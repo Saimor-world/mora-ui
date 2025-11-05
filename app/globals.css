@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 160 50% 7%;
+    --foreground: 0 0% 96%;
+    --card: 160 40% 10%;
+    --card-foreground: 0 0% 96%;
+    --popover: 160 40% 10%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 43 96% 56%;
+    --primary-foreground: 160 50% 7%;
+    --secondary: 160 30% 15%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 160 30% 15%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 43 86% 50%;
+    --accent-foreground: 160 50% 7%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 160 30% 20%;
+    --input: 160 30% 20%;
+    --ring: 43 96% 56%;
+    --radius: 0.5rem;
+    --chart-1: 43 96% 56%;
+    --chart-2: 160 50% 40%;
+    --chart-3: 200 50% 50%;
+    --chart-4: 280 50% 60%;
+    --chart-5: 340 50% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+}
