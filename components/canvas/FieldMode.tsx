@@ -27,10 +27,13 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   // Fetch real snapshots from API
   const { data: apiSnapshots, isLoading, error } = useSnapshots();
 
-  // Use API data if available, otherwise fall back to mock data
-  const snapshots = apiSnapshots && apiSnapshots.length > 0 ? apiSnapshots : mockSnapshots;
+  // Prefer API snapshots only if they contain node data, otherwise fall back to mock data
+  const hasLiveSnapshots = apiSnapshots?.some((snap) => (snap?.nodes?.length ?? 0) > 0) ?? false;
+  const snapshots = hasLiveSnapshots ? apiSnapshots! : mockSnapshots;
+
   const snapshot = snapshots[currentSnapshot] || snapshots[0];
-  const snapshotTimestamps = snapshots.map(s => s.ts);
+  const snapshotTimestamps = snapshots.map((s) => s.ts);
+  const snapshotHasNodes = (snapshot?.nodes?.length ?? 0) > 0;
 
   const handleNodeClick = (node: MoraObject) => {
     console.log('Node clicked:', node);
@@ -76,7 +79,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
               <p className="text-sm text-muted-foreground">Loading 3D data...</p>
             </div>
           </div>
-        ) : (
+        ) : snapshotHasNodes ? (
           <>
             <Scene snapshot={snapshot} onNodeClick={handleNodeClick} />
 
@@ -92,6 +95,14 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
               </div>
             </div>
           </>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-4">
+            <div className="text-primary font-semibold">No snapshot data available</div>
+            <p className="text-sm text-muted-foreground">
+              Could not load timeline data from the Core API. Showing fallback mock data once available.
+              Please ensure the API is running on <code className="px-1">http://localhost:8081</code> or refresh to retry.
+            </p>
+          </div>
         )}
       </div>
 

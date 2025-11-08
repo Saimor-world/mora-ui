@@ -37,15 +37,14 @@ export function useSnapshots() {
       try {
         const response = await api.getSnapshots();
         // Core API returns: { snapshots: [...] }
-        return response.snapshots || [];
+        if (!response.snapshots || response.snapshots.length === 0) {
+          throw new Error('Snapshots response empty');
+        }
+        return response.snapshots;
       } catch (error) {
         console.error('Failed to fetch snapshots:', error);
-        // Return empty snapshots on error
-        return [
-          { ts: 't0', nodes: [], edges: [] },
-          { ts: 't1', nodes: [], edges: [] },
-          { ts: 't2', nodes: [], edges: [] },
-        ];
+        // Return empty list so UI can fall back to mock data
+        return [];
       }
     },
   });
