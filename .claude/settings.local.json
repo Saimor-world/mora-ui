@@ -30,7 +30,12 @@
       "Bash(start http://localhost:3001)",
       "Bash(start http://localhost:3002)",
       "Bash(tasklist:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(npm run lint)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(xxd:*)",
+      "Bash(timeout /t 5 /nobreak)"
     ],
     "deny": [],
     "ask": []

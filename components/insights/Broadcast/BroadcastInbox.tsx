@@ -77,7 +77,14 @@ export default function BroadcastInbox() {
                           {typeInfo.icon}
                         </motion.span>
                         <div>
-                          <div className="font-medium text-sm">{msg.sourceTitle}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-sm">{msg.sourceTitle}</div>
+                            {msg.source === 'mock' && (
+                              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded border border-amber-500/30 whitespace-nowrap">
+                                Demo
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs" style={{ color: typeInfo.color }}>
                             {typeInfo.label}
                           </div>

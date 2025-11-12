@@ -1,21 +1,35 @@
 'use client';
 
 import { useAppContext } from '@/lib/contexts';
-import { useMemoryFacts, useSnapshots } from '@/lib/hooks/useApi';
+import { useMemoryFacts, useSnapshots, useHealthCheck } from '@/lib/hooks/useApi';
 import ContextPanel from './ContextPanel';
+import QuickActions from './QuickActions';
 import WorkflowRunner from './WorkflowRunner';
 import BroadcastInbox from './Broadcast/BroadcastInbox';
+import DataUploadPlaceholder from './DataUploadPlaceholder';
+import MonitoringPlaceholder from './MonitoringPlaceholder';
+import CoreOfflineMessage from '@/components/errors/CoreOfflineMessage';
+
+const ONLINE_STATUSES = new Set(['healthy', 'ok', 'warning']);
+const OFFLINE_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
 
 export default function Insights() {
-  const { selectedObject } = useAppContext();
+  const { selectedObject, orb, activeTagFilter, setActiveTagFilter } = useAppContext();
 
   // Fetch real stats
-  const { data: objects, isLoading: objectsLoading } = useMemoryFacts();
+  const filters: any = {};
+  if (orb !== 'all') filters.orb = orb;
+  if (activeTagFilter) filters.tag = activeTagFilter;
+  const hasFilters = Object.keys(filters).length > 0;
+  const { data: objects, isLoading: objectsLoading } = useMemoryFacts(hasFilters ? filters : undefined);
   const { data: snapshots, isLoading: snapshotsLoading } = useSnapshots();
+  const { data: health, refetch: refetchHealth } = useHealthCheck();
 
   const objectCount = objects?.length || 0;
   const relationCount = snapshots?.[2]?.edges.length || 0; // Use latest snapshot (t2)
-  const isOnline = !objectsLoading && !snapshotsLoading; // Consider online if not loading
+  const healthStatus = (health?.status || '').toString().toLowerCase();
+  const isOffline = OFFLINE_STATUSES.has(healthStatus);
+  const isOnline = ONLINE_STATUSES.has(healthStatus) && !isOffline;
 
   return (
     <aside className="w-80 bg-card border-l border-border flex flex-col overflow-hidden">
@@ -36,14 +50,35 @@ export default function Insights() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {/* Context Panel */}
-        <ContextPanel selectedObject={selectedObject} />
+        {isOffline ? (
+          <CoreOfflineMessage
+            error={new Error('Core API nicht erreichbar')}
+            onRetry={() => refetchHealth()}
+          />
+        ) : (
+          <>
+            {/* Context Panel */}
+            <ContextPanel selectedObject={selectedObject} />
 
-        {/* Workflow Runner */}
-        <WorkflowRunner />
+            {/* Quick Actions */}
+            <QuickActions
+              selectedObject={selectedObject}
+              onFilterByTag={(tag) => setActiveTagFilter(tag)}
+            />
 
-        {/* Broadcast Inbox */}
-        <BroadcastInbox />
+            {/* Workflow Runner */}
+            <WorkflowRunner />
+
+            {/* Broadcast Inbox */}
+            <BroadcastInbox />
+
+            {/* Data Upload Placeholder */}
+            <DataUploadPlaceholder />
+
+            {/* Monitoring Placeholder */}
+            <MonitoringPlaceholder />
+          </>
+        )}
       </div>
 
       {/* Footer Stats */}

@@ -4,31 +4,52 @@
 
 @layer base {
   :root {
-    --background: 160 50% 7%;
-    --foreground: 0 0% 96%;
-    --card: 160 40% 10%;
-    --card-foreground: 0 0% 96%;
-    --popover: 160 40% 10%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 43 96% 56%;
-    --primary-foreground: 160 50% 7%;
-    --secondary: 160 30% 15%;
-    --secondary-foreground: 0 0% 96%;
-    --muted: 160 30% 15%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 43 86% 50%;
-    --accent-foreground: 160 50% 7%;
-    --destructive: 0 84% 60%;
+    /* 🌿 Môra Resonanz-Farben: Wald & Sonne */
+
+    /* Tiefes Myzel-Grün - wie Waldboden */
+    --background: 155 45% 6%;
+    --foreground: 150 15% 92%;
+
+    /* Karten & Panels - organisch, matt */
+    --card: 155 40% 9%;
+    --card-foreground: 150 15% 92%;
+    --popover: 155 40% 9%;
+    --popover-foreground: 150 15% 92%;
+
+    /* Goldenes Sonnenlicht - warm, sanft */
+    --primary: 42 88% 52%;
+    --primary-foreground: 155 45% 6%;
+
+    /* Sekundär - dunkleres Myzel-Grün */
+    --secondary: 155 35% 12%;
+    --secondary-foreground: 150 15% 88%;
+
+    /* Gedämpfte Töne */
+    --muted: 155 30% 14%;
+    --muted-foreground: 150 10% 58%;
+
+    /* Akzent - lebendiges Bernstein */
+    --accent: 38 92% 58%;
+    --accent-foreground: 155 45% 6%;
+
+    /* Destruktiv - gedämpftes Rot (weniger schrill) */
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 96%;
-    --border: 160 30% 20%;
-    --input: 160 30% 20%;
-    --ring: 43 96% 56%;
-    --radius: 0.5rem;
-    --chart-1: 43 96% 56%;
-    --chart-2: 160 50% 40%;
-    --chart-3: 200 50% 50%;
-    --chart-4: 280 50% 60%;
-    --chart-5: 340 50% 50%;
+
+    /* Borders & Inputs - subtil */
+    --border: 155 25% 18%;
+    --input: 155 30% 16%;
+    --ring: 42 88% 52%;
+
+    /* Sanfte Radien für organisches Feeling */
+    --radius: 0.75rem;
+
+    /* Charts - Naturspektrum */
+    --chart-1: 42 88% 52%;  /* Gold */
+    --chart-2: 155 45% 42%; /* Wald-Grün */
+    --chart-3: 190 55% 48%; /* Wasser-Blau */
+    --chart-4: 280 45% 58%; /* Mystisches Violett */
+    --chart-5: 25 85% 55%;  /* Erd-Orange */
   }
 }
 
@@ -39,5 +60,85 @@
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, sans-serif;
+    /* Sanfte, organische Übergänge überall */
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer utilities {
+  /* 🌿 Môra Utilities - Organische Bewegung */
+
+  .mora-transition {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mora-transition-fast {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mora-transition-slow {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Sanftes Pulsieren - wie Atmung */
+  @keyframes mora-breathe {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+  }
+
+  .mora-breathe {
+    animation: mora-breathe 4s ease-in-out infinite;
+  }
+
+  /* Sanftes Glühen - wie Sonnenlicht durch Blätter */
+  @keyframes mora-glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(248, 191, 77, 0.1); }
+    50% { box-shadow: 0 0 20px rgba(248, 191, 77, 0.2); }
+  }
+
+  .mora-glow {
+    animation: mora-glow 3s ease-in-out infinite;
+  }
+
+  /* Subtiles Wachstum - wie Myzel */
+  @keyframes mora-grow {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .mora-grow {
+    animation: mora-grow 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  /* Wellen-Effekt beim Hover - wie Wasser */
+  .mora-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mora-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(248, 191, 77, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mora-ripple:hover::after {
+    opacity: 1;
+  }
+
+  /* Tiefe durch subtile Schatten */
+  .mora-depth-sm {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .mora-depth-md {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .mora-depth-lg {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 }

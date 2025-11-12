@@ -4,16 +4,25 @@ import { useQuery, useMutation, type UseQueryOptions } from '@tanstack/react-que
 import api from '../api';
 import type { MoraObject, Snapshot } from '../types';
 
+type ObjectQueryParams = {
+  spaceId?: string;
+  type?: string;
+  orb?: string;
+};
+
 /**
  * Hook: Get Objects from Core API
  * Fetches objects from /v1/objects endpoint
  */
-export function useMemoryFacts(options?: Partial<UseQueryOptions<MoraObject[]>>) {
+export function useMemoryFacts(
+  params?: ObjectQueryParams,
+  options?: Partial<UseQueryOptions<MoraObject[]>>
+) {
   return useQuery<MoraObject[]>({
-    queryKey: ['objects'],
+    queryKey: ['objects', params ?? {}],
     queryFn: async () => {
       try {
-        const response = await api.getObjects();
+        const response = await api.getObjects(params);
         // Core API returns: { objects: [...], total: number }
         return response.objects || [];
       } catch (error) {

@@ -9,6 +9,7 @@ export interface BroadcastMessage {
   timestamp: string;
   status: 'pending' | 'sent' | 'received';
   type: 'share' | 'reference' | 'insight';
+  source?: 'mock' | 'real'; // Data source indicator
 }
 
 interface BroadcastStore {
@@ -33,6 +34,7 @@ export const useBroadcastStore = create<BroadcastStore>((set) => ({
       timestamp: '2 mins ago',
       status: 'sent',
       type: 'insight',
+      source: 'mock',
     },
     {
       id: 'b2',
@@ -43,6 +45,7 @@ export const useBroadcastStore = create<BroadcastStore>((set) => ({
       timestamp: '1 hour ago',
       status: 'received',
       type: 'share',
+      source: 'mock',
     },
   ],
   activeBroadcasts: new Set(),

@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import type { MoraObject } from '@/lib/types';
+import DocumentViewer from '@/components/documents/DocumentViewer';
 
 interface ContextPanelProps {
   selectedObject?: MoraObject | null;
 }
 
 export default function ContextPanel({ selectedObject }: ContextPanelProps) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   if (!selectedObject) {
     return (
       <div className="p-4 border-b border-border">
@@ -31,7 +34,14 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
         {/* Title */}
         <div>
           <div className="text-xs text-muted-foreground mb-1">Title</div>
-          <div className="font-medium">{selectedObject.title}</div>
+          <div className="flex items-center gap-2">
+            <div className="font-medium">{selectedObject.title}</div>
+            {selectedObject.source === 'mock' && (
+              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded border border-amber-500/30 whitespace-nowrap">
+                Demo
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Type */}
@@ -87,14 +97,22 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
       {/* Actions */}
       <div className="mt-4 pt-4 border-t border-border">
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
+          <button
+            onClick={() => setViewerOpen(true)}
+            className="flex-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-all duration-200"
+          >
             Open
           </button>
-          <button className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-md text-sm font-medium hover:bg-secondary/80 transition-colors">
+          <button className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-md text-sm font-medium hover:bg-secondary/80 transition-all duration-200">
             ···
           </button>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewerOpen && (
+        <DocumentViewer object={selectedObject} onClose={() => setViewerOpen(false)} />
+      )}
     </div>
   );
 }

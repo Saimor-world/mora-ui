@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import TreeView from './FolderMode/TreeView';
 import ListView from './FolderMode/ListView';
+import FilterBadge from '@/components/ui/FilterBadge';
 
 export type ViewType = 'tree' | 'list';
 
@@ -37,6 +38,7 @@ export default function FolderMode() {
               📋 List
             </button>
           </div>
+          <FilterBadge />
         </div>
         <div className="text-sm text-muted-foreground">
           {view === 'tree' ? 'Hierarchical view' : 'Flat file list'}

@@ -9,6 +9,8 @@ export interface MoraObject {
   tags: string[];
   spaceId: string;
   ts?: string;
+  metadata?: Record<string, any>;
+  source?: 'mock' | 'real'; // Data source indicator
 }
 
 export interface Relation {
