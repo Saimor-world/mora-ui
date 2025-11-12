@@ -43,6 +43,9 @@ export default function DiagnosticsPanel() {
   const [adaptersLoading, setAdaptersLoading] = useState(false);
   const [badgePulse, setBadgePulse] = useState(false);
   const badgePulseTimeout = useRef<number | null>(null);
+  const [settledPulse, setSettledPulse] = useState(false);
+  const settleTimeoutRef = useRef<number | null>(null);
+  const lastOverallRef = useRef<HealthStatus['overall']>('loading');
   const lastBadgeState = useRef<{ overall: HealthStatus['overall']; adapterAlert: boolean }>({
     overall: 'loading',
     adapterAlert: false,
@@ -189,6 +192,31 @@ export default function DiagnosticsPanel() {
         window.clearTimeout(badgePulseTimeout.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (lastOverallRef.current !== 'ok' && health.overall === 'ok') {
+      setSettledPulse(true);
+      if (settleTimeoutRef.current) {
+        window.clearTimeout(settleTimeoutRef.current);
+      }
+      settleTimeoutRef.current = window.setTimeout(() => {
+        setSettledPulse(false);
+        settleTimeoutRef.current = null;
+      }, 2000);
+    }
+    lastOverallRef.current = health.overall;
+    return () => {
+      if (settleTimeoutRef.current) {
+        window.clearTimeout(settleTimeoutRef.current);
+      }
+    };
+  }, [health.overall]);
+
+  useEffect(() => {
+    const handleDiagnosticsOpen = () => setIsOpen(true);
+    window.addEventListener('mora:diagnostics-open', handleDiagnosticsOpen as EventListener);
+    return () => window.removeEventListener('mora:diagnostics-open', handleDiagnosticsOpen as EventListener);
   }, []);
 
   const hasCriticalHealthIssue =
@@ -393,6 +421,9 @@ export default function DiagnosticsPanel() {
                   <p className="text-xs text-muted-foreground mt-2">
                     Last check: {new Date(health.timestamp).toLocaleTimeString()}
                   </p>
+                )}
+                {settledPulse && (
+                  <p className="text-xs text-green-500 mt-1">System stabilisiert – Health ok.</p>
                 )}
               </div>
 

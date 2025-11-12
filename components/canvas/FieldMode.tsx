@@ -1,8 +1,11 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import Timeline from './FieldMode/Timeline';
-import MyceliumGraph2D from './FieldMode/MyceliumGraph2D';
+import MyceliumGraph2D, {
+  type MyceliumGraph2DRef,
+  type GraphStats,
+} from './FieldMode/MyceliumGraph2D';
 import FilterBadge from '@/components/ui/FilterBadge';
 import { mockSnapshots } from '@/lib/mockData';
 import { useSnapshots } from '@/lib/hooks/useApi';
@@ -18,7 +21,10 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   const [currentSnapshot, setCurrentSnapshot] = useState(0);
   const [selectedNode, setSelectedNode] = useState<MoraObject | null>(null);
   const [resetSignal, setResetSignal] = useState(0);
+  const [showTelemetry, setShowTelemetry] = useState(false);
+  const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
   const setLastSnapshotId = useSessionStore((state) => state.setLastSnapshotId);
+  const graphRef = useRef<MyceliumGraph2DRef>(null);
 
   // Fetch real snapshots from API
   const { data: apiSnapshots, isLoading, error } = useSnapshots();
@@ -51,6 +57,11 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
 
   const handleResetView = () => {
     setResetSignal((value) => value + 1);
+    graphRef.current?.resetView();
+  };
+
+  const handleTimelineJump = () => {
+    setCurrentSnapshot(snapshots.length - 1);
   };
 
   return (
@@ -101,9 +112,12 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
         ) : snapshotHasNodes ? (
           <>
             <MyceliumGraph2D
+              ref={graphRef}
               snapshot={snapshot}
               onNodeClick={handleNodeClick}
               resetSignal={resetSignal}
+              focusNodeId={selectedNode?.id ?? null}
+              onStatsChange={setGraphStats}
             />
 
             {/* Stats overlay */}
@@ -130,6 +144,57 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                 <div>{snapshot?.nodes.length || 0} Nodes</div>
                 <div>{snapshot?.edges.length || 0} Edges</div>
               </div>
+            </div>
+
+            {/* Telemetry toggle */}
+            {process.env.NODE_ENV !== 'production' && (
+              <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+                <button
+                  onClick={() => setShowTelemetry((prev) => !prev)}
+                  className="px-3 py-1.5 rounded-full bg-card/80 border border-border text-xs font-semibold shadow"
+                >
+                  {showTelemetry ? 'Telemetry ▲' : 'Telemetry ▼'}
+                </button>
+                {showTelemetry && graphStats && (
+                  <div className="px-3 py-2 rounded-2xl bg-card/80 border border-border text-xs shadow">
+                    <div>{graphStats.nodes} Nodes</div>
+                    <div>{graphStats.edges} Edges</div>
+                    <div>{graphStats.fps} FPS</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mini Toolbar */}
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+              <button
+                onClick={() => graphRef.current?.zoomOut()}
+                className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <button
+                onClick={handleResetView}
+                className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
+                aria-label="Ansicht zentrieren"
+              >
+                ⟳
+              </button>
+              <button
+                onClick={() => graphRef.current?.fitView()}
+                className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
+                aria-label="Fit to view"
+              >
+                ⤢
+              </button>
+              <button
+                onClick={handleTimelineJump}
+                className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
+                aria-label="Zum neuesten Snapshot springen"
+              >
+                ⇥
+              </button>
             </div>
 
             {/* Node Detail Panel */}

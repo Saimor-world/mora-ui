@@ -1,11 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import type { Snapshot, MoraObject } from '@/lib/types';
+import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 
 interface MyceliumGraph2DProps {
   snapshot: Snapshot;
   onNodeClick?: (node: MoraObject) => void;
+  resetSignal?: number;
+  focusNodeId?: string | null;
+  onStatsChange?: (stats: GraphStats) => void;
+  prefersReducedMotion?: boolean;
 }
 
 interface NodePosition {
@@ -17,285 +29,449 @@ interface NodePosition {
   node: MoraObject;
 }
 
-export default function MyceliumGraph2D({ snapshot, onNodeClick }: MyceliumGraph2DProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const animationFrameRef = useRef<number>();
-  const nodePositionsRef = useRef<Map<string, NodePosition>>(new Map());
+export interface GraphStats {
+  nodes: number;
+  edges: number;
+  fps: number;
+}
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+export interface MyceliumGraph2DRef {
+  zoomOut: () => void;
+  resetView: () => void;
+  fitView: () => void;
+}
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
+  (
+    {
+      snapshot,
+      onNodeClick,
+      resetSignal = 0,
+      focusNodeId = null,
+      onStatsChange,
+      prefersReducedMotion,
+    },
+    ref
+  ) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+    const [zoom, setZoom] = useState(1);
+    const [panX, setPanX] = useState(0);
+    const [panY, setPanY] = useState(0);
+    const animationFrameRef = useRef<number>();
+    const nodePositionsRef = useRef<Map<string, NodePosition>>(new Map());
+    const lastSnapshotRef = useRef<string>('');
+    const dragStateRef = useRef({ dragging: false, moved: false, x: 0, y: 0 });
+    const edgeMapRef = useRef<Map<string, Set<string>>>(new Map());
+    const fpsRef = useRef(60);
+    const lastFrameTimeRef = useRef(typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const statsThrottleRef = useRef(0);
+    const prefersMotionHook = usePrefersReducedMotion();
+    const reduceMotion = prefersReducedMotion ?? prefersMotionHook;
 
-    // Set canvas size
-    const updateSize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    };
-    updateSize();
-    window.addEventListener('resize', updateSize);
+    const fitToView = useCallback(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const nodes = nodePositionsRef.current;
+      if (nodes.size === 0) return;
 
-    // Initialize node positions (force-directed layout simulation)
-    const nodes = nodePositionsRef.current;
-    if (nodes.size === 0) {
-      const centerX = canvas.offsetWidth / 2;
-      const centerY = canvas.offsetHeight / 2;
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
 
-      snapshot.nodes.forEach((node, i) => {
-        const angle = (i / snapshot.nodes.length) * Math.PI * 2;
-        const radius = Math.min(canvas.offsetWidth, canvas.offsetHeight) * 0.3;
-
-        nodes.set(node.id, {
-          id: node.id,
-          x: centerX + Math.cos(angle) * radius,
-          y: centerY + Math.sin(angle) * radius,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          node,
-        });
+      nodes.forEach((node) => {
+        minX = Math.min(minX, node.x);
+        maxX = Math.max(maxX, node.x);
+        minY = Math.min(minY, node.y);
+        maxY = Math.max(maxY, node.y);
       });
-    }
 
-    // Build edge map for force calculations
-    const edgeMap = new Map<string, Set<string>>();
-    snapshot.edges.forEach(edge => {
-      if (!edgeMap.has(edge.sourceId)) edgeMap.set(edge.sourceId, new Set());
-      if (!edgeMap.has(edge.targetId)) edgeMap.set(edge.targetId, new Set());
-      edgeMap.get(edge.sourceId)!.add(edge.targetId);
-      edgeMap.get(edge.targetId)!.add(edge.sourceId);
-    });
+      if (!Number.isFinite(minX) || !Number.isFinite(maxX)) return;
 
-    // Animation loop with force-directed physics
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      const padding = 120;
+      const boundsWidth = Math.max(1, maxX - minX);
+      const boundsHeight = Math.max(1, maxY - minY);
+      const scaleX = (width - padding) / boundsWidth;
+      const scaleY = (height - padding) / boundsHeight;
+      const targetZoom = Math.max(0.4, Math.min(2.5, Math.min(scaleX, scaleY)));
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
 
-      // Draw background gradient (dark green mycelium soil)
-      const gradient = ctx.createRadialGradient(
-        canvas.offsetWidth / 2,
-        canvas.offsetHeight / 2,
-        0,
-        canvas.offsetWidth / 2,
-        canvas.offsetHeight / 2,
-        Math.max(canvas.offsetWidth, canvas.offsetHeight) / 2
-      );
-      gradient.addColorStop(0, 'hsl(160, 50%, 10%)');
-      gradient.addColorStop(1, 'hsl(160, 50%, 5%)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+      setZoom(targetZoom);
+      setPanX(width / 2 - centerX * targetZoom);
+      setPanY(height / 2 - centerY * targetZoom);
+    }, []);
 
-      // Apply forces
-      const nodeArray = Array.from(nodes.values());
+    useImperativeHandle(
+      ref,
+      () => ({
+        zoomOut: () => {
+          setZoom((prev) => Math.max(0.3, prev * 0.85));
+        },
+        resetView: () => {
+          setZoom(1);
+          setPanX(0);
+          setPanY(0);
+        },
+        fitView: () => fitToView(),
+      }),
+      [fitToView]
+    );
 
-      // Repulsion between all nodes
-      for (let i = 0; i < nodeArray.length; i++) {
-        for (let j = i + 1; j < nodeArray.length; j++) {
-          const n1 = nodeArray[i];
-          const n2 = nodeArray[j];
-          const dx = n2.x - n1.x;
-          const dy = n2.y - n1.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 1) continue;
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-          const force = 500 / (dist * dist);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const updateSize = () => {
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      };
+      updateSize();
+      window.addEventListener('resize', updateSize);
+
+      const nodes = nodePositionsRef.current;
+      const snapshotKey = `${snapshot.ts}-${snapshot.nodes.length}`;
+      if (nodes.size === 0 || lastSnapshotRef.current !== snapshotKey) {
+        lastSnapshotRef.current = snapshotKey;
+        nodes.clear();
+
+        const centerX = canvas.offsetWidth / 2;
+        const centerY = canvas.offsetHeight / 2;
+        const radius = Math.min(canvas.offsetWidth, canvas.offsetHeight) * 0.4;
+
+        snapshot.nodes.forEach((node, index) => {
+          const angle = (index / snapshot.nodes.length) * Math.PI * 2;
+          nodes.set(node.id, {
+            id: node.id,
+            x: centerX + Math.cos(angle) * radius,
+            y: centerY + Math.sin(angle) * radius,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            node,
+          });
+        });
+
+        requestAnimationFrame(() => fitToView());
+      }
+
+      const edgeMap = new Map<string, Set<string>>();
+      snapshot.edges.forEach((edge) => {
+        if (!edgeMap.has(edge.sourceId)) edgeMap.set(edge.sourceId, new Set());
+        if (!edgeMap.has(edge.targetId)) edgeMap.set(edge.targetId, new Set());
+        edgeMap.get(edge.sourceId)!.add(edge.targetId);
+        edgeMap.get(edge.targetId)!.add(edge.sourceId);
+      });
+      edgeMapRef.current = edgeMap;
+
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+        ctx.save();
+        ctx.translate(panX, panY);
+        ctx.scale(zoom, zoom);
+
+        const gradient = ctx.createRadialGradient(
+          canvas.offsetWidth / 2,
+          canvas.offsetHeight / 2,
+          0,
+          canvas.offsetWidth / 2,
+          canvas.offsetHeight / 2,
+          Math.max(canvas.offsetWidth, canvas.offsetHeight) / 2
+        );
+        gradient.addColorStop(0, 'hsl(160, 50%, 10%)');
+        gradient.addColorStop(1, 'hsl(160, 50%, 5%)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+
+        const nodeArray = Array.from(nodes.values());
+        const motionFactor = reduceMotion ? 0.5 : 1;
+
+        for (let i = 0; i < nodeArray.length; i++) {
+          for (let j = i + 1; j < nodeArray.length; j++) {
+            const n1 = nodeArray[i];
+            const n2 = nodeArray[j];
+            const dx = n2.x - n1.x;
+            const dy = n2.y - n1.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const force = (500 / (dist * dist)) * motionFactor;
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+
+            n1.vx -= fx;
+            n1.vy -= fy;
+            n2.vx += fx;
+            n2.vy += fy;
+          }
+        }
+
+        snapshot.edges.forEach((edge) => {
+          const source = nodes.get(edge.sourceId);
+          const target = nodes.get(edge.targetId);
+          if (!source || !target) return;
+
+          const dx = target.x - source.x;
+          const dy = target.y - source.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = dist * 0.001 * motionFactor;
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
 
-          n1.vx -= fx;
-          n1.vy -= fy;
-          n2.vx += fx;
-          n2.vy += fy;
+          source.vx += fx;
+          source.vy += fy;
+          target.vx -= fx;
+          target.vy -= fy;
+        });
+
+        const centerX = canvas.offsetWidth / 2;
+        const centerY = canvas.offsetHeight / 2;
+        nodeArray.forEach((node) => {
+          const dx = centerX - node.x;
+          const dy = centerY - node.y;
+          node.vx += dx * 0.0001;
+          node.vy += dy * 0.0001;
+          node.vx *= 0.85;
+          node.vy *= 0.85;
+          node.x += node.vx;
+          node.y += node.vy;
+
+          const margin = 50;
+          node.x = Math.min(Math.max(node.x, margin), canvas.offsetWidth - margin);
+          node.y = Math.min(Math.max(node.y, margin), canvas.offsetHeight - margin);
+        });
+
+        const focusSet = new Set<string>();
+        if (focusNodeId) {
+          focusSet.add(focusNodeId);
+          const neighbors = edgeMap.get(focusNodeId);
+          neighbors?.forEach((neighbor) => focusSet.add(neighbor));
         }
-      }
 
-      // Attraction along edges (mycelium threads)
-      snapshot.edges.forEach(edge => {
-        const source = nodes.get(edge.sourceId);
-        const target = nodes.get(edge.targetId);
-        if (!source || !target) return;
+        snapshot.edges.forEach((edge) => {
+          const source = nodes.get(edge.sourceId);
+          const target = nodes.get(edge.targetId);
+          if (!source || !target) return;
 
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 1) return;
+          const faded =
+            focusSet.size > 0 &&
+            !focusSet.has(edge.sourceId) &&
+            !focusSet.has(edge.targetId);
 
-        const force = dist * 0.001;
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
+          const weight = edge.weight || 0.5;
+          const controlX = (source.x + target.x) / 2 + (Math.random() - 0.5) * 20 * motionFactor;
+          const controlY = (source.y + target.y) / 2 + (Math.random() - 0.5) * 20 * motionFactor;
 
-        source.vx += fx;
-        source.vy += fy;
-        target.vx -= fx;
-        target.vy -= fy;
-      });
-
-      // Center gravity
-      const centerX = canvas.offsetWidth / 2;
-      const centerY = canvas.offsetHeight / 2;
-      nodeArray.forEach(n => {
-        const dx = centerX - n.x;
-        const dy = centerY - n.y;
-        n.vx += dx * 0.0001;
-        n.vy += dy * 0.0001;
-      });
-
-      // Update positions with damping
-      nodeArray.forEach(n => {
-        n.vx *= 0.85;
-        n.vy *= 0.85;
-        n.x += n.vx;
-        n.y += n.vy;
-
-        // Keep in bounds
-        const margin = 50;
-        if (n.x < margin) { n.x = margin; n.vx = 0; }
-        if (n.x > canvas.offsetWidth - margin) { n.x = canvas.offsetWidth - margin; n.vx = 0; }
-        if (n.y < margin) { n.y = margin; n.vy = 0; }
-        if (n.y > canvas.offsetHeight - margin) { n.y = canvas.offsetHeight - margin; n.vy = 0; }
-      });
-
-      // Draw mycelium threads (organic curves)
-      snapshot.edges.forEach(edge => {
-        const source = nodes.get(edge.sourceId);
-        const target = nodes.get(edge.targetId);
-        if (!source || !target) return;
-
-        const weight = edge.weight || 0.5;
-
-        // Draw organic curved thread
-        ctx.beginPath();
-        ctx.moveTo(source.x, source.y);
-
-        // Control point for curve (creates organic look)
-        const midX = (source.x + target.x) / 2 + (Math.random() - 0.5) * 20;
-        const midY = (source.y + target.y) / 2 + (Math.random() - 0.5) * 20;
-        ctx.quadraticCurveTo(midX, midY, target.x, target.y);
-
-        ctx.strokeStyle = `rgba(52, 211, 153, ${weight * 0.3})`;
-        ctx.lineWidth = weight * 2;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        // Add glowing threads for strong connections
-        if (weight > 0.7) {
           ctx.beginPath();
           ctx.moveTo(source.x, source.y);
-          ctx.quadraticCurveTo(midX, midY, target.x, target.y);
-          ctx.strokeStyle = `rgba(52, 211, 153, ${weight * 0.1})`;
-          ctx.lineWidth = weight * 8;
+          ctx.quadraticCurveTo(controlX, controlY, target.x, target.y);
+          ctx.strokeStyle = `rgba(52, 211, 153, ${faded ? 0.08 : weight * 0.3})`;
+          ctx.lineWidth = weight * 2;
+          ctx.lineCap = 'round';
           ctx.stroke();
+        });
+
+        nodeArray.forEach((node) => {
+          const isHovered = hoveredNode === node.id;
+          const faded = focusSet.size > 0 && !focusSet.has(node.id);
+          const baseRadius = faded ? 6 : 8;
+          const radius = isHovered ? baseRadius + 4 : baseRadius;
+          const color = getNodeColor(node.node.type);
+
+          ctx.globalAlpha = faded ? 0.25 : 1;
+
+          const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, radius * 2);
+          glow.addColorStop(0, `${color}40`);
+          glow.addColorStop(1, 'transparent');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius * 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(node.x - radius / 3, node.y - radius / 3, radius / 2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          ctx.fill();
+
+          if (isHovered) {
+            ctx.font = '12px system-ui';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(node.node.title, node.x, node.y + radius + 8);
+          }
+
+          ctx.globalAlpha = 1;
+        });
+
+        ctx.restore();
+
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const delta = now - lastFrameTimeRef.current || 16;
+        fpsRef.current = 1000 / delta;
+        lastFrameTimeRef.current = now;
+
+        if (onStatsChange && now - statsThrottleRef.current > 500) {
+          statsThrottleRef.current = now;
+          onStatsChange({
+            nodes: snapshot.nodes.length,
+            edges: snapshot.edges.length,
+            fps: Math.round(fpsRef.current),
+          });
+        }
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+      };
+
+      animate();
+
+      return () => {
+        window.removeEventListener('resize', updateSize);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
+    }, [snapshot, hoveredNode, zoom, panX, panY, fitToView, focusNodeId, reduceMotion, onStatsChange]);
+
+    useEffect(() => {
+      fitToView();
+    }, [resetSignal, fitToView]);
+
+    const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
+      event.preventDefault();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const delta = event.deltaY > 0 ? 0.9 : 1.1;
+      const nextZoom = Math.max(0.3, Math.min(3, zoom * delta));
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      const worldX = (mouseX - panX) / zoom;
+      const worldY = (mouseY - panY) / zoom;
+
+      setZoom(nextZoom);
+      setPanX(mouseX - worldX * nextZoom);
+      setPanY(mouseY - worldY * nextZoom);
+    };
+
+    const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+      dragStateRef.current = {
+        dragging: true,
+        moved: false,
+        x: event.clientX,
+        y: event.clientY,
+      };
+    };
+
+    const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      if (dragStateRef.current.dragging) {
+        const dx = event.clientX - dragStateRef.current.x;
+        const dy = event.clientY - dragStateRef.current.y;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+          dragStateRef.current.moved = true;
+        }
+        dragStateRef.current.x = event.clientX;
+        dragStateRef.current.y = event.clientY;
+        setPanX((prev) => prev + dx);
+        setPanY((prev) => prev + dy);
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left - panX) / zoom;
+      const y = (event.clientY - rect.top - panY) / zoom;
+
+      let found: string | null = null;
+      nodePositionsRef.current.forEach((node) => {
+        const dist = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
+        if (dist < 12) {
+          found = node.id;
         }
       });
 
-      // Draw nodes (spores/fruiting bodies)
-      nodeArray.forEach(n => {
-        const isHovered = hoveredNode === n.id;
-        const color = getNodeColor(n.node.type);
-        const radius = isHovered ? 12 : 8;
+      setHoveredNode(found);
+      canvas.style.cursor = found ? 'pointer' : 'default';
+    };
 
-        // Outer glow
-        const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, radius * 2);
-        glow.addColorStop(0, `${color}40`);
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, radius * 2, 0, Math.PI * 2);
-        ctx.fill();
+    const handleMouseUp = () => {
+      dragStateRef.current.dragging = false;
+    };
 
-        // Node body
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
+    const handleMouseLeave = () => {
+      dragStateRef.current.dragging = false;
+      dragStateRef.current.moved = false;
+      setHoveredNode(null);
+    };
 
-        // Inner highlight
-        ctx.beginPath();
-        ctx.arc(n.x - radius/3, n.y - radius/3, radius/2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fill();
+    const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (dragStateRef.current.moved) {
+        dragStateRef.current.moved = false;
+        return;
+      }
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-        // Draw title
-        if (isHovered) {
-          ctx.font = '12px system-ui';
-          ctx.fillStyle = 'white';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-          ctx.fillText(n.node.title, n.x, n.y + radius + 8);
+      const rect = canvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left - panX) / zoom;
+      const y = (event.clientY - rect.top - panY) / zoom;
+
+      nodePositionsRef.current.forEach((node) => {
+        const dist = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
+        if (dist < 12) {
+          onNodeClick?.(node.node);
         }
       });
-
-      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    return (
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full"
+        onMouseMove={handleMouseMove}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        onWheel={handleWheel}
+      />
+    );
+  }
+);
 
-    return () => {
-      window.removeEventListener('resize', updateSize);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [snapshot, hoveredNode]);
+MyceliumGraph2D.displayName = 'MyceliumGraph2D';
 
-  // Handle mouse interactions
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Find hovered node
-    let found: string | null = null;
-    nodePositionsRef.current.forEach(n => {
-      const dist = Math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2);
-      if (dist < 12) {
-        found = n.id;
-      }
-    });
-
-    setHoveredNode(found);
-    canvas.style.cursor = found ? 'pointer' : 'default';
-  };
-
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Find clicked node
-    nodePositionsRef.current.forEach(n => {
-      const dist = Math.sqrt((n.x - x) ** 2 + (n.y - y) ** 2);
-      if (dist < 12) {
-        onNodeClick?.(n.node);
-      }
-    });
-  };
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full"
-      onMouseMove={handleMouseMove}
-      onClick={handleClick}
-    />
-  );
-}
+export default MyceliumGraph2D;
 
 function getNodeColor(type: string): string {
   switch (type) {
-    case 'file': return '#60A5FA'; // Blue
-    case 'link': return '#F5B800'; // Gold
-    case 'note': return '#34D399'; // Green
-    case 'email': return '#F472B6'; // Pink
-    case 'task': return '#A78BFA'; // Purple
-    default: return '#9CA3AF'; // Gray
+    case 'file':
+      return '#60A5FA';
+    case 'link':
+      return '#F5B800';
+    case 'note':
+      return '#34D399';
+    case 'email':
+      return '#F472B6';
+    case 'task':
+      return '#A78BFA';
+    default:
+      return '#9CA3AF';
   }
 }

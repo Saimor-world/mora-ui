@@ -19,6 +19,10 @@ jest.mock('@/lib/mora/listener', () => ({
   getMoraEvents: jest.fn(() => []),
 }));
 
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
+
 const sessionState = {
   introSeen: true,
   setIntroSeen: jest.fn(),

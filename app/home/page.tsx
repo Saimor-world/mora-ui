@@ -7,6 +7,8 @@ import { mockConnectors, mockActivity } from "@/lib/mockConnectors";
 import ConnectorCard from "@/components/home/ConnectorCard";
 import ActivityPulse from "@/components/home/ActivityPulse";
 import OnboardingOverlay from "@/components/home/OnboardingOverlay";
+import SuggestionsPanel from "@/components/home/SuggestionsPanel";
+import EventDetailDrawer from "@/components/home/EventDetailDrawer";
 import ConnectionMap, { type ConnectionNode } from "@/components/connections/ConnectionMap";
 import { emitMoraEvent, getMoraEvents, type MoraEvent } from "@/lib/mora/listener";
 import { showToast } from "@/lib/toast";
@@ -18,6 +20,7 @@ export default function HomePage() {
   const [setupTarget, setSetupTarget] = useState<Connector | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const storedEvents = useSessionStore((state) => state.recentEvents);
+  const [drawerEvent, setDrawerEvent] = useState<MoraEvent | null>(null);
 
   useEffect(() => {
     const loaded = getConnectors(mockConnectors);
@@ -107,6 +110,7 @@ export default function HomePage() {
       return {
         id: `${event.ts}-${event.action}-${index}`,
         time: new Date(event.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        raw: event,
         ...description,
       };
     });
@@ -191,7 +195,11 @@ export default function HomePage() {
                 {recentEvents.map((entry) => (
                   <li key={entry.id} className="flex items-start gap-3">
                     <span className="text-xs text-muted-foreground mt-1">{entry.time}</span>
-                    <div className="flex-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setDrawerEvent(entry.raw)}
+                      className="flex-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-2 text-left hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
                       <div className="flex items-center gap-2 font-medium">
                         <span>{entry.icon}</span>
                         <span className={entry.level === "warning" ? "text-amber-500" : "text-foreground"}>
@@ -201,7 +209,7 @@ export default function HomePage() {
                       {entry.detail && (
                         <p className="text-xs text-muted-foreground mt-1">{entry.detail}</p>
                       )}
-                    </div>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -232,6 +240,9 @@ export default function HomePage() {
           onSave={handleModalSave}
         />
       )}
+
+      <SuggestionsPanel />
+      <EventDetailDrawer event={drawerEvent} open={Boolean(drawerEvent)} onClose={() => setDrawerEvent(null)} />
     </div>
   );
 }

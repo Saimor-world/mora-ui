@@ -15,6 +15,13 @@ const RECENT_EVENT_TYPES: MoraEventAction[] = [
   "tag_filter_change",
 ];
 
+interface FavoriteEntry {
+  id: string;
+  title?: string;
+  path?: string;
+  tags?: string[];
+}
+
 interface SessionState {
   activeOrb: OrbSelection;
   lastViewedNode: Pick<MoraObject, "id" | "title" | "type" | "tags"> | null;
@@ -27,6 +34,16 @@ interface SessionState {
   recentEvents: MoraEvent[];
   appendRecentEvent: (event: MoraEvent) => void;
   clearRecentEvents: () => void;
+  dismissedSuggestionIds: string[];
+  suggestionsCollapsed: boolean;
+  setSuggestionDismissed: (id: string) => void;
+  resetSuggestionDismissals: () => void;
+  setSuggestionsCollapsed: (collapsed: boolean) => void;
+  favorites: Record<string, FavoriteEntry>;
+  addFavorite: (entry: FavoriteEntry) => void;
+  removeFavorite: (id: string) => void;
+  lastVisitedRoute: string | null;
+  setLastVisitedRoute: (route: string) => void;
 }
 
 export const useSessionStore = create<SessionState>()(
@@ -37,8 +54,13 @@ export const useSessionStore = create<SessionState>()(
       introSeen: false,
       lastSnapshotId: null,
       recentEvents: [],
+      dismissedSuggestionIds: [],
+      suggestionsCollapsed: false,
+      favorites: {},
+      lastVisitedRoute: null,
       setActiveOrb: (orb) => {
         emitMoraEvent("orb_change", { orb });
+        emitMoraEvent("filter_change", { orb });
         set({ activeOrb: orb });
       },
       setLastViewedNode: (node) => {
@@ -80,17 +102,73 @@ export const useSessionStore = create<SessionState>()(
       clearRecentEvents: () => {
         set({ recentEvents: [] });
       },
+      setSuggestionDismissed: (id) => {
+        set((state) => {
+          if (state.dismissedSuggestionIds.includes(id)) {
+            return state;
+          }
+          return { dismissedSuggestionIds: [...state.dismissedSuggestionIds, id] };
+        });
+      },
+      resetSuggestionDismissals: () => {
+        set({ dismissedSuggestionIds: [] });
+      },
+      setSuggestionsCollapsed: (collapsed) => {
+        set({ suggestionsCollapsed: collapsed });
+      },
+      addFavorite: (entry) => {
+        if (!entry.id) return;
+        set((state) => ({
+          favorites: {
+            ...state.favorites,
+            [entry.id]: entry,
+          },
+        }));
+      },
+      removeFavorite: (id) => {
+        set((state) => {
+          if (!state.favorites[id]) return state;
+          const next = { ...state.favorites };
+          delete next[id];
+          return { favorites: next };
+        });
+      },
+      setLastVisitedRoute: (route) => {
+        set({ lastVisitedRoute: route });
+      },
     }),
     {
       name: "mora_session_store",
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== "object") {
           return persistedState as SessionState;
         }
         const nextState = { ...persistedState } as SessionState;
-        if (version < 2 || !Array.isArray((persistedState as Record<string, unknown>).recentEvents)) {
+        if (
+          version < 2 ||
+          !Array.isArray((persistedState as Record<string, unknown>).recentEvents)
+        ) {
           nextState.recentEvents = [];
+        }
+        if (version < 3) {
+          nextState.dismissedSuggestionIds = [];
+          nextState.suggestionsCollapsed = false;
+          nextState.favorites = {};
+          nextState.lastVisitedRoute = null;
+        } else {
+          if (!Array.isArray((persistedState as Record<string, unknown>).dismissedSuggestionIds)) {
+            nextState.dismissedSuggestionIds = [];
+          }
+          if (typeof (persistedState as Record<string, unknown>).suggestionsCollapsed !== "boolean") {
+            nextState.suggestionsCollapsed = false;
+          }
+          if (typeof (persistedState as Record<string, unknown>).favorites !== "object") {
+            nextState.favorites = {};
+          }
+          if (typeof (persistedState as Record<string, unknown>).lastVisitedRoute !== "string") {
+            nextState.lastVisitedRoute = null;
+          }
         }
         return nextState;
       },

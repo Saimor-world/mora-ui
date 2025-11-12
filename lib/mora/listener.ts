@@ -14,7 +14,8 @@ export type MoraEventAction =
   | "quick_action"
   | "intro_complete"
   | "view_change"
-  | "connector_action";
+  | "connector_action"
+  | "open_document";
 
 export interface MoraEvent<T = Record<string, unknown>> {
   ts: number;
