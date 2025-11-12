@@ -109,6 +109,14 @@ export default function Scene({ snapshot, onNodeClick }: SceneProps) {
     <Canvas
       camera={{ position: [0, 5, 8], fov: 50 }}
       style={{ background: 'hsl(160, 50%, 7%)' }}
+      gl={{
+        preserveDrawingBuffer: true,
+        failIfMajorPerformanceCaveat: false,
+        powerPreference: 'high-performance',
+      }}
+      onCreated={({ gl }) => {
+        gl.setClearColor('hsl(160, 50%, 7%)');
+      }}
     >
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={1} />

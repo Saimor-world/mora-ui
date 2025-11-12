@@ -1,6 +1,7 @@
 import Lens from '@/components/lens/Lens';
 import Canvas from '@/components/canvas/Canvas';
 import Insights from '@/components/insights/Insights';
+import MoraChat from '@/components/chat/MoraChat';
 import { AppProvider } from '@/lib/contexts';
 import { QueryProvider } from '@/lib/queryClient';
 
@@ -12,6 +13,7 @@ export default function Home() {
           <Lens />
           <Canvas />
           <Insights />
+          <MoraChat />
         </div>
       </AppProvider>
     </QueryProvider>

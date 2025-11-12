@@ -59,9 +59,9 @@ export function useExecuteWorkflow() {
     mutationFn: async ({ workflowId, params }: { workflowId: string; params: Record<string, any> }) => {
       // Get webhook URL from env
       const webhookUrls: Record<string, string> = {
-        flow_email_digest: process.env.NEXT_PUBLIC_N8N_EMAIL_DIGEST || '',
-        flow_broadcast_doc: process.env.NEXT_PUBLIC_N8N_BROADCAST_DOC || '',
-        flow_duplicate_hunter: process.env.NEXT_PUBLIC_N8N_DUPLICATE_HUNTER || '',
+        email_digest: process.env.NEXT_PUBLIC_N8N_EMAIL_DIGEST || '',
+        broadcast_doc: process.env.NEXT_PUBLIC_N8N_BROADCAST_DOC || '',
+        duplicate_hunter: process.env.NEXT_PUBLIC_N8N_DUPLICATE_HUNTER || '',
       };
 
       const webhookUrl = webhookUrls[workflowId];
