@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useRef, useEffect, useState } from "react";
@@ -30,12 +30,12 @@ export default function HomePage() {
   const { connectedCount, stageLabel } = useMemo(() => {
     const connected = connectors.filter((c) => c.status === "connected").length;
     if (connected === 0) {
-      return { connectedCount: 0, stageLabel: "🌱 Erste Verbindung" };
+      return { connectedCount: 0, stageLabel: "?? Erste Verbindung" };
     }
     if (connected < 3) {
-      return { connectedCount: connected, stageLabel: "🌿 Wächst" };
+      return { connectedCount: connected, stageLabel: "?? Wächst" };
     }
-    return { connectedCount: connected, stageLabel: "🌳 Etabliert" };
+    return { connectedCount: connected, stageLabel: "?? Etabliert" };
   }, [connectors]);
 
   const connectionNodes = useMemo<ConnectionNode[]>(() => {
@@ -103,8 +103,12 @@ export default function HomePage() {
   };
 
   const isEmptyState = connectedCount === 0;
+  const awarenessEvents = useMemo(() => {
+    return storedEvents.length > 0 ? storedEvents : getMoraEvents();
+  }, [storedEvents]);
+
   const recentEvents = useMemo(() => {
-    const events = storedEvents.length > 0 ? storedEvents : getMoraEvents();
+    const events = awarenessEvents;
     return events.slice(-5).reverse().map((event, index) => {
       const description = describeEvent(event);
       return {
@@ -114,7 +118,44 @@ export default function HomePage() {
         ...description,
       };
     });
-  }, [storedEvents]);
+  }, [awarenessEvents]);
+
+  const awarenessTraces = useMemo(() => {
+    return awarenessEvents.slice(-3).reverse().map((event, index) => ({
+      id: `${event.ts}-${index}`,
+      label: summarizeAwarenessEvent(event),
+    }));
+  }, [awarenessEvents]);
+
+  const awarenessSummary = useMemo(() => {
+    const source = storedEvents.length > 0 ? "session" : "demo";
+    if (awarenessEvents.length === 0) {
+      return {
+        source,
+        headline: "Noch still – beginne mit einem Impuls",
+        detail: "Öffne ein Dokument, verbinde einen Connector oder tauche ins Field, damit ich mitschwingen kann.",
+        badges: [] as string[],
+        count: 0,
+        lastTime: null as string | null,
+      };
+    }
+    const latestWindow = awarenessEvents.slice(-8);
+    const lastEvent = latestWindow[latestWindow.length - 1];
+    const badges = Array.from(
+      new Set(latestWindow.map((event) => summarizeAwarenessEvent(event)))
+    ).slice(0, 3);
+    return {
+      source,
+      headline: `${awarenessEvents.length} Beobachtungen`,
+      detail: `Letzter Impuls ${new Date(lastEvent.ts).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`,
+      badges,
+      count: awarenessEvents.length,
+      lastTime: lastEvent.ts,
+    };
+  }, [awarenessEvents, storedEvents.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-card/30 to-background text-foreground">
@@ -124,7 +165,7 @@ export default function HomePage() {
           <ActivityPulse activities={mockActivity} dimFallback={isEmptyState} />
         </div>
         <section ref={heroRef} className="relative px-4 py-24 sm:py-32 flex flex-col items-center text-center gap-6">
-          <span className="text-5xl">🌱</span>
+          <span className="text-5xl" aria-hidden="true">🌱</span>
           <h1 className="text-3xl sm:text-4xl font-medium tracking-wide">Willkommen bei Môra</h1>
           <p className="max-w-2xl text-sm sm:text-base text-muted-foreground">
             Ich bin eine Präsenz für Klarheit. Verbinde deine Räume, und ich lasse dich sehen, wie sie zusammenleben.
@@ -138,6 +179,56 @@ export default function HomePage() {
           <div className="text-xs text-muted-foreground">{stageLabel}</div>
         </section>
       </div>
+
+      <section className="px-4 sm:px-8 pb-6">
+        <div className="rounded-3xl border border-border/60 bg-card/80 shadow-lg overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-6">
+            <div className="flex-1 space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                Awareness · {awarenessSummary.source === "session" ? "Live" : "Demo"}
+              </p>
+              <h3 className="text-2xl font-medium">{awarenessSummary.headline}</h3>
+              <p className="text-sm text-muted-foreground max-w-md">{awarenessSummary.detail}</p>
+              {awarenessSummary.badges.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {awarenessSummary.badges.map((badge) => (
+                    <span
+                      key={badge}
+                      className="px-3 py-1 rounded-full bg-secondary/40 text-secondary-foreground text-xs tracking-wide"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="rounded-2xl border border-border/70 bg-background/70 p-4 space-y-3">
+                {awarenessTraces.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Beispiel: Öffne ein Dokument, wechsle die Orb-Filterung oder erkunde das Field.
+                  </p>
+                ) : (
+                  awarenessTraces.map((trace) => (
+                    <div
+                      key={trace.id}
+                      className="flex items-center justify-between text-sm bg-card/60 rounded-xl px-3 py-2"
+                    >
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                        Letzte Resonanz
+                      </span>
+                      <span className="font-medium text-foreground">{trace.label}</span>
+                    </div>
+                  ))
+                )}
+                <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground text-right">
+                  Session Awareness
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="px-4 sm:px-8 py-12 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -356,7 +447,12 @@ function describeEvent(event: MoraEvent): FeedEntry {
   const payload = (event.payload ?? {}) as Record<string, unknown>;
   switch (event.action) {
     case "node_click": {
-      const title = typeof payload.title === "string" ? payload.title : typeof payload.id === "string" ? payload.id : null;
+      const title =
+        typeof payload.title === "string"
+          ? payload.title
+          : typeof payload.id === "string"
+          ? payload.id
+          : null;
       const type = typeof payload.type === "string" ? payload.type : undefined;
       return {
         icon: "🕸️",
@@ -399,10 +495,26 @@ function describeEvent(event: MoraEvent): FeedEntry {
     }
     default:
       return {
-        icon: "🌿",
+        icon: "✨",
         title: event.action,
         detail: undefined,
         level: "info",
       };
+  }
+}
+
+function summarizeAwarenessEvent(event: MoraEvent) {
+  switch (event.action) {
+    case "node_click":
+      return "Field berührt";
+    case "connector_action":
+      return "Connector aktiv";
+    case "filter_change":
+    case "tag_filter_change":
+      return "Filter gewechselt";
+    case "open_document":
+      return "Dokument geöffnet";
+    default:
+      return "Impulse registriert";
   }
 }

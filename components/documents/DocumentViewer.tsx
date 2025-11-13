@@ -187,10 +187,13 @@ export default function DocumentViewer({ object, onClose }: DocumentViewerProps)
                 </tbody>
               </table>
             </div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+              Mock Preview – Beispielzeilen statt echter Daten
+            </p>
 
             {hasMockSource ? (
               <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-700 text-sm">
-                Demo-Daten – Download wird aktiv, sobald Core verbunden ist.
+                Demo-Quelle aktiv – Download steht nach Core-Verbindung bereit.
               </div>
             ) : fileUrl ? (
               <div className="flex flex-wrap gap-3">
@@ -368,7 +371,17 @@ export default function DocumentViewer({ object, onClose }: DocumentViewerProps)
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">{renderContent()}</div>
+        <div className="flex-1 overflow-hidden relative">
+          <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+            <div className="absolute inset-3 rounded-[32px] border border-primary/15 bg-gradient-to-b from-primary/5 via-transparent to-emerald-400/10" />
+            <div
+              className={`absolute inset-8 rounded-[28px] blur-3xl bg-primary/10 ${
+                prefersReducedMotion ? 'opacity-30' : 'mora-breathe opacity-60'
+              }`}
+            />
+          </div>
+          <div className="relative z-10 h-full overflow-auto">{renderContent()}</div>
+        </div>
 
         {/* Footer with Tags - organisch fließend */}
         {object.tags && object.tags.length > 0 && (

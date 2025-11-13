@@ -27,6 +27,8 @@ interface NodePosition {
   vx: number;
   vy: number;
   node: MoraObject;
+  radius: number;
+  seed: number;
 }
 
 export interface GraphStats {
@@ -64,7 +66,9 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
     const dragStateRef = useRef({ dragging: false, moved: false, x: 0, y: 0 });
     const edgeMapRef = useRef<Map<string, Set<string>>>(new Map());
     const fpsRef = useRef(60);
-    const lastFrameTimeRef = useRef(typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const lastFrameTimeRef = useRef(
+      typeof performance !== 'undefined' ? performance.now() : Date.now()
+    );
     const statsThrottleRef = useRef(0);
     const prefersMotionHook = usePrefersReducedMotion();
     const reduceMotion = prefersReducedMotion ?? prefersMotionHook;
@@ -145,17 +149,22 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
 
         const centerX = canvas.offsetWidth / 2;
         const centerY = canvas.offsetHeight / 2;
-        const radius = Math.min(canvas.offsetWidth, canvas.offsetHeight) * 0.4;
+        const envelope = Math.min(canvas.offsetWidth, canvas.offsetHeight) * 0.38;
 
         snapshot.nodes.forEach((node, index) => {
-          const angle = (index / snapshot.nodes.length) * Math.PI * 2;
+          const ratio = Math.max(1, snapshot.nodes.length);
+          const angle = (index / ratio) * Math.PI * 2;
+          const ring = 0.68 + ((index % 5) * 0.04);
+          const jitter = envelope * 0.05;
           nodes.set(node.id, {
             id: node.id,
-            x: centerX + Math.cos(angle) * radius,
-            y: centerY + Math.sin(angle) * radius,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
+            x: centerX + Math.cos(angle) * envelope * ring + (Math.random() - 0.5) * jitter,
+            y: centerY + Math.sin(angle) * envelope * ring + (Math.random() - 0.5) * jitter,
+            vx: (Math.random() - 0.5) * 0.35,
+            vy: (Math.random() - 0.5) * 0.35,
             node,
+            radius: 6 + Math.random() * 5,
+            seed: Math.random() * 2000,
           });
         });
 
@@ -172,26 +181,28 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
       edgeMapRef.current = edgeMap;
 
       const animate = () => {
+        const time = typeof performance !== 'undefined' ? performance.now() : Date.now();
         ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
         ctx.save();
         ctx.translate(panX, panY);
         ctx.scale(zoom, zoom);
 
-        const gradient = ctx.createRadialGradient(
+        const background = ctx.createRadialGradient(
           canvas.offsetWidth / 2,
           canvas.offsetHeight / 2,
           0,
           canvas.offsetWidth / 2,
           canvas.offsetHeight / 2,
-          Math.max(canvas.offsetWidth, canvas.offsetHeight) / 2
+          Math.max(canvas.offsetWidth, canvas.offsetHeight) * 0.55
         );
-        gradient.addColorStop(0, 'hsl(160, 50%, 10%)');
-        gradient.addColorStop(1, 'hsl(160, 50%, 5%)');
-        ctx.fillStyle = gradient;
+        background.addColorStop(0, 'rgba(5, 20, 15, 0.95)');
+        background.addColorStop(0.5, 'rgba(12, 35, 25, 0.92)');
+        background.addColorStop(1, 'rgba(5, 15, 12, 1)');
+        ctx.fillStyle = background;
         ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
         const nodeArray = Array.from(nodes.values());
-        const motionFactor = reduceMotion ? 0.5 : 1;
+        const motionFactor = reduceMotion ? 0.35 : 1;
 
         for (let i = 0; i < nodeArray.length; i++) {
           for (let j = i + 1; j < nodeArray.length; j++) {
@@ -219,7 +230,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           const dx = target.x - source.x;
           const dy = target.y - source.y;
           const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-          const force = dist * 0.001 * motionFactor;
+          const force = dist * 0.0012 * motionFactor;
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
 
@@ -234,14 +245,14 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
         nodeArray.forEach((node) => {
           const dx = centerX - node.x;
           const dy = centerY - node.y;
-          node.vx += dx * 0.0001;
-          node.vy += dy * 0.0001;
-          node.vx *= 0.85;
-          node.vy *= 0.85;
+          node.vx += dx * 0.00008;
+          node.vy += dy * 0.00008;
+          node.vx *= reduceMotion ? 0.88 : 0.82;
+          node.vy *= reduceMotion ? 0.88 : 0.82;
           node.x += node.vx;
           node.y += node.vy;
 
-          const margin = 50;
+          const margin = 60;
           node.x = Math.min(Math.max(node.x, margin), canvas.offsetWidth - margin);
           node.y = Math.min(Math.max(node.y, margin), canvas.offsetHeight - margin);
         });
@@ -258,54 +269,82 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           const target = nodes.get(edge.targetId);
           if (!source || !target) return;
 
+          const highlighted =
+            focusSet.size > 0 &&
+            (focusSet.has(edge.sourceId) || focusSet.has(edge.targetId));
           const faded =
             focusSet.size > 0 &&
             !focusSet.has(edge.sourceId) &&
             !focusSet.has(edge.targetId);
 
-          const weight = edge.weight || 0.5;
-          const controlX = (source.x + target.x) / 2 + (Math.random() - 0.5) * 20 * motionFactor;
-          const controlY = (source.y + target.y) / 2 + (Math.random() - 0.5) * 20 * motionFactor;
+          const energySeed = (source.seed + target.seed) / 2;
+          const sway =
+            Math.sin((time + energySeed) / (reduceMotion ? 2200 : 1400)) * 18 * motionFactor;
+          const controlX = (source.x + target.x) / 2 + sway;
+          const controlY =
+            (source.y + target.y) / 2 +
+            (Math.cos((time + energySeed) / 1800) * 14 * motionFactor);
 
           ctx.beginPath();
           ctx.moveTo(source.x, source.y);
           ctx.quadraticCurveTo(controlX, controlY, target.x, target.y);
-          ctx.strokeStyle = `rgba(52, 211, 153, ${faded ? 0.08 : weight * 0.3})`;
-          ctx.lineWidth = weight * 2;
+          ctx.strokeStyle = `rgba(120, 200, 170, ${faded ? 0.07 : highlighted ? 0.25 : 0.14})`;
+          ctx.lineWidth = (edge.weight || 0.8) * (highlighted ? 2.2 : 1.4);
           ctx.lineCap = 'round';
           ctx.stroke();
         });
 
         nodeArray.forEach((node) => {
           const isHovered = hoveredNode === node.id;
-          const faded = focusSet.size > 0 && !focusSet.has(node.id);
-          const baseRadius = faded ? 6 : 8;
-          const radius = isHovered ? baseRadius + 4 : baseRadius;
-          const color = getNodeColor(node.node.type);
+          const isFocus = focusNodeId === node.id;
+          const isNeighbor = !!focusNodeId && edgeMap.get(focusNodeId)?.has(node.id);
+          const focusPresence =
+            focusSet.size === 0
+              ? 1
+              : isFocus
+              ? 1
+              : isNeighbor
+              ? 0.8
+              : 0.25;
+          const pulse =
+            reduceMotion || focusSet.size === 0
+              ? 0
+              : Math.sin((time + node.seed) / 900) * 0.15;
+          const hoverBoost = isHovered ? 1.2 : 1;
+          const radius = node.radius * (1 + pulse) * hoverBoost;
+          const baseColor = getNodeColor(node.node.type);
 
-          ctx.globalAlpha = faded ? 0.25 : 1;
+          ctx.globalAlpha = focusPresence;
 
-          const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, radius * 2);
-          glow.addColorStop(0, `${color}40`);
+          const glowRadius = radius * (isFocus ? 3.2 : 2.4);
+          const glow = ctx.createRadialGradient(
+            node.x,
+            node.y,
+            0,
+            node.x,
+            node.y,
+            glowRadius
+          );
+          glow.addColorStop(0, hexToRgba(baseColor, isFocus ? 0.45 : 0.32));
           glow.addColorStop(1, 'transparent');
           ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, radius * 2, 0, Math.PI * 2);
+          ctx.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = color;
+          ctx.fillStyle = baseColor;
           ctx.fill();
 
           ctx.beginPath();
-          ctx.arc(node.x - radius / 3, node.y - radius / 3, radius / 2, 0, Math.PI * 2);
+          ctx.arc(node.x - radius / 3, node.y - radius / 3, radius / 2.5, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(255,255,255,0.25)';
           ctx.fill();
 
           if (isHovered) {
             ctx.font = '12px system-ui';
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = '#f5fdf7';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             ctx.fillText(node.node.title, node.x, node.y + radius + 8);
@@ -401,7 +440,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
       let found: string | null = null;
       nodePositionsRef.current.forEach((node) => {
         const dist = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
-        if (dist < 12) {
+        if (dist < Math.max(12, node.radius + 4)) {
           found = node.id;
         }
       });
@@ -434,7 +473,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
 
       nodePositionsRef.current.forEach((node) => {
         const dist = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
-        if (dist < 12) {
+        if (dist < Math.max(12, node.radius + 2)) {
           onNodeClick?.(node.node);
         }
       });
@@ -474,4 +513,13 @@ function getNodeColor(type: string): string {
     default:
       return '#9CA3AF';
   }
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const value = hex.replace('#', '');
+  const bigint = parseInt(value, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }

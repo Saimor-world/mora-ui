@@ -287,24 +287,30 @@ export default function ListView() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {sortedObjects.map((obj) => (
-                    <div
-                      key={obj.id}
-                      onClick={() => handleSelect(obj)}
-                      onDoubleClick={() => handlePreview(obj)}
-                      onMouseEnter={() => setHoveredRow(obj.id)}
-                      onMouseLeave={() => setHoveredRow(null)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') handleSelect(obj);
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      className={`relative flex items-center gap-3 w-full px-3 py-2.5 rounded-md transition-all duration-200 text-left ${
-                        selected === obj.id
-                          ? 'bg-primary/20 border border-primary/40'
-                          : 'hover:bg-secondary border border-transparent'
-                      }`}
-                    >
+                  {sortedObjects.map((obj) => {
+                    const isSelected = selected === obj.id;
+                    const isHovered = hoveredRow === obj.id;
+                    const isPreviewed = inlinePreviewId === obj.id;
+                    return (
+                      <div
+                        key={obj.id}
+                        onClick={() => handleSelect(obj)}
+                        onDoubleClick={() => handlePreview(obj)}
+                        onMouseEnter={() => setHoveredRow(obj.id)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') handleSelect(obj);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className={`group relative flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-300 text-left ${
+                          isSelected
+                            ? 'bg-primary/15 border border-primary/50 shadow-[0_0_30px_rgba(34,197,94,0.18)]'
+                            : isHovered
+                            ? 'bg-secondary/30 border border-secondary/60'
+                            : 'border border-transparent hover:bg-secondary/20 hover:border-secondary/60'
+                        } ${isPreviewed ? 'ring-1 ring-primary/40' : ''}`}
+                      >
                       <input
                         type="checkbox"
                         checked={selectedRows.has(obj.id)}
@@ -368,7 +374,8 @@ export default function ListView() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
