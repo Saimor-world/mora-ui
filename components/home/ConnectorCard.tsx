@@ -1,71 +1,109 @@
 'use client';
 
-import type { Connector } from '@/lib/connectors';
+import type { ConnectorStatus } from '@/lib/connectors';
 
 interface ConnectorCardProps {
-  connector: Connector;
-  onSetup: (connector: Connector) => void;
-  onSync?: (connector: Connector) => void;
+  connector: ConnectorStatus;
+  onSetup: (connector: ConnectorStatus) => void;
+  onSync?: (connector: ConnectorStatus) => void;
   isSyncing?: boolean;
 }
 
-const STATUS_COLORS: Record<Connector['status'], string> = {
-  connected: 'text-green-500',
-  connecting: 'text-amber-500',
-  not_connected: 'text-muted-foreground',
-  error: 'text-red-500',
+const STATUS_STYLES: Record<
+  ConnectorStatus['state'],
+  { color: string; bgColor: string; label: string }
+> = {
+  connected: { color: 'text-green-600', bgColor: 'bg-green-50 border-green-200', label: 'Verbunden' },
+  syncing: { color: 'text-amber-600', bgColor: 'bg-amber-50 border-amber-200', label: 'Synchronisiert...' },
+  disconnected: { color: 'text-muted-foreground', bgColor: 'bg-muted/30 border-border', label: 'Nicht verbunden' },
+  error: { color: 'text-red-600', bgColor: 'bg-red-50 border-red-200', label: 'Fehler' },
 };
 
-const STATUS_LABELS: Record<Connector['status'], string> = {
-  connected: '🟢 Verbunden',
-  connecting: '🟡 Verbindet...',
-  not_connected: '🔴 Nicht verbunden',
-  error: '🔴 Fehler',
-};
+export default function ConnectorCard({
+  connector,
+  onSetup,
+  onSync,
+  isSyncing = false,
+}: ConnectorCardProps) {
+  const status = STATUS_STYLES[connector.state];
+  const isFirstTime = !connector.lastSyncAt && !connector.objectCount;
+  const isConnected = connector.state === 'connected';
 
-export default function ConnectorCard({ connector, onSetup, onSync, isSyncing = false }: ConnectorCardProps) {
   return (
-    <div className="p-4 rounded-2xl border border-border bg-card/70 hover:bg-card shadow-sm mora-transition flex flex-col gap-4">
+    <div
+      className={`p-4 rounded-2xl border-2 shadow-sm mora-transition flex flex-col gap-4 ${status.bgColor} ${
+        isConnected ? 'hover:shadow-md' : 'hover:bg-card/80'
+      }`}
+    >
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="text-2xl">{getIcon(connector.type)}</div>
+          <div className="text-2xl" aria-hidden>
+            {getIcon(connector.type)}
+          </div>
           <div>
-            <p className="text-sm font-medium">{connector.name}</p>
-            <p className={`text-xs ${STATUS_COLORS[connector.status]}`}>
-              {STATUS_LABELS[connector.status]}
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{connector.label}</p>
+              {connector.mode === 'mock' && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/20 text-primary">
+                  Demo
+                </span>
+              )}
+            </div>
+            <p className={`text-xs font-medium ${status.color}`}>
+              {status.label}
             </p>
           </div>
         </div>
         <button
           onClick={() => onSetup(connector)}
-          className="text-xs px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 mora-transition"
+          disabled={isSyncing}
+          className={`text-xs px-3 py-1.5 rounded-full mora-transition ${
+            isSyncing
+              ? 'bg-secondary/50 text-muted-foreground cursor-not-allowed'
+              : 'bg-secondary hover:bg-secondary/80'
+          }`}
         >
-          {connector.status === 'connected' ? 'Konfigurieren' : 'Verbinden'}
+          {connector.state === 'connected' ? 'Konfigurieren' : 'Verbinden'}
         </button>
       </div>
 
-      <div className="text-xs text-muted-foreground space-y-1">
-        <div>Zuletzt: {connector.lastSync ? new Date(connector.lastSync).toLocaleString() : '—'}</div>
-        <div>Objekte: {connector.objectCount ?? '—'}</div>
+      {/* Stats */}
+      <div className={`text-xs space-y-1 ${isFirstTime ? 'text-muted-foreground/70' : 'text-muted-foreground'}`}>
+        <div className="flex items-center justify-between">
+          <span>Zuletzt synchronisiert:</span>
+          <span className={isFirstTime ? 'italic' : 'font-medium'}>
+            {connector.lastSyncAt ? formatTime(connector.lastSyncAt) : 'Noch nie'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Objekte:</span>
+          <span className={isFirstTime ? 'italic' : 'font-medium'}>
+            {typeof connector.objectCount === 'number' ? connector.objectCount : '–'}
+          </span>
+        </div>
       </div>
 
-      {connector.status === 'connected' && onSync && (
+      {/* Sync Button */}
+      {connector.state === 'connected' && onSync && (
         <button
           onClick={() => !isSyncing && onSync(connector)}
           disabled={isSyncing}
           aria-busy={isSyncing}
-          className={`text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 mora-transition ${
-            isSyncing ? 'opacity-70 pointer-events-none' : ''
+          className={`text-xs px-3 py-1.5 rounded-lg mora-transition font-medium ${
+            isSyncing
+              ? 'bg-primary/5 text-primary/50 cursor-wait'
+              : 'bg-primary/10 text-primary hover:bg-primary/20'
           }`}
         >
-          {isSyncing ? 'Synchronisiert...' : 'Synchronisieren'}
+          {isSyncing ? '⏳ Synchronisiert...' : '🔄 Synchronisieren'}
         </button>
       )}
     </div>
   );
 }
 
-function getIcon(type: Connector['type']) {
+function getIcon(type: ConnectorStatus['type']) {
   switch (type) {
     case 'email':
       return '📧';
@@ -80,4 +118,12 @@ function getIcon(type: Connector['type']) {
     default:
       return '🔗';
   }
+}
+
+function formatTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '–';
+  }
+  return date.toLocaleString();
 }

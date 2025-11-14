@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useEffect, useState } from "react";
-import { getConnectors, saveConnector, syncConnector, testConnection, type Connector } from "@/lib/connectors";
+import {
+  applyMockSnapshot,
+  getConnectors,
+  saveConnector,
+  saveConnectorList,
+  syncConnector,
+  testConnection,
+  type ConnectorStatus,
+} from "@/lib/connectors";
 import { mockConnectors, mockActivity } from "@/lib/mockConnectors";
 import ConnectorCard from "@/components/home/ConnectorCard";
 import ActivityPulse from "@/components/home/ActivityPulse";
@@ -18,9 +26,10 @@ import { useRole } from "@/lib/hooks/useRole";
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
-  const [connectors, setConnectors] = useState<Connector[]>([]);
-  const [setupTarget, setSetupTarget] = useState<Connector | null>(null);
+  const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
+  const [setupTarget, setSetupTarget] = useState<ConnectorStatus | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [mockSyncRunning, setMockSyncRunning] = useState(false);
   const storedEvents = useSessionStore((state) => state.recentEvents);
   const [drawerEvent, setDrawerEvent] = useState<MoraEvent | null>(null);
 
@@ -29,8 +38,13 @@ export default function HomePage() {
     setConnectors(loaded);
   }, []);
 
+  const applyConnectorUpdate = (next: ConnectorStatus) => {
+    setConnectors((prev) => prev.map((item) => (item.id === next.id ? next : item)));
+    saveConnector(next);
+  };
+
   const { connectedCount, stageLabel } = useMemo(() => {
-    const connected = connectors.filter((c) => c.status === "connected").length;
+    const connected = connectors.filter((c) => c.state === "connected").length;
     if (connected === 0) {
       return { connectedCount: 0, stageLabel: "🌱 Erste Verbindung" };
     }
@@ -44,63 +58,133 @@ export default function HomePage() {
     if (connectors.length === 0) return [];
     return connectors.map((connector) => {
       const status: ConnectionNode['status'] =
-        connector.status === "connected"
+        connector.state === "connected"
           ? "connected"
-          : connector.status === "error"
+          : connector.state === "error"
           ? "offline"
           : "coming_soon";
       return {
         id: connector.id,
-        label: connector.name,
+        label: connector.label,
         status,
       };
     });
   }, [connectors]);
 
-  const handleSetup = (connector: Connector) => {
+  const handleSetup = (connector: ConnectorStatus) => {
     setSetupTarget(connector);
   };
 
   const handleModalClose = () => setSetupTarget(null);
 
-  const handleModalSave = async (connector: Connector, config: Record<string, unknown>) => {
-    const updating: Connector = {
+  const handleModalSave = async (connector: ConnectorStatus, config: Record<string, unknown>) => {
+    const pending: ConnectorStatus = {
       ...connector,
       config,
-      status: "connecting",
+      state: "syncing",
     };
-    setConnectors((prev) => prev.map((item) => (item.id === connector.id ? updating : item)));
-    saveConnector(updating);
-    emitMoraEvent("connector_action", { id: connector.id, status: "connecting" });
+    applyConnectorUpdate(pending);
+    emitMoraEvent("connector_action", {
+      id: pending.id,
+      status: "syncing",
+      mode: pending.mode,
+    });
 
-    const ok = await testConnection(updating);
-    const next: Connector = {
-      ...updating,
-      status: ok ? "connected" : "error",
-      lastSync: ok ? new Date().toISOString() : updating.lastSync,
-    };
-    setConnectors((prev) => prev.map((item) => (item.id === next.id ? next : item)));
-    saveConnector(next);
-    emitMoraEvent("connector_action", { id: next.id, status: next.status });
-    setSetupTarget(null);
+    try {
+      const next = await testConnection(pending);
+      applyConnectorUpdate(next);
+      emitMoraEvent("connector_action", {
+        id: next.id,
+        status: next.state,
+        mode: next.mode,
+        objectCount: next.objectCount ?? undefined,
+      });
+      showToast({ message: `${next.label} verbunden`, variant: "success" });
+    } catch (error) {
+      const failed: ConnectorStatus = { ...pending, state: "error" };
+      applyConnectorUpdate(failed);
+      emitMoraEvent("connector_action", {
+        id: failed.id,
+        status: "error",
+        mode: failed.mode,
+      });
+      showToast({ message: `${failed.label} konnte nicht verbunden werden`, variant: "error" });
+    } finally {
+      setSetupTarget(null);
+    }
   };
 
-  const handleSync = async (connector: Connector) => {
+  const handleSync = async (connector: ConnectorStatus) => {
     setSyncingId(connector.id);
-    setConnectors((prev) =>
-      prev.map((item) => (item.id === connector.id ? { ...item, status: "connecting" } : item))
-    );
+    const syncing: ConnectorStatus = { ...connector, state: "syncing" };
+    applyConnectorUpdate(syncing);
+    emitMoraEvent("connector_action", {
+      id: syncing.id,
+      status: "syncing",
+      mode: syncing.mode,
+    });
     try {
-      const result = await syncConnector(connector);
-      setConnectors((prev) =>
-        prev.map((item) =>
-          item.id === connector.id
-            ? { ...item, status: "connected", objectCount: result.objectCount, lastSync: result.lastSync }
-            : item
-        )
-      );
+      const result = await syncConnector(syncing);
+      applyConnectorUpdate(result);
+      emitMoraEvent("connector_action", {
+        id: result.id,
+        status: result.state,
+        mode: result.mode,
+        objectCount: result.objectCount ?? undefined,
+      });
+      showToast({ message: `${result.label} synchronisiert`, variant: "success" });
+    } catch (error) {
+      const failed: ConnectorStatus = { ...syncing, state: "error" };
+      applyConnectorUpdate(failed);
+      emitMoraEvent("connector_action", {
+        id: failed.id,
+        status: "error",
+        mode: failed.mode,
+      });
+      showToast({ message: `${failed.label} Sync fehlgeschlagen`, variant: "error" });
     } finally {
       setSyncingId((current) => (current === connector.id ? null : current));
+    }
+  };
+
+  const handleMockSimulation = async () => {
+    if (mockSyncRunning) return;
+    setMockSyncRunning(true);
+    try {
+      const base = connectors.length > 0 ? connectors : mockConnectors;
+      if (base.length === 0) {
+        return;
+      }
+
+      const syncingList = base.map((entry) => ({
+        ...entry,
+        mode: "mock" as const,
+        state: "syncing" as ConnectorStatus["state"],
+      }));
+      setConnectors(syncingList);
+      saveConnectorList(syncingList);
+      syncingList.forEach((entry) =>
+        emitMoraEvent("connector_action", {
+          id: entry.id,
+          status: "syncing",
+          mode: "mock",
+        })
+      );
+      showToast({ message: "Mock-Sync gestartet", variant: "info" });
+      await delay(1500);
+      const result = applyMockSnapshot(syncingList);
+      setConnectors(result);
+      result.forEach((entry) =>
+        emitMoraEvent("connector_action", {
+          id: entry.id,
+          status: entry.state,
+          mode: entry.mode,
+          objectCount: entry.objectCount ?? undefined,
+        })
+      );
+      showToast({ message: "Demo-Sync abgeschlossen", variant: "success" });
+    } finally {
+      setMockSyncRunning(false);
     }
   };
 
@@ -280,13 +364,11 @@ export default function HomePage() {
             <h2 className="text-2xl font-medium">Verbinde deine Quellen</h2>
           </div>
           <button
-            onClick={() => {
-              emitMoraEvent("view_change", { to: "connectors" });
-              showToast({ message: "Connector-Setup geöffnet.", variant: "info" });
-            }}
-            className="text-sm px-4 py-2 rounded-full border border-border hover:bg-secondary mora-transition"
+            onClick={handleMockSimulation}
+            disabled={mockSyncRunning}
+            className="text-sm px-4 py-2 rounded-full border border-border hover:bg-secondary mora-transition disabled:opacity-60 disabled:pointer-events-none"
           >
-            Mock-Modus – Verbindungen simulieren
+            {mockSyncRunning ? "Simulation läuft..." : "Mock-Modus – Verbindungen simulieren"}
           </button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -386,9 +468,9 @@ function ConnectorSetupModal({
   onClose,
   onSave,
 }: {
-  connector: Connector;
+  connector: ConnectorStatus;
   onClose: () => void;
-  onSave: (connector: Connector, config: Record<string, unknown>) => void;
+  onSave: (connector: ConnectorStatus, config: Record<string, unknown>) => void;
 }) {
   const [formState, setFormState] = useState<Record<string, string>>(() => {
     const entries = Object.entries(connector.config ?? {}).filter(
@@ -412,7 +494,7 @@ function ConnectorSetupModal({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Connector Setup</p>
-            <h3 className="text-lg font-semibold">{connector.name}</h3>
+            <h3 className="text-lg font-semibold">{connector.label}</h3>
           </div>
           <button onClick={onClose} className="text-sm text-muted-foreground hover:text-foreground">
             Schließen
@@ -450,7 +532,7 @@ function ConnectorSetupModal({
   );
 }
 
-function getConfigFields(type: Connector["type"]) {
+function getConfigFields(type: ConnectorStatus["type"]) {
   switch (type) {
     case "email":
       return [
@@ -485,6 +567,12 @@ type FeedEntry = {
   detail?: string;
   level: "info" | "warning";
 };
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 function describeEvent(event: MoraEvent): FeedEntry {
   const payload = (event.payload ?? {}) as Record<string, unknown>;

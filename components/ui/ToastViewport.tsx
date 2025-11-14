@@ -11,6 +11,10 @@ const VARIANT_STYLES: Record<
     container: 'bg-slate-900/90 border border-slate-700 text-slate-100',
     indicator: 'bg-slate-400',
   },
+  success: {
+    container: 'bg-emerald-950/90 border border-emerald-700 text-emerald-50',
+    indicator: 'bg-emerald-400',
+  },
   warning: {
     container: 'bg-amber-950/90 border border-amber-700 text-amber-50',
     indicator: 'bg-amber-400',

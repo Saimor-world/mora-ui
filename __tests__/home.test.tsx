@@ -1,12 +1,14 @@
-﻿import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import HomePage from '@/app/home/page';
 import { ROLE_DEFINITIONS } from '@/lib/roles';
 
 jest.mock('@/lib/connectors', () => ({
   getConnectors: jest.fn(() => []),
   saveConnector: jest.fn(),
-  testConnection: jest.fn(() => Promise.resolve(true)),
-  syncConnector: jest.fn(() => Promise.resolve({ objectCount: 0 })),
+  saveConnectorList: jest.fn(),
+  applyMockSnapshot: jest.fn((list) => list),
+  testConnection: jest.fn(),
+  syncConnector: jest.fn(),
 }));
 
 jest.mock('@/lib/mockConnectors', () => ({
@@ -22,6 +24,10 @@ jest.mock('@/lib/mora/listener', () => ({
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+}));
+
+jest.mock('@/lib/toast', () => ({
+  showToast: jest.fn(),
 }));
 
 const sessionState = {
@@ -51,6 +57,38 @@ jest.mock('@/store/session', () => ({
   },
 }));
 
+const connectorsModule = jest.requireMock('@/lib/connectors') as jest.Mocked<
+  typeof import('@/lib/connectors')
+>;
+
+beforeEach(() => {
+  connectorsModule.getConnectors.mockReturnValue([]);
+  connectorsModule.applyMockSnapshot.mockImplementation((list) => list);
+  connectorsModule.syncConnector.mockResolvedValue({
+    id: 'seed',
+    type: 'email',
+    label: 'Seed',
+    mode: 'mock',
+    state: 'connected',
+    lastSyncAt: '2025-01-01T00:00:00.000Z',
+    objectCount: 2,
+  });
+  connectorsModule.testConnection.mockResolvedValue({
+    id: 'seed',
+    type: 'email',
+    label: 'Seed',
+    mode: 'mock',
+    state: 'connected',
+    lastSyncAt: '2025-01-01T00:00:00.000Z',
+    objectCount: 1,
+  });
+});
+
+afterEach(() => {
+  jest.clearAllMocks();
+  jest.useRealTimers();
+});
+
 describe('HomePage', () => {
   it('renders hero heading and CTA', () => {
     render(<HomePage />);
@@ -67,5 +105,83 @@ describe('HomePage', () => {
     render(<HomePage />);
     const fallbackMessages = screen.getAllByText(ROLE_DEFINITIONS.owner.homeEmpty);
     expect(fallbackMessages.length).toBeGreaterThan(0);
+  });
+
+  it('allows running mock connector simulation', async () => {
+    jest.useFakeTimers();
+    const seedConnector = {
+      id: 'mock-email',
+      type: 'email' as const,
+      label: 'Work Mail',
+      mode: 'mock' as const,
+      state: 'disconnected' as const,
+      lastSyncAt: null,
+      objectCount: null,
+    };
+    connectorsModule.getConnectors.mockReturnValue([seedConnector]);
+    connectorsModule.applyMockSnapshot.mockImplementation((list) =>
+      list.map((entry) => ({
+        ...entry,
+        state: 'connected' as const,
+        lastSyncAt: '2025-01-01T00:00:00.000Z',
+        objectCount: 12,
+      }))
+    );
+
+    render(<HomePage />);
+    const mockButton = await screen.findByRole('button', { name: /Mock-Modus/i });
+    fireEvent.click(mockButton);
+    expect(mockButton).toHaveTextContent(/Simulation/i);
+
+    await act(async () => {
+      jest.advanceTimersByTime(1600);
+});
+
+    expect(connectorsModule.applyMockSnapshot).toHaveBeenCalled();
+    expect(screen.getByText(/Verbunden/)).toBeInTheDocument();
+    expect(screen.getByText('Objekte:')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+  });
+
+  it('transitions connector state while syncing', async () => {
+    const seedConnector = {
+      id: 'mock-email',
+      type: 'email' as const,
+      label: 'Work Mail',
+      mode: 'mock' as const,
+      state: 'connected' as const,
+      lastSyncAt: '2025-01-01T00:00:00.000Z',
+      objectCount: 5,
+    };
+    connectorsModule.getConnectors.mockReturnValue([seedConnector]);
+    let resolveSync: (() => void) | null = null;
+    connectorsModule.syncConnector.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSync = () =>
+            resolve({
+              ...seedConnector,
+              state: 'connected' as const,
+              lastSyncAt: '2025-01-02T00:00:00.000Z',
+              objectCount: 8,
+            });
+        })
+    );
+
+    render(<HomePage />);
+    const syncButton = await screen.findByRole('button', { name: /Synchronisieren/ });
+    fireEvent.click(syncButton);
+
+    expect(connectorsModule.syncConnector).toHaveBeenCalledWith(
+      expect.objectContaining({ state: 'syncing' })
+    );
+    await act(async () => {
+      resolveSync?.();
+    });
+
+    expect(connectorsModule.syncConnector).toHaveBeenCalledTimes(1);
+    await screen.findByRole('button', { name: /Synchronisieren/ });
+    expect(screen.getByText('Objekte:')).toBeInTheDocument();
+    expect(screen.getByText('8')).toBeInTheDocument();
   });
 });
