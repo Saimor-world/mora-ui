@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { MoraObject } from "@/lib/types";
 import type { OrbSelection } from "@/lib/contexts";
+import type { RoleKey } from "@/lib/roles";
 import { emitMoraEvent, registerSessionRecorder } from "@/lib/mora/listener";
 import type { MoraEvent, MoraEventAction } from "@/lib/mora/listener";
 
@@ -24,10 +25,12 @@ interface FavoriteEntry {
 
 interface SessionState {
   activeOrb: OrbSelection;
+  activeRole: RoleKey;
   lastViewedNode: Pick<MoraObject, "id" | "title" | "type" | "tags"> | null;
   introSeen: boolean;
   lastSnapshotId: string | null;
   setActiveOrb: (orb: OrbSelection) => void;
+  setActiveRole: (role: RoleKey) => void;
   setLastViewedNode: (node: MoraObject | null) => void;
   setIntroSeen: (seen: boolean) => void;
   setLastSnapshotId: (snapshotId: string | null) => void;
@@ -50,6 +53,7 @@ export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
       activeOrb: "all",
+      activeRole: "owner",
       lastViewedNode: null,
       introSeen: false,
       lastSnapshotId: null,
@@ -62,6 +66,10 @@ export const useSessionStore = create<SessionState>()(
         emitMoraEvent("orb_change", { orb });
         emitMoraEvent("filter_change", { orb });
         set({ activeOrb: orb });
+      },
+      setActiveRole: (role) => {
+        emitMoraEvent("view_change", { role });
+        set({ activeRole: role });
       },
       setLastViewedNode: (node) => {
         if (node) {
@@ -169,6 +177,13 @@ export const useSessionStore = create<SessionState>()(
           if (typeof (persistedState as Record<string, unknown>).lastVisitedRoute !== "string") {
             nextState.lastVisitedRoute = null;
           }
+        }
+        const persistedRole = (persistedState as Record<string, unknown>).activeRole;
+        if (
+          typeof persistedRole !== "string" ||
+          !["owner", "department", "member", "admin"].includes(persistedRole)
+        ) {
+          nextState.activeRole = "owner";
         }
         return nextState;
       },

@@ -7,6 +7,7 @@ import { useMoraAwareness, type MoraEvent } from '@/lib/mora/listener';
 import { useSessionStore } from '@/store/session';
 import { showToast } from '@/lib/toast';
 import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
+import { useShallow } from 'zustand/react/shallow';
 
 interface SuggestionsPanelProps {
   testEvent?: MoraEvent;
@@ -23,13 +24,15 @@ export default function SuggestionsPanel({ testEvent }: SuggestionsPanelProps) {
     suggestionsCollapsed,
     setSuggestionsCollapsed,
     addFavorite,
-  } = useSessionStore((state) => ({
-    dismissedSuggestionIds: state.dismissedSuggestionIds,
-    setSuggestionDismissed: state.setSuggestionDismissed,
-    suggestionsCollapsed: state.suggestionsCollapsed,
-    setSuggestionsCollapsed: state.setSuggestionsCollapsed,
-    addFavorite: state.addFavorite,
-  }));
+  } = useSessionStore(
+    useShallow((state) => ({
+      dismissedSuggestionIds: state.dismissedSuggestionIds,
+      setSuggestionDismissed: state.setSuggestionDismissed,
+      suggestionsCollapsed: state.suggestionsCollapsed,
+      setSuggestionsCollapsed: state.setSuggestionsCollapsed,
+      addFavorite: state.addFavorite,
+    }))
+  );
 
   const [items, setItems] = useState<SuggestionBlueprint[]>([]);
 
@@ -113,7 +116,7 @@ export default function SuggestionsPanel({ testEvent }: SuggestionsPanelProps) {
           aria-expanded={!suggestionsCollapsed}
         >
           <span>Vorschläge</span>
-          <span>{suggestionsCollapsed ? '＋' : '－'}</span>
+          <span>{suggestionsCollapsed ? '▸' : '▾'}</span>
         </button>
         {!suggestionsCollapsed && (
           <div className={`space-y-3 px-4 pb-4 transition-all ${motionClass}`}>

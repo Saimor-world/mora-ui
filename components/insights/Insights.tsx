@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useAppContext } from '@/lib/contexts';
 import { useMemoryFacts, useSnapshots, useHealthCheck } from '@/lib/hooks/useApi';
+import { useRole } from '@/lib/hooks/useRole';
 import ContextPanel from './ContextPanel';
 import QuickActions from './QuickActions';
 import WorkflowRunner from './WorkflowRunner';
@@ -19,6 +20,7 @@ const OFFLINE_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
 export default function Insights() {
   const { selectedObject, orb, activeTagFilter, setActiveTagFilter } = useAppContext();
   const recentEvents = useSessionStore((state) => state.recentEvents);
+  const { definition: roleDefinition } = useRole();
 
   // Fetch real stats
   const filters: any = {};
@@ -35,8 +37,8 @@ export default function Insights() {
   const isOffline = OFFLINE_STATUSES.has(healthStatus);
   const isOnline = ONLINE_STATUSES.has(healthStatus) && !isOffline;
   const awarenessStory = useMemo(
-    () => buildAwarenessStory(recentEvents, orb, activeTagFilter),
-    [recentEvents, orb, activeTagFilter]
+    () => buildAwarenessStory(recentEvents, orb, activeTagFilter, roleDefinition.label),
+    [recentEvents, orb, activeTagFilter, roleDefinition.label]
   );
 
   return (
@@ -78,10 +80,11 @@ export default function Insights() {
             <div className="px-4">
               <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 p-4 space-y-2">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-                  Präsenz-Notiz
+                  Präsenz · {roleDefinition.label}
                 </p>
                 <p className="text-sm font-semibold text-foreground">{awarenessStory.headline}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{awarenessStory.detail}</p>
+                <p className="text-[11px] text-muted-foreground">{roleDefinition.insightsTone}</p>
                 {awarenessStory.badges.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {awarenessStory.badges.map((badge) => (
@@ -138,9 +141,13 @@ interface AwarenessStory {
 function buildAwarenessStory(
   events: MoraEvent[],
   orb: string,
-  activeTagFilter: string | null
+  activeTagFilter: string | null,
+  roleLabel?: string
 ): AwarenessStory {
   const badges: string[] = [];
+  if (roleLabel) {
+    badges.push(roleLabel);
+  }
   if (orb && orb !== 'all') {
     badges.push(`Orb · ${orb}`);
   }
@@ -168,7 +175,7 @@ function buildAwarenessStory(
 
   const headline =
     nodeTouches > 0
-      ? `Field reagiert auf ${nodeTouches} ${nodeTouches === 1 ? 'Berührung' : 'Berührungen'}.`
+      ? `${nodeTouches} ${nodeTouches === 1 ? 'Berührung' : 'Berührungen'} im Field`
       : lastFilter
       ? 'Filter im Fokus'
       : lastConnector
@@ -230,3 +237,4 @@ function describeAwarenessDetail(
 
   return 'Môra beobachtet deine Bewegungen und passt Vorschläge an.';
 }
+

@@ -1,10 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type { MoraObject } from './types';
 import { useSessionStore } from '@/store/session';
 import { emitMoraEvent } from '@/lib/mora/listener';
+import { ROLE_DEFINITIONS, type RoleKey } from '@/lib/roles';
+import { useShallow } from 'zustand/react/shallow';
 
 type ViewMode = 'folder' | 'field';
 export type OrbSelection = 'all' | 'leitung' | 'service' | 'hr';
@@ -36,16 +38,20 @@ export function AppProvider({ children, initialMode = 'field' }: AppProviderProp
   const router = useRouter();
   const pathname = usePathname();
 
-  const {
-    activeOrb: storedOrb,
-    setActiveOrb: persistOrb,
-    setLastViewedNode,
-  } = useSessionStore();
+  const { activeOrb: storedOrb, setActiveOrb: persistOrb, setLastViewedNode } = useSessionStore(
+    useShallow((state) => ({
+      activeOrb: state.activeOrb,
+      setActiveOrb: state.setActiveOrb,
+      setLastViewedNode: state.setLastViewedNode,
+    }))
+  );
+  const activeRole = useSessionStore((state) => state.activeRole);
 
   const [mode, setMode] = useState<ViewMode>(initialMode);
   const [selectedObject, setSelectedObject] = useState<MoraObject | null>(null);
   const [orb, setOrbState] = useState<OrbSelection>(storedOrb ?? 'all');
   const [activeTagFilter, setActiveTagFilterState] = useState<string | null>(null);
+  const roleAppliedRef = useRef<RoleKey | null>(null);
 
   useEffect(() => {
     setMode(initialMode);
@@ -121,6 +127,32 @@ export function AppProvider({ children, initialMode = 'field' }: AppProviderProp
     },
     [setLastViewedNode]
   );
+
+  useEffect(() => {
+    if (!activeRole) return;
+    const definition = ROLE_DEFINITIONS[activeRole];
+    if (!definition) return;
+
+    const roleChanged = roleAppliedRef.current !== activeRole;
+    if (roleChanged) {
+      roleAppliedRef.current = activeRole;
+    }
+
+    if (roleChanged && definition.orbDefault && definition.orbDefault !== orb) {
+      setOrb(definition.orbDefault as OrbSelection);
+    }
+
+    const targetTag = definition.tagDefault ?? null;
+    if (roleChanged) {
+      if (targetTag !== null) {
+        if (activeTagFilter !== targetTag) {
+          setActiveTagFilter(targetTag);
+        }
+      } else if (activeTagFilter) {
+        setActiveTagFilter(null);
+      }
+    }
+  }, [activeRole, orb, activeTagFilter, setOrb, setActiveTagFilter]);
 
   return (
     <AppContext.Provider

@@ -49,7 +49,7 @@ function buildNodeSuggestions(event: MoraEvent): SuggestionBlueprint[] {
       rule: 'finance-pin',
       title: 'Finanz-Pfad vormerken',
       description: `${title} liegt im Finance-Raum – pinne ihn für später.`,
-      icon: '🌿',
+      icon: '📌',
       cta: 'Als Favorit pinnen',
       action: {
         type: 'favorite',
@@ -67,7 +67,7 @@ function buildNodeSuggestions(event: MoraEvent): SuggestionBlueprint[] {
       rule: 'report-open',
       title: 'Bericht weiterlesen',
       description: 'Öffne den Bericht im Folder Mode mit aktivem Filter.',
-      icon: '📑',
+      icon: '📁',
       cta: 'Folder öffnen',
       action: {
         type: 'filter',
@@ -98,6 +98,7 @@ function buildNodeSuggestions(event: MoraEvent): SuggestionBlueprint[] {
 function buildFilterSuggestions(event: MoraEvent): SuggestionBlueprint[] {
   const payload = event.payload ?? {};
   const suggestions: SuggestionBlueprint[] = [];
+
   if (typeof payload.orb === 'string' && payload.orb !== 'all') {
     suggestions.push({
       id: `orb-${payload.orb}`,
@@ -182,7 +183,7 @@ function buildDocumentSuggestions(event: MoraEvent): SuggestionBlueprint[] {
       id: `doc-copy-${path}`,
       rule: 'doc-copy',
       title: `${title} teilen`,
-      description: 'Pfad in die Zwischenablage kopieren und an Kolleg:innen senden.',
+      description: 'Pfad kopieren und an Kolleg:innen senden.',
       icon: '📎',
       cta: 'Pfad kopieren',
       action: {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMemoryFacts } from '@/lib/hooks/useApi';
 import { useAppContext } from '@/lib/contexts';
+import { useRole } from '@/lib/hooks/useRole';
 import DocumentViewer from '@/components/documents/DocumentViewer';
 import type { MoraObject } from '@/lib/types';
 import { showToast } from '@/lib/toast';
@@ -35,6 +36,7 @@ export default function ListView() {
   const [inlinePreviewId, setInlinePreviewId] = useState<string | null>(null);
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
   const { setSelectedObject, orb, activeTagFilter, setActiveTagFilter } = useAppContext();
+  const { definition: roleDefinition } = useRole();
 
   const filters: Record<string, string> = {};
   if (orb !== 'all') filters.orb = orb;
@@ -73,6 +75,7 @@ export default function ListView() {
         setInlinePreviewId(selected);
         const target = sortedObjects.find((obj) => obj.id === selected);
         if (target) {
+          // Awareness stream should know about inline preview focus
           emitMoraEvent('open_document', {
             id: target.id,
             title: target.title,
@@ -117,6 +120,7 @@ export default function ListView() {
     e?.stopPropagation();
     setViewerObject(obj);
     setViewerOpen(true);
+    // Mirror explicit preview actions into Awareness feed
     emitMoraEvent('open_document', {
       id: obj.id,
       title: obj.title,
@@ -278,6 +282,7 @@ export default function ListView() {
                   </button>
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground italic mb-4">{roleDefinition.folderHint}</p>
 
               {sortedObjects.length === 0 ? (
                 <div className="flex items-center justify-center py-12">

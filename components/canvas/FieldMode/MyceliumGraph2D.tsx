@@ -65,6 +65,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
     const lastSnapshotRef = useRef<string>('');
     const dragStateRef = useRef({ dragging: false, moved: false, x: 0, y: 0 });
     const edgeMapRef = useRef<Map<string, Set<string>>>(new Map());
+    const pulseMapRef = useRef<Map<string, number>>(new Map());
     const fpsRef = useRef(60);
     const lastFrameTimeRef = useRef(
       typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -182,6 +183,23 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
 
       const animate = () => {
         const time = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        const delta = time - lastFrameTimeRef.current || 16;
+        const deltaSeconds = delta / 1000;
+        fpsRef.current = 1000 / delta;
+        lastFrameTimeRef.current = time;
+
+        const pulses = pulseMapRef.current;
+        if (pulses.size > 0) {
+          pulses.forEach((value, key) => {
+            const decay = value - deltaSeconds * (reduceMotion ? 0.8 : 1.2);
+            if (decay <= 0) {
+              pulses.delete(key);
+            } else {
+              pulses.set(key, decay);
+            }
+          });
+        }
+
         ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
         ctx.save();
         ctx.translate(panX, panY);
@@ -288,8 +306,15 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           ctx.beginPath();
           ctx.moveTo(source.x, source.y);
           ctx.quadraticCurveTo(controlX, controlY, target.x, target.y);
-          ctx.strokeStyle = `rgba(120, 200, 170, ${faded ? 0.07 : highlighted ? 0.25 : 0.14})`;
-          ctx.lineWidth = (edge.weight || 0.8) * (highlighted ? 2.2 : 1.4);
+          const organicVariance = 1 + Math.sin((time + energySeed) / (reduceMotion ? 2600 : 1600)) * 0.12;
+          const shimmer =
+            reduceMotion || faded ? 0 : Math.sin((time + energySeed) / 1600) * 0.05;
+          const baseAlpha = faded ? 0.05 : highlighted ? 0.28 : 0.12;
+          const edgeAlpha = Math.max(0.04, (baseAlpha + shimmer) * organicVariance);
+          ctx.strokeStyle = highlighted
+            ? `rgba(248, 191, 77, ${edgeAlpha})`
+            : `rgba(120, 200, 170, ${edgeAlpha * 0.9})`;
+          ctx.lineWidth = (edge.weight || 0.8) * (highlighted ? 2.4 : 1.3) * organicVariance;
           ctx.lineCap = 'round';
           ctx.stroke();
         });
@@ -298,6 +323,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           const isHovered = hoveredNode === node.id;
           const isFocus = focusNodeId === node.id;
           const isNeighbor = !!focusNodeId && edgeMap.get(focusNodeId)?.has(node.id);
+          const pulseStrength = pulses.get(node.id) ?? 0;
           const focusPresence =
             focusSet.size === 0
               ? 1
@@ -311,12 +337,12 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
               ? 0
               : Math.sin((time + node.seed) / 900) * 0.15;
           const hoverBoost = isHovered ? 1.2 : 1;
-          const radius = node.radius * (1 + pulse) * hoverBoost;
+          const radius = node.radius * (1 + pulse + pulseStrength * 0.5) * hoverBoost;
           const baseColor = getNodeColor(node.node.type);
 
           ctx.globalAlpha = focusPresence;
 
-          const glowRadius = radius * (isFocus ? 3.2 : 2.4);
+          const glowRadius = radius * (isFocus ? 3.2 : 2.4) * (1 + pulseStrength * 0.6);
           const glow = ctx.createRadialGradient(
             node.x,
             node.y,
@@ -325,7 +351,8 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             node.y,
             glowRadius
           );
-          glow.addColorStop(0, hexToRgba(baseColor, isFocus ? 0.45 : 0.32));
+          const glowOpacity = Math.min(0.65, (isFocus ? 0.45 : 0.32) + pulseStrength * 0.2);
+          glow.addColorStop(0, hexToRgba(baseColor, glowOpacity));
           glow.addColorStop(1, 'transparent');
           ctx.fillStyle = glow;
           ctx.beginPath();
@@ -350,18 +377,46 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             ctx.fillText(node.node.title, node.x, node.y + radius + 8);
           }
 
+          if (pulseStrength > 0.05 && !reduceMotion) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, radius * (1.8 + pulseStrength), 0, Math.PI * 2);
+            ctx.strokeStyle = hexToRgba(baseColor, 0.18 * pulseStrength);
+            ctx.lineWidth = 2 * pulseStrength;
+            ctx.stroke();
+          }
+
           ctx.globalAlpha = 1;
         });
 
+        if (focusNodeId && !reduceMotion) {
+          const focusNode = nodes.get(focusNodeId);
+          if (focusNode) {
+            const aura = ctx.createRadialGradient(
+              focusNode.x,
+              focusNode.y,
+              0,
+              focusNode.x,
+              focusNode.y,
+              180
+            );
+            aura.addColorStop(0, 'rgba(248,191,77,0.18)');
+            aura.addColorStop(1, 'transparent');
+            ctx.fillStyle = aura;
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(
+              focusNode.x - 200,
+              focusNode.y - 200,
+              400,
+              400
+            );
+            ctx.globalAlpha = 1;
+          }
+        }
+
         ctx.restore();
 
-        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-        const delta = now - lastFrameTimeRef.current || 16;
-        fpsRef.current = 1000 / delta;
-        lastFrameTimeRef.current = now;
-
-        if (onStatsChange && now - statsThrottleRef.current > 500) {
-          statsThrottleRef.current = now;
+        if (onStatsChange && time - statsThrottleRef.current > 500) {
+          statsThrottleRef.current = time;
           onStatsChange({
             nodes: snapshot.nodes.length,
             edges: snapshot.edges.length,
@@ -382,9 +437,14 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
       };
     }, [snapshot, hoveredNode, zoom, panX, panY, fitToView, focusNodeId, reduceMotion, onStatsChange]);
 
-    useEffect(() => {
-      fitToView();
-    }, [resetSignal, fitToView]);
+      useEffect(() => {
+        if (!focusNodeId || reduceMotion) return;
+        pulseMapRef.current.set(focusNodeId, 1);
+      }, [focusNodeId, reduceMotion]);
+
+      useEffect(() => {
+        fitToView();
+      }, [resetSignal, fitToView]);
 
     const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
       event.preventDefault();

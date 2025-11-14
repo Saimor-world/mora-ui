@@ -12,6 +12,7 @@ import { useSnapshots } from '@/lib/hooks/useApi';
 import type { MoraObject } from '@/lib/types';
 import { useSessionStore } from '@/store/session';
 import { emitMoraEvent } from '@/lib/mora/listener';
+import { useRole } from '@/lib/hooks/useRole';
 
 interface FieldModeProps {
   onNodeSelect?: (node: MoraObject) => void;
@@ -25,6 +26,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
   const setLastSnapshotId = useSessionStore((state) => state.setLastSnapshotId);
   const graphRef = useRef<MyceliumGraph2DRef>(null);
+  const { definition: roleDefinition } = useRole();
 
   // Fetch real snapshots from API
   const { data: apiSnapshots, isLoading, error } = useSnapshots();
@@ -45,6 +47,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   }, [snapshot?.ts, setLastSnapshotId]);
 
   const handleNodeClick = (node: MoraObject) => {
+    // Awareness: keep Home feed in sync with focused nodes
     emitMoraEvent('node_click', {
       id: node.id,
       title: node.title,
@@ -144,6 +147,9 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                 <div>{snapshot?.nodes.length || 0} Nodes</div>
                 <div>{snapshot?.edges.length || 0} Edges</div>
               </div>
+              <p className="text-xs text-muted-foreground italic">
+                {roleDefinition.fieldHint}
+              </p>
             </div>
 
             {/* Telemetry toggle */}

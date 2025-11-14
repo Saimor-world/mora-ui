@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
+﻿import { render, screen } from '@testing-library/react';
 import HomePage from '@/app/home/page';
+import { ROLE_DEFINITIONS } from '@/lib/roles';
 
 jest.mock('@/lib/connectors', () => ({
   getConnectors: jest.fn(() => []),
@@ -28,10 +29,17 @@ const sessionState = {
   setIntroSeen: jest.fn(),
   setLastViewedNode: jest.fn(),
   setActiveOrb: jest.fn(),
+  activeRole: 'owner',
+  setActiveRole: jest.fn(),
   setLastSnapshotId: jest.fn(),
   recentEvents: [],
   appendRecentEvent: jest.fn(),
   clearRecentEvents: jest.fn(),
+  dismissedSuggestionIds: [],
+  setSuggestionDismissed: jest.fn(),
+  suggestionsCollapsed: false,
+  setSuggestionsCollapsed: jest.fn(),
+  addFavorite: jest.fn(),
 };
 
 jest.mock('@/store/session', () => ({
@@ -46,12 +54,18 @@ jest.mock('@/store/session', () => ({
 describe('HomePage', () => {
   it('renders hero heading and CTA', () => {
     render(<HomePage />);
-    expect(screen.getByText(/Willkommen bei Môra/i)).toBeInTheDocument();
+    expect(screen.getByText(/Willkommen bei/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Beginne mit deinen ersten Daten/i })).toBeInTheDocument();
   });
 
   it('shows connector placeholder when no connectors are available', () => {
     render(<HomePage />);
     expect(screen.getByTestId('connector-placeholder')).toBeInTheDocument();
+  });
+
+  it('renders awareness fallback when no events exist', () => {
+    render(<HomePage />);
+    const fallbackMessages = screen.getAllByText(ROLE_DEFINITIONS.owner.homeEmpty);
+    expect(fallbackMessages.length).toBeGreaterThan(0);
   });
 });

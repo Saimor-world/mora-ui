@@ -13,6 +13,8 @@ import ConnectionMap, { type ConnectionNode } from "@/components/connections/Con
 import { emitMoraEvent, getMoraEvents, type MoraEvent } from "@/lib/mora/listener";
 import { showToast } from "@/lib/toast";
 import { useSessionStore } from "@/store/session";
+import RoleSwitcher from "@/components/home/RoleSwitcher";
+import { useRole } from "@/lib/hooks/useRole";
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -30,12 +32,12 @@ export default function HomePage() {
   const { connectedCount, stageLabel } = useMemo(() => {
     const connected = connectors.filter((c) => c.status === "connected").length;
     if (connected === 0) {
-      return { connectedCount: 0, stageLabel: "?? Erste Verbindung" };
+      return { connectedCount: 0, stageLabel: "🌱 Erste Verbindung" };
     }
     if (connected < 3) {
-      return { connectedCount: connected, stageLabel: "?? Wächst" };
+      return { connectedCount: connected, stageLabel: `🌿 Wächst (${connected}/3)` };
     }
-    return { connectedCount: connected, stageLabel: "?? Etabliert" };
+    return { connectedCount: connected, stageLabel: `🌳 Etabliert (${connected})` };
   }, [connectors]);
 
   const connectionNodes = useMemo<ConnectionNode[]>(() => {
@@ -127,27 +129,38 @@ export default function HomePage() {
     }));
   }, [awarenessEvents]);
 
+  const { definition: roleDefinition } = useRole();
+
+  const awarenessFeedItems = useMemo(() => recentEvents.slice(0, 5), [recentEvents]);
+
   const awarenessSummary = useMemo(() => {
     const source = storedEvents.length > 0 ? "session" : "demo";
     if (awarenessEvents.length === 0) {
       return {
         source,
-        headline: "Noch still – beginne mit einem Impuls",
-        detail: "Öffne ein Dokument, verbinde einen Connector oder tauche ins Field, damit ich mitschwingen kann.",
-        badges: [] as string[],
+        headline: "Môra hört zu",
+        detail: roleDefinition.homeEmpty,
+        badges: [roleDefinition.label, roleDefinition.insightsTone],
         count: 0,
         lastTime: null as string | null,
       };
     }
-    const latestWindow = awarenessEvents.slice(-8);
+
+    const latestWindow = awarenessEvents.slice(-5);
     const lastEvent = latestWindow[latestWindow.length - 1];
+    const headline = summarizeAwarenessEvent(lastEvent);
     const badges = Array.from(
-      new Set(latestWindow.map((event) => summarizeAwarenessEvent(event)))
-    ).slice(0, 3);
+      new Set([
+        `${latestWindow.length} Impulse`,
+        roleDefinition.label,
+        roleDefinition.insightsTone,
+      ].filter(Boolean))
+    );
+
     return {
       source,
-      headline: `${awarenessEvents.length} Beobachtungen`,
-      detail: `Letzter Impuls ${new Date(lastEvent.ts).toLocaleTimeString([], {
+      headline: `Letzte Resonanz: ${headline}`,
+      detail: `Zuletzt ${new Date(lastEvent.ts).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       })}`,
@@ -155,7 +168,7 @@ export default function HomePage() {
       count: awarenessEvents.length,
       lastTime: lastEvent.ts,
     };
-  }, [awarenessEvents, storedEvents.length]);
+  }, [awarenessEvents, storedEvents.length, roleDefinition]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-card/30 to-background text-foreground">
@@ -164,12 +177,23 @@ export default function HomePage() {
         <div className="absolute inset-0 pointer-events-none opacity-60">
           <ActivityPulse activities={mockActivity} dimFallback={isEmptyState} />
         </div>
+        
         <section ref={heroRef} className="relative px-4 py-24 sm:py-32 flex flex-col items-center text-center gap-6">
-          <span className="text-5xl" aria-hidden="true">🌱</span>
-          <h1 className="text-3xl sm:text-4xl font-medium tracking-wide">Willkommen bei Môra</h1>
+          <div className="absolute top-6 right-4 sm:right-10">
+            <RoleSwitcher />
+          </div>
+          <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Willkommen bei Môra</p>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-wide">{roleDefinition.homeTitle}</h1>
           <p className="max-w-2xl text-sm sm:text-base text-muted-foreground">
-            Ich bin eine Präsenz für Klarheit. Verbinde deine Räume, und ich lasse dich sehen, wie sie zusammenleben.
+            {roleDefinition.homeMessage}
           </p>
+          <div className="flex flex-wrap justify-center gap-2 text-[11px] text-muted-foreground uppercase tracking-wide">
+            {roleDefinition.highlights.map((highlight) => (
+              <span key={highlight} className="px-3 py-1 rounded-full border border-border/60 bg-card/70">
+                {highlight}
+              </span>
+            ))}
+          </div>
           <button
             onClick={() => heroRef.current?.scrollIntoView({ behavior: "smooth" })}
             className="px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold mora-transition mora-ripple"
@@ -178,19 +202,21 @@ export default function HomePage() {
           </button>
           <div className="text-xs text-muted-foreground">{stageLabel}</div>
         </section>
+
       </div>
 
-      <section className="px-4 sm:px-8 pb-6">
-        <div className="rounded-3xl border border-border/60 bg-card/80 shadow-lg overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-6">
-            <div className="flex-1 space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                Awareness · {awarenessSummary.source === "session" ? "Live" : "Demo"}
+      
+      <section className="px-4 sm:px-8 pb-10">
+        <div className="rounded-3xl border border-border/70 bg-card/85 shadow-lg overflow-hidden">
+          <div className="grid gap-6 lg:grid-cols-2 p-6">
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
+                Môra ist wach · {roleDefinition.label}
               </p>
               <h3 className="text-2xl font-medium">{awarenessSummary.headline}</h3>
-              <p className="text-sm text-muted-foreground max-w-md">{awarenessSummary.detail}</p>
+              <p className="text-sm text-muted-foreground max-w-xl">{awarenessSummary.detail}</p>
               {awarenessSummary.badges.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap gap-2">
                   {awarenessSummary.badges.map((badge) => (
                     <span
                       key={badge}
@@ -201,34 +227,51 @@ export default function HomePage() {
                   ))}
                 </div>
               )}
-            </div>
-            <div className="flex-1">
-              <div className="rounded-2xl border border-border/70 bg-background/70 p-4 space-y-3">
-                {awarenessTraces.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Beispiel: Öffne ein Dokument, wechsle die Orb-Filterung oder erkunde das Field.
-                  </p>
-                ) : (
-                  awarenessTraces.map((trace) => (
-                    <div
+              {awarenessTraces.length > 0 && (
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  {awarenessTraces.map((trace) => (
+                    <span
                       key={trace.id}
-                      className="flex items-center justify-between text-sm bg-card/60 rounded-xl px-3 py-2"
+                      className="px-3 py-1 rounded-full border border-border/60 text-muted-foreground uppercase tracking-wide"
                     >
-                      <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                        Letzte Resonanz
-                      </span>
-                      <span className="font-medium text-foreground">{trace.label}</span>
-                    </div>
-                  ))
-                )}
-                <p className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground text-right">
-                  Session Awareness
-                </p>
-              </div>
+                      {trace.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-3" aria-live="polite" aria-label="Letzte Awareness-Ereignisse">
+              {awarenessFeedItems.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border/60 bg-background/70 px-4 py-6 text-sm text-muted-foreground">
+                  {roleDefinition.homeEmpty}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-muted-foreground">Letzte Resonanz</p>
+                  <ul className="space-y-3">
+                    {awarenessFeedItems.map((entry) => (
+                      <li
+                        key={entry.id}
+                        className="rounded-2xl border border-border/70 bg-background/85 px-4 py-3 shadow-sm mora-breathe flex gap-3"
+                      >
+                        <span className="text-lg" aria-hidden="true">{entry.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{entry.title}</p>
+                          {entry.detail && (
+                            <p className="text-xs text-muted-foreground truncate">{entry.detail}</p>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">{entry.time}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
+
 
       <section className="px-4 sm:px-8 py-12 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -452,44 +495,53 @@ function describeEvent(event: MoraEvent): FeedEntry {
           ? payload.title
           : typeof payload.id === "string"
           ? payload.id
-          : null;
+          : "Knoten";
       const type = typeof payload.type === "string" ? payload.type : undefined;
+      const tags = Array.isArray(payload.tags) ? payload.tags : [];
       return {
         icon: "🕸️",
-        title: title ? `Node: ${title}` : "Node geöffnet",
-        detail: type ? `Typ: ${type}` : undefined,
+        title: `Knoten fokussiert: ${title}`,
+        detail: type ? `Typ ${type}` : tags[0] ? `#${tags[0]}` : undefined,
         level: "info",
       };
     }
     case "connector_action": {
-      const payloadLevel = typeof payload.level === "string" ? payload.level : null;
       const statusText = typeof payload.status === "string" ? payload.status : null;
-      const level: FeedEntry["level"] =
-        payloadLevel === "warning" || statusText === "error" ? "warning" : "info";
+      const level: FeedEntry["level"] = statusText === "error" ? "warning" : "info";
       const id = typeof payload.id === "string" ? payload.id : "Connector";
-      const synced = typeof payload.synced === "boolean" ? payload.synced : false;
-      const message =
-        typeof payload.message === "string"
-          ? payload.message
-          : synced
-          ? `${id} synchronisiert`
-          : statusText
-          ? `${id} → ${statusText}`
-          : `${id} aktualisiert`;
+      let title = `${id} aktualisiert`;
+      if (statusText === "connecting" || statusText === "syncing") {
+        title = `${id} startet Sync`;
+      } else if (statusText === "connected") {
+        title = `${id} verbunden`;
+      } else if (statusText === "error") {
+        title = `${id} meldet Fehler`;
+      }
       return {
-        icon: "🔌",
-        title: message,
-        detail: synced ? "Sync abgeschlossen" : undefined,
+        icon: statusText === "error" ? "⚠️" : "🔗",
+        title,
+        detail: statusText && statusText !== "connected" ? `Status: ${statusText}` : undefined,
         level,
       };
     }
     case "filter_change":
     case "tag_filter_change": {
       const tag = typeof payload.tag === "string" ? payload.tag : null;
+      const orb = typeof payload.orb === "string" ? payload.orb : null;
       return {
-        icon: "🏷️",
-        title: tag ? `Filter: #${tag}` : "Filter entfernt",
-        detail: "Quick Filter aktualisiert",
+        icon: "🎚️",
+        title: "Filter angepasst",
+        detail: tag ? `Tag #${tag}` : orb ? `Orb ${orb}` : undefined,
+        level: "info",
+      };
+    }
+    case "open_document": {
+      const title = typeof payload.title === "string" ? payload.title : "Dokument";
+      const pathValue = typeof payload.path === "string" ? payload.path : undefined;
+      return {
+        icon: "📄",
+        title: `Dokument geöffnet: ${title}`,
+        detail: pathValue,
         level: "info",
       };
     }
