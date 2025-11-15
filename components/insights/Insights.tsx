@@ -14,7 +14,7 @@ import CoreOfflineMessage from '@/components/errors/CoreOfflineMessage';
 import { useSessionStore } from '@/store/session';
 import type { MoraEvent } from '@/lib/mora/listener';
 
-const ONLINE_STATUSES = new Set(['healthy', 'ok', 'warning']);
+const ONLINE_STATUSES = new Set(['healthy', 'ok', 'online', 'warning']);
 const OFFLINE_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
 
 export default function Insights() {

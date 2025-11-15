@@ -110,8 +110,10 @@ export default function DiagnosticsPanel() {
         ? Math.round(performance.now() - start)
         : Math.round(Date.now() - (start as number));
 
+      // Treat 'ok', 'online', 'healthy' as success
+      const isHealthy = ['ok', 'online', 'healthy'].includes(result.status.toLowerCase());
       const overall =
-        result.status === 'ok'
+        isHealthy
           ? 'ok'
           : result.status === 'unreachable'
           ? 'error'
@@ -517,16 +519,18 @@ function StatusItem({
   message?: string;
 }) {
   const getColor = (status: string) => {
-    if (status === 'ok') return 'text-green-500';
-    if (status === 'loading') return 'text-gray-500';
-    if (status === 'warning') return 'text-yellow-500';
+    const normalized = status.toLowerCase();
+    if (['ok', 'online', 'healthy'].includes(normalized)) return 'text-green-500';
+    if (normalized === 'loading') return 'text-gray-500';
+    if (normalized === 'warning') return 'text-yellow-500';
     return 'text-red-500';
   };
 
   const getIcon = (status: string) => {
-    if (status === 'ok') return '✓';
-    if (status === 'loading') return '⏳';
-    if (status === 'warning') return '⚠️';
+    const normalized = status.toLowerCase();
+    if (['ok', 'online', 'healthy'].includes(normalized)) return '✓';
+    if (normalized === 'loading') return '⏳';
+    if (normalized === 'warning') return '⚠️';
     return '✗';
   };
 
