@@ -2,25 +2,26 @@
 
 import { useAppContext } from '@/lib/contexts';
 import { useHealthCheck } from '@/lib/hooks/useApi';
+import { getHealthFlags } from '@/lib/health';
 import FolderMode from './FolderMode';
 import FieldMode from './FieldMode';
-import CoreOfflineMessage from '@/components/errors/CoreOfflineMessage';
-
-const OFFLINE_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
+import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 
 export default function Canvas() {
   const { mode, setSelectedObject } = useAppContext();
   const { data: health, refetch: refetchHealth } = useHealthCheck();
-  const healthStatus = (health?.status || '').toString().toLowerCase();
-  const isOffline = OFFLINE_STATUSES.has(healthStatus);
+  const { isOffline, isAuthError } = getHealthFlags(health?.status);
 
   return (
     <main className="flex-1 bg-background overflow-auto">
-      {isOffline ? (
-        <CoreOfflineMessage
-          error={new Error('Core API nicht erreichbar')}
-          onRetry={() => refetchHealth()}
-        />
+      {isOffline || isAuthError ? (
+        <div className="flex items-center justify-center min-h-[420px] p-6">
+          <CoreStatusBanner
+            state={isAuthError ? 'auth' : 'offline'}
+            lastChecked={health?.timestamp}
+            onRetry={() => refetchHealth()}
+          />
+        </div>
       ) : mode === 'folder' ? (
         <FolderMode />
       ) : (

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getConfig, isDiagnosticsEnabled } from '@/lib/config';
 import { healthCheck } from '@/lib/api';
 import { showToast } from '@/lib/toast';
+import { getHealthFlags, normalizeHealthStatus, getHealthColorClass, getHealthIcon } from '@/lib/health';
+import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 
 interface HealthStatus {
   overall: 'ok' | 'warning' | 'error' | 'loading';
@@ -110,14 +112,20 @@ export default function DiagnosticsPanel() {
         ? Math.round(performance.now() - start)
         : Math.round(Date.now() - (start as number));
 
-      // Treat 'ok', 'online', 'healthy' as success
-      const isHealthy = ['ok', 'online', 'healthy'].includes(result.status.toLowerCase());
-      const overall =
-        isHealthy
+      const normalizedStatus = normalizeHealthStatus(result.status);
+      if (normalizedStatus === 'auth') {
+        showToast({
+          message: 'JWT ungültig – prüfe dein Token in .env.local.',
+          variant: 'error',
+        });
+      }
+
+      const overall: HealthStatus['overall'] =
+        normalizedStatus === 'healthy'
           ? 'ok'
-          : result.status === 'unreachable'
-          ? 'error'
-          : 'warning';
+          : normalizedStatus === 'warning'
+          ? 'warning'
+          : 'error';
 
       setLogEntry({
         timestamp: result.timestamp || new Date().toISOString(),
@@ -509,7 +517,7 @@ export default function DiagnosticsPanel() {
   );
 }
 
-function StatusItem({
+export function StatusItem({
   label,
   status,
   message,
@@ -531,7 +539,7 @@ function StatusItem({
     if (['ok', 'online', 'healthy'].includes(normalized)) return '✓';
     if (normalized === 'loading') return '⏳';
     if (normalized === 'warning') return '⚠️';
-    return '✗';
+    return '✕';
   };
 
   return (
@@ -548,3 +556,6 @@ function StatusItem({
     </div>
   );
 }
+
+
+

@@ -1,10 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CoreOfflineMessage from '@/components/errors/CoreOfflineMessage';
+import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 import { useChatData } from '@/lib/hooks/useChatData';
 import { useHealthCheck } from '@/lib/hooks/useApi';
+import { getHealthFlags } from '@/lib/health';
 
 interface Message {
   id: string;
@@ -12,8 +13,6 @@ interface Message {
   content: string;
   timestamp: Date;
 }
-
-const OFFLINE_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
 
 const SUGGESTIONS = [
   '- "Zeig mir alle Objects"',
@@ -29,7 +28,7 @@ export default function MoraChat() {
       id: 'intro',
       role: 'mora',
       content:
-        'Hallo! Ich bin Mora. Ich kann Objektdaten abrufen, nach Tags suchen und Workflows erklären. Frag mich einfach nach einem Object, Snapshot oder Workflow.',
+        'Hallo! Ich bin Mora. Ich kann Objektdaten abrufen, nach Tags suchen und Workflows erklaeren. Frag mich nach einem Object, Snapshot oder Workflow.',
       timestamp: new Date(),
     },
   ]);
@@ -38,16 +37,21 @@ export default function MoraChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const chatData = useChatData();
+  const hasDemoData = chatData.hasData;
   const { data: health, refetch: refetchHealth } = useHealthCheck();
-  const healthStatus = (health?.status || '').toString().toLowerCase();
-  const isOffline = OFFLINE_STATUSES.has(healthStatus);
+  const { isOffline, isAuthError } = getHealthFlags(health?.status);
+  const isChatDisabled = isOffline || isAuthError;
+  const showDemoHint = !hasDemoData && !isChatDisabled;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const anchor = messagesEndRef.current;
+    if (anchor && typeof anchor.scrollIntoView === 'function') {
+      anchor.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isTyping]);
 
   const handleSend = async () => {
-    if (!input.trim() || isOffline) return;
+    if (!input.trim() || isChatDisabled) return;
 
     const userMessage: Message = {
       id: `${Date.now()}`,
@@ -61,7 +65,7 @@ export default function MoraChat() {
     setIsTyping(true);
 
     try {
-      const responseText = await buildResponse(prompt, chatData);
+      const responseText = await getChatReply(prompt, chatData);
       setMessages((prev) => [
         ...prev,
         {
@@ -120,14 +124,24 @@ export default function MoraChat() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-24 right-6 w-96 h-[600px] bg-card border border-border rounded-lg shadow-2xl z-40 flex flex-col"
+            className="fixed bottom-24 right-6 w-96 h-[620px] bg-card/95 border border-border/70 rounded-3xl shadow-2xl z-40 flex flex-col overflow-hidden"
           >
-            <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="p-4 border-b border-border/70 bg-card/90 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Mora Chat</h3>
                 <p className="text-xs text-muted-foreground">
                   Datenquelle: {chatData.source === 'semantic' ? 'Semantic Search' : 'Objects'}
                 </p>
+                {hasDemoData ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Demo-Modus - Antworten spiegeln gespeicherte Mock-Daten.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-amber-600">
+                    Noch keine Demo-Objekte geladen - Antworten bleiben neutral.
+                  </p>
+                )}
+
               </div>
               <div className="flex items-center gap-1 text-xs">
                 <span className={`w-2 h-2 rounded-full ${isOffline ? 'bg-red-500' : 'bg-green-500'}`} />
@@ -135,26 +149,33 @@ export default function MoraChat() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-              {isOffline ? (
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-card/80">
+              {isChatDisabled ? (
                 <div className="h-full flex items-center justify-center">
-                  <CoreOfflineMessage
-                    error={new Error('Core API nicht erreichbar')}
+                  <CoreStatusBanner
+                    context="compact"
+                    state={isAuthError ? 'auth' : 'offline'}
+                    lastChecked={health?.timestamp}
                     onRetry={() => refetchHealth()}
                   />
                 </div>
               ) : (
                 <>
+                  {showDemoHint && (
+                    <div className="rounded-xl border border-dashed border-amber-500/70 bg-amber-500/10 px-4 py-3 text-xs text-amber-900">
+                      Demo-Modus: Lade Objekte oder aktiviere den Mock-Modus, damit Mora echte Daten beantworten kann.
+                    </div>
+                  )}
                   {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.role === 'mora' ? 'justify-start' : 'justify-end'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap shadow-sm border ${
                           message.role === 'mora'
-                            ? 'bg-muted text-foreground rounded-bl-none'
-                            : 'bg-primary text-primary-foreground rounded-br-none'
+                            ? 'bg-muted text-foreground rounded-bl-none border-border/60'
+                            : 'bg-primary text-primary-foreground rounded-br-none border-primary/40'
                         }`}
                       >
                         {message.content}
@@ -176,25 +197,25 @@ export default function MoraChat() {
               )}
             </div>
 
-            {!isOffline && (
+            {!isChatDisabled && (
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
                   handleSend();
                 }}
-                className="p-4 border-t border-border"
+                className="p-4 border-t border-border/70 bg-card/90"
               >
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-3 py-2">
                   <input
                     type="text"
-                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm"
                     placeholder="Frag nach Objects, Snapshots oder Workflows..."
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50"
                     disabled={!input.trim() || isTyping}
                   >
                     Senden
@@ -209,10 +230,19 @@ export default function MoraChat() {
   );
 }
 
+async function getChatReply(query: string, chatData: ReturnType<typeof useChatData>): Promise<string> {
+  // Single integration point for demo echo vs. zukuenftige echte Antworten
+  return buildResponse(query, chatData);
+}
+
 async function buildResponse(query: string, chatData: ReturnType<typeof useChatData>): Promise<string> {
   const trimmed = query.trim();
   if (!trimmed) {
     return fallbackResponse();
+  }
+
+  if (!chatData.hasData) {
+    return demoDataMissingResponse(trimmed);
   }
 
   const normalized = trimmed.toLowerCase();
@@ -243,7 +273,7 @@ async function buildResponse(query: string, chatData: ReturnType<typeof useChatD
     const body = top
       .map(
         (result, index) =>
-          `${index + 1}. ${result.title} (${result.type})${result.tags?.length ? ` – Tags: ${result.tags.join(', ')}` : ''}`
+          `${index + 1}. ${result.title} (${result.type})${result.tags?.length ? ` - Tags: ${result.tags.join(', ')}` : ''}`
       )
       .join('\n');
 
@@ -251,11 +281,15 @@ async function buildResponse(query: string, chatData: ReturnType<typeof useChatD
     return `Gefundene Objects:\n${body}${suffix}`;
   }
 
-  return fallbackResponse();
+  return fallbackResponse(trimmed);
 }
 
-function fallbackResponse(): string {
-  return `Ich konnte keine genauen Ergebnisse liefern. Probiere eine der folgenden Fragen:\n${SUGGESTIONS.join(
-    '\n'
-  )}`;
+function fallbackResponse(prompt?: string): string {
+  const header = prompt ? `Du hast gefragt: "${prompt}".` : 'Deine Frage ist angekommen.';
+  return `${header}\n(Demo-Modus - Mora liefert spaeter eine ausfuehrliche Antwort.)`;
+}
+
+function demoDataMissingResponse(prompt?: string): string {
+  const question = prompt ? `Du hast gefragt: "${prompt}".` : 'Anfrage empfangen.';
+  return `${question}\nDemo-Modus: Es sind noch keine Objekte geladen. Verbinde zuerst eine Quelle oder starte den Mock-Modus.`;
 }

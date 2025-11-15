@@ -27,6 +27,11 @@ export interface ChatDataResult {
    * Get data source name
    */
   source: 'objects' | 'semantic';
+
+  /**
+   * Indicates whether any objects are available locally
+   */
+  hasData: boolean;
 }
 
 export interface SearchResult {
@@ -67,6 +72,7 @@ export function useChatData(): ChatDataResult {
   });
 
   const objects = objectsData || [];
+  const hasData = objects.length > 0;
 
   /**
    * Search implementation
@@ -149,6 +155,7 @@ export function useChatData(): ChatDataResult {
     getStats,
     list,
     source,
+    hasData,
   };
 }
 

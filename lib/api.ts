@@ -5,6 +5,7 @@
 
 import { getAuthHeader, getCoreApiUrl, getJwtToken } from './config';
 import { showToast } from './toast';
+import { announceHealthTransition } from './health';
 
 // API Error types for better error handling
 export class ApiError extends Error {
@@ -35,8 +36,6 @@ export class ApiUnauthorizedError extends ApiError {
 
 // Default timeout: 30 seconds
 const DEFAULT_TIMEOUT_MS = 30000;
-const OFFLINE_HEALTH_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
-let lastHealthStatus: string | null = null;
 
 /**
  * Robust fetch with timeout
@@ -194,44 +193,24 @@ export async function healthCheck(): Promise<{
         status: 'error',
         timestamp: new Date().toISOString(),
       };
-      handleHealthStatusToast(fallback.status);
+      announceHealthTransition(fallback.status);
       return fallback;
     }
 
     const payload = await response.json();
-    handleHealthStatusToast(payload.status);
+    announceHealthTransition(payload.status);
     return payload;
   } catch (error) {
     const fallback = {
       status: 'unreachable',
       timestamp: new Date().toISOString(),
     };
-    handleHealthStatusToast(fallback.status);
+    announceHealthTransition(fallback.status);
     return fallback;
   }
 }
 
-function handleHealthStatusToast(status?: string) {
-  const normalized = (status || '').toLowerCase();
-  const isOffline = OFFLINE_HEALTH_STATUSES.has(normalized);
-  const wasOffline = OFFLINE_HEALTH_STATUSES.has(lastHealthStatus || '');
 
-  if (typeof window !== 'undefined') {
-    if (isOffline && !wasOffline) {
-      showToast({
-        message: 'Core API offline – bitte Verbindung prüfen.',
-        variant: 'error',
-      });
-    } else if (!isOffline && wasOffline && normalized) {
-      showToast({
-        message: 'Core API wieder erreichbar.',
-        variant: 'info',
-      });
-    }
-  }
-
-  lastHealthStatus = normalized;
-}
 
 // API Methods
 export const api = {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import type { MoraObject } from '@/lib/types';
@@ -45,7 +45,7 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
       showToast({ message: 'Markierung entfernt', variant: 'info' });
     } else {
       newReviewedIds.add(selectedObject.id);
-      showToast({ message: 'Als geprüft markiert', variant: 'info' });
+      showToast({ message: 'Als geprÃ¼ft markiert', variant: 'info' });
     }
 
     setReviewedIds(newReviewedIds);
@@ -67,7 +67,7 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
     if (!selectedObject?.url) return;
 
     window.open(selectedObject.url, '_blank', 'noopener,noreferrer');
-    showToast({ message: 'Öffne in neuem Tab', variant: 'info' });
+    showToast({ message: 'Ã–ffne in neuem Tab', variant: 'info' });
   };
 
   const handleFilterByTag = (tag: string) => {
@@ -84,7 +84,7 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
           Quick Actions
         </h3>
         <div className="text-sm text-muted-foreground">
-          Wähle ein Objekt aus
+          Waehle ein Objekt aus, um schnelle Aktionen auszufuehren.
         </div>
       </div>
     );
@@ -108,8 +108,8 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
               : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'
           }`}
         >
-          <span className="text-base">{isReviewed ? '✓' : '○'}</span>
-          <span>{isReviewed ? 'Als geprüft markiert' : 'Als geprüft markieren'}</span>
+          <span className="text-base">{isReviewed ? 'âœ“' : 'â—‹'}</span>
+          <span>{isReviewed ? 'Als geprÃ¼ft markiert' : 'Als geprÃ¼ft markieren'}</span>
         </button>
 
         {/* Copy Path */}
@@ -117,7 +117,7 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
           onClick={handleCopyPath}
           className="w-full px-3 py-2 rounded-lg text-sm font-medium text-left mora-transition mora-ripple bg-secondary hover:bg-secondary/80 text-secondary-foreground flex items-center gap-2"
         >
-          <span className="text-base">📋</span>
+          <span className="text-base">ðŸ“‹</span>
           <span>Pfad kopieren</span>
         </button>
 
@@ -127,8 +127,8 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
             onClick={handleOpenUrl}
             className="w-full px-3 py-2 rounded-lg text-sm font-medium text-left mora-transition mora-ripple bg-secondary hover:bg-secondary/80 text-secondary-foreground flex items-center gap-2"
           >
-            <span className="text-base">🔗</span>
-            <span>URL öffnen</span>
+            <span className="text-base">ðŸ”—</span>
+            <span>URL oeffnen</span>
           </button>
         )}
 
@@ -150,6 +150,10 @@ export default function QuickActions({ selectedObject, onFilterByTag }: QuickAct
           </div>
         )}
       </div>
+      <p className="mt-3 text-[11px] uppercase tracking-wide text-muted-foreground">
+        Demo-Modus: Aktionen wirken nur lokal.
+      </p>
     </div>
   );
 }
+

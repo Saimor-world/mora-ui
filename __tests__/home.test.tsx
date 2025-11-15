@@ -1,6 +1,7 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import HomePage from '@/app/home/page';
 import { ROLE_DEFINITIONS } from '@/lib/roles';
+import { useHealthCheck } from '@/lib/hooks/useApi';
 
 jest.mock('@/lib/connectors', () => ({
   getConnectors: jest.fn(() => []),
@@ -14,6 +15,10 @@ jest.mock('@/lib/connectors', () => ({
 jest.mock('@/lib/mockConnectors', () => ({
   mockConnectors: [],
   mockActivity: [],
+}));
+
+jest.mock('@/lib/hooks/useApi', () => ({
+  useHealthCheck: jest.fn(),
 }));
 
 jest.mock('@/lib/mora/listener', () => ({
@@ -32,7 +37,9 @@ jest.mock('@/lib/toast', () => ({
 
 const sessionState = {
   introSeen: true,
-  setIntroSeen: jest.fn(),
+  setIntroSeen: jest.fn((value?: boolean) => {
+    sessionState.introSeen = value ?? true;
+  }),
   setLastViewedNode: jest.fn(),
   setActiveOrb: jest.fn(),
   activeRole: 'owner',
@@ -60,8 +67,10 @@ jest.mock('@/store/session', () => ({
 const connectorsModule = jest.requireMock('@/lib/connectors') as jest.Mocked<
   typeof import('@/lib/connectors')
 >;
+const mockedUseHealth = useHealthCheck as jest.Mock;
 
 beforeEach(() => {
+  sessionState.introSeen = true;
   connectorsModule.getConnectors.mockReturnValue([]);
   connectorsModule.applyMockSnapshot.mockImplementation((list) => list);
   connectorsModule.syncConnector.mockResolvedValue({
@@ -82,6 +91,11 @@ beforeEach(() => {
     lastSyncAt: '2025-01-01T00:00:00.000Z',
     objectCount: 1,
   });
+  mockedUseHealth.mockReturnValue({
+    data: { status: 'online', timestamp: '2025-01-01T00:00:00.000Z' },
+    isLoading: false,
+    refetch: jest.fn(),
+  });
 });
 
 afterEach(() => {
@@ -92,8 +106,23 @@ afterEach(() => {
 describe('HomePage', () => {
   it('renders hero heading and CTA', () => {
     render(<HomePage />);
-    expect(screen.getByText(/Willkommen bei/i)).toBeInTheDocument();
+    expect(screen.getByText(/Demo-Raum/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rolle:/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Beginne mit deinen ersten Daten/i })).toBeInTheDocument();
+  });
+
+  it('shows pulse card with online state', () => {
+    render(<HomePage />);
+    const pulse = screen.getByTestId('home-pulse-card');
+    expect(within(pulse).getByText(/Stabilitaet/i)).toBeInTheDocument();
+    expect(within(pulse).getByText(/System Pulse/i)).toBeInTheDocument();
+  });
+
+  it('renders onboarding overlay when intro not seen', () => {
+    sessionState.introSeen = false;
+    render(<HomePage />);
+    expect(screen.getByRole('heading', { name: /Verbindungen simulieren/i })).toBeInTheDocument();
+    sessionState.introSeen = true;
   });
 
   it('shows connector placeholder when no connectors are available', () => {
@@ -129,13 +158,13 @@ describe('HomePage', () => {
     );
 
     render(<HomePage />);
-    const mockButton = await screen.findByRole('button', { name: /Mock-Modus/i });
+    const mockButton = await screen.findByRole('button', { name: /Mock-Sync/i });
     fireEvent.click(mockButton);
     expect(mockButton).toHaveTextContent(/Simulation/i);
 
     await act(async () => {
       jest.advanceTimersByTime(1600);
-});
+    });
 
     expect(connectorsModule.applyMockSnapshot).toHaveBeenCalled();
     expect(screen.getByText(/Verbunden/)).toBeInTheDocument();

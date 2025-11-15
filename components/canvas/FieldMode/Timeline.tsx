@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 interface TimelineProps {
   snapshots: string[];
@@ -10,7 +10,7 @@ export default function Timeline({ snapshots, current, onChange }: TimelineProps
   const labels = snapshots.map((_, index) => `t${index}`);
 
   return (
-    <div className="p-4 border-t border-border">
+    <div className="p-4 sm:p-5 border-t border-border/60 bg-card/60 rounded-b-2xl">
       <div className="flex items-center gap-4">
         {/* Label */}
         <div className="text-sm font-medium text-muted-foreground">
@@ -24,7 +24,7 @@ export default function Timeline({ snapshots, current, onChange }: TimelineProps
             disabled={current === 0}
             className="px-2 py-1 rounded bg-secondary hover:bg-secondary/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
           >
-            ◀
+            {'<'}
           </button>
 
           <div className="flex-1 relative">
@@ -45,11 +45,12 @@ export default function Timeline({ snapshots, current, onChange }: TimelineProps
                     onClick={() => onChange(i)}
                     className={`w-4 h-4 rounded-full border-2 transition-all ${
                       i === current
-                        ? 'bg-primary border-primary scale-125'
+                        ? 'bg-primary border-primary scale-125 shadow-[0_0_10px_rgba(248,191,77,0.45)]'
                         : 'bg-background border-muted-foreground/50 hover:border-primary/50'
                     }`}
                     style={{ marginTop: '-4px' }}
                     aria-label={`Snapshot ${labels[i]}`}
+                    aria-current={i === current ? 'step' : undefined}
                   />
                   <span
                     className={`text-[10px] uppercase tracking-wide ${
@@ -68,7 +69,7 @@ export default function Timeline({ snapshots, current, onChange }: TimelineProps
             disabled={current === snapshots.length - 1}
             className="px-2 py-1 rounded bg-secondary hover:bg-secondary/80 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
           >
-            ▶
+            {'>'}
           </button>
         </div>
 
@@ -88,3 +89,4 @@ export default function Timeline({ snapshots, current, onChange }: TimelineProps
     </div>
   );
 }
+

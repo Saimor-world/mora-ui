@@ -10,6 +10,15 @@ type ObjectQueryParams = {
   orb?: string;
 };
 
+interface HealthResponse {
+  status: string;
+  message?: string;
+  timestamp?: string;
+  db?: { status: string };
+  qdrant?: { status: string };
+  llm?: { status: string };
+}
+
 /**
  * Hook: Get Objects from Core API
  * Fetches objects from /v1/objects endpoint
@@ -113,14 +122,22 @@ export function useBroadcast() {
  * Checks if the Core API is accessible
  */
 export function useHealthCheck() {
-  return useQuery({
+  return useQuery<HealthResponse>({
     queryKey: ['health'],
-    queryFn: async () => {
+    queryFn: async (): Promise<HealthResponse> => {
       try {
-        return await api.health();
+        const result = await api.health();
+        return {
+          ...result,
+          timestamp: result.timestamp ?? new Date().toISOString(),
+        };
       } catch (error) {
         console.error('Health check failed:', error);
-        return { status: 'error', message: 'API not reachable' };
+        return {
+          status: 'error',
+          message: 'API not reachable',
+          timestamp: new Date().toISOString(),
+        };
       }
     },
     // Check every 60 seconds

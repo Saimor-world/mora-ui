@@ -10,12 +10,10 @@ import WorkflowRunner from './WorkflowRunner';
 import BroadcastInbox from './Broadcast/BroadcastInbox';
 import DataUploadPlaceholder from './DataUploadPlaceholder';
 import MonitoringPlaceholder from './MonitoringPlaceholder';
-import CoreOfflineMessage from '@/components/errors/CoreOfflineMessage';
+import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 import { useSessionStore } from '@/store/session';
 import type { MoraEvent } from '@/lib/mora/listener';
-
-const ONLINE_STATUSES = new Set(['healthy', 'ok', 'online', 'warning']);
-const OFFLINE_STATUSES = new Set(['unreachable', 'error', 'unauthorized']);
+import { getHealthFlags } from '@/lib/health';
 
 export default function Insights() {
   const { selectedObject, orb, activeTagFilter, setActiveTagFilter } = useAppContext();
@@ -33,9 +31,7 @@ export default function Insights() {
 
   const objectCount = objects?.length || 0;
   const relationCount = snapshots?.[2]?.edges.length || 0; // Use latest snapshot (t2)
-  const healthStatus = (health?.status || '').toString().toLowerCase();
-  const isOffline = OFFLINE_STATUSES.has(healthStatus);
-  const isOnline = ONLINE_STATUSES.has(healthStatus) && !isOffline;
+  const { isOffline, isAuthError, isOnline } = getHealthFlags(health?.status);
   const awarenessStory = useMemo(
     () => buildAwarenessStory(recentEvents, orb, activeTagFilter, roleDefinition.label),
     [recentEvents, orb, activeTagFilter, roleDefinition.label]
@@ -60,11 +56,15 @@ export default function Insights() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        {isOffline ? (
-          <CoreOfflineMessage
-            error={new Error('Core API nicht erreichbar')}
-            onRetry={() => refetchHealth()}
-          />
+        {isOffline || isAuthError ? (
+          <div className="p-4">
+            <CoreStatusBanner
+              context="compact"
+              state={isAuthError ? 'auth' : 'offline'}
+              lastChecked={health?.timestamp}
+              onRetry={() => refetchHealth()}
+            />
+          </div>
         ) : (
           <>
             {/* Context Panel */}

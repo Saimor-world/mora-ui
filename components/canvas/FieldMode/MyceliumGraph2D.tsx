@@ -309,7 +309,8 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           const organicVariance = 1 + Math.sin((time + energySeed) / (reduceMotion ? 2600 : 1600)) * 0.12;
           const shimmer =
             reduceMotion || faded ? 0 : Math.sin((time + energySeed) / 1600) * 0.05;
-          const baseAlpha = faded ? 0.05 : highlighted ? 0.28 : 0.12;
+          const seedShift = (Math.sin((energySeed % 7) * 0.3) + 1) * 0.02;
+          const baseAlpha = faded ? 0.04 : highlighted ? 0.32 : 0.12 + seedShift;
           const edgeAlpha = Math.max(0.04, (baseAlpha + shimmer) * organicVariance);
           ctx.strokeStyle = highlighted
             ? `rgba(248, 191, 77, ${edgeAlpha})`
@@ -351,7 +352,10 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             node.y,
             glowRadius
           );
-          const glowOpacity = Math.min(0.65, (isFocus ? 0.45 : 0.32) + pulseStrength * 0.2);
+          const glowOpacity = Math.min(
+            0.65,
+            (isFocus ? 0.48 : 0.34) + pulseStrength * 0.25 + (reduceMotion ? 0 : 0.05 * Math.sin((time + node.seed) / 1400))
+          );
           glow.addColorStop(0, hexToRgba(baseColor, glowOpacity));
           glow.addColorStop(1, 'transparent');
           ctx.fillStyle = glow;
@@ -368,6 +372,14 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           ctx.arc(node.x - radius / 3, node.y - radius / 3, radius / 2.5, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(255,255,255,0.25)';
           ctx.fill();
+
+          if (isFocus) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, radius + 6, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(248,191,77,0.85)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
 
           if (isHovered) {
             ctx.font = '12px system-ui';

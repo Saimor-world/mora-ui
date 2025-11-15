@@ -23,20 +23,48 @@ import { showToast } from "@/lib/toast";
 import { useSessionStore } from "@/store/session";
 import RoleSwitcher from "@/components/home/RoleSwitcher";
 import { useRole } from "@/lib/hooks/useRole";
+import DiagnosticsPanel from "@/components/diagnostics/DiagnosticsPanel";
+import { useHealthCheck } from "@/lib/hooks/useApi";
+import { getHealthFlags } from "@/lib/health";
+import { QueryProvider } from "@/lib/queryClient";
 
-export default function HomePage() {
+function HomePageInner() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const connectorsRef = useRef<HTMLElement | null>(null);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
   const [setupTarget, setSetupTarget] = useState<ConnectorStatus | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [mockSyncRunning, setMockSyncRunning] = useState(false);
   const storedEvents = useSessionStore((state) => state.recentEvents);
   const [drawerEvent, setDrawerEvent] = useState<MoraEvent | null>(null);
+  const setIntroSeen = useSessionStore((state) => state.setIntroSeen);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   useEffect(() => {
     const loaded = getConnectors(mockConnectors);
     setConnectors(loaded);
   }, []);
+
+  const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useHealthCheck();
+  const { isOnline, isAuthError } = getHealthFlags(health?.status);
+  const connectorsTotal = connectors.length || mockConnectors.length;
+  const coreStatusLabel = healthLoading
+    ? "Pruefung laeuft"
+    : isAuthError
+    ? "Auth-Fehler"
+    : isOnline
+    ? "Online"
+    : "Offline";
+  const coreStatusTone = isOnline
+    ? "text-green-600 border-green-500/40 bg-green-500/5"
+    : isAuthError
+    ? "text-amber-600 border-amber-500/40 bg-amber-500/5"
+    : "text-red-600 border-red-500/40 bg-red-500/5";
+  const coreStatusText = isOnline ? "text-green-600" : isAuthError ? "text-amber-600" : "text-red-600";
+  const coreDotTone = isOnline ? "bg-green-500" : isAuthError ? "bg-amber-500" : "bg-red-500";
+  const lastCheckedLabel = health?.timestamp
+    ? new Date(health.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "n/a";
 
   const applyConnectorUpdate = (next: ConnectorStatus) => {
     setConnectors((prev) => prev.map((item) => (item.id === next.id ? next : item)));
@@ -46,12 +74,12 @@ export default function HomePage() {
   const { connectedCount, stageLabel } = useMemo(() => {
     const connected = connectors.filter((c) => c.state === "connected").length;
     if (connected === 0) {
-      return { connectedCount: 0, stageLabel: "🌱 Erste Verbindung" };
+      return { connectedCount: 0, stageLabel: "Keine Verbindungen" };
     }
     if (connected < 3) {
-      return { connectedCount: connected, stageLabel: `🌿 Wächst (${connected}/3)` };
+      return { connectedCount: connected, stageLabel: `Aufbauend (${connected}/3)` };
     }
-    return { connectedCount: connected, stageLabel: `🌳 Etabliert (${connected})` };
+    return { connectedCount: connected, stageLabel: `Verbunden (${connected})` };
   }, [connectors]);
 
   const connectionNodes = useMemo<ConnectionNode[]>(() => {
@@ -262,34 +290,140 @@ export default function HomePage() {
           <ActivityPulse activities={mockActivity} dimFallback={isEmptyState} />
         </div>
         
-        <section ref={heroRef} className="relative px-4 py-24 sm:py-32 flex flex-col items-center text-center gap-6">
+        <section
+          ref={heroRef}
+          className="relative px-4 sm:px-8 py-20 sm:py-28 border-b border-border/50"
+        >
           <div className="absolute top-6 right-4 sm:right-10">
             <RoleSwitcher />
           </div>
-          <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Willkommen bei Môra</p>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-wide">{roleDefinition.homeTitle}</h1>
-          <p className="max-w-2xl text-sm sm:text-base text-muted-foreground">
-            {roleDefinition.homeMessage}
-          </p>
-          <div className="flex flex-wrap justify-center gap-2 text-[11px] text-muted-foreground uppercase tracking-wide">
-            {roleDefinition.highlights.map((highlight) => (
-              <span key={highlight} className="px-3 py-1 rounded-full border border-border/60 bg-card/70">
-                {highlight}
-              </span>
-            ))}
+          <div className="max-w-5xl mx-auto flex flex-col items-center text-center gap-6">
+            <div className="flex flex-wrap justify-center gap-2 text-[11px] uppercase tracking-[0.35em] text-muted-foreground">
+              <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">Môra Demo-Raum</span>
+              <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">Rolle: {roleDefinition.label}</span>
+              <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">{stageLabel}</span>
+            </div>
+            <div className="space-y-3">
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{roleDefinition.homeTitle}</h1>
+              <p className="max-w-3xl mx-auto text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {roleDefinition.homeMessage}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Geführter Produkt-Raum: Reale Verbindungen werden bevorzugt, Mock-Daten bleiben klar gekennzeichnet.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2 text-[11px] text-muted-foreground uppercase tracking-wide">
+              {roleDefinition.highlights.map((highlight) => (
+                <span key={highlight} className="px-3 py-1 rounded-full border border-border/60 bg-card/70">
+                  {highlight}
+                </span>
+              ))}
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 items-center">
+              <button
+                onClick={() => connectorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold mora-transition mora-ripple"
+              >
+                Beginne mit deinen ersten Daten
+              </button>
+              <button
+                type="button"
+                onClick={() => setIntroSeen(false)}
+                className="text-sm px-4 py-2 rounded-full border border-dashed border-border text-muted-foreground hover:text-foreground mora-transition"
+              >
+                Onboarding anzeigen
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => heroRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold mora-transition mora-ripple"
-          >
-            Beginne mit deinen ersten Daten
-          </button>
-          <div className="text-xs text-muted-foreground">{stageLabel}</div>
         </section>
 
       </div>
 
-      
+      <section className="px-4 sm:px-8 pb-10">
+        <div className="max-w-6xl mx-auto grid gap-6 lg:grid-cols-2">
+          <div
+            className="rounded-2xl border border-border/70 bg-card/85 shadow-xl p-6 lg:p-7 space-y-4"
+            data-testid="home-pulse-card"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">System Pulse</p>
+                <h3 className="text-lg font-semibold">Stabilitaet & Demo-Modus</h3>
+                <p className="text-sm text-muted-foreground">
+                  Core-Status, Verbindungen und letzter Check auf einen Blick.
+                </p>
+              </div>
+              <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full border ${coreStatusTone}`}>
+                <span
+                  className={`h-2 w-2 rounded-full ${coreDotTone} ${healthLoading ? "" : "animate-pulse"}`}
+                  aria-hidden="true"
+                />
+                {coreStatusLabel}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 flex items-center justify-between">
+                <span className="text-muted-foreground">Core</span>
+                <span className={`font-semibold ${coreStatusText}`}>{coreStatusLabel}</span>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 flex items-center justify-between">
+                <span className="text-muted-foreground">Connectors</span>
+                <span className="font-semibold">{connectedCount} / {connectorsTotal} aktiv</span>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 flex items-center justify-between sm:col-span-2">
+                <span className="text-muted-foreground">Zuletzt geprueft</span>
+                <span className="text-xs">{lastCheckedLabel}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDiagnostics(true)}
+                className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold mora-transition"
+                data-testid="open-diagnostics"
+              >
+                Diagnostics oeffnen
+              </button>
+              <button
+                type="button"
+                onClick={handleMockSimulation}
+                disabled={mockSyncRunning}
+                className="px-4 py-2 rounded-full border border-border text-sm mora-transition disabled:opacity-60"
+              >
+                {mockSyncRunning ? "Simulation laeuft..." : "Mock-Sync starten"}
+              </button>
+              <button
+                type="button"
+                onClick={() => refetchHealth()}
+                className="text-xs px-3 py-2 rounded-full border border-border/70 hover:bg-secondary mora-transition"
+              >
+                Health aktualisieren
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Mock-Sync haelt den Demo-Modus aktuell. Diagnostics oeffnet die Detailansicht.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-border/70 bg-card/85 shadow-xl p-6 lg:p-7 space-y-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Naechste Schritte</p>
+            <h3 className="text-lg font-semibold">Gefuehrter Einstieg</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>1) Verbindungen simulieren oder echte Quellen verbinden.</li>
+              <li>2) Field Mode oeffnen und Kontext auf einem Knoten pruefen.</li>
+              <li>3) Chat testen und eine Demo-Antwort erhalten.</li>
+            </ul>
+            <div className="flex gap-2 flex-wrap">
+              <Link href="/field" className="px-4 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-sm mora-transition">
+                Zum Field Mode
+              </Link>
+              <Link href="/folder" className="px-4 py-2 rounded-full border border-border text-sm mora-transition">
+                Zum Folder Mode
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
       <section className="px-4 sm:px-8 pb-10">
         <div className="rounded-3xl border border-border/70 bg-card/85 shadow-lg overflow-hidden">
           <div className="grid gap-6 lg:grid-cols-2 p-6">
@@ -357,79 +491,83 @@ export default function HomePage() {
       </section>
 
 
-      <section className="px-4 sm:px-8 py-12 space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <p className="text-sm uppercase tracking-wide text-muted-foreground">Schritt 1</p>
-            <h2 className="text-2xl font-medium">Verbinde deine Quellen</h2>
-          </div>
-          <button
-            onClick={handleMockSimulation}
-            disabled={mockSyncRunning}
-            className="text-sm px-4 py-2 rounded-full border border-border hover:bg-secondary mora-transition disabled:opacity-60 disabled:pointer-events-none"
-          >
-            {mockSyncRunning ? "Simulation läuft..." : "Mock-Modus – Verbindungen simulieren"}
-          </button>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {connectors.length === 0 ? (
-            <div className="p-6 rounded-2xl border border-dashed border-border/70 bg-card/60 text-center text-sm text-muted-foreground" data-testid="connector-placeholder">
-              Noch keine Verbindungen. Starte mit deiner ersten Quelle, um den Raum zu wecken.
+      <section className="px-4 sm:px-8 py-12">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="text-sm uppercase tracking-wide text-muted-foreground">Schritt 1</p>
+              <h2 className="text-2xl font-medium">Verbinde deine Quellen</h2>
             </div>
-          ) : (
-            connectors.map((connector) => (
-              <ConnectorCard
-                key={connector.id}
-                connector={connector}
-                onSetup={handleSetup}
-                onSync={handleSync}
-                isSyncing={syncingId === connector.id}
-              />
-            ))
-          )}
+            <button
+              onClick={handleMockSimulation}
+              disabled={mockSyncRunning}
+              className="text-sm px-4 py-2 rounded-full border border-border hover:bg-secondary mora-transition disabled:opacity-60 disabled:pointer-events-none"
+            >
+              {mockSyncRunning ? "Simulation laeuft..." : "Mock-Modus - Verbindungen simulieren"}
+            </button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {connectors.length === 0 ? (
+              <div className="p-6 rounded-2xl border border-dashed border-border/70 bg-card/60 text-center text-sm text-muted-foreground" data-testid="connector-placeholder">
+                Noch keine Verbindungen. Starte mit deiner ersten Quelle, um den Raum zu wecken.
+              </div>
+            ) : (
+              connectors.map((connector) => (
+                <ConnectorCard
+                  key={connector.id}
+                  connector={connector}
+                  onSetup={handleSetup}
+                  onSync={handleSync}
+                  isSyncing={syncingId === connector.id}
+                />
+              ))
+            )}
+          </div>
         </div>
       </section>
 
-      <section className="px-4 sm:px-8 py-12 grid lg:grid-cols-2 gap-6 items-center">
-        <div className="space-y-4">
-          <p className="text-sm uppercase tracking-wide text-muted-foreground">Schritt 2</p>
-          <h2 className="text-2xl font-medium">Môra versteht</h2>
-          <p className="text-sm text-muted-foreground">
-            Datenpunkte verbinden sich zu einem Myzel-Netz. Jede neue Quelle stärkt das gemeinsame Bewusstsein.
-          </p>
-          <ConnectionMap nodes={connectionNodes.length === 0 ? undefined : connectionNodes} />
-        </div>
-        <div className="space-y-4">
-          <h3 className="text-sm uppercase tracking-wide text-muted-foreground">Letzte Aktionen</h3>
-          <div className="rounded-3xl border border-border bg-card/70 p-4 max-h-64 overflow-auto">
-            {recentEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Noch keine Awareness-Events – verbinde eine Quelle oder erkunde das Feld.
-              </p>
-            ) : (
-              <ul className="space-y-3 text-sm">
-                {recentEvents.map((entry) => (
-                  <li key={entry.id} className="flex items-start gap-3">
-                    <span className="text-xs text-muted-foreground mt-1">{entry.time}</span>
-                    <button
-                      type="button"
-                      onClick={() => setDrawerEvent(entry.raw)}
-                      className="flex-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-2 text-left hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    >
-                      <div className="flex items-center gap-2 font-medium">
-                        <span>{entry.icon}</span>
-                        <span className={entry.level === "warning" ? "text-amber-500" : "text-foreground"}>
-                          {entry.title}
-                        </span>
-                      </div>
-                      {entry.detail && (
-                        <p className="text-xs text-muted-foreground mt-1">{entry.detail}</p>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+      <section className="px-4 sm:px-8 py-12">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-6 items-center">
+          <div className="space-y-4">
+            <p className="text-sm uppercase tracking-wide text-muted-foreground">Schritt 2</p>
+            <h2 className="text-2xl font-medium">Môra versteht</h2>
+            <p className="text-sm text-muted-foreground">
+              Datenpunkte verbinden sich zu einem Myzel-Netz. Jede neue Quelle staerkt das gemeinsame Bewusstsein.
+            </p>
+            <ConnectionMap nodes={connectionNodes.length === 0 ? undefined : connectionNodes} />
+          </div>
+          <div className="space-y-4">
+            <h3 className="text-sm uppercase tracking-wide text-muted-foreground">Letzte Aktionen</h3>
+            <div className="rounded-3xl border border-border bg-card/70 p-4 max-h-64 overflow-auto">
+              {recentEvents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Noch keine Awareness-Events - verbinde eine Quelle oder erkunde das Feld.
+                </p>
+              ) : (
+                <ul className="space-y-3 text-sm">
+                  {recentEvents.map((entry) => (
+                    <li key={entry.id} className="flex items-start gap-3">
+                      <span className="text-xs text-muted-foreground mt-1">{entry.time}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDrawerEvent(entry.raw)}
+                        className="flex-1 rounded-2xl border border-border/60 bg-background/60 px-3 py-2 text-left hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      >
+                        <div className="flex items-center gap-2 font-medium">
+                          <span>{entry.icon}</span>
+                          <span className={entry.level === "warning" ? "text-amber-500" : "text-foreground"}>
+                            {entry.title}
+                          </span>
+                        </div>
+                        {entry.detail && (
+                          <p className="text-xs text-muted-foreground mt-1">{entry.detail}</p>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -455,6 +593,24 @@ export default function HomePage() {
           onClose={handleModalClose}
           onSave={handleModalSave}
         />
+      )}
+
+      {showDiagnostics && (
+        <section className="px-4 sm:px-8 pb-8">
+          <div className="rounded-3xl border border-border bg-card/90 shadow-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Systemdiagnose</h3>
+              <button
+                type="button"
+                onClick={() => setShowDiagnostics(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Schliessen
+              </button>
+            </div>
+            <DiagnosticsPanel />
+          </div>
+        </section>
       )}
 
       <SuggestionsPanel />
@@ -628,7 +784,7 @@ function describeEvent(event: MoraEvent): FeedEntry {
       const pathValue = typeof payload.path === "string" ? payload.path : undefined;
       return {
         icon: "📄",
-        title: `Dokument geöffnet: ${title}`,
+        title: `Dokument geoeffnet: ${title}`,
         detail: pathValue,
         level: "info",
       };
@@ -646,15 +802,33 @@ function describeEvent(event: MoraEvent): FeedEntry {
 function summarizeAwarenessEvent(event: MoraEvent) {
   switch (event.action) {
     case "node_click":
-      return "Field berührt";
+      return "Field beruehrt";
     case "connector_action":
       return "Connector aktiv";
     case "filter_change":
     case "tag_filter_change":
       return "Filter gewechselt";
     case "open_document":
-      return "Dokument geöffnet";
+      return "Dokument geoeffnet";
     default:
       return "Impulse registriert";
   }
 }
+
+export default function HomePage() {
+  return (
+    <QueryProvider>
+      <HomePageInner />
+    </QueryProvider>
+  );
+}
+
+
+
+
+
+
+
+
+
+

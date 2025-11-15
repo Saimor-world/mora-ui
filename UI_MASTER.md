@@ -13,11 +13,11 @@ Môra-UI ist die Next.js-15-Oberfläche des Saimôr/Môra-OS-Stacks. Sie stellt 
 - **API Client (IST)** – `lib/api.ts` kapselt `authFetch` mit Timeout, Custom-Errors und Health-Check. `useMemoryFacts` / `useSnapshots` nutzen ihn bereits.
 - **Diagnostics Panel (IST)** – `components/diagnostics/DiagnosticsPanel.tsx` zeigt Badge + Statusdetails, wenn `NEXT_PUBLIC_ENABLE_DIAGNOSTICS=true` und Dev-Build aktiv sind; der neue Export-Button liefert JSONL-Einträge gem. Protokoll. Health Export = ✅ (11 Nov 2025, Core 8081 / UI 3002).
 - **Diagnostics Logging (IST)** – `docs/DIAGNOSTICS_LOGGING.md` + `docs/DIAGNOSTICS_EXPORT_GUIDE.md` definieren Aufnahme + Archivierung, Export ist ausschließlich in Dev sichtbar und kopiert Einträge in Clipboard & Konsole.
-- **Fallback UI (IST)** – `CoreOfflineMessage` wird in Canvas, Insights und Chat automatisch angezeigt, wenn `useHealthCheck` einen Fehlerzustand (`unreachable|error|unauthorized`) meldet. Retry triggert das Health-Refetching, statt kryptischer Fehler.
+- **Fallback UI (IST)** – `CoreStatusBanner` wird in Canvas, Insights und Chat automatisch angezeigt, wenn `useHealthCheck` einen Fehlerzustand (`unreachable|error|unauthorized`) meldet. Retry triggert das Health-Refetching, statt kryptischer Fehler.
 - **Orb Filter (IST)** – Lens bindet `OrbFilter` ein und `useMemoryFacts` akzeptiert den `orb`-Parameter; Folder- und Insights-Ansichten zeigen nur die selektierte Orb-Sicht.
 - **OrbFilter + Chat Pipeline (IST)** – AppContext hält den aktiven Orb, Lens/Folder/Insights geben ihn an `useMemoryFacts`/`api.getObjects?orb` weiter und `MoraChat` bleibt via `useChatData`+Offline-Gate deckungsgleich (Sanity-Check 2025-11-11).
 - **Chat (IST)** – `MoraChat` nutzt `useChatData()` (objects oder semantic) für Suche/List/Stats, generiert Antworten daraus und respektiert Offline-Zustände.
-- **Diagnostics/Teststatus (IST)** – Dev-Server (`npm run dev` → Port 3002) startet ohne Fehler, Snapshots/Objects werden über React Query geladen, Health-Check ist eingebaut und steuert sowohl Diagnostics Badge als auch die CoreOfflineMessage-Gates.
+- **Diagnostics/Teststatus (IST)** – Dev-Server (`npm run dev` → Port 3002) startet ohne Fehler, Snapshots/Objects werden über React Query geladen, Health-Check ist eingebaut und steuert sowohl Diagnostics Badge als auch die CoreStatusBanner-Gates.
 - **System-Adapter (IST)** – `/v1/system/adapters` liefert optional ein `adapters[]`-Array; UI nutzt es defensiv (kein Blocker, falls leer).
 - **Lokaler Quicktest (IST)**  
   - Core (`http://localhost:8081`) läuft und `.env.local` enthält ein gültiges `NEXT_PUBLIC_JWT_TOKEN` (Fallback `NEXT_PUBLIC_ADMIN_TOKEN` bleibt leer).  
@@ -57,7 +57,7 @@ Alle Aussagen basieren auf überprüfbaren Dateien (siehe Abschnitt 7) und man
 
 ## Core Connectivity (IST)
 - `curl http://localhost:8081/v1/health` am 2025-11-11 08:55 CET lieferte `{"status":"healthy","timestamp":"2025-11-11T08:55:22.734408Z"}` – Core antwortet stabil.
-- Das Diagnostics Panel nutzt denselben React-Query-Key (`useHealthCheck`), daher werden Badge und neue CoreOfflineMessage-Sperren synchron mit diesem Health-Status aktualisiert.
+- Das Diagnostics Panel nutzt denselben React-Query-Key (`useHealthCheck`), daher werden Badge und neue CoreStatusBanner-Sperren synchron mit diesem Health-Status aktualisiert.
 - `C:\Users\mf4hr\saimor-core\core\app.py` enthält `http://localhost:3002` in `_allowed_origins`; der Next.js Dev-Port ist damit offiziell freigeschaltet.
 - Log-Vorgaben für Health-Checks sind in `docs/DIAGNOSTICS_LOGGING.md` dokumentiert und sollen bei jeder Session angewendet werden.
 
@@ -122,11 +122,17 @@ Alle Aussagen basieren auf überprüfbaren Dateien (siehe Abschnitt 7) und man
 ## 5. Roadmap bis Jan 2026
 1. **Stabilisierung der Core-Verbindung & Diagnostics (GEPLANT, KW 45)** – Health-Checks regelmäßig ausführen, CORS für Port 3002 final anpassen, Diagnostics-Badge als Standard-Testschritt etablieren.
 2. **OrbFilter + Chat-Datasource live schalten (GEPLANT, KW 46)** – Lens/Objects wirklich über `?orb` filtern, `MoraChat` auf `useChatData` umziehen und Source-Toggle exponieren.
-3. **Fallback-UX & 3D-Mycelium solidifizieren (GEPLANT, KW 47)** – `CoreOfflineMessage` zentral einsetzen, optionale Rückkehr zur React-Three-Fiber-Szene wenn WebGL stabil ist.
+3. **Fallback-UX & 3D-Mycelium solidifizieren (GEPLANT, KW 47)** – `CoreStatusBanner` zentral einsetzen, optionale Rückkehr zur React-Three-Fiber-Szene wenn WebGL stabil ist.
 4. **LLM-Switch Vorarbeit + Deployment-Pfade (GEPLANT, KW 48–50)** – Backend-ENV `LLM_PROVIDER` testen, Ollama-Guides anwenden, Vercel/Hetzner Deployment finalisieren inkl. Auth-Plan.
 5. **Demo/Prod Readiness (GEPLANT, bis Jan 2026)** – End-to-End Testlauf mit echtem Core, Workflows mit n8n-Webhooks, Monitoring/Latency in Diagnostics ergänzen.
 
 ---
+
+## 5. Demo-View-Zustände
+- **Field Mode** – Zeigt Spinner „Môra sammelt Field-Daten …“, sobald Snapshots geladen werden. Wenn keine Nodes im aktuellen Snapshot vorhanden sind, erscheint der Hinweis „Noch keine Field-Impulse“; Auswahl synchronisiert weiter ins Insights-Panel.
+- **Folder Mode** – Leerer Folder meldet „Keine Dokumente im aktuellen Blick“, Hover-Toolbar ist auch per Tastatur erreichbar (Fokus blendet Quick Actions ein).
+- **Insights Panel** – Ohne Auswahl fordert das Context-Panel klar auf, ein Objekt im Field oder Folder zu wählen; bei Offline/Auth greift der CoreStatusBanner mit identischem Retry-Flow.
+- **Môra Chat** – Offline/Auth nutzt ebenfalls den CoreStatusBanner; Header weist explizit auf den Demo-Modus hin, Antworten spiegeln weiterhin Mock-Objects wider.
 
 ## 6. Offene Punkte / TODOs
 - **Diagnostics Logging** – Health/Ping funktioniert; es fehlt weiterhin ein klarer Prozess, wann Panel-Ergebnisse dokumentiert werden (z. B. automatischer Logeintrag).
@@ -140,7 +146,7 @@ Alle Aussagen basieren auf überprüfbaren Dateien (siehe Abschnitt 7) und man
 - `README.md` – Quickstart, ENV-Doku, Diagnostics-/Chat-Hinweise (Stand 2025-11-10).
 - `.env.local.example` – Vollständige Liste der benötigten Variablen.
 - `lib/config.ts`, `lib/api.ts`, `lib/hooks/useApi.ts`, `lib/hooks/useChatData.ts` – Technische Implementierung der beschriebenen Systeme.
-- `components/diagnostics/DiagnosticsPanel.tsx`, `components/errors/CoreOfflineMessage.tsx`, `components/lens/OrbFilter.tsx`, `components/chat/MoraChat.tsx`, `components/canvas/FieldMode.tsx`, `components/insights/WorkflowRunner.tsx` – Codebelege für den IST-Stand der Module.
+- `components/diagnostics/DiagnosticsPanel.tsx`, `components/errors/CoreStatusBanner.tsx`, `components/lens/OrbFilter.tsx`, `components/chat/MoraChat.tsx`, `components/canvas/FieldMode.tsx`, `components/insights/WorkflowRunner.tsx` – Codebelege für den IST-Stand der Module.
 - `docs/DIAGNOSTICS_LOGGING.md`, `docs/DIAGNOSTICS_EXPORT_GUIDE.md`, `docs/LLM_SWITCH.md` – Logging-/Export- bzw. LLM-Spezifikationen.
 - `CORS_REQUIREMENT.md`, `TEST_GUIDE.md`, `DEMO_GUIDE.md` – Hintergrund für Port-/Testing-Details (teils veraltet, aber Fakten geprüft).
 
@@ -150,3 +156,74 @@ Alle Aussagen in diesem Dokument wurden gegen diese Quellen abgeglichen; ältere
 
 **Letztes Update:** 2025‑11‑11 · Verantwortlich: Codex Agent  
 Dieses Dokument ersetzt alle vorherigen Status-Zusammenfassungen für mora-ui.
+
+
+## Demo State Reference
+
+### Field Mode
+- **Loading:** Spinner + Text "Mora sammelt Snapshot-Daten. Einen Moment bitte." solange keine Live-Snapshots vorhanden sind.
+- **Empty:** Hinweis "Keine Objekte im aktuellen Snapshot." mit Verweis auf Timeline/Quellen.
+- **Selection:** Fokus erzeugt einen goldenen Ring, ContextPanel/Insights aktualisiert sofort.
+- **Offline:** Canvas zeigt automatisch den `CoreStatusBanner` (auth/offline konsistent).
+
+### Folder Mode
+- **Empty:** Hinweis "In diesem Ordner liegen aktuell keine Objekte. Verbinde ...".
+- **Sortierung:** Buttons "Name"/"Modified" mit aktivem State + Tastatur-Toolbar bleibt stabil.
+- **Filter-Hinweis:** Aktive Filter werden neben dem Counter visualisiert.
+
+### Insights Panel
+- **No selection:** Neutraler Text "Waehle ein Objekt im Field oder Folder, dann halte ich hier die Details fest."
+- **Selection:** Titel, Typ, Space-Fallback, Demo-Tags + Quick-Actions mit Demo-Toasts.
+- **Offline:** Kompakter Banner aus `CoreStatusBanner`.
+
+### Mora Chat
+- **Offline/Auth:** `CoreStatusBanner` blockt Eingaben.
+- **Keine Daten:** Hinweisbox + Demo-Antwort "Du hast gefragt ... Demo-Modus: Es sind noch keine Objekte geladen."
+- **Fallback:** Jede Antwort echos die Eingabe und endet mit "(Demo-Modus - Mora liefert spaeter ...)".
+
+### Wave 3 Manual Checks
+1. `/field` ohne Daten laden → Spinner erscheint; danach Mock-Daten aktivieren und auf Node klicken → ContextPanel aktualisiert sich.
+2. `/field` Timeline klicken → aktiver Snapshot-Chip zeigt Glow, Reset/View Buttons funktionieren.
+3. `/folder` Filter setzen, leeren und per Tab in eine Row wechseln → Hover-Toolbar reagiert, Sortierbuttons wechseln Reihenfolge (Name vs. Modified).
+4. `/insights` ohne Auswahl starten → Intro-Text sichtbar; danach Objekt waehlen → Titel/Typ/Quick-Actions inklusive Demo-Hinweis.
+5. Mora Chat oeffnen → Offline (falls Health down) zeigt Banner; ohne Objekte Nachricht senden → Echo + Demo-Text; nach Mock-Sync erscheinen normale Listen/Suchen.
+
+## Wave 4 - Demo Journey
+- Home Intro weist klar auf Demo-Kontext hin (Mock-Daten, keine Produktion) und bietet einen CTA zum Neustart des Onboardings.
+- Pulse-Card zeigt Core-Status (online/offline/auth), aktive Connectoren und letzten Health-Timestamp; Buttons fuer Diagnostics und Mock-Sync.
+- Onboarding-Overlay fuehrt durch 3 Schritte: Verbindungen simulieren, Myzel ansehen, Chat testen (alles lokal gespeichert).
+- Diagnostics ist von Home aus erreichbar (Button oeffnet das bestehende Panel), Pulse/Banner bleiben konsistent.
+- Gefuehrter Flow listet naechste Schritte und Links zu Field/Folder.
+
+### Wave 4 Manual Checks
+1. Home laden: Overlay erscheint bei Erstbesuch oder via "Onboarding anzeigen".
+2. Pulse-Card zeigt Core-Status und Connector-Zahl; Health offline simulieren ? Text wechselt.
+3. Mock-Sync starten ? Connector-Karten springen auf "connected", Pulse-Card spiegelt die Anzahl.
+4. "Diagnostics oeffnen" klickt ? Panel sichtbar; Status deckt sich mit Pulse/Banner.
+5. CTAs zu Field/Folder/Chat funktionieren; Chat ohne Daten echos Eingabe mit Demo-Hinweis.
+
+## Wave 5 Stage 1 - Home/Pulse/Onboarding
+- Hero: rolle-aware Chips (Demo-Raum, Rolle, Stage), Role-Message bleibt erhalten, CTA + kleiner Onboarding-Reset.
+- Pulse: kompakte Karte mit Core-Status, Connector-Anzahl und letztem Check; Aktionen fuer Diagnostics, Mock-Sync und Health-Refresh.
+- Onboarding: 3 Schritte (Mock- oder echte Quellen, Field ansehen, Chat testen); auto beim ersten Besuch, jederzeit ueber CTA erneut oeffnbar.
+- Layout: Sektionen auf max-w-6xl begrenzt, Awareness/Steps bleiben bestehen, Demo-Hinweise sind sachlich.
+
+### Wave 5 Stage 1 Manual Checks
+1. Home laden -> Hero-Chips (Demo-Raum/Rolle/Stage) und CTA sehen.
+2. Pulse-Karte zeigt Core-Status, Connector-Zahl, "Zuletzt geprueft"; Buttons fuer Diagnostics/Mock-Sync/Health-Refresh klicken.
+3. Onboarding anzeigen -> Overlay mit 3 Schritten, Weiter/Schliessen reagiert.
+4. Awareness-Block zeigt letzte Impulse oder Fallback; Links zu Field/Folder bleiben erreichbar.
+5. Mock-Sync aus Pulse oder Schritt 1 starten -> Connector-Karten und Pulse aktualisieren sich.
+
+## Wave 5 Stage 2 - Field/Folder/Insights/Chat
+- Field: Header/section framing im Myzel, ruhige Toolbar + Timeline im Kartenrahmen; Fokus-Gold bleibt, Reset/Legende unveraendert.
+- Folder: Oberer Abschnitt mit Listen-Hero, gleiche Sort/Filter/Empty-States, Toolbar/A11y unveraendert.
+- Insights/Context: Kompakte Meta-Header-Karte (Kein Objekt / Objekt ausgewaehlt), Tags/Quick-Actions bleiben, Rahmen vereinheitlicht.
+- Chat: Panel-Radius/Border wie Home, Bubbles gruppiert, Input-Bar an Home-Form-Style; Antwort-Logik bleibt Demo, zentraler Reply-Hook fuer spaetere Real-API.
+
+### Wave 5 Stage 2 Manual Checks
+1. Field �ffnen -> Header (Myzel-Ansicht), Toolbar-Chips, goldener Fokus + Timeline-Chips wie zuvor.
+2. Snapshot ohne Nodes -> Empty-State bleibt; Reset/Zoom/Legend funktionieren.
+3. Folder �ffnen -> neuer Listen-Hero, Sortierung Name/Modified funktioniert, Hover-Toolbar per Tastatur weiterhin sichtbar; Empty-State klar.
+4. Insights �ffnen -> ContextPanel zeigt Meta-Header; kein Objekt vs. Objekt gew�hlt (Titel/Typ/Tags/Actions) bleibt funktionsgleich.
+5. Chat togglen -> Banner bei Offline/Auth unveraendert, Echo-Antwort im Demo-Modus, Input-Bar und Bubbles im neuen Layout.

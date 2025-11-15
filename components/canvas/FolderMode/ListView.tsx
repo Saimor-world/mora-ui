@@ -188,254 +188,291 @@ export default function ListView() {
   const hasInlinePreview = Boolean(inlinePreviewObject);
 
   return (
-    <div className="p-4">
-      <div className={`grid gap-6 ${hasInlinePreview ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : ''}`}>
-        <div>
-          {isLoading && (
-            <div className="flex items-center justify-center py-16">
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative w-16 h-16">
-                  <div className="absolute inset-0 rounded-full bg-primary/20 mora-breathe" />
-                  <div className="absolute inset-2 rounded-full bg-primary/30 mora-breathe" style={{ animationDelay: '0.2s' }} />
-                  <div className="absolute inset-4 rounded-full bg-primary/40 mora-breathe" style={{ animationDelay: '0.4s' }} />
+    <div className="px-4 sm:px-6 py-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="rounded-2xl border border-border/70 bg-card/80 p-4 lg:p-5 shadow-sm flex items-start justify-between gap-3 flex-wrap">
+          <div className="space-y-1">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-muted-foreground">Ordneransicht</p>
+            <h2 className="text-xl font-semibold">Listenansicht</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Strukturierte Sicht auf deine Objekte. Filter, Sortierung und Inline-Preview bleiben aktiv.
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {hasFilters ? 'Filter aktiv' : 'Alle Objekte'}
+          </div>
+        </div>
+
+        <div className={`grid gap-6 ${hasInlinePreview ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : ''}`}>
+          <div className="space-y-4">
+            {isLoading && (
+              <div className="flex items-center justify-center py-16">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative w-16 h-16">
+                    <div className="absolute inset-0 rounded-full bg-primary/20 mora-breathe" />
+                    <div className="absolute inset-2 rounded-full bg-primary/30 mora-breathe" style={{ animationDelay: '0.2s' }} />
+                    <div className="absolute inset-4 rounded-full bg-primary/40 mora-breathe" style={{ animationDelay: '0.4s' }} />
+                  </div>
+                  <p className="text-sm text-muted-foreground tracking-wide">Loading objects...</p>
                 </div>
-                <p className="text-sm text-muted-foreground tracking-wide">Loading objects...</p>
               </div>
-            </div>
-          )}
+            )}
 
-          {error && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <p className="text-sm text-destructive mb-2">Failed to load objects</p>
-                <p className="text-xs text-muted-foreground">Check API connection</p>
+            {error && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <p className="text-sm text-destructive mb-2">Failed to load objects</p>
+                  <p className="text-xs text-muted-foreground">Check API connection</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {!isLoading && !error && (
-            <>
-              {selectedRows.size > 0 && (
-                <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-border bg-card/90 px-4 py-3 flex items-center justify-between shadow">
-                  <span className="text-sm font-medium">{selectedRows.size} ausgewählt</span>
-                  <div className="flex items-center gap-2 text-xs">
+            {!isLoading && !error && (
+              <>
+                {selectedRows.size > 0 && (
+                  <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-border bg-card/90 px-4 py-3 flex items-center justify-between shadow">
+                    <span className="text-sm font-medium">{selectedRows.size} ausgewählt</span>
+                    <div className="flex items-center gap-2 text-xs">
+                      <button
+                        onClick={markSelectionReviewed}
+                        className="px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                      >
+                        ✓ Mark reviewed
+                      </button>
+                      <button
+                        onClick={copySelectionPaths}
+                        className="px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80"
+                      >
+                        📋 Copy paths
+                      </button>
+                      <button
+                        onClick={() => setSelectedRows(new Set())}
+                        className="px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground"
+                        aria-label="Auswahl löschen"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                    <span>{sortedObjects.length} objects</span>
+                    {orb !== 'all' && (
+                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                        Orb: {orb}
+                      </span>
+                    )}
+                    {activeTagFilter && (
+                      <button
+                        onClick={() => setActiveTagFilter(null)}
+                        className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 text-xs font-medium hover:bg-amber-500/30 mora-transition"
+                      >
+                        #{activeTagFilter} entfernen
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
                     <button
-                      onClick={markSelectionReviewed}
-                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                      onClick={() => setSortBy('name')}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${
+                        sortBy === 'name'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary hover:bg-secondary/80'
+                      }`}
+                      aria-pressed={sortBy === 'name'}
+                      title="Nach Name sortieren"
                     >
-                      ✓ Mark reviewed
+                      Name
                     </button>
                     <button
-                      onClick={copySelectionPaths}
-                      className="px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80"
+                      onClick={() => setSortBy('modified')}
+                      className={`px-3 py-1 rounded text-sm transition-colors ${
+                        sortBy === 'modified'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary hover:bg-secondary/80'
+                      }`}
+                      aria-pressed={sortBy === 'modified'}
+                      title="Nach Aktualitaet sortieren"
                     >
-                      📋 Copy paths
-                    </button>
-                    <button
-                      onClick={() => setSelectedRows(new Set())}
-                      className="px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground"
-                      aria-label="Auswahl löschen"
-                    >
-                      ×
+                      Modified
                     </button>
                   </div>
                 </div>
-              )}
+                <p className="text-xs text-muted-foreground italic mb-4">{roleDefinition.folderHint}</p>
 
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-                  <span>{sortedObjects.length} objects</span>
-                  {orb !== 'all' && (
-                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      Orb: {orb}
-                    </span>
-                  )}
-                  {activeTagFilter && (
-                    <button
-                      onClick={() => setActiveTagFilter(null)}
-                      className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 text-xs font-medium hover:bg-amber-500/30 mora-transition"
-                    >
-                      #{activeTagFilter} entfernen
-                    </button>
-                  )}
+                {sortedObjects.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-sm text-muted-foreground gap-2">
+                    <p className="font-semibold text-foreground">In diesem Ordner liegen aktuell keine Objekte.</p>
+                    <p>
+                      {hasFilters
+                        ? 'Passe Filter oder Orb an, dann kehren die Dokumente zurueck.'
+                        : 'Verbinde zuerst eine Quelle - danach tauchen hier die Dokumente auf.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {sortedObjects.map((obj) => {
+                      const isSelected = selected === obj.id;
+                      const isHovered = hoveredRow === obj.id;
+                      const isPreviewed = inlinePreviewId === obj.id;
+                      const showToolbar = isHovered;
+                      const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+                        const nextFocus = event.relatedTarget as Node | null;
+                        if (!event.currentTarget.contains(nextFocus)) {
+                          setHoveredRow((current) => (current === obj.id ? null : current));
+                        }
+                      };
+                      return (
+                        <div
+                          key={obj.id}
+                          onClick={() => handleSelect(obj)}
+                          onDoubleClick={() => handlePreview(obj)}
+                          onMouseEnter={() => setHoveredRow(obj.id)}
+                          onMouseLeave={() => setHoveredRow(null)}
+                          onFocus={() => setHoveredRow(obj.id)}
+                          onBlur={handleBlur}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') handleSelect(obj);
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          className={`group relative flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-300 text-left ${
+                            isSelected
+                              ? 'bg-primary/15 border border-primary/50 shadow-[0_0_30px_rgba(34,197,94,0.18)]'
+                              : isHovered
+                              ? 'bg-secondary/30 border border-secondary/60'
+                              : 'border border-transparent hover:bg-secondary/20 hover:border-secondary/60'
+                          } ${isPreviewed ? 'ring-1 ring-primary/40' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.has(obj.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => handleRowCheckbox(obj.id, e.target.checked)}
+                            aria-label={`Objekt ${obj.title} auswählen`}
+                          />
+                          <span className="text-xl">
+                            {obj.type === 'file' ? '📄' :
+                             obj.type === 'link' ? '🔗' :
+                             obj.type === 'note' ? '📝' :
+                             obj.type === 'email' ? '✉️' :
+                             obj.type === 'task' ? '✓' : '🌱'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span data-testid="folder-title" className="font-semibold text-left">{obj.title}</span>
+                              {obj.tags && obj.tags.length > 0 && (
+                                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary">
+                                  #{obj.tags[0]}
+                                </span>
+                              )}
+                              {obj.source === 'mock' && (
+                                <span className="text-[10px] uppercase tracking-wide text-amber-500">Demo</span>
+                              )}
+                              {reviewedIds.has(obj.id) && (
+                                <span className="text-[10px] text-green-500">Reviewed</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {obj.path || obj.url || obj.spaceId}
+                            </p>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatTimeAgo(obj.ts)}
+                          </div>
+
+                          {showToolbar && (
+                            <div className="absolute right-2 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg px-2 py-1 mora-transition shadow-lg">
+                              <button
+                                onClick={(e) => handlePreview(obj, e)}
+                                className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
+                                title="Preview"
+                                aria-label={`Preview ${obj.title}`}
+                              >
+                                👁️
+                              </button>
+                              <button
+                                onClick={(e) => handleOpenExternal(obj, e)}
+                                className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
+                                title="Open Source"
+                                aria-label={`Quelle von ${obj.title} öffnen`}
+                              >
+                                🔍
+                              </button>
+                              <button
+                                onClick={(e) => handleCopyPath(obj, e)}
+                                className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
+                                title="Copy Path"
+                                aria-label={`Pfad von ${obj.title} kopieren`}
+                              >
+                                📋
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {inlinePreviewObject && (
+            <aside className="rounded-3xl border border-border bg-card/80 p-4 shadow-xl flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase">Inline Preview</p>
+                  <h3 className="text-lg font-semibold">{inlinePreviewObject.title}</h3>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSortBy('name')}
-                    className={`px-3 py-1 rounded text-sm transition-colors ${
-                      sortBy === 'name'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary hover:bg-secondary/80'
-                    }`}
-                  >
-                    Name
-                  </button>
-                  <button
-                    onClick={() => setSortBy('modified')}
-                    className={`px-3 py-1 rounded text-sm transition-colors ${
-                      sortBy === 'modified'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary hover:bg-secondary/80'
-                    }`}
-                  >
-                    Modified
-                  </button>
-                </div>
+                <button
+                  onClick={() => setInlinePreviewId(null)}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                  aria-label="Inline Preview schließen"
+                >
+                  ×
+                </button>
               </div>
-              <p className="text-xs text-muted-foreground italic mb-4">{roleDefinition.folderHint}</p>
-
-              {sortedObjects.length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                  <p className="text-sm text-muted-foreground">
-                    Keine Objekte gefunden. {hasFilters ? 'Filter zurücksetzen?' : 'Verbinde zuerst eine Quelle.'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {sortedObjects.map((obj) => {
-                    const isSelected = selected === obj.id;
-                    const isHovered = hoveredRow === obj.id;
-                    const isPreviewed = inlinePreviewId === obj.id;
-                    return (
-                      <div
-                        key={obj.id}
-                        onClick={() => handleSelect(obj)}
-                        onDoubleClick={() => handlePreview(obj)}
-                        onMouseEnter={() => setHoveredRow(obj.id)}
-                        onMouseLeave={() => setHoveredRow(null)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') handleSelect(obj);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        className={`group relative flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-all duration-300 text-left ${
-                          isSelected
-                            ? 'bg-primary/15 border border-primary/50 shadow-[0_0_30px_rgba(34,197,94,0.18)]'
-                            : isHovered
-                            ? 'bg-secondary/30 border border-secondary/60'
-                            : 'border border-transparent hover:bg-secondary/20 hover:border-secondary/60'
-                        } ${isPreviewed ? 'ring-1 ring-primary/40' : ''}`}
-                      >
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.has(obj.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleRowCheckbox(obj.id, e.target.checked)}
-                        aria-label={`Objekt ${obj.title} auswählen`}
-                      />
-                      <span className="text-xl">
-                        {obj.type === 'file' ? '📄' :
-                         obj.type === 'link' ? '🔗' :
-                         obj.type === 'note' ? '📝' :
-                         obj.type === 'email' ? '✉️' :
-                         obj.type === 'task' ? '✓' : '🌱'}
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>{inlinePreviewObject.type}</div>
+                <div className="font-mono break-all">{inlinePreviewObject.path || inlinePreviewObject.url || inlinePreviewObject.spaceId}</div>
+                {inlinePreviewObject.tags && inlinePreviewObject.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {inlinePreviewObject.tags.map((tag) => (
+                      <span key={tag} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        #{tag}
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-left">{obj.title}</span>
-                          {obj.tags && obj.tags.length > 0 && (
-                            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary">
-                              #{obj.tags[0]}
-                            </span>
-                          )}
-                          {obj.source === 'mock' && (
-                            <span className="text-[10px] uppercase tracking-wide text-amber-500">Demo</span>
-                          )}
-                          {reviewedIds.has(obj.id) && (
-                            <span className="text-[10px] text-green-500">Reviewed</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {obj.path || obj.url || obj.spaceId}
-                        </p>
-                      </div>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatTimeAgo(obj.ts)}
-                      </div>
-
-                      {hoveredRow === obj.id && (
-                        <div className="absolute right-2 flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg px-2 py-1 mora-transition shadow-lg">
-                          <button
-                            onClick={(e) => handlePreview(obj, e)}
-                            className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
-                            title="Preview"
-                          >
-                            👁️
-                          </button>
-                          <button
-                            onClick={(e) => handleOpenExternal(obj, e)}
-                            className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
-                            title="Open Source"
-                          >
-                            🔍
-                          </button>
-                          <button
-                            onClick={(e) => handleCopyPath(obj, e)}
-                            className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
-                            title="Copy Path"
-                          >
-                            📋
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="mt-auto flex flex-col gap-2">
+                <button
+                  onClick={(e) => handlePreview(inlinePreviewObject, e)}
+                  className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
+                >
+                  In Viewer öffnen
+                </button>
+                <button
+                  onClick={(e) => handleOpenExternal(inlinePreviewObject, e)}
+                  className="w-full px-3 py-2 rounded-xl border border-border text-sm"
+                >
+                  Quelle öffnen
+                </button>
+              </div>
+            </aside>
           )}
         </div>
 
-        {inlinePreviewObject && (
-          <aside className="rounded-3xl border border-border bg-card/80 p-4 shadow-xl flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase">Inline Preview</p>
-                <h3 className="text-lg font-semibold">{inlinePreviewObject.title}</h3>
-              </div>
-              <button
-                onClick={() => setInlinePreviewId(null)}
-                className="text-sm text-muted-foreground hover:text-foreground"
-                aria-label="Inline Preview schließen"
-              >
-                ×
-              </button>
-            </div>
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div>{inlinePreviewObject.type}</div>
-              <div className="font-mono break-all">{inlinePreviewObject.path || inlinePreviewObject.url || inlinePreviewObject.spaceId}</div>
-              {inlinePreviewObject.tags && inlinePreviewObject.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {inlinePreviewObject.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="mt-auto flex flex-col gap-2">
-              <button
-                onClick={(e) => handlePreview(inlinePreviewObject, e)}
-                className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
-              >
-                In Viewer öffnen
-              </button>
-              <button
-                onClick={(e) => handleOpenExternal(inlinePreviewObject, e)}
-                className="w-full px-3 py-2 rounded-xl border border-border text-sm"
-              >
-                Quelle öffnen
-              </button>
-            </div>
-          </aside>
+        {viewerOpen && viewerObject && (
+          <DocumentViewer object={viewerObject} onClose={() => setViewerOpen(false)} />
         )}
       </div>
-
-      {viewerOpen && viewerObject && (
-        <DocumentViewer object={viewerObject} onClose={() => setViewerOpen(false)} />
-      )}
     </div>
   );
 }
+
+
+

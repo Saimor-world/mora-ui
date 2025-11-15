@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
 import Timeline from './FieldMode/Timeline';
@@ -39,6 +39,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   const snapshotTimestamps = useMemo(() => snapshots.map((s) => s.ts), [snapshots]);
   const snapshotHasNodes = (snapshot?.nodes?.length ?? 0) > 0;
   const snapshotLabel = `t${currentSnapshot}`;
+  const showLoadingState = isLoading && !hasLiveSnapshots;
 
   useEffect(() => {
     if (snapshot?.ts) {
@@ -68,48 +69,71 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Toolbar */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-wrap">
-          <h2 className="text-lg font-semibold">🌐 Field Mode</h2>
-          {snapshot && (
-            <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-              Snapshot {snapshot.ts} • {snapshot.nodes?.length || 0} nodes • {snapshot.edges?.length || 0} edges
-            </div>
-          )}
-          <FilterBadge />
-          <div className="text-sm text-muted-foreground">
-            {isLoading ? 'Loading snapshots...' : error ? 'Using offline data' : 'Live data'}
+    <div className="h-full flex flex-col bg-gradient-to-b from-background via-card/20 to-background">
+      {/* Section header */}
+      <div className="border-b border-border/60 bg-card/80 px-4 sm:px-6 py-5">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-muted-foreground">Myzel-Ansicht</p>
+            <h2 className="text-2xl font-semibold leading-tight">Field Mode</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {roleDefinition.fieldHint}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end text-xs text-muted-foreground">
+            <span className="px-3 py-1 rounded-full border border-border/70 bg-card/70">
+              {isLoading ? 'Snapshots werden geladen' : error ? 'Offline-Daten' : 'Live-Daten'}
+            </span>
+            {snapshot && (
+              <span className="px-3 py-1 rounded-full border border-border/70 bg-card/70">
+                Snapshot {snapshot.ts}
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#F5B800]" />
-            <span className="text-muted-foreground">Project</span>
+      </div>
+
+      {/* Toolbar */}
+      <div className="border-b border-border/60 bg-card/60 px-4 sm:px-6 py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            {snapshot && (
+              <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                {snapshot.nodes?.length || 0} Objekte · {snapshot.edges?.length || 0} Verbindungen
+              </div>
+            )}
+            <FilterBadge />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#60A5FA]" />
-            <span className="text-muted-foreground">Document</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#34D399]" />
-            <span className="text-muted-foreground">Code</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#F472B6]" />
-            <span className="text-muted-foreground">Insight</span>
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#F5B800]" />
+              <span className="text-muted-foreground">Project</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#60A5FA]" />
+              <span className="text-muted-foreground">Document</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#34D399]" />
+              <span className="text-muted-foreground">Code</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#F472B6]" />
+              <span className="text-muted-foreground">Insight</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 3D Scene */}
-      <div className="flex-1 relative">
-        {isLoading ? (
-          <div className="h-full flex items-center justify-center">
+      <div className="flex-1 relative px-4 sm:px-6 py-4">
+        {showLoadingState ? (
+          <div className="h-full flex items-center justify-center" role="status" aria-live="polite">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading 3D data...</p>
+              <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground">
+                Mora sammelt Snapshot-Daten. Einen Moment bitte.
+              </p>
             </div>
           </div>
         ) : snapshotHasNodes ? (
@@ -140,7 +164,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                   onClick={handleResetView}
                   className="ml-auto px-2 py-1 rounded-md bg-secondary hover:bg-secondary/80 text-xs mora-transition"
                 >
-                  Reset View
+                  Ansicht zuruecksetzen
                 </button>
               </div>
               <div className="text-muted-foreground space-y-1">
@@ -159,7 +183,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                   onClick={() => setShowTelemetry((prev) => !prev)}
                   className="px-3 py-1.5 rounded-full bg-card/80 border border-border text-xs font-semibold shadow"
                 >
-                  {showTelemetry ? 'Telemetry ▲' : 'Telemetry ▼'}
+                  {showTelemetry ? 'Telemetry ausblenden' : 'Telemetry anzeigen'}
                 </button>
                 {showTelemetry && graphStats && (
                   <div className="px-3 py-2 rounded-2xl bg-card/80 border border-border text-xs shadow">
@@ -178,34 +202,34 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                 className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
                 aria-label="Zoom out"
               >
-                −
+                -
               </button>
               <button
                 onClick={handleResetView}
                 className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
                 aria-label="Ansicht zentrieren"
               >
-                ⟳
+                Center
               </button>
               <button
                 onClick={() => graphRef.current?.fitView()}
                 className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
                 aria-label="Fit to view"
               >
-                ⤢
+                Fit
               </button>
               <button
                 onClick={handleTimelineJump}
                 className="w-10 h-10 rounded-full bg-card/90 border border-border shadow flex items-center justify-center text-base hover:bg-card"
                 aria-label="Zum neuesten Snapshot springen"
               >
-                ⇥
+                Neu
               </button>
             </div>
 
             {/* Node Detail Panel */}
             {selectedNode && (
-              <div className="absolute top-4 right-4 w-80 bg-card/95 backdrop-blur-sm border border-border rounded-lg p-4 text-sm shadow-xl">
+              <div className="absolute top-4 right-4 w-80 bg-card/95 backdrop-blur-sm border border-border rounded-2xl p-4 text-sm shadow-xl">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div
@@ -226,22 +250,22 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                   </div>
                   <button
                     onClick={() => setSelectedNode(null)}
-                    className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                    className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0 text-xs px-2 py-1 rounded-full border border-border/80"
                   >
-                    ✕
+                    Schliessen
                   </button>
                 </div>
 
                 <div className="space-y-3">
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">Type</div>
-                    <div className="text-foreground capitalize">{selectedNode.type || '—'}</div>
+                    <div className="text-foreground capitalize">{selectedNode.type || 'â€”'}</div>
                   </div>
 
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">Path</div>
                     <div className="text-foreground font-mono text-xs break-all">
-                      {selectedNode.path || selectedNode.spaceId || '—'}
+                      {selectedNode.path || selectedNode.spaceId || 'â€”'}
                     </div>
                   </div>
 
@@ -273,7 +297,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-foreground">—</div>
+                      <div className="text-foreground">-</div>
                     )}
                   </div>
 
@@ -294,7 +318,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">Created</div>
                     <div className="text-foreground">
-                      {selectedNode.ts ? new Date(selectedNode.ts).toLocaleString() : '—'}
+                      {selectedNode.ts ? new Date(selectedNode.ts).toLocaleString() : '-'}
                     </div>
                   </div>
                 </div>
@@ -303,21 +327,29 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-4">
-            <div className="text-primary font-semibold">No snapshot data available</div>
-            <p className="text-sm text-muted-foreground">
-              Could not load timeline data from the Core API. Showing fallback mock data once available.
-              Please ensure the API is running on <code className="px-1">http://localhost:8081</code> or refresh to retry.
+            <div className="text-primary font-semibold">Keine Objekte im aktuellen Snapshot.</div>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Verbinde eine Quelle oder waehle eine andere Timeline, damit Mora das Myzel aufbauen kann.
             </p>
           </div>
         )}
       </div>
 
       {/* Timeline */}
-      <Timeline
-        snapshots={snapshotTimestamps}
-        current={currentSnapshot}
-        onChange={setCurrentSnapshot}
-      />
+      <div className="px-4 sm:px-6 pb-6 bg-card/40 border-t border-border/60">
+        <div className="max-w-6xl mx-auto">
+          <Timeline
+            snapshots={snapshotTimestamps}
+            current={currentSnapshot}
+            onChange={setCurrentSnapshot}
+          />
+        </div>
+      </div>
     </div>
   );
 }
+
+
+
+
+
