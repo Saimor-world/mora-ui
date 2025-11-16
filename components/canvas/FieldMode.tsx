@@ -13,6 +13,7 @@ import type { MoraObject } from '@/lib/types';
 import { useSessionStore } from '@/store/session';
 import { emitMoraEvent } from '@/lib/mora/listener';
 import { useRole } from '@/lib/hooks/useRole';
+import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
 
 interface FieldModeProps {
   onNodeSelect?: (node: MoraObject) => void;
@@ -27,6 +28,8 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   const setLastSnapshotId = useSessionStore((state) => state.setLastSnapshotId);
   const graphRef = useRef<MyceliumGraph2DRef>(null);
   const { definition: roleDefinition } = useRole();
+  const { selection } = useMyceliumSelection();
+  const { setSelection } = useMyceliumSelection();
 
   // Fetch real snapshots from API
   const { data: apiSnapshots, isLoading, error } = useSnapshots();
@@ -57,6 +60,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
     });
     setSelectedNode(node);
     onNodeSelect?.(node);
+    setSelection({ kind: 'node', node: mapObjectToNode(node), object: node });
   };
 
   const handleResetView = () => {
@@ -103,6 +107,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
               </div>
             )}
             <FilterBadge />
+            <span className="text-xs text-muted-foreground">Myzel deines Teams: Klick auf einen Knoten, der Kontext fließt in Insights & Chat.</span>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <div className="flex items-center gap-2">
@@ -126,7 +131,8 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
       </div>
 
       {/* 3D Scene */}
-      <div className="flex-1 relative px-4 sm:px-6 py-6">
+      <div className="flex-1 relative px-4 sm:px-6 py-6 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.08),transparent_40%),radial-gradient(circle_at_80%_10%,rgba(234,179,8,0.08),transparent_42%)]">
+        <div className="absolute inset-2 pointer-events-none border border-border/50 rounded-3xl opacity-40 blur-[1px]" aria-hidden="true" />
         {showLoadingState ? (
           <div className="h-full flex items-center justify-center" role="status" aria-live="polite">
             <div className="flex flex-col items-center gap-3">
@@ -144,6 +150,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
               onNodeClick={handleNodeClick}
               resetSignal={resetSignal}
               focusNodeId={selectedNode?.id ?? null}
+              selectedNodeId={selection.kind === 'node' ? selection.node.id : null}
               onStatsChange={setGraphStats}
             />
 

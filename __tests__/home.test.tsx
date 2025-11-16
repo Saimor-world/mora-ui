@@ -40,6 +40,13 @@ const sessionState = {
   setIntroSeen: jest.fn((value?: boolean) => {
     sessionState.introSeen = value ?? true;
   }),
+  myceliumSelection: { kind: 'none' as const },
+  setMyceliumSelection: jest.fn((selection) => {
+    sessionState.myceliumSelection = selection;
+  }),
+  clearMyceliumSelection: jest.fn(() => {
+    sessionState.myceliumSelection = { kind: 'none' as const };
+  }),
   setLastViewedNode: jest.fn(),
   setActiveOrb: jest.fn(),
   activeRole: 'owner',

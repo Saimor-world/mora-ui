@@ -18,6 +18,7 @@ interface MyceliumGraph2DProps {
   focusNodeId?: string | null;
   onStatsChange?: (stats: GraphStats) => void;
   prefersReducedMotion?: boolean;
+  selectedNodeId?: string | null;
 }
 
 interface NodePosition {
@@ -52,6 +53,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
       focusNodeId = null,
       onStatsChange,
       prefersReducedMotion,
+      selectedNodeId = null,
     },
     ref
   ) => {
@@ -312,10 +314,16 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           const seedShift = (Math.sin((energySeed % 7) * 0.3) + 1) * 0.02;
           const baseAlpha = faded ? 0.04 : highlighted ? 0.32 : 0.12 + seedShift;
           const edgeAlpha = Math.max(0.04, (baseAlpha + shimmer) * organicVariance);
-          ctx.strokeStyle = highlighted
+          const isSelectedEdge =
+            selectedNodeId &&
+            (edge.sourceId === selectedNodeId || edge.targetId === selectedNodeId);
+          ctx.strokeStyle = highlighted || isSelectedEdge
             ? `rgba(248, 191, 77, ${edgeAlpha})`
             : `rgba(120, 200, 170, ${edgeAlpha * 0.9})`;
-          ctx.lineWidth = (edge.weight || 0.8) * (highlighted ? 2.4 : 1.3) * organicVariance;
+          ctx.lineWidth =
+            (edge.weight || 0.8) *
+            (highlighted || isSelectedEdge ? 2.5 : 1.3) *
+            organicVariance;
           ctx.lineCap = 'round';
           ctx.stroke();
         });
@@ -323,6 +331,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
         nodeArray.forEach((node) => {
           const isHovered = hoveredNode === node.id;
           const isFocus = focusNodeId === node.id;
+          const isSelected = selectedNodeId === node.id;
           const isNeighbor = !!focusNodeId && edgeMap.get(focusNodeId)?.has(node.id);
           const pulseStrength = pulses.get(node.id) ?? 0;
           const focusPresence =
@@ -343,7 +352,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
 
           ctx.globalAlpha = focusPresence;
 
-          const glowRadius = radius * (isFocus ? 3.2 : 2.4) * (1 + pulseStrength * 0.6);
+          const glowRadius = radius * (isFocus || isSelected ? 3.4 : 2.5) * (1 + pulseStrength * 0.6);
           const glow = ctx.createRadialGradient(
             node.x,
             node.y,
@@ -367,6 +376,14 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
           ctx.fillStyle = baseColor;
           ctx.fill();
+
+          // soft outline echoes
+          const outlineAlpha = isFocus || isSelected ? 0.45 : isHovered ? 0.22 : isNeighbor ? 0.16 : 0.1;
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius + (isSelected ? 6 : 4), 0, Math.PI * 2);
+          ctx.strokeStyle = hexToRgba(baseColor, outlineAlpha);
+          ctx.lineWidth = isFocus || isSelected ? 3 : 2;
+          ctx.stroke();
 
           ctx.beginPath();
           ctx.arc(node.x - radius / 3, node.y - radius / 3, radius / 2.5, 0, Math.PI * 2);
@@ -447,7 +464,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-    }, [snapshot, hoveredNode, zoom, panX, panY, fitToView, focusNodeId, reduceMotion, onStatsChange]);
+    }, [snapshot, hoveredNode, zoom, panX, panY, fitToView, focusNodeId, reduceMotion, onStatsChange, selectedNodeId]);
 
       useEffect(() => {
         if (!focusNodeId || reduceMotion) return;

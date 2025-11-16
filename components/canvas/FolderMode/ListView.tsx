@@ -8,6 +8,7 @@ import DocumentViewer from '@/components/documents/DocumentViewer';
 import type { MoraObject } from '@/lib/types';
 import { showToast } from '@/lib/toast';
 import { emitMoraEvent } from '@/lib/mora/listener';
+import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
 
 const REVIEWED_OBJECTS_KEY = 'mora_reviewed_objects';
 
@@ -37,6 +38,7 @@ export default function ListView() {
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
   const { setSelectedObject, orb, activeTagFilter, setActiveTagFilter } = useAppContext();
   const { definition: roleDefinition } = useRole();
+  const { selection, setSelection } = useMyceliumSelection();
 
   const filters: Record<string, string> = {};
   if (orb !== 'all') filters.orb = orb;
@@ -114,6 +116,7 @@ export default function ListView() {
     setSelected(obj.id);
     setSelectedObject(obj);
     setSelectedRows(new Set([obj.id]));
+    setSelection({ kind: 'node', node: mapObjectToNode(obj), object: obj });
   };
 
   const handlePreview = (obj: MoraObject, e?: React.MouseEvent) => {
@@ -134,10 +137,10 @@ export default function ListView() {
     const externalUrl = (obj as any).file_url || obj.url;
     if (externalUrl) {
       window.open(externalUrl, '_blank', 'noopener,noreferrer');
-      showToast({ message: 'Öffne in neuem Tab', variant: 'info' });
+      showToast({ message: 'Ãƒâ€“ffne in neuem Tab', variant: 'info' });
     } else {
       showToast({
-        message: 'Keine externe Quelle vorhanden – bitte Preview nutzen.',
+        message: 'Keine externe Quelle vorhanden Ã¢â‚¬â€œ bitte Preview nutzen.',
         variant: 'info',
       });
     }
@@ -169,7 +172,7 @@ export default function ListView() {
       persistReviewed(next);
       return next;
     });
-    showToast({ message: 'Als geprüft markiert', variant: 'info' });
+    showToast({ message: 'Als geprÃƒÂ¼ft markiert', variant: 'info' });
   };
 
   const copySelectionPaths = async () => {
@@ -195,7 +198,7 @@ export default function ListView() {
             <p className="text-[11px] uppercase tracking-[0.35em] text-muted-foreground">Ordneransicht</p>
             <h2 className="text-xl font-semibold">Listenansicht</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Strukturierte Sicht auf deine Objekte. Filter, Sortierung und Inline-Preview bleiben aktiv.
+              Wald-Ebene: strukturierte Sicht auf Linien, KPIs, Dokumente. Ausgewaehlte Eintraege steuern den Fokus fuer Myzel und Chat (Demo-Modus).
             </p>
           </div>
           <div className="text-xs text-muted-foreground">
@@ -231,26 +234,26 @@ export default function ListView() {
               <>
                 {selectedRows.size > 0 && (
                   <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-border bg-card/90 px-4 py-3 flex items-center justify-between shadow">
-                    <span className="text-sm font-medium">{selectedRows.size} ausgewählt</span>
-                    <div className="flex items-center gap-2 text-xs">
-                      <button
-                        onClick={markSelectionReviewed}
-                        className="px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
-                      >
-                        ✓ Mark reviewed
-                      </button>
-                      <button
-                        onClick={copySelectionPaths}
-                        className="px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80"
-                      >
-                        📋 Copy paths
+                    <span className="text-sm font-medium">{selectedRows.size} ausgewaehlt</span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      onClick={markSelectionReviewed}
+                      className="px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      ✓ Mark reviewed
+                    </button>
+                    <button
+                      onClick={copySelectionPaths}
+                      className="px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80"
+                    >
+                      📋 Copy paths
                       </button>
                       <button
                         onClick={() => setSelectedRows(new Set())}
                         className="px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground"
-                        aria-label="Auswahl löschen"
+                        aria-label="Auswahl lÃƒÂ¶schen"
                       >
-                        ×
+                        Ãƒâ€”
                       </button>
                     </div>
                   </div>
@@ -315,6 +318,8 @@ export default function ListView() {
                   <div className="space-y-1">
                     {sortedObjects.map((obj) => {
                       const isSelected = selected === obj.id;
+                      const isMyceliumSelected =
+                        selection.kind === 'node' && selection.node.id === obj.id;
                       const isHovered = hoveredRow === obj.id;
                       const isPreviewed = inlinePreviewId === obj.id;
                       const showToolbar = isHovered;
@@ -344,24 +349,29 @@ export default function ListView() {
                               : isHovered
                               ? 'bg-secondary/30 border border-secondary/60'
                               : 'border border-transparent hover:bg-secondary/20 hover:border-secondary/60'
-                          } ${isPreviewed ? 'ring-1 ring-primary/40' : ''}`}
+                          } ${isPreviewed ? 'ring-1 ring-primary/40' : ''} ${isMyceliumSelected ? 'border-l-4 border-l-primary/70 bg-gradient-to-r from-primary/10 via-background to-background shadow-[0_6px_26px_-16px_rgba(248,191,77,0.5)]' : ''}`}
                         >
                           <input
                             type="checkbox"
                             checked={selectedRows.has(obj.id)}
                             onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handleRowCheckbox(obj.id, e.target.checked)}
-                            aria-label={`Objekt ${obj.title} auswählen`}
+                            aria-label={`Objekt ${obj.title} auswÃƒÂ¤hlen`}
                           />
                           <span className="text-xl">
-                            {obj.type === 'file' ? '📄' :
-                             obj.type === 'link' ? '🔗' :
-                             obj.type === 'note' ? '📝' :
-                             obj.type === 'email' ? '✉️' :
-                             obj.type === 'task' ? '✓' : '🌱'}
+                            {obj.type === 'file' ? 'Ã°Å¸â€œâ€ž' :
+                             obj.type === 'link' ? 'Ã°Å¸â€â€”' :
+                             obj.type === 'note' ? 'Ã°Å¸â€œÂ' :
+                             obj.type === 'email' ? 'Ã¢Å“â€°Ã¯Â¸Â' :
+                             obj.type === 'task' ? 'Ã¢Å“â€œ' : 'Ã°Å¸Å’Â±'}
                           </span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
+                              {isMyceliumSelected && (
+                                <span className="text-[11px] inline-flex items-center px-2 py-0.5 rounded-full border border-primary/40 bg-primary/10 text-primary">
+                                  Myzel
+                                </span>
+                              )}
                               <span data-testid="folder-title" className="font-semibold text-left">{obj.title}</span>
                               {obj.tags && obj.tags.length > 0 && (
                                 <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary">
@@ -391,15 +401,15 @@ export default function ListView() {
                                 title="Preview"
                                 aria-label={`Preview ${obj.title}`}
                               >
-                                👁️
+                                Ã°Å¸â€˜ÂÃ¯Â¸Â
                               </button>
                               <button
                                 onClick={(e) => handleOpenExternal(obj, e)}
                                 className="p-1.5 hover:bg-secondary rounded mora-transition text-base"
                                 title="Open Source"
-                                aria-label={`Quelle von ${obj.title} öffnen`}
+                                aria-label={`Quelle von ${obj.title} ÃƒÂ¶ffnen`}
                               >
-                                🔍
+                                Ã°Å¸â€Â
                               </button>
                               <button
                                 onClick={(e) => handleCopyPath(obj, e)}
@@ -407,7 +417,7 @@ export default function ListView() {
                                 title="Copy Path"
                                 aria-label={`Pfad von ${obj.title} kopieren`}
                               >
-                                📋
+                                Ã°Å¸â€œâ€¹
                               </button>
                             </div>
                           )}
@@ -430,9 +440,9 @@ export default function ListView() {
                 <button
                   onClick={() => setInlinePreviewId(null)}
                   className="text-sm text-muted-foreground hover:text-foreground"
-                  aria-label="Inline Preview schließen"
+                  aria-label="Inline Preview schlieÃƒÅ¸en"
                 >
-                  ×
+                  Ãƒâ€”
                 </button>
               </div>
               <div className="text-xs text-muted-foreground space-y-1">
@@ -453,13 +463,13 @@ export default function ListView() {
                   onClick={(e) => handlePreview(inlinePreviewObject, e)}
                   className="w-full px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold"
                 >
-                  In Viewer öffnen
+                  In Viewer ÃƒÂ¶ffnen
                 </button>
                 <button
                   onClick={(e) => handleOpenExternal(inlinePreviewObject, e)}
                   className="w-full px-3 py-2 rounded-xl border border-border text-sm"
                 >
-                  Quelle öffnen
+                  Quelle ÃƒÂ¶ffnen
                 </button>
               </div>
             </aside>

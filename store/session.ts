@@ -7,6 +7,7 @@ import type { OrbSelection } from "@/lib/contexts";
 import type { RoleKey } from "@/lib/roles";
 import { emitMoraEvent, registerSessionRecorder } from "@/lib/mora/listener";
 import type { MoraEvent, MoraEventAction } from "@/lib/mora/listener";
+import type { MyceliumSelection } from "@/lib/mycelium/selection";
 
 const RECENT_EVENT_LIMIT = 50;
 const RECENT_EVENT_TYPES: MoraEventAction[] = [
@@ -27,11 +28,14 @@ interface SessionState {
   activeOrb: OrbSelection;
   activeRole: RoleKey;
   lastViewedNode: Pick<MoraObject, "id" | "title" | "type" | "tags"> | null;
+  myceliumSelection: MyceliumSelection;
   introSeen: boolean;
   lastSnapshotId: string | null;
   setActiveOrb: (orb: OrbSelection) => void;
   setActiveRole: (role: RoleKey) => void;
   setLastViewedNode: (node: MoraObject | null) => void;
+  setMyceliumSelection: (selection: MyceliumSelection) => void;
+  clearMyceliumSelection: () => void;
   setIntroSeen: (seen: boolean) => void;
   setLastSnapshotId: (snapshotId: string | null) => void;
   recentEvents: MoraEvent[];
@@ -55,6 +59,7 @@ export const useSessionStore = create<SessionState>()(
       activeOrb: "all",
       activeRole: "owner",
       lastViewedNode: null,
+      myceliumSelection: { kind: "none" },
       introSeen: false,
       lastSnapshotId: null,
       recentEvents: [],
@@ -85,6 +90,12 @@ export const useSessionStore = create<SessionState>()(
         } else {
           set({ lastViewedNode: null });
         }
+      },
+      setMyceliumSelection: (selection) => {
+        set({ myceliumSelection: selection });
+      },
+      clearMyceliumSelection: () => {
+        set({ myceliumSelection: { kind: "none" } });
       },
       setIntroSeen: (seen) => {
         if (seen) {
@@ -147,7 +158,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: "mora_session_store",
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         if (!persistedState || typeof persistedState !== "object") {
           return persistedState as SessionState;
@@ -184,6 +195,13 @@ export const useSessionStore = create<SessionState>()(
           !["owner", "department", "member", "admin"].includes(persistedRole)
         ) {
           nextState.activeRole = "owner";
+        }
+        if (
+          version < 4 ||
+          typeof (persistedState as Record<string, unknown>).myceliumSelection !== "object" ||
+          !(persistedState as Record<string, any>).myceliumSelection?.kind
+        ) {
+          nextState.myceliumSelection = { kind: "none" } as MyceliumSelection;
         }
         return nextState;
       },

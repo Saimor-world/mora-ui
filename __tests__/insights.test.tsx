@@ -44,7 +44,7 @@ describe('Insights offline handling', () => {
 describe('ContextPanel states', () => {
   it('renders intro text when no object is selected', () => {
     render(<RealContextPanel selectedObject={null} />);
-    expect(screen.getByText(/Waehle ein Objekt im Field/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kein Objekt ausgewaehlt/i)).toBeInTheDocument();
   });
 
   it('renders object details when selection exists', () => {

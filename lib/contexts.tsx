@@ -7,6 +7,7 @@ import { useSessionStore } from '@/store/session';
 import { emitMoraEvent } from '@/lib/mora/listener';
 import { ROLE_DEFINITIONS, type RoleKey } from '@/lib/roles';
 import { useShallow } from 'zustand/react/shallow';
+import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
 
 type ViewMode = 'folder' | 'field';
 export type OrbSelection = 'all' | 'leitung' | 'service' | 'hr';
@@ -46,9 +47,9 @@ export function AppProvider({ children, initialMode = 'field' }: AppProviderProp
     }))
   );
   const activeRole = useSessionStore((state) => state.activeRole);
+  const { selection, setSelection, clearSelection } = useMyceliumSelection();
 
   const [mode, setMode] = useState<ViewMode>(initialMode);
-  const [selectedObject, setSelectedObject] = useState<MoraObject | null>(null);
   const [orb, setOrbState] = useState<OrbSelection>(storedOrb ?? 'all');
   const [activeTagFilter, setActiveTagFilterState] = useState<string | null>(null);
   const roleAppliedRef = useRef<RoleKey | null>(null);
@@ -122,11 +123,18 @@ export function AppProvider({ children, initialMode = 'field' }: AppProviderProp
 
   const handleSelectObject = useCallback(
     (obj: MoraObject | null) => {
-      setSelectedObject(obj);
-      setLastViewedNode(obj ?? null);
+      if (obj) {
+        setSelection({ kind: 'node', node: mapObjectToNode(obj), object: obj });
+        setLastViewedNode(obj);
+      } else {
+        clearSelection();
+        setLastViewedNode(null);
+      }
     },
-    [setLastViewedNode]
+    [setSelection, clearSelection, setLastViewedNode]
   );
+
+  const selectedObject = selection.kind === 'node' ? selection.object ?? null : null;
 
   useEffect(() => {
     if (!activeRole) return;

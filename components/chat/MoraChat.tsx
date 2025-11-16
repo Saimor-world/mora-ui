@@ -6,7 +6,11 @@ import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 import { useChatData } from '@/lib/hooks/useChatData';
 import { useHealthCheck } from '@/lib/hooks/useApi';
 import { getHealthFlags } from '@/lib/health';
+import { useMyceliumSelection } from '@/lib/mycelium/selection';
 import PanelCard from '@/components/ui/PanelCard';
+import MyceliumContextChip from '@/components/ui/MyceliumContextChip';
+import { getSemanticAnswer, isSemanticEnabled } from '@/lib/api/semantic';
+import SemanticDebugPanel from '@/components/dev/SemanticDebugPanel';
 
 interface Message {
   id: string;
@@ -29,15 +33,31 @@ export default function MoraChat() {
       id: 'intro',
       role: 'mora',
       content:
-        'Hallo, ich bin Mora. Diese gefuehrte Demo nutzt Beispiel-Objekte. Frag nach Objekten, Tags oder Snapshots – spaeter beantworte ich das mit euren echten Daten.',
+        'Hallo, ich bin Mora. Diese gefuehrte Demo nutzt Beispiel-Objekte. Waehle etwas im Feld oder Ordner, dann halte ich den Kontext - spaeter beantworte ich das mit euren echten Daten.',
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [semanticNotice, setSemanticNotice] = useState<string | null>(null);
+  const [semanticDebug, setSemanticDebug] = useState<{
+    prompt?: string | null;
+    contextLabel?: string | null;
+    answerSnippet?: string | null;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const chatData = useChatData();
+  const { selection } = useMyceliumSelection();
+  const selectionLabel =
+    selection.kind === 'node'
+      ? `${selection.node.label} (${selection.node.type})`
+      : selection.kind === 'space'
+      ? `${selection.space.label} (${selection.space.kind})`
+      : null;
+  const contextLine = selectionLabel
+    ? `Du sprichst mit Mora ueber ${selectionLabel}.`
+    : 'Noch kein konkreter Kontext - frag mich trotzdem, ich antworte mit Beispieldaten.';
   const hasDemoData = chatData.hasData;
   const { data: health, refetch: refetchHealth } = useHealthCheck();
   const { isOffline, isAuthError } = getHealthFlags(health?.status);
@@ -64,9 +84,24 @@ export default function MoraChat() {
     const prompt = input;
     setInput('');
     setIsTyping(true);
+    setSemanticNotice(null);
 
     try {
-      const responseText = await getChatReply(prompt, chatData);
+      const responseText = await getChatReply(prompt, chatData, selection, {
+        onSemanticStart: () => setSemanticNotice('Semantische Auswertung wird vorbereitet ...'),
+        onSemanticUnavailable: () =>
+          setSemanticNotice(
+            'Semantische Auswertung gerade nicht erreichbar – ich bleibe im Demo-Modus.'
+          ),
+        onSemanticComplete: () => setSemanticNotice(null),
+        onSemanticResult: (answer) => {
+          setSemanticDebug({
+            prompt,
+            contextLabel: selectionLabel,
+            answerSnippet: answer,
+          });
+        },
+      });
       setMessages((prev) => [
         ...prev,
         {
@@ -128,16 +163,19 @@ export default function MoraChat() {
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="fixed bottom-24 right-6 w-96 h-[620px] z-40"
           >
-            <PanelCard className="h-full backdrop-blur-md flex flex-col overflow-hidden" paddingClassName="p-0 bg-card/95 shadow-2xl">
+            <PanelCard className="h-full backdrop-blur-md flex flex-col overflow-hidden relative" paddingClassName="p-0 bg-card/95 shadow-2xl">
               <div className="p-4 border-b border-border/70 bg-card/90 flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-semibold text-foreground">Mora Chat</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Antworten aus {chatData.source === 'semantic' ? 'Semantic Search' : 'Objects'} - Demo-Modus aktiv.
-                  </p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-foreground">Mora Chat</h3>
+                    <span className="px-2 py-0.5 rounded-full border border-border/70 bg-background text-[11px] text-muted-foreground">
+                      {chatData.source === 'semantic' ? 'Semantic Search' : 'Objects'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{contextLine}</p>
                   {hasDemoData ? (
                     <p className="text-[11px] text-muted-foreground">
-                      Gefuehrte Demo: Antworten basieren auf Beispiel-Objekten. Spaeter nutzt Mora eure realen Daten.
+                      Gefuehrte Demo: Antworten basieren auf Beispiel-Objekten. Spaeter fliessen hier echte Kennzahlen, Dokumente und Beziehungen uebers Myzel, wenn die Auswertung aktiv ist.
                     </p>
                   ) : (
                     <p className="text-[11px] text-amber-600">
@@ -167,9 +205,17 @@ export default function MoraChat() {
                 <>
                   {showDemoHint && (
                     <div className="rounded-xl border border-dashed border-amber-500/70 bg-amber-500/10 px-4 py-3 text-xs text-amber-900">
-                      Demo-Modus: Lade Objekte oder aktiviere den Mock-Modus, damit Mora echte Daten beantworten kann.
+                      Demo-Modus: Lade Objekte oder aktiviere den Mock-Modus, damit Mora mit Beispieldaten antworten kann.
                     </div>
                   )}
+                  {semanticNotice && (
+                    <div className="text-[11px] text-muted-foreground px-2">
+                      {semanticNotice}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground items-center">
+                    <MyceliumContextChip neutralText="Kein konkreter Kontext - frag einfach los." />
+                  </div>
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {SUGGESTIONS.map((suggestion) => (
                       <button
@@ -239,6 +285,11 @@ export default function MoraChat() {
                   </div>
                 </form>
               )}
+              <SemanticDebugPanel
+                prompt={semanticDebug?.prompt}
+                contextLabel={semanticDebug?.contextLabel}
+                answerSnippet={semanticDebug?.answerSnippet}
+              />
             </PanelCard>
           </motion.div>
         )}
@@ -247,8 +298,54 @@ export default function MoraChat() {
   );
 }
 
-async function getChatReply(query: string, chatData: ReturnType<typeof useChatData>): Promise<string> {
+type SemanticHooks = {
+  onSemanticStart?: () => void;
+  onSemanticUnavailable?: () => void;
+  onSemanticComplete?: () => void;
+  onSemanticResult?: (answer: string) => void;
+};
+
+async function getChatReply(
+  query: string,
+  chatData: ReturnType<typeof useChatData>,
+  selection: ReturnType<typeof useMyceliumSelection>['selection'],
+  semanticHooks?: SemanticHooks
+): Promise<string> {
   // Single integration point for demo echo vs. zukuenftige echte Antworten
+  const semanticActive = isSemanticEnabled();
+  const trimmed = query.trim();
+  if (semanticActive && trimmed) {
+    const context =
+      selection.kind === 'node'
+        ? {
+            id: selection.node.id,
+            label: selection.node.label,
+            type: selection.node.type,
+            space: selection.node.space,
+          }
+        : selection.kind === 'space'
+        ? {
+            id: selection.space.id,
+            label: selection.space.label,
+            type: selection.space.kind,
+            space: selection.space.label,
+          }
+        : undefined;
+    try {
+      semanticHooks?.onSemanticStart?.();
+      const resp = await getSemanticAnswer({ prompt: trimmed, selection: context });
+      semanticHooks?.onSemanticComplete?.();
+      if (resp?.answer) {
+        semanticHooks?.onSemanticResult?.(resp.answer);
+        return resp.answer;
+      }
+      semanticHooks?.onSemanticUnavailable?.();
+    } catch (error) {
+      console.error('Semantic reply failed:', error);
+      semanticHooks?.onSemanticUnavailable?.();
+    }
+  }
+
   return buildResponse(query, chatData);
 }
 

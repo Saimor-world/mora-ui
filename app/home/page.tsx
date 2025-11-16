@@ -29,6 +29,7 @@ import { getHealthFlags } from "@/lib/health";
 import { QueryProvider } from "@/lib/queryClient";
 import PageSection from "@/components/ui/PageSection";
 import PanelCard from "@/components/ui/PanelCard";
+import MyceliumContextChip from "@/components/ui/MyceliumContextChip";
 
 function HomePageInner() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -312,7 +313,7 @@ function HomePageInner() {
                 {roleDefinition.homeMessage}
               </p>
               <p className="text-xs text-muted-foreground">
-                Gefuehrter Produkt-Blick: Quellen verbinden, Zusammenhaenge sehen, mit Mora sprechen – heute mit Demo-Daten, spaeter mit euren Systemen.
+                Saimor als semantisches OS fuer Klarheit: oben der Wald, unten das Myzel. Gefuehrter Demo-Blick mit simulierten Daten - spaeter laeuft derselbe Pfad mit euren echten Signalen durchs Myzel. Mora haelt den Kontext ueber Field, Folder, Insights und Chat hinweg.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 text-[11px] text-muted-foreground uppercase tracking-wide">
@@ -410,11 +411,39 @@ function HomePageInner() {
 
           <PanelCard paddingClassName="p-6 lg:p-7" className="space-y-4 shadow-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Naechste Schritte</p>
-            <h3 className="text-lg font-semibold">Gefuehrte Demo-Reise</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>1) Demo-Daten starten oder echte Quellen verbinden – das weckt den Raum.</li>
-              <li>2) Field/Folder oeffnen und ein Objekt fokussieren – so zeigt Mora Beziehungen.</li>
-              <li>3) Mit Mora sprechen – Antworten stammen aus den Demo-Objekten und spaeter aus euren Daten.</li>
+            <h3 className="text-lg font-semibold">Gefuehrte Demo-Reise (simuliert)</h3>
+            <MyceliumContextChip neutralText="Auswahl in Field/Folder steuert Kontext fuer Insights & Chat" />
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 h-8 w-8 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 3v6l-2 2 6 6 2-2h6" />
+                    <circle cx="8" cy="3" r="1.5" />
+                    <circle cx="20" cy="15" r="1.5" />
+                  </svg>
+                </span>
+                <span>Quellen verbinden (Wald): Demo-Daten starten oder spaeter echte Connectoren fuer Teams, Projekte, KPIs anschliessen - derselbe Weg bleibt bestehen.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 h-8 w-8 rounded-full border border-border bg-secondary/50 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="6" cy="12" r="2" />
+                    <circle cx="18" cy="8" r="2" />
+                    <circle cx="18" cy="16" r="2" />
+                    <path d="M8 12h8M8 12l8-4M8 12l8 4" />
+                  </svg>
+                </span>
+                <span>Myzel erkennen (Feld): Field oder Folder oeffnen, einen Knoten waehlen - dieser Kontext traegt in Insights & Chat.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-0.5 h-8 w-8 rounded-full border border-border bg-card/70 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 18l-1.5 3 3-1.5H20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h1z" />
+                    <path d="M8 10h8M8 7h5M8 13h6" />
+                  </svg>
+                </span>
+                <span>Kontextbewusster Dialog (Chat): Insights und Chat nutzen dieselbe Auswahl - heute Demo-Antworten, spaeter fliessen echte Kennzahlen und Dokumente ueber denselben Pfad.</span>
+              </li>
             </ul>
             <div className="flex gap-2 flex-wrap">
               <Link href="/field" className="px-4 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-sm mora-transition">

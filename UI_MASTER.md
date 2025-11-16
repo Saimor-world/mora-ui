@@ -1,51 +1,51 @@
-# MÔRA-UI MASTER DOC
-Status: konsolidiert am 2025-11-11 · Dossier v1.2 = stabil nach Sanity Cycle (Core 8081 / UI 3002)
+﻿# M├öRA-UI MASTER DOC
+Status: konsolidiert am 2025-11-11 ┬╖ Dossier v1.2 = stabil nach Sanity Cycle (Core 8081 / UI 3002)
 
 ---
 
 ## 1. Projektkontext
-Môra-UI ist die Next.js-15-Oberfläche des Saimôr/Môra-OS-Stacks. Sie stellt Lens (Navigation), Canvas (Folder-/Field-Mode), Insights (Workflows/Broadcasts) und das Chat-Overlay bereit und konsumiert reale Daten aus der Core-API (`http://localhost:8081`). Ziel: eine überprüfbare, demo-fähige Oberfläche inklusive Diagnostics und Fallback-UX für Januar 2026.
+M├┤ra-UI ist die Next.js-15-Oberfl├ñche des Saim├┤r/M├┤ra-OS-Stacks. Sie stellt Lens (Navigation), Canvas (Folder-/Field-Mode), Insights (Workflows/Broadcasts) und das Chat-Overlay bereit und konsumiert reale Daten aus der Core-API (`http://localhost:8081`). Ziel: eine ├╝berpr├╝fbare, demo-f├ñhige Oberfl├ñche inklusive Diagnostics und Fallback-UX f├╝r JanuarΓÇ»2026.
 
 ---
 
 ## 2. Aktueller IST-Stand
-- **Config System (IST)** – `lib/config.ts` liefert geprüfte ENV-Werte (inkl. Fallbacks und Warnungen) und wird überall über Helper verwendet.
-- **API Client (IST)** – `lib/api.ts` kapselt `authFetch` mit Timeout, Custom-Errors und Health-Check. `useMemoryFacts` / `useSnapshots` nutzen ihn bereits.
-- **Diagnostics Panel (IST)** – `components/diagnostics/DiagnosticsPanel.tsx` zeigt Badge + Statusdetails, wenn `NEXT_PUBLIC_ENABLE_DIAGNOSTICS=true` und Dev-Build aktiv sind; der neue Export-Button liefert JSONL-Einträge gem. Protokoll. Health Export = ✅ (11 Nov 2025, Core 8081 / UI 3002).
-- **Diagnostics Logging (IST)** – `docs/DIAGNOSTICS_LOGGING.md` + `docs/DIAGNOSTICS_EXPORT_GUIDE.md` definieren Aufnahme + Archivierung, Export ist ausschließlich in Dev sichtbar und kopiert Einträge in Clipboard & Konsole.
-- **Fallback UI (IST)** – `CoreStatusBanner` wird in Canvas, Insights und Chat automatisch angezeigt, wenn `useHealthCheck` einen Fehlerzustand (`unreachable|error|unauthorized`) meldet. Retry triggert das Health-Refetching, statt kryptischer Fehler.
-- **Orb Filter (IST)** – Lens bindet `OrbFilter` ein und `useMemoryFacts` akzeptiert den `orb`-Parameter; Folder- und Insights-Ansichten zeigen nur die selektierte Orb-Sicht.
-- **OrbFilter + Chat Pipeline (IST)** – AppContext hält den aktiven Orb, Lens/Folder/Insights geben ihn an `useMemoryFacts`/`api.getObjects?orb` weiter und `MoraChat` bleibt via `useChatData`+Offline-Gate deckungsgleich (Sanity-Check 2025-11-11).
-- **Chat (IST)** – `MoraChat` nutzt `useChatData()` (objects oder semantic) für Suche/List/Stats, generiert Antworten daraus und respektiert Offline-Zustände.
-- **Diagnostics/Teststatus (IST)** – Dev-Server (`npm run dev` → Port 3002) startet ohne Fehler, Snapshots/Objects werden über React Query geladen, Health-Check ist eingebaut und steuert sowohl Diagnostics Badge als auch die CoreStatusBanner-Gates.
-- **System-Adapter (IST)** – `/v1/system/adapters` liefert optional ein `adapters[]`-Array; UI nutzt es defensiv (kein Blocker, falls leer).
+- **Config System (IST)** ΓÇô `lib/config.ts` liefert gepr├╝fte ENV-Werte (inkl. Fallbacks und Warnungen) und wird ├╝berall ├╝ber Helper verwendet.
+- **API Client (IST)** ΓÇô `lib/api.ts` kapselt `authFetch` mit Timeout, Custom-Errors und Health-Check. `useMemoryFacts` / `useSnapshots` nutzen ihn bereits.
+- **Diagnostics Panel (IST)** ΓÇô `components/diagnostics/DiagnosticsPanel.tsx` zeigt Badge + Statusdetails, wenn `NEXT_PUBLIC_ENABLE_DIAGNOSTICS=true` und Dev-Build aktiv sind; der neue Export-Button liefert JSONL-Eintr├ñge gem. Protokoll. Health Export = Γ£à (11 Nov 2025, Core 8081 / UI 3002).
+- **Diagnostics Logging (IST)** ΓÇô `docs/DIAGNOSTICS_LOGGING.md` + `docs/DIAGNOSTICS_EXPORT_GUIDE.md` definieren Aufnahme + Archivierung, Export ist ausschlie├ƒlich in Dev sichtbar und kopiert Eintr├ñge in Clipboard & Konsole.
+- **Fallback UI (IST)** ΓÇô `CoreStatusBanner` wird in Canvas, Insights und Chat automatisch angezeigt, wenn `useHealthCheck` einen Fehlerzustand (`unreachable|error|unauthorized`) meldet. Retry triggert das Health-Refetching, statt kryptischer Fehler.
+- **Orb Filter (IST)** ΓÇô Lens bindet `OrbFilter` ein und `useMemoryFacts` akzeptiert den `orb`-Parameter; Folder- und Insights-Ansichten zeigen nur die selektierte Orb-Sicht.
+- **OrbFilter + Chat Pipeline (IST)** ΓÇô AppContext h├ñlt den aktiven Orb, Lens/Folder/Insights geben ihn an `useMemoryFacts`/`api.getObjects?orb` weiter und `MoraChat` bleibt via `useChatData`+Offline-Gate deckungsgleich (Sanity-Check 2025-11-11).
+- **Chat (IST)** ΓÇô `MoraChat` nutzt `useChatData()` (objects oder semantic) f├╝r Suche/List/Stats, generiert Antworten daraus und respektiert Offline-Zust├ñnde.
+- **Diagnostics/Teststatus (IST)** ΓÇô Dev-Server (`npm run dev` ΓåÆ PortΓÇ»3002) startet ohne Fehler, Snapshots/Objects werden ├╝ber React Query geladen, Health-Check ist eingebaut und steuert sowohl Diagnostics Badge als auch die CoreStatusBanner-Gates.
+- **System-Adapter (IST)** ΓÇô `/v1/system/adapters` liefert optional ein `adapters[]`-Array; UI nutzt es defensiv (kein Blocker, falls leer).
 - **Lokaler Quicktest (IST)**  
-  - Core (`http://localhost:8081`) läuft und `.env.local` enthält ein gültiges `NEXT_PUBLIC_JWT_TOKEN` (Fallback `NEXT_PUBLIC_ADMIN_TOKEN` bleibt leer).  
-  - `npm run dev` startet auf Port 3002 ohne Config-Warnungen; Diagnostics-Badge zeigt nach `Refresh` den Health-Status ✅.  
-  - Lens/Folder/Canvas/Insights/Chat laden echte Objects/Snapshots; Badge bleibt grün, während Chat-Fenster live Daten durchsucht.
+  - Core (`http://localhost:8081`) l├ñuft und `.env.local` enth├ñlt ein g├╝ltiges `NEXT_PUBLIC_JWT_TOKEN` (Fallback `NEXT_PUBLIC_ADMIN_TOKEN` bleibt leer).  
+  - `npm run dev` startet auf PortΓÇ»3002 ohne Config-Warnungen; Diagnostics-Badge zeigt nach `Refresh` den Health-Status Γ£à.  
+  - Lens/Folder/Canvas/Insights/Chat laden echte Objects/Snapshots; Badge bleibt gr├╝n, w├ñhrend Chat-Fenster live Daten durchsucht.
 
-Alle Aussagen basieren auf überprüfbaren Dateien (siehe Abschnitt 7) und manuell sichtbaren Komponenten; keine Featureversprechen ohne Codebasis.
-- **Demo-Daten Kennzeichnung (IST)** – Mock-Daten werden mit "Demo-Daten"-Badge visualisiert:
-  - `lib/types.ts` enthält `source?: 'mock' | 'real'` im MoraObject-Interface.
-  - `lib/broadcastStore.ts` enthält `source` im BroadcastMessage-Interface.
+Alle Aussagen basieren auf ├╝berpr├╝fbaren Dateien (siehe AbschnittΓÇ»7) und manuell sichtbaren Komponenten; keine Featureversprechen ohne Codebasis.
+- **Demo-Daten Kennzeichnung (IST)** ΓÇô Mock-Daten werden mit "Demo-Daten"-Badge visualisiert:
+  - `lib/types.ts` enth├ñlt `source?: 'mock' | 'real'` im MoraObject-Interface.
+  - `lib/broadcastStore.ts` enth├ñlt `source` im BroadcastMessage-Interface.
   - **ListView** (`FolderMode`): Gelbes "Demo-Daten"-Badge neben Objects mit `source: "mock"`.
   - **FieldMode Stats-Overlay**: "Demo-Daten"-Badge wenn Mock-Snapshots verwendet werden.
   - **FieldMode Node Detail Panel**: "Demo"-Badge bei Mock-Nodes.
   - **BroadcastInbox**: "Demo"-Badge bei Mock-Broadcasts.
   - **ContextPanel**: "Demo"-Badge bei selektiertem Mock-Object.
-  - Fehlende Felder werden defensiv gerendert: `path || spaceId || '—'`, Tags zeigen "—" wenn leer, Timestamps ebenfalls.
-  - Keine produktiven Behauptungen über Echtzeit-/Live-Daten bei Mock-Quellen.
-- **Adapter Status (IST)** – Diagnostics Panel zeigt Adapter-Status:
+  - Fehlende Felder werden defensiv gerendert: `path || spaceId || 'ΓÇö'`, Tags zeigen "ΓÇö" wenn leer, Timestamps ebenfalls.
+  - Keine produktiven Behauptungen ├╝ber Echtzeit-/Live-Daten bei Mock-Quellen.
+- **Adapter Status (IST)** ΓÇô Diagnostics Panel zeigt Adapter-Status:
   - Neuer Block "Adapter Status" nach Health Status im Diagnostics Panel.
-  - Ruft `/v1/system/adapters` ab (Falls endpoint nicht verfügbar: "Adapter-Status nicht verfügbar").
+  - Ruft `/v1/system/adapters` ab (Falls endpoint nicht verf├╝gbar: "Adapter-Status nicht verf├╝gbar").
   - Zeigt Adapter-Liste mit Name und Status-Label:
-    - 🟢 **Live-Daten** (real adapter)
-    - 🟠 **Demo-Daten** (mock adapter)
-    - 🟡 **Degraded** (degraded adapter, Warnhinweis)
-    - 🔴 **Offline** (offline adapter, Fehlerhinweis)
-  - Unterstützt `adapter` field oder `status` field als Fallback.
+    - ≡ƒƒó **Live-Daten** (real adapter)
+    - ≡ƒƒá **Demo-Daten** (mock adapter)
+    - ≡ƒƒí **Degraded** (degraded adapter, Warnhinweis)
+    - ≡ƒö┤ **Offline** (offline adapter, Fehlerhinweis)
+  - Unterst├╝tzt `adapter` field oder `status` field als Fallback.
   - Fehlertoleranz: Bei 404/Fehler keine Blocking-UI, nur console.warn und Fallback-Text.
-- **Upload & Monitoring Platzhalter (IST)** – Geplante Features visualisiert in Insights:
+- **Upload & Monitoring Platzhalter (IST)** ΓÇô Geplante Features visualisiert in Insights:
   - `DataUploadPlaceholder.tsx` zeigt disabled Drop-Zone mit "Coming Soon"-Badge.
   - Hinweis auf geplanten Endpoint `/v1/upload` (CSV/JSON).
   - `MonitoringPlaceholder.tsx` zeigt disabled Metrics/Audit-Log-Bereiche.
@@ -56,106 +56,106 @@ Alle Aussagen basieren auf überprüfbaren Dateien (siehe Abschnitt 7) und man
 ---
 
 ## Core Connectivity (IST)
-- `curl http://localhost:8081/v1/health` am 2025-11-11 08:55 CET lieferte `{"status":"healthy","timestamp":"2025-11-11T08:55:22.734408Z"}` – Core antwortet stabil.
+- `curl http://localhost:8081/v1/health` am 2025-11-11 08:55 CET lieferte `{"status":"healthy","timestamp":"2025-11-11T08:55:22.734408Z"}` ΓÇô Core antwortet stabil.
 - Das Diagnostics Panel nutzt denselben React-Query-Key (`useHealthCheck`), daher werden Badge und neue CoreStatusBanner-Sperren synchron mit diesem Health-Status aktualisiert.
-- `C:\Users\mf4hr\saimor-core\core\app.py` enthält `http://localhost:3002` in `_allowed_origins`; der Next.js Dev-Port ist damit offiziell freigeschaltet.
-- Log-Vorgaben für Health-Checks sind in `docs/DIAGNOSTICS_LOGGING.md` dokumentiert und sollen bei jeder Session angewendet werden.
+- `C:\Users\mf4hr\saimor-core\core\app.py` enth├ñlt `http://localhost:3002` in `_allowed_origins`; der Next.js Dev-Port ist damit offiziell freigeschaltet.
+- Log-Vorgaben f├╝r Health-Checks sind in `docs/DIAGNOSTICS_LOGGING.md` dokumentiert und sollen bei jeder Session angewendet werden.
 
 ---
 
 ## 3. Architektur & ENV Variablen
 **Zentrale Dateien**
-- `app/page.tsx` – Layout (Lens • Canvas • Insights • Chat • Diagnostics) wrapped von `QueryProvider` und `AppProvider`.
-- `lib/contexts.tsx` – globale View- und Selection-States.
-- `lib/queryClient.tsx` – React-Query-Konfiguration (5 min stale, 10 min cache).
-- `lib/hooks/useApi.ts` & `lib/hooks/useChatData.ts` – Datenzugriffsschicht.
-- `components/*` – Feature-Module (Diagnostics, Errors, Lens, Canvas, Insights, Chat).
+- `app/page.tsx` ΓÇô Layout (Lens ΓÇó Canvas ΓÇó Insights ΓÇó Chat ΓÇó Diagnostics) wrapped von `QueryProvider` und `AppProvider`.
+- `lib/contexts.tsx` ΓÇô globale View- und Selection-States.
+- `lib/queryClient.tsx` ΓÇô React-Query-Konfiguration (5ΓÇ»min stale, 10ΓÇ»min cache).
+- `lib/hooks/useApi.ts` & `lib/hooks/useChatData.ts` ΓÇô Datenzugriffsschicht.
+- `components/*` ΓÇô Feature-Module (Diagnostics, Errors, Lens, Canvas, Insights, Chat).
 
 **ENV Keys (aus `.env.local.example`)**
 
 | Key | Beschreibung | Pflicht |
 | --- | --- | --- |
 | `NEXT_PUBLIC_CORE_API_URL` | Basis der Core-API (Standard: `http://localhost:8081`). | Ja |
-| `NEXT_PUBLIC_JWT_TOKEN` (Fallback `NEXT_PUBLIC_ADMIN_TOKEN`) | JWT für alle authFetch-Aufrufe. | Ja |
+| `NEXT_PUBLIC_JWT_TOKEN` (Fallback `NEXT_PUBLIC_ADMIN_TOKEN`) | JWT f├╝r alle authFetch-Aufrufe. | Ja |
 | `NEXT_PUBLIC_CHAT_SOURCE` | `objects` (aktuell aktiv) oder `semantic` (bereitet semantische Suche vor). | Ja |
-| `NEXT_PUBLIC_ENABLE_DIAGNOSTICS` | Schaltet Diagnostics-Badge in Dev frei (Production → `false`). | Ja |
+| `NEXT_PUBLIC_ENABLE_DIAGNOSTICS` | Schaltet Diagnostics-Badge in Dev frei (Production ΓåÆ `false`). | Ja |
 | `NEXT_PUBLIC_N8N_EMAIL_DIGEST`, `_BROADCAST_DOC`, `_DUPLICATE_HUNTER` | Optional; ohne Werte laufen Workflows im Simulationsmodus. | Optional |
-| `NEXT_PUBLIC_AUTH_HEADER` | Optional: Header-Name für den JWT (Default `Authorization`). | Optional |
+| `NEXT_PUBLIC_AUTH_HEADER` | Optional: Header-Name f├╝r den JWT (Default `Authorization`). | Optional |
 
 **API-Endpunkte (bereits implementiert)**
-- `GET /v1/objects?orb=<slug>` – Listet Objekte (15 reale Datensätze vorhanden).
-- `GET /v1/relations`, `GET /v1/snapshots` – Datenquellen für Field Mode.
-- `POST /v1/semantic/search`, `/v1/semantic/suggest-broadcasts` – vorbereitet für `semantic` Chat-Quelle.
-- `GET /v1/health` – ungeauthed Ping (Diagnostics Panel).
-- `GET /v1/system/adapters` – Adapter-Status (optional, zeigt Mock/Real/Offline pro Modul).
-- `POST /v1/upload` – Stub (202) für zukünftige CSV/JSON Uploads, keine Persistenz – UI nutzt nur Platzhalter.
-- `GET /v1/system/audit` – Stub (200) für Audit-Panel, keine Persistenz – UI bleibt visuell.
+- `GET /v1/objects?orb=<slug>` ΓÇô Listet Objekte (15 reale Datens├ñtze vorhanden).
+- `GET /v1/relations`, `GET /v1/snapshots` ΓÇô Datenquellen f├╝r Field Mode.
+- `POST /v1/semantic/search`, `/v1/semantic/suggest-broadcasts` ΓÇô vorbereitet f├╝r `semantic` Chat-Quelle.
+- `GET /v1/health` ΓÇô ungeauthed Ping (Diagnostics Panel).
+- `GET /v1/system/adapters` ΓÇô Adapter-Status (optional, zeigt Mock/Real/Offline pro Modul).
+- `POST /v1/upload` ΓÇô Stub (202) f├╝r zuk├╝nftige CSV/JSON Uploads, keine Persistenz ΓÇô UI nutzt nur Platzhalter.
+- `GET /v1/system/audit` ΓÇô Stub (200) f├╝r Audit-Panel, keine Persistenz ΓÇô UI bleibt visuell.
 
 **API-Endpunkte (geplant)**
-- `POST /v1/upload` – Data Upload für CSV/JSON (Placeholder in UI vorhanden).
-- `GET /metrics` – System Metrics (Placeholder in UI vorhanden).
-- `GET /v1/system/audit` – Audit Log (Placeholder in UI vorhanden).
+- `POST /v1/upload` ΓÇô Data Upload f├╝r CSV/JSON (Placeholder in UI vorhanden).
+- `GET /metrics` ΓÇô System Metrics (Placeholder in UI vorhanden).
+- `GET /v1/system/audit` ΓÇô Audit Log (Placeholder in UI vorhanden).
 
 **Ports & CORS**
-- Frontend fix auf Port 3002 (`package.json > dev`).
-- Core-CORS muss `http://localhost:3002` erlauben (siehe `CORS_REQUIREMENT.md`; altes Dokument nennt noch 3004 → beim Backend-Update korrigieren).
+- Frontend fix auf PortΓÇ»3002 (`package.json > dev`).
+- Core-CORS muss `http://localhost:3002` erlauben (siehe `CORS_REQUIREMENT.md`; altes Dokument nennt noch 3004 ΓåÆ beim Backend-Update korrigieren).
 
 ---
 
 ## Auth & ENV Validation
-- **Token-Priorität:** `lib/config.ts` liest zuerst `NEXT_PUBLIC_JWT_TOKEN`, fällt bei leerem Wert automatisch auf `NEXT_PUBLIC_ADMIN_TOKEN` zurück und meldet in Dev klar, wenn beide fehlen (Hinweis auf `.env.local.example`).
+- **Token-Priorit├ñt:** `lib/config.ts` liest zuerst `NEXT_PUBLIC_JWT_TOKEN`, f├ñllt bei leerem Wert automatisch auf `NEXT_PUBLIC_ADMIN_TOKEN` zur├╝ck und meldet in Dev klar, wenn beide fehlen (Hinweis auf `.env.local.example`).
 - **Header-Kontrolle:** `lib/api.ts` bezieht den Header-Namen aus `NEXT_PUBLIC_AUTH_HEADER` (Standard `Authorization`) und setzt konsequent `Authorization: Bearer <token>` (bzw. mit custom Header).
 - **Fehlerbehandlung:**
   - **Fehlender Token:** Roter Toast ("JWT Token fehlt oder ist leer...") + `ApiUnauthorizedError`, aber kein UI-Crash.
   - **401 Unauthorized:** Roter Toast ("Authentication failed (401)...") + `ApiUnauthorizedError`.
   - **403 Forbidden:** Roter Toast ("Zugriff verweigert (403)...") + `ApiError(403)`.
-- **Runtime-Signal:** Bei fehlendem oder ungültigem Token erscheint Toast, `authFetch` stoppt, ohne das UI abzuschießen. Alle Hooks/Components zeigen leere States + Hinweis statt Crash.
+- **Runtime-Signal:** Bei fehlendem oder ung├╝ltigem Token erscheint Toast, `authFetch` stoppt, ohne das UI abzuschie├ƒen. Alle Hooks/Components zeigen leere States + Hinweis statt Crash.
 
 ---
 
 ## 4. LLM-Strategie (Frontend-Sicht)
-- **IST** – Chat bezieht alle Antworten indirekt über Core (`/v1/objects` o. ä.). Core selbst verwendet heute die Claude API. Frontend unterscheidet nicht zwischen Claude oder lokalem Modell.
-- **GEPLANT** – Laut `docs/LLM_SWITCH.md` führt der Core eine ENV `LLM_PROVIDER=external|local` ein und kann auf Ollama/vLLM (z. B. Mistral 7B) umschalten. Frontend bleibt unverändert; `MoraChat` konsumiert weiterhin nur Core-Endpunkte. Wichtige zusätzliche ENV (Core-seitig) wären `LLM_LOCAL_BASE_URL`, `LLM_LOCAL_MODEL`, `ANTHROPIC_API_KEY`.
+- **IST** ΓÇô Chat bezieht alle Antworten indirekt ├╝ber Core (`/v1/objects` o.ΓÇ»├ñ.). Core selbst verwendet heute die Claude API. Frontend unterscheidet nicht zwischen Claude oder lokalem Modell.
+- **GEPLANT** ΓÇô Laut `docs/LLM_SWITCH.md` f├╝hrt der Core eine ENV `LLM_PROVIDER=external|local` ein und kann auf Ollama/vLLM (z.ΓÇ»B. MistralΓÇ»7B) umschalten. Frontend bleibt unver├ñndert; `MoraChat` konsumiert weiterhin nur Core-Endpunkte. Wichtige zus├ñtzliche ENV (Core-seitig) w├ñren `LLM_LOCAL_BASE_URL`, `LLM_LOCAL_MODEL`, `ANTHROPIC_API_KEY`.
 
 ---
 
-## 5. Roadmap bis Jan 2026
-1. **Stabilisierung der Core-Verbindung & Diagnostics (GEPLANT, KW 45)** – Health-Checks regelmäßig ausführen, CORS für Port 3002 final anpassen, Diagnostics-Badge als Standard-Testschritt etablieren.
-2. **OrbFilter + Chat-Datasource live schalten (GEPLANT, KW 46)** – Lens/Objects wirklich über `?orb` filtern, `MoraChat` auf `useChatData` umziehen und Source-Toggle exponieren.
-3. **Fallback-UX & 3D-Mycelium solidifizieren (GEPLANT, KW 47)** – `CoreStatusBanner` zentral einsetzen, optionale Rückkehr zur React-Three-Fiber-Szene wenn WebGL stabil ist.
-4. **LLM-Switch Vorarbeit + Deployment-Pfade (GEPLANT, KW 48–50)** – Backend-ENV `LLM_PROVIDER` testen, Ollama-Guides anwenden, Vercel/Hetzner Deployment finalisieren inkl. Auth-Plan.
-5. **Demo/Prod Readiness (GEPLANT, bis Jan 2026)** – End-to-End Testlauf mit echtem Core, Workflows mit n8n-Webhooks, Monitoring/Latency in Diagnostics ergänzen.
+## 5. Roadmap bis JanΓÇ»2026
+1. **Stabilisierung der Core-Verbindung & Diagnostics (GEPLANT, KWΓÇ»45)** ΓÇô Health-Checks regelm├ñ├ƒig ausf├╝hren, CORS f├╝r PortΓÇ»3002 final anpassen, Diagnostics-Badge als Standard-Testschritt etablieren.
+2. **OrbFilter + Chat-Datasource live schalten (GEPLANT, KWΓÇ»46)** ΓÇô Lens/Objects wirklich ├╝ber `?orb` filtern, `MoraChat` auf `useChatData` umziehen und Source-Toggle exponieren.
+3. **Fallback-UX & 3D-Mycelium solidifizieren (GEPLANT, KWΓÇ»47)** ΓÇô `CoreStatusBanner` zentral einsetzen, optionale R├╝ckkehr zur React-Three-Fiber-Szene wenn WebGL stabil ist.
+4. **LLM-Switch Vorarbeit + Deployment-Pfade (GEPLANT, KWΓÇ»48ΓÇô50)** ΓÇô Backend-ENV `LLM_PROVIDER` testen, Ollama-Guides anwenden, Vercel/Hetzner Deployment finalisieren inkl. Auth-Plan.
+5. **Demo/Prod Readiness (GEPLANT, bis JanΓÇ»2026)** ΓÇô End-to-End Testlauf mit echtem Core, Workflows mit n8n-Webhooks, Monitoring/Latency in Diagnostics erg├ñnzen.
 
 ---
 
-## 5. Demo-View-Zustände
-- **Field Mode** – Zeigt Spinner „Môra sammelt Field-Daten …“, sobald Snapshots geladen werden. Wenn keine Nodes im aktuellen Snapshot vorhanden sind, erscheint der Hinweis „Noch keine Field-Impulse“; Auswahl synchronisiert weiter ins Insights-Panel.
-- **Folder Mode** – Leerer Folder meldet „Keine Dokumente im aktuellen Blick“, Hover-Toolbar ist auch per Tastatur erreichbar (Fokus blendet Quick Actions ein).
-- **Insights Panel** – Ohne Auswahl fordert das Context-Panel klar auf, ein Objekt im Field oder Folder zu wählen; bei Offline/Auth greift der CoreStatusBanner mit identischem Retry-Flow.
-- **Môra Chat** – Offline/Auth nutzt ebenfalls den CoreStatusBanner; Header weist explizit auf den Demo-Modus hin, Antworten spiegeln weiterhin Mock-Objects wider.
+## 5. Demo-View-Zust├ñnde
+- **Field Mode** ΓÇô Zeigt Spinner ΓÇ₧M├┤ra sammelt Field-Daten ΓÇªΓÇ£, sobald Snapshots geladen werden. Wenn keine Nodes im aktuellen Snapshot vorhanden sind, erscheint der Hinweis ΓÇ₧Noch keine Field-ImpulseΓÇ£; Auswahl synchronisiert weiter ins Insights-Panel.
+- **Folder Mode** ΓÇô Leerer Folder meldet ΓÇ₧Keine Dokumente im aktuellen BlickΓÇ£, Hover-Toolbar ist auch per Tastatur erreichbar (Fokus blendet Quick Actions ein).
+- **Insights Panel** ΓÇô Ohne Auswahl fordert das Context-Panel klar auf, ein Objekt im Field oder Folder zu w├ñhlen; bei Offline/Auth greift der CoreStatusBanner mit identischem Retry-Flow.
+- **M├┤ra Chat** ΓÇô Offline/Auth nutzt ebenfalls den CoreStatusBanner; Header weist explizit auf den Demo-Modus hin, Antworten spiegeln weiterhin Mock-Objects wider.
 
 ## 6. Offene Punkte / TODOs
-- **Diagnostics Logging** – Health/Ping funktioniert; es fehlt weiterhin ein klarer Prozess, wann Panel-Ergebnisse dokumentiert werden (z. B. automatischer Logeintrag).
-- **Error Toasts** – Fehlermeldungen erscheinen nur als Console-Warnung; UI-Feedback (Toast/Alert) fehlt weiterhin.
-- **3D-Mycelium** – Canvas-2D-Version ist aktiv, die ursprüngliche React-Three-Fiber-Szene bleibt aufgrund WebGL-Issues deaktiviert; Re-Enable sobald Browser/GPU stabil sind.
-- **Auth & Deployment** – Noch keine User Auth oder Prod Deployment; Guides vorhanden, Umsetzung steht aus.
+- **Diagnostics Logging** ΓÇô Health/Ping funktioniert; es fehlt weiterhin ein klarer Prozess, wann Panel-Ergebnisse dokumentiert werden (z.ΓÇ»B. automatischer Logeintrag).
+- **Error Toasts** ΓÇô Fehlermeldungen erscheinen nur als Console-Warnung; UI-Feedback (Toast/Alert) fehlt weiterhin.
+- **3D-Mycelium** ΓÇô Canvas-2D-Version ist aktiv, die urspr├╝ngliche React-Three-Fiber-Szene bleibt aufgrund WebGL-Issues deaktiviert; Re-Enable sobald Browser/GPU stabil sind.
+- **Auth & Deployment** ΓÇô Noch keine User Auth oder Prod Deployment; Guides vorhanden, Umsetzung steht aus.
 
 ---
 
 ## 7. Quellen & Referenzen
-- `README.md` – Quickstart, ENV-Doku, Diagnostics-/Chat-Hinweise (Stand 2025-11-10).
-- `.env.local.example` – Vollständige Liste der benötigten Variablen.
-- `lib/config.ts`, `lib/api.ts`, `lib/hooks/useApi.ts`, `lib/hooks/useChatData.ts` – Technische Implementierung der beschriebenen Systeme.
-- `components/diagnostics/DiagnosticsPanel.tsx`, `components/errors/CoreStatusBanner.tsx`, `components/lens/OrbFilter.tsx`, `components/chat/MoraChat.tsx`, `components/canvas/FieldMode.tsx`, `components/insights/WorkflowRunner.tsx` – Codebelege für den IST-Stand der Module.
-- `docs/DIAGNOSTICS_LOGGING.md`, `docs/DIAGNOSTICS_EXPORT_GUIDE.md`, `docs/LLM_SWITCH.md` – Logging-/Export- bzw. LLM-Spezifikationen.
-- `CORS_REQUIREMENT.md`, `TEST_GUIDE.md`, `DEMO_GUIDE.md` – Hintergrund für Port-/Testing-Details (teils veraltet, aber Fakten geprüft).
+- `README.md` ΓÇô Quickstart, ENV-Doku, Diagnostics-/Chat-Hinweise (Stand 2025-11-10).
+- `.env.local.example` ΓÇô Vollst├ñndige Liste der ben├╢tigten Variablen.
+- `lib/config.ts`, `lib/api.ts`, `lib/hooks/useApi.ts`, `lib/hooks/useChatData.ts` ΓÇô Technische Implementierung der beschriebenen Systeme.
+- `components/diagnostics/DiagnosticsPanel.tsx`, `components/errors/CoreStatusBanner.tsx`, `components/lens/OrbFilter.tsx`, `components/chat/MoraChat.tsx`, `components/canvas/FieldMode.tsx`, `components/insights/WorkflowRunner.tsx` ΓÇô Codebelege f├╝r den IST-Stand der Module.
+- `docs/DIAGNOSTICS_LOGGING.md`, `docs/DIAGNOSTICS_EXPORT_GUIDE.md`, `docs/LLM_SWITCH.md` ΓÇô Logging-/Export- bzw. LLM-Spezifikationen.
+- `CORS_REQUIREMENT.md`, `TEST_GUIDE.md`, `DEMO_GUIDE.md` ΓÇô Hintergrund f├╝r Port-/Testing-Details (teils veraltet, aber Fakten gepr├╝ft).
 
-Alle Aussagen in diesem Dokument wurden gegen diese Quellen abgeglichen; ältere Logs (PROJECT_STATUS, PHASE*_COMPLETE, FINAL_SUMMARY etc.) dienen nur noch der Historie und flossen nicht in den IST-Status ein.
+Alle Aussagen in diesem Dokument wurden gegen diese Quellen abgeglichen; ├ñltere Logs (PROJECT_STATUS, PHASE*_COMPLETE, FINAL_SUMMARY etc.) dienen nur noch der Historie und flossen nicht in den IST-Status ein.
 
 ---
 
-**Letztes Update:** 2025‑11‑11 · Verantwortlich: Codex Agent  
-Dieses Dokument ersetzt alle vorherigen Status-Zusammenfassungen für mora-ui.
+**Letztes Update:** 2025ΓÇæ11ΓÇæ11 ┬╖ Verantwortlich: Codex Agent  
+Dieses Dokument ersetzt alle vorherigen Status-Zusammenfassungen f├╝r mora-ui.
 
 
 ## Demo State Reference
@@ -182,11 +182,11 @@ Dieses Dokument ersetzt alle vorherigen Status-Zusammenfassungen für mora-ui.
 - **Fallback:** Jede Antwort echos die Eingabe und endet mit "(Demo-Modus - Mora liefert spaeter ...)".
 
 ### Wave 3 Manual Checks
-1. `/field` ohne Daten laden → Spinner erscheint; danach Mock-Daten aktivieren und auf Node klicken → ContextPanel aktualisiert sich.
-2. `/field` Timeline klicken → aktiver Snapshot-Chip zeigt Glow, Reset/View Buttons funktionieren.
-3. `/folder` Filter setzen, leeren und per Tab in eine Row wechseln → Hover-Toolbar reagiert, Sortierbuttons wechseln Reihenfolge (Name vs. Modified).
-4. `/insights` ohne Auswahl starten → Intro-Text sichtbar; danach Objekt waehlen → Titel/Typ/Quick-Actions inklusive Demo-Hinweis.
-5. Mora Chat oeffnen → Offline (falls Health down) zeigt Banner; ohne Objekte Nachricht senden → Echo + Demo-Text; nach Mock-Sync erscheinen normale Listen/Suchen.
+1. `/field` ohne Daten laden ΓåÆ Spinner erscheint; danach Mock-Daten aktivieren und auf Node klicken ΓåÆ ContextPanel aktualisiert sich.
+2. `/field` Timeline klicken ΓåÆ aktiver Snapshot-Chip zeigt Glow, Reset/View Buttons funktionieren.
+3. `/folder` Filter setzen, leeren und per Tab in eine Row wechseln ΓåÆ Hover-Toolbar reagiert, Sortierbuttons wechseln Reihenfolge (Name vs. Modified).
+4. `/insights` ohne Auswahl starten ΓåÆ Intro-Text sichtbar; danach Objekt waehlen ΓåÆ Titel/Typ/Quick-Actions inklusive Demo-Hinweis.
+5. Mora Chat oeffnen ΓåÆ Offline (falls Health down) zeigt Banner; ohne Objekte Nachricht senden ΓåÆ Echo + Demo-Text; nach Mock-Sync erscheinen normale Listen/Suchen.
 
 ## Wave 4 - Demo Journey
 - Home Intro weist klar auf Demo-Kontext hin (Mock-Daten, keine Produktion) und bietet einen CTA zum Neustart des Onboardings.
@@ -222,8 +222,14 @@ Dieses Dokument ersetzt alle vorherigen Status-Zusammenfassungen für mora-ui.
 - Chat: Panel-Radius/Border wie Home, Bubbles gruppiert, Input-Bar an Home-Form-Style; Antwort-Logik bleibt Demo, zentraler Reply-Hook fuer spaetere Real-API.
 
 ### Wave 5 Stage 2 Manual Checks
-1. Field �ffnen -> Header (Myzel-Ansicht), Toolbar-Chips, goldener Fokus + Timeline-Chips wie zuvor.
+1. Field ÷ffnen -> Header (Myzel-Ansicht), Toolbar-Chips, goldener Fokus + Timeline-Chips wie zuvor.
 2. Snapshot ohne Nodes -> Empty-State bleibt; Reset/Zoom/Legend funktionieren.
-3. Folder �ffnen -> neuer Listen-Hero, Sortierung Name/Modified funktioniert, Hover-Toolbar per Tastatur weiterhin sichtbar; Empty-State klar.
-4. Insights �ffnen -> ContextPanel zeigt Meta-Header; kein Objekt vs. Objekt gew�hlt (Titel/Typ/Tags/Actions) bleibt funktionsgleich.
+3. Folder ÷ffnen -> neuer Listen-Hero, Sortierung Name/Modified funktioniert, Hover-Toolbar per Tastatur weiterhin sichtbar; Empty-State klar.
+4. Insights ÷ffnen -> ContextPanel zeigt Meta-Header; kein Objekt vs. Objekt gewΣhlt (Titel/Typ/Tags/Actions) bleibt funktionsgleich.
 5. Chat togglen -> Banner bei Offline/Auth unveraendert, Echo-Antwort im Demo-Modus, Input-Bar und Bubbles im neuen Layout.
+## Mycelium Model & Shared Selection (Wave 7)
+- Modell: `MoraNode` (id, label, type, space, tags, meta), `MoraEdge` (source/target/kind/weight), `MoraSpace` (id/label/kind) in `lib/mycelium/model.ts`.
+- Auswahl: zentral im Session-Store (`myceliumSelection`), Helper-Hook `useMyceliumSelection` verbindet UI-State mit Auswahl.
+- Schreibende Flaechen: Field (Knoten-Klick) und Folder (Row-Select) setzen die Selection ohne das Awareness-Logging zu aendern.
+- Lesende Flaechen: ContextPanel und Chat zeigen den gleichen Kontext (MyceliumContextChip) und leiten daraus die Antworten/Quick-Actions ab.
+- Story: Wald oben, Myzel unten - der Chip benennt den Kontext aus Feld/Ordner. Semantische Auswertung ist vorbereitet und nur bei Flag aktiv; Standard bleibt das Demo-Dashboard, spaeter laeuft derselbe Pfad mit echten Organisationsdaten.

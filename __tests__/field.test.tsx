@@ -35,7 +35,12 @@ jest.mock('@/lib/hooks/useRole', () => ({
 }));
 jest.mock('@/store/session', () => ({
   useSessionStore: (selector?: (state: any) => any) => {
-    const state = { setLastSnapshotId: jest.fn() };
+    const state = {
+      setLastSnapshotId: jest.fn(),
+      setMyceliumSelection: jest.fn(),
+      clearMyceliumSelection: jest.fn(),
+      myceliumSelection: { kind: 'none' },
+    };
     return selector ? selector(state) : state;
   },
 }));

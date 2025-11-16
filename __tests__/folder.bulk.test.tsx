@@ -40,7 +40,7 @@ describe('Folder ListView bulk actions', () => {
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
 
-    expect(screen.getByText(/2 ausgewählt/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 ausgewaehlt/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Mark reviewed/i }));
     const stored = localStorage.getItem('mora_reviewed_objects');
