@@ -11,9 +11,9 @@ export default function FolderMode() {
   const [view, setView] = useState<ViewType>('tree');
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-background">
       {/* Toolbar */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-5 border-b border-border flex items-center justify-between bg-card/80">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-semibold">📁 Folder Mode</h2>
           <div className="flex gap-1 bg-secondary rounded-md p-1">
@@ -46,7 +46,7 @@ export default function FolderMode() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
         {view === 'tree' ? <TreeView /> : <ListView />}
       </div>
     </div>

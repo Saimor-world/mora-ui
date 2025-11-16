@@ -71,7 +71,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-background via-card/20 to-background">
       {/* Section header */}
-      <div className="border-b border-border/60 bg-card/80 px-4 sm:px-6 py-5">
+      <div className="border-b border-border/60 bg-card/80 px-4 sm:px-6 py-6">
         <div className="max-w-6xl mx-auto flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <p className="text-[11px] uppercase tracking-[0.35em] text-muted-foreground">Myzel-Ansicht</p>
@@ -94,7 +94,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
       </div>
 
       {/* Toolbar */}
-      <div className="border-b border-border/60 bg-card/60 px-4 sm:px-6 py-3">
+      <div className="border-b border-border/60 bg-card/60 px-4 sm:px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3 flex-wrap">
             {snapshot && (
@@ -126,7 +126,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
       </div>
 
       {/* 3D Scene */}
-      <div className="flex-1 relative px-4 sm:px-6 py-4">
+      <div className="flex-1 relative px-4 sm:px-6 py-6">
         {showLoadingState ? (
           <div className="h-full flex items-center justify-center" role="status" aria-live="polite">
             <div className="flex flex-col items-center gap-3">

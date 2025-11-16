@@ -106,15 +106,15 @@ afterEach(() => {
 describe('HomePage', () => {
   it('renders hero heading and CTA', () => {
     render(<HomePage />);
-    expect(screen.getByText(/Demo-Raum/i)).toBeInTheDocument();
+    expect(screen.getByText(/Resonanzraum/i)).toBeInTheDocument();
     expect(screen.getByText(/Rolle:/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Beginne mit deinen ersten Daten/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Datenquellen/i })).toBeInTheDocument();
   });
 
   it('shows pulse card with online state', () => {
     render(<HomePage />);
     const pulse = screen.getByTestId('home-pulse-card');
-    expect(within(pulse).getByText(/Stabilitaet/i)).toBeInTheDocument();
+    expect(within(pulse).getByText(/Systemgesundheit/i)).toBeInTheDocument();
     expect(within(pulse).getByText(/System Pulse/i)).toBeInTheDocument();
   });
 
@@ -158,7 +158,7 @@ describe('HomePage', () => {
     );
 
     render(<HomePage />);
-    const mockButton = await screen.findByRole('button', { name: /Mock-Sync/i });
+    const mockButton = await screen.findByRole('button', { name: /Demo-Sync/i });
     fireEvent.click(mockButton);
     expect(mockButton).toHaveTextContent(/Simulation/i);
 

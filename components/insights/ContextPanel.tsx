@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { MoraObject } from '@/lib/types';
 import DocumentViewer from '@/components/documents/DocumentViewer';
 import { showToast } from '@/lib/toast';
+import PanelCard from '@/components/ui/PanelCard';
 
 interface ContextPanelProps {
   selectedObject?: MoraObject | null;
@@ -14,23 +15,23 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
   if (!selectedObject) {
     return (
       <div className="p-4" aria-live="polite">
-        <div className="rounded-2xl border border-border/70 bg-card/80 p-4 space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Kein Objekt ausgewaehlt</p>
+        <PanelCard paddingClassName="p-4" className="bg-card/80 space-y-3">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Kontext</p>
           <div className="text-sm text-muted-foreground">
-            Waehle ein Objekt im Field oder Folder, dann halte ich hier die Details fest.
+            Waehle ein Objekt im Field oder in der Liste. Dann siehst du hier Titel, Typ, Tags, Pfad und Quick Actions.
           </div>
-        </div>
+        </PanelCard>
       </div>
     );
   }
 
   return (
     <div className="p-4">
-      <div className="rounded-2xl border border-border/70 bg-card/80 p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Objekt ausgewaehlt</p>
-            <p className="text-sm text-muted-foreground">Details aus Field oder Folder.</p>
+      <PanelCard paddingClassName="p-5" className="bg-card/80 space-y-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Objektdetails</p>
+            <p className="text-sm text-muted-foreground">Uebernommen aus Field oder Folder.</p>
           </div>
           {selectedObject.source === 'mock' && (
             <span className="px-2 py-1 bg-amber-500/20 text-amber-600 dark:text-amber-400 text-xs rounded border border-amber-500/30 whitespace-nowrap">
@@ -40,16 +41,16 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
         </div>
 
         {/* Object Details */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Title */}
           <div>
-            <div className="text-xs text-muted-foreground mb-1">Title</div>
+            <div className="text-xs text-muted-foreground mb-1">Titel</div>
             <div className="font-medium">{selectedObject.title}</div>
           </div>
 
           {/* Type */}
           <div>
-            <div className="text-xs text-muted-foreground mb-1">Type</div>
+            <div className="text-xs text-muted-foreground mb-1">Typ</div>
             <div className="inline-flex items-center px-2 py-1 rounded-md bg-secondary text-xs font-medium">
               {selectedObject.type}
             </div>
@@ -57,7 +58,7 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
 
           {/* Space */}
           <div>
-            <div className="text-xs text-muted-foreground mb-1">Space</div>
+            <div className="text-xs text-muted-foreground mb-1">Bereich</div>
             <div className="text-sm">{selectedObject.spaceId || 'Unbekannt'}</div>
           </div>
 
@@ -75,7 +76,7 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
           {selectedObject.tags && selectedObject.tags.length > 0 && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Tags</div>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-2">
                 {selectedObject.tags.map((tag, i) => (
                   <span
                     key={i}
@@ -120,7 +121,7 @@ export default function ContextPanel({ selectedObject }: ContextPanelProps) {
             </button>
           </div>
         </div>
-      </div>
+      </PanelCard>
 
       {/* Document Viewer Modal */}
       {viewerOpen && (

@@ -10,8 +10,8 @@ export default function Timeline({ snapshots, current, onChange }: TimelineProps
   const labels = snapshots.map((_, index) => `t${index}`);
 
   return (
-    <div className="p-4 sm:p-5 border-t border-border/60 bg-card/60 rounded-b-2xl">
-      <div className="flex items-center gap-4">
+    <div className="p-5 sm:p-6 border-t border-border/60 bg-card/60 rounded-b-2xl">
+      <div className="flex items-center gap-5">
         {/* Label */}
         <div className="text-sm font-medium text-muted-foreground">
           Timeline

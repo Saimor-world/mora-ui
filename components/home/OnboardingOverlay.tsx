@@ -7,15 +7,15 @@ import { emitMoraEvent } from '@/lib/mora/listener';
 const STEPS = [
   {
     title: 'Verbindungen simulieren',
-    text: 'Nutze den Mock-Modus auf Home oder verbinde echte Quellen, um den Raum zu fuellen.',
+    text: 'Starte die Demo-Daten auf Home oder verbinde echte Quellen, um den Raum zu füllen.',
   },
   {
     title: 'Myzel ansehen',
-    text: 'Oeffne den Field Mode und klicke einen Knoten an, um den Kontext zu sehen.',
+    text: 'Öffne Field oder Folder und klicke ein Objekt an, um Kontext zu sehen.',
   },
   {
     title: 'Chat testen',
-    text: 'Sende im Chat eine Frage zu deinen Demo-Objekten. Antworten bleiben im Demo-Modus.',
+    text: 'Teste den Chat mit den Demo-Objekten. Später antwortet er auf eure echten Daten.',
   },
 ];
 

@@ -27,6 +27,8 @@ import DiagnosticsPanel from "@/components/diagnostics/DiagnosticsPanel";
 import { useHealthCheck } from "@/lib/hooks/useApi";
 import { getHealthFlags } from "@/lib/health";
 import { QueryProvider } from "@/lib/queryClient";
+import PageSection from "@/components/ui/PageSection";
+import PanelCard from "@/components/ui/PanelCard";
 
 function HomePageInner() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -290,16 +292,17 @@ function HomePageInner() {
           <ActivityPulse activities={mockActivity} dimFallback={isEmptyState} />
         </div>
         
-        <section
+        <PageSection
           ref={heroRef}
-          className="relative px-4 sm:px-8 py-20 sm:py-28 border-b border-border/50"
+          className="relative py-20 sm:py-28 border-b border-border/50"
+          maxWidthClassName="max-w-5xl"
         >
           <div className="absolute top-6 right-4 sm:right-10">
             <RoleSwitcher />
           </div>
-          <div className="max-w-5xl mx-auto flex flex-col items-center text-center gap-6">
+          <div className="flex flex-col items-center text-center gap-6">
             <div className="flex flex-wrap justify-center gap-2 text-[11px] uppercase tracking-[0.35em] text-muted-foreground">
-              <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">Môra Demo-Raum</span>
+              <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">Mora Resonanzraum</span>
               <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">Rolle: {roleDefinition.label}</span>
               <span className="px-3 py-1 rounded-full border border-border/60 bg-card/70">{stageLabel}</span>
             </div>
@@ -309,7 +312,7 @@ function HomePageInner() {
                 {roleDefinition.homeMessage}
               </p>
               <p className="text-xs text-muted-foreground">
-                Geführter Produkt-Raum: Reale Verbindungen werden bevorzugt, Mock-Daten bleiben klar gekennzeichnet.
+                Gefuehrter Produkt-Blick: Quellen verbinden, Zusammenhaenge sehen, mit Mora sprechen – heute mit Demo-Daten, spaeter mit euren Systemen.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 text-[11px] text-muted-foreground uppercase tracking-wide">
@@ -324,33 +327,33 @@ function HomePageInner() {
                 onClick={() => connectorsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
                 className="px-6 py-3 rounded-full bg-primary text-primary-foreground text-sm font-semibold mora-transition mora-ripple"
               >
-                Beginne mit deinen ersten Daten
+                Starte mit deinen Datenquellen
               </button>
               <button
                 type="button"
                 onClick={() => setIntroSeen(false)}
                 className="text-sm px-4 py-2 rounded-full border border-dashed border-border text-muted-foreground hover:text-foreground mora-transition"
               >
-                Onboarding anzeigen
+                Kurze Tour erneut starten
               </button>
             </div>
           </div>
-        </section>
+        </PageSection>
 
       </div>
 
-      <section className="px-4 sm:px-8 pb-10">
-        <div className="max-w-6xl mx-auto grid gap-6 lg:grid-cols-2">
-          <div
-            className="rounded-2xl border border-border/70 bg-card/85 shadow-xl p-6 lg:p-7 space-y-4"
+      <PageSection className="py-12" containerClassName="grid gap-6 lg:grid-cols-2">
+          <PanelCard
+            paddingClassName="p-6 lg:p-7"
+            className="space-y-4 shadow-xl"
             data-testid="home-pulse-card"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">System Pulse</p>
-                <h3 className="text-lg font-semibold">Stabilitaet & Demo-Modus</h3>
+                <h3 className="text-lg font-semibold">Systemgesundheit & Datenlage</h3>
                 <p className="text-sm text-muted-foreground">
-                  Core-Status, Verbindungen und letzter Check auf einen Blick.
+                  Core-Status, Demo-Quellen und letzter Check auf einen Blick.
                 </p>
               </div>
               <span className={`flex items-center gap-2 text-xs px-3 py-1 rounded-full border ${coreStatusTone}`}>
@@ -363,11 +366,11 @@ function HomePageInner() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 flex items-center justify-between">
-                <span className="text-muted-foreground">Core</span>
+                <span className="text-muted-foreground">Core-Status</span>
                 <span className={`font-semibold ${coreStatusText}`}>{coreStatusLabel}</span>
               </div>
               <div className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 flex items-center justify-between">
-                <span className="text-muted-foreground">Connectors</span>
+                <span className="text-muted-foreground">Demo-Quellen</span>
                 <span className="font-semibold">{connectedCount} / {connectorsTotal} aktiv</span>
               </div>
               <div className="rounded-xl border border-border/60 bg-background/70 px-4 py-3 flex items-center justify-between sm:col-span-2">
@@ -382,7 +385,7 @@ function HomePageInner() {
                 className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold mora-transition"
                 data-testid="open-diagnostics"
               >
-                Diagnostics oeffnen
+                Diagnostics anzeigen
               </button>
               <button
                 type="button"
@@ -390,28 +393,28 @@ function HomePageInner() {
                 disabled={mockSyncRunning}
                 className="px-4 py-2 rounded-full border border-border text-sm mora-transition disabled:opacity-60"
               >
-                {mockSyncRunning ? "Simulation laeuft..." : "Mock-Sync starten"}
+                {mockSyncRunning ? "Simulation laeuft..." : "Demo-Sync starten"}
               </button>
               <button
                 type="button"
                 onClick={() => refetchHealth()}
                 className="text-xs px-3 py-2 rounded-full border border-border/70 hover:bg-secondary mora-transition"
               >
-                Health aktualisieren
+                Health neu laden
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Mock-Sync haelt den Demo-Modus aktuell. Diagnostics oeffnet die Detailansicht.
+              Demo-Sync haelt die Mock-Daten frisch. Diagnostics zeigt Details zum System.
             </p>
-          </div>
+          </PanelCard>
 
-          <div className="rounded-2xl border border-border/70 bg-card/85 shadow-xl p-6 lg:p-7 space-y-4">
+          <PanelCard paddingClassName="p-6 lg:p-7" className="space-y-4 shadow-xl">
             <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Naechste Schritte</p>
-            <h3 className="text-lg font-semibold">Gefuehrter Einstieg</h3>
+            <h3 className="text-lg font-semibold">Gefuehrte Demo-Reise</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>1) Verbindungen simulieren oder echte Quellen verbinden.</li>
-              <li>2) Field Mode oeffnen und Kontext auf einem Knoten pruefen.</li>
-              <li>3) Chat testen und eine Demo-Antwort erhalten.</li>
+              <li>1) Demo-Daten starten oder echte Quellen verbinden – das weckt den Raum.</li>
+              <li>2) Field/Folder oeffnen und ein Objekt fokussieren – so zeigt Mora Beziehungen.</li>
+              <li>3) Mit Mora sprechen – Antworten stammen aus den Demo-Objekten und spaeter aus euren Daten.</li>
             </ul>
             <div className="flex gap-2 flex-wrap">
               <Link href="/field" className="px-4 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-sm mora-transition">
@@ -421,15 +424,14 @@ function HomePageInner() {
                 Zum Folder Mode
               </Link>
             </div>
-          </div>
-        </div>
-      </section>
-      <section className="px-4 sm:px-8 pb-10">
-        <div className="rounded-3xl border border-border/70 bg-card/85 shadow-lg overflow-hidden">
+          </PanelCard>
+      </PageSection>
+      <PageSection className="py-12">
+        <PanelCard className="rounded-3xl shadow-lg overflow-hidden" paddingClassName="p-0">
           <div className="grid gap-6 lg:grid-cols-2 p-6">
             <div className="space-y-4">
               <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
-                Môra ist wach · {roleDefinition.label}
+                Mora hoert zu - {roleDefinition.label}
               </p>
               <h3 className="text-2xl font-medium">{awarenessSummary.headline}</h3>
               <p className="text-sm text-muted-foreground max-w-xl">{awarenessSummary.detail}</p>
@@ -487,16 +489,15 @@ function HomePageInner() {
               )}
             </div>
           </div>
-        </div>
-      </section>
+        </PanelCard>
+      </PageSection>
 
-
-      <section className="px-4 sm:px-8 py-12">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <PageSection className="py-12">
+        <div className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="text-sm uppercase tracking-wide text-muted-foreground">Schritt 1</p>
-              <h2 className="text-2xl font-medium">Verbinde deine Quellen</h2>
+              <h2 className="text-2xl font-medium">Quellen anschliessen</h2>
             </div>
             <button
               onClick={handleMockSimulation}
@@ -524,21 +525,21 @@ function HomePageInner() {
             )}
           </div>
         </div>
-      </section>
+      </PageSection>
 
-      <section className="px-4 sm:px-8 py-12">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-6 items-center">
+      <PageSection className="py-12">
+        <div className="grid lg:grid-cols-2 gap-6 items-center">
           <div className="space-y-4">
             <p className="text-sm uppercase tracking-wide text-muted-foreground">Schritt 2</p>
-            <h2 className="text-2xl font-medium">Môra versteht</h2>
+            <h2 className="text-2xl font-medium">Mora verknuepft</h2>
             <p className="text-sm text-muted-foreground">
-              Datenpunkte verbinden sich zu einem Myzel-Netz. Jede neue Quelle staerkt das gemeinsame Bewusstsein.
+              Datenpunkte formen ein Myzel. Jede neue Quelle schaerft das gemeinsame Bild.
             </p>
             <ConnectionMap nodes={connectionNodes.length === 0 ? undefined : connectionNodes} />
           </div>
           <div className="space-y-4">
             <h3 className="text-sm uppercase tracking-wide text-muted-foreground">Letzte Aktionen</h3>
-            <div className="rounded-3xl border border-border bg-card/70 p-4 max-h-64 overflow-auto">
+            <PanelCard className="rounded-3xl bg-card/70" paddingClassName="p-4 max-h-64 overflow-auto border-border">
               {recentEvents.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Noch keine Awareness-Events - verbinde eine Quelle oder erkunde das Feld.
@@ -567,15 +568,14 @@ function HomePageInner() {
                   ))}
                 </ul>
               )}
-            </div>
+            </PanelCard>
           </div>
         </div>
-      </section>
-
-      <section className="px-4 sm:px-8 py-16 text-center space-y-4">
-        <h2 className="text-2xl font-medium">Bereit, Môra zu erkunden?</h2>
+      </PageSection>
+      <PageSection className="py-16 text-center space-y-4">
+        <h2 className="text-2xl font-medium">Bereit, Mora weiter zu erkunden?</h2>
         <p className="text-sm text-muted-foreground">
-          Folder Mode für Dokumente. Field Mode für Verbindungen. Insights für Resonanz.
+          Folder Mode fuer Dokumente. Field Mode fuer Verbindungen. Insights fuer Resonanz.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link href="/folder" className="px-6 py-2 rounded-full bg-secondary hover:bg-secondary/80 text-sm mora-transition">
@@ -585,7 +585,7 @@ function HomePageInner() {
             Zu Field Mode
           </Link>
         </div>
-      </section>
+      </PageSection>
 
       {setupTarget && (
         <ConnectorSetupModal
@@ -822,6 +822,7 @@ export default function HomePage() {
     </QueryProvider>
   );
 }
+
 
 
 

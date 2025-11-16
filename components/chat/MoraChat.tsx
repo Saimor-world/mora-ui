@@ -6,6 +6,7 @@ import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 import { useChatData } from '@/lib/hooks/useChatData';
 import { useHealthCheck } from '@/lib/hooks/useApi';
 import { getHealthFlags } from '@/lib/health';
+import PanelCard from '@/components/ui/PanelCard';
 
 interface Message {
   id: string;
@@ -15,10 +16,10 @@ interface Message {
 }
 
 const SUGGESTIONS = [
-  '- "Zeig mir alle Objects"',
-  '- "Wie viele Documents gibt es?"',
-  '- "Liste Q4 Budget"',
-  '- "Finde Service-Orb Inhalte"',
+  'Zeig mir alle Objects',
+  'Wie viele Documents gibt es?',
+  'Liste Q4 Budget',
+  'Finde Service-Orb Inhalte',
 ];
 
 export default function MoraChat() {
@@ -28,7 +29,7 @@ export default function MoraChat() {
       id: 'intro',
       role: 'mora',
       content:
-        'Hallo! Ich bin Mora. Ich kann Objektdaten abrufen, nach Tags suchen und Workflows erklaeren. Frag mich nach einem Object, Snapshot oder Workflow.',
+        'Hallo, ich bin Mora. Diese gefuehrte Demo nutzt Beispiel-Objekte. Frag nach Objekten, Tags oder Snapshots – spaeter beantworte ich das mit euren echten Daten.',
       timestamp: new Date(),
     },
   ]);
@@ -96,17 +97,17 @@ export default function MoraChat() {
       {/* Chat Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-br from-[#34D399] to-[#0EA5E9] text-white rounded-full shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center z-50"
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-6 right-6 h-14 px-5 rounded-2xl border border-border/70 bg-card/95 text-foreground shadow-xl hover:shadow-2xl mora-transition flex items-center gap-2 z-50"
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.97 }}
         aria-label="Mora Chat"
       >
         {isOpen ? (
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -115,6 +116,7 @@ export default function MoraChat() {
             />
           </svg>
         )}
+        <span className="text-sm font-semibold">{isOpen ? 'Schliessen' : 'Mora Chat'}</span>
       </motion.button>
 
       {/* Chat Panel */}
@@ -124,32 +126,34 @@ export default function MoraChat() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-24 right-6 w-96 h-[620px] bg-card/95 border border-border/70 rounded-3xl shadow-2xl z-40 flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 w-96 h-[620px] z-40"
           >
-            <div className="p-4 border-b border-border/70 bg-card/90 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Mora Chat</h3>
-                <p className="text-xs text-muted-foreground">
-                  Datenquelle: {chatData.source === 'semantic' ? 'Semantic Search' : 'Objects'}
-                </p>
-                {hasDemoData ? (
-                  <p className="text-[11px] text-muted-foreground">
-                    Demo-Modus - Antworten spiegeln gespeicherte Mock-Daten.
+            <PanelCard className="h-full backdrop-blur-md flex flex-col overflow-hidden" paddingClassName="p-0 bg-card/95 shadow-2xl">
+              <div className="p-4 border-b border-border/70 bg-card/90 flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-foreground">Mora Chat</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Antworten aus {chatData.source === 'semantic' ? 'Semantic Search' : 'Objects'} - Demo-Modus aktiv.
                   </p>
-                ) : (
-                  <p className="text-[11px] text-amber-600">
-                    Noch keine Demo-Objekte geladen - Antworten bleiben neutral.
-                  </p>
-                )}
-
+                  {hasDemoData ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      Gefuehrte Demo: Antworten basieren auf Beispiel-Objekten. Spaeter nutzt Mora eure realen Daten.
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-amber-600">
+                      Noch keine Demo-Objekte geladen - Antworten bleiben neutral, bis Daten verbunden sind.
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <span className={`w-2 h-2 rounded-full ${isAuthError ? 'bg-amber-500' : isOffline ? 'bg-red-500' : 'bg-green-500'}`} />
+                  <span className="text-muted-foreground">
+                    {isAuthError ? 'Auth Thema' : isOffline ? 'Offline' : 'Online'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-1 text-xs">
-                <span className={`w-2 h-2 rounded-full ${isOffline ? 'bg-red-500' : 'bg-green-500'}`} />
-                <span className="text-muted-foreground">{isOffline ? 'Offline' : 'Live'}</span>
-              </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-card/80">
+            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-card/80">
               {isChatDisabled ? (
                 <div className="h-full flex items-center justify-center">
                   <CoreStatusBanner
@@ -166,6 +170,18 @@ export default function MoraChat() {
                       Demo-Modus: Lade Objekte oder aktiviere den Mock-Modus, damit Mora echte Daten beantworten kann.
                     </div>
                   )}
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {SUGGESTIONS.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setInput(suggestion)}
+                        className="px-3 py-2 rounded-xl border border-border/60 bg-background/70 hover:bg-secondary/60 mora-transition"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -197,32 +213,33 @@ export default function MoraChat() {
               )}
             </div>
 
-            {!isChatDisabled && (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  handleSend();
-                }}
-                className="p-4 border-t border-border/70 bg-card/90"
+              {!isChatDisabled && (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    handleSend();
+                  }}
+                className="p-5 border-t border-border/70 bg-card/90"
               >
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-3 py-2">
-                  <input
-                    type="text"
-                    className="flex-1 bg-transparent border-none focus:outline-none text-sm"
-                    placeholder="Frag nach Objects, Snapshots oder Workflows..."
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50"
-                    disabled={!input.trim() || isTyping}
-                  >
-                    Senden
-                  </button>
-                </div>
-              </form>
-            )}
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-4 py-3">
+                    <input
+                      type="text"
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm"
+                      placeholder="Frag nach Objects, Snapshots oder Workflows. Antworten bleiben im Demo-Modus."
+                      value={input}
+                      onChange={(event) => setInput(event.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50"
+                      disabled={!input.trim() || isTyping}
+                    >
+                      Senden
+                    </button>
+                  </div>
+                </form>
+              )}
+            </PanelCard>
           </motion.div>
         )}
       </AnimatePresence>
