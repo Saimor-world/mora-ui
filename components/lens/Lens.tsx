@@ -5,6 +5,8 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/contexts';
 import OrbFilter from './OrbFilter';
+import { useMindloopSynthesis } from '@/lib/hooks/useMindloopSynthesis';
+import { computeActions } from '@/lib/mind/actions';
 
 const NAV_LINKS = [
   { href: '/', label: 'Home', icon: '🏠' },
@@ -15,6 +17,9 @@ const NAV_LINKS = [
 
 export default function Lens() {
   const { mode, setMode, orb, setOrb } = useAppContext();
+  const { items: synthesisItems } = useMindloopSynthesis();
+  const actions = computeActions(synthesisItems || []);
+  const hasRisk = actions.some((a) => a.kind === 'risk');
   const router = useRouter();
   const pathname = usePathname();
   const shortcutPendingRef = useRef(false);
@@ -101,7 +106,7 @@ export default function Lens() {
       </div>
 
       {/* Orb Filter */}
-      <OrbFilter selected={orb} onChange={setOrb} />
+      <OrbFilter selected={orb} onChange={setOrb} hasActions={actions.length > 0} hasRisk={hasRisk} />
 
       {/* Navigation */}
       <nav className="flex-1 p-4">

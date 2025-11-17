@@ -5,6 +5,13 @@ import * as ApiHooks from '@/lib/hooks/useApi';
 
 jest.mock('@/lib/hooks/useApi', () => ({
   useSnapshots: jest.fn(),
+  useHealthCheck: jest.fn(() => ({
+    data: { status: 'online', timestamp: '2025-11-17T10:00:00Z' },
+    refetch: jest.fn(),
+  })),
+}));
+jest.mock('@/lib/hooks/useSemanticEvents', () => ({
+  useSemanticEvents: jest.fn(() => ({ data: [] })),
 }));
 jest.mock('@/components/ui/FilterBadge', () => () => <div data-testid="filter-badge" />);
 const mockNode = {
@@ -52,6 +59,9 @@ jest.mock('@/lib/mockData', () => ({
       edges: [],
     },
   ],
+}));
+jest.mock('@/lib/hooks/useMindloopSynthesis', () => ({
+  useMindloopSynthesis: jest.fn(() => ({ items: [], summary: undefined, isLoading: false, error: null })),
 }));
 
 const mockedUseSnapshots = ApiHooks.useSnapshots as jest.Mock;

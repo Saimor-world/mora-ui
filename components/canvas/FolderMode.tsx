@@ -7,7 +7,11 @@ import FilterBadge from '@/components/ui/FilterBadge';
 
 export type ViewType = 'tree' | 'list';
 
-export default function FolderMode() {
+interface FolderModeProps {
+  initialFocusId?: string;
+}
+
+export default function FolderMode({ initialFocusId }: FolderModeProps) {
   const [view, setView] = useState<ViewType>('tree');
 
   return (
@@ -47,7 +51,7 @@ export default function FolderMode() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto px-4 sm:px-6 py-4">
-        {view === 'tree' ? <TreeView /> : <ListView />}
+        {view === 'tree' ? <TreeView initialFocusId={initialFocusId} /> : <ListView initialFocusId={initialFocusId} />}
       </div>
     </div>
   );

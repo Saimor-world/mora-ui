@@ -27,7 +27,11 @@ function formatTimeAgo(timestamp?: string): string {
   return date.toLocaleDateString();
 }
 
-export default function ListView() {
+interface ListViewProps {
+  initialFocusId?: string;
+}
+
+export default function ListView({ initialFocusId }: ListViewProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'modified'>('modified');
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -93,6 +97,17 @@ export default function ListView() {
     window.addEventListener('keydown', handleKeys);
     return () => window.removeEventListener('keydown', handleKeys);
   }, [selected, sortedObjects]);
+
+  // Deep-linking: Apply initial focus from URL params
+  useEffect(() => {
+    if (!initialFocusId || sortedObjects.length === 0) return;
+    const matchingObject = sortedObjects.find((obj) => obj.id === initialFocusId);
+    if (matchingObject) {
+      handleSelect(matchingObject);
+    }
+    // If no match found, gracefully ignore and continue with normal flow
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFocusId, sortedObjects]);
 
   const inlinePreviewObject = useMemo(
     () => sortedObjects.find((obj) => obj.id === inlinePreviewId) ?? null,

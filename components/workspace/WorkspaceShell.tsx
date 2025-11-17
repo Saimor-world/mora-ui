@@ -8,8 +8,10 @@ import Insights from '@/components/insights/Insights';
 import MoraChat from '@/components/chat/MoraChat';
 import DiagnosticsPanel from '@/components/diagnostics/DiagnosticsPanel';
 import ToastViewport from '@/components/ui/ToastViewport';
+import ThoughtBubble from '@/components/hints/ThoughtBubble';
 import { AppProvider } from '@/lib/contexts';
 import { QueryProvider } from '@/lib/queryClient';
+import { ThoughtBubbleProvider } from '@/lib/contexts/ThoughtBubbleContext';
 import { useSessionStore } from '@/store/session';
 import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 
@@ -41,26 +43,29 @@ export default function WorkspaceShell({
     <QueryProvider>
       <Suspense fallback={<div className="h-screen flex items-center justify-center text-sm text-muted-foreground">Lade Môra...</div>}>
         <AppProvider initialMode={initialMode}>
-          <div
-            className={`h-screen flex overflow-hidden transition-all ${
-              prefersReducedMotion ? 'duration-150' : 'duration-500'
-            } ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-          >
-            {standaloneInsights ? (
-              <div className="flex flex-1">
-                <Insights />
-              </div>
-            ) : (
-              <>
-                <Lens />
-                <Canvas />
-                <Insights />
-                <MoraChat />
-              </>
-            )}
-            <DiagnosticsPanel />
-            <ToastViewport />
-          </div>
+          <ThoughtBubbleProvider>
+            <div
+              className={`h-screen flex overflow-hidden transition-all ${
+                prefersReducedMotion ? 'duration-150' : 'duration-500'
+              } ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+            >
+              {standaloneInsights ? (
+                <div className="flex flex-1">
+                  <Insights />
+                </div>
+              ) : (
+                <>
+                  <Lens />
+                  <Canvas />
+                  <Insights />
+                  <MoraChat />
+                </>
+              )}
+              <DiagnosticsPanel />
+              <ToastViewport />
+              <ThoughtBubble />
+            </div>
+          </ThoughtBubbleProvider>
         </AppProvider>
       </Suspense>
     </QueryProvider>

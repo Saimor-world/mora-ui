@@ -4,6 +4,8 @@ import { useHealthCheck } from '@/lib/hooks/useApi';
 import { useChatData } from '@/lib/hooks/useChatData';
 import { useSessionStore } from '@/store/session';
 import { isSemanticEnabled, getSemanticAnswer } from '@/lib/api/semantic';
+import { useMindloopSynthesis } from '@/lib/hooks/useMindloopSynthesis';
+import { computeActions } from '@/lib/mind/actions';
 
 jest.mock('@/lib/hooks/useChatData', () => ({
   useChatData: jest.fn(),
@@ -15,11 +17,22 @@ jest.mock('@/lib/api/semantic', () => ({
   isSemanticEnabled: jest.fn(),
   getSemanticAnswer: jest.fn(),
 }));
+jest.mock('@/lib/hooks/useMindloopSynthesis', () => ({
+  useMindloopSynthesis: jest.fn(() => ({ items: [], summary: undefined, isLoading: false, error: null })),
+}));
+jest.mock('@/lib/mind/actions', () => ({
+  computeActions: jest.fn(() => []),
+}));
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
 
 const mockedUseHealth = useHealthCheck as jest.Mock;
 const mockedUseChatData = useChatData as jest.Mock;
 const mockedSemanticEnabled = isSemanticEnabled as jest.Mock;
 const mockedSemanticAnswer = getSemanticAnswer as jest.Mock;
+const mockedUseMindloop = useMindloopSynthesis as jest.Mock;
+const mockedComputeActions = computeActions as jest.Mock;
 
 function buildChatData(overrides: Partial<ReturnType<typeof useChatData>> = {}) {
   return {
@@ -38,6 +51,10 @@ describe('MoraChat', () => {
     mockedUseChatData.mockReset();
     mockedSemanticEnabled.mockReset();
     mockedSemanticAnswer.mockReset();
+    mockedUseMindloop.mockReset();
+    mockedComputeActions.mockReset();
+    mockedComputeActions.mockReturnValue([]);
+    mockedUseMindloop.mockReturnValue({ items: [], summary: undefined, isLoading: false, error: null });
     mockedSemanticEnabled.mockReturnValue(false);
     useSessionStore.getState().clearMyceliumSelection?.();
   });
@@ -95,6 +112,22 @@ describe('MoraChat', () => {
     expect(screen.getAllByText(/Node One/).length).toBeGreaterThan(0);
   });
 
+  it('shows action hint indicator when actions exist', () => {
+    mockedUseHealth.mockReturnValue({
+      data: { status: 'online', timestamp: '2025-11-12T10:00:00Z' },
+      refetch: jest.fn(),
+    });
+    mockedUseChatData.mockReturnValue(buildChatData());
+    mockedSemanticEnabled.mockReturnValue(false);
+    mockedComputeActions.mockReturnValue([
+      { id: 'a1', kind: 'focus', label: 'Fokus auf Umsatz', targetNodeId: 'n1' },
+    ]);
+
+    render(<MoraChat />);
+    fireEvent.click(screen.getByLabelText(/Mora Chat/i));
+    expect(screen.getByText(/Hinweise zu deinem Raum/i)).toBeInTheDocument();
+  });
+
   it('uses semantic answer when feature flag is on and request succeeds', async () => {
     mockedUseHealth.mockReturnValue({
       data: { status: 'online', timestamp: '2025-11-12T10:00:00Z' },
@@ -126,6 +159,74 @@ describe('MoraChat', () => {
     fireEvent.click(screen.getByLabelText(/Mora Chat/i));
     const input = screen.getByPlaceholderText(/Frag nach Objects/i);
     fireEvent.change(input, { target: { value: 'Frag etwas' } });
+    fireEvent.click(screen.getByText(/Senden/i));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Semantische Auswertung gerade nicht erreichbar/i)
+      ).toBeInTheDocument()
+    );
+  });
+
+  it('does not call semantic API when feature flag is off', async () => {
+    mockedUseHealth.mockReturnValue({
+      data: { status: 'online', timestamp: '2025-11-12T10:00:00Z' },
+      refetch: jest.fn(),
+    });
+    mockedUseChatData.mockReturnValue(
+      buildChatData({
+        hasData: true,
+        search: jest.fn().mockResolvedValue([]),
+      })
+    );
+    mockedSemanticEnabled.mockReturnValue(false);
+
+    render(<MoraChat />);
+    fireEvent.click(screen.getByLabelText(/Mora Chat/i));
+    const input = screen.getByPlaceholderText(/Frag nach Objects/i);
+    fireEvent.change(input, { target: { value: 'Test' } });
+    fireEvent.click(screen.getByText(/Senden/i));
+
+    await waitFor(() => expect(screen.getByText(/Demo-Modus/i)).toBeInTheDocument());
+    expect(mockedSemanticAnswer).not.toHaveBeenCalled();
+  });
+
+  it('shows loading notice while semantic answer is being prepared', async () => {
+    mockedUseHealth.mockReturnValue({
+      data: { status: 'online', timestamp: '2025-11-12T10:00:00Z' },
+      refetch: jest.fn(),
+    });
+    mockedUseChatData.mockReturnValue(buildChatData({ hasData: true }));
+    mockedSemanticEnabled.mockReturnValue(true);
+    mockedSemanticAnswer.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve({ answer: 'Delayed answer' }), 100))
+    );
+
+    render(<MoraChat />);
+    fireEvent.click(screen.getByLabelText(/Mora Chat/i));
+    const input = screen.getByPlaceholderText(/Frag nach Objects/i);
+    fireEvent.change(input, { target: { value: 'Test' } });
+    fireEvent.click(screen.getByText(/Senden/i));
+
+    await waitFor(() =>
+      expect(screen.getByText(/Semantische Auswertung wird vorbereitet/i)).toBeInTheDocument()
+    );
+    await waitFor(() => expect(screen.getByText(/Delayed answer/)).toBeInTheDocument());
+  });
+
+  it('handles semantic API exception gracefully', async () => {
+    mockedUseHealth.mockReturnValue({
+      data: { status: 'online', timestamp: '2025-11-12T10:00:00Z' },
+      refetch: jest.fn(),
+    });
+    mockedUseChatData.mockReturnValue(buildChatData({ hasData: true }));
+    mockedSemanticEnabled.mockReturnValue(true);
+    mockedSemanticAnswer.mockRejectedValue(new Error('Network error'));
+
+    render(<MoraChat />);
+    fireEvent.click(screen.getByLabelText(/Mora Chat/i));
+    const input = screen.getByPlaceholderText(/Frag nach Objects/i);
+    fireEvent.change(input, { target: { value: 'Test' } });
     fireEvent.click(screen.getByText(/Senden/i));
 
     await waitFor(() =>

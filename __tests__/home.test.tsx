@@ -21,6 +21,10 @@ jest.mock('@/lib/hooks/useApi', () => ({
   useHealthCheck: jest.fn(),
 }));
 
+jest.mock('@/lib/hooks/useMindloopSynthesis', () => ({
+  useMindloopSynthesis: jest.fn(() => ({ items: [], summary: undefined, isLoading: false, error: null })),
+}));
+
 jest.mock('@/lib/mora/listener', () => ({
   useMoraAwareness: jest.fn(() => ({ events: [], lastEvent: null, emit: jest.fn(), clear: jest.fn() })),
   emitMoraEvent: jest.fn(),

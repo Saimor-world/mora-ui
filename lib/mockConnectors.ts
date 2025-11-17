@@ -4,27 +4,27 @@ export const mockConnectors: ConnectorStatus[] = [
   {
     id: "mock-email",
     type: "email",
-    label: "Work E-Mail (Gmail)",
+    label: "Cafe Mail (Gmail)",
     mode: "mock",
     state: "disconnected",
     lastSyncAt: null,
     objectCount: null,
-    config: { email: "demo@example.com" },
+    config: { email: "kontakt@cafe-aurora.example" },
   },
   {
     id: "mock-filesystem",
     type: "filesystem",
-    label: "Dokumente",
+    label: "Kassen-Exporte",
     mode: "mock",
     state: "disconnected",
     lastSyncAt: null,
     objectCount: null,
-    config: { path: "/Users/demo/Documents" },
+    config: { path: "/CafeAurora/Exports" },
   },
   {
     id: "mock-notion",
     type: "notion",
-    label: "Notion Workspace",
+    label: "Checklisten & Rezepte",
     mode: "mock",
     state: "disconnected",
     lastSyncAt: null,
@@ -34,7 +34,7 @@ export const mockConnectors: ConnectorStatus[] = [
   {
     id: "mock-github",
     type: "github",
-    label: "GitHub Repos",
+    label: "POS Scripts",
     mode: "mock",
     state: "disconnected",
     lastSyncAt: null,
@@ -44,7 +44,7 @@ export const mockConnectors: ConnectorStatus[] = [
   {
     id: "mock-n8n",
     type: "n8n",
-    label: "n8n Workflows",
+    label: "Automationen",
     mode: "mock",
     state: "disconnected",
     lastSyncAt: null,
@@ -54,7 +54,7 @@ export const mockConnectors: ConnectorStatus[] = [
 ];
 
 export const mockActivity = [
-  { type: "new_object", title: "Q4 Budget Report.pdf", timestamp: "2025-11-12T08:15:00Z" },
-  { type: "broadcast", title: "Q4 Planning", resonance: 5, timestamp: "2025-11-12T07:45:00Z" },
-  { type: "connection", from: "README.md", to: "ARCHITECTURE.md", timestamp: "2025-11-12T07:30:00Z" },
+  { type: "new_object", title: "Wochenplanung KW45", timestamp: "2025-11-12T08:15:00Z" },
+  { type: "broadcast", title: "Latte Art Training", resonance: 5, timestamp: "2025-11-12T07:45:00Z" },
+  { type: "connection", from: "Tagesumsatz Montag", to: "Dashboard KPI", timestamp: "2025-11-12T07:30:00Z" },
 ];

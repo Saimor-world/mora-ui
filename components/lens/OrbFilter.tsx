@@ -39,11 +39,17 @@ export const ORBS: Orb[] = [
 interface OrbFilterProps {
   selected: OrbSelection;
   onChange: (orb: OrbSelection) => void;
+  hasActions?: boolean;
+  hasRisk?: boolean;
 }
 
-export default function OrbFilter({ selected, onChange }: OrbFilterProps) {
+export default function OrbFilter({ selected, onChange, hasActions = false, hasRisk = false }: OrbFilterProps) {
   return (
-    <div className="p-4 border-b border-border">
+    <div
+      className={`p-4 border-b border-border transition-colors ${
+        hasRisk ? 'border-amber-500/50 shadow-inner' : ''
+      } ${hasActions ? 'mora-breathe bg-primary/5' : ''}`}
+    >
       <div className="text-xs text-muted-foreground mb-2">Orb View</div>
       <div className="flex gap-2">
         {ORBS.map((orb) => (

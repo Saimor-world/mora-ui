@@ -14,25 +14,42 @@ import { useSessionStore } from '@/store/session';
 import { emitMoraEvent } from '@/lib/mora/listener';
 import { useRole } from '@/lib/hooks/useRole';
 import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
+import { useSemanticEvents } from '@/lib/hooks/useSemanticEvents';
+import { useMindloopSynthesis } from '@/lib/hooks/useMindloopSynthesis';
+import ThoughtBubble from '@/components/hints/ThoughtBubble';
 
 interface FieldModeProps {
   onNodeSelect?: (node: MoraObject) => void;
+  initialFocusIds?: string[];
 }
 
-export default function FieldMode({ onNodeSelect }: FieldModeProps) {
+export function computeAmbientStrength(highestSeverity?: number) {
+  if (typeof highestSeverity !== 'number') return 0;
+  const intensity = (highestSeverity - 0.7) / 0.3;
+  if (!Number.isFinite(intensity)) return 0;
+  return Math.max(0, Math.min(1, intensity));
+}
+
+export default function FieldMode({ onNodeSelect, initialFocusIds }: FieldModeProps) {
   const [currentSnapshot, setCurrentSnapshot] = useState(0);
   const [selectedNode, setSelectedNode] = useState<MoraObject | null>(null);
   const [resetSignal, setResetSignal] = useState(0);
   const [showTelemetry, setShowTelemetry] = useState(false);
   const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
+  const [thought, setThought] = useState<string | null>(null);
+  const thoughtTimerRef = useRef<NodeJS.Timeout | null>(null);
   const setLastSnapshotId = useSessionStore((state) => state.setLastSnapshotId);
   const graphRef = useRef<MyceliumGraph2DRef>(null);
   const { definition: roleDefinition } = useRole();
-  const { selection } = useMyceliumSelection();
-  const { setSelection } = useMyceliumSelection();
+  const { selection, setSelection } = useMyceliumSelection();
 
   // Fetch real snapshots from API
   const { data: apiSnapshots, isLoading, error } = useSnapshots();
+
+  // Fetch semantic events (polling every 8s when enabled + online)
+  const { data: semanticEvents } = useSemanticEvents();
+  const { summary: synthesisSummary } = useMindloopSynthesis();
+  const ambientSignalStrength = computeAmbientStrength(synthesisSummary?.highest_severity);
 
   // Prefer API snapshots only if they contain node data, otherwise fall back to mock data
   const hasLiveSnapshots = apiSnapshots?.some((snap) => (snap?.nodes?.length ?? 0) > 0) ?? false;
@@ -45,10 +62,55 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
   const showLoadingState = isLoading && !hasLiveSnapshots;
 
   useEffect(() => {
+    if (selection.kind !== 'node') return;
+    const found = snapshot?.nodes.find((node) => node.id === selection.node.id);
+    if (found) {
+      setSelectedNode(found);
+    } else {
+      const fallback: MoraObject = {
+        id: selection.node.id,
+        title: selection.node.label,
+        type: selection.node.type ?? 'document',
+        tags: selection.node.tags ?? [],
+        spaceId: (selection.node.space as string) ?? '',
+      };
+      setSelectedNode(fallback);
+    }
+  }, [selection, snapshot]);
+
+  useEffect(() => {
+    const latest = semanticEvents && semanticEvents.length > 0 ? semanticEvents[0] : null;
+    if (latest?.message) {
+      setThought(latest.message);
+      if (thoughtTimerRef.current) clearTimeout(thoughtTimerRef.current);
+      thoughtTimerRef.current = setTimeout(() => setThought(null), 5000);
+    }
+    return () => {
+      if (thoughtTimerRef.current) clearTimeout(thoughtTimerRef.current);
+    };
+  }, [semanticEvents]);
+
+  useEffect(() => {
     if (snapshot?.ts) {
       setLastSnapshotId(snapshot.ts);
     }
   }, [snapshot?.ts, setLastSnapshotId]);
+
+  // Deep-linking: Apply initial focus from URL params
+  useEffect(() => {
+    if (!initialFocusIds || initialFocusIds.length === 0) return;
+    if (!snapshot?.nodes || snapshot.nodes.length === 0) return;
+
+    const matchingNode = snapshot.nodes.find((node) => initialFocusIds.includes(node.id));
+    if (matchingNode) {
+      setSelection({
+        kind: 'node',
+        node: mapObjectToNode(matchingNode),
+        object: matchingNode,
+      });
+    }
+    // If no match found, gracefully ignore and continue with normal flow
+  }, [initialFocusIds, snapshot, setSelection]);
 
   const handleNodeClick = (node: MoraObject) => {
     // Awareness: keep Home feed in sync with focused nodes
@@ -152,6 +214,8 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
               focusNodeId={selectedNode?.id ?? null}
               selectedNodeId={selection.kind === 'node' ? selection.node.id : null}
               onStatsChange={setGraphStats}
+              semanticEvents={semanticEvents || []}
+              ambientSignalStrength={ambientSignalStrength}
             />
 
             {/* Stats overlay */}
@@ -340,6 +404,7 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
             </p>
           </div>
         )}
+        <ThoughtBubble message={thought} />
       </div>
 
       {/* Timeline */}
@@ -355,8 +420,3 @@ export default function FieldMode({ onNodeSelect }: FieldModeProps) {
     </div>
   );
 }
-
-
-
-
-

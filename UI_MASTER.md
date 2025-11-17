@@ -17,6 +17,20 @@ M├┤ra-UI ist die Next.js-15-Oberfl├ñche des Saim├┤r/M├┤ra-OS-Stac
 - **Orb Filter (IST)** ΓÇô Lens bindet `OrbFilter` ein und `useMemoryFacts` akzeptiert den `orb`-Parameter; Folder- und Insights-Ansichten zeigen nur die selektierte Orb-Sicht.
 - **OrbFilter + Chat Pipeline (IST)** ΓÇô AppContext h├ñlt den aktiven Orb, Lens/Folder/Insights geben ihn an `useMemoryFacts`/`api.getObjects?orb` weiter und `MoraChat` bleibt via `useChatData`+Offline-Gate deckungsgleich (Sanity-Check 2025-11-11).
 - **Chat (IST)** ΓÇô `MoraChat` nutzt `useChatData()` (objects oder semantic) f├╝r Suche/List/Stats, generiert Antworten daraus und respektiert Offline-Zust├ñnde.
+- **Mind Loop UI (IST)** – useMindloopSynthesis pollt /v1/mindloop/synthesis (alle 8s, nur wenn Semantic+online). Home zeigt das SignalCard-Summary (Anzahl, hoechste Severity, Typ-Breakdown), Field Mode legt bei highest_severity > 0.7 einen sanften ambient shimmer ueber das Canvas, und MoraChat blendet die letzten Synthese-Items als Kontextmarker ein.
+- **Action Hints (IST)** – computeActions bildet aus Mindloop-Signalen kleine Hinweise (focus/risk/opportunity); Home zeigt sie in ActionsCard, Chat bietet eine Mini-Liste, Feld-Selektion folgt den Klicks.
+- **Orb Reaktion (IST)** – OrbFilter atmet golden, wenn Hinweise vorliegen; bei Risiko pulsiert der Rahmen kurz staerker.
+- **Thought Bubbles (IST)** – Bei frischen Synthese- oder Semantic-Events erscheint fuer wenige Sekunden ein leiser Hinweis mit Originaltext.
+- **Deep-Linking (IST)** – URL-basierte Navigation mit automatischer Node-Selektion:
+  - **URL-Schema**: `/field?focus=node1,node2` (Field Mode) und `/folder?focus=nodeId` (Folder Mode)
+  - **Canvas.tsx** parst `?focus` Parameter aus URL via `useSearchParams` und ├╝bergibt sie an Field/Folder
+  - **FieldMode**: Akzeptiert `initialFocusIds[]`, findet passende Nodes im Snapshot und setzt Mycelium-Selektion via `useMyceliumSelection`
+  - **FolderMode**: Akzeptiert `initialFocusId`, ├╝bergibt an TreeView und ListView
+    - **ListView**: Automatische Row-Selektion beim Load wenn Node-ID matched
+    - **TreeView**: Expandiert Parent-Nodes und selektiert Ziel-Node automatisch
+  - **Home Navigation**: `handleMindloopNavigate` generiert Deep-Links mit `?focus=` Parameter
+  - **Chat Navigation**: `handleActionNavigate` in MoraChat navigiert mit `?focus=targetId`
+  - **Graceful Fallback**: Keine Warnungen/Crashes wenn Node-ID nicht im Snapshot gefunden – normaler Demo-Flow
 - **Diagnostics/Teststatus (IST)** ΓÇô Dev-Server (`npm run dev` ΓåÆ PortΓÇ»3002) startet ohne Fehler, Snapshots/Objects werden ├╝ber React Query geladen, Health-Check ist eingebaut und steuert sowohl Diagnostics Badge als auch die CoreStatusBanner-Gates.
 - **System-Adapter (IST)** ΓÇô `/v1/system/adapters` liefert optional ein `adapters[]`-Array; UI nutzt es defensiv (kein Blocker, falls leer).
 - **Lokaler Quicktest (IST)**  
@@ -233,3 +247,206 @@ Dieses Dokument ersetzt alle vorherigen Status-Zusammenfassungen f├╝r mora-u
 - Schreibende Flaechen: Field (Knoten-Klick) und Folder (Row-Select) setzen die Selection ohne das Awareness-Logging zu aendern.
 - Lesende Flaechen: ContextPanel und Chat zeigen den gleichen Kontext (MyceliumContextChip) und leiten daraus die Antworten/Quick-Actions ab.
 - Story: Wald oben, Myzel unten - der Chip benennt den Kontext aus Feld/Ordner. Semantische Auswertung ist vorbereitet und nur bei Flag aktiv; Standard bleibt das Demo-Dashboard, spaeter laeuft derselbe Pfad mit echten Organisationsdaten.
+
+---
+
+## Mycelium Visuals – Canvas 2D Upgrade (IST)
+**MyceliumGraph2D.tsx** (`components/canvas/FieldMode/MyceliumGraph2D.tsx`):
+- **Farbpalette**: Waldgrün (#4A7C24, #3D6B1E), Gold (#D4AF37, #F5B800), Nebelblau (#7FA4B8, #8DB4C8, #6B8E9E) – organischer, weniger technisch.
+- **Breathing Animation**: 0.5 Hz (2 Sekunden Periode) – subtile Puls-Bewegung auf allen Nodes, deaktiviert bei `prefersReducedMotion`.
+- **Glow/Highlight**: Reduzierte Opacity (0.45 max statt 0.65), subtilere Highlights für Selected/Focused Nodes.
+- **Organische Linien**: Quadratic Bezier Curves mit perpendicular sway, subtilere Bewegung (12px/10px statt 18px/14px), Nebelblau/Gold für Edges.
+- **Selection-Visuals**: Selected Node bekommt stärkeren Glow, dickere Outline, Gold-Ring bei Focus; Edges zu selektiertem Node in Gold hervorgehoben.
+
+**Folder Selection-Row** (`components/canvas/FolderMode/ListView.tsx` & `TreeView.tsx`):
+- **ListView**: `isMyceliumSelected` triggert linken Border (border-l-4), Gradient-Background, "Myzel"-Badge, Gold-Glow.
+- **TreeView**: Gleiche Visuals wie ListView, integriert mit `useMyceliumSelection` Hook.
+- **Hover/Focus**: Unverändert – Selection-Visuals sind additiv, überschreiben nicht die bestehenden Hover-States.
+
+### Manual Checks – Mycelium Visuals
+1. Field öffnen → Nodes atmen leicht (0.5 Hz), Waldgrün/Gold/Nebelblau Farben sichtbar.
+2. Node klicken → Selection-Highlight (stärkerer Glow, Gold-Ring), Edges in Gold.
+3. Folder → ListView öffnen → Node auswählen → Linker Border, "Myzel"-Badge, Gradient sichtbar.
+4. TreeView öffnen → Objekt auswählen → Gleiche Visuals wie ListView.
+5. Hover über nicht-selektierte Row → Hover-State bleibt unverändert (additiv).
+
+---
+
+## Semantic Integration – Feature Flag (IST)
+**lib/api/semantic.ts**:
+- **Feature Flag**: `NEXT_PUBLIC_ENABLE_SEMANTIC=true|false` steuert, ob semantische Auswertung aktiv ist.
+- **Endpoints**: `POST /v1/semantic/answer` mit Request `{ prompt, selection: { id, label, type, space } }` → Response `{ answer, sources? }`.
+- **Fallback**: Wenn Flag OFF oder API-Fehler → Demo-Echo-Antworten bleiben aktiv.
+
+**MoraChat.tsx** (`components/chat/MoraChat.tsx`):
+- **Integration**: `getChatReply` prüft `isSemanticEnabled()`, ruft `getSemanticAnswer()` auf, zeigt Loading-Notice ("Semantische Auswertung wird vorbereitet ...").
+- **Error Handling**: Bei Fehler/null → "Semantische Auswertung gerade nicht erreichbar – ich bleibe im Demo-Modus.", Fallback zu `buildResponse`.
+- **SemanticDebugPanel**: Zeigt Prompt, Context-Label, Answer-Snippet (nur in Dev sichtbar).
+
+**Tests** (`__tests__/chat.test.tsx`):
+- ✅ Semantic ON + Success → Semantic-Antwort wird angezeigt.
+- ✅ Semantic ON + Failure (null response) → Fallback-Notice angezeigt.
+- ✅ Semantic ON + Exception (Network error) → Fallback-Notice angezeigt.
+- ✅ Semantic OFF → `getSemanticAnswer` wird nicht aufgerufen, Demo-Echo aktiv.
+- ✅ Semantic Loading → Loading-Notice während API-Call sichtbar.
+
+### Manual Checks – Semantic Integration
+1. `.env.local` → `NEXT_PUBLIC_ENABLE_SEMANTIC=false` → Chat öffnen → Nur Demo-Echo, kein Semantic-Call.
+2. `.env.local` → `NEXT_PUBLIC_ENABLE_SEMANTIC=true` + Core läuft → Chat öffnen → "Semantische Auswertung wird vorbereitet ..." → Semantic-Antwort.
+3. Core offline + Flag ON → Chat öffnen → "Semantische Auswertung gerade nicht erreichbar – ich bleibe im Demo-Modus." → Demo-Echo.
+
+---
+
+## Proaktivität – UI Hints (IST)
+**lib/mind/uiHints.ts**:
+- **Typen**: `HintType` = `'insight' | 'action' | 'suggestion' | 'discovery'`.
+- **Model**: `UIHint` = `{ id, type, message, contextLabel?, actionLabel?, actionPath?, priority? }`.
+- **Demo-Daten**: `DEMO_HINTS` enthält 5 Hints (z.B. "Im Myzel gibt es 3 neue Verbindungen zu Q4-Budget", "5 Dokumente warten auf Review").
+- **Helpers**: `getTopHints(count)` sortiert nach Priorität, `getHintsByType(type)` filtert nach Typ, `formatHint(hint)` fügt Icon hinzu.
+
+**HintsCard.tsx** (`components/home/HintsCard.tsx`):
+- **Display**: Zeigt Top 3 Hints in PanelCard, jedes Hint mit Icon (💡/⚡/🌱/🔍), Message, Context-Label, Action-Link.
+- **Integration**: In Home page (`app/home/page.tsx`) als dritte Karte in der 2-Spalten-Grid (nach System Pulse & Nächste Schritte).
+
+### Manual Checks – Proaktivität
+1. Home laden → HintsCard erscheint mit 3 Demo-Hints.
+2. Hint mit Action-Link klicken → Navigation zu `/field`, `/folder`, oder `/insights`.
+3. Hint ohne Action-Link → Nur Text, kein Link.
+4. Icons → 💡 (Insight), ⚡ (Action), 🌱 (Suggestion), 🔍 (Discovery) korrekt angezeigt.
+
+---
+
+## Developer Guide – Mindloop & Semantic Integration (IST)
+
+### Mindloop System
+**Was ist Mindloop?**
+- Aggregiert Signale aus 3 Quellen: Semantic Events, Awareness (UI Actions), System Events
+- Läuft im Core (`/v1/mindloop/synthesis`), pollt alle 8 Sekunden (wenn Semantic Flag ON + Core online)
+- Liefert: `items[]` (einzelne Signale mit type/severity/entity_id/related_ids), `summary` (total, highest_severity, breakdown)
+
+**UI Flow – Signals → Actions → Visual Feedback**
+
+1. **SignalCard** (`components/home/SignalCard.tsx`):
+   - Zeigt Mindloop-Synthese-Summary (Anzahl, höchste Severity, Typ-Breakdown)
+   - Empfehlungen: Thema-Clustering, Anomalien, Opportunities
+   - Buttons navigieren zu betroffenen Nodes im Field/Folder
+
+2. **ActionsCard** (`components/home/ActionsCard.tsx`):
+   - Berechnet 2-3 konkrete Hinweise aus Signalen (`lib/mind/actions.ts`)
+   - Typen: `risk` (⚠️), `opportunity` (🌿), `focus` (🔎)
+   - Klick → Field Mode mit fokussiertem Node
+
+3. **Field Mode – Mycelium Graph** (`components/canvas/FieldMode/MyceliumGraph2D.tsx`):
+   - Ambient Shimmer: Bei `highest_severity > 0.7` → goldener Glow über Canvas
+   - Node Impulse: Betroffene Nodes pulsieren gold (severity-basiert)
+   - Edge Shimmer: Dashed lines + Gold-Tint für betroffene Verbindungen
+   - Decay: Signale faden nach 1200ms aus (außer live Events)
+
+4. **ThoughtBubble** (`components/hints/ThoughtBubble.tsx`):
+   - Zeigt neueste Event-Message für 5 Sekunden
+   - Erscheint bottom-right im Field/Folder
+
+5. **Orb Filter** (`components/layout/OrbFilter.tsx`):
+   - Atmet golden bei vorhandenen Actions
+   - Pulsiert stärker bei Risiko-Signalen (`kind: 'risk'`)
+
+6. **Chat** (`components/chat/MoraChat.tsx`):
+   - Zeigt Mindloop-Items als Kontext-Marker
+   - Integration: `useMindloopSynthesis()` Hook
+
+**Hooks & Clients**
+
+| Hook/Client | Datei | Zweck |
+|-------------|-------|-------|
+| `useMindloopSynthesis()` | `lib/hooks/useMindloopSynthesis.ts` | Pollt `/v1/mindloop/synthesis`, liefert `{ items, summary, isLoading }` |
+| `useSemanticEvents()` | `lib/hooks/useSemanticEvents.ts` | Pollt `/v1/semantic/events`, liefert `SemanticEvent[]` (veraltet, durch Mindloop ersetzt) |
+| `getMindloopSynthesis()` | `lib/api/mindloop.ts` | Fetch-Funktion für Mindloop (JWT-Auth, Flag-geschützt) |
+| `computeActions()` | `lib/mind/actions.ts` | Wandelt Mindloop-Items → ActionHints |
+| `computeAmbientStrength()` | `components/canvas/FieldMode.tsx` | Berechnet Ambient-Shimmer-Intensität aus höchster Severity |
+
+**Feature Flags**
+
+```env
+NEXT_PUBLIC_ENABLE_SEMANTIC=true   # Master-Flag für Semantic + Mindloop
+NEXT_PUBLIC_CORE_API_URL=http://localhost:8081
+NEXT_PUBLIC_JWT_TOKEN=<your-token>
+```
+
+- **Flag OFF**: Mindloop/Semantic deaktiviert, Hooks liefern leere Arrays, UI zeigt Empty States
+- **Flag ON + Core offline**: Hooks pausieren (enabled: false), UI zeigt "Gerade keine Signale"
+- **Flag ON + Core online**: Volle Integration, alle visuellen Signale aktiv
+
+### Semantic Integration (parallel zu Mindloop)
+**Was ist Semantic?**
+- Legacy-System, teilweise durch Mindloop ersetzt
+- Chat nutzt noch `/v1/semantic/answer` für LLM-basierte Antworten
+- Semantic Events (`/v1/semantic/events`) werden durch Mindloop Synthesis aggregiert
+
+**Chat Flow – Semantic Answer**
+
+1. User sendet Message im Chat
+2. `getChatReply()` prüft `isSemanticEnabled()` (Flag-Check)
+3. Wenn ON: `getSemanticAnswer({ prompt, selection })` ruft `/v1/semantic/answer` auf
+4. Loading: "Semantische Auswertung wird vorbereitet ..."
+5. Erfolg: Antwort wird angezeigt (SemanticDebugPanel in Dev sichtbar)
+6. Fehler: "Semantische Auswertung gerade nicht erreichbar – ich bleibe im Demo-Modus."
+7. Fallback: `buildResponse()` generiert Demo-Echo-Antwort
+
+**Mock vs. Live Data**
+- **Mock-Modus**: `NEXT_PUBLIC_ENABLE_SEMANTIC=false` → Café Aurora Demo-Story aktiv
+- **Live-Modus**: Flag ON + Core online → echte Signale aus Mindloop
+- **Hybrid**: Demo-Snapshots (`lib/mockData.ts`) + Live Mindloop-Signale (wenn verfügbar)
+
+### Lokales Testen – Developer Workflow
+
+**Setup**
+```bash
+# 1. Core starten (Port 8081)
+cd saimor-core
+python -m uvicorn core.app:app --reload --port 8081
+
+# 2. UI starten (Port 3002)
+cd mora-ui
+npm run dev
+```
+
+**Feature Flag Kombinationen**
+
+| Szenario | Flag | Core Status | Erwartetes Verhalten |
+|----------|------|-------------|----------------------|
+| **Pure Demo** | OFF | - | Café Aurora Story, keine Semantic/Mindloop |
+| **Live Mindloop** | ON | Online | SignalCard + Actions + Ambient Shimmer + ThoughtBubbles |
+| **Core Offline** | ON | Offline | Empty States, "Gerade keine Signale", Demo-Story bleibt nutzbar |
+| **Partial** | ON | Online (ohne Mindloop Endpoint) | Chat Semantic funktioniert, Mindloop Empty State |
+
+**Quick Checks**
+1. **Home**: SignalCard zeigt Signals oder "Noch keine aktuellen Signale"
+2. **Field**: Ambient Shimmer bei hohen Severities (> 0.7), Node-Impulse bei Events
+3. **Folder**: ThoughtBubble erscheint bei frischen Events (5s)
+4. **Chat**: Semantic-Statuszeile beim Senden, Demo-Echo als Fallback
+5. **Orb**: Atmet golden bei Actions, pulsiert bei Risks
+
+**Debug Tools**
+- Diagnostics Panel: Health Status, Adapter Status, Export (Dev-only)
+- SemanticDebugPanel: Zeigt Semantic-Requests/Responses (Dev + Flag ON)
+- Browser Console: `🧠 Môra Awareness | node_click` für Awareness-Events
+
+**Tests**
+```bash
+npm run lint   # ESLint
+npm test       # Jest (55 Tests, 15 Suites)
+npm run build  # Production Build
+```
+
+**Known Limitations (aktueller Stand)**
+- Mindloop Synthesis: Nur wenn `/v1/mindloop/synthesis` existiert (Core >= Nov 2025)
+- Semantic Events: Legacy, durch Mindloop ersetzt (aber noch in MyceliumGraph2D für Backward-Compat)
+- Demo-Story (Café Aurora): Statische Snapshots, keine dynamischen Updates
+- Ambient Shimmer: Canvas 2D only, keine WebGL-Postprocessing
+
+### Next Steps (Empfehlungen)
+1. **Mindloop Persistence**: Signals im Core cachen, um Flackern bei Re-Fetch zu vermeiden
+2. **ThoughtBubble Stacking**: Mehrere Bubbles gleichzeitig anzeigen (Queue)
+3. **Orb Animation**: Subtilere Breathing-Kurve (aktuell: linear pulse)
+4. **Test Coverage**: E2E-Tests für Mindloop-Flow (Playwright/Cypress)
+5. **Deep-Link Camera**: Optional Camera-Zentrierung auf fokussierte Nodes in FieldMode

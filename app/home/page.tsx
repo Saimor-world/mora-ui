@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   applyMockSnapshot,
   getConnectors,
@@ -30,8 +31,17 @@ import { QueryProvider } from "@/lib/queryClient";
 import PageSection from "@/components/ui/PageSection";
 import PanelCard from "@/components/ui/PanelCard";
 import MyceliumContextChip from "@/components/ui/MyceliumContextChip";
+import HintsCard from "@/components/home/HintsCard";
+import SignalCard from "@/components/home/SignalCard";
+import { useMindloopSynthesis } from "@/lib/hooks/useMindloopSynthesis";
+import { useMyceliumSelection, mapObjectToNode } from "@/lib/mycelium/selection";
+import { mockSnapshots } from "@/lib/mockData";
+import ActionsCard from "@/components/home/ActionsCard";
+import ThoughtBubble from "@/components/hints/ThoughtBubble";
+import { ThoughtBubbleProvider, useThoughtBubbles } from "@/lib/contexts/ThoughtBubbleContext";
 
 function HomePageInner() {
+  const router = useRouter();
   const heroRef = useRef<HTMLDivElement>(null);
   const connectorsRef = useRef<HTMLElement | null>(null);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
@@ -42,6 +52,7 @@ function HomePageInner() {
   const [drawerEvent, setDrawerEvent] = useState<MoraEvent | null>(null);
   const setIntroSeen = useSessionStore((state) => state.setIntroSeen);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const { setSelection } = useMyceliumSelection();
 
   useEffect(() => {
     const loaded = getConnectors(mockConnectors);
@@ -50,6 +61,14 @@ function HomePageInner() {
 
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useHealthCheck();
   const { isOnline, isAuthError } = getHealthFlags(health?.status);
+  const { items: synthesisItems, summary: synthesisSummary, isLoading: synthesisLoading } = useMindloopSynthesis();
+  const mockNodeIndex = useMemo(() => {
+    const index = new Map<string, (typeof mockSnapshots)[number]['nodes'][number]>();
+    mockSnapshots.forEach((snap) => snap.nodes.forEach((node) => index.set(node.id, node)));
+    return index;
+  }, []);
+  const { pushBubble } = useThoughtBubbles();
+  const lastSynthesisCountRef = useRef(0);
   const connectorsTotal = connectors.length || mockConnectors.length;
   const coreStatusLabel = healthLoading
     ? "Pruefung laeuft"
@@ -68,6 +87,43 @@ function HomePageInner() {
   const lastCheckedLabel = health?.timestamp
     ? new Date(health.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "n/a";
+
+  const handleMindloopNavigate = (targetIds?: string[], contextLabel?: string) => {
+    const targetId = targetIds?.[0];
+    if (targetId) {
+      const found = mockNodeIndex.get(targetId);
+      const fallback = {
+        id: targetId,
+        title: contextLabel || targetId,
+        type: found?.type ?? "document",
+        tags: found?.tags ?? [],
+        path: found?.path,
+        spaceId: found?.spaceId ?? "cafe-main",
+      };
+      setSelection({ kind: "node", node: mapObjectToNode(found ?? fallback), object: found ?? fallback });
+      // Navigate with deep-linking focus param
+      const focusParam = targetIds && targetIds.length > 0 ? `?focus=${targetIds.join(',')}` : '';
+      router.push(`/field${focusParam}`);
+    } else {
+      setSelection({ kind: "none" });
+      router.push("/field");
+    }
+  };
+
+  useEffect(() => {
+    if ((synthesisItems?.length ?? 0) > lastSynthesisCountRef.current) {
+      const top = synthesisItems[0];
+      const message = top?.summary || top?.title || null;
+      if (message) {
+        pushBubble({
+          title: 'Mind Loop',
+          message,
+          source: 'mindloop',
+        });
+      }
+    }
+    lastSynthesisCountRef.current = synthesisItems?.length ?? 0;
+  }, [synthesisItems, pushBubble]);
 
   const applyConnectorUpdate = (next: ConnectorStatus) => {
     setConnectors((prev) => prev.map((item) => (item.id === next.id ? next : item)));
@@ -454,7 +510,20 @@ function HomePageInner() {
               </Link>
             </div>
           </PanelCard>
+
+          <HintsCard maxHints={3} />
+          <SignalCard
+            items={synthesisItems}
+            summary={synthesisSummary}
+            isLoading={synthesisLoading}
+            onNavigateToTargets={handleMindloopNavigate}
+          />
+          <ActionsCard
+            items={synthesisItems}
+            onNavigateToTarget={(id, label) => handleMindloopNavigate(id ? [id] : undefined, label)}
+          />
       </PageSection>
+      <ThoughtBubble />
       <PageSection className="py-12">
         <PanelCard className="rounded-3xl shadow-lg overflow-hidden" paddingClassName="p-0">
           <div className="grid gap-6 lg:grid-cols-2 p-6">
@@ -847,7 +916,9 @@ function summarizeAwarenessEvent(event: MoraEvent) {
 export default function HomePage() {
   return (
     <QueryProvider>
-      <HomePageInner />
+      <ThoughtBubbleProvider>
+        <HomePageInner />
+      </ThoughtBubbleProvider>
     </QueryProvider>
   );
 }

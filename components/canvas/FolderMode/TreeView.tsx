@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { MoraObject } from '@/lib/types';
+import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
 
 // Mock data for now
 const mockTree = {
@@ -41,9 +42,37 @@ const mockTree = {
   ],
 };
 
-export default function TreeView() {
+interface TreeViewProps {
+  initialFocusId?: string;
+}
+
+export default function TreeView({ initialFocusId }: TreeViewProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['s1', 'd1', 'p1']));
   const [selected, setSelected] = useState<string | null>(null);
+  const { selection, setSelection } = useMyceliumSelection();
+
+  // Deep-linking: Apply initial focus from URL params
+  useEffect(() => {
+    if (!initialFocusId) return;
+
+    // Search for the object in the mock tree
+    for (const space of mockTree.spaces) {
+      for (const dept of space.departments) {
+        for (const project of dept.projects) {
+          const obj = project.objects.find((o) => o.id === initialFocusId);
+          if (obj) {
+            // Expand parent nodes
+            setExpanded(new Set([space.id, dept.id, project.id]));
+            // Select the object
+            handleObjectClick(obj);
+            return;
+          }
+        }
+      }
+    }
+    // If no match found, gracefully ignore and continue with normal flow
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFocusId]);
 
   const toggle = (id: string) => {
     const newExpanded = new Set(expanded);
@@ -53,6 +82,20 @@ export default function TreeView() {
       newExpanded.add(id);
     }
     setExpanded(newExpanded);
+  };
+
+  const handleObjectClick = (obj: any) => {
+    setSelected(obj.id);
+    // Convert to MoraObject format and set mycelium selection
+    const moraObject: MoraObject = {
+      id: obj.id,
+      title: obj.title,
+      type: obj.type,
+      spaceId: 's1',
+      source: 'mock',
+      tags: [],
+    };
+    setSelection({ kind: 'node', node: mapObjectToNode(moraObject), object: moraObject });
   };
 
   return (
@@ -104,20 +147,29 @@ export default function TreeView() {
                             {/* Objects */}
                             {expanded.has(project.id) && (
                               <div className="ml-6 space-y-0.5 mt-1">
-                                {project.objects.map((obj) => (
-                                  <button
-                                    key={obj.id}
-                                    onClick={() => setSelected(obj.id)}
-                                    className={`flex items-center gap-2 w-full px-2 py-1.5 rounded transition-colors text-left text-sm ${
-                                      selected === obj.id
-                                        ? 'bg-primary/20 text-primary'
-                                        : 'text-muted-foreground hover:bg-secondary'
-                                    }`}
-                                  >
-                                    <span>📄</span>
-                                    <span>{obj.title}</span>
-                                  </button>
-                                ))}
+                                {project.objects.map((obj) => {
+                                  const isMyceliumSelected =
+                                    selection.kind === 'node' && selection.node.id === obj.id;
+                                  return (
+                                    <button
+                                      key={obj.id}
+                                      onClick={() => handleObjectClick(obj)}
+                                      className={`flex items-center gap-2 w-full px-2 py-1.5 rounded transition-all duration-300 text-left text-sm ${
+                                        selected === obj.id
+                                          ? 'bg-primary/20 text-primary'
+                                          : 'text-muted-foreground hover:bg-secondary'
+                                      } ${isMyceliumSelected ? 'border-l-4 border-l-primary/70 bg-gradient-to-r from-primary/10 via-background to-background shadow-[0_6px_26px_-16px_rgba(248,191,77,0.5)]' : ''}`}
+                                    >
+                                      <span>📄</span>
+                                      {isMyceliumSelected && (
+                                        <span className="text-[10px] inline-flex items-center px-1.5 py-0.5 rounded-full border border-primary/40 bg-primary/10 text-primary">
+                                          Myzel
+                                        </span>
+                                      )}
+                                      <span>{obj.title}</span>
+                                    </button>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

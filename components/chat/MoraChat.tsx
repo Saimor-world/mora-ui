@@ -1,16 +1,19 @@
 ﻿'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 import { useChatData } from '@/lib/hooks/useChatData';
 import { useHealthCheck } from '@/lib/hooks/useApi';
 import { getHealthFlags } from '@/lib/health';
-import { useMyceliumSelection } from '@/lib/mycelium/selection';
+import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
 import PanelCard from '@/components/ui/PanelCard';
 import MyceliumContextChip from '@/components/ui/MyceliumContextChip';
 import { getSemanticAnswer, isSemanticEnabled } from '@/lib/api/semantic';
 import SemanticDebugPanel from '@/components/dev/SemanticDebugPanel';
+import { useMindloopSynthesis } from '@/lib/hooks/useMindloopSynthesis';
+import { computeActions } from '@/lib/mind/actions';
 
 interface Message {
   id: string;
@@ -46,9 +49,11 @@ export default function MoraChat() {
     answerSnippet?: string | null;
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showActions, setShowActions] = useState(false);
+  const router = useRouter();
 
   const chatData = useChatData();
-  const { selection } = useMyceliumSelection();
+  const { selection, setSelection } = useMyceliumSelection();
   const selectionLabel =
     selection.kind === 'node'
       ? `${selection.node.label} (${selection.node.type})`
@@ -63,6 +68,31 @@ export default function MoraChat() {
   const { isOffline, isAuthError } = getHealthFlags(health?.status);
   const isChatDisabled = isOffline || isAuthError;
   const showDemoHint = !hasDemoData && !isChatDisabled;
+  const { items: synthesisItems } = useMindloopSynthesis({ enabled: isOpen });
+  const contextMarkers = (synthesisItems || [])
+    .slice(0, 3)
+    .sort((a, b) => (b.severity ?? 0) - (a.severity ?? 0));
+  const actionHints = useMemo(() => computeActions(synthesisItems || []), [synthesisItems]);
+
+  const handleActionNavigate = (targetId?: string, label?: string) => {
+    if (targetId) {
+      const fallback = {
+        id: targetId,
+        title: label || targetId,
+        type: 'document',
+        tags: [],
+        spaceId: 'cafe-main',
+      };
+      setSelection({ kind: 'node', node: mapObjectToNode(fallback), object: fallback });
+      setIsOpen(false);
+      // Navigate with deep-linking focus param
+      router.push(`/field?focus=${targetId}`);
+    } else {
+      setSelection({ kind: 'none' });
+      setIsOpen(false);
+      router.push('/field');
+    }
+  };
 
   useEffect(() => {
     const anchor = messagesEndRef.current;
@@ -173,6 +203,34 @@ export default function MoraChat() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">{contextLine}</p>
+                  {contextMarkers.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {contextMarkers.map((item) => (
+                        <span
+                          key={item.id}
+                          className="px-2 py-1 rounded-full border border-amber-500/40 bg-amber-500/10 text-[11px] text-amber-100 flex items-center gap-1"
+                        >
+                          <span aria-hidden="true">{markerIcon(item.type)}</span>
+                          <span className="font-semibold">{item.title || item.summary || item.type}</span>
+                          {typeof item.severity === 'number' && (
+                            <span className="text-amber-300/80">({Math.round(item.severity * 100)}%)</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {actionHints.length > 0 && (
+                    <div className="mt-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-100 flex items-center justify-between gap-2">
+                      <span>Es gibt {actionHints.length} Hinweise zu deinem Raum - moechtest du sie sehen?</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowActions((prev) => !prev)}
+                        className="px-2 py-1 rounded-full bg-amber-500/30 text-amber-950 font-semibold"
+                      >
+                        Anzeigen
+                      </button>
+                    </div>
+                  )}
                   {hasDemoData ? (
                     <p className="text-[11px] text-muted-foreground">
                       Gefuehrte Demo: Antworten basieren auf Beispiel-Objekten. Spaeter fliessen hier echte Kennzahlen, Dokumente und Beziehungen uebers Myzel, wenn die Auswertung aktiv ist.
@@ -190,6 +248,35 @@ export default function MoraChat() {
                   </span>
                 </div>
               </div>
+
+              {showActions && actionHints.length > 0 && (
+                <div className="absolute top-20 right-4 left-4 z-20 rounded-xl border border-amber-500/40 bg-card/95 shadow-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between text-sm text-foreground">
+                    <span>Hinweise aus Mind Loop</span>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowActions(false)}
+                    >
+                      Schliessen
+                    </button>
+                  </div>
+                  {actionHints.map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={() => handleActionNavigate(action.targetNodeId, action.label)}
+                      className="w-full text-left px-3 py-2 rounded-lg border border-border/60 bg-background/70 hover:border-primary/50 hover:bg-primary/5 mora-transition text-sm flex items-start gap-2"
+                    >
+                      <span aria-hidden="true">{markerIcon(action.kind)}</span>
+                      <div>
+                        <div className="font-semibold text-foreground">{action.label}</div>
+                        {action.targetNodeId && <div className="text-xs text-muted-foreground">Fokus: {action.targetNodeId}</div>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
 
             <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-card/80">
               {isChatDisabled ? (
@@ -304,6 +391,25 @@ type SemanticHooks = {
   onSemanticComplete?: () => void;
   onSemanticResult?: (answer: string) => void;
 };
+
+function markerIcon(type?: string) {
+  switch (type) {
+    case 'semantic':
+      return '🌿';
+    case 'awareness':
+      return '✨';
+    case 'system':
+      return '⚙️';
+    case 'risk':
+      return '⚠️';
+    case 'opportunity':
+      return '🌿';
+    case 'focus':
+      return '🔎';
+    default:
+      return '🔆';
+  }
+}
 
 async function getChatReply(
   query: string,
