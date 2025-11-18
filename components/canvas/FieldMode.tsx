@@ -16,7 +16,7 @@ import { useRole } from '@/lib/hooks/useRole';
 import { useMyceliumSelection, mapObjectToNode } from '@/lib/mycelium/selection';
 import { useSemanticEvents } from '@/lib/hooks/useSemanticEvents';
 import { useMindloopSynthesis } from '@/lib/hooks/useMindloopSynthesis';
-import ThoughtBubble from '@/components/hints/ThoughtBubble';
+import { useThoughtBubbles } from '@/lib/contexts/ThoughtBubbleContext';
 
 interface FieldModeProps {
   onNodeSelect?: (node: MoraObject) => void;
@@ -36,12 +36,13 @@ export default function FieldMode({ onNodeSelect, initialFocusIds }: FieldModePr
   const [resetSignal, setResetSignal] = useState(0);
   const [showTelemetry, setShowTelemetry] = useState(false);
   const [graphStats, setGraphStats] = useState<GraphStats | null>(null);
-  const [thought, setThought] = useState<string | null>(null);
-  const thoughtTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initialFocusAppliedRef = useRef(false);
+  const lastSemanticEventIdRef = useRef<string | null>(null);
   const setLastSnapshotId = useSessionStore((state) => state.setLastSnapshotId);
   const graphRef = useRef<MyceliumGraph2DRef>(null);
   const { definition: roleDefinition } = useRole();
   const { selection, setSelection } = useMyceliumSelection();
+  const { pushBubble } = useThoughtBubbles();
 
   // Fetch real snapshots from API
   const { data: apiSnapshots, isLoading, error } = useSnapshots();
@@ -79,38 +80,33 @@ export default function FieldMode({ onNodeSelect, initialFocusIds }: FieldModePr
   }, [selection, snapshot]);
 
   useEffect(() => {
-    const latest = semanticEvents && semanticEvents.length > 0 ? semanticEvents[0] : null;
-    if (latest?.message) {
-      setThought(latest.message);
-      if (thoughtTimerRef.current) clearTimeout(thoughtTimerRef.current);
-      thoughtTimerRef.current = setTimeout(() => setThought(null), 5000);
+    // Apply deep-linked focus (query param) once when available
+    if (!initialFocusIds || initialFocusAppliedRef.current) return;
+    const targetId = initialFocusIds.find((id) => snapshot?.nodes.some((node) => node.id === id));
+    if (targetId) {
+      const found = snapshot?.nodes.find((node) => node.id === targetId);
+      if (found) {
+        setSelection({ kind: 'node', node: mapObjectToNode(found), object: found });
+        setSelectedNode(found);
+      }
     }
-    return () => {
-      if (thoughtTimerRef.current) clearTimeout(thoughtTimerRef.current);
-    };
-  }, [semanticEvents]);
+    // Ensure we only attempt to apply incoming focus once
+    initialFocusAppliedRef.current = true;
+  }, [initialFocusIds, snapshot, setSelection]);
+
+  useEffect(() => {
+    const latest = semanticEvents && semanticEvents.length > 0 ? semanticEvents[0] : null;
+    if (latest?.message && latest.event_id !== lastSemanticEventIdRef.current) {
+      lastSemanticEventIdRef.current = latest.event_id;
+      pushBubble({ message: latest.message, title: 'Semantic', source: 'semantic' });
+    }
+  }, [semanticEvents, pushBubble]);
 
   useEffect(() => {
     if (snapshot?.ts) {
       setLastSnapshotId(snapshot.ts);
     }
   }, [snapshot?.ts, setLastSnapshotId]);
-
-  // Deep-linking: Apply initial focus from URL params
-  useEffect(() => {
-    if (!initialFocusIds || initialFocusIds.length === 0) return;
-    if (!snapshot?.nodes || snapshot.nodes.length === 0) return;
-
-    const matchingNode = snapshot.nodes.find((node) => initialFocusIds.includes(node.id));
-    if (matchingNode) {
-      setSelection({
-        kind: 'node',
-        node: mapObjectToNode(matchingNode),
-        object: matchingNode,
-      });
-    }
-    // If no match found, gracefully ignore and continue with normal flow
-  }, [initialFocusIds, snapshot, setSelection]);
 
   const handleNodeClick = (node: MoraObject) => {
     // Awareness: keep Home feed in sync with focused nodes
@@ -404,7 +400,6 @@ export default function FieldMode({ onNodeSelect, initialFocusIds }: FieldModePr
             </p>
           </div>
         )}
-        <ThoughtBubble message={thought} />
       </div>
 
       {/* Timeline */}

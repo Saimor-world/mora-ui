@@ -340,6 +340,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
         ctx.fillStyle = background;
         ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
+        // Ambient shimmer gently suggests synthesis intensity without overpowering node pulses
         const ambientStrength =
           !reduceMotion && typeof ambientSignalStrength === 'number'
             ? Math.max(0, Math.min(1, ambientSignalStrength))

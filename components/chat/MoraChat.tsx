@@ -36,7 +36,7 @@ export default function MoraChat() {
       id: 'intro',
       role: 'mora',
       content:
-        'Hallo, ich bin Mora. Diese gefuehrte Demo nutzt Beispiel-Objekte. Waehle etwas im Feld oder Ordner, dann halte ich den Kontext - spaeter beantworte ich das mit euren echten Daten.',
+        'Hallo, ich bin Mora. Diese gefuehrte Demo nutzt Beispiel-Objekte. Waehle etwas im Feld oder Ordner, dann halte ich den Kontext - mit echten Daten arbeite ich spaeter genauso ruhig.',
       timestamp: new Date(),
     },
   ]);
@@ -84,14 +84,12 @@ export default function MoraChat() {
         spaceId: 'cafe-main',
       };
       setSelection({ kind: 'node', node: mapObjectToNode(fallback), object: fallback });
-      setIsOpen(false);
-      // Navigate with deep-linking focus param
       router.push(`/field?focus=${targetId}`);
     } else {
       setSelection({ kind: 'none' });
-      setIsOpen(false);
       router.push('/field');
     }
+    setIsOpen(false);
   };
 
   useEffect(() => {
@@ -352,9 +350,21 @@ export default function MoraChat() {
                     event.preventDefault();
                     handleSend();
                   }}
-                className="p-5 border-t border-border/70 bg-card/90"
-              >
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  className="p-5 border-t border-border/70 bg-card/90 space-y-2"
+                >
+                  {actionHints.length > 0 && (
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <span>Mora hat leise Hinweise im Feld abgelegt.</span>
+                      <button
+                        type="button"
+                        className="underline text-primary"
+                        onClick={() => setShowActions(true)}
+                      >
+                        Anzeigen
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-4 py-3">
                     <input
                       type="text"
                       className="flex-1 bg-transparent border-none focus:outline-none text-sm"

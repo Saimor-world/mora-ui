@@ -93,8 +93,8 @@ describe('SignalCard', () => {
       />
     );
 
-    const hintButtons = screen.getAllByRole('button', { name: /schau im Feld/i });
-    fireEvent.click(hintButtons[0]);
+    const hintButton = screen.getByRole('button', { name: /Resonanz/i });
+    fireEvent.click(hintButton);
     expect(onNavigate).toHaveBeenCalled();
   });
 });

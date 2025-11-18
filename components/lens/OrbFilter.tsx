@@ -46,9 +46,9 @@ interface OrbFilterProps {
 export default function OrbFilter({ selected, onChange, hasActions = false, hasRisk = false }: OrbFilterProps) {
   return (
     <div
-      className={`p-4 border-b border-border transition-colors ${
-        hasRisk ? 'border-amber-500/50 shadow-inner' : ''
-      } ${hasActions ? 'mora-breathe bg-primary/5' : ''}`}
+      className={`p-4 border-b border-border transition-colors duration-700 ${
+        hasRisk ? 'ring-amber-400/40 animate-[pulse_1.3s_ease-out_2]' : ''
+      } ${hasActions ? 'bg-primary/5 shadow-inner animate-[pulse_3.4s_ease-in-out_infinite]' : ''}`}
     >
       <div className="text-xs text-muted-foreground mb-2">Orb View</div>
       <div className="flex gap-2">

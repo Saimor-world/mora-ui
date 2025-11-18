@@ -17,6 +17,9 @@ interface SignalCardProps {
   onNavigateToTargets?: (targetIds?: string[], contextLabel?: string) => void;
 }
 
+const HINT_LIMIT = 3;
+
+// UI-only helper that clusters signals into calm, actionable hints.
 export function deriveMindloopHints(items: MindloopItem[]): DerivedSignalHint[] {
   const hints: DerivedSignalHint[] = [];
   const targetsOf = (item: MindloopItem) => {
@@ -28,7 +31,6 @@ export function deriveMindloopHints(items: MindloopItem[]): DerivedSignalHint[] 
     return Array.from(new Set(ids));
   };
 
-  // Theme clustering via tags
   const tagCounts = items.reduce<Record<string, { count: number; targets: string[] }>>((acc, item) => {
     (item.tags || []).forEach((tag) => {
       if (!acc[tag]) acc[tag] = { count: 0, targets: [] };
@@ -41,7 +43,7 @@ export function deriveMindloopHints(items: MindloopItem[]): DerivedSignalHint[] 
   if (topTag && topTag[1].count >= 2) {
     hints.push({
       id: `theme-${topTag[0]}`,
-      text: `Thema ${topTag[0]} verdichtet sich - schau im Feld nach.`,
+      text: `Mora bemerkt mehr Resonanz zu ${topTag[0]} - Feld oeffnen.`,
       targets: Array.from(new Set(topTag[1].targets)),
       tone: 'theme',
     });
@@ -53,7 +55,7 @@ export function deriveMindloopHints(items: MindloopItem[]): DerivedSignalHint[] 
   if (anomaly) {
     hints.push({
       id: `anomaly-${anomaly.id}`,
-      text: 'Ungewoehnliche Bewegung - Feld oeffnen und betroffene Knoten pruefen.',
+      text: 'Ungewoehnliche Bewegung - sanft im Feld pruefen.',
       targets: targetsOf(anomaly),
       tone: 'anomaly',
     });
@@ -65,13 +67,13 @@ export function deriveMindloopHints(items: MindloopItem[]): DerivedSignalHint[] 
   if (opportunity) {
     hints.push({
       id: `opportunity-${opportunity.id}`,
-      text: 'Verbindungen koennen gestaerkt werden - schau dir die verknuepften Objekte an.',
+      text: 'Verbindungen lassen sich staerken - verknuepfte Objekte ansehen.',
       targets: targetsOf(opportunity),
       tone: 'opportunity',
     });
   }
 
-  return hints.slice(0, 3);
+  return hints.slice(0, HINT_LIMIT);
 }
 
 export default function SignalCard({ items, summary, isLoading, onNavigateToTargets }: SignalCardProps) {
@@ -87,7 +89,7 @@ export default function SignalCard({ items, summary, isLoading, onNavigateToTarg
   }
 
   const breakdown = buildBreakdown(items, summary?.breakdown);
-  const strongestLabel = highest >= 0.8 ? 'hoch' : highest >= 0.55 ? 'mittel' : 'niedrig';
+  const strongestLabel = highest >= 0.8 ? 'deutlich' : highest >= 0.55 ? 'spuerbar' : 'sanft';
   const derivedHints = deriveMindloopHints(items);
 
   return (
@@ -97,7 +99,7 @@ export default function SignalCard({ items, summary, isLoading, onNavigateToTarg
           <p className="text-[11px] uppercase tracking-[0.35em] text-muted-foreground">Signalstrang</p>
           <h3 className="text-xl font-semibold text-foreground">Mind Loop Synthese</h3>
           <p className="text-sm text-muted-foreground max-w-xl">
-            Zusammengefasste Impulse aus Semantic, Awareness und System. Sanft, ohne zu ueberladen.
+            Zusammengefasste Impulse aus Semantic, Awareness und System. Demo-freundlich, defensiv und ohne Live-Versprechen.
           </p>
         </div>
         <button
@@ -122,11 +124,11 @@ export default function SignalCard({ items, summary, isLoading, onNavigateToTarg
           }
           hint="semantic / awareness / system"
         />
-        <Metric label="Frische" value="Live alle 8s" hint="Mock freundlich" />
+        <Metric label="Frische" value="Regelmaessige Aktualisierung" hint="Mock-freundlich, kein Echtzeit-Versprechen" />
       </div>
 
       <div className="mt-5 space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Empfehlungen</p>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Hinweise</p>
         {derivedHints.length > 0 ? (
           <ul className="space-y-2">
             {derivedHints.map((hint) => (
@@ -172,10 +174,10 @@ function buildBreakdown(items: MindloopItem[], fromSummary?: Record<string, numb
 function iconForTone(tone: DerivedSignalHint['tone']) {
   switch (tone) {
     case 'anomaly':
-      return '✨';
+      return '⚠';
     case 'opportunity':
-      return '🌿';
+      return '✨';
     default:
-      return '🔍';
+      return '🌿';
   }
 }

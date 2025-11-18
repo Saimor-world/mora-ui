@@ -40,7 +40,7 @@ export function describeHealthState(state: NormalizedHealthState): string {
     case "warning":
       return "Core reachable · limited data";
     case "auth":
-      return "JWT invalid · check token";
+      return "Core erreichbar · kein gültiger Token";
     case "offline":
       return "Core offline";
     default:
@@ -92,8 +92,8 @@ export function announceHealthTransition(status?: string | null) {
     });
   } else if (next === "auth") {
     showToast({
-      message: "JWT ungültig – bitte .env.local prüfen.",
-      variant: "error",
+      message: "Core erreichbar, aber ohne gültigen Zugangstoken – Demo-Modus aktiv.",
+      variant: "warning",
     });
   } else if (lastToastState === "offline" || lastToastState === "auth") {
     showToast({

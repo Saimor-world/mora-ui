@@ -175,6 +175,11 @@ export async function authFetch<T = any>(
 
 /**
  * Health check - special case without auth requirement
+ * However, if a JWT is configured, we send it along
+ * This allows us to distinguish between:
+ * - Core offline (no response)
+ * - Core online but auth failed (401)
+ * - Core online and healthy (200)
  */
 export async function healthCheck(): Promise<{
   status: string;
@@ -184,10 +189,32 @@ export async function healthCheck(): Promise<{
   llm?: { status: string };
 }> {
   const baseUrl = getCoreApiUrl();
+  const token = getJwtToken();
+  const authHeaderName = getAuthHeader();
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers[authHeaderName] = `Bearer ${token}`;
+  }
 
   try {
-    const response = await fetchWithTimeout(`${baseUrl}/v1/health`, {}, 5000);
+    const response = await fetchWithTimeout(
+      `${baseUrl}/v1/health`,
+      { headers },
+      5000
+    );
 
+    // Handle 401 Unauthorized specifically
+    if (response.status === 401) {
+      const fallback = {
+        status: 'unauthorized',
+        timestamp: new Date().toISOString(),
+      };
+      announceHealthTransition(fallback.status);
+      return fallback;
+    }
+
+    // Handle other errors
     if (!response.ok) {
       const fallback = {
         status: 'error',

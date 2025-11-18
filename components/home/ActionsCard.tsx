@@ -19,7 +19,7 @@ export default function ActionsCard({ items, onNavigateToTarget }: ActionsCardPr
           <p className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Hinweise</p>
           <h3 className="text-lg font-semibold text-foreground">Aktionen aus Mind Loop</h3>
           <p className="text-xs text-muted-foreground">
-            2-3 leise Vorschlaege, basierend auf aktuellen Signalen.
+            2-3 leise Vorschlaege, basierend auf aktuellen Signalen (Demo-freundlich).
           </p>
         </div>
         <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-200 text-[11px] border border-amber-500/30">
@@ -29,7 +29,7 @@ export default function ActionsCard({ items, onNavigateToTarget }: ActionsCardPr
 
       <div className="mt-4 space-y-2">
         {actions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Gerade keine Hinweise — Môra beobachtet weiter.</p>
+          <p className="text-sm text-muted-foreground">Gerade keine Hinweise - Mora beobachtet ruhig weiter.</p>
         ) : (
           actions.map((action) => (
             <ActionRow key={action.id} action={action} onNavigate={() => onNavigateToTarget?.(action.targetNodeId, action.label)} />
@@ -59,10 +59,10 @@ function ActionRow({ action, onNavigate }: { action: ActionHint; onNavigate?: ()
 function iconForKind(kind: ActionHint['kind']) {
   switch (kind) {
     case 'risk':
-      return '⚠️';
+      return '⚠';
     case 'opportunity':
-      return '🌿';
+      return '✨';
     default:
-      return '🔎';
+      return '🌿';
   }
 }

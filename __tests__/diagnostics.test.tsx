@@ -49,8 +49,8 @@ describe('Diagnostics UI helpers', () => {
     announceHealthTransition('unauthorized');
     expect(showToast).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringMatching(/JWT/),
-        variant: 'error',
+        message: expect.stringMatching(/Core erreichbar.*Zugangstoken/),
+        variant: 'warning',
       })
     );
   });

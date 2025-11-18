@@ -1,4 +1,5 @@
 import { isSemanticEnabled } from './semantic';
+import { getCoreApiUrl, getJwtToken, getAuthHeader } from '../config';
 
 export type MindloopItem = {
   id: string;
@@ -25,15 +26,21 @@ export type MindloopSynthesisResponse = {
 
 export async function getMindloopSynthesis(signal?: AbortSignal): Promise<MindloopSynthesisResponse | null> {
   if (!isSemanticEnabled()) return null;
-  const baseUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
+
+  const baseUrl = getCoreApiUrl();
   if (!baseUrl) return null;
+
+  const token = getJwtToken();
+  const authHeaderName = getAuthHeader();
 
   const url = `${baseUrl}/v1/mindloop/synthesis`;
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
-  const token = process.env.NEXT_PUBLIC_JWT_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    headers[authHeaderName] = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(url, { method: 'GET', headers, signal });

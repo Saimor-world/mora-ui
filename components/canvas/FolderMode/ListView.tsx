@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMemoryFacts } from '@/lib/hooks/useApi';
 import { useAppContext } from '@/lib/contexts';
 import { useRole } from '@/lib/hooks/useRole';
@@ -98,13 +98,16 @@ export default function ListView({ initialFocusId }: ListViewProps) {
     return () => window.removeEventListener('keydown', handleKeys);
   }, [selected, sortedObjects]);
 
-  // Deep-linking: Apply initial focus from URL params
+  // Deep-linking: Apply initial focus from URL params (once, if present)
+  const initialFocusHandledRef = useRef(false);
   useEffect(() => {
+    if (initialFocusHandledRef.current) return;
     if (!initialFocusId || sortedObjects.length === 0) return;
     const matchingObject = sortedObjects.find((obj) => obj.id === initialFocusId);
     if (matchingObject) {
       handleSelect(matchingObject);
     }
+    initialFocusHandledRef.current = true;
     // If no match found, gracefully ignore and continue with normal flow
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFocusId, sortedObjects]);

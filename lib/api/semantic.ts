@@ -1,4 +1,5 @@
-﻿import type { MoraNode } from '../mycelium/model';
+import type { MoraNode } from '../mycelium/model';
+import { getCoreApiUrl, getJwtToken, getAuthHeader } from '../config';
 
 export type SemanticContext = {
   nodeId: string;
@@ -54,20 +55,33 @@ export async function fetchSemanticContext(
   if (!isSemanticEnabled()) {
     return null;
   }
-  const baseUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
+
+  const baseUrl = getCoreApiUrl();
   if (!baseUrl) {
     return null;
   }
+
+  const token = getJwtToken();
+  const authHeaderName = getAuthHeader();
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (token) {
+    headers[authHeaderName] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${baseUrl}/v1/semantic/context/${encodeURIComponent(nodeId)}`, {
     method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
+    headers,
     signal,
   });
+
   if (!response.ok) {
     return null;
   }
+
   const data = (await response.json()) as any;
   return {
     nodeId,
@@ -92,16 +106,22 @@ export async function getSemanticAnswer(
   signal?: AbortSignal
 ): Promise<SemanticResponse | null> {
   if (!isSemanticEnabled()) return null;
-  const baseUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
+
+  const baseUrl = getCoreApiUrl();
   if (!baseUrl) return null;
+
+  const token = getJwtToken();
+  const authHeaderName = getAuthHeader();
 
   const url = `${baseUrl}/v1/semantic/answer`;
   const headers: Record<string, string> = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   };
-  const token = process.env.NEXT_PUBLIC_JWT_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    headers[authHeaderName] = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(url, {
@@ -136,15 +156,21 @@ export async function getSemanticEvents(
   limit: number = 10
 ): Promise<SemanticEventsResponse | null> {
   if (!isSemanticEnabled()) return null;
-  const baseUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
+
+  const baseUrl = getCoreApiUrl();
   if (!baseUrl) return null;
+
+  const token = getJwtToken();
+  const authHeaderName = getAuthHeader();
 
   const url = `${baseUrl}/v1/semantic/events?limit=${limit}`;
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
-  const token = process.env.NEXT_PUBLIC_JWT_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    headers[authHeaderName] = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(url, {

@@ -28,7 +28,7 @@ export function computeActions(items: MindloopItem[]): ActionHint[] {
       push({
         id: `risk-${item.id}`,
         kind: 'risk',
-        label: `Auffaelligkeit bei ${display}`,
+        label: `Môra merkt eine Auffaelligkeit bei ${display}`,
         targetNodeId: target,
       });
       return;
@@ -38,7 +38,7 @@ export function computeActions(items: MindloopItem[]): ActionHint[] {
       push({
         id: `opportunity-${item.id}`,
         kind: 'opportunity',
-        label: `Chance bei ${display}`,
+        label: `Chance bei ${display} pruefen`,
         targetNodeId: target,
       });
       return;
@@ -64,7 +64,7 @@ export function computeActions(items: MindloopItem[]): ActionHint[] {
         push({
           id: `focus-${tag}`,
           kind: 'focus',
-          label: `Fokus auf ${tag} sinnvoll`,
+          label: `Fokus auf ${tag} koennte helfen`,
           targetNodeId: meta.target,
         });
       }

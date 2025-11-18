@@ -63,6 +63,9 @@ jest.mock('@/lib/mockData', () => ({
 jest.mock('@/lib/hooks/useMindloopSynthesis', () => ({
   useMindloopSynthesis: jest.fn(() => ({ items: [], summary: undefined, isLoading: false, error: null })),
 }));
+jest.mock('@/lib/contexts/ThoughtBubbleContext', () => ({
+  useThoughtBubbles: () => ({ pushBubble: jest.fn(), bubbles: [], dismissBubble: jest.fn() }),
+}));
 
 const mockedUseSnapshots = ApiHooks.useSnapshots as jest.Mock;
 
@@ -84,6 +87,16 @@ describe('FieldMode', () => {
       error: null,
     });
     render(<FieldMode />);
+    expect(screen.getByText(/Keine Objekte im aktuellen Snapshot/i)).toBeInTheDocument();
+  });
+
+  it('ignores unknown deep-link focus ids gracefully', () => {
+    mockedUseSnapshots.mockReturnValue({
+      data: [{ ts: 't0', nodes: [], edges: [] }],
+      isLoading: false,
+      error: null,
+    });
+    render(<FieldMode initialFocusIds={['does-not-exist']} />);
     expect(screen.getByText(/Keine Objekte im aktuellen Snapshot/i)).toBeInTheDocument();
   });
 

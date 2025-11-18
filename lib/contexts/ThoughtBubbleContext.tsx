@@ -18,21 +18,53 @@ interface ThoughtBubbleContextType {
 
 const ThoughtBubbleContext = createContext<ThoughtBubbleContextType | undefined>(undefined);
 
-const MAX_BUBBLES = 3;
+const MAX_QUEUE = 3;
 const AUTO_DISMISS_MS = 5000;
+const RATE_LIMIT_MS = 30000; // ensure calm cadence – max one bubble per 30s
 
 export function ThoughtBubbleProvider({ children }: { children: ReactNode }) {
-  const [bubbles, setBubbles] = useState<ThoughtBubble[]>([]);
-  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const [queue, setQueue] = useState<ThoughtBubble[]>([]);
+  const [activeBubble, setActiveBubble] = useState<ThoughtBubble | null>(null);
+  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastShownRef = useRef<number>(0);
 
   const dismissBubble = useCallback((id: string) => {
-    setBubbles((prev) => prev.filter((b) => b.id !== id));
+    setActiveBubble((prev) => (prev?.id === id ? null : prev));
     const timeout = timeoutsRef.current.get(id);
     if (timeout) {
       clearTimeout(timeout);
       timeoutsRef.current.delete(id);
     }
   }, []);
+
+  const clearNextTimer = useCallback(() => {
+    if (nextTimerRef.current) {
+      clearTimeout(nextTimerRef.current);
+      nextTimerRef.current = null;
+    }
+  }, []);
+
+  // Show next bubble when cadence allows
+  const showNext = useCallback(() => {
+    clearNextTimer();
+    setQueue((prev) => {
+      if (!prev.length || activeBubble) return prev;
+      const now = Date.now();
+      const sinceLast = now - lastShownRef.current;
+      if (sinceLast < RATE_LIMIT_MS) {
+        // schedule when rate-limit expires
+        nextTimerRef.current = setTimeout(showNext, RATE_LIMIT_MS - sinceLast);
+        return prev;
+      }
+      const [next, ...rest] = prev;
+      setActiveBubble(next);
+      lastShownRef.current = now;
+      const timeout = setTimeout(() => dismissBubble(next.id), AUTO_DISMISS_MS);
+      timeoutsRef.current.set(next.id, timeout);
+      return rest;
+    });
+  }, [activeBubble, clearNextTimer, dismissBubble]);
 
   const pushBubble = useCallback(
     (bubble: Omit<ThoughtBubble, 'id' | 'timestamp'>) => {
@@ -43,53 +75,48 @@ export function ThoughtBubbleProvider({ children }: { children: ReactNode }) {
         timestamp: Date.now(),
       };
 
-      setBubbles((prev) => {
-        // Check for duplicates: same message within last 3 seconds
-        const isDuplicate = prev.some(
-          (b) =>
-            b.message === newBubble.message &&
-            newBubble.timestamp - b.timestamp < 3000
-        );
+      setQueue((prev) => {
+        // Ignore near-duplicates (same message in last 3s in queue or active)
+        const isDuplicate =
+          (activeBubble && newBubble.message === activeBubble.message && newBubble.timestamp - activeBubble.timestamp < 3000) ||
+          prev.some((b) => b.message === newBubble.message && newBubble.timestamp - b.timestamp < 3000);
+        if (isDuplicate) return prev;
 
-        if (isDuplicate) {
-          return prev; // Skip duplicate
-        }
-
-        // Add new bubble and enforce max limit (FIFO)
         const updated = [...prev, newBubble];
-        if (updated.length > MAX_BUBBLES) {
-          // Remove oldest bubble
-          const removed = updated.shift();
-          if (removed) {
-            const timeout = timeoutsRef.current.get(removed.id);
-            if (timeout) {
-              clearTimeout(timeout);
-              timeoutsRef.current.delete(removed.id);
-            }
-          }
-        }
-        return updated;
+        // Keep only latest entries to avoid spamming
+        return updated.slice(-MAX_QUEUE);
       });
 
-      // Auto-dismiss after timeout
-      const timeout = setTimeout(() => {
-        dismissBubble(id);
-      }, AUTO_DISMISS_MS);
-      timeoutsRef.current.set(id, timeout);
+      showNext();
     },
-    [dismissBubble]
+    [activeBubble, showNext]
   );
 
   // Cleanup on unmount
   useEffect(() => {
+    const timeouts = timeoutsRef.current;
     return () => {
-      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
-      timeoutsRef.current.clear();
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+      timeouts.clear();
+      clearNextTimer();
     };
-  }, []);
+  }, [clearNextTimer]);
+
+  // When active is cleared, try to show the next queued bubble in a calm cadence
+  useEffect(() => {
+    if (!activeBubble && queue.length) {
+      showNext();
+    }
+  }, [activeBubble, queue.length, showNext]);
 
   return (
-    <ThoughtBubbleContext.Provider value={{ bubbles, pushBubble, dismissBubble }}>
+    <ThoughtBubbleContext.Provider
+      value={{
+        bubbles: activeBubble ? [activeBubble] : [],
+        pushBubble,
+        dismissBubble,
+      }}
+    >
       {children}
     </ThoughtBubbleContext.Provider>
   );
