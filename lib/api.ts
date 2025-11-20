@@ -81,11 +81,28 @@ export async function authFetch<T = any>(
   const token = getJwtToken();
   const authHeaderName = getAuthHeader() || 'Authorization';
 
-  // DEV LOGGING - Diagnose token in authFetch
+  // DEV LOGGING - Diagnose token/header usage (without leaking full token)
   if (process.env.NODE_ENV === 'development') {
+    const describeToken = (value?: string | null) => {
+      if (!value) return 'none';
+      if (value.length <= 8) return `${value.length} chars`;
+      return `${value.slice(0, 4)}...${value.slice(-4)} (${value.length} chars)`;
+    };
+
+    const hashToken = (value?: string | null) => {
+      if (!value) return 'none';
+      let hash = 0;
+      for (let i = 0; i < value.length; i += 1) {
+        hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+      }
+      return hash.toString(16).padStart(8, '0').slice(0, 8);
+    };
+
     console.log('[authFetch] Called for endpoint:', endpoint);
-    console.log('[authFetch] Token available:', !!token);
-    console.log('[authFetch] Token length:', token?.length || 0);
+    console.log('[authFetch] Base URL:', baseUrl);
+    console.log('[authFetch] Auth header name:', authHeaderName);
+    console.log('[authFetch] Token preview:', describeToken(token));
+    console.log('[authFetch] Token digest:', hashToken(token));
   }
 
   // Validate config
@@ -94,10 +111,8 @@ export async function authFetch<T = any>(
   }
 
   if (!token) {
-    showToast({
-      message: 'JWT Token fehlt oder ist leer. Bitte .env.local prüfen.',
-      variant: 'error',
-    });
+    // Silently fail - health check will show Core offline status
+    console.warn('[authFetch] No JWT token configured');
     return Promise.reject(new ApiUnauthorizedError(endpoint));
   }
 
@@ -120,18 +135,13 @@ export async function authFetch<T = any>(
 
     // Handle 401 Unauthorized
     if (response.status === 401) {
-      showToast({
-        message: 'Authentication failed (401). Bitte JWT-Token prüfen.',
-        variant: 'error',
-      });
+      // Health check will announce auth state transitions
+      console.warn('[authFetch] 401 Unauthorized:', endpoint);
       throw new ApiUnauthorizedError(endpoint);
     }
 
     if (response.status === 403) {
-      showToast({
-        message: 'Zugriff verweigert (403). Berechtigungen oder Token prüfen.',
-        variant: 'error',
-      });
+      console.warn('[authFetch] 403 Forbidden:', endpoint);
       throw new ApiError(response.status, 'Forbidden', endpoint);
     }
 
@@ -146,10 +156,7 @@ export async function authFetch<T = any>(
   } catch (error) {
     // Re-throw our custom errors
     if (error instanceof ApiTimeoutError) {
-      showToast({
-        message: 'Core API Timeout – bitte Verbindung prüfen.',
-        variant: 'error',
-      });
+      console.warn('[authFetch] Timeout:', endpoint);
       throw error;
     }
 
@@ -157,12 +164,12 @@ export async function authFetch<T = any>(
       throw error;
     }
 
-    // Network errors
+    // Network errors (silently fail - health check handles status)
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      showToast({
-        message: 'Core API nicht erreichbar – bitte Server starten.',
-        variant: 'error',
-      });
+      // Suppress network errors in development - this is expected when Core API is offline
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[authFetch] Network error (Core API offline):', endpoint);
+      }
       throw new Error(
         `Network error: Cannot reach Core API at ${baseUrl}. Is the server running?`
       );

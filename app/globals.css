@@ -61,33 +61,43 @@
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, sans-serif;
     /* Sanfte, organische Übergänge überall */
-    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Organische Buttons - abgerundet wie Sporen */
+  button, [role="button"] {
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Organische Inputs - weiche Formen */
+  input, textarea, select {
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
 @layer utilities {
-  /* 🌿 Môra Utilities - Organische Bewegung */
+  /* 🌿 Môra Utilities - Organische Bewegung (langsamer, weiser, wie Bäume) */
 
   .mora-transition {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mora-transition-fast {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mora-transition-slow {
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Sanftes Pulsieren - wie Atmung */
+  /* Sanftes Pulsieren - wie Atmung (langsamer, 6s statt 4s) */
   @keyframes mora-breathe {
     0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.02); }
+    50% { opacity: 1; transform: scale(1.015); }
   }
 
   .mora-breathe {
-    animation: mora-breathe 4s ease-in-out infinite;
+    animation: mora-breathe 6s ease-in-out infinite;
   }
 
   /* Sanftes Glühen - wie Sonnenlicht durch Blätter */

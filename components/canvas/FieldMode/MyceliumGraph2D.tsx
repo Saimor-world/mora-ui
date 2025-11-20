@@ -11,6 +11,7 @@ import {
 import type { Snapshot, MoraObject } from '@/lib/types';
 import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 import type { SemanticEvent } from '@/lib/api/semantic';
+import { emitNodeClick, emitNodeHover } from '@/lib/events/nodeInteractions';
 
 interface MyceliumGraph2DProps {
   snapshot: Snapshot;
@@ -54,9 +55,11 @@ export interface GraphStats {
 }
 
 export interface MyceliumGraph2DRef {
+  zoomIn: () => void;
   zoomOut: () => void;
   resetView: () => void;
   fitView: () => void;
+  panToNode: (nodeId: string) => void;
 }
 
 const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
@@ -76,6 +79,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+    const hoveredNodeRef = useRef<string | null>(null);
     const [zoom, setZoom] = useState(1);
     const [panX, setPanX] = useState(0);
     const [panY, setPanY] = useState(0);
@@ -190,6 +194,9 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
     useImperativeHandle(
       ref,
       () => ({
+        zoomIn: () => {
+          setZoom((prev) => Math.min(3, prev * 1.2));
+        },
         zoomOut: () => {
           setZoom((prev) => Math.max(0.3, prev * 0.85));
         },
@@ -199,6 +206,16 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           setPanY(0);
         },
         fitView: () => fitToView(),
+        panToNode: (nodeId: string) => {
+          const node = nodePositionsRef.current.get(nodeId);
+          if (node && canvasRef.current) {
+            const canvas = canvasRef.current;
+            const targetZoom = 1.5;
+            setZoom(targetZoom);
+            setPanX(canvas.offsetWidth / 2 - node.x * targetZoom);
+            setPanY(canvas.offsetHeight / 2 - node.y * targetZoom);
+          }
+        },
       }),
       [fitToView]
     );
@@ -332,11 +349,11 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           0,
           canvas.offsetWidth / 2,
           canvas.offsetHeight / 2,
-          Math.max(canvas.offsetWidth, canvas.offsetHeight) * 0.55
+          Math.max(canvas.offsetWidth, canvas.offsetHeight) * 0.8
         );
-        background.addColorStop(0, 'rgba(5, 20, 15, 0.95)');
-        background.addColorStop(0.5, 'rgba(12, 35, 25, 0.92)');
-        background.addColorStop(1, 'rgba(5, 15, 12, 1)');
+        background.addColorStop(0, '#1a3c34'); // Lighter forest green (matches OrganicBackground)
+        background.addColorStop(0.6, '#0E1F18'); // Deep forest
+        background.addColorStop(1, '#050f0b'); // Almost black
         ctx.fillStyle = background;
         ctx.fillRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
 
@@ -444,9 +461,9 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             !focusSet.has(edge.targetId);
 
           const energySeed = (source.seed + target.seed) / 2;
-          // Organischere Linien: subtilere Bewegung, mehr Variation
-          const swayX = Math.sin((time + energySeed) / (reduceMotion ? 2800 : 1800)) * 12 * motionFactor;
-          const swayY = Math.cos((time + energySeed * 1.3) / 2200) * 10 * motionFactor;
+          // Organischere Linien: langsamer, wie Myzel das wächst (3500ms statt 1800ms)
+          const swayX = Math.sin((time + energySeed) / (reduceMotion ? 4200 : 3500)) * 15 * motionFactor;
+          const swayY = Math.cos((time + energySeed * 1.3) / 3800) * 12 * motionFactor;
           const perpX = -(target.y - source.y);
           const perpY = (target.x - source.x);
           const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
@@ -462,7 +479,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
           const eventShimmer =
             eventSignal && !reduceMotion
               ? Math.abs(Math.sin(time / (1200 - eventSignal.strength * 220))) *
-                (0.12 + eventSignal.strength * 0.22)
+              (0.12 + eventSignal.strength * 0.22)
               : 0;
           const seedShift = (Math.sin((energySeed % 7) * 0.3) + 1) * 0.015;
           const baseAlpha = faded ? 0.03 : highlighted ? 0.28 : 0.10 + seedShift;
@@ -478,22 +495,82 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             ctx.lineDashOffset = 0;
           }
           // Waldgrün/Gold/Nebelblau Palette für Edges
+          const isContains = edge.kind === 'contains';
           ctx.strokeStyle =
             highlighted || isSelectedEdge || eventSignal
               ? `rgba(248, 191, 77, ${Math.min(
-                  0.9,
-                  edgeAlpha + (eventSignal ? 0.25 * eventSignal.strength : 0)
-                )})`
-              : `rgba(107, 142, 158, ${edgeAlpha * 0.9})`; // Nebelblau
+                0.9,
+                edgeAlpha + (eventSignal ? 0.25 * eventSignal.strength : 0)
+              )})`
+              : isContains
+                ? `rgba(107, 142, 158, ${edgeAlpha * 1.5})` // Stronger for hierarchy
+                : `rgba(107, 142, 158, ${edgeAlpha * 0.9})`; // Nebelblau
+
           ctx.lineWidth =
             (edge.weight || 0.8) *
             (highlighted || isSelectedEdge ? 2.2 : 1.2) *
+            (isContains ? 1.5 : 1) * // Thicker for hierarchy
             organicVariance *
             (1 + (eventSignal?.strength ?? 0) * 0.4);
           ctx.lineCap = 'round';
           ctx.stroke();
           if (eventSignal && !reduceMotion) {
             ctx.setLineDash([]);
+          }
+
+          // Particle Flow - leuchtende Partikel fließen wie Nährstoffe durch Myzelium
+          if (!reduceMotion) {
+            const isActive = highlighted || isSelectedEdge || eventSignal;
+            // Ambient flow is much slower and subtle
+            const flowSpeed = eventSignal ? 1800 - eventSignal.strength * 400 : isActive ? 3200 : 12000;
+            const particleCount = eventSignal ? 3 : isActive ? 2 : 1;
+
+            for (let i = 0; i < particleCount; i++) {
+              // Jedes Partikel hat eigene Phase basierend auf Index
+              const particlePhase = ((time + energySeed * 100 + i * 1000) % flowSpeed) / flowSpeed;
+
+              // Position entlang der Kurve berechnen (quadratic bezier)
+              const t = particlePhase;
+              const particleX =
+                (1 - t) * (1 - t) * source.x +
+                2 * (1 - t) * t * controlX +
+                t * t * target.x;
+              const particleY =
+                (1 - t) * (1 - t) * source.y +
+                2 * (1 - t) * t * controlY +
+                t * t * target.y;
+
+              // Partikel-Größe mit Pulsieren
+              const particlePulse = Math.sin(time / 800 + i * 2) * 0.3 + 0.7;
+              const baseSize = isActive ? 2 : 1.2;
+              const particleSize = (baseSize + (eventSignal?.strength ?? 0) * 3) * particlePulse;
+
+              // Leuchtender Glow um Partikel
+              const particleGlow = ctx.createRadialGradient(
+                particleX, particleY, 0,
+                particleX, particleY, particleSize * 3
+              );
+              const glowColor = eventSignal || highlighted || isSelectedEdge
+                ? '248, 191, 77' // Gold
+                : '107, 142, 158'; // Nebelblau
+
+              const opacityMultiplier = isActive ? 1 : 0.3; // Dim ambient particles
+
+              particleGlow.addColorStop(0, `rgba(${glowColor}, ${0.6 * particlePulse * opacityMultiplier})`);
+              particleGlow.addColorStop(0.5, `rgba(${glowColor}, ${0.3 * particlePulse * opacityMultiplier})`);
+              particleGlow.addColorStop(1, 'transparent');
+
+              ctx.fillStyle = particleGlow;
+              ctx.beginPath();
+              ctx.arc(particleX, particleY, particleSize * 3, 0, Math.PI * 2);
+              ctx.fill();
+
+              // Heller Kern
+              ctx.fillStyle = `rgba(${glowColor}, ${0.9 * particlePulse * opacityMultiplier})`;
+              ctx.beginPath();
+              ctx.arc(particleX, particleY, particleSize, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
         });
 
@@ -509,88 +586,105 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             focusSet.size === 0
               ? 1
               : isFocus
-              ? 1
-              : isNeighbor
-              ? 0.8
-              : 0.25;
+                ? 1
+                : isNeighbor
+                  ? 0.8
+                  : 0.25;
           const pulse =
             reduceMotion || focusSet.size === 0
               ? 0
               : Math.sin((time + node.seed) / 900) * 0.15;
-          // Breathing Animation (0.3–0.7 Hz → ~2000ms period)
-          const breathingFreq = 0.5; // 0.5 Hz = 2 seconds period
-          const breathing = reduceMotion ? 0 : Math.sin(time / (1000 / breathingFreq)) * 0.08;
+          // Organisches Atmen - wie Bäume im Wald (0.28–0.35 Hz → ~3000ms period)
+          // Jeder Node atmet individuell basierend auf seed
+          const breathingFreq = 0.3; // 0.3 Hz = 3.3 seconds period (langsamer, weiser)
+          const breathingPhase = (time + node.seed * 1000) / (1000 / breathingFreq);
+          const breathing = reduceMotion ? 0 : Math.sin(breathingPhase) * 0.12; // Stärkeres Atmen (12%)
+          const secondaryBreath = reduceMotion ? 0 : Math.sin(breathingPhase * 0.7 + node.seed) * 0.04; // Sekundäre Welle
           const hoverBoost = isHovered ? 1.2 : 1;
+          const isProject = node.node.type === 'project';
           const radius =
             node.radius *
-            (1 + pulse + pulseStrength * 0.5 + breathing + eventStrength * 0.3) *
+            (isProject ? 1.8 : 1) * // Projects are larger
+            (1 + pulse + pulseStrength * 0.5 + breathing + secondaryBreath + eventStrength * 0.3) *
             hoverBoost;
           const baseColor = getNodeColor(node.node.type);
 
+          // Ambient Bewegung - sanftes Schwanken wie Zweige im Wind
+          const swayAmplitude = reduceMotion ? 0 : 2.5; // Pixel-Bewegung
+          const swayX = Math.sin((time + node.seed * 500) / 3200) * swayAmplitude;
+          const swayY = Math.cos((time + node.seed * 700) / 3800) * swayAmplitude * 0.8;
+          const nodeX = node.x + swayX;
+          const nodeY = node.y + swayY;
+
           ctx.globalAlpha = focusPresence;
 
-          const glowRadius = radius * (isFocus || isSelected ? 3.2 : 2.3) * (1 + pulseStrength * 0.5);
+          // Biolumineszenz - organischer, pulsierender Glow wie Pilze im Wald
+          const glowRadius = radius * (isFocus || isSelected ? 3.5 : 2.6) * (1 + pulseStrength * 0.5);
           const glow = ctx.createRadialGradient(
-            node.x,
-            node.y,
+            nodeX,
+            nodeY,
             0,
-            node.x,
-            node.y,
+            nodeX,
+            nodeY,
             glowRadius
           );
-          // Subtilerer Glow
+          // Stärkere Biolumineszenz mit individueller Variation
+          const bioGlowPhase = (time + node.seed * 800) / 2200; // Jeder Node leuchtet anders
+          const bioGlowVariation = Math.sin(bioGlowPhase) * 0.08; // Organisches Pulsieren
+          const baseGlow = isFocus ? 0.42 : isProject ? 0.38 : 0.32; // Stärkerer Basis-Glow für Projects
           const glowOpacity = Math.min(
-            0.45,
-            (isFocus ? 0.32 : 0.22) +
-              pulseStrength * 0.18 +
-              eventStrength * 0.22 +
-              (reduceMotion ? 0 : 0.03 * Math.sin((time + node.seed) / 1600))
+            0.65, // Höheres Maximum (war 0.45)
+            baseGlow +
+            pulseStrength * 0.22 +
+            eventStrength * 0.28 +
+            (reduceMotion ? 0 : bioGlowVariation)
           );
           glow.addColorStop(0, hexToRgba(baseColor, glowOpacity));
+          glow.addColorStop(0.4, hexToRgba(baseColor, glowOpacity * 0.5)); // Sanfter Übergang
           glow.addColorStop(1, 'transparent');
           ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
+          ctx.arc(nodeX, nodeY, glowRadius, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.beginPath();
-          ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+          ctx.arc(nodeX, nodeY, radius, 0, Math.PI * 2);
           ctx.fillStyle = baseColor;
           ctx.fill();
 
           if (eventStrength > 0.02) {
             const eventGlow = ctx.createRadialGradient(
-              node.x,
-              node.y,
+              nodeX,
+              nodeY,
               0,
-              node.x,
-              node.y,
+              nodeX,
+              nodeY,
               radius * (2.4 + eventStrength)
             );
             eventGlow.addColorStop(0, `rgba(248,191,77,${0.35 * eventStrength})`);
             eventGlow.addColorStop(1, 'transparent');
             ctx.fillStyle = eventGlow;
             ctx.beginPath();
-            ctx.arc(node.x, node.y, radius * (2.5 + eventStrength), 0, Math.PI * 2);
+            ctx.arc(nodeX, nodeY, radius * (2.5 + eventStrength), 0, Math.PI * 2);
             ctx.fill();
           }
 
           // soft outline echoes
           const outlineAlpha = isFocus || isSelected ? 0.45 : isHovered ? 0.22 : isNeighbor ? 0.16 : 0.1;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, radius + (isSelected ? 6 : 4), 0, Math.PI * 2);
+          ctx.arc(nodeX, nodeY, radius + (isSelected ? 6 : 4), 0, Math.PI * 2);
           ctx.strokeStyle = hexToRgba(baseColor, outlineAlpha);
           ctx.lineWidth = isFocus || isSelected ? 3 : 2;
           ctx.stroke();
 
           ctx.beginPath();
-          ctx.arc(node.x - radius / 3, node.y - radius / 3, radius / 2.5, 0, Math.PI * 2);
+          ctx.arc(nodeX - radius / 3, nodeY - radius / 3, radius / 2.5, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(255,255,255,0.25)';
           ctx.fill();
 
           if (isFocus) {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, radius + 6, 0, Math.PI * 2);
+            ctx.arc(nodeX, nodeY, radius + 6, 0, Math.PI * 2);
             ctx.strokeStyle = 'rgba(248,191,77,0.85)';
             ctx.lineWidth = 1.5;
             ctx.stroke();
@@ -598,7 +692,7 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
 
           if (eventStrength > 0.05) {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, radius + 6 + eventStrength * 10, 0, Math.PI * 2);
+            ctx.arc(nodeX, nodeY, radius + 6 + eventStrength * 10, 0, Math.PI * 2);
             ctx.strokeStyle = `rgba(248,191,77,${0.35 * eventStrength})`;
             ctx.lineWidth = 1.2 + eventStrength * 2.4;
             ctx.stroke();
@@ -609,12 +703,12 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
             ctx.fillStyle = '#f5fdf7';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.fillText(node.node.title, node.x, node.y + radius + 8);
+            ctx.fillText(node.node.title, nodeX, nodeY + radius + 8);
           }
 
           if (pulseStrength > 0.05 && !reduceMotion) {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, radius * (1.8 + pulseStrength), 0, Math.PI * 2);
+            ctx.arc(nodeX, nodeY, radius * (1.8 + pulseStrength), 0, Math.PI * 2);
             ctx.strokeStyle =
               eventStrength > 0
                 ? `rgba(248,191,77, ${0.22 * Math.max(pulseStrength, eventStrength)})`
@@ -687,14 +781,14 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
       ambientSignalStrength,
     ]);
 
-      useEffect(() => {
-        if (!focusNodeId || reduceMotion) return;
-        pulseMapRef.current.set(focusNodeId, 1);
-      }, [focusNodeId, reduceMotion]);
+    useEffect(() => {
+      if (!focusNodeId || reduceMotion) return;
+      pulseMapRef.current.set(focusNodeId, 1);
+    }, [focusNodeId, reduceMotion]);
 
-      useEffect(() => {
-        fitToView();
-      }, [resetSignal, fitToView]);
+    useEffect(() => {
+      fitToView();
+    }, [resetSignal, fitToView]);
 
     const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
       event.preventDefault();
@@ -755,7 +849,22 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
         }
       });
 
-      setHoveredNode(found);
+      if (found !== hoveredNodeRef.current) {
+        hoveredNodeRef.current = found;
+        setHoveredNode(found);
+        const nodeObject = found ? nodePositionsRef.current.get(found)?.node ?? null : null;
+        emitNodeHover({
+          node: nodeObject,
+          pointer: {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            canvasX: x,
+            canvasY: y,
+          },
+          source: 'mycelium-graph',
+        });
+      }
+
       canvas.style.cursor = found ? 'pointer' : 'default';
     };
 
@@ -766,7 +875,14 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
     const handleMouseLeave = () => {
       dragStateRef.current.dragging = false;
       dragStateRef.current.moved = false;
-      setHoveredNode(null);
+      if (hoveredNodeRef.current !== null) {
+        hoveredNodeRef.current = null;
+        setHoveredNode(null);
+        emitNodeHover({
+          node: null,
+          source: 'mycelium-graph',
+        });
+      }
     };
 
     const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -785,6 +901,16 @@ const MyceliumGraph2D = forwardRef<MyceliumGraph2DRef, MyceliumGraph2DProps>(
         const dist = Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2);
         if (dist < Math.max(12, node.radius + 2)) {
           onNodeClick?.(node.node);
+          emitNodeClick({
+            node: node.node,
+            pointer: {
+              clientX: event.clientX,
+              clientY: event.clientY,
+              canvasX: x,
+              canvasY: y,
+            },
+            source: 'mycelium-graph',
+          });
         }
       });
     };

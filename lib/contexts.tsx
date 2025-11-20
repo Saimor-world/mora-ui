@@ -21,11 +21,13 @@ interface AppContextType {
   setOrb: (orb: OrbSelection) => void;
   activeTagFilter: string | null;
   setActiveTagFilter: (tag: string | null) => void;
+  spaceId?: string;
 }
 
 interface AppProviderProps {
   children: ReactNode;
   initialMode?: ViewMode;
+  spaceId?: string;
 }
 
 function isValidOrb(value: string | null): value is OrbSelection {
@@ -34,7 +36,7 @@ function isValidOrb(value: string | null): value is OrbSelection {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children, initialMode = 'field' }: AppProviderProps) {
+export function AppProvider({ children, initialMode = 'field', spaceId }: AppProviderProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -173,6 +175,7 @@ export function AppProvider({ children, initialMode = 'field' }: AppProviderProp
         setOrb,
         activeTagFilter,
         setActiveTagFilter,
+        spaceId,
       }}
     >
       {children}

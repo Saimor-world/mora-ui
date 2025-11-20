@@ -52,19 +52,14 @@ export function useSnapshots() {
   return useQuery<Snapshot[]>({
     queryKey: ['snapshots'],
     queryFn: async () => {
-      try {
-        const response = await api.getSnapshots();
-        // Core API returns: { snapshots: [...] }
-        if (!response.snapshots || response.snapshots.length === 0) {
-          throw new Error('Snapshots response empty');
-        }
-        return response.snapshots;
-      } catch (error) {
-        console.error('Failed to fetch snapshots:', error);
-        // Return empty list so UI can fall back to mock data
-        return [];
+      const response = await api.getSnapshots();
+      if (!response.snapshots || response.snapshots.length === 0) {
+        throw new Error('Snapshots response empty');
       }
+      return response.snapshots;
     },
+    placeholderData: [],
+    retry: 2,
   });
 }
 

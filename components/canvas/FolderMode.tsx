@@ -9,9 +9,10 @@ export type ViewType = 'tree' | 'list';
 
 interface FolderModeProps {
   initialFocusId?: string;
+  spaceId?: string;
 }
 
-export default function FolderMode({ initialFocusId }: FolderModeProps) {
+export default function FolderMode({ initialFocusId, spaceId }: FolderModeProps) {
   const [view, setView] = useState<ViewType>('tree');
 
   return (

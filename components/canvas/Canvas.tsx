@@ -9,7 +9,7 @@ import FieldMode from './FieldMode';
 import CoreStatusBanner from '@/components/status/CoreStatusBanner';
 
 export default function Canvas() {
-  const { mode, setSelectedObject } = useAppContext();
+  const { mode, setSelectedObject, spaceId } = useAppContext();
   const { data: health, refetch: refetchHealth } = useHealthCheck();
   const { isOffline, isAuthError } = getHealthFlags(health?.status);
   const searchParams = useSearchParams();
@@ -29,9 +29,9 @@ export default function Canvas() {
           />
         </div>
       ) : mode === 'folder' ? (
-        <FolderMode initialFocusId={initialFocusIds?.[0]} />
+        <FolderMode initialFocusId={initialFocusIds?.[0]} spaceId={spaceId} />
       ) : (
-        <FieldMode onNodeSelect={setSelectedObject} initialFocusIds={initialFocusIds} />
+        <FieldMode onNodeSelect={setSelectedObject} initialFocusIds={initialFocusIds} spaceId={spaceId} />
       )}
     </main>
   );

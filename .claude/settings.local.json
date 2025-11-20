@@ -37,7 +37,16 @@
       "Bash(xxd:*)",
       "Bash(timeout /t 5 /nobreak)",
       "Bash(npm run test:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(cloudflared:*)",
+      "Bash(start https://retrieval-shelter-par-dividend.trycloudflare.com)",
+      "Bash(start https://officers-knights-screensavers-intro.trycloudflare.com)",
+      "Bash(start https://officers-knights-screensavers-intro.trycloudflare.com/field)",
+      "Bash(timeout /t 2 /nobreak)",
+      "Bash(start http://localhost:3002/organic)",
+      "Bash(start http://localhost:3005/organic)",
+      "Bash(start http://localhost:3005)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

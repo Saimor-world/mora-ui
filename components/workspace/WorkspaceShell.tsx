@@ -18,11 +18,13 @@ import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 interface WorkspaceShellProps {
   initialMode?: 'folder' | 'field';
   standaloneInsights?: boolean;
+  spaceId?: string;
 }
 
 export default function WorkspaceShell({
   initialMode = 'field',
   standaloneInsights = false,
+  spaceId,
 }: WorkspaceShellProps) {
   const pathname = usePathname();
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -42,7 +44,7 @@ export default function WorkspaceShell({
   return (
     <QueryProvider>
       <Suspense fallback={<div className="h-screen flex items-center justify-center text-sm text-muted-foreground">Lade Môra...</div>}>
-        <AppProvider initialMode={initialMode}>
+        <AppProvider initialMode={initialMode} spaceId={spaceId}>
           <ThoughtBubbleProvider>
             <div
               className={`h-screen flex overflow-hidden transition-all ${

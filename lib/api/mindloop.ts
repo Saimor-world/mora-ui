@@ -24,6 +24,13 @@ export type MindloopSynthesisResponse = {
   summary?: MindloopSynthesisSummary;
 };
 
+export type MindloopEvent = {
+  id: string;
+  event_type: string;
+  timestamp: string;
+  data?: Record<string, unknown>;
+};
+
 export async function getMindloopSynthesis(signal?: AbortSignal): Promise<MindloopSynthesisResponse | null> {
   if (!isSemanticEnabled()) return null;
 
@@ -52,7 +59,46 @@ export async function getMindloopSynthesis(signal?: AbortSignal): Promise<Mindlo
     const summary = data.summary && typeof data.summary === 'object' ? data.summary : undefined;
     return { items, summary };
   } catch (error) {
-    console.error('Mindloop synthesis fetch failed', error);
+    // Suppress fetch errors when Core is offline - this is expected behavior
+    // Only log in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('Mindloop synthesis fetch failed (Core API offline):', error);
+    }
     return null;
+  }
+}
+
+export async function getMindloopEvents(limit = 20, signal?: AbortSignal): Promise<MindloopEvent[]> {
+  if (!isSemanticEnabled()) return [];
+
+  const baseUrl = getCoreApiUrl();
+  if (!baseUrl) return [];
+
+  const token = getJwtToken();
+  const authHeaderName = getAuthHeader();
+
+  const url = `${baseUrl}/v1/mindloop/events?limit=${limit}`;
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  };
+
+  if (token) {
+    headers[authHeaderName] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(url, { method: 'GET', headers, signal });
+    if (!response.ok) {
+      return [];
+    }
+    const data = (await response.json()) as any;
+    return Array.isArray(data.events) ? data.events : [];
+  } catch (error) {
+    // Suppress fetch errors when Core is offline - this is expected behavior
+    // Only log in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('Mindloop events fetch failed (Core API offline):', error);
+    }
+    return [];
   }
 }
