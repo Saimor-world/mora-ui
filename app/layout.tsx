@@ -1,21 +1,24 @@
-import type { Metadata } from "next";
-import "./globals.css";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Môra UI - Dual Mode Vision",
-  description: "Folder Mode ↔ Field Mode for Môra Core",
-};
+import { useEffect } from "react";
+import "./globals.css";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fix hydration mismatch from browser extensions
+  useEffect(() => {
+    const body = document.body;
+    if (body?.classList?.contains("antigravity-scroll-lock")) {
+      body.classList.remove("antigravity-scroll-lock");
+    }
+  }, []);
+
   return (
     <html lang="en">
-      <body className="antialiased">
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
