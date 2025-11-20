@@ -46,7 +46,9 @@
       "Bash(start http://localhost:3002/organic)",
       "Bash(start http://localhost:3005/organic)",
       "Bash(start http://localhost:3005)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(PORT=3002 npm run dev:*)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []
