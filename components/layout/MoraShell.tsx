@@ -3,6 +3,7 @@
 import React from 'react';
 import { OrganicBackground } from '@/components/organic/OrganicBackground';
 import { ViewPort } from './ViewPort';
+import { ChatDock } from '@/components/ui/ChatDock';
 
 export const MoraShell: React.FC = () => {
     return (
@@ -17,10 +18,8 @@ export const MoraShell: React.FC = () => {
                 <ViewPort />
             </div>
 
-            {/* Global UI Overlays (Chat, Nav, etc. - placeholders for now) */}
-            <div className="absolute bottom-0 left-0 right-0 z-50 pointer-events-none">
-                {/* ChatDock placeholder */}
-            </div>
+            {/* Global UI Overlays */}
+            <ChatDock />
         </div>
     );
 };

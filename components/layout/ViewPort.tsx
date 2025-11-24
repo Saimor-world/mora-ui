@@ -4,6 +4,8 @@ import React from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { CoreLayer } from '@/components/layers/CoreLayer';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
+import { SpaceLayer } from '@/components/layers/SpaceLayer';
+import { FolderLayer } from '@/components/layers/FolderLayer';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export const ViewPort: React.FC = () => {
@@ -45,11 +47,22 @@ export const ViewPort: React.FC = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 1.1 }}
                         transition={{ duration: 0.5 }}
-                        className="absolute inset-0 flex items-center justify-center"
+                        className="absolute inset-0"
                     >
-                        <div className="text-2xl text-emerald-100/50 tracking-widest">
-                            SPACE LAYER (Coming Soon)
-                        </div>
+                        <SpaceLayer />
+                    </motion.div>
+                )}
+
+                {viewLevel === 'folder' && (
+                    <motion.div
+                        key="folder"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.1 }}
+                        transition={{ duration: 0.5 }}
+                        className="absolute inset-0"
+                    >
+                        <FolderLayer />
                     </motion.div>
                 )}
             </AnimatePresence>

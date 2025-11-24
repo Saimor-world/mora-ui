@@ -5,9 +5,10 @@ import { Sparkles, Mic, Send } from 'lucide-react';
 
 interface OrganicInputProps {
     onSend?: (msg: string) => void;
+    placeholder?: string;
 }
 
-export const OrganicInput: React.FC<OrganicInputProps> = ({ onSend }) => {
+export const OrganicInput: React.FC<OrganicInputProps> = ({ onSend, placeholder = "Frag Môra..." }) => {
     const [input, setInput] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -65,7 +66,7 @@ export const OrganicInput: React.FC<OrganicInputProps> = ({ onSend }) => {
                     type="text"
                     value={input}
                     onChange={handleChange}
-                    placeholder="Ask, or type '@' to connect..."
+                    placeholder={placeholder}
                     className="flex-1 bg-transparent border-none outline-none text-sm text-emerald-100 placeholder-emerald-500/40 font-light z-10"
                 />
 

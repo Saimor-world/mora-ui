@@ -48,7 +48,10 @@
       "Bash(start http://localhost:3005)",
       "Bash(dir:*)",
       "Bash(PORT=3002 npm run dev:*)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(PORT=3005 npm run dev:*)",
+      "Bash(start http://localhost:3002/home)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

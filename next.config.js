@@ -7,6 +7,14 @@ const nextConfig = {
     "http://172.20.10.*",
     "https://*.trycloudflare.com",
   ],
+  async rewrites() {
+    return [
+      {
+        source: '/api/core/:path*',
+        destination: 'http://localhost:8081/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
