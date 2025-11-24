@@ -5,6 +5,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { ArrowLeft, LayoutGrid, List, Folder, FileText, AlertCircle, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 // Preset colors for folders
 const FOLDER_COLORS = [
@@ -20,9 +21,11 @@ export const SpaceLayer: React.FC = () => {
     const {
         activeSpaceId,
         activeDepartmentId,
+        departments,
         spacesByDepartment,
         foldersBySpace,
         isLoadingFolders,
+        navigateToCore,
         navigateToDepartment,
         navigateToFolder,
         loadFoldersForSpace,
@@ -40,6 +43,12 @@ export const SpaceLayer: React.FC = () => {
         const spaces = spacesByDepartment[activeDepartmentId] || [];
         return spaces.find(s => s.id === activeSpaceId);
     }, [activeDepartmentId, activeSpaceId, spacesByDepartment]);
+
+    // Get current department data for breadcrumb
+    const currentDepartment = useMemo(() => {
+        if (!activeDepartmentId) return null;
+        return departments.find(d => d.id === activeDepartmentId);
+    }, [activeDepartmentId, departments]);
 
     // Get folders for current space
     const folders = activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [];
@@ -81,10 +90,21 @@ export const SpaceLayer: React.FC = () => {
         }
     };
 
+    // Sort folders by order then name for stable display
+    const sortedFolders = useMemo(() => {
+        return [...folders].sort((a, b) => {
+            //Default order to 0 if undefined
+            const orderA = a.order ?? 0;
+            const orderB = b.order ?? 0;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.name.localeCompare(b.name);
+        });
+    }, [folders]);
+
     // Generate orbital positions for folder bubbles
     const folderPositions = useMemo(() => {
-        return folders.map((folder, index) => {
-            const angle = (index / Math.max(folders.length, 1)) * Math.PI * 2;
+        return sortedFolders.map((folder, index) => {
+            const angle = (index / Math.max(sortedFolders.length, 1)) * Math.PI * 2;
             const radius = 200 + (index % 2) * 80;
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
@@ -92,7 +112,7 @@ export const SpaceLayer: React.FC = () => {
 
             return { ...folder, x, y, delay };
         });
-    }, [folders]);
+    }, [sortedFolders]);
 
     return (
         <div className="relative w-full h-full p-10 flex flex-col">
@@ -110,7 +130,11 @@ export const SpaceLayer: React.FC = () => {
                         <h2 className="text-2xl font-light text-emerald-50 tracking-widest uppercase">
                             {currentSpace?.name || 'Space'}
                         </h2>
-                        <p className="text-xs text-emerald-400/50 tracking-[0.2em]">KNOWLEDGE GALAXY</p>
+                        <Breadcrumb items={[
+                            { label: 'ROOT', onClick: navigateToCore },
+                            { label: currentDepartment?.name || 'Dept', onClick: () => activeDepartmentId && navigateToDepartment(activeDepartmentId) },
+                            { label: currentSpace?.name || 'Space', isActive: true }
+                        ]} />
                     </div>
                 </div>
 
@@ -178,17 +202,17 @@ export const SpaceLayer: React.FC = () => {
                                     key={folder.id}
                                     onClick={() => handleFolderClick(folder.id)}
                                     title={folder.name}
-                                    className="absolute group"
+                                    className="absolute group flex flex-col items-center justify-center gap-3"
                                     style={{
                                         left: '50%',
                                         top: '50%',
+                                        // Center the element on its coordinate
+                                        marginLeft: -60, // half of approx width
+                                        marginTop: -60,
+                                        width: 120,
+                                        height: 120,
                                     }}
-                                    initial={{
-                                        x: 0,
-                                        y: 0,
-                                        opacity: 0,
-                                        scale: 0
-                                    }}
+                                    initial={{ x: 0, y: 0, opacity: 0, scale: 0 }}
                                     animate={{
                                         x: folder.x,
                                         y: folder.y,
@@ -201,35 +225,30 @@ export const SpaceLayer: React.FC = () => {
                                         type: "spring",
                                         stiffness: 100,
                                     }}
-                                    whileHover={{ scale: 1.15, zIndex: 50 }}
+                                    whileHover={{ scale: 1.1, zIndex: 50 }}
                                 >
                                     {/* Folder Bubble */}
-                                    <div className="relative">
+                                    <div className="relative w-20 h-20 flex items-center justify-center">
                                         {/* Glow Effect */}
                                         <div
-                                            className="absolute inset-0 rounded-full blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500"
+                                            className="absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-50 transition-opacity duration-500"
                                             style={{ backgroundColor: folder.color || '#10b981' }}
                                         />
 
                                         {/* Main Bubble */}
-                                        <div className="relative w-24 h-24 rounded-full glass-panel border border-white/10 group-hover:border-white/30 transition-all duration-500 flex items-center justify-center backdrop-blur-md">
+                                        <div className="relative w-full h-full rounded-full glass-panel border border-white/10 group-hover:border-white/40 transition-all duration-500 flex items-center justify-center backdrop-blur-md bg-black/40">
                                             <Folder
-                                                className="w-10 h-10 transition-colors duration-500"
+                                                className="w-8 h-8 transition-colors duration-500"
                                                 style={{ color: folder.color || '#10b981' }}
                                             />
                                         </div>
+                                    </div>
 
-                                        {/* Label - always visible, brightens on hover */}
-                                        <motion.div
-                                            className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none"
-                                            initial={{ opacity: 0.5 }}
-                                            animate={{ opacity: 0.5 }}
-                                            whileHover={{ opacity: 1 }}
-                                        >
-                                            <span className="text-xs text-emerald-100 bg-black/70 px-3 py-1 rounded-full border border-white/10">
-                                                {folder.name}
-                                            </span>
-                                        </motion.div>
+                                    {/* Label - Stably visible, brightens on hover */}
+                                    <div className="relative">
+                                        <span className="text-[10px] uppercase tracking-wider text-emerald-100/70 bg-black/60 px-3 py-1 rounded-full border border-white/5 group-hover:text-white group-hover:border-white/20 group-hover:bg-black/80 transition-all whitespace-nowrap">
+                                            {folder.name}
+                                        </span>
                                     </div>
                                 </motion.button>
                             ))}
@@ -260,7 +279,7 @@ export const SpaceLayer: React.FC = () => {
                             </div>
 
                             {/* Folder List */}
-                            {folders.map((folder) => (
+                            {sortedFolders.map((folder) => (
                                 <button
                                     key={folder.id}
                                     onClick={() => handleFolderClick(folder.id)}
@@ -274,7 +293,7 @@ export const SpaceLayer: React.FC = () => {
                                         {folder.name}
                                     </span>
                                     <span className="w-32 text-emerald-500/40 text-xs">
-                                        {folder.created_at ? new Date(folder.created_at).toLocaleDateString() : 'Today'}
+                                        {folder.updated_at ? new Date(folder.updated_at).toLocaleDateString() : 'Today'}
                                     </span>
                                 </button>
                             ))}
@@ -334,8 +353,8 @@ export const SpaceLayer: React.FC = () => {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, color: color.value })}
                                     className={`w-full aspect-square rounded-lg border-2 transition-all ${formData.color === color.value
-                                            ? 'border-white scale-110'
-                                            : 'border-white/20 hover:border-white/40'
+                                        ? 'border-white scale-110'
+                                        : 'border-white/20 hover:border-white/40'
                                         }`}
                                     style={{ backgroundColor: color.value }}
                                     title={color.name}

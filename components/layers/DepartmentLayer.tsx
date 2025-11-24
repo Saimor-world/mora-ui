@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { ArrowLeft, Hexagon, Layers, AlertTriangle, Plus } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 export const DepartmentLayer: React.FC = () => {
     const {
@@ -75,7 +76,10 @@ export const DepartmentLayer: React.FC = () => {
                         <h2 className="text-2xl font-light text-emerald-50 tracking-widest uppercase">
                             {currentDepartment?.name || 'Department'}
                         </h2>
-                        <p className="text-xs text-emerald-400/50 tracking-[0.2em]">SECTOR VIEW</p>
+                        <Breadcrumb items={[
+                            { label: 'ROOT', onClick: navigateToCore },
+                            { label: currentDepartment?.name || 'Department', isActive: true }
+                        ]} />
                     </div>
                 </div>
 

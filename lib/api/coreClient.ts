@@ -1,4 +1,6 @@
 import jwt from 'jsonwebtoken';
+import type { CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
+
 
 const CORE_BASE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ?? "http://localhost:8081";
 let CORE_JWT = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT;
@@ -139,9 +141,8 @@ export async function corePost(path: string, body: any): Promise<any> {
     }
 }
 
-import type { CoreDepartment, CoreSpace, CoreFolder, CoreNode } from "@/lib/types/core";
-
 // ========== FETCH FUNCTIONS ==========
+
 
 export async function fetchDepartments(): Promise<CoreDepartment[]> {
     return coreGet('/v1/departments');
@@ -159,6 +160,16 @@ export async function fetchFolders(spaceId: string): Promise<CoreFolder[]> {
 export async function fetchNodes(folderId: string): Promise<CoreNode[]> {
     return coreGet(`/v1/nodes?folder_id=${folderId}`);
 }
+
+export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
+    return coreGet(`/v1/nodes/${nodeId}`);
+}
+
+export async function fetchTree(): Promise<CoreTreeNode[]> {
+    const response = await coreGet<{ departments: CoreTreeNode[] }>(`/v1/tree`);
+    return response.departments || [];
+}
+
 
 // ========== CREATE FUNCTIONS ==========
 // Backend now auto-generates IDs and slugs

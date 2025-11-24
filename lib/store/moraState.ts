@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import type { CoreDepartment, CoreSpace, CoreFolder, CoreNode } from "@/lib/types/core";
+import type { CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
 import {
     fetchDepartments,
     fetchSpaces,
     fetchFolders,
     fetchNodes,
+    fetchNodeDetails,
+    fetchTree,
     createSpace,
     createFolder,
     createNode,
@@ -22,6 +24,7 @@ interface MoraState {
     activeDepartmentId: string | null;
     activeSpaceId: string | null;
     activeFolderId: string | null;
+    activeNode: CoreNode | null;
 
     // Data
     departments: CoreDepartment[];
@@ -29,11 +32,16 @@ interface MoraState {
     foldersBySpace: Record<string, CoreFolder[]>;
     nodesByFolder: Record<string, CoreNode[]>;
 
+    // Tree Data
+    treeData: CoreTreeNode[] | null;
+    expandedTreeNodes: Set<string>;
+
     // Loading / Error States
     isLoadingDepartments: boolean;
     isLoadingSpaces: boolean;
     isLoadingFolders: boolean;
     isLoadingNodes: boolean;
+    isLoadingTree: boolean;
     coreError: string | null;
 
     // Actions
@@ -41,12 +49,18 @@ interface MoraState {
     setActiveDepartment: (id: string | null) => void;
     setActiveSpace: (id: string | null) => void;
     setActiveFolder: (id: string | null) => void;
+    setActiveNode: (node: CoreNode | null) => void;
 
     // Data Actions - Load
     loadDepartments: () => Promise<void>;
     loadSpacesForDepartment: (departmentId: string) => Promise<void>;
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
     loadNodesForFolder: (folderId: string) => Promise<void>;
+    loadNodeDetails: (nodeId: string) => Promise<void>;
+    loadTree: () => Promise<void>;
+
+    // Tree Actions
+    toggleTreeNode: (id: string) => void;
 
     // Data Actions - Create
     addSpace: (payload: CreateSpacePayload) => Promise<void>;
@@ -66,16 +80,21 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     activeDepartmentId: null,
     activeSpaceId: null,
     activeFolderId: null,
+    activeNode: null,
 
     departments: [],
     spacesByDepartment: {},
     foldersBySpace: {},
     nodesByFolder: {},
 
+    treeData: null,
+    expandedTreeNodes: new Set<string>(),
+
     isLoadingDepartments: false,
     isLoadingSpaces: false,
     isLoadingFolders: false,
     isLoadingNodes: false,
+    isLoadingTree: false,
     coreError: null,
 
     // Basic Setters
@@ -83,6 +102,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     setActiveDepartment: (id) => set({ activeDepartmentId: id }),
     setActiveSpace: (id) => set({ activeSpaceId: id }),
     setActiveFolder: (id) => set({ activeFolderId: id }),
+    setActiveNode: (node) => set({ activeNode: node }),
+
 
     // Data Loading Actions
     loadDepartments: async () => {
@@ -146,6 +167,55 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
 
+    loadNodeDetails: async (nodeId: string) => {
+        // Optimistic update if we have the node in the list
+        const state = get();
+        let foundNode: CoreNode | undefined;
+
+        // Search in loaded folders
+        for (const nodes of Object.values(state.nodesByFolder)) {
+            foundNode = nodes.find(n => n.id === nodeId);
+            if (foundNode) break;
+        }
+
+        if (foundNode) {
+            set({ activeNode: foundNode });
+        }
+
+        // Fetch fresh details
+        try {
+            const detailedNode = await fetchNodeDetails(nodeId);
+            set({ activeNode: detailedNode });
+        } catch (error: any) {
+            console.error("Failed to load node details:", error);
+            // Keep the optimistic version if available, or handle error
+        }
+    },
+
+    loadTree: async () => {
+        set({ isLoadingTree: true, coreError: null });
+        try {
+            const tree = await fetchTree();
+            set({ treeData: tree, isLoadingTree: false });
+        } catch (error: any) {
+            const msg = error instanceof CoreError
+                ? (error.status === 401 || error.status === 403 ? "Not authorized to access tree." : error.message)
+                : "Failed to load tree structure.";
+            set({ isLoadingTree: false, coreError: msg });
+        }
+    },
+
+    toggleTreeNode: (id: string) => {
+        const state = get();
+        const newExpanded = new Set(state.expandedTreeNodes);
+        if (newExpanded.has(id)) {
+            newExpanded.delete(id);
+        } else {
+            newExpanded.add(id);
+        }
+        set({ expandedTreeNodes: newExpanded });
+    },
+
     // Create Actions
     addSpace: async (payload) => {
         try {
@@ -158,6 +228,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     [deptId]: [...(state.spacesByDepartment[deptId] || []), newSpace]
                 }
             }));
+
+            // Refresh tree to show new space
+            get().loadTree();
         } catch (error: any) {
             const msg = error instanceof CoreError ? error.message : "Failed to create space.";
             set({ coreError: msg });
@@ -176,6 +249,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     [spaceId]: [...(state.foldersBySpace[spaceId] || []), newFolder]
                 }
             }));
+
+            // Refresh tree to show new folder
+            get().loadTree();
         } catch (error: any) {
             const msg = error instanceof CoreError ? error.message : "Failed to create folder.";
             set({ coreError: msg });
@@ -194,6 +270,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     [folderId]: [...(state.nodesByFolder[folderId] || []), newNode]
                 }
             }));
+
+            // Refresh tree to show new node
+            get().loadTree();
         } catch (error: any) {
             const msg = error instanceof CoreError ? error.message : "Failed to create node.";
             set({ coreError: msg });

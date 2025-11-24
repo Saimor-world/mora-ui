@@ -4,6 +4,7 @@ import React from 'react';
 import { OrganicBackground } from '@/components/organic/OrganicBackground';
 import { ViewPort } from './ViewPort';
 import { ChatDock } from '@/components/ui/ChatDock';
+import { TreeSidebar } from '@/components/sidebar/TreeSidebar';
 
 export const MoraShell: React.FC = () => {
     return (
@@ -13,9 +14,15 @@ export const MoraShell: React.FC = () => {
                 <OrganicBackground intensity={1} />
             </div>
 
-            {/* Main ViewPort Layer */}
-            <div className="relative z-10 w-full h-full">
-                <ViewPort />
+            {/* Main Content Area with Sidebar */}
+            <div className="relative z-10 w-full h-full flex">
+                {/* Tree Sidebar */}
+                <TreeSidebar />
+
+                {/* Main ViewPort Layer */}
+                <div className="flex-1 h-full">
+                    <ViewPort />
+                </div>
             </div>
 
             {/* Global UI Overlays */}

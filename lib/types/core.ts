@@ -32,6 +32,7 @@ export interface CoreFolder {
     description?: string | null;
     icon?: string | null;
     color?: string | null;
+    order: number;
     parent_id?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
@@ -44,6 +45,22 @@ export interface CoreNode {
     type: 'document' | 'task' | 'note' | 'link' | 'other';
     title: string;
     content?: string | null;
+    url?: string | null;
+    metadata?: Record<string, any> | null;
+    size?: number | null;
     created_at?: string | null;
     updated_at?: string | null;
+}
+
+// Tree structure for hierarchical navigation
+export interface CoreTreeNode {
+    id: string;
+    type: 'department' | 'space' | 'folder' | 'node';
+    name: string;
+    slug?: string;
+    color?: string | null;
+    icon?: string | null;
+    children?: CoreTreeNode[];
+    // Optional metadata for nodes
+    nodeType?: 'document' | 'task' | 'note' | 'link' | 'other';
 }

@@ -1,12 +1,21 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useMoraStore } from '@/lib/store/moraState';
 import { OrganicInput } from '@/components/organic/OrganicInput';
 import { MessageSquareText, X, Maximize2, Minimize2 } from 'lucide-react';
 
 export const ChatDock: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const { activeDepartmentId, activeSpaceId, activeFolderId, activeNode } = useMoraStore();
+
+    const getWelcomeMessage = () => {
+        if (activeNode) return `I see you're looking at "${activeNode.title}". How can I assist with this ${activeNode.type}?`;
+        if (activeFolderId) return "I'm ready to help you manage this folder.";
+        if (activeSpaceId) return "Welcome to this Space. What would you like to create?";
+        return "I'm connected to the Core. How can I help you navigate the system today?";
+    };
 
     // Minimized Pill
     if (!isOpen) {
@@ -54,6 +63,15 @@ export const ChatDock: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Context Bar */}
+                <div className="px-6 py-2 border-b border-white/5 flex items-center gap-2 text-[10px] text-emerald-500/50 overflow-x-auto custom-scrollbar whitespace-nowrap">
+                    <span>ROOT</span>
+                    {activeDepartmentId && <><span>/</span><span className="text-emerald-400">DEPT</span></>}
+                    {activeSpaceId && <><span>/</span><span className="text-emerald-400">SPACE</span></>}
+                    {activeFolderId && <><span>/</span><span className="text-emerald-400">FOLDER</span></>}
+                    {activeNode && <><span>/</span><span className="text-mora-gold truncate max-w-[150px]">{activeNode.title}</span></>}
+                </div>
+
                 {/* Chat Area */}
                 <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
                     {/* Mock Messages */}
@@ -64,7 +82,7 @@ export const ChatDock: React.FC = () => {
                         <div className="flex-1 space-y-1">
                             <div className="text-[10px] text-emerald-500/50 uppercase tracking-wider">Môra • Just now</div>
                             <p className="text-sm text-emerald-100/90 leading-relaxed">
-                                I&apos;m connected to the Core. How can I help you navigate the system today?
+                                {getWelcomeMessage()}
                             </p>
                         </div>
                     </div>
