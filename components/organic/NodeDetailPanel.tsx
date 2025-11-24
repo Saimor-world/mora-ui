@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useMoraStore } from '@/lib/store/moraState';
 import { X, FileText, Link as LinkIcon, File, Calendar, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -89,11 +91,13 @@ export const NodeDetailPanel: React.FC = () => {
                             </div>
 
                             {/* Main Content Area */}
-                            {activeNode.type === 'note' && activeNode.content && (
+                            {(activeNode.type === 'note' || activeNode.type === 'document') && activeNode.content && (
                                 <div className="prose prose-invert prose-emerald max-w-none">
                                     <h3 className="text-xs uppercase tracking-widest text-emerald-400/50 mb-4 border-b border-white/5 pb-2">Content</h3>
-                                    <div className="whitespace-pre-wrap text-emerald-100/80 font-light leading-relaxed">
-                                        {activeNode.content}
+                                    <div className="text-emerald-100/80 font-light leading-relaxed markdown-content">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {activeNode.content}
+                                        </ReactMarkdown>
                                     </div>
                                 </div>
                             )}

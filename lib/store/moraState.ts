@@ -15,6 +15,7 @@ import {
     type CreateFolderPayload,
     type CreateNodePayload
 } from "@/lib/api/coreClient";
+import { toast } from "@/lib/toast";
 
 export type ViewLevel = 'core' | 'department' | 'space' | 'folder';
 
@@ -229,10 +230,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 }
             }));
 
+            // Show success toast
+            toast.success(`Space "${newSpace.name}" created successfully!`);
+
             // Refresh tree to show new space
             get().loadTree();
         } catch (error: any) {
             const msg = error instanceof CoreError ? error.message : "Failed to create space.";
+            toast.error(msg);
             set({ coreError: msg });
             throw error;
         }
@@ -250,10 +255,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 }
             }));
 
+            // Show success toast
+            toast.success(`Folder "${newFolder.name}" created!`);
+
             // Refresh tree to show new folder
             get().loadTree();
         } catch (error: any) {
             const msg = error instanceof CoreError ? error.message : "Failed to create folder.";
+            toast.error(msg);
             set({ coreError: msg });
             throw error;
         }
@@ -271,10 +280,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 }
             }));
 
+            // Show success toast
+            toast.success(`Item "${newNode.title}" added!`);
+
             // Refresh tree to show new node
             get().loadTree();
         } catch (error: any) {
-            const msg = error instanceof CoreError ? error.message : "Failed to create node.";
+            const msg = error instanceof CoreError ? error.message : "Failed to create item.";
+            toast.error(msg);
             set({ coreError: msg });
             throw error;
         }

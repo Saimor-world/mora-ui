@@ -1,213 +1,439 @@
-# Môra-UI V2 - Next Phase Implementation Plan
+# Môra-UI V2 - Next Phase Implementation Plan (Updated)
+
+**Status:** Tree-Sidebar ✅ Complete | Now focusing on polish & multi-org preparation
 
 ## Context
-The V2 shell is approved and functional. This phase focuses on enhancing the UI with a hierarchical sidebar, polishing demo flows, ensuring state synchronization, and preparing for multi-organization support.
-
-## Phase Objectives
-1. **Tree-Sidebar**: Render the full hierarchy in a persistent, collapsible sidebar
-2. **Demo Flow Polish**: Define and refine 2-3 "golden paths" through Alpha Centauri data
-3. **Create-Flow Synchronization**: Ensure all create operations update UI state consistently
-4. **Multi-Org Preparation**: Add configuration hooks for switching organizations
+The V2 shell with TreeSidebar is approved and functional. This phase focuses on **polishing demo flows**, ensuring **state synchronization**, and preparing for **multi-organization support**.
 
 ---
 
-## Task 1: Tree-Sidebar Implementation
+## ✅ Completed Tasks (Phase B)
 
-### 1.1 Backend Integration
-- [ ] Add `fetchTree()` to `lib/api/coreClient.ts`
-  - `GET /v1/tree` returns full Department → Space → Folder → Node hierarchy
-- [ ] Add `CoreTreeNode` type to `lib/types/core.ts`
-  ```typescript
-  interface CoreTreeNode {
-    id: string;
-    type: 'department' | 'space' | 'folder' | 'node';
-    name: string;
-    children?: CoreTreeNode[];
-    // ... other fields
-  }
-  ```
-
-### 1.2 State Management
-- [ ] Extend `moraState.ts`:
-  - Add `treeData: CoreTreeNode[] | null`
-  - Add `isLoadingTree: boolean`
-  - Add `loadTree()` action
-  - Add `expandedTreeNodes: Set<string>` for collapse/expand state
-  - Add `toggleTreeNode(id: string)` action
-
-### 1.3 Component Creation
-- [ ] Create `components/sidebar/TreeSidebar.tsx`
-  - Collapsible sections (Department → Space → Folder → Node)
-  - Active state highlighting (matches current `activeDepartmentId`, `activeSpaceId`, etc.)
-  - Click navigation to any level
+### Task 1: Tree-Sidebar Implementation ✅
+- ✅ `fetchTree()` added to `lib/api/coreClient.ts`
+- ✅ `CoreTreeNode` type added to `lib/types/core.ts`
+- ✅ `moraState.ts` extended with tree state and actions
+- ✅ `TreeSidebar.tsx` component created with:
+  - Collapsible hierarchy (Department → Space → Folder → Node)
+  - Active state highlighting
+  - Click navigation
   - Smooth expand/collapse animations
-  - Search/filter functionality (optional for now)
+- ✅ Layout integrated in `MoraShell.tsx`
+- ✅ State synchronization: Tree updates on create operations via `loadTree()`
 
-### 1.4 Layout Integration
-- [ ] Update main layout to include sidebar
-  - Left sidebar: `TreeSidebar` (280-320px, resizable?)
-  - Main area: Current Layer views
-  - Ensure responsive behavior (collapse on mobile)
+### Task 2.3: Breadcrumbs ✅
+- ✅ `Breadcrumb.tsx` component created
+- ✅ Integrated in `DepartmentLayer` and `SpaceLayer`
+- ✅ Clickable navigation to parent levels
 
-### 1.5 State Synchronization
-- [ ] When user clicks in `TreeSidebar`, update active IDs and navigate to correct layer
-- [ ] When user navigates via main view, highlight correct node in `TreeSidebar`
-- [ ] When tree data changes (create/delete), refresh `TreeSidebar`
-
----
-
-## Task 2: Alpha Centauri Demo Flow Polish
-
-### 2.1 Define Golden Paths
-- [ ] **Path 1**: `ENGINEERING → Nebula Analytics → Data Models → [Node Detail]`
-  - User starts at Department, clicks "Nebula Analytics", explores "Data Models" folder, opens a specific node
-- [ ] **Path 2**: `ENGINEERING → Stellar UI → Components → [Node Detail]`
-  - User navigates to "Stellar UI" space, browses "Components" folder, views component documentation
-- [ ] **Path 3**: Create Flow: `ENGINEERING → Stellar UI → [Create Folder] → [Create Node]`
-  - User creates a new folder in "Stellar UI", then adds a node to it
-
-### 2.2 Micro-Copy & States
-- [ ] **Loading States**: Ensure all layers show spinner with meaningful text
-  - "Loading departments...", "Loading spaces...", etc.
-- [ ] **Empty States**: Improve messaging
-  - "This space is empty. Create your first folder to get started."
-  - Add illustrations or icons
-- [ ] **Error States**: User-friendly error messages
-  - "Unable to load spaces. Please check your connection."
-- [ ] **Success Feedback**: Toast notifications for create/update/delete
-  - "Space created successfully!", "Node saved!"
-
-### 2.3 Breadcrumbs & Navigation
-- [ ] Add breadcrumb navigation to layer headers
-  - `ENGINEERING / Nebula Analytics / Data Models`
-  - Clickable to jump back to any level
+### Task 3: Basic Create-Flow Sync ✅
+- ✅ Creating Space/Folder/Node calls `loadTree()` to refresh sidebar
+- ✅ `ChatDock` is context-aware (shows current path)
 
 ---
 
-## Task 3: Create-Flow State Synchronization
+## 🎯 Phase C: Polish & Preparation
 
-### 3.1 Space Creation
-- [ ] When `addSpace()` succeeds:
-  - Refresh `spacesByDepartment[departmentId]`
-  - Refresh `treeData` (or append to tree)
-  - Update `ChatDock` context
-  - Show success toast
+### Task 1: Golden Path Definition & Polish
 
-### 3.2 Folder Creation
-- [ ] When `addFolder()` succeeds:
-  - Refresh `foldersBySpace[spaceId]`
-  - Refresh `treeData`
-  - Update `ChatDock` context
-  - Show success toast
+**Objective:** Define 2-3 demo flows through Alpha Centauri and polish all interaction states.
 
-### 3.3 Node Creation
-- [ ] When `addNode()` succeeds:
-  - Refresh `nodesByFolder[folderId]`
-  - Refresh `treeData` (if tree includes nodes)
-  - Update `ChatDock` context
-  - Show success toast
+#### 1.1 Define Golden Paths
+Define these paths in code (constants/config):
 
-### 3.4 ChatDock Context Updates
-- [ ] Ensure `ChatDock` always shows:
-  - Current Department, Space, Folder, Node path
-  - Updates immediately when items are created
+**Path 1: Data Analytics Flow**
+```
+ENGINEERING → Nebula Analytics → Data Models → [View Node]
+```
+- User flow: Core → Click "Nebula Analytics" → Click "Data Models" folder → Click a node
+- Polish points: Smooth transitions, clear hover states, node preview
+
+**Path 2: UI Component Documentation Flow**
+```
+ENGINEERING → Stellar UI → Components → [View Node]
+```
+- User flow: Core → Click "Stellar UI" → Click "Components" folder → View component doc
+- Polish points: Icon consistency, folder colors, node type indicators
+
+**Path 3: Creation Flow**
+```
+ENGINEERING → Alpha Centauri Core → [Create Folder] → [Create Node]
+```
+- User flow: Navigate to space → Click "NEW FOLDER" → Create → Click "ADD ITEM" → Create node
+- Polish points: Success feedback, immediate tree update, smooth modal transitions
+
+**Implementation:**
+- [ ] Create `lib/config/demoFlows.ts` with path definitions
+- [ ] Add optional "Demo Mode" indicator (subtle, bottom-right)
+- [ ] Consider adding a "Take Tour" feature (future enhancement)
+
+#### 1.2 State & Feedback Polish
+
+**Loading States:**
+- [ ] Ensure all layers show consistent spinner with contextual text
+  - CoreLayer: "Loading departments..."
+  - DepartmentLayer: "Loading spaces..."
+  - SpaceLayer: "Loading folders..."
+  - FolderLayer: "Loading nodes..."
+  - TreeSidebar: "Loading organization tree..."
+
+**Empty States:**
+- [ ] Improve messaging with clearer CTAs:
+  - SpaceLayer empty: "This space is empty. Create your first folder to organize your work."
+  - FolderLayer empty: "No items yet. Add documents, notes, or links to get started."
+- [ ] Add subtle icons to empty states (already using AlertCircle, FileText)
+
+**Error States:**
+- [ ] Standardize error UI across all layers
+  - Show error message from `coreError` state
+  - Include "Retry" button that calls the load function again
+  - Consider: `components/ui/ErrorPanel.tsx` for consistency
+
+**Success Feedback (Toast Notifications):**
+- [ ] Install or create toast system (e.g., `sonner` or custom)
+- [ ] Add toasts for:
+  - "Space '{name}' created successfully!"
+  - "Folder '{name}' created!"
+  - "Item '{title}' added to folder"
+- [ ] Position: Bottom-right, 3s auto-dismiss
+- [ ] Style: Match mora aesthetic (glass panel, emerald accent)
+
+**Implementation:**
+- [ ] Install toast library: `npm install sonner`
+- [ ] Create `lib/toast.ts` wrapper for consistent styling
+- [ ] Update all create functions in `moraState.ts` to show toasts
+- [ ] Add loading text to all spinner components
+
+#### 1.3 Breadcrumb Extension
+- [ ] Add breadcrumb to `FolderLayer` (currently missing)
+  - `ROOT → Department → Space → Folder`
+- [ ] Ensure breadcrumbs update immediately when navigation changes
 
 ---
 
-## Task 4: Multi-Organization Configuration
+### Task 2: Create-Flow State Synchronization Enhancement
 
-### 4.1 Config File
-- [ ] Create `lib/config/org.ts`:
+**Objective:** Ensure creating items updates **all UI elements** immediately with proper feedback.
+
+#### 2.1 Current State (What's Working)
+- ✅ Creating Space/Folder/Node adds to local state
+- ✅ `loadTree()` is called to refresh TreeSidebar
+- ✅ ChatDock shows updated context
+
+#### 2.2 Improvements Needed
+
+**Optimistic Updates:**
+- [ ] When creating Space/Folder/Node, add it to local state **immediately** (optimistic)
+- [ ] If API call fails, remove it and show error toast
+- [ ] This makes UI feel instant instead of waiting for tree refresh
+
+**Tree Refresh Optimization:**
+- [ ] Currently: `loadTree()` refetches entire tree (slow for large orgs)
+- [ ] Better: Only expand/highlight the newly created item in tree
+- [ ] Implementation: After create, call `toggleTreeNode(parentId)` to expand parent
+
+**ChatDock Context Update:**
+- [ ] Verify ChatDock context bar updates immediately when item is created
+- [ ] Test: Create folder → ChatDock should show "ROOT / DEPT / SPACE / NEW_FOLDER"
+
+**Visual Feedback:**
+- [ ] Newly created items should briefly highlight/pulse in the list
+- [ ] Consider: Add `animate-in` class to new items for 1-2 seconds
+
+**Implementation:**
+- [ ] Update `addSpace`, `addFolder`, `addNode` in `moraState.ts`:
+  - Add item to local state immediately
+  - Show success toast
+  - Call `loadTree()` in background
+  - Expand parent node in tree
+- [ ] Add highlight animation to new items
+
+---
+
+### Task 3: Multi-Organization Configuration
+
+**Objective:** Prepare UI to switch from Alpha Centauri to a real organization without code changes.
+
+#### 3.1 Organization Config System
+
+**Create `lib/config/org.ts`:**
+```typescript
+export interface OrgConfig {
+  id: string;
+  name: string;
+  displayName: string;
+  tenantId: string;
+  theme?: {
+    primary?: string;    // Default: emerald-400
+    accent?: string;     // Default: mora-gold
+    background?: string; // Default: mora-forest
+  };
+  branding?: {
+    logo?: string;
+    favicon?: string;
+  };
+}
+
+export const ORGS: Record<string, OrgConfig> = {
+  'alpha-centauri': {
+    id: 'alpha-centauri',
+    name: 'Alpha Centauri',
+    displayName: 'Alpha Centauri Demo',
+    tenantId: 'saimor',
+    theme: {
+      primary: '#10b981', // emerald
+      accent: '#CEB676',  // mora-gold
+    },
+  },
+  'olfas-tobi': {
+    id: 'olfas-tobi',
+    name: 'Olfas & Tobi',
+    displayName: 'Olfas & Tobi Organization',
+    tenantId: 'olfas_tobi',
+    // Could override theme colors here
+  },
+  // Easy to add more orgs
+};
+
+export const getActiveOrg = (): OrgConfig => {
+  const orgId = process.env.NEXT_PUBLIC_ORG_ID || 'alpha-centauri';
+  return ORGS[orgId] || ORGS['alpha-centauri'];
+};
+```
+
+**Tasks:**
+- [ ] Create `lib/config/org.ts` with above structure
+- [ ] Add to `.env.local`: `NEXT_PUBLIC_ORG_ID=alpha-centauri`
+- [ ] Document in README how to switch organizations
+
+#### 3.2 JWT/Tenant Integration
+Currently JWT is hardcoded in `.env.local`. For multi-org:
+
+**Option A: Manual JWT per Org (Simple)**
+- [ ] Add `NEXT_PUBLIC_SAIMOR_CORE_JWT_ALPHA` to `.env.local`
+- [ ] Add `NEXT_PUBLIC_SAIMOR_CORE_JWT_OLFAS` to `.env.local`
+- [ ] Update `coreClient.ts` to read JWT based on active org:
   ```typescript
-  export interface OrgConfig {
-    id: string;
-    name: string;
-    tenantId: string;
-    theme?: 'emerald' | 'blue' | 'purple'; // Optional theme override
-  }
-  
-  export const ORGS: Record<string, OrgConfig> = {
-    'alpha-centauri': {
-      id: 'alpha-centauri',
-      name: 'Alpha Centauri',
-      tenantId: 'tenant_saimor_001',
-    },
-    'olfas-tobi': {
-      id: 'olfas-tobi',
-      name: 'Olfas & Tobi',
-      tenantId: 'tenant_olfas_001',
-    },
-  };
-  
-  export const getActiveOrg = (): OrgConfig => {
-    const orgId = process.env.NEXT_PUBLIC_ORG_ID || 'alpha-centauri';
-    return ORGS[orgId] || ORGS['alpha-centauri'];
-  };
+  const org = getActiveOrg();
+  const jwtKey = `NEXT_PUBLIC_SAIMOR_CORE_JWT_${org.id.toUpperCase().replace('-', '_')}`;
+  const jwt = process.env[jwtKey];
   ```
 
-### 4.2 Environment Variable
-- [ ] Add to `.env.local`:
-  ```
-  NEXT_PUBLIC_ORG_ID=alpha-centauri
-  ```
-- [ ] Document in `UI_V2_OVERVIEW.md` how to switch organizations
+**Option B: Server-Side JWT Generation (Future)**
+- Create `/api/auth/token` endpoint that generates JWT for org
+- Client fetches token on load
+- More complex, defer for now
 
-### 4.3 JWT/Tenant Integration
-- [ ] Update `coreClient.ts` to use `getActiveOrg().tenantId` for JWT generation
-- [ ] Ensure all API calls use the correct tenant context
+**Tasks:**
+- [ ] Implement Option A for now
+- [ ] Test switching between `alpha-centauri` and `olfas-tobi` (after creating test org in Core)
+
+#### 3.3 UI Customization Hooks
+Allow orgs to customize branding:
+
+- [ ] Update `MoraShell.tsx` to use `getActiveOrg().displayName`
+- [ ] Add optional logo in top-left if `branding.logo` is set
+- [ ] Apply theme colors if specified (use CSS variables)
+
+**Example CSS Variables:**
+```typescript
+// In MoraShell.tsx
+const org = getActiveOrg();
+const themeVars = {
+  '--color-primary': org.theme?.primary || '#10b981',
+  '--color-accent': org.theme?.accent || '#CEB676',
+};
+```
+
+**Tasks:**
+- [ ] Add theme CSS variables to root element
+- [ ] Test theme switching visually
+
+---
+
+### Task 4: Node Detail View Integration
+
+**Objective:** Complete the node detail experience when clicking a node.
+
+#### 4.1 Current State
+- `NodeDetailPanel.tsx` exists but is not integrated
+- Clicking a node in FolderLayer does nothing
+
+#### 4.2 Implementation Plan
+
+**State Management:**
+- [ ] Add `activeNode: CoreNode | null` to moraState (already exists?)
+- [ ] Add `setActiveNode(node)` action
+- [ ] Add `closeNodeDetail()` action
+
+**UI Integration:**
+- [ ] Update `FolderLayer.tsx`:
+  - Make node items clickable
+  - On click: `setActiveNode(node)`
+- [ ] Update `MoraShell.tsx`:
+  - Conditionally render `NodeDetailPanel` when `activeNode` is set
+  - Position: Slide in from right (full height)
+- [ ] Polish `NodeDetailPanel.tsx`:
+  - Show node title, type, content (markdown rendering?)
+  - Show metadata (created_at, size, etc.)
+  - Show "Edit" and "Delete" buttons (placeholder for now)
+  - Show "Close" button that calls `closeNodeDetail()`
+
+**Content Rendering:**
+- [ ] If node.type === 'document' or 'note': Render `node.content` as markdown
+- [ ] Install markdown renderer: `npm install react-markdown`
+- [ ] Style markdown to match mora aesthetic
+
+**Tasks:**
+- [ ] Verify `activeNode` state exists in moraState
+- [ ] Make nodes clickable in FolderLayer
+- [ ] Integrate NodeDetailPanel in MoraShell
+- [ ] Add markdown rendering for content
+- [ ] Add close handler
 
 ---
 
 ## Implementation Order
 
-1. **Tree-Sidebar** (Highest Priority)
-   - Backend integration → State management → Component → Layout → Sync
-   
-2. **Create-Flow Sync** (High Priority)
-   - Ensures UI feels responsive and consistent
-   
-3. **Demo Flow Polish** (Medium Priority)
-   - Refine existing flows, add breadcrumbs, improve states
-   
-4. **Multi-Org Config** (Low Priority, but foundational)
-   - Quick win that sets up for future scalability
+**Week 1: Polish & Feedback**
+1. ✅ Install toast library: `npm install sonner`
+2. ✅ Add loading/empty/error state polish
+3. ✅ Add success toasts to all create operations
+4. ✅ Add breadcrumb to FolderLayer
+5. ✅ Optimize create-flow synchronization
+
+**Week 2: Node Detail & Multi-Org**
+6. ✅ Integrate NodeDetailPanel
+7. ✅ Add markdown rendering for node content
+8. ✅ Create `lib/config/org.ts` and multi-org system
+9. ✅ Test org switching
+10. ✅ Document golden paths in `demoFlows.ts`
 
 ---
 
 ## Success Criteria
 
-- [ ] User can see the full tree hierarchy in the left sidebar
-- [ ] Clicking any node in the tree navigates to the correct layer
-- [ ] Creating a Space/Folder/Node updates both the tree and the current view
-- [ ] 2-3 golden paths through Alpha Centauri feel smooth and polished
-- [ ] Switching `NEXT_PUBLIC_ORG_ID` in `.env.local` changes the organization context
-- [ ] No console errors, `npm run build` passes
 - [ ] All layers have consistent loading/empty/error states
+- [ ] Creating Space/Folder/Node shows immediate feedback (toast + UI update)
+- [ ] TreeSidebar updates instantly when items are created
+- [ ] Clicking a node opens `NodeDetailPanel` with formatted content
+- [ ] Markdown content renders beautifully in node detail view
+- [ ] Switching `NEXT_PUBLIC_ORG_ID` in `.env.local` changes org context
+- [ ] All 3 golden paths feel smooth and polished
+- [ ] `npm run build` passes with no errors
+- [ ] No console errors during normal operation
 
 ---
 
-## Design Principles
+## Design Principles (Reiterated)
 
-- **Calm & Consistent**: No new visual paradigms, extend existing "liquid glass" aesthetic
-- **Depth over Complexity**: Add subtle shadows, hover states, transitions—not new UI patterns
-- **Interaction Polish**: Smooth animations, responsive feedback, clear affordances
+- **Calm & Consistent**: Extend existing aesthetic, no new paradigms
+- **Depth over Complexity**: Subtle shadows, smooth transitions, clear affordances
+- **Responsive Feedback**: Immediate visual confirmation for all actions
+- **Accessibility**: Keyboard navigation, ARIA labels, focus states
+
+---
+
+## Technical Notes
+
+### Toast Library Choice
+**Recommended:** `sonner` by Emil Kowalski
+- Lightweight, beautiful, accessible
+- Matches our aesthetic (can be styled with Tailwind)
+- `npm install sonner`
+
+### Markdown Rendering
+**Recommended:** `react-markdown` with `remark-gfm`
+- Standard, well-maintained
+- Supports GitHub Flavored Markdown
+- `npm install react-markdown remark-gfm`
+
+### State Update Pattern
+When creating items, follow this pattern:
+```typescript
+addFolder: async (payload) => {
+  const optimisticFolder = { id: 'temp-' + Date.now(), ...payload };
+
+  // 1. Optimistic update
+  set(state => ({
+    foldersBySpace: {
+      ...state.foldersBySpace,
+      [payload.space_id]: [...(state.foldersBySpace[payload.space_id] || []), optimisticFolder]
+    }
+  }));
+
+  try {
+    // 2. API call
+    const newFolder = await createFolder(payload);
+
+    // 3. Replace optimistic with real
+    set(state => ({
+      foldersBySpace: {
+        ...state.foldersBySpace,
+        [payload.space_id]: state.foldersBySpace[payload.space_id].map(f =>
+          f.id === optimisticFolder.id ? newFolder : f
+        )
+      }
+    }));
+
+    // 4. Show success
+    toast.success(`Folder "${newFolder.name}" created!`);
+
+    // 5. Refresh tree (background)
+    get().loadTree();
+
+  } catch (error) {
+    // Rollback optimistic update
+    set(state => ({
+      foldersBySpace: {
+        ...state.foldersBySpace,
+        [payload.space_id]: state.foldersBySpace[payload.space_id].filter(f =>
+          f.id !== optimisticFolder.id
+        )
+      }
+    }));
+
+    toast.error(`Failed to create folder: ${error.message}`);
+    throw error;
+  }
+}
+```
 
 ---
 
 ## Estimated Effort
 
-- Tree-Sidebar: ~2-3 hours
-- Create-Flow Sync: ~1 hour
-- Demo Flow Polish: ~1-2 hours
-- Multi-Org Config: ~30 minutes
+- State & Feedback Polish: ~2 hours
+- Create-Flow Optimization: ~1 hour
+- Node Detail Integration: ~2 hours
+- Multi-Org Config: ~1 hour
+- Testing & Refinement: ~1 hour
 
-**Total**: ~5-7 hours
+**Total**: ~7 hours
 
 ---
 
-## Notes
+## Questions for User
 
-- Keep the tree sidebar collapsible to maximize main view space
-- Consider adding keyboard shortcuts (e.g., `Cmd+K` to open tree search)
-- Breadcrumbs should match the tree structure exactly
-- Toast notifications should be subtle and auto-dismiss (3-5 seconds)
+Before implementing, please confirm:
+
+1. **Toast Position:** Bottom-right or top-right?
+2. **Node Detail Panel:** Slide from right, or modal overlay?
+3. **Multi-Org Priority:** Implement now or defer to Phase D?
+4. **Golden Paths:** Should we add a "Demo Tour" feature, or just document them?
+
+---
+
+## Next Steps
+
+Once approved, I will:
+1. Install dependencies (sonner, react-markdown)
+2. Implement state & feedback polish (Task 1)
+3. Optimize create-flow synchronization (Task 2)
+4. Integrate NodeDetailPanel (Task 4)
+5. Add multi-org configuration (Task 3)
+6. Test all golden paths
+7. Create commit with full Phase C summary
+8. Update INTEGRATION_STATUS.md
+
+**Proceed with implementation?** 🚀

@@ -5,6 +5,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { ArrowLeft, LayoutGrid, List, FileText, Image as ImageIcon, Link as LinkIcon, MoreHorizontal, Plus, File } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 
 const NODE_TYPES = [
     { value: 'note' as const, label: 'Note', icon: FileText },
@@ -17,12 +18,18 @@ export const FolderLayer: React.FC = () => {
     const {
         activeSpaceId,
         activeFolderId,
+        activeDepartmentId,
         foldersBySpace,
         nodesByFolder,
         isLoadingNodes,
+        departments,
+        spacesByDepartment,
+        navigateToCore,
+        navigateToDepartment,
         navigateToSpace,
         loadNodesForFolder,
         addNode,
+        setActiveNode,
     } = useMoraStore();
 
     const [viewMode, setViewMode] = useState<'visual' | 'list'>('visual');
@@ -41,6 +48,18 @@ export const FolderLayer: React.FC = () => {
         const folders = foldersBySpace[activeSpaceId] || [];
         return folders.find(f => f.id === activeFolderId);
     }, [activeSpaceId, activeFolderId, foldersBySpace]);
+
+    // Get current department and space for breadcrumb
+    const currentDepartment = useMemo(() => {
+        if (!activeDepartmentId) return null;
+        return departments.find(d => d.id === activeDepartmentId);
+    }, [activeDepartmentId, departments]);
+
+    const currentSpace = useMemo(() => {
+        if (!activeDepartmentId || !activeSpaceId) return null;
+        const spaces = spacesByDepartment[activeDepartmentId] || [];
+        return spaces.find(s => s.id === activeSpaceId);
+    }, [activeDepartmentId, activeSpaceId, spacesByDepartment]);
 
     // Get nodes for current folder
     const nodes = activeFolderId ? (nodesByFolder[activeFolderId] || []) : [];
@@ -114,7 +133,12 @@ export const FolderLayer: React.FC = () => {
                         <h2 className="text-2xl font-light text-emerald-50 tracking-widest uppercase">
                             {currentFolder?.name || 'Folder'}
                         </h2>
-                        <p className="text-xs text-emerald-400/50 tracking-[0.2em]">DATA NODE VIEW</p>
+                        <Breadcrumb items={[
+                            { label: 'ROOT', onClick: navigateToCore },
+                            { label: currentDepartment?.name || 'Dept', onClick: () => activeDepartmentId && navigateToDepartment(activeDepartmentId) },
+                            { label: currentSpace?.name || 'Space', onClick: () => activeSpaceId && navigateToSpace(activeSpaceId) },
+                            { label: currentFolder?.name || 'Folder', isActive: true }
+                        ]} />
                     </div>
                 </div>
 
@@ -173,6 +197,7 @@ export const FolderLayer: React.FC = () => {
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.1 }}
+                                            onClick={() => setActiveNode(node)}
                                             className="w-32 h-32 rounded-2xl glass-panel border border-white/10 flex flex-col items-center justify-center gap-3 hover:border-mora-gold/50 hover:bg-white/5 transition-all cursor-pointer group"
                                         >
                                             <Icon className={`w-8 h-8 ${colorClass} group-hover:text-mora-gold transition-colors`} />
@@ -219,6 +244,7 @@ export const FolderLayer: React.FC = () => {
                                 return (
                                     <div
                                         key={node.id}
+                                        onClick={() => setActiveNode(node)}
                                         className="flex items-center gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer group"
                                     >
                                         <div className="w-8 flex justify-center">

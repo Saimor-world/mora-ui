@@ -1,44 +1,59 @@
-export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
+import { toast as sonnerToast } from 'sonner';
 
-export interface ToastPayload {
-  id: string;
-  message: string;
-  variant: ToastVariant;
-  timeout: number;
-}
+/**
+ * Môra-styled toast notifications
+ * Wrapper around sonner with consistent styling
+ */
 
-type ToastListener = (toast: ToastPayload) => void;
+export const toast = {
+  success: (message: string) => {
+    sonnerToast.success(message, {
+      duration: 3000,
+      position: 'bottom-right',
+      style: {
+        background: 'rgba(16, 185, 129, 0.1)',
+        border: '1px solid rgba(16, 185, 129, 0.3)',
+        color: '#10b981',
+        backdropFilter: 'blur(12px)',
+      },
+    });
+  },
 
-const listeners = new Set<ToastListener>();
+  error: (message: string) => {
+    sonnerToast.error(message, {
+      duration: 4000,
+      position: 'bottom-right',
+      style: {
+        background: 'rgba(239, 68, 68, 0.1)',
+        border: '1px solid rgba(239, 68, 68, 0.3)',
+        color: '#ef4444',
+        backdropFilter: 'blur(12px)',
+      },
+    });
+  },
 
-function generateId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
+  info: (message: string) => {
+    sonnerToast.info(message, {
+      duration: 3000,
+      position: 'bottom-right',
+      style: {
+        background: 'rgba(59, 130, 246, 0.1)',
+        border: '1px solid rgba(59, 130, 246, 0.3)',
+        color: '#3b82f6',
+        backdropFilter: 'blur(12px)',
+      },
+    });
+  },
 
-export function showToast({
-  message,
-  variant = 'info',
-  timeout = 4000,
-}: {
-  message: string;
-  variant?: ToastVariant;
-  timeout?: number;
-}) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  const toast: ToastPayload = {
-    id: generateId(),
-    message,
-    variant,
-    timeout,
-  };
-
-  listeners.forEach((listener) => listener(toast));
-}
-
-export function subscribeToToasts(listener: ToastListener) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
+  loading: (message: string) => {
+    return sonnerToast.loading(message, {
+      position: 'bottom-right',
+      style: {
+        background: 'rgba(206, 182, 118, 0.1)',
+        border: '1px solid rgba(206, 182, 118, 0.3)',
+        color: '#CEB676',
+        backdropFilter: 'blur(12px)',
+      },
+    });
+  },
+};
