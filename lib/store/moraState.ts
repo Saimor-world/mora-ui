@@ -10,14 +10,18 @@ import {
     createSpace,
     createFolder,
     createNode,
+    updateNode as apiUpdateNode,
+    deleteNode as apiDeleteNode,
     CoreError,
     type CreateSpacePayload,
     type CreateFolderPayload,
-    type CreateNodePayload
+    type CreateNodePayload,
+    type UpdateNodePayload
 } from "@/lib/api/coreClient";
 import { toast } from "@/lib/toast";
 
 export type ViewLevel = 'core' | 'department' | 'space' | 'folder';
+
 
 interface MoraState {
     // Spatial Position
@@ -56,17 +60,19 @@ interface MoraState {
     loadDepartments: () => Promise<void>;
     loadSpacesForDepartment: (departmentId: string) => Promise<void>;
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
-    loadNodesForFolder: (folderId: string) => Promise<void>;
+    loadNodesForFolder: (folderId: string, options?: { search?: string, type?: string }) => Promise<void>;
     loadNodeDetails: (nodeId: string) => Promise<void>;
     loadTree: () => Promise<void>;
 
     // Tree Actions
     toggleTreeNode: (id: string) => void;
 
-    // Data Actions - Create
+    // Data Actions - Create/Update/Delete
     addSpace: (payload: CreateSpacePayload) => Promise<void>;
     addFolder: (payload: CreateFolderPayload) => Promise<void>;
     addNode: (payload: CreateNodePayload) => Promise<void>;
+    updateNode: (id: string, payload: UpdateNodePayload) => Promise<void>;
+    deleteNode: (id: string) => Promise<void>;
 
     // Navigation Helpers
     navigateToCore: () => void;
@@ -152,10 +158,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
 
-    loadNodesForFolder: async (folderId: string) => {
+    loadNodesForFolder: async (folderId: string, options?: { search?: string, type?: string }) => {
         set({ isLoadingNodes: true, coreError: null });
         try {
-            const data = await fetchNodes(folderId);
+            const data = await fetchNodes(folderId, options);
             set(state => ({
                 nodesByFolder: { ...state.nodesByFolder, [folderId]: data },
                 isLoadingNodes: false
@@ -289,6 +295,69 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const msg = error instanceof CoreError ? error.message : "Failed to create item.";
             toast.error(msg);
             set({ coreError: msg });
+            throw error;
+        }
+    },
+
+    updateNode: async (id, payload) => {
+        try {
+            const updatedNode = await apiUpdateNode(id, payload);
+            const folderId = updatedNode.folder_id;
+
+            if (folderId) {
+                set(state => ({
+                    activeNode: state.activeNode?.id === id ? updatedNode : state.activeNode,
+                    nodesByFolder: {
+                        ...state.nodesByFolder,
+                        [folderId]: (state.nodesByFolder[folderId] || []).map((n: CoreNode) =>
+                            n.id === id ? updatedNode : n
+                        )
+                    }
+                }));
+            }
+
+            toast.success(`Item updated successfully!`);
+            get().loadTree();
+        } catch (error: any) {
+            const msg = error instanceof CoreError ? error.message : "Failed to update item.";
+            toast.error(msg);
+            throw error;
+        }
+    },
+
+    deleteNode: async (id) => {
+        try {
+            // Get folder ID before deletion for state update
+            const state = get();
+            let folderId = state.activeNode?.id === id ? state.activeNode.folder_id : null;
+
+            if (!folderId) {
+                // Find folder ID if not active
+                for (const [fId, nodes] of Object.entries(state.nodesByFolder)) {
+                    if (nodes.find(n => n.id === id)) {
+                        folderId = fId;
+                        break;
+                    }
+                }
+            }
+
+            await apiDeleteNode(id);
+
+            if (folderId) {
+                set(state => ({
+                    activeNode: state.activeNode?.id === id ? null : state.activeNode,
+                    nodesByFolder: {
+                        ...state.nodesByFolder,
+                        [folderId]: (state.nodesByFolder[folderId] || []).filter(n => n.id !== id)
+                    }
+                }));
+            }
+
+            toast.success(`Item deleted.`);
+            get().loadTree();
+        } catch (error: any) {
+            const msg = error instanceof CoreError ? error.message : "Failed to delete item.";
+            toast.error(msg);
             throw error;
         }
     },

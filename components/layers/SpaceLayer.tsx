@@ -6,6 +6,8 @@ import { ArrowLeft, LayoutGrid, List, Folder, FileText, AlertCircle, Plus } from
 import { motion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // Preset colors for folders
 const FOLDER_COLORS = [
@@ -171,7 +173,7 @@ export const SpaceLayer: React.FC = () => {
             {/* Loading State */}
             {isLoadingFolders && (
                 <div className="flex-1 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-mora-gold/30 border-t-mora-gold rounded-full animate-spin" />
+                    <LoadingState message="Loading knowledge clusters..." />
                 </div>
             )}
 
@@ -229,19 +231,25 @@ export const SpaceLayer: React.FC = () => {
                                 >
                                     {/* Folder Bubble */}
                                     <div className="relative w-20 h-20 flex items-center justify-center">
-                                        {/* Glow Effect */}
-                                        <div
-                                            className="absolute inset-0 rounded-full blur-xl opacity-20 group-hover:opacity-50 transition-opacity duration-500"
+                                        {/* Glow Effect - breathing on hover only */}
+                                        <motion.div
+                                            className="absolute inset-0 rounded-full blur-xl opacity-20 transition-opacity duration-500"
                                             style={{ backgroundColor: folder.color || '#10b981' }}
                                         />
 
                                         {/* Main Bubble */}
-                                        <div className="relative w-full h-full rounded-full glass-panel border border-white/10 group-hover:border-white/40 transition-all duration-500 flex items-center justify-center backdrop-blur-md bg-black/40">
+                                        <motion.div
+                                            className="relative w-full h-full rounded-full glass-panel border border-white/10 transition-all duration-500 flex items-center justify-center backdrop-blur-md bg-black/40"
+                                            whileHover={{
+                                                scale: 1.05,
+                                                borderColor: 'rgba(255, 255, 255, 0.4)',
+                                            }}
+                                        >
                                             <Folder
                                                 className="w-8 h-8 transition-colors duration-500"
                                                 style={{ color: folder.color || '#10b981' }}
                                             />
-                                        </div>
+                                        </motion.div>
                                     </div>
 
                                     {/* Label - Stably visible, brightens on hover */}
@@ -255,15 +263,14 @@ export const SpaceLayer: React.FC = () => {
 
                             {/* Empty State */}
                             {folders.length === 0 && (
-                                <div className="flex flex-col items-center justify-center text-emerald-500/30 gap-4">
-                                    <AlertCircle size={48} className="opacity-50" />
-                                    <p className="tracking-widest text-sm uppercase">No folders in this space</p>
-                                    <button
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="mt-4 px-6 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 text-sm text-emerald-300 hover:text-mora-gold transition-all"
-                                    >
-                                        Create your first folder
-                                    </button>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <EmptyState
+                                        icon={Folder}
+                                        title="Empty Space"
+                                        description="This space is waiting for matter. Create a folder to begin."
+                                        actionLabel="Create Folder"
+                                        onAction={() => setIsCreateModalOpen(true)}
+                                    />
                                 </div>
                             )}
                         </div>
@@ -300,16 +307,13 @@ export const SpaceLayer: React.FC = () => {
 
                             {/* Empty State */}
                             {folders.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-20 text-emerald-500/30">
-                                    <FileText size={48} className="opacity-50 mb-4" />
-                                    <p className="tracking-widest text-sm uppercase mb-4">No folders yet</p>
-                                    <button
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="px-6 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 text-sm text-emerald-300 hover:text-mora-gold transition-all"
-                                    >
-                                        Create your first folder
-                                    </button>
-                                </div>
+                                <EmptyState
+                                    icon={Folder}
+                                    title="Empty Space"
+                                    description="This space is waiting for matter. Create a folder to begin."
+                                    actionLabel="Create Folder"
+                                    onAction={() => setIsCreateModalOpen(true)}
+                                />
                             )}
                         </div>
                     )}

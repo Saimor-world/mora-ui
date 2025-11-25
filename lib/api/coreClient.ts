@@ -141,6 +141,82 @@ export async function corePost(path: string, body: any): Promise<any> {
     }
 }
 
+export async function corePatch(path: string, body: any): Promise<any> {
+    if (!CORE_JWT) {
+        console.error("Môra Core: missing NEXT_PUBLIC_SAIMOR_CORE_JWT");
+        throw new CoreError("Configuration Error: Missing Core JWT", 0);
+    }
+
+    try {
+        const res = await fetch(`${CORE_BASE_URL}${path}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${CORE_JWT}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+            let message = `Core API Error: ${res.status} ${res.statusText}`;
+            try {
+                const errorBody = await res.json();
+                if (errorBody.detail) {
+                    message = typeof errorBody.detail === 'string'
+                        ? errorBody.detail
+                        : JSON.stringify(errorBody.detail);
+                }
+            } catch (e) {
+                // ignore json parse error
+            }
+            throw new CoreError(message, res.status);
+        }
+
+        return await res.json();
+    } catch (error: any) {
+        if (error instanceof CoreError) {
+            throw error;
+        }
+        throw new CoreError(error.message || "Unknown Network Error", 0);
+    }
+}
+
+export async function coreDelete(path: string): Promise<void> {
+    if (!CORE_JWT) {
+        console.error("Môra Core: missing NEXT_PUBLIC_SAIMOR_CORE_JWT");
+        throw new CoreError("Configuration Error: Missing Core JWT", 0);
+    }
+
+    try {
+        const res = await fetch(`${CORE_BASE_URL}${path}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${CORE_JWT}`
+            }
+        });
+
+        if (!res.ok) {
+            let message = `Core API Error: ${res.status} ${res.statusText}`;
+            try {
+                const errorBody = await res.json();
+                if (errorBody.detail) {
+                    message = typeof errorBody.detail === 'string'
+                        ? errorBody.detail
+                        : JSON.stringify(errorBody.detail);
+                }
+            } catch (e) {
+                // ignore json parse error
+            }
+            throw new CoreError(message, res.status);
+        }
+    } catch (error: any) {
+        if (error instanceof CoreError) {
+            throw error;
+        }
+        throw new CoreError(error.message || "Unknown Network Error", 0);
+    }
+}
+
 // ========== FETCH FUNCTIONS ==========
 
 
@@ -157,8 +233,11 @@ export async function fetchFolders(spaceId: string): Promise<CoreFolder[]> {
     return coreGet(`/v1/folders?space_id=${spaceId}`);
 }
 
-export async function fetchNodes(folderId: string): Promise<CoreNode[]> {
-    return coreGet(`/v1/nodes?folder_id=${folderId}`);
+export async function fetchNodes(folderId: string, options?: { search?: string, type?: string }): Promise<CoreNode[]> {
+    let query = `?folder_id=${folderId}`;
+    if (options?.search) query += `&search=${encodeURIComponent(options.search)}`;
+    if (options?.type && options.type !== 'all') query += `&type=${encodeURIComponent(options.type)}`;
+    return coreGet(`/v1/nodes${query}`);
 }
 
 export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
@@ -207,4 +286,19 @@ export interface CreateNodePayload {
 
 export async function createNode(payload: CreateNodePayload): Promise<CoreNode> {
     return corePost('/v1/nodes', payload);
+}
+
+export interface UpdateNodePayload {
+    title?: string;
+    type?: 'document' | 'task' | 'note' | 'link' | 'other';
+    content?: string;
+    url?: string;
+}
+
+export async function updateNode(id: string, payload: UpdateNodePayload): Promise<CoreNode> {
+    return corePatch(`/v1/nodes/${id}`, payload);
+}
+
+export async function deleteNode(id: string): Promise<void> {
+    return coreDelete(`/v1/nodes/${id}`);
 }

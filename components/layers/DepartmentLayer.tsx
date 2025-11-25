@@ -5,6 +5,8 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { ArrowLeft, Hexagon, Layers, AlertTriangle, Plus } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export const DepartmentLayer: React.FC = () => {
     const {
@@ -98,7 +100,7 @@ export const DepartmentLayer: React.FC = () => {
             {/* Loading State */}
             {isLoadingSpaces && (
                 <div className="flex-1 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-mora-gold/30 border-t-mora-gold rounded-full animate-spin" />
+                    <LoadingState message="Loading galaxy spaces..." />
                 </div>
             )}
 
@@ -142,15 +144,14 @@ export const DepartmentLayer: React.FC = () => {
                     ))}
 
                     {spaces.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center text-emerald-500/40 py-20">
-                            <Layers className="w-12 h-12 mb-4 opacity-50" />
-                            <p className="mb-4">NO SPACES FOUND IN THIS SECTOR</p>
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="px-6 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 text-sm text-emerald-300 hover:text-mora-gold transition-all"
-                            >
-                                Create your first space
-                            </button>
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon={Layers}
+                                title="Empty Sector"
+                                description="No spaces found in this sector. Initialize a new space to begin."
+                                actionLabel="Create Space"
+                                onAction={() => setIsCreateModalOpen(true)}
+                            />
                         </div>
                     )}
                 </div>

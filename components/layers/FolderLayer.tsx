@@ -6,6 +6,8 @@ import { ArrowLeft, LayoutGrid, List, FileText, Image as ImageIcon, Link as Link
 import { motion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const NODE_TYPES = [
     { value: 'note' as const, label: 'Note', icon: FileText },
@@ -34,6 +36,8 @@ export const FolderLayer: React.FC = () => {
 
     const [viewMode, setViewMode] = useState<'visual' | 'list'>('visual');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState<string>('all');
     const [formData, setFormData] = useState({
         title: '',
         type: 'note' as 'document' | 'task' | 'note' | 'link' | 'other',
@@ -70,6 +74,21 @@ export const FolderLayer: React.FC = () => {
             loadNodesForFolder(activeFolderId);
         }
     }, [activeFolderId, nodesByFolder, loadNodesForFolder]);
+
+    // Debounced search and filter effect
+    useEffect(() => {
+        if (!activeFolderId) return;
+
+        const timer = setTimeout(() => {
+            const options: { search?: string, type?: string } = {};
+            if (searchQuery.trim()) options.search = searchQuery.trim();
+            if (typeFilter && typeFilter !== 'all') options.type = typeFilter;
+
+            loadNodesForFolder(activeFolderId, options);
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, typeFilter, activeFolderId, loadNodesForFolder]);
 
     const handleBack = () => {
         if (activeSpaceId) {
@@ -121,61 +140,104 @@ export const FolderLayer: React.FC = () => {
         <div className="relative w-full h-full p-10 flex flex-col">
 
             {/* Header / Nav */}
-            <header className="flex items-center justify-between mb-8 z-20">
-                <div className="flex items-center gap-6">
-                    <button
-                        onClick={handleBack}
-                        className="p-3 rounded-full glass-panel border border-white/10 hover:bg-white/5 transition-colors group"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-emerald-400 group-hover:text-mora-gold transition-colors" />
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-light text-emerald-50 tracking-widest uppercase">
-                            {currentFolder?.name || 'Folder'}
-                        </h2>
-                        <Breadcrumb items={[
-                            { label: 'ROOT', onClick: navigateToCore },
-                            { label: currentDepartment?.name || 'Dept', onClick: () => activeDepartmentId && navigateToDepartment(activeDepartmentId) },
-                            { label: currentSpace?.name || 'Space', onClick: () => activeSpaceId && navigateToSpace(activeSpaceId) },
-                            { label: currentFolder?.name || 'Folder', isActive: true }
-                        ]} />
+            <header className="flex flex-col gap-4 mb-8 z-20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={handleBack}
+                            className="p-3 rounded-full glass-panel border border-white/10 hover:bg-white/5 transition-colors group"
+                        >
+                            <ArrowLeft className="w-5 h-5 text-emerald-400 group-hover:text-mora-gold transition-colors" />
+                        </button>
+                        <div>
+                            <h2 className="text-2xl font-light text-emerald-50 tracking-widest uppercase">
+                                {currentFolder?.name || 'Folder'}
+                            </h2>
+                            <Breadcrumb items={[
+                                { label: 'ROOT', onClick: navigateToCore },
+                                { label: currentDepartment?.name || 'Dept', onClick: () => activeDepartmentId && navigateToDepartment(activeDepartmentId) },
+                                { label: currentSpace?.name || 'Space', onClick: () => activeSpaceId && navigateToSpace(activeSpaceId) },
+                                { label: currentFolder?.name || 'Folder', isActive: true }
+                            ]} />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {/* Add Item Button */}
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 hover:bg-white/5 transition-all group"
+                        >
+                            <Plus className="w-4 h-4 text-emerald-400 group-hover:text-mora-gold transition-colors" />
+                            <span className="text-sm text-emerald-300 group-hover:text-mora-gold transition-colors tracking-wider">
+                                ADD ITEM
+                            </span>
+                        </button>
+
+                        {/* View Toggle */}
+                        <div className="flex items-center bg-black/20 rounded-full p-1 border border-white/5">
+                            <button
+                                onClick={() => setViewMode('visual')}
+                                className={`p-2 rounded-full transition-all ${viewMode === 'visual' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                            >
+                                <List className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
+                {/* Search and Filter Bar */}
                 <div className="flex items-center gap-3">
-                    {/* Add Item Button */}
-                    <button
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 hover:bg-white/5 transition-all group"
-                    >
-                        <Plus className="w-4 h-4 text-emerald-400 group-hover:text-mora-gold transition-colors" />
-                        <span className="text-sm text-emerald-300 group-hover:text-mora-gold transition-colors tracking-wider">
-                            ADD ITEM
-                        </span>
-                    </button>
-
-                    {/* View Toggle */}
-                    <div className="flex items-center bg-black/20 rounded-full p-1 border border-white/5">
-                        <button
-                            onClick={() => setViewMode('visual')}
-                            className={`p-2 rounded-full transition-all ${viewMode === 'visual' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                        >
-                            <LayoutGrid className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                        >
-                            <List className="w-4 h-4" />
-                        </button>
+                    {/* Search Input */}
+                    <div className="flex-1 relative">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search items..."
+                            className="w-full px-4 py-2.5 pl-10 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-mora-gold/50 focus:outline-none transition-colors text-sm"
+                        />
+                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/40" />
                     </div>
+
+                    {/* Type Filter */}
+                    <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="px-4 py-2.5 rounded-xl bg-black/30 border border-white/10 text-emerald-100 focus:border-mora-gold/50 focus:outline-none transition-colors text-sm cursor-pointer"
+                    >
+                        <option value="all">All Types</option>
+                        <option value="note">Notes</option>
+                        <option value="document">Documents</option>
+                        <option value="link">Links</option>
+                        <option value="other">Other</option>
+                    </select>
+
+                    {/* Clear Filters */}
+                    {(searchQuery || typeFilter !== 'all') && (
+                        <button
+                            onClick={() => {
+                                setSearchQuery('');
+                                setTypeFilter('all');
+                            }}
+                            className="px-4 py-2.5 rounded-xl border border-white/10 text-emerald-400/70 hover:text-emerald-300 hover:border-white/20 transition-all text-sm"
+                        >
+                            Clear
+                        </button>
+                    )}
                 </div>
             </header>
 
             {/* Loading State */}
             {isLoadingNodes && (
                 <div className="flex-1 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-mora-gold/30 border-t-mora-gold rounded-full animate-spin" />
+                    <LoadingState message="Loading data nodes..." />
                 </div>
             )}
 
@@ -211,15 +273,14 @@ export const FolderLayer: React.FC = () => {
 
                             {/* Empty State */}
                             {nodes.length === 0 && (
-                                <div className="flex flex-col items-center justify-center text-emerald-500/30 gap-4">
-                                    <FileText size={48} className="opacity-50" />
-                                    <p className="tracking-widest text-sm uppercase">No items in this folder</p>
-                                    <button
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="mt-4 px-6 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 text-sm text-emerald-300 hover:text-mora-gold transition-all"
-                                    >
-                                        Add your first item
-                                    </button>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <EmptyState
+                                        icon={FileText}
+                                        title="Empty Folder"
+                                        description="This folder contains no data nodes. Initialize it by adding your first item."
+                                        actionLabel="Add Item"
+                                        onAction={() => setIsCreateModalOpen(true)}
+                                    />
                                 </div>
                             )}
                         </div>
@@ -266,16 +327,13 @@ export const FolderLayer: React.FC = () => {
 
                             {/* Empty State */}
                             {nodes.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-20 text-emerald-500/30">
-                                    <FileText size={48} className="opacity-50 mb-4" />
-                                    <p className="tracking-widest text-sm uppercase mb-4">No items yet</p>
-                                    <button
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="px-6 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 text-sm text-emerald-300 hover:text-mora-gold transition-all"
-                                    >
-                                        Add your first item
-                                    </button>
-                                </div>
+                                <EmptyState
+                                    icon={FileText}
+                                    title="Empty Folder"
+                                    description="This folder contains no data nodes. Initialize it by adding your first item."
+                                    actionLabel="Add Item"
+                                    onAction={() => setIsCreateModalOpen(true)}
+                                />
                             )}
                         </div>
                     )}
