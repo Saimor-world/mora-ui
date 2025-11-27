@@ -1,2 +1,7 @@
 nul
+nul
+.env.local
+.next
+node_modules
+tsconfig.tsbuildinfo
 
