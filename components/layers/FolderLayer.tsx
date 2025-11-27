@@ -2,12 +2,17 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { ArrowLeft, LayoutGrid, List, FileText, Image as ImageIcon, Link as LinkIcon, MoreHorizontal, Plus, File } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, List, FileText, Image as ImageIcon, Link as LinkIcon, MoreHorizontal, Plus, File, Zap, Network } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
+// Sprint Tag 3-5: Intel Client
+import { triggerMoraScan } from '@/lib/api/intelClient';
+// NEW: 2.5D Mycelium Visualization (Blueprint-konform)
+import { Mycelium25D } from '@/components/organic/Mycelium25D';
+import { mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
 
 const NODE_TYPES = [
     { value: 'note' as const, label: 'Note', icon: FileText },
@@ -21,6 +26,7 @@ export const FolderLayer: React.FC = () => {
         activeSpaceId,
         activeFolderId,
         activeDepartmentId,
+        activeNode,
         foldersBySpace,
         nodesByFolder,
         isLoadingNodes,
@@ -34,7 +40,7 @@ export const FolderLayer: React.FC = () => {
         setActiveNode,
     } = useMoraStore();
 
-    const [viewMode, setViewMode] = useState<'visual' | 'list'>('visual');
+    const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('mycelium');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -45,6 +51,8 @@ export const FolderLayer: React.FC = () => {
         url: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // Sprint Tag 3-5: MÔRA Scan State
+    const [isScanning, setIsScanning] = useState(false);
 
     // Get current folder
     const currentFolder = useMemo(() => {
@@ -104,7 +112,7 @@ export const FolderLayer: React.FC = () => {
         try {
             await addNode({
                 folder_id: activeFolderId,
-                title: formData.title.trim(),
+                name: formData.title.trim(),
                 type: formData.type,
                 content: formData.content.trim() || undefined,
                 url: formData.url.trim() || undefined,
@@ -163,6 +171,34 @@ export const FolderLayer: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* MÔRA Scan Button - Sprint Tag 3-5 */}
+                        <button
+                            onClick={async () => {
+                                if (!activeFolderId || isScanning) return;
+                                setIsScanning(true);
+                                try {
+                                    const result = await triggerMoraScan(activeFolderId);
+                                    // Reload nodes to show new intel_report
+                                    await loadNodesForFolder(activeFolderId);
+                                    // Trigger Mycelium event (Tag 5-7)
+                                    window.dispatchEvent(new CustomEvent('intel-report-created', { detail: result }));
+                                    console.log('[MÔRA Scan] Intel report created:', result.title);
+                                } catch (error) {
+                                    console.error('[MÔRA Scan] Failed:', error);
+                                    alert(`MÔRA Scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                                } finally {
+                                    setIsScanning(false);
+                                }
+                            }}
+                            disabled={!activeFolderId || isScanning}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-mora-gold/30 hover:border-mora-gold/50 hover:bg-white/5 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Zap className={`w-4 h-4 text-mora-gold transition-all ${isScanning ? 'animate-pulse' : 'group-hover:scale-110'}`} />
+                            <span className="text-sm text-mora-gold transition-colors tracking-wider">
+                                {isScanning ? 'SCANNING...' : 'MÔRA SCAN'}
+                            </span>
+                        </button>
+
                         {/* Add Item Button */}
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
@@ -174,17 +210,26 @@ export const FolderLayer: React.FC = () => {
                             </span>
                         </button>
 
-                        {/* View Toggle */}
+                        {/* View Toggle - 3 modes: Mycelium (3D), Grid, List */}
                         <div className="flex items-center bg-black/20 rounded-full p-1 border border-white/5">
                             <button
-                                onClick={() => setViewMode('visual')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'visual' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                                onClick={() => setViewMode('mycelium')}
+                                className={`p-2 rounded-full transition-all ${viewMode === 'mycelium' ? 'bg-mora-gold/20 text-mora-gold' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                                title="2.5D Mycelium Network"
+                            >
+                                <Network className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-full transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                                title="Grid View"
                             >
                                 <LayoutGrid className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                                title="List View"
                             >
                                 <List className="w-4 h-4" />
                             </button>
@@ -245,7 +290,41 @@ export const FolderLayer: React.FC = () => {
             {!isLoadingNodes && (
                 <div className="flex-1 relative z-10">
 
-                    {viewMode === 'visual' && (
+                    {/* NEW: 2.5D Mycelium View */}
+                    {viewMode === 'mycelium' && (
+                        <div className="absolute inset-0">
+                            <Mycelium25D
+                                nodes={mapNodesToMycelium(nodes, {
+                                    useSemanticConnections: true,
+                                    activeNodeId: activeNode?.id || null
+                                })}
+                                onNodeClick={(nodeId) => {
+                                    const node = nodes.find(n => n.id === nodeId);
+                                    if (node) {
+                                        console.log('[FolderLayer] 2.5D Node clicked:', node.title, node.id);
+                                        setActiveNode(node);
+                                    }
+                                }}
+                                activeNodeId={activeNode?.id || null}
+                                variant="node"
+                            />
+
+                            {/* Empty State for Mycelium */}
+                            {nodes.length === 0 && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <EmptyState
+                                        icon={Network}
+                                        title="Empty Network"
+                                        description="This folder contains no data nodes. Initialize it by adding your first item."
+                                        actionLabel="Add Item"
+                                        onAction={() => setIsCreateModalOpen(true)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {viewMode === 'grid' && (
                         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
                             {/* Neural Network Visuals */}
                             <div className="grid grid-cols-3 gap-8">
@@ -259,7 +338,10 @@ export const FolderLayer: React.FC = () => {
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.1 }}
-                                            onClick={() => setActiveNode(node)}
+                                            onClick={() => {
+                                                console.log('[FolderLayer] Node clicked:', node.title, node.id);
+                                                setActiveNode(node);
+                                            }}
                                             className="w-32 h-32 rounded-2xl glass-panel border border-white/10 flex flex-col items-center justify-center gap-3 hover:border-mora-gold/50 hover:bg-white/5 transition-all cursor-pointer group"
                                         >
                                             <Icon className={`w-8 h-8 ${colorClass} group-hover:text-mora-gold transition-colors`} />
@@ -305,7 +387,10 @@ export const FolderLayer: React.FC = () => {
                                 return (
                                     <div
                                         key={node.id}
-                                        onClick={() => setActiveNode(node)}
+                                        onClick={() => {
+                                            console.log('[FolderLayer] Node clicked (list):', node.title, node.id);
+                                            setActiveNode(node);
+                                        }}
                                         className="flex items-center gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer group"
                                     >
                                         <div className="w-8 flex justify-center">

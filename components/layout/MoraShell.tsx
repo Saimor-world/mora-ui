@@ -7,6 +7,7 @@ import { ViewPort } from './ViewPort';
 import { ChatDock } from '@/components/ui/ChatDock';
 import { TreeSidebar } from '@/components/sidebar/TreeSidebar';
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
+import { SynthesisPanel } from '@/components/intelligence/SynthesisPanel';
 
 export const MoraShell: React.FC = () => {
     return (
@@ -27,6 +28,7 @@ export const MoraShell: React.FC = () => {
 
             {/* Global UI Overlays */}
             <ChatDock />
+            <SynthesisPanel />
 
             {/* Node Detail Panel (slide-in from right) */}
             <NodeDetailPanel />

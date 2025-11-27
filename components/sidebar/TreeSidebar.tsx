@@ -5,6 +5,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { ChevronRight, ChevronDown, Folder, FileText, Link as LinkIcon, Building2, Box, File } from 'lucide-react';
 import type { CoreTreeNode } from '@/lib/types/core';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SemanticSearch } from '@/components/search/SemanticSearch';
 
 export const TreeSidebar: React.FC = () => {
     const {
@@ -139,7 +140,7 @@ export const TreeSidebar: React.FC = () => {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                         >
-                            {node.children!.map(child => renderTreeNode(child, depth + 1))}
+                            {node.children?.map(child => renderTreeNode(child, depth + 1))}
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -148,29 +149,37 @@ export const TreeSidebar: React.FC = () => {
     };
 
     return (
-        <div className="w-80 h-full border-r border-white/10 bg-black/40 backdrop-blur-xl flex flex-col">
+        <aside className="w-80 h-full glass-panel border-r border-white/10 bg-[#050f0a]/90 backdrop-blur-md flex flex-col z-10">
             {/* Header */}
-            <div className="p-6 border-b border-white/10">
-                <h2 className="text-lg font-light text-emerald-50 tracking-widest uppercase">Navigation</h2>
-                <p className="text-xs text-emerald-400/50 tracking-wider mt-1">Organizational Tree</p>
+            <div className="p-6 border-b border-white/10 space-y-4">
+                <h2 className="text-sm font-light text-emerald-50 tracking-widest uppercase">
+                    NAVIGATION
+                </h2>
+
+                {/* Semantic Search */}
+                <SemanticSearch />
             </div>
 
             {/* Tree Content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
                 {isLoadingTree && (
-                    <div className="flex items-center justify-center py-12">
-                        <div className="w-6 h-6 border-2 border-mora-gold/30 border-t-mora-gold rounded-full animate-spin" />
+                    <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
                     </div>
                 )}
 
-                {!isLoadingTree && treeData && treeData.length === 0 && (
-                    <div className="text-center py-12 text-emerald-500/30 text-sm">
+                {!isLoadingTree && !treeData && (
+                    <div className="text-center py-8 text-emerald-500/30 text-sm">
                         No data available
                     </div>
                 )}
 
-                {!isLoadingTree && treeData && treeData.map(node => renderTreeNode(node))}
+                {!isLoadingTree && treeData && treeData.length > 0 && (
+                    <div className="space-y-1">
+                        {treeData.map(node => renderTreeNode(node, 0))}
+                    </div>
+                )}
             </div>
-        </div>
+        </aside>
     );
 };

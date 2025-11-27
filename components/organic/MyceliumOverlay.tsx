@@ -12,10 +12,10 @@ import { useMoraStore } from '@/lib/store/moraState';
 // Vision: Departments = mushrooms sprouting, Mycelium = living network beneath
 // ============================================================================
 
-const GRID_SIZE = 120;                      // Spatial hash cell size
-const MAX_CONNECTIONS_PER_PARTICLE = 4;     // Performance limit
-const CONNECTION_DISTANCE = 120;            // Max connection range
-const BASE_PARTICLE_DENSITY = 20000;        // Pixels per particle
+const GRID_SIZE = 150;                      // Spatial hash cell size
+const MAX_CONNECTIONS_PER_PARTICLE = 6;     // More connections for denser network
+const CONNECTION_DISTANCE = 150;            // Longer hyphen-like connections
+const BASE_PARTICLE_DENSITY = 15000;        // More particles (was 20000 = less dense)
 
 interface Particle {
     x: number;
@@ -32,11 +32,14 @@ interface Particle {
 
 export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { departments, activeSpaceId, activeNode } = useMoraStore();
+    // Sprint Tag 5-7: Add activeFolderId for Folder-Pulse
+    const { departments, activeSpaceId, activeFolderId, activeNode } = useMoraStore();
 
     // Reactive visual states
     const [shimmerIntensity, setShimmerIntensity] = useState(0);
     const [growthPulse, setGrowthPulse] = useState(0);
+    // Sprint Tag 5-7: Intel-Report Blitz State
+    const [intelBlitz, setIntelBlitz] = useState(false);
 
     // React to Department growth (Pilze sprießen - Mushrooms sprouting)
     useEffect(() => {
@@ -62,6 +65,36 @@ export const MyceliumOverlay: React.FC = () => {
         }
     }, [activeNode?.id]);
 
+    // Sprint Tag 5-7: React to Folder selection (Folder Pulse)
+    useEffect(() => {
+        if (activeFolderId) {
+            setShimmerIntensity(0.3);
+            setGrowthPulse(0.4);
+            setTimeout(() => {
+                setShimmerIntensity(0);
+                setGrowthPulse(0);
+            }, 600);
+        }
+    }, [activeFolderId]);
+
+    // Sprint Tag 5-7: Listen for Intel-Report creation (Synapsen-Blitz)
+    useEffect(() => {
+        const handleIntelReport = (event: Event) => {
+            console.log('[Mycelium] Intel-Report-Blitz triggered');
+            setIntelBlitz(true);
+            setShimmerIntensity(0.8); // Strong flash
+            setGrowthPulse(0.6);
+            setTimeout(() => {
+                setIntelBlitz(false);
+                setShimmerIntensity(0);
+                setGrowthPulse(0);
+            }, 500); // Half-second blitz
+        };
+
+        window.addEventListener('intel-report-created', handleIntelReport);
+        return () => window.removeEventListener('intel-report-created', handleIntelReport);
+    }, []);
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -85,10 +118,10 @@ export const MyceliumOverlay: React.FC = () => {
                 particles.push({
                     x,
                     y,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    size: Math.random() * 2.5 + 1,
-                    alpha: Math.random() * 0.35 + 0.15,
+                    vx: (Math.random() - 0.5) * 0.2,  // Slower, more organic drift
+                    vy: (Math.random() - 0.5) * 0.2,
+                    size: Math.random() * 3 + 1.5,    // Larger spore-like particles
+                    alpha: Math.random() * 0.45 + 0.2, // More visible
                     pulse: Math.random() * Math.PI * 2,
                     cellX: Math.floor(x / GRID_SIZE),
                     cellY: Math.floor(y / GRID_SIZE),
@@ -162,12 +195,18 @@ export const MyceliumOverlay: React.FC = () => {
 
                             if (distSq < CONNECTION_DISTANCE * CONNECTION_DISTANCE) {
                                 const dist = Math.sqrt(distSq);
-                                const opacity = 0.15 * (1 - dist / CONNECTION_DISTANCE);
-                                const shimmer = shimmerIntensity * 0.3;
+                                const opacity = 0.25 * (1 - dist / CONNECTION_DISTANCE); // Thicker connections
+                                const shimmer = shimmerIntensity * 0.4;
+
+                                // Hyphen-like organic connections with gradient
+                                const gradient = ctx.createLinearGradient(p.x, p.y, p2.x, p2.y);
+                                gradient.addColorStop(0, `rgba(234, 179, 8, ${opacity + shimmer})`); // Gold
+                                gradient.addColorStop(0.5, `rgba(16, 185, 129, ${opacity * 0.7 + shimmer})`); // Emerald
+                                gradient.addColorStop(1, `rgba(234, 179, 8, ${opacity + shimmer})`); // Gold
 
                                 ctx.beginPath();
-                                ctx.strokeStyle = `rgba(234, 179, 8, ${opacity + shimmer})`;
-                                ctx.lineWidth = 0.5 + shimmer;
+                                ctx.strokeStyle = gradient;
+                                ctx.lineWidth = 1 + shimmer * 2;  // Thicker hyphen-like strands
                                 ctx.moveTo(p.x, p.y);
                                 ctx.lineTo(p2.x, p2.y);
                                 ctx.stroke();
@@ -180,20 +219,33 @@ export const MyceliumOverlay: React.FC = () => {
                 }
             });
 
-            // Draw particles
+            // Draw particles (spore-like)
             particles.forEach(p => {
-                const currentAlpha = p.alpha + Math.sin(p.pulse) * 0.06 + (shimmerIntensity * 0.2);
-                const currentSize = p.size + (growthPulse * 0.8);
+                const currentAlpha = p.alpha + Math.sin(p.pulse) * 0.1 + (shimmerIntensity * 0.3); // Stronger breathing
+                const currentSize = p.size + (growthPulse * 1.2); // More growth
 
+                // Outer glow (always visible, organic halo)
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(16, 185, 129, ${currentAlpha})`;
+                ctx.arc(p.x, p.y, currentSize * 1.5, 0, Math.PI * 2);
+                const outerGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize * 1.5);
+                outerGradient.addColorStop(0, `rgba(234, 179, 8, ${currentAlpha * 0.3})`);
+                outerGradient.addColorStop(1, 'rgba(234, 179, 8, 0)');
+                ctx.fillStyle = outerGradient;
                 ctx.fill();
 
-                // Add glow on shimmer
+                // Core particle (spore)
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
+                const coreGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize);
+                coreGradient.addColorStop(0, `rgba(234, 179, 8, ${currentAlpha})`);
+                coreGradient.addColorStop(1, `rgba(16, 185, 129, ${currentAlpha * 0.7})`);
+                ctx.fillStyle = coreGradient;
+                ctx.fill();
+
+                // Add extra glow on shimmer (intel-report blitz)
                 if (shimmerIntensity > 0) {
-                    ctx.shadowBlur = 8 * shimmerIntensity;
-                    ctx.shadowColor = 'rgba(16, 185, 129, 0.6)';
+                    ctx.shadowBlur = 15 * shimmerIntensity;
+                    ctx.shadowColor = 'rgba(234, 179, 8, 0.8)';
                     ctx.fill();
                     ctx.shadowBlur = 0;
                 }
@@ -208,12 +260,12 @@ export const MyceliumOverlay: React.FC = () => {
             window.removeEventListener('resize', resize);
             cancelAnimationFrame(animationFrameId);
         };
-    }, [shimmerIntensity, growthPulse]);
+    }, [shimmerIntensity, growthPulse, intelBlitz]); // Sprint Tag 5-7: Added intelBlitz dependency
 
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-0 opacity-40"
+            className="fixed inset-0 pointer-events-none z-0 opacity-50"
             style={{ mixBlendMode: 'screen' }}
         />
     );

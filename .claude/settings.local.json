@@ -51,7 +51,10 @@
       "Bash(nul)",
       "Bash(PORT=3005 npm run dev:*)",
       "Bash(start http://localhost:3002/home)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(set PORT=3004)",
+      "Bash(npx next dev:*)",
+      "Bash(start http://localhost:3004/mycelium-test)"
     ],
     "deny": [],
     "ask": []

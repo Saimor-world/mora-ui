@@ -5,6 +5,52 @@ import { toast as sonnerToast } from 'sonner';
  * Wrapper around sonner with consistent styling
  */
 
+export interface ToastPayload {
+  id: string;
+  message: string;
+  variant: 'info' | 'success' | 'warning' | 'error';
+  timeout: number;
+}
+
+type ToastListener = (toast: ToastPayload) => void;
+const listeners: ToastListener[] = [];
+
+export function subscribeToToasts(listener: ToastListener): () => void {
+  listeners.push(listener);
+  return () => {
+    const index = listeners.indexOf(listener);
+    if (index > -1) listeners.splice(index, 1);
+  };
+}
+
+export function showToast(
+  options: { message: string; variant?: ToastPayload['variant']; timeout?: number } | string,
+  variant?: ToastPayload['variant'],
+  timeout = 3000
+) {
+  let payload: ToastPayload;
+
+  if (typeof options === 'string') {
+    // Legacy positional parameters
+    payload = {
+      id: Math.random().toString(36),
+      message: options,
+      variant: variant || 'info',
+      timeout,
+    };
+  } else {
+    // Object parameter
+    payload = {
+      id: Math.random().toString(36),
+      message: options.message,
+      variant: options.variant || 'info',
+      timeout: options.timeout || timeout,
+    };
+  }
+
+  listeners.forEach((listener) => listener(payload));
+}
+
 export const toast = {
   success: (message: string) => {
     sonnerToast.success(message, {

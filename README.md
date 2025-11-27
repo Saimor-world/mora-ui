@@ -2,6 +2,11 @@
 
 Next.js frontend for the Môra semantic intelligence platform.
 
+**📚 New to Môra UI?** Start here:
+- **[QUICKSTART.md](./QUICKSTART.md)** - 5-Minute Setup Guide → Get running fast!
+- **[PHASE_G_COMPLETE.md](./PHASE_G_COMPLETE.md)** - Latest Implementation Status (Phase G)
+- **[PHASE_G_STATUS.md](./PHASE_G_STATUS.md)** - Technical Deep-Dive
+
 ## 🚀 Quick Start
 
 ```bash

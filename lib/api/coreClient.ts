@@ -244,8 +244,12 @@ export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
     return coreGet(`/v1/nodes/${nodeId}`);
 }
 
+export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
+    return coreGet(`/v1/nodes/${nodeId}/relations`);
+}
+
 export async function fetchTree(): Promise<CoreTreeNode[]> {
-    const response = await coreGet<{ departments: CoreTreeNode[] }>(`/v1/tree`);
+    const response = await coreGet(`/v1/tree`) as { departments: CoreTreeNode[] };
     return response.departments || [];
 }
 

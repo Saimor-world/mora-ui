@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { NodeViewer } from '@/components/content/NodeViewer';
 import { useMoraStore } from '@/lib/store/moraState';
 import { X, FileText, Link as LinkIcon, File, Calendar, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +50,15 @@ export const NodeDetailPanel: React.FC = () => {
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
     }, [setActiveNode, isEditing]);
+
+    // Debug: Log when panel mounts/updates
+    useEffect(() => {
+        if (activeNode) {
+            console.log('[NodeDetailPanel] Rendering panel for node:', activeNode.title, activeNode.id);
+        } else {
+            console.log('[NodeDetailPanel] Panel closed (no activeNode)');
+        }
+    }, [activeNode]);
 
     if (!activeNode) return null;
 
@@ -113,7 +121,7 @@ export const NodeDetailPanel: React.FC = () => {
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-black/90 border-l border-white/10 backdrop-blur-xl z-50 shadow-2xl flex flex-col"
+                        className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-black/90 border-l border-white/10 backdrop-blur-xl z-[60] shadow-2xl flex flex-col"
                     >
                         {/* Header */}
                         <div className="p-6 border-b border-white/10 flex items-start justify-between bg-emerald-900/20">
@@ -250,7 +258,7 @@ export const NodeDetailPanel: React.FC = () => {
                                     <div className="flex gap-3 pt-4 border-t border-white/5">
                                         <button
                                             onClick={handleSave}
-                                            disabled={isSaving || !formData.title.trim()}
+                                            disabled={isSaving || !formData?.title?.trim()}
                                             className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-100 hover:bg-emerald-600/30 hover:border-mora-gold/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {isSaving ? 'Saving...' : 'Save Changes'}
@@ -292,39 +300,18 @@ export const NodeDetailPanel: React.FC = () => {
                                     </div>
 
                                     {/* Main Content Area */}
-                                    {(activeNode.type === 'note' || activeNode.type === 'document' || activeNode.type === 'task') && activeNode.content && (
-                                        <div className="prose prose-invert prose-emerald max-w-none">
-                                            <h3 className="text-xs uppercase tracking-widest text-emerald-400/50 mb-4 border-b border-white/5 pb-2">Content</h3>
-                                            <div className="text-emerald-100/80 font-light leading-relaxed markdown-content">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                    {activeNode.content}
-                                                </ReactMarkdown>
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="mt-6">
+                                        <h3 className="text-xs uppercase tracking-widest text-emerald-400/50 mb-4 border-b border-white/5 pb-2">Content</h3>
+                                        <NodeViewer
+                                            content={activeNode.content || activeNode.url || undefined}
+                                            type={activeNode.type as any}
+                                        />
+                                    </div>
 
-                                    {activeNode.type === 'link' && activeNode.url && (
-                                        <div>
-                                            <h3 className="text-xs uppercase tracking-widest text-emerald-400/50 mb-4 border-b border-white/5 pb-2">Target URL</h3>
-                                            <a
-                                                href={activeNode.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 transition-colors group"
-                                            >
-                                                <LinkIcon className="w-4 h-4" />
-                                                <span className="truncate flex-1">{activeNode.url}</span>
-                                                <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity">OPEN</span>
-                                            </a>
-                                        </div>
-                                    )}
+
 
                                     {/* Fallback for other types or empty content */}
-                                    {(!activeNode.content && !activeNode.url) && (
-                                        <div className="text-center py-12 text-emerald-500/30 italic">
-                                            No preview available
-                                        </div>
-                                    )}
+
                                 </>
                             )}
 

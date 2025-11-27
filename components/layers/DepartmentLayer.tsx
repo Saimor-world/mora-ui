@@ -2,15 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { ArrowLeft, Hexagon, Layers, AlertTriangle, Plus } from 'lucide-react';
+import { ArrowLeft, Hexagon, Layers, AlertTriangle, Plus, Network } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Mycelium25D } from '@/components/organic/Mycelium25D';
+import { mapSpacesToMycelium } from '@/lib/utils/myceliumDataMapper';
 
 export const DepartmentLayer: React.FC = () => {
     const {
         activeDepartmentId,
+        activeSpaceId,
         departments,
         spacesByDepartment,
         isLoadingSpaces,
@@ -24,6 +27,7 @@ export const DepartmentLayer: React.FC = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [view3D, setView3D] = useState(true); // Default to 3D
 
     const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
     const currentDepartment = departments.find(d => d.id === activeDepartmentId);
@@ -85,16 +89,33 @@ export const DepartmentLayer: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Create Space Button */}
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 hover:bg-white/5 transition-all group"
-                >
-                    <Plus className="w-4 h-4 text-emerald-400 group-hover:text-mora-gold transition-colors" />
-                    <span className="text-sm text-emerald-300 group-hover:text-mora-gold transition-colors tracking-wider">
-                        CREATE SPACE
-                    </span>
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* View Toggle */}
+                    {!isLoadingSpaces && spaces.length > 0 && (
+                        <button
+                            onClick={() => setView3D(!view3D)}
+                            className={`p-3 rounded-full glass-panel border transition-all ${
+                                view3D
+                                    ? 'border-mora-gold/50 bg-mora-gold/10 text-mora-gold'
+                                    : 'border-white/10 text-emerald-400 hover:border-emerald-400/50'
+                            }`}
+                            title={view3D ? '2D Grid View' : '2.5D Mycelium View'}
+                        >
+                            <Network className="w-5 h-5" />
+                        </button>
+                    )}
+
+                    {/* Create Space Button */}
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-emerald-500/30 hover:border-mora-gold/50 hover:bg-white/5 transition-all group"
+                    >
+                        <Plus className="w-4 h-4 text-emerald-400 group-hover:text-mora-gold transition-colors" />
+                        <span className="text-sm text-emerald-300 group-hover:text-mora-gold transition-colors tracking-wider">
+                            CREATE SPACE
+                        </span>
+                    </button>
+                </div>
             </header>
 
             {/* Loading State */}
@@ -112,8 +133,32 @@ export const DepartmentLayer: React.FC = () => {
                 </div>
             )}
 
-            {/* Spaces Grid */}
-            {!isLoadingSpaces && !coreError && (
+            {/* 2.5D Mycelium View */}
+            {!isLoadingSpaces && !coreError && view3D && (
+                <div className="flex-1 relative z-10">
+                    <Mycelium25D
+                        nodes={mapSpacesToMycelium(spaces, activeSpaceId)}
+                        onNodeClick={(spaceId) => navigateToSpace(spaceId)}
+                        activeNodeId={activeSpaceId}
+                        variant="space"
+                    />
+
+                    {spaces.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <EmptyState
+                                icon={Layers}
+                                title="Empty Sector"
+                                description="No spaces found in this sector. Initialize a new space to begin."
+                                actionLabel="Create Space"
+                                onAction={() => setIsCreateModalOpen(true)}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Spaces Grid (2D Classic) */}
+            {!isLoadingSpaces && !coreError && !view3D && (
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto w-full z-20 overflow-y-auto pb-20 custom-scrollbar">
                     {spaces.map((space) => (
                         <button

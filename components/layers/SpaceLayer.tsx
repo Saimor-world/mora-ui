@@ -2,12 +2,14 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { ArrowLeft, LayoutGrid, List, Folder, FileText, AlertCircle, Plus } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, List, Folder, FileText, AlertCircle, Plus, Network } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Mycelium25D } from '@/components/organic/Mycelium25D';
+import { mapFoldersToMycelium } from '@/lib/utils/myceliumDataMapper';
 
 // Preset colors for folders
 const FOLDER_COLORS = [
@@ -23,6 +25,7 @@ export const SpaceLayer: React.FC = () => {
     const {
         activeSpaceId,
         activeDepartmentId,
+        activeFolderId,
         departments,
         spacesByDepartment,
         foldersBySpace,
@@ -34,7 +37,7 @@ export const SpaceLayer: React.FC = () => {
         addFolder,
     } = useMoraStore();
 
-    const [viewMode, setViewMode] = useState<'visual' | 'list'>('visual');
+    const [viewMode, setViewMode] = useState<'mycelium' | 'visual' | 'list'>('mycelium');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,17 +155,26 @@ export const SpaceLayer: React.FC = () => {
                         </span>
                     </button>
 
-                    {/* View Toggle */}
+                    {/* View Toggle - 3 modes: Mycelium (3D), Visual (Orbital), List */}
                     <div className="flex items-center bg-black/20 rounded-full p-1 border border-white/5">
+                        <button
+                            onClick={() => setViewMode('mycelium')}
+                            className={`p-2 rounded-full transition-all ${viewMode === 'mycelium' ? 'bg-mora-gold/20 text-mora-gold' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                            title="2.5D Mycelium Network"
+                        >
+                            <Network className="w-4 h-4" />
+                        </button>
                         <button
                             onClick={() => setViewMode('visual')}
                             className={`p-2 rounded-full transition-all ${viewMode === 'visual' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                            title="Orbital View"
                         >
                             <LayoutGrid className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
+                            title="List View"
                         >
                             <List className="w-4 h-4" />
                         </button>
@@ -180,6 +192,30 @@ export const SpaceLayer: React.FC = () => {
             {/* Content Area */}
             {!isLoadingFolders && (
                 <div className="flex-1 relative z-10">
+
+                    {/* NEW: 2.5D Mycelium View */}
+                    {viewMode === 'mycelium' && (
+                        <div className="absolute inset-0">
+                            <Mycelium25D
+                                nodes={mapFoldersToMycelium(sortedFolders, activeFolderId)}
+                                onNodeClick={(folderId) => handleFolderClick(folderId)}
+                                activeNodeId={activeFolderId}
+                                variant="folder"
+                            />
+
+                            {folders.length === 0 && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <EmptyState
+                                        icon={Folder}
+                                        title="Empty Space"
+                                        description="This space is waiting for matter. Create a folder to begin."
+                                        actionLabel="Create Folder"
+                                        onAction={() => setIsCreateModalOpen(true)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {viewMode === 'visual' && (
                         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
