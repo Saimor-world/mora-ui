@@ -230,7 +230,7 @@ export function mapNodesToMycelium(
     // Map to Mycelium format
     return coreNodes.map((node) => ({
         id: node.id,
-        title: node.title || 'Untitled',
+        title: node.title || node.name || 'Untitled',
         type: node.type,
         position: positions.get(node.id) || [0, 0, 0],
         color: TYPE_COLORS[node.type] || TYPE_COLORS.other,

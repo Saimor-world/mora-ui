@@ -1,220 +1,18 @@
-"use client";
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MyceliumNode } from '@/lib/utils/myceliumDataMapper';
 
-import React, { useRef, useMemo, useEffect, useState } from 'react';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+// --- CONFIGURATION ---
+const IDLE_BREATH_DURATION = 8;
+const CALM_MODE_THRESHOLD = 20;
 
-// ============================================================================
-// MYCELIUM 2.5D - CALM OS EDITION
-// ============================================================================
-// DESIGN PHILOSOPHY:
-// - Firefly Mode: Labels hidden when n > 20 (clarity)
-// - Focus Mode: Hover = spotlight (attention)
-// - Semantic Clustering: Types cluster naturally (not random)
-// - Calm Energy: Idle = slow breath, Hover = local pulse, Alert = rare flash
-// - Connection Language: Structural (solid) vs Semantic (dotted)
-//
-// NODE THRESHOLDS:
-// - n ≤ 20: Full labels visible (like garden)
-// - n > 20: Firefly mode (orbs only, hover reveals)
-// - n > 60: Performance warning (consider LOD levels)
-//
-// ENERGY LEVELS:
-// - IDLE: 6bpm breathing, barely visible
-// - HOVER: Local 100%, neighbors 70%, rest 20%
-// - ALERT: Flash (Intel-Report, rare)
-// ============================================================================
+// --- SUB-COMPONENTS ---
 
-export interface MyceliumNode {
-    id: string;
-    title: string;
-    type: string;
-    position: [number, number, number]; // x, y, z (z = layer depth)
-    color: string;
-    size: number;
-    connections: string[];
-    semanticType?: 'structural' | 'semantic'; // Connection type
-}
-
-interface Mycelium25DProps {
-    nodes: MyceliumNode[];
-    onNodeClick?: (nodeId: string) => void;
-    activeNodeId?: string | null;
-    variant?: 'department' | 'space' | 'folder' | 'node';
-}
-
-// CONSTANTS - Focus-Only Mode for Large Networks
-const CALM_MODE_THRESHOLD = 25; // Above this, activate focus-only mode
-const FOCUS_DIM_OPACITY = 0.25; // Rest of network when focusing
-const NEIGHBOR_OPACITY = 0.8; // Direct neighbors opacity
-const IDLE_BREATH_DURATION = 12; // seconds (balanced: 5bpm)
-const MAX_VISIBLE_CONNECTIONS = 150; // Limit visible connections for performance
-
-// ============================================================================
-// ORGANIC SPORE - PHASE 1 (Firefly) + PHASE 2 (Focus)
-// ============================================================================
-function OrganicSpore({
-    node,
-    isActive,
-    onClick,
-    mouseX,
-    mouseY,
-    isCalmMode,
-    isFireflyMode,
-    isFocused,
-    isNeighbor,
-    globalDimmed,
-}: {
-    node: MyceliumNode;
-    isActive: boolean;
-    onClick: () => void;
-    mouseX: number;
-    mouseY: number;
-    isCalmMode: boolean;
-    isFireflyMode: boolean;
-    isFocused: boolean;
-    isNeighbor: boolean;
-    globalDimmed: boolean;
-}) {
-    const [hovered, setHovered] = useState(false);
-
-    // BALANCED: Slight parallax reduction in calm mode
-    const depth = node.position[2];
-    const parallaxX = isCalmMode ? mouseX * depth * 0.008 : mouseX * depth * 0.015;
-    const parallaxY = isCalmMode ? mouseY * depth * 0.008 : mouseY * depth * 0.015;
-
-    // BALANCED: Moderate size reduction in calm mode
-    const depthScale = isCalmMode ? 0.85 : (1 + depth * 0.08);
-
-    // PHASE 2: Focus Mode opacity calculation
-    const calculateOpacity = () => {
-        if (isActive) return 1.0;
-        if (isFocused) return 1.0;
-        if (isNeighbor) return NEIGHBOR_OPACITY;
-        if (globalDimmed) return FOCUS_DIM_OPACITY;
-        // BALANCED: Only slight opacity reduction
-        return isCalmMode ? 0.85 : 1.0;
-    };
-
-    const nodeOpacity = calculateOpacity();
-
-    // BALANCED LABEL LOGIC:
-    // - n <= 20: Labels dürfen für alle Nodes sichtbar sein (Garden Mode)
-    // - n > 20: Firefly Mode -> Labels nur bei Hover / aktivem Fokus
-    const showLabel =
-        !isFireflyMode ||
-        isActive ||
-        hovered ||
-        (isFocused && !isCalmMode) ||
-        (isNeighbor && !isCalmMode);
-
-    return (
-        <motion.div
-            className="absolute cursor-pointer group"
-            style={{
-                left: `${50 + node.position[0] * 2.2}%`,
-                top: `${50 + node.position[1] * 2.2}%`,
-                zIndex: Math.floor(10 + depth * 10),
-            }}
-            animate={{
-                x: parallaxX,
-                y: parallaxY,
-                scale: (isActive ? 1.5 : isFocused ? 1.3 : hovered ? 1.2 : 1) * depthScale,
-                opacity: nodeOpacity,
-            }}
-            transition={{
-                type: "spring",
-                stiffness: 120,
-                damping: 25,
-            }}
-            onClick={(e) => {
-                e.stopPropagation();
-                onClick();
-            }}
-            onHoverStart={() => setHovered(true)}
-            onHoverEnd={() => setHovered(false)}
-        >
-            {/* MINIMAL GLOW: Only for active/focused, very subtle otherwise */}
-            {(isActive || isFocused) && (
-                <motion.div
-                    className="absolute inset-0 rounded-full blur-xl"
-                    style={{
-                        width: node.size * 30,
-                        height: node.size * 30,
-                        backgroundColor: node.color,
-                        transform: 'translate(-50%, -50%)',
-                    }}
-                    animate={{
-                        opacity: isActive ? [0.4, 0.6, 0.4] : [0.3, 0.4, 0.3],
-                    }}
-                    transition={{
-                        duration: IDLE_BREATH_DURATION,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                />
-            )}
-
-            {/* Core Spore */}
-            {/* Core Spore - FILIGREE & FLOATING */}
-            <motion.div
-                className="relative rounded-full border backdrop-blur-sm flex items-center justify-center"
-                style={{
-                    width: node.size * 24, // Smaller, more delicate
-                    height: node.size * 24,
-                    backgroundColor: `${node.color}05`, // Very transparent
-                    borderColor: isActive ? '#CEB676' : node.color,
-                    borderWidth: isActive ? 1.5 : 0.5, // Ultra thin borders
-                    // FILIGREE: Minimalist glow
-                    boxShadow: isCalmMode
-                        ? `0 0 ${isActive ? 6 : isFocused ? 3 : 0}px ${node.color}`
-                        : `0 0 ${isActive ? 8 : isFocused ? 5 : 2}px ${node.color}`,
-                }}
-                animate={{
-                    borderColor: isActive ? '#CEB676' : isFocused ? '#10B981' : node.color,
-                    y: [0, -3, 0], // Gentle floating effect
-                }}
-                transition={{
-                    y: {
-                        duration: 4 + Math.random() * 2, // Random float duration
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: Math.random() * 2,
-                    },
-                    borderColor: { duration: 0.3 }
-                }}
-            >
-                {/* Inner core - Tiny dot */}
-                <div
-                    className="absolute rounded-full"
-                    style={{
-                        inset: '35%', // Make core smaller
-                        backgroundColor: node.color,
-                        opacity: isActive ? 0.8 : isFocused ? 0.6 : 0.4
-                    }}
-                />
-            </motion.div>
-
-            {/* PHASE 1: Firefly Mode - Conditional Label */}
-            {showLabel && (
-                <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 bg-mora-forest/95 backdrop-blur-md border border-mora-gold/30 rounded-full text-xs text-emerald-100 pointer-events-none shadow-lg"
-                    style={{ zIndex: 100 }}
-                >
-                    <div className="font-medium">{node.title}</div>
-                    <div className="text-[9px] text-emerald-400/50 uppercase tracking-wider">{node.type}</div>
-                </motion.div>
-            )}
-        </motion.div>
-    );
-}
-
-// ============================================================================
-// ORGANIC HYPHA - PHASE 4 (Connection Differentiation)
-// ============================================================================
-function OrganicHypha({
+/**
+ * ORGANIC HYPHA (Connection Line)
+ * Filigree, subtle, semantic
+ */
+const OrganicHypha = ({
     start,
     end,
     isActive,
@@ -228,67 +26,201 @@ function OrganicHypha({
     isSemanticConnection: boolean;
     depth: number;
     globalDimmed: boolean;
-}) {
-    const startX = 50 + start[0] * 2.2;
-    const startY = 50 + start[1] * 2.2;
-    const endX = 50 + end[0] * 2.2;
-    const endY = 50 + end[1] * 2.2;
+}) => {
+    // Convert normalized coords (-1 to 1) to percentage (0 to 100)
+    // Adjust scale factor to fit in container comfortably
+    const startX = 50 + start[0] * 25;
+    const startY = 50 + start[1] * 25;
+    const endX = 50 + end[0] * 25;
+    const endY = 50 + end[1] * 25;
 
-    // Organic curve with subtle randomness
-    const midX = (startX + endX) / 2 + (Math.random() - 0.5) * 5;
-    const midY = (startY + endY) / 2 + (Math.random() - 0.5) * 5;
+    // Deterministic randomness based on coordinates to avoid hydration mismatch
+    const seed = Math.abs((startX + endX + startY + endY) * 100);
+    const pseudoRandom = (seed % 100) / 100; // 0.0 to 1.0
 
-    const pathD = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
+    // Organic curve with subtle randomness (deterministic)
+    // Semantic connections are straighter, structural ones more curved
+    const curveIntensity = isSemanticConnection ? 0 : 5;
+    const midX = (startX + endX) / 2 + (pseudoRandom - 0.5) * curveIntensity;
+    const midY = (startY + endY) / 2 + ((seed * 13 % 100) / 100 - 0.5) * curveIntensity;
 
-    // FILIGREE: Ultra-thin, delicate connections
-    const strokeStyle = isSemanticConnection
-        ? "1 3" // Finer dots
-        : "0";
+    // Round to 3 decimals to avoid hydration mismatch (floating point diffs)
+    const pathD = `M ${startX.toFixed(3)} ${startY.toFixed(3)} Q ${midX.toFixed(3)} ${midY.toFixed(3)} ${endX.toFixed(3)} ${endY.toFixed(3)}`;
 
-    const baseWidth = isSemanticConnection ? 0.5 : 0.8; // Thin, filigree
-    const baseOpacity = isSemanticConnection ? 0.08 : 0.12; // Very subtle
+    // FILIGREE STYLE
+    const strokeWidth = isActive ? 1.5 : isSemanticConnection ? 0.5 : 0.8;
+    const baseOpacity = isActive ? 0.8 : isSemanticConnection ? 0.15 : 0.1;
+    const opacity = globalDimmed && !isActive ? baseOpacity * 0.1 : baseOpacity;
 
-    // PHASE 2: Respect focus mode
-    const connectionOpacity = globalDimmed && !isActive
-        ? baseOpacity * FOCUS_DIM_OPACITY
-        : baseOpacity;
+    const color = isActive ? '#CEB676' : isSemanticConnection ? '#10B981' : '#065f46'; // Gold active, Emerald semantic, Dark Green structural
 
     return (
         <motion.path
             d={pathD}
             fill="none"
-            stroke={isActive ? '#CEB676' : '#10B981'}
-            strokeWidth={baseWidth}
+            stroke={color}
+            strokeWidth={strokeWidth}
             strokeLinecap="round"
-            strokeDasharray={strokeStyle}
+            strokeDasharray={isSemanticConnection ? "2 4" : "0"} // Dotted for semantic
+            initial={{ pathLength: 0, opacity: 0 }}
             animate={{
-                strokeDashoffset: isSemanticConnection ? [0, -8] : 0, // Flow for semantic
-                opacity: isActive ? [connectionOpacity * 1.5, connectionOpacity * 2, connectionOpacity * 1.5]
-                    : [connectionOpacity, connectionOpacity * 1.2, connectionOpacity],
-                strokeWidth: isActive ? [baseWidth, baseWidth * 1.5, baseWidth] : baseWidth,
+                pathLength: 1,
+                opacity: opacity,
+                strokeWidth: strokeWidth
             }}
             transition={{
-                strokeDashoffset: {
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "linear",
-                },
-                opacity: {
-                    duration: isActive ? 2 : 8, // Faster pulse when active
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                },
+                duration: 1.5,
+                ease: "easeOut",
+                opacity: { duration: 0.5 }
             }}
             style={{
-                filter: `drop-shadow(0 0 ${isActive ? 4 : 1}px ${isActive ? '#CEB676' : '#10B981'}30)`,
+                vectorEffect: "non-scaling-stroke",
+                filter: isActive ? `drop-shadow(0 0 4px ${color}80)` : 'none'
             }}
         />
     );
+};
+
+/**
+ * ORGANIC SPORE (Node)
+ * Floating, glowing, interactive
+ */
+const OrganicSpore = ({
+    node,
+    isActive,
+    onClick,
+    isCalmMode,
+    isFocused,
+    isNeighbor,
+    globalDimmed,
+}: {
+    node: MyceliumNode;
+    isActive: boolean;
+    onClick: () => void;
+    isCalmMode: boolean;
+    isFocused: boolean;
+    isNeighbor: boolean;
+    globalDimmed: boolean;
+}) => {
+    const [hovered, setHovered] = useState(false);
+
+    // Position calculation
+    const x = 50 + node.position[0] * 25;
+    const y = 50 + node.position[1] * 25;
+    const z = node.position[2]; // Depth 0.6 to 1.2 approx
+
+    // Visual State
+    const isHighlighted = isActive || isFocused || hovered;
+    const isDimmed = globalDimmed && !isHighlighted;
+
+    // Size & Scale
+    const baseSize = node.size * 60; // Increased from 20 to 60 for better usability
+    const depthScale = z; // Larger when closer (higher z)
+    const scale = (isHighlighted ? 1.2 : 1.0) * depthScale;
+
+    // Opacity based on depth and focus
+    const opacity = isDimmed ? 0.2 : Math.min(1, z * 0.8 + 0.4); // More visible
+
+    // Color & Glow
+    const color = node.color;
+    const glowSize = isHighlighted ? 30 : 10; // Larger glow
+    const glowOpacity = isHighlighted ? 0.6 : 0.2;
+
+    // Deterministic randomness based on node ID for animation params
+    // This prevents hydration mismatch
+    const seed = node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const floatDuration = 4 + (seed % 30) / 10; // 4.0 to 7.0s
+    const floatDelay = (seed % 20) / 10; // 0.0 to 2.0s
+
+    return (
+        <motion.div
+            className="absolute flex items-center justify-center cursor-pointer"
+            style={{
+                left: `${x.toFixed(3)}%`,
+                top: `${y.toFixed(3)}%`,
+                width: baseSize,
+                height: baseSize,
+                zIndex: Math.floor(z * 100) + (isHighlighted ? 1000 : 0),
+            }}
+            animate={{
+                scale: scale,
+                opacity: opacity,
+                y: [0, -8 * z, 0], // Floating effect based on depth
+            }}
+            transition={{
+                y: {
+                    duration: floatDuration,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: floatDelay,
+                },
+                scale: { type: "spring", stiffness: 300, damping: 20 },
+                opacity: { duration: 0.3 }
+            }}
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            {/* Core Dot */}
+            <motion.div
+                className="rounded-full border backdrop-blur-sm"
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: isHighlighted ? `${color}40` : `${color}10`,
+                    borderColor: isHighlighted ? '#CEB676' : color,
+                    borderWidth: isHighlighted ? 2 : 1,
+                    boxShadow: `0 0 ${glowSize}px ${glowSize / 4}px ${color}${Math.floor(glowOpacity * 255).toString(16).padStart(2, '0')}`
+                }}
+            />
+
+            {/* Inner Nucleus */}
+            <div
+                className="absolute rounded-full"
+                style={{
+                    width: '30%',
+                    height: '30%',
+                    backgroundColor: isHighlighted ? '#CEB676' : color,
+                    opacity: 0.8
+                }}
+            />
+
+            {/* Label (ALWAYS VISIBLE NOW) */}
+            <motion.div
+                className="absolute top-full mt-2 pointer-events-none z-50 w-48 flex justify-center"
+                initial={{ opacity: 0.8 }}
+                animate={{
+                    opacity: isHighlighted ? 1 : 0.7,
+                    scale: isHighlighted ? 1.1 : 1
+                }}
+            >
+                <div className="flex flex-col items-center bg-mora-forest/80 backdrop-blur-sm border border-white/5 px-3 py-1.5 rounded-lg shadow-lg">
+                    <span className="text-xs font-bold tracking-wider text-emerald-50 whitespace-normal text-center leading-tight">
+                        {node.title}
+                    </span>
+                    {isHighlighted && (
+                        <span className="text-[10px] text-emerald-400/70 uppercase tracking-widest mt-1">
+                            {node.type}
+                        </span>
+                    )}
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+// --- MAIN COMPONENT ---
+
+interface Mycelium25DProps {
+    nodes: MyceliumNode[];
+    onNodeClick?: (nodeId: string) => void;
+    activeNodeId?: string | null;
+    variant?: 'folder' | 'node';
 }
 
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 export function Mycelium25D({
     nodes,
     onNodeClick,
@@ -299,15 +231,10 @@ export function Mycelium25D({
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
 
-    // Smooth mouse tracking
-    const mouseX = useSpring(0, { stiffness: 80, damping: 25 });
-    const mouseY = useSpring(0, { stiffness: 80, damping: 25 });
+    // Calm Mode Logic
+    const isCalmMode = nodes.length > CALM_MODE_THRESHOLD;
 
-    useEffect(() => {
-        mouseX.set(mousePosition.x);
-        mouseY.set(mousePosition.y);
-    }, [mousePosition, mouseX, mouseY]);
-
+    // Mouse Tracking
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
@@ -316,19 +243,7 @@ export function Mycelium25D({
         setMousePosition({ x, y });
     };
 
-    // CALM MODE: Activate for large networks
-    const isCalmMode = nodes.length > CALM_MODE_THRESHOLD;
-
-    // PHASE 2: Build neighbor map for focus mode
-    const neighborMap = useMemo(() => {
-        const map = new Map<string, Set<string>>();
-        nodes.forEach(node => {
-            map.set(node.id, new Set(node.connections));
-        });
-        return map;
-    }, [nodes]);
-
-    // PHASE 4: Categorize connections as structural or semantic
+    // Connection Logic
     const connections = useMemo(() => {
         const conns: Array<{
             start: [number, number, number];
@@ -336,182 +251,131 @@ export function Mycelium25D({
             isActive: boolean;
             isSemanticConnection: boolean;
             depth: number;
-            distance: number;
+            key: string;
         }> = [];
 
-        // Detect connection types
-        // Structural: same folder_id (all nodes in same folder connect)
-        // Semantic: tags, type, author (detected by mapper)
+        const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
-        nodes.forEach((node) => {
-            node.connections.forEach((targetId) => {
-                const targetNode = nodes.find((n) => n.id === targetId);
-                if (targetNode) {
+        nodes.forEach(node => {
+            node.connections.forEach(targetId => {
+                const targetNode = nodeMap.get(targetId);
+                // Avoid duplicate lines (A-B and B-A) by ID comparison
+                if (targetNode && node.id < targetNode.id) {
                     const isActive = focusedNodeId === node.id || focusedNodeId === targetId || activeNodeId === node.id || activeNodeId === targetId;
-                    const depth = (node.position[2] + targetNode.position[2]) / 2;
+                    const isSemantic = node.type !== targetNode.type; // Simple heuristic for semantic vs structural
 
-                    // Calculate distance for filtering in Calm Mode
-                    const dx = targetNode.position[0] - node.position[0];
-                    const dy = targetNode.position[1] - node.position[1];
-                    const dz = targetNode.position[2] - node.position[2];
-                    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-                    // All connections in folder layer are structural (same folder)
-                    // Semantic connections would come from tags/author matching
-                    const isSemanticConnection = node.type !== targetNode.type; // Simple heuristic
+                    // Filter in Calm Mode: Only show if active/focused or semantic
+                    if (isCalmMode && !isActive && !isSemantic) return;
 
                     conns.push({
                         start: node.position,
                         end: targetNode.position,
                         isActive,
-                        isSemanticConnection,
-                        depth,
-                        distance,
+                        isSemanticConnection: isSemantic,
+                        depth: (node.position[2] + targetNode.position[2]) / 2,
+                        key: `${node.id}-${targetNode.id}`
                     });
                 }
             });
         });
-
-        // CALM MODE: 
-        // - Idle: keine Verbindungen (nur Feld aus Nodes)
-        // - Fokus/Hover: nur Verbindungen, die den aktiven/fokussierten Node betreffen
-        if (isCalmMode) {
-            if (focusedNodeId || activeNodeId) {
-                return conns.filter(conn => conn.isActive);
-            }
-            return [];
-        }
-
-        // Normal mode: Limit to prevent overload
-        if (conns.length > MAX_VISIBLE_CONNECTIONS) {
-            const sorted = conns.sort((a, b) => {
-                if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
-                return a.distance - b.distance;
-            });
-            return sorted.slice(0, MAX_VISIBLE_CONNECTIONS);
-        }
-
         return conns;
-    }, [nodes, activeNodeId, focusedNodeId, isCalmMode]);
+    }, [nodes, focusedNodeId, activeNodeId, isCalmMode]);
 
     if (nodes.length === 0) {
         return (
-            <div className="w-full h-full flex items-center justify-center text-emerald-500/30 text-sm">
-                <div className="text-center">
-                    <div className="text-2xl mb-2">∅</div>
-                    <div>No nodes to visualize</div>
-                </div>
+            <div className="w-full h-full flex items-center justify-center text-emerald-500/30 text-sm font-mono">
+                <div>∅ NO SPORES DETECTED</div>
             </div>
         );
     }
 
+    // Camera / Pan Logic
+    // Instead of re-calculating layout, we shift the view to center the active node
+    const activeNode = nodes.find(n => n.id === activeNodeId);
+    const panX = activeNode ? -(activeNode.position[0] * 25) : 0;
+    const panY = activeNode ? -(activeNode.position[1] * 25) : 0;
+
     return (
         <div
             ref={containerRef}
-            className="w-full h-full relative overflow-hidden"
+            className="w-full h-full relative overflow-hidden bg-[#071C18]"
             onMouseMove={handleMouseMove}
             onMouseLeave={() => setFocusedNodeId(null)}
-            style={{
-                background: 'radial-gradient(circle at 50% 50%, rgba(10, 42, 37, 0.2) 0%, rgba(2, 13, 10, 0.05) 100%)',
-            }}
         >
-            {/* PHASE 5: Calm background - very subtle */}
+            {/* Movable Container (Camera) */}
             <motion.div
-                className="absolute inset-0 opacity-20 pointer-events-none"
-                style={{
-                    x: mouseX,
-                    y: mouseY,
-                    scale: 1.05,
-                }}
-            >
-                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-900/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/5 rounded-full blur-3xl" />
-            </motion.div>
-
-            {/* Connection Layer (SVG) */}
-            <svg
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{
-                    zIndex: 5,
-                    mixBlendMode: 'screen',
-                }}
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-            >
-                {connections.map((conn, i) => (
-                    <OrganicHypha
-                        key={i}
-                        start={conn.start}
-                        end={conn.end}
-                        isActive={conn.isActive}
-                        isSemanticConnection={conn.isSemanticConnection}
-                        depth={conn.depth}
-                        globalDimmed={focusedNodeId !== null}
-                    />
-                ))}
-            </svg>
-
-            {/* Nodes Layer */}
-            <div className="absolute inset-0">
-                {nodes.map((node) => {
-                    const isFocused = focusedNodeId === node.id;
-                    const isNeighbor = focusedNodeId ? neighborMap.get(focusedNodeId)?.has(node.id) : false;
-                    const globalDimmed = focusedNodeId !== null && !isFocused && !isNeighbor;
-
-                    return (
-                        <div
-                            key={node.id}
-                            onMouseEnter={() => setFocusedNodeId(node.id)}
-                            onMouseLeave={() => setFocusedNodeId(null)}
-                        >
-                            <OrganicSpore
-                                node={node}
-                                isActive={activeNodeId === node.id}
-                                onClick={() => onNodeClick?.(node.id)}
-                                mouseX={mousePosition.x}
-                                mouseY={mousePosition.y}
-                                isCalmMode={isCalmMode}
-                                isFireflyMode={nodes.length > 20}
-                                isFocused={isFocused}
-                                isNeighbor={isNeighbor || false}
-                                globalDimmed={globalDimmed}
-                            />
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* PHASE 6: UI Overlay with stats and hints */}
-            <div className="absolute bottom-4 left-4 text-[10px] text-emerald-500/40 uppercase tracking-wider pointer-events-none font-mono space-y-1">
-                <div className="flex items-center gap-3">
-                    <span>Mycelium Network</span>
-                    <span className="text-mora-gold/50">•</span>
-                    <span className="text-emerald-400/60">{nodes.length} Nodes</span>
-                    <span className="text-mora-gold/50">•</span>
-                    <span className="text-emerald-500/30">{connections.length} Links</span>
-                </div>
-                <div className="flex items-center gap-2 text-emerald-500/25">
-                    <span>{isCalmMode ? '🌿 Calm Mode' : '🏷️ Full Labels'}</span>
-                    <span className="text-mora-gold/30">•</span>
-                    <span>Hover to focus</span>
-                </div>
-            </div>
-
-            {/* PHASE 5: Idle breathing aura - extremely subtle */}
-            <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                    background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.015) 0%, transparent 60%)',
-                }}
+                className="absolute inset-0 w-full h-full"
                 animate={{
-                    opacity: [0.2, 0.35, 0.2],
+                    x: `${panX}%`,
+                    y: `${panY}%`,
                 }}
                 transition={{
-                    duration: IDLE_BREATH_DURATION,
-                    repeat: Infinity,
-                    ease: "easeInOut",
+                    type: "spring",
+                    stiffness: 50,
+                    damping: 20
                 }}
-            />
+            >
+                {/* Ambient Background Layers */}
+                <div className="absolute inset-0 pointer-events-none opacity-40">
+                    <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-[#0f3d31] rounded-full blur-[120px] opacity-30" />
+                    <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-[#1c5d4b] rounded-full blur-[120px] opacity-30" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)]" />
+                </div>
+
+                {/* Connection Layer (SVG) */}
+                <svg
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    style={{ zIndex: 5 }}
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                >
+                    {connections.map((conn) => (
+                        <OrganicHypha
+                            key={conn.key}
+                            start={conn.start}
+                            end={conn.end}
+                            isActive={conn.isActive}
+                            isSemanticConnection={conn.isSemanticConnection}
+                            depth={conn.depth}
+                            globalDimmed={focusedNodeId !== null}
+                        />
+                    ))}
+                </svg>
+
+                {/* Node Layer */}
+                <div className="absolute inset-0">
+                    {nodes.map((node) => {
+                        const isFocused = focusedNodeId === node.id;
+                        const isNeighbor = focusedNodeId ? node.connections.includes(focusedNodeId) : false;
+                        const globalDimmed = focusedNodeId !== null && !isFocused && !isNeighbor;
+
+                        return (
+                            <div
+                                key={node.id}
+                                onMouseEnter={() => setFocusedNodeId(node.id)}
+                            >
+                                <OrganicSpore
+                                    node={node}
+                                    isActive={activeNodeId === node.id}
+                                    onClick={() => onNodeClick?.(node.id)}
+                                    isCalmMode={isCalmMode}
+                                    isFocused={isFocused}
+                                    isNeighbor={isNeighbor}
+                                    globalDimmed={globalDimmed}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
+            </motion.div>
+
+            {/* UI Overlay Stats (Fixed position, outside camera) */}
+            <div className="absolute bottom-4 left-4 text-[10px] text-emerald-500/30 font-mono tracking-widest pointer-events-none select-none">
+                <div className="flex gap-4">
+                    <span>MYCELIUM_NET :: {nodes.length} SPORES</span>
+                    <span>{isCalmMode ? 'CALM_MODE' : 'FULL_VISIBILITY'}</span>
+                </div>
+            </div>
         </div>
     );
 }

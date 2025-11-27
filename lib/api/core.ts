@@ -1,3 +1,5 @@
+import { getDevToken } from './devToken';
+
 const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8081';
 
 export interface Department {
@@ -40,12 +42,15 @@ export interface TreeResponse {
 }
 
 async function fetchCore<T>(endpoint: string, token?: string): Promise<T> {
+    // Auto-fetch dev token if not provided
+    const authToken = token || await getDevToken();
+
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
     };
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+    if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
     }
 
     try {
