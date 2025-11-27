@@ -1,18 +1,15 @@
 /**
- * MYCELIUM DATA MAPPER - RADIAL CONSTELLATION EDITION
+ * MYCELIUM DATA MAPPER - NATURAL MYCELIUM EDITION
  * ============================================================================
  * Converts Core API data into 2.5D Mycelium visualization format
- * Uses deterministic RADIAL CONSTELLATION layout (no random physics!)
+ * Uses NATURAL VOGEL SPIRAL layout (Phyllotaxis) - like real fungal mycelium!
  * ============================================================================
  *
  * DESIGN PHILOSOPHY:
- * - Strictly 2.5D (all in one plane, z only for layering/parallax)
- * - No Physics Engine (deterministic geometry only)
- * - Semantic Clustering (by tag, type, author)
- * - Concentric Circles (2-3 radii, R1=1.0, R2=1.8, R3=2.6)
- * - Angle Segments (clusters get pie slices)
- * - Center Node (activeNodeId or meta-node in middle)
- * - Reproducible Layout (same input = same output)
+ * - Natural distribution (Vogel Spiral) - NO cluster sectors
+ * - Semantic connections ONLY (Tags, Author, Folder, Type)
+ * - Positions: Mathematically distributed (golden angle)
+ * - Connections: Semantically determined (real relationships)
  * ============================================================================
  */
 
@@ -36,7 +33,6 @@ const TYPE_COLORS: Record<string, string> = {
     task: '#F59E0B',        // Amber
     intel_report: '#CEB676', // Gold - Môra generated
     other: '#6B7280',       // Gray
-    // Department/Space/Folder
     department: '#10B981',
     space: '#3B82F6',
     folder: '#8B5CF6',
@@ -48,33 +44,60 @@ const TYPE_SIZES: Record<string, number> = {
     note: 0.35,
     link: 0.3,
     task: 0.38,
-    intel_report: 0.6,  // Larger for Môra insights
+    intel_report: 0.6,
     other: 0.28,
     department: 1.0,
     space: 0.75,
     folder: 0.5,
 };
 
-// ============================================================================
-// RADIAL CONSTELLATION LAYOUT
-// ============================================================================
-
 /**
- * Simple hash function to get deterministic pseudo-random value from string
- * Used for stable positioning (same ID = same position)
+ * NATURAL MYCELIUM LAYOUT (Vogel Spiral / Phyllotaxis)
+ * Distributes nodes evenly across canvas using golden angle
+ * Like sunflower seeds or fungal spore patterns
  */
-function hashString(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32-bit integer
+function calculateMyceliumLayout(
+    nodes: Array<{ id: string; clusterKey: string; connections: string[] }>,
+    activeNodeId?: string | null
+): Map<string, [number, number, number]> {
+    const positions = new Map<string, [number, number, number]>();
+
+    if (nodes.length === 0) return positions;
+
+    // Golden Angle for Vogel's spiral (Phyllotaxis)
+    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
+
+    // Scale factor based on number of nodes
+    const SCALE_FACTOR = Math.min(0.5, Math.sqrt(nodes.length) * 0.12);
+
+    // Place activeNodeId in center if exists
+    if (activeNodeId) {
+        const activeNode = nodes.find(n => n.id === activeNodeId);
+        if (activeNode) {
+            positions.set(activeNodeId, [0, 0, 1.2]);
+        }
     }
-    return Math.abs(hash);
+
+    // Filter out active node
+    const nodesToPlace = nodes.filter(n => n.id !== activeNodeId);
+
+    // Vogel's Spiral: Natural distribution
+    nodesToPlace.forEach((node, index) => {
+        const theta = index * GOLDEN_ANGLE;
+        const radius = SCALE_FACTOR * Math.sqrt(index + 1) + 0.8;
+
+        const x = radius * Math.cos(theta);
+        const y = radius * Math.sin(theta);
+        const depth = 0.6 + ((index % 4) * 0.15);
+
+        positions.set(node.id, [x, y, depth]);
+    });
+
+    return positions;
 }
 
 /**
- * Determine cluster key for a node
+ * Determine cluster key for a node (used for coloring, not positioning)
  * Priority: first tag > type > "other"
  */
 function getClusterKey(node: CoreNode): string {
@@ -84,105 +107,9 @@ function getClusterKey(node: CoreNode): string {
 }
 
 /**
- * RADIAL CONSTELLATION LAYOUT
- * Deterministic, cluster-based, concentric circle positioning
- */
-function calculateRadialConstellationLayout(
-    nodes: Array<{ id: string; clusterKey: string; connections: string[] }>,
-    activeNodeId?: string | null
-): Map<string, [number, number, number]> {
-    const positions = new Map<string, [number, number, number]>();
-
-    if (nodes.length === 0) return positions;
-
-    // STEP 1: Group nodes by cluster
-    const clusters = new Map<string, typeof nodes>();
-    nodes.forEach(node => {
-        if (!clusters.has(node.clusterKey)) {
-            clusters.set(node.clusterKey, []);
-        }
-        clusters.get(node.clusterKey)!.push(node);
-    });
-
-    const clusterKeys = Array.from(clusters.keys());
-    const clusterCount = clusterKeys.length;
-
-    // STEP 2: Define concentric circles
-    const RADII = [1.0, 1.8, 2.6]; // Inner, Middle, Outer
-
-    // STEP 3: Assign angle ranges to clusters (pie slices)
-    const anglePerCluster = (Math.PI * 2) / clusterCount;
-
-    // STEP 4: Place activeNodeId in center if exists
-    if (activeNodeId) {
-        const activeNode = nodes.find(n => n.id === activeNodeId);
-        if (activeNode) {
-            positions.set(activeNodeId, [0, 0, 1.2]); // Center, elevated depth
-        }
-    }
-
-    // STEP 5: Position nodes in their cluster segments
-    clusterKeys.forEach((clusterKey, clusterIndex) => {
-        const clusterNodes = clusters.get(clusterKey)!;
-        const baseAngle = clusterIndex * anglePerCluster;
-
-        // Filter out active node if it's already centered
-        const nodesToPlace = clusterNodes.filter(n => n.id !== activeNodeId);
-
-        if (nodesToPlace.length === 0) return;
-
-        // Distribute nodes across radii (inner to outer as count grows)
-        let radiusIndex = 0;
-        let nodesOnCurrentRadius = 0;
-        const maxNodesPerRadius = Math.ceil(nodesToPlace.length / RADII.length);
-
-        nodesToPlace.forEach((node, index) => {
-            // Determine which radius to use
-            if (nodesOnCurrentRadius >= maxNodesPerRadius && radiusIndex < RADII.length - 1) {
-                radiusIndex++;
-                nodesOnCurrentRadius = 0;
-            }
-
-            const radius = RADII[radiusIndex];
-            nodesOnCurrentRadius++;
-
-            // Calculate angle within cluster segment
-            // Use hash for deterministic but "natural" spread
-            const angleSpread = anglePerCluster * 0.8; // Leave 20% gap between clusters
-            const angleOffset = (hashString(node.id) % 1000) / 1000 * angleSpread;
-            const angle = baseAngle + angleOffset;
-
-            // Add subtle radius variation for organic feel (deterministic)
-            const radiusVariation = ((hashString(node.id + 'r') % 100) / 100) * 0.15;
-            const finalRadius = radius + radiusVariation;
-
-            // Calculate 2D position
-            const x = Math.cos(angle) * finalRadius;
-            const y = Math.sin(angle) * finalRadius;
-
-            // Z is for depth/layering only (subtle parallax)
-            // Inner nodes slightly higher depth
-            const depth = 0.5 + (1 - radiusIndex / RADII.length) * 0.4;
-
-            positions.set(node.id, [x, y, depth]);
-        });
-    });
-
-    return positions;
-}
-
-/**
- * Convert Core Nodes to Mycelium Nodes with SEMANTIC connections
- *
- * WICHTIG: Keine zufälligen Verbindungen!
- * Nur echte semantische Relationen basierend auf:
- * - Shared Tags (metadata.tags)
- * - Same Folder (folder_id)
- * - Same Author (metadata.author)
- * - Same Type mit shared tags
- *
- * FUTURE: Intelligence Layer wird via Relations-API automatisch
- * weitere semantische Verbindungen erstellen (GET /v1/nodes/{id}/relations)
+ * Convert Core Nodes to Mycelium Nodes
+ * POSITIONS: Mathematical (Vogel Spiral)
+ * CONNECTIONS: Semantic (Tags, Author, Folder, Type)
  */
 export function mapNodesToMycelium(
     coreNodes: CoreNode[],
@@ -193,16 +120,16 @@ export function mapNodesToMycelium(
 ): MyceliumNode[] {
     if (coreNodes.length === 0) return [];
 
-    // Build ONLY semantic connections - no random!
+    // Build SEMANTIC connections (nur wo Daten zusammengehören!)
     const nodeConnections = new Map<string, Set<string>>();
 
     coreNodes.forEach((node) => {
         nodeConnections.set(node.id, new Set());
     });
 
-    // ONLY SEMANTIC CONNECTIONS - No random!
+    // SEMANTIC CONNECTIONS ONLY
     if (options?.useSemanticConnections !== false) {
-        // 1. Connect nodes with SHARED TAGS (real semantic relationship)
+        // 1. SHARED TAGS
         coreNodes.forEach((nodeA, i) => {
             const tagsA = (nodeA.metadata?.tags as string[]) || [];
 
@@ -210,7 +137,6 @@ export function mapNodesToMycelium(
                 const tagsB = (nodeB.metadata?.tags as string[]) || [];
                 const sharedTags = tagsA.filter((tag) => tagsB.includes(tag));
 
-                // Only connect if they share tags (real semantic link)
                 if (sharedTags.length > 0) {
                     nodeConnections.get(nodeA.id)?.add(nodeB.id);
                     nodeConnections.get(nodeB.id)?.add(nodeA.id);
@@ -218,8 +144,7 @@ export function mapNodesToMycelium(
             });
         });
 
-        // 2. Connect nodes in SAME FOLDER (folder_id relationship)
-        // IMPORTANT: Don't create complete graph! Limit connections per node.
+        // 2. SAME FOLDER (sparse network)
         const folderGroups = new Map<string, CoreNode[]>();
         coreNodes.forEach((node) => {
             if (node.folder_id) {
@@ -230,13 +155,9 @@ export function mapNodesToMycelium(
             }
         });
 
-        // Connect nodes within same folder - SPARSE network (max 3-5 connections per node)
         folderGroups.forEach((nodes) => {
             if (nodes.length > 1) {
-                // Strategy: Each node connects to its 2-3 nearest neighbors (by creation order)
-                // This creates a "chain" or "small clusters" instead of complete graph
                 nodes.forEach((nodeA, i) => {
-                    // Connect to next 1-2 nodes (creates sequential chain)
                     const maxConnections = Math.min(2, nodes.length - i - 1);
                     for (let j = 1; j <= maxConnections; j++) {
                         const nodeB = nodes[i + j];
@@ -249,7 +170,7 @@ export function mapNodesToMycelium(
             }
         });
 
-        // 3. Connect nodes by SAME AUTHOR (metadata.author)
+        // 3. SAME AUTHOR
         const authorGroups = new Map<string, CoreNode[]>();
         coreNodes.forEach((node) => {
             const author = node.metadata?.author as string;
@@ -263,7 +184,6 @@ export function mapNodesToMycelium(
 
         authorGroups.forEach((nodes) => {
             if (nodes.length > 1) {
-                // Connect author's nodes to each other (limit to 2 connections per node)
                 nodes.forEach((nodeA, i) => {
                     nodes.slice(i + 1, Math.min(i + 3, nodes.length)).forEach((nodeB) => {
                         nodeConnections.get(nodeA.id)?.add(nodeB.id);
@@ -273,7 +193,7 @@ export function mapNodesToMycelium(
             }
         });
 
-        // 4. Connect by TYPE (documents reference each other, but only with shared tags)
+        // 4. SAME TYPE (documents with shared tags)
         const typeGroups = new Map<string, CoreNode[]>();
         coreNodes.forEach((node) => {
             if (!typeGroups.has(node.type)) {
@@ -282,7 +202,6 @@ export function mapNodesToMycelium(
             typeGroups.get(node.type)!.push(node);
         });
 
-        // Only connect within type if there are shared tags
         typeGroups.forEach((nodes, type) => {
             if (nodes.length > 1 && type === 'document') {
                 nodes.forEach((nodeA, i) => {
@@ -299,14 +218,14 @@ export function mapNodesToMycelium(
         });
     }
 
-    // Calculate RADIAL CONSTELLATION layout (deterministic!)
+    // Calculate NATURAL MYCELIUM layout (Vogel Spiral)
     const layoutData = coreNodes.map((node) => ({
         id: node.id,
         clusterKey: getClusterKey(node),
         connections: Array.from(nodeConnections.get(node.id) || []),
     }));
 
-    const positions = calculateRadialConstellationLayout(layoutData, options?.activeNodeId);
+    const positions = calculateMyceliumLayout(layoutData, options?.activeNodeId);
 
     // Map to Mycelium format
     return coreNodes.map((node) => ({
@@ -321,27 +240,25 @@ export function mapNodesToMycelium(
 }
 
 /**
- * Convert Departments to Mycelium Nodes (Simple Circle Layout)
+ * Convert Departments to Mycelium Nodes
  */
 export function mapDepartmentsToMycelium(
     departments: CoreDepartment[],
     activeDepartmentId?: string | null
 ): MyceliumNode[] {
     return departments.map((dept, index) => {
-        // If this is the active department, place it in center
         if (activeDepartmentId && dept.id === activeDepartmentId) {
             return {
                 id: dept.id,
                 title: dept.name,
                 type: 'department',
-                position: [0, 0, 1.2], // Center, elevated
+                position: [0, 0, 1.2],
                 color: dept.color || TYPE_COLORS.department,
                 size: TYPE_SIZES.department,
                 connections: [],
             };
         }
 
-        // Otherwise, arrange in circle
         const angle = (index / departments.length) * Math.PI * 2;
         const radius = 2.0;
 
@@ -356,13 +273,13 @@ export function mapDepartmentsToMycelium(
             ],
             color: dept.color || TYPE_COLORS.department,
             size: TYPE_SIZES.department,
-            connections: [], // Departments don't connect to each other (yet)
+            connections: [],
         };
     });
 }
 
 /**
- * Convert Spaces to Mycelium Nodes (Radial Layout)
+ * Convert Spaces to Mycelium Nodes
  */
 export function mapSpacesToMycelium(
     spaces: CoreSpace[],
@@ -370,11 +287,11 @@ export function mapSpacesToMycelium(
 ): MyceliumNode[] {
     const layoutData = spaces.map((space) => ({
         id: space.id,
-        clusterKey: 'space', // All spaces in one cluster
-        connections: [], // Can be enhanced with semantic connections
+        clusterKey: 'space',
+        connections: [],
     }));
 
-    const positions = calculateRadialConstellationLayout(layoutData, activeSpaceId);
+    const positions = calculateMyceliumLayout(layoutData, activeSpaceId);
 
     return spaces.map((space) => ({
         id: space.id,
@@ -388,13 +305,12 @@ export function mapSpacesToMycelium(
 }
 
 /**
- * Convert Folders to Mycelium Nodes (Radial Layout with parent-child connections)
+ * Convert Folders to Mycelium Nodes
  */
 export function mapFoldersToMycelium(
     folders: CoreFolder[],
     activeFolderId?: string | null
 ): MyceliumNode[] {
-    // Connect parent-child folders
     const connections = new Map<string, Set<string>>();
 
     folders.forEach((folder) => {
@@ -413,11 +329,11 @@ export function mapFoldersToMycelium(
 
     const layoutData = folders.map((folder) => ({
         id: folder.id,
-        clusterKey: folder.parent_id || 'root', // Cluster by parent
+        clusterKey: folder.parent_id || 'root',
         connections: Array.from(connections.get(folder.id) || []),
     }));
 
-    const positions = calculateRadialConstellationLayout(layoutData, activeFolderId);
+    const positions = calculateMyceliumLayout(layoutData, activeFolderId);
 
     return folders.map((folder) => ({
         id: folder.id,

@@ -59,6 +59,7 @@ function OrganicSpore({
     mouseX,
     mouseY,
     isCalmMode,
+    isFireflyMode,
     isFocused,
     isNeighbor,
     globalDimmed,
@@ -69,6 +70,7 @@ function OrganicSpore({
     mouseX: number;
     mouseY: number;
     isCalmMode: boolean;
+    isFireflyMode: boolean;
     isFocused: boolean;
     isNeighbor: boolean;
     globalDimmed: boolean;
@@ -95,8 +97,15 @@ function OrganicSpore({
 
     const nodeOpacity = calculateOpacity();
 
-    // BALANCED: Show labels on hover always, but reduce neighbor labels in calm mode
-    const showLabel = isActive || hovered || (isFocused && !isCalmMode) || (isNeighbor && !isCalmMode);
+    // BALANCED LABEL LOGIC:
+    // - n <= 20: Labels dürfen für alle Nodes sichtbar sein (Garden Mode)
+    // - n > 20: Firefly Mode -> Labels nur bei Hover / aktivem Fokus
+    const showLabel =
+        !isFireflyMode ||
+        isActive ||
+        hovered ||
+        (isFocused && !isCalmMode) ||
+        (isNeighbor && !isCalmMode);
 
     return (
         <motion.div
@@ -146,29 +155,41 @@ function OrganicSpore({
             )}
 
             {/* Core Spore */}
+            {/* Core Spore - FILIGREE & FLOATING */}
             <motion.div
                 className="relative rounded-full border backdrop-blur-sm flex items-center justify-center"
                 style={{
-                    width: node.size * 28,
-                    height: node.size * 28,
-                    backgroundColor: `${node.color}15`,
+                    width: node.size * 24, // Smaller, more delicate
+                    height: node.size * 24,
+                    backgroundColor: `${node.color}05`, // Very transparent
                     borderColor: isActive ? '#CEB676' : node.color,
-                    borderWidth: isActive ? 3 : 2,
-                    // Reduce glow in calm mode to prevent blob effect
+                    borderWidth: isActive ? 1.5 : 0.5, // Ultra thin borders
+                    // FILIGREE: Minimalist glow
                     boxShadow: isCalmMode
-                        ? `0 0 ${isActive ? 20 : isFocused ? 12 : 4}px ${node.color}`
-                        : `0 0 ${isActive ? 25 : isFocused ? 18 : 8}px ${node.color}`,
+                        ? `0 0 ${isActive ? 6 : isFocused ? 3 : 0}px ${node.color}`
+                        : `0 0 ${isActive ? 8 : isFocused ? 5 : 2}px ${node.color}`,
                 }}
                 animate={{
                     borderColor: isActive ? '#CEB676' : isFocused ? '#10B981' : node.color,
+                    y: [0, -3, 0], // Gentle floating effect
+                }}
+                transition={{
+                    y: {
+                        duration: 4 + Math.random() * 2, // Random float duration
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: Math.random() * 2,
+                    },
+                    borderColor: { duration: 0.3 }
                 }}
             >
-                {/* Inner core - MINIMAL: Static, no animation */}
+                {/* Inner core - Tiny dot */}
                 <div
-                    className="absolute inset-2 rounded-full"
+                    className="absolute rounded-full"
                     style={{
+                        inset: '35%', // Make core smaller
                         backgroundColor: node.color,
-                        opacity: isActive ? 0.5 : isFocused ? 0.4 : 0.2
+                        opacity: isActive ? 0.8 : isFocused ? 0.6 : 0.4
                     }}
                 />
             </motion.div>
@@ -219,13 +240,13 @@ function OrganicHypha({
 
     const pathD = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
 
-    // MINIMAL: Very subtle connections
+    // FILIGREE: Ultra-thin, delicate connections
     const strokeStyle = isSemanticConnection
-        ? "2 4" // Dotted for semantic
-        : "0"; // Solid for structural
+        ? "1 3" // Finer dots
+        : "0";
 
-    const baseWidth = isSemanticConnection ? 0.8 : 1.2; // Very thin
-    const baseOpacity = isSemanticConnection ? 0.15 : 0.25; // Very subtle
+    const baseWidth = isSemanticConnection ? 0.5 : 0.8; // Thin, filigree
+    const baseOpacity = isSemanticConnection ? 0.08 : 0.12; // Very subtle
 
     // PHASE 2: Respect focus mode
     const connectionOpacity = globalDimmed && !isActive
@@ -351,37 +372,14 @@ export function Mycelium25D({
             });
         });
 
-        // CALM MODE: Show ONLY connections from focused/active nodes
+        // CALM MODE: 
+        // - Idle: keine Verbindungen (nur Feld aus Nodes)
+        // - Fokus/Hover: nur Verbindungen, die den aktiven/fokussierten Node betreffen
         if (isCalmMode) {
             if (focusedNodeId || activeNodeId) {
-                // Show only connections involving the focused/active node
                 return conns.filter(conn => conn.isActive);
-            } else {
-                // No focus: Show balanced sample of connections
-                // Strategy: Show connections from each node (max 2-3 per node)
-                const nodeConnectionCounts = new Map<string, number>();
-                const balancedConns: typeof conns = [];
-
-                // Sort by distance first (prefer closer connections)
-                const sorted = conns.sort((a, b) => a.distance - b.distance);
-
-                // Take connections, but limit per node to avoid clustering
-                sorted.forEach(conn => {
-                    const startKey = `${conn.start[0]},${conn.start[1]}`;
-                    const endKey = `${conn.end[0]},${conn.end[1]}`;
-                    const startCount = nodeConnectionCounts.get(startKey) || 0;
-                    const endCount = nodeConnectionCounts.get(endKey) || 0;
-
-                    // Only add if both nodes have less than 3 visible connections
-                    if (startCount < 3 && endCount < 3 && balancedConns.length < 80) {
-                        balancedConns.push(conn);
-                        nodeConnectionCounts.set(startKey, startCount + 1);
-                        nodeConnectionCounts.set(endKey, endCount + 1);
-                    }
-                });
-
-                return balancedConns;
             }
+            return [];
         }
 
         // Normal mode: Limit to prevent overload
@@ -473,6 +471,7 @@ export function Mycelium25D({
                                 mouseX={mousePosition.x}
                                 mouseY={mousePosition.y}
                                 isCalmMode={isCalmMode}
+                                isFireflyMode={nodes.length > 20}
                                 isFocused={isFocused}
                                 isNeighbor={isNeighbor || false}
                                 globalDimmed={globalDimmed}
