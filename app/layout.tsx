@@ -9,6 +9,7 @@ import { setActive, updateOrbFromSystemState } from "@/lib/mora/awarenessControl
 import { MoraIntelligenceBar } from "@/components/mora/MoraIntelligenceBar";
 import { SynthesisPanel } from "@/components/intelligence/SynthesisPanel";
 import { Toaster } from "sonner";
+import { ErrorBoundary } from "@/components/errors/ErrorBoundary";
 
 export default function RootLayout({
   children,
@@ -56,12 +57,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        {children}
-        <FolderRoom />
-        <DocumentViewer />
-        <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
-        {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
-        <Toaster position="top-right" />
+        <ErrorBoundary>
+          {children}
+          <FolderRoom />
+          <DocumentViewer />
+          <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
+          {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
+          <Toaster position="top-right" />
+        </ErrorBoundary>
       </body>
     </html>
   );
