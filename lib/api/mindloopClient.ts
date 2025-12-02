@@ -3,7 +3,7 @@
  * Connects to saimor-core Mindloop Intelligence endpoints
  */
 
-import { coreGet, corePost } from './coreClient';
+import { coreGet, corePost, CoreError } from './coreClient';
 import type { MindloopEvent } from '@/lib/types/mindloop';
 
 export type { MindloopEvent } from '@/lib/types/mindloop';
@@ -60,7 +60,9 @@ export async function fetchSynthesis(): Promise<SynthesisResponse> {
         const data = await coreGet('/v1/mindloop/synthesis');
         return data;
     } catch (error: any) {
-        console.error('Mindloop: Failed to fetch synthesis', error);
+        if (!(error instanceof CoreError)) {
+            console.error('Mindloop: Failed to fetch synthesis', error);
+        }
         // Return fallback empty synthesis
         return {
             summary: {

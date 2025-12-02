@@ -6,7 +6,7 @@ import { OrganicInput } from '@/components/organic/OrganicInput';
 import { MessageSquareText, X, Maximize2, Minimize2, Loader2, Radar } from 'lucide-react';
 import { sendMessage, type AIMessage } from '@/lib/api/aiClient';
 import { fetchNodes, fetchNodeRelations } from '@/lib/api/coreClient';
-import { getFolderEvents, runScan, type MindloopEvent } from '@/lib/api/mindloopClient';
+import { getFolderEvents, runScan, fetchSynthesis, type MindloopEvent } from '@/lib/api/mindloopClient';
 import type { CoreNode } from '@/lib/types/core';
 
 export const ChatDock: React.FC = () => {
@@ -26,32 +26,11 @@ export const ChatDock: React.FC = () => {
 
     // Sprint Tag 1-2: Load Mindloop-Synthesis on mount
     useEffect(() => {
-        async function loadSynthesis() {
-            try {
-                const coreUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
-                const token = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT;
-
-                const response = await fetch(`${coreUrl}/v1/mindloop/synthesis`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setSynthesis(data);
-                    console.log('Mindloop Synthesis loaded:', data);
-                } else {
-                    console.warn('Failed to load synthesis:', response.status);
-                }
-            } catch (error) {
-                console.error('Error loading synthesis:', error);
-            }
-        }
-
-        loadSynthesis();
+        fetchSynthesis().then(setSynthesis).catch(() => setSynthesis(null));
         // Reload every 60 seconds
-        const interval = setInterval(loadSynthesis, 60000);
+        const interval = setInterval(() => {
+            fetchSynthesis().then(setSynthesis).catch(() => setSynthesis(null));
+        }, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -211,6 +190,20 @@ export const ChatDock: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Tabs */}
+                <div className="flex items-center border-b border-white/5 bg-black/20">
+                    {['TEAM', 'PERSONAL', 'MÔRA'].map((tab) => (
+                        <button
+                            key={tab}
+                            className={`flex-1 py-2 text-[10px] font-medium tracking-widest uppercase transition-colors
+                                ${tab === 'MÔRA' ? 'text-mora-gold bg-mora-gold/5' : 'text-emerald-500/50 hover:text-emerald-300 hover:bg-white/5'}
+                            `}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Context Bar */}
                 <div className="px-6 py-2 border-b border-white/5 flex items-center gap-2 text-[10px] text-emerald-500/50 overflow-x-auto custom-scrollbar whitespace-nowrap">
                     <span>ROOT</span>
@@ -305,7 +298,7 @@ export const ChatDock: React.FC = () => {
                                     nodeTitle: activeNode?.title,
                                     nodeType: activeNode?.type,
                                     folderNodes: folderNodes.map(n => ({
-                                        title: n.title,
+                                        title: n.title || 'Untitled',
                                         type: n.type,
                                         id: n.id
                                     })),

@@ -1,0 +1,42 @@
+import { coreGet } from './coreClient';
+import { corePost, coreDelete, corePatch } from './coreClient';
+
+export interface RelationEdge {
+  id: string;
+  source_id: string;
+  target_id: string;
+  kind: string;
+  weight: number;
+  metadata?: Record<string, any>;
+  created_at?: string;
+}
+
+export interface SpaceRelationsResponse {
+  relations: RelationEdge[];
+  nodes?: any[];
+}
+
+export const getRelationsForSpace = async (spaceId: string): Promise<SpaceRelationsResponse> => {
+  return coreGet(`/v1/relations/space/${spaceId}`) as Promise<SpaceRelationsResponse>;
+};
+
+export const getRelationsForNode = async (nodeId: string): Promise<RelationEdge[]> => {
+  return coreGet(`/v1/relations/node/${nodeId}`) as Promise<RelationEdge[]>;
+};
+
+// Legacy exports expected by DocumentViewer (no design changes)
+export interface CreateRelationPayload {
+  source_id: string;
+  target_id: string;
+  kind: string;
+  weight?: number;
+  metadata?: Record<string, any>;
+}
+
+export const createRelation = async (payload: CreateRelationPayload): Promise<RelationEdge> => {
+  return corePost('/v1/relations', payload) as Promise<RelationEdge>;
+};
+
+export const deleteRelation = async (relationId: string): Promise<void> => {
+  return coreDelete(`/v1/relations/${relationId}`);
+};

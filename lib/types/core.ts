@@ -1,6 +1,22 @@
+// Company (Workspace) - Top level of the hierarchy
+export interface CoreCompany {
+    id: string;
+    tenant_id: string;
+    owner_id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+    logo_url?: string | null;
+    settings?: Record<string, any> | null;
+    is_demo: boolean;
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
 export interface CoreDepartment {
     id: string;
     tenant_id: string;
+    company_id?: string | null; // Link to parent company
     name: string;
     slug: string;
     icon?: string | null;
@@ -43,7 +59,8 @@ export interface CoreNode {
     space_id: string;
     folder_id?: string | null;
     type: 'document' | 'task' | 'note' | 'link' | 'other';
-    title: string;
+    title?: string; // Optional, some endpoints return 'name' instead
+    name?: string;  // Some endpoints return this instead of title
     content?: string | null;
     url?: string | null;
     metadata?: Record<string, any> | null;

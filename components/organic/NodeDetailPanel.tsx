@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { NodeViewer } from '@/components/content/NodeViewer';
 import { useMoraStore } from '@/lib/store/moraState';
 import { X, FileText, Link as LinkIcon, File, Calendar, Tag } from 'lucide-react';
@@ -60,8 +60,20 @@ export const NodeDetailPanel: React.FC = () => {
         }
     }, [activeNode]);
 
-    if (!activeNode) return null;
+    const nodeTitle = activeNode ? ((activeNode as any).title || (activeNode as any).name || 'Untitled') : 'Untitled';
+    const coreBase = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8083';
+    const filePath = (activeNode as any)?.metadata?.file_path as string | undefined;
+    const fileDownloadUrl = useMemo(() => {
+        if (!filePath) return null;
+        // file_path shape: "uploads/<tenant>/<filename>"
+        const parts = filePath.split('/');
+        const tenant = parts.length >= 2 ? parts[1] : null;
+        const filename = parts.length >= 3 ? parts[2] : parts.at(-1);
+        if (!tenant || !filename) return null;
+        return `${coreBase}/v1/upload/file/${tenant}/${filename}`;
+    }, [filePath, coreBase]);
 
+    if (!activeNode) return null;
     const Icon = activeNode.type === 'link' ? LinkIcon : (activeNode.type === 'note' ? FileText : File);
 
     const handleSave = async () => {
@@ -139,7 +151,7 @@ export const NodeDetailPanel: React.FC = () => {
                                         />
                                     ) : (
                                         <h2 className="text-lg font-light text-emerald-50 leading-tight">
-                                            {activeNode.title}
+                                            {nodeTitle}
                                         </h2>
                                     )}
                                     <span className="text-xs text-emerald-400/50 uppercase tracking-wider">
@@ -147,26 +159,34 @@ export const NodeDetailPanel: React.FC = () => {
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {!isEditing && !isDeleting && (
-                                    <>
+                        <div className="flex items-center gap-2">
+                            {!isEditing && !isDeleting && (
+                                <>
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-emerald-400 hover:bg-white/5 transition-colors"
+                                    >
+                                        EDIT
+                                    </button>
+                                    <button
+                                        onClick={() => setIsDeleting(true)}
+                                        className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                                    >
+                                        DELETE
+                                    </button>
+                                    {fileDownloadUrl && (
                                         <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-emerald-400 hover:bg-white/5 transition-colors"
+                                            onClick={() => window.open(fileDownloadUrl, "_blank")}
+                                            className="px-3 py-1.5 rounded-lg border border-emerald-500/30 text-xs text-emerald-300 hover:bg-emerald-500/10 transition-colors"
                                         >
-                                            EDIT
+                                            DOWNLOAD
                                         </button>
-                                        <button
-                                            onClick={() => setIsDeleting(true)}
-                                            className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-                                        >
-                                            DELETE
-                                        </button>
-                                    </>
-                                )}
-                                <button
-                                    onClick={() => setActiveNode(null)}
-                                    className="p-2 rounded-full hover:bg-white/5 text-emerald-400/50 hover:text-emerald-400 transition-colors"
+                                    )}
+                                </>
+                            )}
+                            <button
+                                onClick={() => setActiveNode(null)}
+                                className="p-2 rounded-full hover:bg-white/5 text-emerald-400/50 hover:text-emerald-400 transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>

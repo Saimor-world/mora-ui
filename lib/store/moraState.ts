@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import type { CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
+import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
 import {
     fetchDepartments,
+    fetchCompanies,
     fetchSpaces,
     fetchFolders,
     fetchNodes,
@@ -18,20 +19,23 @@ import {
     type CreateNodePayload,
     type UpdateNodePayload
 } from "@/lib/api/coreClient";
+import { useAccountStore } from "@/lib/auth/useAccount";
 import { toast } from "@/lib/toast";
 
-export type ViewLevel = 'core' | 'department' | 'space' | 'folder';
+export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
 
 
 interface MoraState {
     // Spatial Position
     viewLevel: ViewLevel;
+    activeCompanyId: string | null;
     activeDepartmentId: string | null;
     activeSpaceId: string | null;
     activeFolderId: string | null;
     activeNode: CoreNode | null;
 
     // Data
+    companies: CoreCompany[];
     departments: CoreDepartment[];
     spacesByDepartment: Record<string, CoreSpace[]>;
     foldersBySpace: Record<string, CoreFolder[]>;
@@ -42,27 +46,33 @@ interface MoraState {
     expandedTreeNodes: Set<string>;
 
     // Loading / Error States
+    isLoadingCompanies: boolean;
     isLoadingDepartments: boolean;
     isLoadingSpaces: boolean;
     isLoadingFolders: boolean;
     isLoadingNodes: boolean;
     isLoadingTree: boolean;
     coreError: string | null;
+    // Orb Awareness
+    orbState: 'idle' | 'active' | 'learning' | 'warning' | 'demo';
 
     // Actions
     setViewLevel: (level: ViewLevel) => void;
+    setActiveCompany: (id: string | null) => void;
     setActiveDepartment: (id: string | null) => void;
     setActiveSpace: (id: string | null) => void;
     setActiveFolder: (id: string | null) => void;
     setActiveNode: (node: CoreNode | null) => void;
+    setOrbState: (state: 'idle' | 'active' | 'learning' | 'warning' | 'demo') => void;
 
     // Data Actions - Load
-    loadDepartments: () => Promise<void>;
+    loadCompanies: () => Promise<void>;
+    loadDepartments: (companyId?: string) => Promise<void>;
     loadSpacesForDepartment: (departmentId: string) => Promise<void>;
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
     loadNodesForFolder: (folderId: string, options?: { search?: string, type?: string }) => Promise<void>;
     loadNodeDetails: (nodeId: string) => Promise<void>;
-    loadTree: () => Promise<void>;
+    loadTree: (tenantId?: string) => Promise<void>;
 
     // Tree Actions
     toggleTreeNode: (id: string) => void;
@@ -83,12 +93,14 @@ interface MoraState {
 
 export const useMoraStore = create<MoraState>((set, get) => ({
     // Initial State
-    viewLevel: 'core',
+    viewLevel: 'core', // Default to core view (Môra + departments)
+    activeCompanyId: null,
     activeDepartmentId: null,
     activeSpaceId: null,
     activeFolderId: null,
     activeNode: null,
 
+    companies: [],
     departments: [],
     spacesByDepartment: {},
     foldersBySpace: {},
@@ -97,26 +109,45 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     treeData: null,
     expandedTreeNodes: new Set<string>(),
 
+    isLoadingCompanies: false,
     isLoadingDepartments: false,
     isLoadingSpaces: false,
     isLoadingFolders: false,
     isLoadingNodes: false,
     isLoadingTree: false,
     coreError: null,
+    orbState: 'idle',
 
     // Basic Setters
     setViewLevel: (level) => set({ viewLevel: level }),
+    setActiveCompany: (id) => set({ activeCompanyId: id }),
     setActiveDepartment: (id) => set({ activeDepartmentId: id }),
     setActiveSpace: (id) => set({ activeSpaceId: id }),
     setActiveFolder: (id) => set({ activeFolderId: id }),
     setActiveNode: (node) => set({ activeNode: node }),
+    setOrbState: (state) => set({ orbState: state }),
 
 
     // Data Loading Actions
-    loadDepartments: async () => {
+    loadCompanies: async () => {
+        set({ isLoadingCompanies: true, coreError: null });
+        try {
+            const data = await fetchCompanies(true); // Include demo for now
+            set({ companies: data, isLoadingCompanies: false });
+        } catch (error: any) {
+            const msg = error instanceof CoreError
+                ? (error.status === 401 || error.status === 403 ? "Not authorized." : error.message)
+                : "Failed to load companies.";
+            set({ isLoadingCompanies: false, coreError: msg });
+        }
+    },
+
+    loadDepartments: async (companyId?: string) => {
         set({ isLoadingDepartments: true, coreError: null });
         try {
-            const data = await fetchDepartments();
+            // Use active company if not provided
+            const targetCompanyId = companyId || get().activeCompanyId || undefined;
+            const data = await fetchDepartments(targetCompanyId);
             set({ departments: data, isLoadingDepartments: false });
         } catch (error: any) {
             const msg = error instanceof CoreError
@@ -199,10 +230,22 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
 
-    loadTree: async () => {
+    loadTree: async (tenantId?: string) => {
         set({ isLoadingTree: true, coreError: null });
         try {
-            const tree = await fetchTree();
+            const resolvedTenant = tenantId || useAccountStore.getState().currentAccount?.tenantId;
+            const tree = await fetchTree(resolvedTenant || undefined);
+            if ((tree?.length || 0) === 0) {
+                // Retry once to avoid empty renders during demo refresh
+                const retryTree = await fetchTree(resolvedTenant || undefined);
+                const hasData = (retryTree?.length || 0) > 0;
+                set({
+                    treeData: retryTree,
+                    isLoadingTree: false,
+                    coreError: hasData ? null : "Tree is empty after refresh. Try resetting the demo.",
+                });
+                return;
+            }
             set({ treeData: tree, isLoadingTree: false });
         } catch (error: any) {
             const msg = error instanceof CoreError

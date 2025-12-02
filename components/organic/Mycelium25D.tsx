@@ -1,18 +1,65 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MyceliumNode } from '@/lib/utils/myceliumDataMapper';
+import { setLearning } from '@/lib/mora/awarenessController';
 
 // --- CONFIGURATION ---
-const IDLE_BREATH_DURATION = 8;
-const CALM_MODE_THRESHOLD = 20;
+const IDLE_BREATH_DURATION = 6;
+const CALM_MODE_THRESHOLD = 20; // Increased slightly
+const SCALE = 22;
+const CAMERA_DAMPING = 25;
+const CAMERA_STIFFNESS = 40;
 
 // --- SUB-COMPONENTS ---
 
 /**
- * ORGANIC HYPHA (Connection Line)
- * Filigree, subtle, semantic
+ * AMBIENT DUST
+ * Optimized floating particles
  */
-const OrganicHypha = ({
+const AmbientDust = React.memo(({ count = 15 }: { count?: number }) => {
+    const particles = useMemo(() => Array.from({ length: count }).map((_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: Math.random() * 2 + 0.5,
+        duration: Math.random() * 15 + 15,
+        delay: Math.random() * 5
+    })), [count]);
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {particles.map(p => (
+                <motion.div
+                    key={p.id}
+                    className="absolute rounded-full bg-emerald-500/10"
+                    style={{
+                        left: `${p.x}%`,
+                        top: `${p.y}%`,
+                        width: p.size,
+                        height: p.size,
+                    }}
+                    animate={{
+                        y: [0, -100, 0],
+                        opacity: [0, 0.2, 0],
+                    }}
+                    transition={{
+                        duration: p.duration,
+                        repeat: Infinity,
+                        ease: "linear",
+                        delay: p.delay
+                    }}
+                />
+            ))}
+        </div>
+    );
+});
+AmbientDust.displayName = 'AmbientDust';
+
+/**
+ * ORGANIC HYPHA (Connection Line)
+ * Unified visual style across all levels
+ */
+const OrganicHypha = React.memo(({
     start,
     end,
     isActive,
@@ -27,32 +74,27 @@ const OrganicHypha = ({
     depth: number;
     globalDimmed: boolean;
 }) => {
-    // Convert normalized coords (-1 to 1) to percentage (0 to 100)
-    // Adjust scale factor to fit in container comfortably
-    const startX = 50 + start[0] * 25;
-    const startY = 50 + start[1] * 25;
-    const endX = 50 + end[0] * 25;
-    const endY = 50 + end[1] * 25;
+    const startX = 50 + start[0] * SCALE;
+    const startY = 50 + start[1] * SCALE;
+    const endX = 50 + end[0] * SCALE;
+    const endY = 50 + end[1] * SCALE;
 
-    // Deterministic randomness based on coordinates to avoid hydration mismatch
+    // Deterministic randomness for curve
     const seed = Math.abs((startX + endX + startY + endY) * 100);
-    const pseudoRandom = (seed % 100) / 100; // 0.0 to 1.0
+    const pseudoRandom = (seed % 100) / 100;
 
-    // Organic curve with subtle randomness (deterministic)
-    // Semantic connections are straighter, structural ones more curved
-    const curveIntensity = isSemanticConnection ? 0 : 5;
+    // Organic curve - less intense for semantic to keep it clean
+    const curveIntensity = isSemanticConnection ? 2 : 5;
     const midX = (startX + endX) / 2 + (pseudoRandom - 0.5) * curveIntensity;
     const midY = (startY + endY) / 2 + ((seed * 13 % 100) / 100 - 0.5) * curveIntensity;
 
-    // Round to 3 decimals to avoid hydration mismatch (floating point diffs)
-    const pathD = `M ${startX.toFixed(3)} ${startY.toFixed(3)} Q ${midX.toFixed(3)} ${midY.toFixed(3)} ${endX.toFixed(3)} ${endY.toFixed(3)}`;
+    const pathD = `M ${startX.toFixed(2)} ${startY.toFixed(2)} Q ${midX.toFixed(2)} ${midY.toFixed(2)} ${endX.toFixed(2)} ${endY.toFixed(2)}`;
 
-    // FILIGREE STYLE
-    const strokeWidth = isActive ? 1.5 : isSemanticConnection ? 0.5 : 0.8;
-    const baseOpacity = isActive ? 0.8 : isSemanticConnection ? 0.15 : 0.1;
+    // Unified Style
+    const strokeWidth = isActive ? 1.5 : isSemanticConnection ? 0.6 : 0.8;
+    const baseOpacity = isActive ? 0.8 : isSemanticConnection ? 0.2 : 0.12;
     const opacity = globalDimmed && !isActive ? baseOpacity * 0.1 : baseOpacity;
-
-    const color = isActive ? '#CEB676' : isSemanticConnection ? '#10B981' : '#065f46'; // Gold active, Emerald semantic, Dark Green structural
+    const color = isActive ? '#CEB676' : isSemanticConnection ? '#10B981' : '#065f46';
 
     return (
         <motion.path
@@ -61,7 +103,7 @@ const OrganicHypha = ({
             stroke={color}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
-            strokeDasharray={isSemanticConnection ? "2 4" : "0"} // Dotted for semantic
+            strokeDasharray={isSemanticConnection ? "2 4" : "0"}
             initial={{ pathLength: 0, opacity: 0 }}
             animate={{
                 pathLength: 1,
@@ -70,22 +112,22 @@ const OrganicHypha = ({
             }}
             transition={{
                 duration: 1.5,
-                ease: "easeOut",
-                opacity: { duration: 0.5 }
+                ease: "easeOut"
             }}
             style={{
                 vectorEffect: "non-scaling-stroke",
-                filter: isActive ? `drop-shadow(0 0 4px ${color}80)` : 'none'
+                filter: isActive ? `drop-shadow(0 0 4px ${color}40)` : 'none'
             }}
         />
     );
-};
+});
+OrganicHypha.displayName = 'OrganicHypha';
 
 /**
  * ORGANIC SPORE (Node)
- * Floating, glowing, interactive
+ * Unified physics and interaction
  */
-const OrganicSpore = ({
+const OrganicSpore = React.memo(({
     node,
     isActive,
     onClick,
@@ -104,40 +146,39 @@ const OrganicSpore = ({
 }) => {
     const [hovered, setHovered] = useState(false);
 
-    // Position calculation
-    const x = 50 + node.position[0] * 25;
-    const y = 50 + node.position[1] * 25;
-    const z = node.position[2]; // Depth 0.6 to 1.2 approx
+    // Position with Jitter to prevent stacking
+    // We use the node ID to generate a deterministic jitter
+    const seed = node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const jitterX = ((seed % 100) / 100 - 0.5) * 0.5; // Small offset
+    const jitterY = ((seed * 13 % 100) / 100 - 0.5) * 0.5;
+
+    const x = 50 + (node.position[0] * SCALE) + jitterX;
+    const y = 50 + (node.position[1] * SCALE) + jitterY;
+    const z = node.position[2];
 
     // Visual State
     const isHighlighted = isActive || isFocused || hovered;
     const isDimmed = globalDimmed && !isHighlighted;
 
     // Size & Scale
-    const baseSize = node.size * 60; // Increased from 20 to 60 for better usability
-    const depthScale = z; // Larger when closer (higher z)
-    const scale = (isHighlighted ? 1.2 : 1.0) * depthScale;
+    const baseSize = Math.max(node.size * 50, 10); // Normalized size
+    const scale = (isHighlighted ? 1.2 : 1.0) * z;
+    const opacity = isDimmed ? 0.1 : Math.min(1, z * 0.7 + 0.3);
 
-    // Opacity based on depth and focus
-    const opacity = isDimmed ? 0.2 : Math.min(1, z * 0.8 + 0.4); // More visible
-
-    // Color & Glow
+    // Color
     const color = node.color;
-    const glowSize = isHighlighted ? 30 : 10; // Larger glow
-    const glowOpacity = isHighlighted ? 0.6 : 0.2;
+    const glowOpacity = isHighlighted ? 0.4 : 0.05;
 
-    // Deterministic randomness based on node ID for animation params
-    // This prevents hydration mismatch
-    const seed = node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const floatDuration = 4 + (seed % 30) / 10; // 4.0 to 7.0s
-    const floatDelay = (seed % 20) / 10; // 0.0 to 2.0s
+    // Animation Params
+    const floatDuration = 6 + (seed % 40) / 10;
+    const floatDelay = (seed % 20) / 10;
 
     return (
         <motion.div
             className="absolute flex items-center justify-center cursor-pointer"
             style={{
-                left: `${x.toFixed(3)}%`,
-                top: `${y.toFixed(3)}%`,
+                left: `${x.toFixed(2)}%`,
+                top: `${y.toFixed(2)}%`,
                 width: baseSize,
                 height: baseSize,
                 zIndex: Math.floor(z * 100) + (isHighlighted ? 1000 : 0),
@@ -145,7 +186,7 @@ const OrganicSpore = ({
             animate={{
                 scale: scale,
                 opacity: opacity,
-                y: [0, -8 * z, 0], // Floating effect based on depth
+                y: [0, -8 * z, 0], // Reduced float range for calmness
             }}
             transition={{
                 y: {
@@ -154,7 +195,7 @@ const OrganicSpore = ({
                     ease: "easeInOut",
                     delay: floatDelay,
                 },
-                scale: { type: "spring", stiffness: 300, damping: 20 },
+                scale: { type: "spring", stiffness: 200, damping: 25 },
                 opacity: { duration: 0.3 }
             }}
             onClick={(e) => {
@@ -164,65 +205,72 @@ const OrganicSpore = ({
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            {/* Core Dot */}
+            {/* Core Shell */}
             <motion.div
-                className="rounded-full border backdrop-blur-sm"
+                className="rounded-full border backdrop-blur-[1px]"
                 style={{
                     width: '100%',
                     height: '100%',
-                    backgroundColor: isHighlighted ? `${color}40` : `${color}10`,
+                    backgroundColor: isHighlighted ? `${color}30` : `${color}05`,
                     borderColor: isHighlighted ? '#CEB676' : color,
-                    borderWidth: isHighlighted ? 2 : 1,
-                    boxShadow: `0 0 ${glowSize}px ${glowSize / 4}px ${color}${Math.floor(glowOpacity * 255).toString(16).padStart(2, '0')}`
+                    borderWidth: isHighlighted ? 1.5 : 1,
+                    boxShadow: `0 0 ${isHighlighted ? 30 : 10}px ${color}${Math.floor(glowOpacity * 255).toString(16).padStart(2, '0')}`
                 }}
             />
 
-            {/* Inner Nucleus */}
-            <div
+            {/* Nucleus (Breathing) */}
+            <motion.div
                 className="absolute rounded-full"
+                animate={{
+                    scale: [0.85, 1, 0.85],
+                }}
+                transition={{
+                    duration: IDLE_BREATH_DURATION,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: floatDelay
+                }}
                 style={{
-                    width: '30%',
-                    height: '30%',
+                    width: '40%',
+                    height: '40%',
                     backgroundColor: isHighlighted ? '#CEB676' : color,
                     opacity: 0.8
                 }}
             />
 
-            {/* Label (ALWAYS VISIBLE NOW) */}
-            <motion.div
-                className="absolute top-full mt-2 pointer-events-none z-50 w-48 flex justify-center"
-                initial={{ opacity: 0.8 }}
-                animate={{
-                    opacity: isHighlighted ? 1 : 0.7,
-                    scale: isHighlighted ? 1.1 : 1
-                }}
-            >
-                <div className="flex flex-col items-center bg-mora-forest/80 backdrop-blur-sm border border-white/5 px-3 py-1.5 rounded-lg shadow-lg">
-                    <span className="text-xs font-bold tracking-wider text-emerald-50 whitespace-normal text-center leading-tight">
-                        {node.title}
-                    </span>
-                    {isHighlighted && (
-                        <span className="text-[10px] text-emerald-400/70 uppercase tracking-widest mt-1">
-                            {node.type}
-                        </span>
-                    )}
-                </div>
-            </motion.div>
+            {/* Label - Only show if highlighted or close/large enough */}
+            <AnimatePresence>
+                {(isHighlighted || (!isCalmMode && z > 0.8 && node.size > 0.3)) && (
+                    <motion.div
+                        className="absolute top-full mt-2 pointer-events-none z-50 w-40 flex justify-center"
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <div className="flex flex-col items-center bg-[#050a08]/80 backdrop-blur-sm border border-white/5 px-2 py-1 rounded shadow-xl">
+                            <span className="text-[10px] font-medium tracking-wide text-emerald-50 whitespace-normal text-center leading-tight truncate max-w-full">
+                                {node.title}
+                            </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
-};
+});
+OrganicSpore.displayName = 'OrganicSpore';
 
 // --- MAIN COMPONENT ---
 
 interface Mycelium25DProps {
-    nodes: MyceliumNode[];
+    nodes?: MyceliumNode[];
     onNodeClick?: (nodeId: string) => void;
     activeNodeId?: string | null;
-    variant?: 'folder' | 'node';
+    variant?: 'folder' | 'node' | 'department';
 }
 
 export function Mycelium25D({
-    nodes,
+    nodes = [],
     onNodeClick,
     activeNodeId,
     variant = 'folder',
@@ -231,20 +279,31 @@ export function Mycelium25D({
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
 
-    // Calm Mode Logic
-    const isCalmMode = nodes.length > CALM_MODE_THRESHOLD;
+    // Defensive default
+    const safeNodes = useMemo(() => Array.isArray(nodes) ? nodes : [], [nodes]);
+    const isCalmMode = safeNodes.length > CALM_MODE_THRESHOLD;
 
-    // Mouse Tracking
+    // Awareness: Trigger learning state when nodes are being loaded/rendered
+    useEffect(() => {
+        if (safeNodes.length > 0) {
+            setLearning();
+        }
+    }, [safeNodes.length]);
+
+    // Mouse Tracking (Throttled via RequestAnimationFrame ideally, but simple state is okay for low freq)
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
+        // Normalize -1 to 1
         const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
         const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
         setMousePosition({ x, y });
     };
 
-    // Connection Logic
+    // Connection Logic - Memoized for performance
     const connections = useMemo(() => {
+        if (safeNodes.length === 0) return [];
+
         const conns: Array<{
             start: [number, number, number];
             end: [number, number, number];
@@ -254,17 +313,19 @@ export function Mycelium25D({
             key: string;
         }> = [];
 
-        const nodeMap = new Map(nodes.map(n => [n.id, n]));
+        const nodeMap = new Map(safeNodes.map(n => [n.id, n]));
 
-        nodes.forEach(node => {
+        safeNodes.forEach(node => {
+            if (!node.connections) return;
+
             node.connections.forEach(targetId => {
                 const targetNode = nodeMap.get(targetId);
-                // Avoid duplicate lines (A-B and B-A) by ID comparison
+                // Ensure unique edges (id < targetId) and target exists
                 if (targetNode && node.id < targetNode.id) {
                     const isActive = focusedNodeId === node.id || focusedNodeId === targetId || activeNodeId === node.id || activeNodeId === targetId;
-                    const isSemantic = node.type !== targetNode.type; // Simple heuristic for semantic vs structural
+                    const isSemantic = node.type !== targetNode.type;
 
-                    // Filter in Calm Mode: Only show if active/focused or semantic
+                    // Calm Mode: Hide non-active, non-semantic connections
                     if (isCalmMode && !isActive && !isSemantic) return;
 
                     conns.push({
@@ -278,51 +339,71 @@ export function Mycelium25D({
                 }
             });
         });
-        return conns;
-    }, [nodes, focusedNodeId, activeNodeId, isCalmMode]);
 
-    if (nodes.length === 0) {
+        // Fallback ring if no connections exist (prevents floating dots)
+        if (conns.length === 0 && safeNodes.length > 1) {
+            safeNodes.forEach((node, idx) => {
+                const next = safeNodes[(idx + 1) % safeNodes.length];
+                conns.push({
+                    start: node.position,
+                    end: next.position,
+                    isActive: false,
+                    isSemanticConnection: false,
+                    depth: (node.position[2] + next.position[2]) / 2,
+                    key: `ring-${node.id}-${next.id}`
+                });
+            });
+        }
+        return conns;
+    }, [safeNodes, focusedNodeId, activeNodeId, isCalmMode]);
+
+    if (safeNodes.length === 0) {
         return (
-            <div className="w-full h-full flex items-center justify-center text-emerald-500/30 text-sm font-mono">
+            <div className="w-full h-full flex items-center justify-center text-emerald-500/30 text-xs font-mono tracking-widest">
                 <div>∅ NO SPORES DETECTED</div>
             </div>
         );
     }
 
-    // Camera / Pan Logic
-    // Instead of re-calculating layout, we shift the view to center the active node
-    const activeNode = nodes.find(n => n.id === activeNodeId);
-    const panX = activeNode ? -(activeNode.position[0] * 25) : 0;
-    const panY = activeNode ? -(activeNode.position[1] * 25) : 0;
+    // Camera Logic - Center on active node
+    const activeNode = safeNodes.find(n => n.id === activeNodeId);
+    // If no active node, center on (0,0)
+    const panX = activeNode ? -(activeNode.position[0] * SCALE) : 0;
+    const panY = activeNode ? -(activeNode.position[1] * SCALE) : 0;
+
+    // Parallax Offset - Subtle
+    const parallaxX = mousePosition.x * -1.5;
+    const parallaxY = mousePosition.y * -1.5;
 
     return (
         <div
             ref={containerRef}
-            className="w-full h-full relative overflow-hidden bg-[#071C18]"
+            className="w-full h-full relative overflow-hidden bg-[#030806] select-none"
             onMouseMove={handleMouseMove}
             onMouseLeave={() => setFocusedNodeId(null)}
         >
+            <AmbientDust count={isCalmMode ? 10 : 20} />
+
             {/* Movable Container (Camera) */}
             <motion.div
                 className="absolute inset-0 w-full h-full"
                 animate={{
-                    x: `${panX}%`,
-                    y: `${panY}%`,
+                    x: `calc(${panX}% + ${parallaxX}px)`,
+                    y: `calc(${panY}% + ${parallaxY}px)`,
                 }}
                 transition={{
                     type: "spring",
-                    stiffness: 50,
-                    damping: 20
+                    stiffness: CAMERA_STIFFNESS,
+                    damping: CAMERA_DAMPING,
+                    mass: 1
                 }}
             >
-                {/* Ambient Background Layers */}
-                <div className="absolute inset-0 pointer-events-none opacity-40">
-                    <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-[#0f3d31] rounded-full blur-[120px] opacity-30" />
-                    <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-[#1c5d4b] rounded-full blur-[120px] opacity-30" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_70%)]" />
+                {/* Deep Background Glow */}
+                <div className="absolute inset-0 pointer-events-none opacity-20">
+                    <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,#10b98110_0%,transparent_60%)]" />
                 </div>
 
-                {/* Connection Layer (SVG) */}
+                {/* Connection Layer */}
                 <svg
                     className="absolute inset-0 w-full h-full pointer-events-none"
                     style={{ zIndex: 5 }}
@@ -344,9 +425,9 @@ export function Mycelium25D({
 
                 {/* Node Layer */}
                 <div className="absolute inset-0">
-                    {nodes.map((node) => {
+                    {safeNodes.map((node) => {
                         const isFocused = focusedNodeId === node.id;
-                        const isNeighbor = focusedNodeId ? node.connections.includes(focusedNodeId) : false;
+                        const isNeighbor = focusedNodeId ? node.connections?.includes(focusedNodeId) : false;
                         const globalDimmed = focusedNodeId !== null && !isFocused && !isNeighbor;
 
                         return (
@@ -369,12 +450,23 @@ export function Mycelium25D({
                 </div>
             </motion.div>
 
-            {/* UI Overlay Stats (Fixed position, outside camera) */}
-            <div className="absolute bottom-4 left-4 text-[10px] text-emerald-500/30 font-mono tracking-widest pointer-events-none select-none">
-                <div className="flex gap-4">
-                    <span>MYCELIUM_NET :: {nodes.length} SPORES</span>
-                    <span>{isCalmMode ? 'CALM_MODE' : 'FULL_VISIBILITY'}</span>
-                </div>
+            {/* UI Overlay Stats */}
+            <div className="absolute bottom-6 left-6 text-[9px] text-emerald-500/20 font-mono tracking-widest pointer-events-none select-none flex gap-4">
+                <span>NET :: {safeNodes.length}</span>
+                <span className={isCalmMode ? "text-emerald-400/40" : ""}>
+                    {isCalmMode ? 'CALM_MODE' : 'FULL_VIS'}
+                </span>
+                {/* Môra Micro-Hint */}
+                {connections.length === 0 && safeNodes.length > 0 && (
+                    <span className="text-mora-gold/30">
+                        • MÔRA: No connections detected
+                    </span>
+                )}
+                {connections.length > 0 && !isCalmMode && (
+                    <span className="text-mora-gold/30">
+                        • MÔRA: {connections.length} links active
+                    </span>
+                )}
             </div>
         </div>
     );

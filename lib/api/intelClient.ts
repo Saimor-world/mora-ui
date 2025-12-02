@@ -20,8 +20,11 @@ export interface IntelScanResponse {
  * Creates an intel_report node with Mindloop synthesis data
  */
 export async function triggerMoraScan(folderId: string): Promise<IntelScanResponse> {
-    const coreUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
-    const token = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT;
+    const coreUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8083';
+
+    // Use devToken for authentication
+    const { getDevToken } = await import('@/lib/api/devToken');
+    const token = await getDevToken();
 
     const response = await fetch(`${coreUrl}/v1/intel/scan`, {
         method: 'POST',

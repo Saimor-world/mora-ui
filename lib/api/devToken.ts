@@ -3,9 +3,17 @@
  * Automatically fetches and manages JWT tokens for local development
  */
 
-const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8081';
+const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8083';
 const TOKEN_STORAGE_KEY = 'saimor_dev_token';
 const TOKEN_EXPIRY_KEY = 'saimor_dev_token_expiry';
+
+// Optional static token for local development:
+// - NEXT_PUBLIC_SAIMOR_CORE_JWT (neuer Pfad)
+// - NEXT_PUBLIC_API_TOKEN       (älterer Pfad)
+const STATIC_DEV_TOKEN =
+    process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
+    process.env.NEXT_PUBLIC_API_TOKEN ||
+    null;
 
 interface DevTokenResponse {
     token: string;
@@ -53,8 +61,15 @@ async function fetchDevToken(): Promise<string | null> {
  * Get the current token, fetching a new one if needed
  */
 export async function getDevToken(): Promise<string | null> {
+    // 1) Wenn ein statischer Token per ENV gesetzt ist, zuerst diesen verwenden.
+    //    Das spiegelt das frühere Verhalten wider und macht das System robust,
+    //    falls /v1/auth/dev-token nicht erreichbar ist.
+    if (STATIC_DEV_TOKEN) {
+        return STATIC_DEV_TOKEN;
+    }
+
     if (typeof window === 'undefined') {
-        // Server-side rendering - no token needed
+        // Server-side rendering – ohne statischen Token kein lokaler Storage
         return null;
     }
 

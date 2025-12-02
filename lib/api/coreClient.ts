@@ -1,13 +1,9 @@
-import { getDevToken } from './devToken';
-import type { CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
+import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
 
+type AccountRole = 'admin' | 'owner' | 'manager' | 'member' | 'demo';
 
-const CORE_BASE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ?? "http://localhost:8081";
-
-// Token is now managed by devToken service
-// No need for environment variable or fallback generation
-
-console.log("🔑 Core Client initialized - using dev token service");
+const CORE_BASE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ?? "http://localhost:8083";
+const AUTH_COOKIE = "mora_auth_token";
 
 export class CoreError extends Error {
     status: number;
@@ -18,167 +14,198 @@ export class CoreError extends Error {
     }
 }
 
-export async function coreGet(path: string): Promise<any> {
-    const token = await getDevToken();
-    if (!token) {
-        console.error("Môra Core: Failed to get dev token");
-        throw new CoreError("Configuration Error: Missing Core JWT", 0);
-    }
+type CoreRequestOptions = {
+    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    body?: any;
+    skipAuth?: boolean;
+    headers?: Record<string, string>;
+};
 
+function readCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const value = document.cookie.split('; ').find(row => row.startsWith(`${name}=`));
+    if (!value) return null;
+    const [, raw] = value.split('=');
     try {
-        const res = await fetch(`${CORE_BASE_URL}${path}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!res.ok) {
-            let message = `Core API Error: ${res.status} ${res.statusText}`;
-            try {
-                const errorBody = await res.json();
-                if (errorBody.detail) {
-                    message = errorBody.detail;
-                }
-            } catch (e) {
-                // ignore json parse error
-            }
-            throw new CoreError(message, res.status);
-        }
-
-        return await res.json();
-    } catch (error: any) {
-        if (error instanceof CoreError) {
-            throw error;
-        }
-        throw new CoreError(error.message || "Unknown Network Error", 0);
+        return decodeURIComponent(raw);
+    } catch {
+        return raw;
     }
 }
 
-export async function corePost(path: string, body: any): Promise<any> {
-    const token = await getDevToken();
-    if (!token) {
-        console.error("Môra Core: Failed to get dev token");
-        throw new CoreError("Configuration Error: Missing Core JWT", 0);
+async function coreRequest(path: string, options: CoreRequestOptions = {}): Promise<any> {
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+
+    if (!options.skipAuth) {
+        const token = readCookie(AUTH_COOKIE);
+        const devToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
+        const fallbackToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT || process.env.NEXT_PUBLIC_API_TOKEN;
+        const finalToken = token || devToken || fallbackToken;
+        if (!finalToken) {
+            throw new CoreError("Not authenticated", 401);
+        }
+        headers['Authorization'] = `Bearer ${finalToken}`;
     }
 
+    let response: Response;
     try {
-        const res = await fetch(`${CORE_BASE_URL}${path}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
+        response = await fetch(`${CORE_BASE_URL}${path}`, {
+            method: options.method ?? 'GET',
+            headers,
+            body: options.body ? JSON.stringify(options.body) : undefined,
+            credentials: 'include',
         });
-
-        if (!res.ok) {
-            let message = `Core API Error: ${res.status} ${res.statusText}`;
-            try {
-                const errorBody = await res.json();
-                if (errorBody.detail) {
-                    message = typeof errorBody.detail === 'string'
-                        ? errorBody.detail
-                        : JSON.stringify(errorBody.detail);
-                }
-            } catch (e) {
-                // ignore json parse error
-            }
-            throw new CoreError(message, res.status);
-        }
-
-        return await res.json();
-    } catch (error: any) {
-        if (error instanceof CoreError) {
-            throw error;
-        }
-        throw new CoreError(error.message || "Unknown Network Error", 0);
+    } catch (err: any) {
+        throw new CoreError(`Core unreachable: ${err?.message || 'network error'}`, 0);
     }
+
+    if (!response.ok) {
+        let message = `Core API Error: ${response.status} ${response.statusText}`;
+        try {
+            const errorBody = await response.json();
+            if (errorBody.detail) {
+                message = typeof errorBody.detail === 'string'
+                    ? errorBody.detail
+                    : JSON.stringify(errorBody.detail);
+            }
+        } catch {
+            // ignore parse errors
+        }
+        throw new CoreError(message, response.status);
+    }
+
+    if (response.status === 204) {
+        return null;
+    }
+    try {
+        return await response.json();
+    } catch {
+        return null;
+    }
+}
+
+export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'method' | 'body'> = {}): Promise<any> {
+    return coreRequest(path, { ...options, method: 'GET' });
+}
+
+export async function corePost(path: string, body: any, options: Omit<CoreRequestOptions, 'method'> = {}): Promise<any> {
+    return coreRequest(path, { ...options, method: 'POST', body });
 }
 
 export async function corePatch(path: string, body: any): Promise<any> {
-    const token = await getDevToken();
-    if (!token) {
-        console.error("Môra Core: Failed to get dev token");
-        throw new CoreError("Configuration Error: Missing Core JWT", 0);
-    }
-
-    try {
-        const res = await fetch(`${CORE_BASE_URL}${path}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        });
-
-        if (!res.ok) {
-            let message = `Core API Error: ${res.status} ${res.statusText}`;
-            try {
-                const errorBody = await res.json();
-                if (errorBody.detail) {
-                    message = typeof errorBody.detail === 'string'
-                        ? errorBody.detail
-                        : JSON.stringify(errorBody.detail);
-                }
-            } catch (e) {
-                // ignore json parse error
-            }
-            throw new CoreError(message, res.status);
-        }
-
-        return await res.json();
-    } catch (error: any) {
-        if (error instanceof CoreError) {
-            throw error;
-        }
-        throw new CoreError(error.message || "Unknown Network Error", 0);
-    }
+    return coreRequest(path, { method: 'PATCH', body });
 }
 
 export async function coreDelete(path: string): Promise<void> {
-    const token = await getDevToken();
-    if (!token) {
-        console.error("Môra Core: Failed to get dev token");
-        throw new CoreError("Configuration Error: Missing Core JWT", 0);
-    }
+    await coreRequest(path, { method: 'DELETE' });
+}
 
+// ========== AUTH FUNCTIONS ==========
+
+export interface AuthPayload {
+    email: string;
+    password: string;
+    role?: AccountRole;
+    tenant_id?: string;
+}
+
+export interface AuthSession {
+    user_id: string;
+    email?: string;
+    role: AccountRole;
+    tenant_id: string;
+    token: string;
+}
+
+export async function authRegister(payload: AuthPayload): Promise<AuthSession> {
+    return corePost('/v1/auth/register', payload, { skipAuth: true });
+}
+
+export async function authLogin(payload: AuthPayload): Promise<AuthSession> {
     try {
-        const res = await fetch(`${CORE_BASE_URL}${path}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!res.ok) {
-            let message = `Core API Error: ${res.status} ${res.statusText}`;
-            try {
-                const errorBody = await res.json();
-                if (errorBody.detail) {
-                    message = typeof errorBody.detail === 'string'
-                        ? errorBody.detail
-                        : JSON.stringify(errorBody.detail);
-                }
-            } catch (e) {
-                // ignore json parse error
-            }
-            throw new CoreError(message, res.status);
+        return await corePost('/v1/auth/login', payload, { skipAuth: true });
+    } catch (err: any) {
+        // Fallback for environments that don't yet expose /auth/login (e.g. old core build)
+        if (err instanceof CoreError && (err.status === 404 || err.status === 0)) {
+            const dev = await corePost('/v1/auth/dev-token', {}, { skipAuth: true });
+            return {
+                user_id: dev.user_id || 'dev_user',
+                email: payload.email,
+                role: (payload.role as AccountRole) || 'demo',
+                tenant_id: dev.tenant_id || dev.tenant || 'tenant-default',
+                token: dev.token,
+            };
         }
-    } catch (error: any) {
-        if (error instanceof CoreError) {
-            throw error;
-        }
-        throw new CoreError(error.message || "Unknown Network Error", 0);
+        throw err;
     }
+}
+
+export interface UserProfile {
+    user_id: string;
+    email?: string;
+    role: AccountRole;
+    tenant_id: string;
+    demo_mode?: boolean;
+}
+
+export async function fetchUserProfile(): Promise<UserProfile> {
+    return coreGet('/v1/auth/me');
+}
+
+// ========== DEMO FLOW ==========
+
+export interface DemoInstanceState {
+    tenant_id: string;
+    has_data?: boolean;
+    seed_type?: string;
+    departments?: any[];
+    files?: any[];
+    spaces?: any[];
+    folders?: any[];
+    members?: any[];
+}
+
+export async function forceResetDemo(): Promise<any> {
+    return corePost('/v1/demo/force-reset', {});
+}
+
+export async function fetchDemoInstance(): Promise<DemoInstanceState> {
+    return coreGet('/v1/demo/current-instance');
+}
+
+export async function connectDemoSource(source = 'simple_coffee_group'): Promise<any> {
+    return corePost('/v1/demo/connect-data-source', { source });
+}
+
+// ========== COMPANY FUNCTIONS ==========
+
+export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]> {
+    const query = includeDemo ? '?include_demo=true' : '';
+    return coreGet(`/v1/companies${query}`);
+}
+
+export async function getCompany(id: string): Promise<CoreCompany> {
+    return coreGet(`/v1/companies/${id}`);
+}
+
+export interface CreateCompanyPayload {
+    name: string;
+    description?: string;
+    slug?: string;
+}
+
+export async function createCompany(payload: CreateCompanyPayload): Promise<CoreCompany> {
+    return corePost('/v1/companies', payload);
 }
 
 // ========== FETCH FUNCTIONS ==========
 
-
-export async function fetchDepartments(): Promise<CoreDepartment[]> {
-    return coreGet('/v1/departments');
+export async function fetchDepartments(companyId?: string): Promise<CoreDepartment[]> {
+    const query = companyId ? `?company_id=${companyId}` : '';
+    return coreGet(`/v1/departments${query}`);
 }
 
 export async function fetchSpaces(departmentId?: string): Promise<CoreSpace[]> {
@@ -205,9 +232,64 @@ export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
     return coreGet(`/v1/nodes/${nodeId}/relations`);
 }
 
-export async function fetchTree(): Promise<CoreTreeNode[]> {
-    const response = await coreGet(`/v1/tree`) as { departments: CoreTreeNode[] };
-    return response.departments || [];
+export type TreeApiResponse = {
+    departments?: any[];
+};
+
+// Map backend tree response (departments + spaces + folders + nodes) into the UI-friendly CoreTreeNode shape
+export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[] {
+    const mapNode = (node: any): CoreTreeNode => ({
+        id: node.id,
+        type: 'node',
+        name: node.title || node.name || 'Node',
+        slug: node.slug,
+        color: node.color,
+        nodeType: node.type || 'other',
+        children: [],
+    });
+
+    const mapFolder = (folder: any): CoreTreeNode => ({
+        id: folder.id,
+        type: 'folder',
+        name: folder.name,
+        slug: folder.slug,
+        color: folder.color,
+        children: [
+            ...(folder.subfolders || []).map(mapFolder),
+            ...(folder.nodes || []).map(mapNode),
+        ],
+    });
+
+    const mapSpace = (space: any): CoreTreeNode => ({
+        id: space.id,
+        type: 'space',
+        name: space.name,
+        slug: space.slug,
+        color: space.color,
+        children: (space.folders || []).map(mapFolder),
+    });
+
+    const mapDepartment = (dept: any): CoreTreeNode => ({
+        id: dept.id,
+        type: 'department',
+        name: dept.name,
+        slug: dept.slug,
+        color: dept.color,
+        children: (dept.spaces || []).map(mapSpace),
+    });
+
+    return (response.departments || []).map(mapDepartment);
+}
+
+export async function fetchTree(tenantId?: string): Promise<CoreTreeNode[]> {
+    const query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+    const response = await coreGet(`/v1/tree${query}`) as TreeApiResponse;
+    return mapTreeResponseToNodes(response);
+}
+
+export async function fetchTreeData(tenantId?: string): Promise<TreeApiResponse> {
+    const query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+    return coreGet(`/v1/tree${query}`);
 }
 
 
@@ -263,3 +345,19 @@ export async function updateNode(id: string, payload: UpdateNodePayload): Promis
 export async function deleteNode(id: string): Promise<void> {
     return coreDelete(`/v1/nodes/${id}`);
 }
+
+// Department helpers (Tag 10+)
+export interface CreateDepartmentPayload {
+    name: string;
+    description?: string;
+    color?: string;
+    icon?: string;
+}
+
+export const createDepartment = async (payload: CreateDepartmentPayload) => {
+    return corePost('/v1/departments', payload);
+};
+
+export const createSimpleDepartment = async (name: string) => {
+    return corePost('/v1/departments/create-simple', { name });
+};

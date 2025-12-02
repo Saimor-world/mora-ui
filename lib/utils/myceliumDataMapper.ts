@@ -51,6 +51,15 @@ const TYPE_SIZES: Record<string, number> = {
     folder: 0.5,
 };
 
+function addRingConnections(nodeIds: string[], connections: Map<string, Set<string>>) {
+    if (nodeIds.length < 2) return;
+    nodeIds.forEach((id, idx) => {
+        const next = nodeIds[(idx + 1) % nodeIds.length];
+        connections.get(id)?.add(next);
+        connections.get(next)?.add(id);
+    });
+}
+
 /**
  * NATURAL MYCELIUM LAYOUT (Vogel Spiral / Phyllotaxis)
  * Distributes nodes evenly across canvas using golden angle
@@ -84,7 +93,7 @@ function calculateMyceliumLayout(
     // Vogel's Spiral: Natural distribution
     nodesToPlace.forEach((node, index) => {
         const theta = index * GOLDEN_ANGLE;
-        const radius = SCALE_FACTOR * Math.sqrt(index + 1) + 0.8;
+        const radius = SCALE_FACTOR * Math.sqrt(index + 1) + 0.5; // Reduced base offset from 0.8 to 0.5
 
         const x = radius * Math.cos(theta);
         const y = radius * Math.sin(theta);
@@ -240,12 +249,104 @@ export function mapNodesToMycelium(
 }
 
 /**
+ * Combine folders and their nodes for a space-level mycelium view.
+ * - Folders: structural ring + parent-child links
+ * - Nodes: connect to their folder (structural)
+ * - Layout: unified (folders + nodes) via Vogel spiral
+ */
+export function mapSpaceContentToMycelium(
+    folders: CoreFolder[],
+    nodes: CoreNode[],
+    options?: {
+        activeFolderId?: string | null;
+        activeNodeId?: string | null;
+    }
+): MyceliumNode[] {
+    if (folders.length === 0 && nodes.length === 0) return [];
+
+    // Setup connection map
+    const connections = new Map<string, Set<string>>();
+    const allIds: string[] = [];
+
+    // Add folders
+    folders.forEach((folder) => {
+        connections.set(folder.id, new Set());
+        allIds.push(folder.id);
+    });
+
+    // Add nodes
+    nodes.forEach((node) => {
+        connections.set(node.id, new Set());
+        allIds.push(node.id);
+    });
+
+    // Folder ring
+    addRingConnections(folders.map(f => f.id), connections);
+
+    // Link nodes to their folder (structural)
+    nodes.forEach((node) => {
+        if (node.folder_id && connections.has(node.folder_id)) {
+            connections.get(node.folder_id)?.add(node.id);
+            connections.get(node.id)?.add(node.folder_id);
+        }
+    });
+
+    // Build layout data for unified placement
+    const layoutData = allIds.map((id) => {
+        const isFolder = folders.some(f => f.id === id);
+        const clusterKey = isFolder ? 'folder' : (nodes.find(n => n.id === id)?.folder_id || 'node');
+        return {
+            id,
+            clusterKey,
+            connections: Array.from(connections.get(id) || []),
+        };
+    });
+
+    const positions = calculateMyceliumLayout(layoutData, options?.activeNodeId || options?.activeFolderId);
+
+    const folderNodes: MyceliumNode[] = folders.map((folder) => ({
+        id: folder.id,
+        title: folder.name,
+        type: 'folder',
+        position: positions.get(folder.id) || [0, 0, 0],
+        color: folder.color || TYPE_COLORS.folder,
+        size: TYPE_SIZES.folder,
+        connections: Array.from(connections.get(folder.id) || []),
+    }));
+
+    const fileNodes: MyceliumNode[] = nodes.map((node) => ({
+        id: node.id,
+        title: node.title || node.name || 'Untitled',
+        type: node.type,
+        position: positions.get(node.id) || [0, 0, 0],
+        color: TYPE_COLORS[node.type] || TYPE_COLORS.other,
+        size: TYPE_SIZES[node.type] || 0.4,
+        connections: Array.from(connections.get(node.id) || []),
+    }));
+
+    return [...folderNodes, ...fileNodes];
+}
+
+/**
  * Convert Departments to Mycelium Nodes
  */
 export function mapDepartmentsToMycelium(
     departments: CoreDepartment[],
     activeDepartmentId?: string | null
 ): MyceliumNode[] {
+    if (departments.length === 0) return [];
+
+    // Build a light ring connection so the mycelium shows relationships between departments
+    const ringConnections = new Map<string, Set<string>>();
+    departments.forEach((d) => ringConnections.set(d.id, new Set()));
+    if (departments.length > 1) {
+        departments.forEach((dept, index) => {
+            const next = departments[(index + 1) % departments.length];
+            ringConnections.get(dept.id)?.add(next.id);
+            ringConnections.get(next.id)?.add(dept.id);
+        });
+    }
+
     return departments.map((dept, index) => {
         if (activeDepartmentId && dept.id === activeDepartmentId) {
             return {
@@ -255,12 +356,12 @@ export function mapDepartmentsToMycelium(
                 position: [0, 0, 1.2],
                 color: dept.color || TYPE_COLORS.department,
                 size: TYPE_SIZES.department,
-                connections: [],
+                connections: Array.from(ringConnections.get(dept.id) || []),
             };
         }
 
         const angle = (index / departments.length) * Math.PI * 2;
-        const radius = 2.0;
+        const radius = 1.5; // Reduced from 2.0 to 1.5 to keep in view
 
         return {
             id: dept.id,
@@ -273,7 +374,7 @@ export function mapDepartmentsToMycelium(
             ],
             color: dept.color || TYPE_COLORS.department,
             size: TYPE_SIZES.department,
-            connections: [],
+            connections: Array.from(ringConnections.get(dept.id) || []),
         };
     });
 }
@@ -285,13 +386,34 @@ export function mapSpacesToMycelium(
     spaces: CoreSpace[],
     activeSpaceId?: string | null
 ): MyceliumNode[] {
-    const layoutData = spaces.map((space) => ({
-        id: space.id,
-        clusterKey: 'space',
-        connections: [],
-    }));
+    if (spaces.length === 0) return [];
 
-    const positions = calculateMyceliumLayout(layoutData, activeSpaceId);
+    // Gentle ring connections between spaces to avoid isolated dots
+    const ringConnections = new Map<string, Set<string>>();
+    spaces.forEach((s) => ringConnections.set(s.id, new Set()));
+    if (spaces.length > 1) {
+        spaces.forEach((space, index) => {
+            const next = spaces[(index + 1) % spaces.length];
+            ringConnections.get(space.id)?.add(next.id);
+            ringConnections.get(next.id)?.add(space.id);
+        });
+    }
+
+    // Orbit layout with active space in center, tighter radius for visibility
+    const positions = new Map<string, [number, number, number]>();
+    spaces.forEach((space, index) => {
+        if (activeSpaceId && space.id === activeSpaceId) {
+            positions.set(space.id, [0, 0, 1.2]);
+            return;
+        }
+        const angle = (index / spaces.length) * Math.PI * 2;
+        const radius = 1.3; // Reduced from 1.6 to 1.3
+        positions.set(space.id, [
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            0.9,
+        ]);
+    });
 
     return spaces.map((space) => ({
         id: space.id,
@@ -300,7 +422,7 @@ export function mapSpacesToMycelium(
         position: positions.get(space.id) || [0, 0, 0],
         color: space.color || TYPE_COLORS.space,
         size: TYPE_SIZES.space,
-        connections: [],
+        connections: Array.from(ringConnections.get(space.id) || []),
     }));
 }
 
@@ -311,6 +433,8 @@ export function mapFoldersToMycelium(
     folders: CoreFolder[],
     activeFolderId?: string | null
 ): MyceliumNode[] {
+    if (folders.length === 0) return [];
+
     const connections = new Map<string, Set<string>>();
 
     folders.forEach((folder) => {
@@ -327,13 +451,31 @@ export function mapFoldersToMycelium(
         }
     });
 
-    const layoutData = folders.map((folder) => ({
-        id: folder.id,
-        clusterKey: folder.parent_id || 'root',
-        connections: Array.from(connections.get(folder.id) || []),
-    }));
+    // Add a soft ring connection between sibling folders for visual coherence
+    if (folders.length > 1) {
+        folders.forEach((folder, index) => {
+            const next = folders[(index + 1) % folders.length];
+            connections.get(folder.id)?.add(next.id);
+            connections.get(next.id)?.add(folder.id);
+        });
+    }
 
-    const positions = calculateMyceliumLayout(layoutData, activeFolderId);
+    // Orbit layout with active folder at center
+    const positions = new Map<string, [number, number, number]>();
+    folders.forEach((folder, index) => {
+        if (activeFolderId && folder.id === activeFolderId) {
+            positions.set(folder.id, [0, 0, 1.2]);
+            return;
+        }
+        const angle = (index / folders.length) * Math.PI * 2;
+        // Keep folders comfortably in view; smaller radius prevents drifting off-canvas
+        const radius = 1.0; // Reduced from 1.2 to 1.0
+        positions.set(folder.id, [
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            0.9,
+        ]);
+    });
 
     return folders.map((folder) => ({
         id: folder.id,

@@ -27,7 +27,8 @@ export const DepartmentLayer: React.FC = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', description: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [view3D, setView3D] = useState(true); // Default to 3D
+    // Default to 2D orbit so Spaces sind sofort sichtbar
+    const [view3D, setView3D] = useState(false);
 
     const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
     const currentDepartment = departments.find(d => d.id === activeDepartmentId);
