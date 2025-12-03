@@ -2,13 +2,17 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { ArrowLeft, LayoutGrid, List, Folder, Plus, Network, Search, X } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { CreateModal } from '@/components/ui/CreateModal';
+import { LayoutGrid, List, Folder, Plus, Network, Search, X } from 'lucide-react';
+import { GlassPanel } from '@/components/layers/GlassPanel';
+import { IntelligenceContextBar } from '@/components/layers/IntelligenceContextBar';
 import { Mycelium25D } from '@/components/organic/Mycelium25D';
+import { CreateModal } from '@/components/ui/CreateModal';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { mapSpaceContentToMycelium } from '@/lib/utils/myceliumDataMapper';
-import type { CoreFolder, CoreNode } from '@/lib/types/core';
 import { getRelationsForSpace, RelationEdge } from '@/lib/api/relationsClient';
+import type { CoreNode } from '@/lib/types/core';
+import { motion } from 'framer-motion';
 
 const FOLDER_COLORS = [
     { name: 'Emerald', value: '#10b981' },
@@ -42,109 +46,52 @@ export const SpaceLayer: React.FC = () => {
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [graphNodes, setGraphNodes] = useState<any[]>([]);
-    const [graphRelations, setGraphRelations] = useState<RelationEdge[]>([]);
     const [isGraphLoading, setIsGraphLoading] = useState(false);
 
-    // Get current space data
+    // Context Data
     const currentSpace = useMemo(() => {
         if (!activeDepartmentId || !activeSpaceId) return null;
-        const spaces = spacesByDepartment[activeDepartmentId] || [];
-        return spaces.find(s => s.id === activeSpaceId);
+        return spacesByDepartment[activeDepartmentId]?.find(s => s.id === activeSpaceId);
     }, [activeDepartmentId, activeSpaceId, spacesByDepartment]);
 
-    // Get current department data for breadcrumb
-    const currentDepartment = useMemo(() => {
-        if (!activeDepartmentId) return null;
-        return departments.find(d => d.id === activeDepartmentId);
-    }, [activeDepartmentId, departments]);
+    const currentDepartment = departments.find(d => d.id === activeDepartmentId);
 
-    // Get folders and nodes for current space
     const folders = activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [];
     const spaceNodes: CoreNode[] = useMemo(() => {
         if (!activeSpaceId) return [];
         return folders.flatMap(f => nodesByFolder[f.id] || []);
     }, [activeSpaceId, folders, nodesByFolder]);
 
-    // Filtered & sorted folders
+    // Filter Logic
     const filteredFolders = useMemo(() => {
-        let result = [...folders];
-
-        // Filter by search
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(f => f.name.toLowerCase().includes(query));
-        }
-
-        // Sort by order then name
-        result.sort((a, b) => {
-            const orderA = a.order ?? 0;
-            const orderB = b.order ?? 0;
-            if (orderA !== orderB) return orderA - orderB;
-            return a.name.localeCompare(b.name);
-        });
-
-        return result;
+        if (!searchQuery.trim()) return folders;
+        const query = searchQuery.toLowerCase();
+        return folders.filter(f => f.name.toLowerCase().includes(query));
     }, [folders, searchQuery]);
 
-    // Load folders when space becomes active
+    // Load Data
     useEffect(() => {
         if (activeSpaceId && !foldersBySpace[activeSpaceId]) {
             loadFoldersForSpace(activeSpaceId);
         }
     }, [activeSpaceId, foldersBySpace, loadFoldersForSpace]);
 
-    // Build Mycelium data for current space (folders + nodes)
+    // Load Graph
     useEffect(() => {
         if (activeSpaceId && viewMode === 'mycelium') {
             const loadGraph = async () => {
                 setIsGraphLoading(true);
-                // Mapper nodes
                 const mapped = mapSpaceContentToMycelium(
                     folders,
                     spaceNodes,
                     { activeFolderId: activeFolderId, activeNodeId: null }
                 );
-
-                // Load real relations (optional)
-                let relations: RelationEdge[] = [];
-                try {
-                    const res = await getRelationsForSpace(activeSpaceId);
-                    relations = res.relations || [];
-                } catch (err) {
-                    console.warn("Relations for space unavailable", err);
-                }
-
-                // Merge relations into node connections (undirected)
-                const connMap = new Map<string, Set<string>>();
-                mapped.forEach(n => connMap.set(n.id, new Set(n.connections || [])));
-                relations.forEach(rel => {
-                    if (connMap.has(rel.source_id) && connMap.has(rel.target_id)) {
-                        connMap.get(rel.source_id)!.add(rel.target_id);
-                        connMap.get(rel.target_id)!.add(rel.source_id);
-                    }
-                });
-                const mergedNodes = mapped.map(n => ({
-                    ...n,
-                    connections: Array.from(connMap.get(n.id) || [])
-                }));
-
-                setGraphNodes(mergedNodes);
-                setGraphRelations(relations);
+                setGraphNodes(mapped);
                 setIsGraphLoading(false);
             };
             loadGraph();
         }
     }, [activeSpaceId, viewMode, folders, spaceNodes, activeFolderId]);
-
-    const handleBack = () => {
-        if (activeDepartmentId) {
-            navigateToDepartment(activeDepartmentId);
-        }
-    };
-
-    const handleFolderClick = (folderId: string) => {
-        setActiveFolder(folderId);
-    };
 
     const handleCreateFolder = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,239 +113,170 @@ export const SpaceLayer: React.FC = () => {
         }
     };
 
-    // Only render if viewLevel is 'space'
-    if (viewLevel !== 'space') return null;
+    if (viewLevel !== 'space' || !activeSpaceId) return null;
+
+    const breadcrumb = [
+        { label: 'Home', onClick: () => { } },
+        { label: currentDepartment?.name || 'Dept', onClick: () => activeDepartmentId && navigateToDepartment(activeDepartmentId) },
+        { label: currentSpace?.name || 'Space' }
+    ];
 
     return (
-        <div className="absolute inset-0 z-10 flex flex-col bg-gradient-to-br from-[#050505] to-[#0A0A0A]">
-            {/* Header */}
-            <header className="relative p-6 pb-4 border-b border-emerald-500/10 bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm">
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+        <div className="relative w-full h-full flex items-center justify-center p-6">
 
-                {/* Top Bar */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={handleBack}
-                            className="p-3 rounded-full bg-gradient-to-br from-white/5 to-white/0 border border-white/10 hover:border-emerald-500/30 hover:bg-white/10 transition-all group"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-emerald-400 group-hover:-translate-x-0.5 transition-transform" />
-                        </button>
-                        <div>
-                            <h2 className="text-2xl font-light text-emerald-50 tracking-tight">
-                                {currentSpace?.name || 'Space'}
-                            </h2>
-                            <div className="flex items-center gap-2 mt-1 text-xs text-emerald-500/50">
-                                <span className="hover:text-emerald-400 cursor-pointer transition-colors">
-                                    {currentDepartment?.name || 'Dept'}
-                                </span>
-                                <span>/</span>
-                                <span className="text-emerald-400">
-                                    {currentSpace?.name || 'Space'}
-                                </span>
+            {/* Context Bar */}
+            <IntelligenceContextBar
+                breadcrumb={breadcrumb}
+                activeCount={folders.length}
+                riskLevel="none"
+            />
+
+            {/* Glass Panel */}
+            <GlassPanel
+                title={currentSpace?.name || 'Space'}
+                showBackButton
+                onBack={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
+                width="full"
+                height="full"
+                blurIntensity={15}
+                opacity={0.9}
+            >
+                <div className="flex flex-col h-full">
+
+                    {/* Toolbar */}
+                    <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0">
+                        <div className="flex items-center gap-2">
+                            <div className="flex bg-black/20 rounded-lg p-1 border border-white/5">
+                                <button
+                                    onClick={() => setViewMode('mycelium')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'mycelium' ? 'bg-mora-gold/20 text-mora-gold' : 'text-white/40 hover:text-white'}`}
+                                >
+                                    <Network size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/40 hover:text-white'}`}
+                                >
+                                    <LayoutGrid size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/40 hover:text-white'}`}
+                                >
+                                    <List size={18} />
+                                </button>
+                            </div>
+
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search folders..."
+                                    className="pl-9 pr-4 py-2 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-48 transition-all focus:w-64"
+                                />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Create Folder Button */}
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all group"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm tracking-wide"
                         >
-                            <Plus className="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform" />
-                            <span className="text-sm text-emerald-300 transition-colors tracking-wider">
-                                NEW FOLDER
-                            </span>
+                            <Plus size={16} />
+                            NEW FOLDER
                         </button>
-
-                        {/* View Toggle */}
-                        <div className="flex items-center bg-black/30 rounded-full p-1 border border-white/5">
-                            <button
-                                onClick={() => setViewMode('mycelium')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'mycelium' ? 'bg-mora-gold/20 text-mora-gold' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                                title="2.5D Mycelium Network"
-                            >
-                                <Network className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                                title="Grid View"
-                            >
-                                <LayoutGrid className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                                title="List View"
-                            >
-                                <List className="w-4 h-4" />
-                            </button>
-                        </div>
                     </div>
-                </div>
 
-                {/* Search Bar */}
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search folders..."
-                        className="w-full px-4 py-2.5 pl-10 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-emerald-500/50 focus:outline-none transition-colors text-sm"
-                    />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/40" />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500/40 hover:text-emerald-400"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            {/* Content Area */}
-            <div className="flex-1 relative overflow-hidden">
-                {isLoadingFolders && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                            <span className="text-sm text-emerald-500/70 font-mono tracking-widest">LOADING FOLDERS...</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Mycelium View */}
-                {viewMode === 'mycelium' && (
-                    <div className="absolute inset-0">
-                        {isGraphLoading ? (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                                    <span className="text-sm text-emerald-500/70 font-mono tracking-widest">GROWING MYCELIUM...</span>
-                                </div>
+                    {/* Content */}
+                    <div className="flex-1 relative overflow-hidden">
+                        {isLoadingFolders && (
+                            <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 backdrop-blur-sm">
+                                <LoadingState message="Loading space folders..." />
                             </div>
-                        ) : (
-                            <Mycelium25D
-                                nodes={graphNodes}
-                                onNodeClick={(nodeId) => {
-                                    const node: any = graphNodes.find((n: any) => n.id === nodeId);
-                                    if (node?.type === 'folder') {
-                                        handleFolderClick(nodeId);
-                                    }
-                                }}
-                            />
                         )}
-                    </div>
-                )}
 
-                {/* Grid View */}
-                {viewMode === 'grid' && !isLoadingFolders && (
-                    <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                        {filteredFolders.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center">
-                                <Folder className="w-16 h-16 text-emerald-500/20 mb-4" />
-                                <p className="text-emerald-500/30 font-mono text-sm uppercase tracking-wider">
-                                    {searchQuery ? 'No matching folders' : 'Empty Space'}
-                                </p>
+                        {viewMode === 'mycelium' && (
+                            <div className="absolute inset-0">
+                                <Mycelium25D
+                                    nodes={graphNodes}
+                                    onNodeClick={(nodeId) => {
+                                        const node: any = graphNodes.find((n: any) => n.id === nodeId);
+                                        if (node?.type === 'folder') setActiveFolder(nodeId);
+                                    }}
+                                    activeNodeId={activeFolderId}
+                                    variant="space"
+                                />
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-6 gap-5">
-                                {filteredFolders.map((folder) => (
-                                    <motion.button
-                                        key={folder.id}
-                                        className="group flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-gradient-to-br hover:from-emerald-500/10 hover:to-emerald-600/5 border border-transparent hover:border-emerald-500/20 transition-all duration-200"
-                                        whileHover={{ scale: 1.05, y: -2 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        onClick={() => handleFolderClick(folder.id)}
-                                    >
-                                        <div
-                                            className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 group-hover:border-emerald-500/30 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] flex items-center justify-center transition-all duration-200"
+                        )}
+
+                        {viewMode === 'grid' && !isLoadingFolders && (
+                            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {filteredFolders.map((folder) => (
+                                        <motion.button
+                                            key={folder.id}
+                                            onClick={() => setActiveFolder(folder.id)}
+                                            whileHover={{ scale: 1.02, y: -2 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            className="flex flex-col items-center gap-3 p-6 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all group"
                                         >
-                                            <Folder size={28} style={{ color: folder.color || '#10b981' }} />
-                                        </div>
-                                        <span className="text-xs text-white/60 group-hover:text-emerald-100 text-center font-medium leading-tight line-clamp-2 transition-colors duration-200 max-w-[90px]">
-                                            {folder.name}
-                                        </span>
-                                    </motion.button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* List View */}
-                {viewMode === 'list' && !isLoadingFolders && (
-                    <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                        {filteredFolders.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center">
-                                <Folder className="w-16 h-16 text-emerald-500/20 mb-4" />
-                                <p className="text-emerald-500/30 font-mono text-sm uppercase tracking-wider">
-                                    {searchQuery ? 'No matching folders' : 'Empty Space'}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {filteredFolders.map((folder) => (
-                                    <motion.button
-                                        key={folder.id}
-                                        className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-emerald-600/5 border border-transparent hover:border-emerald-500/20 transition-all duration-200 text-left group"
-                                        whileHover={{ x: 4 }}
-                                        whileTap={{ scale: 0.99 }}
-                                        onClick={() => handleFolderClick(folder.id)}
-                                    >
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 group-hover:border-emerald-500/30 flex items-center justify-center flex-shrink-0 transition-all">
-                                            <Folder size={20} style={{ color: folder.color || '#10b981' }} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm text-emerald-100 group-hover:text-emerald-50 truncate transition-colors">
+                                            <div className="w-12 h-12 rounded-lg bg-black/20 flex items-center justify-center">
+                                                <Folder size={24} style={{ color: folder.color || '#10b981' }} />
+                                            </div>
+                                            <span className="text-sm text-white/70 group-hover:text-white text-center line-clamp-2">
                                                 {folder.name}
+                                            </span>
+                                        </motion.button>
+                                    ))}
+                                </div>
+                                {filteredFolders.length === 0 && <EmptyState icon={Folder} title="No folders found" description="Create a new folder to get started." />}
+                            </div>
+                        )}
+
+                        {viewMode === 'list' && !isLoadingFolders && (
+                            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+                                <div className="flex flex-col gap-2">
+                                    {filteredFolders.map((folder) => (
+                                        <button
+                                            key={folder.id}
+                                            onClick={() => setActiveFolder(folder.id)}
+                                            className="flex items-center gap-4 p-4 rounded-lg bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all text-left group"
+                                        >
+                                            <div className="p-2 rounded bg-black/20">
+                                                <Folder size={18} style={{ color: folder.color || '#10b981' }} />
                                             </div>
-                                            <div className="text-xs text-emerald-500/40 group-hover:text-emerald-500/60 uppercase tracking-wider mt-0.5 transition-colors">
-                                                Folder
-                                            </div>
-                                        </div>
-                                        {folder.updated_at && (
-                                            <div className="text-xs text-emerald-500/30 font-mono">
-                                                {new Date(folder.updated_at).toLocaleDateString()}
-                                            </div>
-                                        )}
-                                    </motion.button>
-                                ))}
+                                            <span className="text-white/70 group-hover:text-white flex-1">
+                                                {folder.name}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                                {filteredFolders.length === 0 && <EmptyState icon={Folder} title="No folders found" description="Create a new folder to get started." />}
                             </div>
                         )}
                     </div>
-                )}
-            </div>
+                </div>
+            </GlassPanel>
 
-            {/* Create Folder Modal */}
+            {/* Create Modal */}
             <CreateModal
                 isOpen={isCreateModalOpen}
-                onClose={() => {
-                    setIsCreateModalOpen(false);
-                    setFormData({ name: '', color: FOLDER_COLORS[0].value });
-                }}
+                onClose={() => setIsCreateModalOpen(false)}
                 title="Create New Folder"
             >
                 <form onSubmit={handleCreateFolder} className="space-y-6">
                     <div>
-                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">
-                            NAME *
-                        </label>
+                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">NAME</label>
                         <input
                             type="text"
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-mora-gold/50 focus:outline-none transition-colors"
-                            placeholder="Enter folder name"
-                            required
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-emerald-500/50 outline-none"
                             autoFocus
+                            required
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">
                             COLOR
@@ -419,25 +297,9 @@ export const SpaceLayer: React.FC = () => {
                             ))}
                         </div>
                     </div>
-
                     <div className="flex gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsCreateModalOpen(false);
-                                setFormData({ name: '', color: FOLDER_COLORS[0].value });
-                            }}
-                            className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-emerald-400 hover:bg-white/5 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting || !formData.name.trim()}
-                            className="flex-1 px-4 py-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-100 hover:bg-emerald-600/30 hover:border-mora-gold/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Folder'}
-                        </button>
+                        <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:bg-white/5">Cancel</button>
+                        <button type="submit" className="flex-1 py-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30">Create</button>
                     </div>
                 </form>
             </CreateModal>

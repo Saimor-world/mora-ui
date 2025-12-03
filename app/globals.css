@@ -4,6 +4,64 @@
 
 @layer base {
   :root {
+    /* === SAIMÔR/MÔRA v2.0 DESIGN SYSTEM === */
+
+    /* PRIMARY PALETTE */
+    --mora-emerald-core: #10B981;
+    --mora-deep-forest: #065F46;
+    --mora-gold: #CEB676;
+    --mora-shadow-black: #030806;
+    --mora-frost-white: #F0FDF4;
+
+    /* AWARENESS STATES */
+    --mora-state-idle: #10B981;
+    --mora-state-active: #CEB676;
+    --mora-state-learning: #60A5FA;
+    --mora-state-warning: #EF4444;
+    --mora-state-demo: #C4B5FD;
+
+    /* DEPARTMENT SEMANTIC COLORS */
+    --mora-dept-ops: #F59E0B;
+    --mora-dept-fin: #3B82F6;
+    --mora-dept-hr: #10B981;
+    --mora-dept-tech: #8B5CF6;
+    --mora-dept-mkt: #EC4899;
+
+    /* SPACING SCALE (8px base) */
+    --mora-space-xs: 4px;
+    --mora-space-sm: 8px;
+    --mora-space-md: 16px;
+    --mora-space-lg: 24px;
+    --mora-space-xl: 32px;
+    --mora-space-2xl: 48px;
+    --mora-space-3xl: 64px;
+
+    /* BORDER RADIUS */
+    --mora-radius-sm: 8px;
+    --mora-radius-md: 12px;
+    --mora-radius-lg: 24px;
+    --mora-radius-xl: 32px;
+
+    /* GLASS PANEL SETTINGS */
+    --mora-glass-blur: 20px;
+    --mora-glass-opacity: 0.90;
+    --mora-glass-bg: rgba(3, 8, 6, 0.85);
+    --mora-glass-border: rgba(16, 185, 129, 0.15);
+
+    /* LAYER OPACITY SCALE */
+    --mora-layer-0: 1.0;
+    --mora-layer-1: 0.95;
+    --mora-layer-2: 0.90;
+    --mora-layer-3: 0.85;
+    --mora-layer-4: 0.80;
+
+    /* SHADOWS */
+    --mora-shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --mora-shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --mora-shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+    /* === LEGACY VARIABLES (for backward compatibility) === */
+
     /* 🌿 Môra Resonanz-Farben: Wald & Sonne */
 
     /* Tiefes Myzel-Grün - wie Waldboden */
@@ -45,22 +103,28 @@
     --radius: 0.75rem;
 
     /* Charts - Naturspektrum */
-    --chart-1: 42 88% 52%;  /* Gold */
-    --chart-2: 155 45% 42%; /* Wald-Grün */
-    --chart-3: 190 55% 48%; /* Wasser-Blau */
-    --chart-4: 280 45% 58%; /* Mystisches Violett */
-    --chart-5: 25 85% 55%;  /* Erd-Orange */
+    --chart-1: 42 88% 52%;
+    /* Gold */
+    --chart-2: 155 45% 42%;
+    /* Wald-Grün */
+    --chart-3: 190 55% 48%;
+    /* Wasser-Blau */
+    --chart-4: 280 45% 58%;
+    /* Mystisches Violett */
+    --chart-5: 25 85% 55%;
+    /* Erd-Orange */
   }
 
   /* --- THEMES --- */
-  
+
   /* Light Theme - Paper & Ink */
   [data-theme='light'] {
     --background: 40 20% 97%;
     --foreground: 155 45% 10%;
     --card: 40 20% 95%;
     --card-foreground: 155 45% 10%;
-    --primary: 42 88% 45%; /* Darker Gold */
+    --primary: 42 88% 45%;
+    /* Darker Gold */
     --secondary: 155 20% 90%;
     --secondary-foreground: 155 45% 10%;
     --muted: 155 10% 90%;
@@ -86,10 +150,13 @@
 
   /* Glass Theme - Frost */
   [data-theme='glass'] {
-    --background: 200 10% 10%; /* Blue-ish dark */
+    --background: 200 10% 10%;
+    /* Blue-ish dark */
     --foreground: 200 10% 95%;
-    --card: 200 10% 15%; /* More transparent in components */
-    --primary: 190 80% 60%; /* Cyan/Ice */
+    --card: 200 10% 15%;
+    /* More transparent in components */
+    --primary: 190 80% 60%;
+    /* Cyan/Ice */
   }
 }
 
@@ -97,6 +164,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, -apple-system, sans-serif;
@@ -105,12 +173,15 @@
   }
 
   /* Organische Buttons - abgerundet wie Sporen */
-  button, [role="button"] {
+  button,
+  [role="button"] {
     transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Organische Inputs - weiche Formen */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
@@ -132,8 +203,17 @@
 
   /* Sanftes Pulsieren - wie Atmung (langsamer, 6s statt 4s) */
   @keyframes mora-breathe {
-    0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.015); }
+
+    0%,
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.015);
+    }
   }
 
   .mora-breathe {
@@ -142,8 +222,15 @@
 
   /* Sanftes Glühen - wie Sonnenlicht durch Blätter */
   @keyframes mora-glow {
-    0%, 100% { box-shadow: 0 0 10px rgba(248, 191, 77, 0.1); }
-    50% { box-shadow: 0 0 20px rgba(248, 191, 77, 0.2); }
+
+    0%,
+    100% {
+      box-shadow: 0 0 10px rgba(248, 191, 77, 0.1);
+    }
+
+    50% {
+      box-shadow: 0 0 20px rgba(248, 191, 77, 0.2);
+    }
   }
 
   .mora-glow {
@@ -152,12 +239,31 @@
 
   /* Subtiles Wachstum - wie Myzel */
   @keyframes mora-grow {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   .mora-grow {
     animation: mora-grow 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  /* Star twinkling animation */
+  @keyframes twinkle {
+    0%, 100% {
+      opacity: 0.2;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.2);
+    }
   }
 
   /* Wellen-Effekt beim Hover - wie Wasser */
@@ -212,4 +318,3 @@
     background: linear-gradient(0deg, rgba(52, 211, 153, 0.2) 0%, rgba(52, 211, 153, 0.1) 100%);
   }
 }
-

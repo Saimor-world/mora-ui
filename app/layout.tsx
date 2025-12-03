@@ -49,14 +49,26 @@ export default function RootLayout({
   if (!mounted) {
     return (
       <html lang="en" suppressHydrationWarning>
-        <body className="antialiased" suppressHydrationWarning />
+        <head>
+          <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+            rel="stylesheet"
+          />
+        </head>
+        <body className="antialiased" suppressHydrationWarning style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }} />
       </html>
     );
   }
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased" suppressHydrationWarning>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="antialiased" suppressHydrationWarning style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
         <ErrorBoundary>
           {children}
           <FolderRoom />

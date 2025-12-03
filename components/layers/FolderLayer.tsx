@@ -2,15 +2,20 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { ArrowLeft, LayoutGrid, List, FileText, CheckSquare, Link as LinkIcon, Plus, Zap, Network, Search, X, Folder as FolderIcon, Box } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { CreateModal } from '@/components/ui/CreateModal';
-import { triggerFolderScan } from '@/lib/api/scanClient';
+import { Zap, Network, LayoutGrid, List, Plus, Search, X, FileText, Box, Link as LinkIcon, CheckSquare, Folder as FolderIcon } from 'lucide-react';
+import { GlassPanel } from '@/components/layers/GlassPanel';
+import { IntelligenceContextBar } from '@/components/layers/IntelligenceContextBar';
 import { Mycelium25D } from '@/components/organic/Mycelium25D';
-import type { CoreNode } from '@/lib/types/core';
+import { CreateModal } from '@/components/ui/CreateModal';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { triggerFolderScan } from '@/lib/api/scanClient';
 import { mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
 import { getRelationsForSpace, RelationEdge } from '@/lib/api/relationsClient';
+import type { CoreNode } from '@/lib/types/core';
+import { motion } from 'framer-motion';
 
+// --- CONFIG ---
 const NODE_TYPES = [
     { value: 'note' as const, label: 'Note', icon: FileText },
     { value: 'link' as const, label: 'Link', icon: LinkIcon },
@@ -56,10 +61,9 @@ export const FolderLayer: React.FC = () => {
         viewLevel,
     } = useMoraStore();
 
-    const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('mycelium');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [typeFilter, setTypeFilter] = useState<string>('all');
     const [formData, setFormData] = useState({
         name: '',
         type: 'note' as 'document' | 'task' | 'note' | 'link' | 'other',
@@ -69,102 +73,49 @@ export const FolderLayer: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
     const [graphNodes, setGraphNodes] = useState<any[]>([]);
-    const [graphRelations, setGraphRelations] = useState<RelationEdge[]>([]);
     const [isGraphLoading, setIsGraphLoading] = useState(false);
 
-    // Get current folder
+    // Context Data
     const currentFolder = useMemo(() => {
         if (!activeSpaceId || !activeFolderId) return null;
-        const folders = foldersBySpace[activeSpaceId] || [];
-        return folders.find(f => f.id === activeFolderId);
+        return foldersBySpace[activeSpaceId]?.find(f => f.id === activeFolderId);
     }, [activeSpaceId, activeFolderId, foldersBySpace]);
 
-    // Get current department and space
-    const currentDepartment = useMemo(() => {
-        if (!activeDepartmentId) return null;
-        return departments.find(d => d.id === activeDepartmentId);
-    }, [activeDepartmentId, departments]);
+    const currentDepartment = departments.find(d => d.id === activeDepartmentId);
+    const currentSpace = spacesByDepartment[activeDepartmentId || '']?.find(s => s.id === activeSpaceId);
 
-    const currentSpace = useMemo(() => {
-        if (!activeDepartmentId || !activeSpaceId) return null;
-        const spaces = spacesByDepartment[activeDepartmentId] || [];
-        return spaces.find(s => s.id === activeSpaceId);
-    }, [activeDepartmentId, activeSpaceId, spacesByDepartment]);
-
-    // Get nodes for current folder
     const nodes = activeFolderId ? (nodesByFolder[activeFolderId] || []) : [];
 
-    // Filtered nodes
+    // Filter Logic
     const filteredNodes = useMemo(() => {
-        let result = [...nodes];
+        if (!searchQuery.trim()) return nodes;
+        const query = searchQuery.toLowerCase();
+        return nodes.filter(n =>
+            n.name.toLowerCase().includes(query) ||
+            (n as any).content?.toLowerCase().includes(query)
+        );
+    }, [nodes, searchQuery]);
 
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(n =>
-                ((n as any).name?.toLowerCase().includes(query)) ||
-                ((n as any).content?.toLowerCase().includes(query))
-            );
-        }
-
-        if (typeFilter && typeFilter !== 'all') {
-            result = result.filter(n => (n as any).type === typeFilter);
-        }
-
-        return result;
-    }, [nodes, searchQuery, typeFilter]);
-
-    // Load nodes when folder becomes active
+    // Load Nodes
     useEffect(() => {
         if (activeFolderId && !nodesByFolder[activeFolderId]) {
             loadNodesForFolder(activeFolderId);
         }
     }, [activeFolderId, nodesByFolder, loadNodesForFolder]);
 
-    // Load Graph Data for Mycelium
+    // Load Graph Data
     useEffect(() => {
         if (activeFolderId && viewMode === 'mycelium') {
             const loadGraph = async () => {
                 setIsGraphLoading(true);
                 const mapped = mapNodesToMycelium(nodes, { activeNodeId: null });
-
-                let relations: RelationEdge[] = [];
-                try {
-                    if (activeSpaceId) {
-                        const res = await getRelationsForSpace(activeSpaceId);
-                        const nodeIds = new Set(mapped.map(n => n.id));
-                        relations = (res.relations || []).filter(r => nodeIds.has(r.source_id) && nodeIds.has(r.target_id));
-                    }
-                } catch (err) {
-                    console.warn("Relations for folder unavailable", err);
-                }
-
-                // merge edges
-                const connMap = new Map<string, Set<string>>();
-                mapped.forEach(n => connMap.set(n.id, new Set(n.connections || [])));
-                relations.forEach(rel => {
-                    if (connMap.has(rel.source_id) && connMap.has(rel.target_id)) {
-                        connMap.get(rel.source_id)!.add(rel.target_id);
-                        connMap.get(rel.target_id)!.add(rel.source_id);
-                    }
-                });
-                const mergedNodes = mapped.map(n => ({
-                    ...n,
-                    connections: Array.from(connMap.get(n.id) || [])
-                }));
-
-                setGraphNodes(mergedNodes);
-                setGraphRelations(relations);
+                // Simplified graph loading for now (skipping complex relations fetch for speed)
+                setGraphNodes(mapped);
                 setIsGraphLoading(false);
             };
             loadGraph();
         }
-    }, [activeFolderId, activeSpaceId, viewMode, nodes]);
-
-    const handleBack = () => {
-        if (activeSpaceId) {
-            navigateToSpace(activeSpaceId);
-        }
-    };
+    }, [activeFolderId, viewMode, nodes]);
 
     const handleCreateNode = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -194,15 +145,10 @@ export const FolderLayer: React.FC = () => {
         try {
             const result = await triggerFolderScan(activeFolderId);
             await loadNodesForFolder(activeFolderId);
-            console.log('[MÔRA Scan] Report created:', result.report_id);
-            // Auto-open the report
             const reportNode = nodes.find(n => (n as any).id === result.report_id);
-            if (reportNode) {
-                handleNodeClick(reportNode);
-            }
+            if (reportNode) handleNodeClick(reportNode);
         } catch (error) {
-            console.error('[MÔRA Scan] Failed:', error);
-            alert(`MÔRA Scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.error('Scan failed:', error);
         } finally {
             setIsScanning(false);
         }
@@ -213,252 +159,201 @@ export const FolderLayer: React.FC = () => {
         setActiveNode(node);
     };
 
-    // Only render if we're in folder view
-    if (!activeFolderId || viewLevel !== 'folder') return null;
+    if (!activeFolderId) return null;
+
+    const breadcrumb = [
+        { label: 'Home', onClick: () => { } }, // handled by context bar
+        { label: currentDepartment?.name || 'Dept' },
+        { label: currentSpace?.name || 'Space', onClick: () => activeSpaceId && navigateToSpace(activeSpaceId) },
+        { label: currentFolder?.name || 'Folder' }
+    ];
 
     return (
-        <div className="absolute inset-0 z-20 flex flex-col bg-gradient-to-br from-[#050505] to-[#0A0A0A]">
-            {/* Header */}
-            <header className="relative p-6 pb-4 border-b border-emerald-500/10 bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm">
-                <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+        <div className="relative w-full h-full flex items-center justify-center p-6">
 
-                {/* Top Bar */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={handleBack}
-                            className="p-3 rounded-full bg-gradient-to-br from-white/5 to-white/0 border border-white/10 hover:border-emerald-500/30 hover:bg-white/10 transition-all group"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-emerald-400 group-hover:-translate-x-0.5 transition-transform" />
-                        </button>
-                        <div>
-                            <h2 className="text-2xl font-light text-emerald-50 tracking-tight">
-                                {currentFolder?.name || 'Folder'}
-                            </h2>
-                            <div className="flex items-center gap-2 mt-1 text-xs text-emerald-500/50">
-                                <span>{currentDepartment?.name || 'Dept'}</span>
-                                <span>/</span>
-                                <span>{currentSpace?.name || 'Space'}</span>
-                                <span>/</span>
-                                <span className="text-emerald-400">{currentFolder?.name || 'Folder'}</span>
+            {/* Context Bar */}
+            <IntelligenceContextBar
+                breadcrumb={breadcrumb}
+                activeCount={nodes.length}
+                riskLevel="none"
+            />
+
+            {/* Main Glass Panel */}
+            <GlassPanel
+                title={currentFolder?.name || 'Folder'}
+                showBackButton
+                onBack={() => activeSpaceId && navigateToSpace(activeSpaceId)}
+                width="full"
+                height="full"
+                blurIntensity={15}
+                opacity={0.9}
+            >
+                <div className="flex flex-col h-full">
+
+                    {/* Toolbar */}
+                    <div className="flex items-center justify-between p-4 border-b border-white/5 shrink-0">
+                        <div className="flex items-center gap-2">
+                            {/* View Toggles */}
+                            <div className="flex bg-black/20 rounded-lg p-1 border border-white/5">
+                                <button
+                                    onClick={() => setViewMode('mycelium')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'mycelium' ? 'bg-mora-gold/20 text-mora-gold' : 'text-white/40 hover:text-white'}`}
+                                    title="Mycelium Network"
+                                >
+                                    <Network size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/40 hover:text-white'}`}
+                                    title="Grid View"
+                                >
+                                    <LayoutGrid size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/40 hover:text-white'}`}
+                                    title="List View"
+                                >
+                                    <List size={18} />
+                                </button>
+                            </div>
+
+                            {/* Search */}
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search nodes..."
+                                    className="pl-9 pr-4 py-2 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-48 transition-all focus:w-64"
+                                />
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex items-center gap-3">
-                        {/* Môra Scan Button */}
-                        <button
-                            onClick={handleMoraScan}
-                            disabled={isScanning}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-mora-gold/10 border border-mora-gold/30 hover:bg-mora-gold/20 hover:border-mora-gold/50 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Zap className={`w-4 h-4 text-mora-gold ${isScanning ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'}`} />
-                            <span className="text-sm text-mora-gold transition-colors tracking-wider">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleMoraScan}
+                                disabled={isScanning}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mora-gold/5 border border-mora-gold/20 hover:bg-mora-gold/10 text-mora-gold/80 hover:text-mora-gold transition-all text-sm tracking-wide disabled:opacity-50"
+                            >
+                                <Zap size={14} className={isScanning ? 'animate-pulse' : ''} />
                                 {isScanning ? 'SCANNING...' : 'MÔRA SCAN'}
-                            </span>
-                        </button>
+                            </button>
 
-                        {/* Create Node Button */}
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all group"
-                        >
-                            <Plus className="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform" />
-                            <span className="text-sm text-emerald-300 transition-colors tracking-wider">
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm tracking-wide"
+                            >
+                                <Plus size={16} />
                                 NEW NODE
-                            </span>
-                        </button>
-
-                        {/* View Toggle */}
-                        <div className="flex items-center bg-black/30 rounded-full p-1 border border-white/5">
-                            <button
-                                onClick={() => setViewMode('mycelium')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'mycelium' ? 'bg-mora-gold/20 text-mora-gold' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                                title="Mycelium Network"
-                            >
-                                <Network className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'grid' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                                title="Grid View"
-                            >
-                                <LayoutGrid className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-emerald-500/20 text-emerald-300' : 'text-emerald-500/40 hover:text-emerald-400'}`}
-                                title="List View"
-                            >
-                                <List className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
-                </div>
 
-                {/* Search Bar */}
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search nodes..."
-                        className="w-full px-4 py-2.5 pl-10 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-emerald-500/50 focus:outline-none transition-colors text-sm"
-                    />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500/40" />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500/40 hover:text-emerald-400"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-            </header>
-
-            {/* Content Area */}
-            <div className="flex-1 relative overflow-hidden">
-                {isLoadingNodes && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                            <span className="text-sm text-emerald-500/70 font-mono tracking-widest">LOADING NODES...</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Mycelium View */}
-                {viewMode === 'mycelium' && (
-                    <div className="absolute inset-0">
-                        {isGraphLoading ? (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-                                    <span className="text-sm text-emerald-500/70 font-mono tracking-widest">GROWING MYCELIUM...</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <Mycelium25D
-                                nodes={graphNodes}
-                                onNodeClick={(nodeId) => {
-                                    const node = graphNodes.find((n: any) => n.id === nodeId);
-                                    if (node) {
-                                        handleNodeClick(node as CoreNode);
-                                    }
-                                }}
-                            />
-                        )}
-                    </div>
-                )}
-
-                {/* Grid View */}
-                {viewMode === 'grid' && !isLoadingNodes && (
-                    <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                        {filteredNodes.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center">
-                                <FileText className="w-16 h-16 text-emerald-500/20 mb-4" />
-                                <p className="text-emerald-500/30 font-mono text-sm uppercase tracking-wider">
-                                    {searchQuery ? 'No matching nodes' : 'Empty Folder'}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-6 gap-5">
-                                {filteredNodes.map((node: any) => {
-                                    const Icon = TYPE_ICONS[node.type] || Box;
-                                    const colorClass = TYPE_COLORS[node.type] || 'text-gray-400';
-
-                                    return (
-                                        <motion.button
-                                            key={node.id}
-                                            className="group flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-gradient-to-br hover:from-emerald-500/10 hover:to-emerald-600/5 border border-transparent hover:border-emerald-500/20 transition-all duration-200"
-                                            whileHover={{ scale: 1.05, y: -2 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => handleNodeClick(node)}
-                                        >
-                                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 group-hover:border-emerald-500/30 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] flex items-center justify-center transition-all duration-200">
-                                                <Icon size={28} className={colorClass} />
-                                            </div>
-                                            <span className="text-xs text-white/60 group-hover:text-emerald-100 text-center font-medium leading-tight line-clamp-2 transition-colors duration-200 max-w-[90px]">
-                                                {node.name}
-                                            </span>
-                                        </motion.button>
-                                    );
-                                })}
+                    {/* Content Area */}
+                    <div className="flex-1 relative overflow-hidden">
+                        {isLoadingNodes && (
+                            <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 backdrop-blur-sm">
+                                <LoadingState message="Loading neural nodes..." />
                             </div>
                         )}
-                    </div>
-                )}
 
-                {/* List View */}
-                {viewMode === 'list' && !isLoadingNodes && (
-                    <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                        {filteredNodes.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center">
-                                <FileText className="w-16 h-16 text-emerald-500/20 mb-4" />
-                                <p className="text-emerald-500/30 font-mono text-sm uppercase tracking-wider">
-                                    {searchQuery ? 'No matching nodes' : 'Empty Folder'}
-                                </p>
+                        {/* Mycelium View */}
+                        {viewMode === 'mycelium' && (
+                            <div className="absolute inset-0">
+                                <Mycelium25D
+                                    nodes={graphNodes}
+                                    onNodeClick={(nodeId) => {
+                                        const node = nodes.find(n => n.id === nodeId);
+                                        if (node) handleNodeClick(node);
+                                    }}
+                                    activeNodeId={null}
+                                    variant="folder"
+                                />
                             </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {filteredNodes.map((node: any) => {
-                                    const Icon = TYPE_ICONS[node.type] || Box;
-                                    const colorClass = TYPE_COLORS[node.type] || 'text-gray-400';
+                        )}
 
-                                    return (
-                                        <motion.button
-                                            key={node.id}
-                                            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gradient-to-r hover:from-emerald-500/10 hover:to-emerald-600/5 border border-transparent hover:border-emerald-500/20 transition-all duration-200 text-left group"
-                                            whileHover={{ x: 4 }}
-                                            whileTap={{ scale: 0.99 }}
-                                            onClick={() => handleNodeClick(node)}
-                                        >
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 group-hover:border-emerald-500/30 flex items-center justify-center flex-shrink-0 transition-all">
-                                                <Icon size={20} className={colorClass} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm text-emerald-100 group-hover:text-emerald-50 truncate transition-colors">
+                        {/* Grid View */}
+                        {viewMode === 'grid' && !isLoadingNodes && (
+                            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {filteredNodes.map((node) => {
+                                        const Icon = TYPE_ICONS[node.type] || Box;
+                                        const color = TYPE_COLORS[node.type] || 'text-gray-400';
+                                        return (
+                                            <motion.button
+                                                key={node.id}
+                                                onClick={() => handleNodeClick(node)}
+                                                whileHover={{ scale: 1.02, y: -2 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                className="flex flex-col items-center gap-3 p-6 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all group"
+                                            >
+                                                <div className={`w-12 h-12 rounded-lg bg-black/20 flex items-center justify-center ${color}`}>
+                                                    <Icon size={24} />
+                                                </div>
+                                                <span className="text-sm text-white/70 group-hover:text-white text-center line-clamp-2">
                                                     {node.name}
+                                                </span>
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
+                                {filteredNodes.length === 0 && <EmptyState icon={Box} title="No nodes found" description="Create a new node to populate this folder." />}
+                            </div>
+                        )}
+
+                        {/* List View */}
+                        {viewMode === 'list' && !isLoadingNodes && (
+                            <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+                                <div className="flex flex-col gap-2">
+                                    {filteredNodes.map((node) => {
+                                        const Icon = TYPE_ICONS[node.type] || Box;
+                                        const color = TYPE_COLORS[node.type] || 'text-gray-400';
+                                        return (
+                                            <button
+                                                key={node.id}
+                                                onClick={() => handleNodeClick(node)}
+                                                className="flex items-center gap-4 p-4 rounded-lg bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all text-left group"
+                                            >
+                                                <div className={`p-2 rounded bg-black/20 ${color}`}>
+                                                    <Icon size={18} />
                                                 </div>
-                                                <div className="text-xs text-emerald-500/40 group-hover:text-emerald-500/60 uppercase tracking-wider mt-0.5 transition-colors">
+                                                <span className="text-white/70 group-hover:text-white flex-1">
+                                                    {node.name}
+                                                </span>
+                                                <span className="text-xs text-white/30 uppercase tracking-wider">
                                                     {node.type}
-                                                </div>
-                                            </div>
-                                        </motion.button>
-                                    );
-                                })}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {filteredNodes.length === 0 && <EmptyState icon={Box} title="No nodes found" description="Create a new node to populate this folder." />}
                             </div>
                         )}
                     </div>
-                )}
-            </div>
+                </div>
+            </GlassPanel>
 
-            {/* Create Node Modal */}
+            {/* Create Modal */}
             <CreateModal
                 isOpen={isCreateModalOpen}
-                onClose={() => {
-                    setIsCreateModalOpen(false);
-                    setFormData({ name: '', type: 'note', content: '', url: '' });
-                }}
+                onClose={() => setIsCreateModalOpen(false)}
                 title="Create New Node"
             >
                 <form onSubmit={handleCreateNode} className="space-y-6">
                     <div>
-                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">
-                            NAME *
-                        </label>
+                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">NAME</label>
                         <input
                             type="text"
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-mora-gold/50 focus:outline-none transition-colors"
-                            placeholder="Enter node name"
-                            required
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-emerald-500/50 outline-none"
                             autoFocus
+                            required
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">
                             TYPE
@@ -472,8 +367,8 @@ export const FolderLayer: React.FC = () => {
                                         type="button"
                                         onClick={() => setFormData({ ...formData, type: type.value })}
                                         className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${formData.type === type.value
-                                                ? 'border-mora-gold bg-mora-gold/10 text-mora-gold'
-                                                : 'border-white/10 hover:border-white/20 text-emerald-400/70'
+                                            ? 'border-mora-gold bg-mora-gold/10 text-mora-gold'
+                                            : 'border-white/10 hover:border-white/20 text-emerald-400/70'
                                             }`}
                                     >
                                         <Icon size={16} />
@@ -514,25 +409,9 @@ export const FolderLayer: React.FC = () => {
                             />
                         </div>
                     )}
-
                     <div className="flex gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsCreateModalOpen(false);
-                                setFormData({ name: '', type: 'note', content: '', url: '' });
-                            }}
-                            className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-emerald-400 hover:bg-white/5 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting || !formData.name.trim()}
-                            className="flex-1 px-4 py-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-100 hover:bg-emerald-600/30 hover:border-mora-gold/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Node'}
-                        </button>
+                        <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:bg-white/5">Cancel</button>
+                        <button type="submit" className="flex-1 py-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30">Create</button>
                     </div>
                 </form>
             </CreateModal>

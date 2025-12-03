@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { OrganicInput } from '@/components/organic/OrganicInput';
-import { MessageSquareText, X, Maximize2, Minimize2, Loader2, Radar } from 'lucide-react';
+import { X, Maximize2, Minimize2, Loader2, Radar } from 'lucide-react';
 import { sendMessage, type AIMessage } from '@/lib/api/aiClient';
 import { fetchNodes, fetchNodeRelations } from '@/lib/api/coreClient';
 import { getFolderEvents, runScan, fetchSynthesis, type MindloopEvent } from '@/lib/api/mindloopClient';

@@ -413,21 +413,33 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         activeFolderId: null
     }),
 
-    navigateToDepartment: (deptId) => set({
-        viewLevel: 'department',
-        activeDepartmentId: deptId,
-        activeSpaceId: null,
-        activeFolderId: null
-    }),
+    navigateToDepartment: (deptId) => {
+        set({
+            viewLevel: 'department',
+            activeDepartmentId: deptId,
+            activeSpaceId: null,
+            activeFolderId: null
+        });
+        // Auto-load spaces for this department
+        get().loadSpacesForDepartment(deptId);
+    },
 
-    navigateToSpace: (spaceId) => set({
-        viewLevel: 'space',
-        activeSpaceId: spaceId,
-        activeFolderId: null
-    }),
+    navigateToSpace: (spaceId) => {
+        set({
+            viewLevel: 'space',
+            activeSpaceId: spaceId,
+            activeFolderId: null
+        });
+        // Auto-load folders for this space
+        get().loadFoldersForSpace(spaceId);
+    },
 
-    navigateToFolder: (folderId) => set({
-        viewLevel: 'folder',
-        activeFolderId: folderId
-    }),
+    navigateToFolder: (folderId) => {
+        set({
+            viewLevel: 'folder',
+            activeFolderId: folderId
+        });
+        // Auto-load nodes for this folder
+        get().loadNodesForFolder(folderId);
+    },
 }));

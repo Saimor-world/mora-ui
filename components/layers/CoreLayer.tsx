@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { MoraOrb } from '@/components/organic/MoraOrb';
+import { MoraOrb } from '@/components/mora/MoraOrb';
 import { useMoraStore } from '@/lib/store/moraState';
 import { AlertTriangle } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export const CoreLayer: React.FC = () => {
 
             {/* Central Môra Orb */}
             <div className="relative z-20 scale-150">
-                <MoraOrb state={isLoadingDepartments ? 'processing' : 'idle'} />
+                <MoraOrb state={isLoadingDepartments ? 'learning' : 'idle'} />
                 <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 text-center w-96">
                     <h1 className="text-4xl font-light tracking-[0.3em] text-emerald-50 mb-3">MÔRA</h1>
                     <p className="text-xs text-emerald-400/50 tracking-widest uppercase">

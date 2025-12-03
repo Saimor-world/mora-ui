@@ -63,119 +63,139 @@ export const IntelligencePlayfield: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-full bg-[#050f0a]/80 backdrop-blur-xl border-t border-white/5 flex flex-col relative overflow-hidden">
-            {/* Ambient Background Glow */}
-            <div className="absolute top-0 left-1/4 w-1/2 h-full bg-emerald-500/5 blur-[100px] pointer-events-none" />
+        <div className="w-full h-full bg-[#030806]/60 backdrop-blur-2xl border-l border-white/5 flex flex-col relative overflow-hidden transition-all duration-500">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-0 right-0 w-3/4 h-1/2 bg-emerald-500/5 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-full h-1/3 bg-mora-gold/5 blur-[100px] pointer-events-none" />
 
             {/* Header / Status Line */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-white/5 backdrop-blur-md">
                 <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-mora-gold animate-pulse" />
-                    <span className="text-xs font-medium text-emerald-100/70 tracking-widest uppercase">
-                        Môra Intelligence Field
+                    <div className="relative">
+                        <div className="w-2 h-2 rounded-full bg-mora-gold animate-pulse relative z-10" />
+                        <div className="absolute inset-0 bg-mora-gold/50 rounded-full blur-sm animate-ping" />
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-100/90 tracking-[0.2em] uppercase">
+                        Môra Intelligence
                     </span>
                 </div>
-                <div className="flex items-center gap-4 text-[10px] text-emerald-500/50 uppercase tracking-wider">
-                    <div className="flex items-center gap-1">
-                        <Activity size={12} />
-                        <span>System Active</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Layers size={12} />
-                        <span>Context: {activeFolderId ? 'Folder Focused' : 'Global'}</span>
+                <div className="flex items-center gap-4 text-[9px] text-emerald-500/60 uppercase tracking-widest font-mono">
+                    <div className="flex items-center gap-1.5">
+                        <Activity size={10} />
+                        <span>Active</span>
                     </div>
                 </div>
             </div>
 
             {/* Main Playfield Content */}
-            <div className="flex-1 p-6 grid grid-cols-12 gap-6 overflow-y-auto">
+            <div className="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar">
 
-                {/* Left: Context / Synthesis */}
-                <div className="col-span-4 space-y-4">
-                    <h3 className="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-2">
-                        Active Context
+                {/* Section: Active Context */}
+                <div className="space-y-3">
+                    <h3 className="text-[10px] font-bold text-emerald-500/40 uppercase tracking-[0.2em] pl-1">
+                        Neural Context
                     </h3>
-                    <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors group">
-                        <div className="flex items-start gap-3">
-                            <Brain className="text-mora-gold mt-1 group-hover:scale-110 transition-transform" size={16} />
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/5 hover:border-emerald-500/20 transition-all group relative overflow-hidden">
+                        <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                        <div className="flex items-start gap-4 relative z-10">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 text-mora-gold group-hover:scale-110 transition-transform duration-500">
+                                <Brain size={18} />
+                            </div>
                             <div>
-                                <div className="text-sm text-emerald-100 font-medium mb-1">
+                                <div className="text-sm text-emerald-50 font-medium mb-1 tracking-wide">
                                     {synthesis?.summary.risk_level === 'high' ? 'Attention Required' : 'System Nominal'}
                                 </div>
-                                <p className="text-xs text-emerald-100/60 leading-relaxed">
-                                    {isLoading ? "Analyzing current context patterns..." :
-                                        (synthesis?.summary.risk_level === 'high' ? 'Attention Required' : 'System Nominal')}
+                                <p className="text-xs text-emerald-100/50 leading-relaxed font-light">
+                                    {isLoading ? "Analyzing neural patterns..." :
+                                        (activeFolderId ? "Focused on local folder context." : "Monitoring global workspace state.")}
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Center: Action Stream / Suggestions */}
-                <div className="col-span-5 space-y-4">
-                    <h3 className="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-2">
-                        Suggested Actions
+                {/* Section: Actions */}
+                <div className="space-y-3">
+                    <h3 className="text-[10px] font-bold text-emerald-500/40 uppercase tracking-[0.2em] pl-1">
+                        Capabilities
                     </h3>
                     <div className="space-y-2">
-                        {/* Generate Intelligence Report */}
+                        {/* Generate Report Button */}
                         <button
                             onClick={handleGenerateReport}
                             disabled={!activeFolderId || isGeneratingReport}
-                            className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all group"
+                            className="w-full relative overflow-hidden p-4 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all group text-left"
                         >
-                            <div className="flex items-center gap-3">
-                                {isGeneratingReport ? (
-                                    <Activity size={14} className="text-mora-gold animate-spin" />
-                                ) : (
-                                    <FileText size={14} className="text-emerald-400" />
-                                )}
-                                <span className="text-xs text-emerald-100">
-                                    {isGeneratingReport ? "Generating Report..." : "Generate Intelligence Report"}
-                                </span>
+                            <div className="absolute inset-0 bg-emerald-500/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out" />
+
+                            <div className="relative z-10 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    {isGeneratingReport ? (
+                                        <Activity size={16} className="text-mora-gold animate-spin" />
+                                    ) : (
+                                        <Sparkles size={16} className="text-emerald-400" />
+                                    )}
+                                    <span className="text-xs font-medium text-emerald-100 tracking-wide">
+                                        {isGeneratingReport ? "Synthesizing..." : "Generate Intel Report"}
+                                    </span>
+                                </div>
+                                {!isGeneratingReport && <ArrowRight size={14} className="text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />}
                             </div>
-                            {!isGeneratingReport && <ArrowRight size={12} className="text-emerald-500/50 group-hover:translate-x-1 transition-transform" />}
                         </button>
 
-                        {/* Review Recent Uploads */}
+                        {/* Review Uploads Button */}
                         <button
                             onClick={handleReviewUploads}
-                            className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 cursor-pointer transition-all group"
+                            className="w-full p-4 rounded-xl bg-transparent border border-white/5 hover:bg-white/5 hover:border-white/10 cursor-pointer transition-all group text-left flex items-center justify-between"
                         >
                             <div className="flex items-center gap-3">
-                                <Upload size={14} className="text-blue-400" />
-                                <span className="text-xs text-emerald-100">Review Recent Uploads</span>
+                                <Upload size={16} className="text-blue-400/80" />
+                                <span className="text-xs font-medium text-emerald-100/80 tracking-wide">Review Uploads</span>
                             </div>
-                            <ArrowRight size={12} className="text-emerald-500/50 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight size={14} className="text-emerald-500/30 group-hover:translate-x-1 transition-all" />
                         </button>
-
-                        {/* Show context hint if no folder selected */}
-                        {!activeFolderId && (
-                            <div className="p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/20">
-                                <p className="text-[10px] text-mora-gold/70 leading-relaxed">
-                                    💡 Open a folder to enable intelligence actions
-                                </p>
-                            </div>
-                        )}
                     </div>
+
+                    {!activeFolderId && (
+                        <div className="px-4 py-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10 flex items-center gap-3">
+                            <div className="w-1 h-1 rounded-full bg-mora-gold animate-pulse" />
+                            <p className="text-[10px] text-mora-gold/70 font-medium tracking-wide">
+                                Select a folder to enable actions
+                            </p>
+                        </div>
+                    )}
                 </div>
 
-                {/* Right: Metrics / Visuals */}
-                <div className="col-span-3 space-y-4">
-                    <h3 className="text-xs font-medium text-emerald-500 uppercase tracking-wider mb-2">
-                        Metrics
+                {/* Section: Metrics */}
+                <div className="space-y-3">
+                    <h3 className="text-[10px] font-bold text-emerald-500/40 uppercase tracking-[0.2em] pl-1">
+                        System Metrics
                     </h3>
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="p-3 rounded-lg bg-white/5 border border-white/5 text-center">
-                            <div className="text-lg font-bold text-emerald-100">{synthesis?.summary.total_nodes || 0}</div>
-                            <div className="text-[10px] text-emerald-500/60 uppercase">Nodes</div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center justify-center gap-1 group hover:bg-white/10 transition-colors">
+                            <div className="text-2xl font-light text-emerald-50 group-hover:scale-110 transition-transform duration-300">
+                                {synthesis?.summary.total_nodes || 0}
+                            </div>
+                            <div className="text-[9px] font-bold text-emerald-500/40 uppercase tracking-widest">Nodes</div>
                         </div>
-                        <div className="p-3 rounded-lg bg-white/5 border border-white/5 text-center">
-                            <div className="text-lg font-bold text-emerald-100">{synthesis?.summary.total_events || 0}</div>
-                            <div className="text-[10px] text-emerald-500/60 uppercase">Events</div>
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center justify-center gap-1 group hover:bg-white/10 transition-colors">
+                            <div className="text-2xl font-light text-emerald-50 group-hover:scale-110 transition-transform duration-300">
+                                {synthesis?.summary.total_events || 0}
+                            </div>
+                            <div className="text-[9px] font-bold text-emerald-500/40 uppercase tracking-widest">Events</div>
                         </div>
                     </div>
                 </div>
 
+            </div>
+
+            {/* Bottom Status Bar */}
+            <div className="p-4 border-t border-white/5 bg-black/20 backdrop-blur-md">
+                <div className="flex items-center gap-2 text-[10px] text-emerald-500/30 font-mono">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/20" />
+                    <span>MÔRA NEURAL CORE V3.0</span>
+                </div>
             </div>
         </div>
     );
