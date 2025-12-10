@@ -2,7 +2,8 @@
 
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { OrganicBackground } from "./OrganicBackground";
-import { MoraOrb } from "./MoraOrb";
+import { MoraOrb } from "@/components/mora/MoraOrb";
+import { type OrbState } from "@/lib/api/awarenessClient";
 
 type StateVariant = "loading" | "error" | "empty";
 
@@ -12,28 +13,28 @@ interface OrganicStatePanelProps {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
-  orbState?: "idle" | "speaking" | "processing" | "listening";
+  orbState?: OrbState;
   showBackground?: boolean;
 }
 
 const DEFAULT_COPY: Record<
   StateVariant,
-  { title: string; description: string; orb: "idle" | "speaking" | "processing" | "listening" }
+  { title: string; description: string; orb: OrbState }
 > = {
   loading: {
     title: "Myzelium erwacht …",
     description: "Bitte einen Moment Geduld, die aktuelle Feldstruktur wird geladen.",
-    orb: "processing",
+    orb: "thinking",
   },
   error: {
     title: "Verbindung zum Kern fehlgeschlagen",
     description: "Keine Antwort vom Core API. Bitte prüfe Netzwerk & Token.",
-    orb: "idle",
+    orb: "alert",
   },
   empty: {
     title: "Noch keine Daten vorhanden",
     description: "Sobald erste Objekte importiert wurden, erscheint hier dein Feld.",
-    orb: "listening",
+    orb: "idle",
   },
 };
 
@@ -52,7 +53,7 @@ export function OrganicStatePanel({
     <div className="relative h-full w-full overflow-hidden rounded-[2rem]">
       {showBackground && <OrganicBackground intensity={0.6} breathingSpeed={4500} />}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 gap-8 backdrop-blur-2xl bg-black/30">
-        <MoraOrb state={orbState ?? copy.orb} scale={0.8} />
+        <MoraOrb state={orbState ?? copy.orb} />
         <div className="space-y-3 max-w-lg">
           <h2 className="text-2xl font-semibold text-white tracking-wide">{title ?? copy.title}</h2>
           <p className="text-sm text-white/70 leading-relaxed">{description ?? copy.description}</p>

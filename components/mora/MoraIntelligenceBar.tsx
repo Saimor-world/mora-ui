@@ -21,8 +21,8 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
 
     const statusText = useMemo(() => {
         if (coreError) return "SYSTEM CONNECTION LOST";
-        if (orbState === "learning") return "ABSORBING KNOWLEDGE...";
-        if (orbState === "active") return "ACTIVE NAVIGATION";
+        if (orbState === "thinking") return "ABSORBING KNOWLEDGE...";
+        if (orbState === "focus") return "ACTIVE NAVIGATION";
         if (orbState === "demo") return "DEMO MODE ACTIVE";
         return "AWAITING INPUT";
     }, [orbState, coreError]);
@@ -30,7 +30,7 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
     const intelText = hint?.summary || hint?.title || "Môra is observing the workspace...";
 
     return (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-4 pointer-events-none">
+        <div className="fixed bottom-6 left-6 sm:left-20 z-40 w-full max-w-xl px-4 pointer-events-none">
             <div className="pointer-events-auto relative group">
 
                 {/* Main Bar Container */}

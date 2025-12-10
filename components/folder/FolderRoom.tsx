@@ -6,6 +6,7 @@ import { FileText, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box, Folde
 import { useMoraStore } from "@/lib/store/moraState";
 import { CreateModal } from "@/components/ui/CreateModal";
 import type { CoreNode } from "@/lib/types/core";
+import { toast } from "@/lib/toast";
 
 export interface RoomItem {
     id: string;
@@ -50,6 +51,8 @@ export default function FolderRoom() {
         setActiveNode,
         foldersBySpace,
         addNode,
+        updateNode,
+        deleteNode,
         viewLevel,
         setViewLevel
     } = useMoraStore();
@@ -125,6 +128,33 @@ export default function FolderRoom() {
         if (activeFolderId) {
             setViewLevel('folder');
             setActiveFolder(activeFolderId);
+        }
+    };
+
+    const handleRenameNode = async (item: RoomItem) => {
+        const newName = window.prompt("Rename item", item.title);
+        if (!newName || !newName.trim()) return;
+        try {
+            await updateNode(item.id, { title: newName.trim() });
+            toast.success("Item renamed");
+            if (activeFolderId) {
+                await loadNodesForFolder(activeFolderId);
+            }
+        } catch (e: any) {
+            toast.error(e?.message || "Rename failed");
+        }
+    };
+
+    const handleDeleteNode = async (nodeId: string) => {
+        if (!window.confirm("Are you sure you want to delete this item?")) return;
+        try {
+            await deleteNode(nodeId);
+            toast.success("Item deleted");
+            if (activeFolderId) {
+                await loadNodesForFolder(activeFolderId);
+            }
+        } catch (e: any) {
+            toast.error(e?.message || "Delete failed");
         }
     };
 
@@ -204,7 +234,7 @@ export default function FolderRoom() {
         try {
             await addNode({
                 folder_id: activeFolderId,
-                name: formData.name.trim(),
+                title: formData.name.trim(),
                 type: formData.type,
                 content: formData.content.trim() || undefined,
                 url: formData.url.trim() || undefined,
@@ -229,7 +259,7 @@ export default function FolderRoom() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-auto"
+                    className="absolute inset-0 z-critical flex items-center justify-center pointer-events-auto"
                 >
                     {/* Backdrop with glassmorphism */}
                     <div
@@ -244,7 +274,7 @@ export default function FolderRoom() {
                         animate={{ scale: 1, y: 0, opacity: 1 }}
                         exit={{ scale: 0.92, y: 30, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 280, damping: 26 }}
-                        className="relative w-[900px] max-w-[95vw] h-[650px] max-h-[85vh] bg-gradient-to-br from-[#0A0A0A]/95 to-[#050505]/95 border border-emerald-500/10 rounded-[28px] shadow-[0_20px_80px_-20px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col"
+                        className="relative w-[900px] max-w-[95vw] h-[650px] max-h-[85vh] mx-auto bg-gradient-to-br from-[#0A0A0A]/95 to-[#050505]/95 border border-emerald-500/10 rounded-[28px] shadow-[0_20px_80px_-20px_rgba(16,185,129,0.15)] overflow-hidden flex flex-col"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Header with gradient underline */}
@@ -307,34 +337,55 @@ export default function FolderRoom() {
                                         const colorClass = TYPE_COLORS[item.type] || "text-gray-400";
 
                                         return (
-                                            <motion.button
+                                            <motion.div
                                                 key={item.id}
                                                 layoutId={`item-${item.id}`}
                                                 className="group flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-gradient-to-br hover:from-emerald-500/10 hover:to-emerald-600/5 border border-transparent hover:border-emerald-500/20 transition-all duration-200"
                                                 whileHover={{ scale: 1.05, y: -2 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                onClick={() => {
-                                                    setActiveFolder(null);
-                                                    loadNodeDetails(item.id);
-                                                    setActiveNode({
-                                                        id: item.id,
-                                                        type: item.type as any,
-                                                        title: item.title,
-                                                        name: item.title,
-                                                        space_id: activeSpaceId || '',
-                                                        folder_id: activeFolderId || '',
-                                                    } as any);
-                                                }}
                                             >
-                                                <div
-                                                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 group-hover:border-emerald-500/30 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] flex items-center justify-center transition-all duration-200 ${colorClass}`}
+                                                <button
+                                                    onClick={() => {
+                                                        setActiveFolder(null);
+                                                        loadNodeDetails(item.id);
+                                                        setActiveNode({
+                                                            id: item.id,
+                                                            type: item.type as any,
+                                                            title: item.title,
+                                                            name: item.title,
+                                                            space_id: activeSpaceId || '',
+                                                            folder_id: activeFolderId || '',
+                                                        } as any);
+                                                    }}
+                                                    className="flex flex-col items-center gap-3"
                                                 >
-                                                    <Icon size={28} strokeWidth={1.5} />
+                                                    <div
+                                                        className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 group-hover:border-emerald-500/30 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] flex items-center justify-center transition-all duration-200 ${colorClass}`}
+                                                    >
+                                                        <Icon size={28} strokeWidth={1.5} />
+                                                    </div>
+                                                    <span className="text-xs text-white/60 group-hover:text-emerald-100 text-center font-medium leading-tight line-clamp-2 transition-colors duration-200 max-w-[90px]">
+                                                        {item.title}
+                                                    </span>
+                                                </button>
+
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => handleRenameNode(item)}
+                                                        className="p-2 rounded-lg hover:bg-white/10 text-blue-300"
+                                                        title="Rename"
+                                                    >
+                                                        <Settings size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteNode(item.id)}
+                                                        className="p-2 rounded-lg hover:bg-white/10 text-red-300"
+                                                        title="Delete"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
                                                 </div>
-                                                <span className="text-xs text-white/60 group-hover:text-emerald-100 text-center font-medium leading-tight line-clamp-2 transition-colors duration-200 max-w-[90px]">
-                                                    {item.title}
-                                                </span>
-                                            </motion.button>
+                                            </motion.div>
                                         );
                                     })}
                                 </div>
