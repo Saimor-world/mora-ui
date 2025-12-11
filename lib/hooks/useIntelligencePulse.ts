@@ -24,8 +24,23 @@ export const useIntelligencePulse = () => {
         let isMounted = true;
 
         const fetchData = async () => {
+            // Check for auth token before making request
+            const hasToken = typeof window !== 'undefined' && (
+                document.cookie.includes('saimor_auth') ||
+                localStorage.getItem('saimor_dev_token') ||
+                process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT
+            );
+
+            // Skip fetch entirely if no token - prevents browser 401 errors
+            if (!hasToken) {
+                if (isMounted) {
+                    setData(MOCK_PULSE_LOW);
+                    setLastFetch(Date.now());
+                }
+                return;
+            }
+
             try {
-                // Poll every 10s
                 const response = await fetch('/api/core/v1/mindloop/synthesis');
 
                 if (isMounted) {
@@ -33,14 +48,12 @@ export const useIntelligencePulse = () => {
                         const jsonData = await response.json();
                         setData(jsonData || MOCK_PULSE_LOW);
                     } else {
-                        // Silent fail to low pulse
                         setData(MOCK_PULSE_LOW);
                     }
                     setLastFetch(Date.now());
                 }
             } catch (error) {
                 if (isMounted) {
-                    // Network error - silent fallback
                     setData(MOCK_PULSE_LOW);
                     setLastFetch(Date.now());
                 }

@@ -39,6 +39,8 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         ...(options.headers || {})
     };
 
+    let hasValidToken = false;
+
     if (!options.skipAuth) {
         const token = readCookie(AUTH_COOKIE);
         const devToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
@@ -47,7 +49,14 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
 
         if (finalToken) {
             headers['Authorization'] = `Bearer ${finalToken}`;
+            hasValidToken = true;
+        } else {
+            // NO TOKEN = Skip API call entirely, return null silently
+            // This prevents browser from logging 401 errors to console
+            return null;
         }
+    } else {
+        hasValidToken = true; // skipAuth endpoints don't need token
     }
 
     let response: Response;
@@ -60,8 +69,8 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
             credentials: 'include',
         });
     } catch (err: any) {
-        // Network error - throw only for truly unexpected failures
-        throw new CoreError(`Core unreachable: ${err?.message || 'network error'}`, 0);
+        // Network error - return null silently
+        return null;
     }
 
     // SILENT HANDLING: 401/403 = auth issue -> return null, caller uses fallback
