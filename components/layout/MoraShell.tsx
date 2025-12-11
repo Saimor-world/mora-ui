@@ -26,7 +26,7 @@ import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 
 export const MoraShell: React.FC = () => {
     const router = useRouter();
-    useAuthBootstrapper(); // Phase 1: Fix Auth
+    const isBootstrapped = useAuthBootstrapper(); // Phase 1: Fix Auth - WAIT for it!
     const { activeNode } = useMoraStore();
     const [stars, setStars] = useState<Array<{
         id: number;
@@ -61,6 +61,19 @@ export const MoraShell: React.FC = () => {
         // Navigate to root which will show lockscreen
         router.push('/?sleep=true');
     };
+
+    // CRITICAL: Don't render anything until auth is ready
+    // This prevents 401 errors from components that try to fetch before token is available
+    if (!isBootstrapped) {
+        return (
+            <div className="w-full h-screen bg-[#030806] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                    <span className="text-emerald-500/50 text-sm font-light tracking-wider">INITIALIZING...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative w-full h-screen overflow-hidden bg-[#030806] text-emerald-50 font-sans selection:bg-mora-gold/30">

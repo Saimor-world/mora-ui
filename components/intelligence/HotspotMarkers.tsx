@@ -12,7 +12,7 @@ export const HotspotMarkers: React.FC<HotspotMarkersProps> = ({ hotspots }) => {
 
     // Filter hotspots that have valid positions in current view
     const activeMarkers = useMemo(() => {
-        if (!hotspots.length || nodePositions.size === 0) return [];
+        if (!hotspots || !hotspots.length || nodePositions.size === 0) return [];
 
         return hotspots.map(h => {
             const pos = nodePositions.get(h.node_id);
