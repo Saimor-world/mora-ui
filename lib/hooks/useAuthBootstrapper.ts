@@ -23,19 +23,24 @@ export function useAuthBootstrapper() {
             const hasLocalToken = localStorage.getItem('saimor_dev_token');
 
             if (hasCookie || hasLocalToken) {
-                // Verify token validity
-                const isValid = await coreGet('/v1/auth/me');
-                if (isValid && isValid.user_id) {
-                    setIsBootstrapped(true);
-                    return;
+                try {
+                    // Verify token validity
+                    const result = await coreGet('/v1/auth/me');
+                    if (result && result.user_id) {
+                        setIsBootstrapped(true);
+                        return;
+                    }
+                } catch (err) {
+                    // Token validation failed - clear tokens
+                    console.log('Token validation failed, clearing...');
                 }
+
                 // Token was invalid - clear it
                 localStorage.removeItem('saimor_dev_token');
                 document.cookie = 'saimor_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
             }
 
             // NO TOKEN OR INVALID TOKEN -> Redirect to login
-            // Don't auto-generate dev tokens anymore!
             setAuthError('Authentication required');
             router.push('/login');
         };
