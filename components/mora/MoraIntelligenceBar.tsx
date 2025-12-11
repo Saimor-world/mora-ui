@@ -30,7 +30,7 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
     const intelText = hint?.summary || hint?.title || "Môra is observing the workspace...";
 
     return (
-        <div className="fixed bottom-6 left-6 sm:left-20 z-40 w-full max-w-xl px-4 pointer-events-none">
+        <div className="fixed bottom-6 left-6 z-40 w-full max-w-md px-4 pointer-events-none">
             <div className="pointer-events-auto relative group">
 
                 {/* Main Bar Container */}
