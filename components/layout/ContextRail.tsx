@@ -1,32 +1,189 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useDemoFlow } from '@/lib/hooks/useDemoFlow';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { writeCookie } from '@/lib/auth/cookies';
+import { useRouter } from 'next/navigation';
 
+/**
+ * ContextRail - Left Navigation Sidebar
+ * 
+ * MASTERBIBEL compliant:
+ * - Home Icon behavior depends on role:
+ *   - Owner: Goes to Owner Dashboard (Companies overview)
+ *   - Demo/Member: Goes to current Workspace
+ * - Logout redirects to WelcomeScreen (/)
+ */
 export const ContextRail: React.FC = () => {
-    const { setViewLevel, viewLevel } = useMoraStore();
+    const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree } = useMoraStore();
     const { currentAccount, logout } = useAccountStore();
+    const { runDemoFlow, isRunning: demoRunning } = useDemoFlow();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const router = useRouter();
+
+    // Get current role from localStorage or account
+    const getCurrentRole = useCallback(() => {
+        const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
+        return savedRole || currentAccount?.role || 'member';
+    }, [currentAccount?.role]);
+
+    const closeOverlays = () => {
+        setShowSettings(false);
+        setShowUserMenu(false);
+    };
+
+    const openChatDock = () => {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('mora:open-chat'));
+        }
+    };
+
+    // Home action - ALWAYS goes to own Workspace (eigene Saimor-Struktur)
+    // Owner sieht hier seine EIGENE Company-Struktur, nicht Client Companies!
+    const handleHomeClick = async () => {
+        closeOverlays();
+
+        // ALLE: Go to own Workspace (eigene Departments, Spaces, Folders)
+        setViewMode('workspace');
+        setViewLevel('core');
+        console.log('🏠 Home → Eigene Saimor-Struktur');
+
+        // RESET Active Company to User's Company (Fix for "No Data after Demo")
+        const { companies, setActiveCompany, loadDepartments, loadNodesForCompany } = useMoraStore.getState();
+        const userCompany = companies.find(c => !c.is_demo); // Find non-demo company
+
+        if (userCompany) {
+            setActiveCompany(userCompany.id);
+            await loadDepartments(userCompany.id);
+            loadNodesForCompany(userCompany.id).catch(console.warn);
+        } else {
+            // Fallback if no user company found
+            setActiveCompany(null);
+            await loadDepartments();
+        }
+
+        loadTree();
+    };
 
     const navItems = [
-        { id: 'home', icon: Home, label: 'Home', action: () => setViewLevel('core') },
-        { id: 'search', icon: Search, label: 'Search', action: () => console.log('Search clicked') },
-        { id: 'activity', icon: Activity, label: 'Activity', action: () => console.log('Activity clicked') },
-        { id: 'chat', icon: MessageSquare, label: 'Môra Chat', action: () => console.log('Chat clicked') },
+        {
+            id: 'home',
+            icon: Home,
+            label: getCurrentRole() === 'owner' ? 'Owner Dashboard' : 'Home',
+            action: handleHomeClick
+        },
+        { id: 'search', icon: Search, label: 'Search', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },
+        { id: 'activity', icon: Activity, label: 'Activity', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },
+        { id: 'chat', icon: MessageSquare, label: "MÔRA Chat", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
-    const handleDemoFlow = () => {
-        console.log('🎬 Demo Flow triggered');
-        // TODO: Trigger demo data reload or showcase
+    // Blitz = CEO/Demo View (Simple Coffee Group - Demo Company)
+    // DETERMINISTIC: Enter Demo → Simple Coffee Group, Exit Demo → Workspace
+    const handleWorkspaceView = async () => {
+        try {
+            closeOverlays();
+
+            const { viewMode: currentMode, loadCompanies, setActiveCompany, loadDepartments, loadNodesForCompany, setViewMode, setViewLevel } = useMoraStore.getState();
+
+            if (currentMode === 'demo') {
+                // EXIT DEMO: Return to workspace
+                setViewMode('workspace');
+                setViewLevel('core');
+                
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem('saimor_mode', 'workspace');
+                }
+
+                await loadCompanies();
+                const updatedCompanies = useMoraStore.getState().companies;
+                
+                // Find user's own company (NOT demo)
+                const userCompany = updatedCompanies.find(c => c.name.toLowerCase().includes('saimor') && !c.is_demo)
+                    || updatedCompanies.find(c => !c.is_demo)
+                    || updatedCompanies[0];
+
+                if (userCompany) {
+                    setActiveCompany(userCompany.id);
+                    await loadDepartments(userCompany.id);
+                    loadNodesForCompany(userCompany.id).catch(console.warn);
+                    console.log('✅ Exited demo, switched to workspace:', userCompany.name);
+                    toast.success(`Workspace: ${userCompany.name}`);
+                } else {
+                    toast.error('No workspace company available');
+                }
+            } else {
+                // ENTER DEMO: Load Simple Coffee Group deterministically
+                setViewMode('demo');
+                setViewLevel('core');
+
+                console.log('⚡ Entering Demo Mode: Simple Coffee Group');
+
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem('saimor_mode', 'demo');
+                }
+
+                await loadCompanies();
+                const updatedCompanies = useMoraStore.getState().companies;
+                
+                // DETERMINISTIC: Find "Simple Coffee Group" by exact name or is_demo flag
+                let demoCompany = updatedCompanies.find(c => c.name.toLowerCase().includes('simple coffee group'))
+                    || updatedCompanies.find(c => c.is_demo === true)
+                    || updatedCompanies.find(c => c.name.toLowerCase().includes('coffee'));
+
+                if (demoCompany) {
+                    setActiveCompany(demoCompany.id);
+                    await loadDepartments(demoCompany.id);
+                    loadNodesForCompany(demoCompany.id).catch(console.warn);
+                    console.log('✅ Demo activated:', demoCompany.name);
+                    toast.success(`Demo: ${demoCompany.name}`);
+                } else {
+                    toast.error('No demo company available. Please ensure "Simple Coffee Group" exists.');
+                }
+            }
+
+            await loadTree();
+        } catch (err: any) {
+            console.error('Demo toggle error:', err);
+            toast.error(err?.message || 'Failed to toggle demo mode');
+        }
     };
+
+    const handleLogout = () => {
+        // Clear all auth state
+        localStorage.removeItem('saimor_dev_token');
+        localStorage.removeItem('saimor_mode');
+        localStorage.removeItem('saimor_role');
+        localStorage.removeItem('saimor_tenant');
+        localStorage.removeItem('last_workspace');
+        localStorage.removeItem('last_activity');
+        localStorage.removeItem('user_name');
+        writeCookie('saimor_auth', '', -1);
+
+        // Logout from account store
+        logout();
+
+        // Reset view mode
+        setViewMode('workspace');
+        setViewLevel('core');
+
+        closeOverlays();
+
+        // Redirect to WelcomeScreen
+        toast.info("Logged out successfully");
+        router.replace('/');
+    };
+
+    const isOwner = getCurrentRole() === 'owner' || getCurrentRole() === 'admin';
 
     return (
         <>
-            <div className="fixed left-0 top-0 bottom-0 w-[72px] z-[60] flex flex-col items-center py-6 bg-black/40 backdrop-blur-xl border-r border-white/5">
+            <div className="fixed left-0 top-0 bottom-0 w-[72px] z-fixed pointer-events-auto flex flex-col items-center py-6 bg-black/40 backdrop-blur-xl border-r border-white/5">
                 {/* Logo Area */}
                 <div className="mb-8">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.2)]">
@@ -37,7 +194,9 @@ export const ContextRail: React.FC = () => {
                 {/* Navigation Icons */}
                 <div className="flex-1 flex flex-col gap-6 w-full px-3">
                     {navItems.map((item) => {
-                        const isActive = item.id === 'home' && viewLevel === 'core';
+                        // Home is active when: viewMode is 'workspace' AND viewLevel is 'core'
+                        // NOT active when in demo mode (that's the CEO View button)
+                        const isActive = item.id === 'home' && viewLevel === 'core' && viewMode === 'workspace';
                         const Icon = item.icon;
 
                         return (
@@ -76,19 +235,59 @@ export const ContextRail: React.FC = () => {
                             </button>
                         );
                     })}
+
+                    {/* Owner-Only: Companies Button */}
+                    {isOwner && (
+                        <button
+                            onClick={() => {
+                                closeOverlays();
+                                setViewMode('owner');
+                                setViewLevel('company');
+                                console.log('🏢 Switching to Owner View');
+                            }}
+                            className={`group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all duration-300 ${viewMode === 'owner' ? 'bg-mora-gold/20' : ''
+                                }`}
+                        >
+                            <Building2
+                                size={22}
+                                className={`relative z-10 transition-colors duration-300 ${viewMode === 'owner'
+                                        ? 'text-mora-gold'
+                                        : 'text-white/40 group-hover:text-mora-gold/80'
+                                    }`}
+                            />
+                            <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-200 pointer-events-none whitespace-nowrap backdrop-blur-md">
+                                Client Companies
+                            </div>
+                            {viewMode === 'owner' && (
+                                <motion.div
+                                    layoutId="activeOwner"
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-mora-gold rounded-r-full shadow-[0_0_8px_#d4af37]"
+                                />
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {/* Bottom Actions */}
                 <div className="mt-auto flex flex-col gap-4 w-full px-3">
-                    {/* Demo Flow Button */}
+                    {/* Workspace/CEO View Button (Blitz = wie CEO die Firma sieht) */}
                     <button
-                        onClick={handleDemoFlow}
-                        className="group relative flex items-center justify-center w-full aspect-square rounded-xl hover:bg-purple-500/10 transition-all"
+                        onClick={handleWorkspaceView}
+                        disabled={demoRunning}
+                        className={`group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed ${viewMode === 'demo' ? 'bg-blue-500/20' : 'hover:bg-blue-500/10'
+                            }`}
                     >
-                        <Zap size={20} className="text-purple-400/60 group-hover:text-purple-400 transition-colors" />
+                        <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
+                            }`} />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            Demo Flow
+                            Demo (Simple Coffee Group)
                         </div>
+                        {viewMode === 'demo' && (
+                            <motion.div
+                                layoutId="activeDemo"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full shadow-[0_0_8px_#3b82f6]"
+                            />
+                        )}
                     </button>
 
                     {/* Settings Button */}
@@ -107,7 +306,9 @@ export const ContextRail: React.FC = () => {
                         onClick={() => setShowUserMenu(!showUserMenu)}
                         className="relative w-10 h-10 rounded-full bg-gradient-to-br from-mora-gold/20 to-amber-900/20 border border-mora-gold/30 flex items-center justify-center text-xs font-medium text-mora-gold cursor-pointer hover:scale-105 transition-transform"
                     >
-                        {currentAccount?.email?.slice(0, 2).toUpperCase() || 'US'}
+                        {currentAccount?.email?.slice(0, 2).toUpperCase() ||
+                            (typeof window !== 'undefined' ? localStorage.getItem('user_name')?.slice(0, 2).toUpperCase() : 'US') ||
+                            'US'}
                     </button>
                 </div>
             </div>
@@ -121,8 +322,15 @@ export const ContextRail: React.FC = () => {
                         exit={{ opacity: 0, x: -10 }}
                         className="fixed left-[88px] bottom-6 z-[70] w-64 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl"
                     >
-                        <div className="text-sm text-white/90 font-medium mb-1">{currentAccount?.email || 'User'}</div>
-                        <div className="text-xs text-white/50 mb-4">{currentAccount?.tenantId || 'No tenant'}</div>
+                        <div className="text-sm text-white/90 font-medium mb-1">
+                            {currentAccount?.email || localStorage.getItem('user_name') || 'User'}
+                        </div>
+                        <div className="text-xs text-white/50 mb-1">
+                            Role: {getCurrentRole().charAt(0).toUpperCase() + getCurrentRole().slice(1)}
+                        </div>
+                        <div className="text-xs text-white/30 mb-4">
+                            {currentAccount?.tenantId || localStorage.getItem('saimor_tenant') || 'tenant-default'}
+                        </div>
 
                         <div className="flex flex-col gap-2">
                             <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/80">
@@ -130,10 +338,7 @@ export const ContextRail: React.FC = () => {
                                 Profile
                             </button>
                             <button
-                                onClick={() => {
-                                    logout();
-                                    setShowUserMenu(false);
-                                }}
+                                onClick={handleLogout}
                                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors text-left text-sm text-red-400"
                             >
                                 <LogOut size={16} />

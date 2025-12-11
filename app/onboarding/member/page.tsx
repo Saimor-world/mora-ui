@@ -88,7 +88,7 @@ export default function MemberOnboardingPage() {
             <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
               <Users className="w-6 h-6 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-light tracking-tight mb-2">Welcome to SaimA'r</h1>
+            <h1 className="text-2xl font-light tracking-tight mb-2">Welcome to SAIMÔR</h1>
             <p className="text-emerald-400/60 text-sm">Select your department to synchronize your workspace.</p>
           </div>
 
@@ -160,7 +160,7 @@ export default function MemberOnboardingPage() {
 
         <div className="mt-8 text-center">
           <p className="text-[10px] text-emerald-500/20 font-mono tracking-[0.2em] uppercase">
-            MA"RA INTELLIGENCE SYSTEM v2.5
+            MÔRA INTELLIGENCE SYSTEM v2.5
           </p>
         </div>
       </motion.div>

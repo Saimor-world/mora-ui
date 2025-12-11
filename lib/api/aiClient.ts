@@ -87,6 +87,9 @@ export async function sendMessage(
         return data.content;
     } catch (error: any) {
         console.error('AI Client Error:', error);
+        if (error.message?.includes('API key not valid') || error.message?.includes('400')) {
+            throw new Error(`Gemini API Key Invalid. Please check NEXT_PUBLIC_GEMINI_API_KEY in .env`);
+        }
         throw new Error(`Failed to get AI response: ${error.message}`);
     }
 }

@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { Building2, Briefcase, Users, DollarSign, TrendingUp } from 'lucide-react';
 import { Bubble } from './Bubble';
-import { calculateOrbitPositions, calculateDynamicRadius, type AnchorPoint, positionsToAnchorPoints } from '@/lib/orbit/orbitMath';
+import { calculateOrbitPositions, calculateDynamicRadius, calculateVisualCenter, type AnchorPoint, positionsToAnchorPoints } from '@/lib/orbit/orbitMath';
 
 /**
  * COMPANY ORBIT SYSTEM
@@ -42,7 +42,7 @@ function getDepartmentIcon(name: string): React.ElementType {
 }
 
 export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
-    center = { x: 0, y: 0 },
+    center,
     radius,
     onDepartmentSelect,
     onAnchorPointsUpdate
@@ -53,30 +53,55 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
         navigateToDepartment
     } = useMoraStore();
 
-    // Calculate positions
+    // Calculate center from viewport (accounts for sidebars/right panel)
+    const calculatedCenter = useMemo(() => {
+        if (typeof window === 'undefined') return { x: 600, y: 400 };
+        const visualCenter = calculateVisualCenter(window.innerWidth, window.innerHeight);
+        // Convert global center (accounts for sidebars) into local canvas coordinates
+        return {
+            x: visualCenter.x - 72, // left offset used in CompanyCoreView container
+            y: visualCenter.y
+        };
+    }, []);
+
+    const finalCenter = center ?? calculatedCenter;
+
+    // Calculate positions - ARC MODE: Max 6-8 departments in upper arc
     const { positions, orbitRadius, anchorPoints } = useMemo(() => {
-        const count = departments.length;
-        if (count === 0) return { positions: [], orbitRadius: 0, anchorPoints: [] };
+        const count = Math.min(departments.length, 8); // Max 8
+        if (count === 0) {
+            console.log('[CompanyOrbit] No departments found!');
+            return { positions: [], orbitRadius: 0, anchorPoints: [] };
+        }
 
-        // Smaller bubbles for departments
-        const bubbleSize = 70;
+        // Professional arc settings
+        const bubbleSize = 60;
+        const orbitRadius = radius ?? 190; // Smaller radius for arc
+        const arcAngle = 2.618; // 150 degrees (professional upper arc)
+        const startAngle = -Math.PI / 2 - arcAngle / 2; // Center the arc at top
 
-        // Calculate optimal radius if not provided
-        const orbitRadius = radius ?? calculateDynamicRadius(
-            count,
-            bubbleSize,
-            200, // Min radius
-            450  // Max radius
-        );
+        // Calculate arc positions
+        const positions = calculateOrbitPositions(count, orbitRadius, finalCenter, startAngle, arcAngle);
 
-        // Calculate orbit positions
-        const positions = calculateOrbitPositions(count, orbitRadius, center);
+        // DEBUG LOGGING
+        console.log('[CompanyOrbit] Rendering:', {
+            departmentCount: departments.length,
+            visibleCount: count,
+            center: finalCenter,
+            radius: orbitRadius,
+            arcAngle: `${(arcAngle * 180 / Math.PI).toFixed(0)} degrees`,
+            positions: positions.map((p, i) => ({
+                dept: departments[i]?.name,
+                x: Math.round(p.x),
+                y: Math.round(p.y)
+            }))
+        });
 
-        // Convert to anchor points for canvas
+        // Convert to anchor points
         const anchorPoints = positionsToAnchorPoints(positions, 'department', bubbleSize / 2);
 
         return { positions, orbitRadius, anchorPoints };
-    }, [departments, center, radius]);
+    }, [departments.length, finalCenter, radius]);
 
     // Notify parent of anchor points (for canvas signals)
     React.useEffect(() => {
@@ -94,32 +119,43 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
         onDepartmentSelect?.(deptId);
     };
 
-    if (departments.length === 0) {
+    // RESCUE MODE: Show max 8 departments
+    const visibleDepartments = departments.slice(0, 8);
+
+    if (visibleDepartments.length === 0) {
+        console.log('[CompanyOrbit] No visible departments - returning null');
         return null; // No departments to show
     }
 
+    console.log('[CompanyOrbit] Rendering', visibleDepartments.length, 'department bubbles');
+
     return (
         <div className="absolute inset-0 pointer-events-none">
-            {departments.map((dept, index) => {
+            {visibleDepartments.map((dept, index) => {
                 const pos = positions[index];
-                if (!pos) return null;
+                if (!pos) {
+                    console.warn('[CompanyOrbit] No position for department:', dept.name, 'index:', index);
+                    return null;
+                }
 
                 const isActive = dept.id === activeDepartmentId;
                 const DeptIcon = getDepartmentIcon(dept.name);
-                const color = dept.color || '#10b981'; // Use dept color or fallback
+                const color = dept.color || '#10b981';
+
+                console.log(`[CompanyOrbit] Rendering bubble: ${dept.name} at (${Math.round(pos.x)}, ${Math.round(pos.y)})`);
 
                 return (
                     <Bubble
                         key={dept.id}
                         id={dept.id}
                         label={dept.name}
-                        icon={DeptIcon}
+                        icon={DeptIcon as any}
                         position={{ x: pos.x, y: pos.y }}
-                        size={70}
+                        size={60}
                         color={color}
                         isActive={isActive}
                         onClick={handleDepartmentClick}
-                        delay={index * 0.06} // Staggered entrance
+                        delay={index * 0.06}
                     />
                 );
             })}

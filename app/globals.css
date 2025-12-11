@@ -60,6 +60,30 @@
     --mora-shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.2);
     --mora-shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.3);
 
+    /* Z-INDEX SYSTEM (standardized layers) */
+    --mora-z-base: 0;
+    /* Backgrounds: canvas, overlays, organic backgrounds */
+    --mora-z-content: 10;
+    /* Main content: layers, nodes, text */
+    --mora-z-elevated: 20;
+    /* Elevated elements: bubbles, orbits, cards */
+    --mora-z-sidebar: 30;
+    /* Sidebar navigation elements */
+    --mora-z-backdrop: 40;
+    /* Overlay backgrounds, blur backdrops */
+    --mora-z-floating: 50;
+    /* Floating UI: orb controller, tooltips */
+    --mora-z-modal: 60;
+    /* Modals: document viewer, detail panels */
+    --mora-z-popup: 70;
+    /* Popups: dropdowns, context menus */
+    --mora-z-fixed: 80;
+    /* Fixed navigation: ContextRail */
+    --mora-z-toast: 90;
+    /* Notifications, toasts */
+    --mora-z-critical: 100;
+    /* Critical: auth screens, blocking overlays */
+
     /* === LEGACY VARIABLES (for backward compatibility) === */
 
     /* 🌿 Môra Resonanz-Farben: Wald & Sonne */
@@ -256,10 +280,13 @@
 
   /* Star twinkling animation */
   @keyframes twinkle {
-    0%, 100% {
+
+    0%,
+    100% {
       opacity: 0.2;
       transform: scale(1);
     }
+
     50% {
       opacity: 0.8;
       transform: scale(1.2);
@@ -298,6 +325,12 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 
+  /* UPGRADE A1: Global Noise Texture */
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
   /* Custom Select Dropdown Styling */
   select {
     appearance: none;
@@ -312,6 +345,51 @@
     background-color: rgb(6, 20, 15);
     color: rgb(209, 250, 229);
     padding: 0.5rem;
+  }
+
+  /* Z-INDEX UTILITY CLASSES */
+  .z-base {
+    z-index: var(--mora-z-base);
+  }
+
+  .z-content {
+    z-index: var(--mora-z-content);
+  }
+
+  .z-elevated {
+    z-index: var(--mora-z-elevated);
+  }
+
+  .z-sidebar {
+    z-index: var(--mora-z-sidebar);
+  }
+
+  .z-backdrop {
+    z-index: var(--mora-z-backdrop);
+  }
+
+  .z-floating {
+    z-index: var(--mora-z-floating);
+  }
+
+  .z-modal {
+    z-index: var(--mora-z-modal);
+  }
+
+  .z-popup {
+    z-index: var(--mora-z-popup);
+  }
+
+  .z-fixed {
+    z-index: var(--mora-z-fixed);
+  }
+
+  .z-toast {
+    z-index: var(--mora-z-toast);
+  }
+
+  .z-critical {
+    z-index: var(--mora-z-critical);
   }
 
   select:focus option:checked {

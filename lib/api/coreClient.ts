@@ -2,8 +2,8 @@ import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, Core
 
 type AccountRole = 'admin' | 'owner' | 'manager' | 'member' | 'demo';
 
-const CORE_BASE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ?? "http://localhost:8083";
-const AUTH_COOKIE = "mora_auth_token";
+const CORE_BASE_URL = "/api/core";
+const AUTH_COOKIE = "saimor_auth";
 
 export class CoreError extends Error {
     status: number;
@@ -44,22 +44,35 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         const devToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
         const fallbackToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT || process.env.NEXT_PUBLIC_API_TOKEN;
         const finalToken = token || devToken || fallbackToken;
-        if (!finalToken) {
-            throw new CoreError("Not authenticated", 401);
+
+        // Debug logging
+        console.log('[coreClient] Token sources:', {
+            cookie: token ? `${token.substring(0, 20)}...` : 'null',
+            localStorage: devToken ? `${devToken.substring(0, 20)}...` : 'null',
+            envVar: fallbackToken ? `${fallbackToken.substring(0, 20)}...` : 'null',
+            using: finalToken ? (token ? 'cookie' : devToken ? 'localStorage' : 'envVar') : 'NONE'
+        });
+
+        if (finalToken) {
+            headers['Authorization'] = `Bearer ${finalToken}`;
         }
-        headers['Authorization'] = `Bearer ${finalToken}`;
+        // If no token, still attempt request - backend will return 401 if auth required
     }
 
     let response: Response;
     try {
-        response = await fetch(`${CORE_BASE_URL}${path}`, {
+        const url = `${CORE_BASE_URL}${path}`;
+        console.log(`[coreClient] ${options.method ?? 'GET'} ${url}`);
+        response = await fetch(url, {
             method: options.method ?? 'GET',
             headers,
             body: options.body ? JSON.stringify(options.body) : undefined,
             credentials: 'include',
         });
     } catch (err: any) {
-        throw new CoreError(`Core unreachable: ${err?.message || 'network error'}`, 0);
+        const errorMessage = err?.message || 'network error';
+        console.error(`[coreClient] Fetch failed for ${CORE_BASE_URL}${path}:`, errorMessage);
+        throw new CoreError(`Core unreachable: ${errorMessage}`, 0);
     }
 
     if (!response.ok) {
@@ -183,8 +196,16 @@ export async function connectDemoSource(source = 'simple_coffee_group'): Promise
 // ========== COMPANY FUNCTIONS ==========
 
 export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]> {
-    const query = includeDemo ? '?include_demo=true' : '';
-    return coreGet(`/v1/companies${query}`);
+    try {
+        const query = includeDemo ? '?include_demo=true' : '';
+        return await coreGet(`/v1/companies${query}`);
+    } catch (error: any) {
+        // Silent fallback for auth errors - return empty array
+        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
+            return [];
+        }
+        throw error;
+    }
 }
 
 export async function getCompany(id: string): Promise<CoreCompany> {
@@ -195,10 +216,48 @@ export interface CreateCompanyPayload {
     name: string;
     description?: string;
     slug?: string;
+    is_owner_company?: boolean; // Creates with demo departments/spaces/folders/nodes
 }
 
 export async function createCompany(payload: CreateCompanyPayload): Promise<CoreCompany> {
     return corePost('/v1/companies', payload);
+}
+
+// ========== COMPANY HEALTH (OWNER VIEW - METRICS ONLY) ==========
+
+export interface CompanyHealth {
+    company_id: string;
+    name: string;
+    slug: string;
+    health_score: number; // 0.0 - 1.0
+    last_activity: string | null;
+    node_count: number;
+    folder_count: number;
+    space_count: number;
+    department_count: number;
+    active_users: number;
+}
+
+export interface CompaniesHealthResponse {
+    companies: CompanyHealth[];
+    total: number;
+}
+
+/**
+ * Fetch health metrics for all companies (OWNER VIEW ONLY)
+ * Returns ONLY metrics, NO content/data access!
+ * Privacy: Owner cannot see inside client workspaces.
+ */
+export async function fetchCompaniesHealth(): Promise<CompaniesHealthResponse> {
+    try {
+        return await coreGet('/v1/companies/health');
+    } catch (error: any) {
+        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
+            return { companies: [], total: 0 };
+        }
+        console.error('Failed to fetch companies health:', error);
+        throw error;
+    }
 }
 
 // ========== FETCH FUNCTIONS ==========
@@ -222,6 +281,10 @@ export async function fetchNodes(folderId: string, options?: { search?: string, 
     if (options?.search) query += `&search=${encodeURIComponent(options.search)}`;
     if (options?.type && options.type !== 'all') query += `&type=${encodeURIComponent(options.type)}`;
     return coreGet(`/v1/nodes${query}`);
+}
+
+export async function fetchNodesByCompany(companyId: string): Promise<CoreNode[]> {
+    return coreGet(`/v1/nodes?company_id=${companyId}`);
 }
 
 export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
@@ -361,3 +424,49 @@ export const createDepartment = async (payload: CreateDepartmentPayload) => {
 export const createSimpleDepartment = async (name: string) => {
     return corePost('/v1/departments/create-simple', { name });
 };
+
+// ========== UPDATE & DELETE FUNCTIONS ==========
+
+export interface UpdateDepartmentPayload {
+    name?: string;
+    description?: string;
+    color?: string;
+    icon?: string;
+}
+
+export async function updateDepartment(id: string, payload: UpdateDepartmentPayload): Promise<CoreDepartment> {
+    return corePatch(`/v1/departments/${id}`, payload);
+}
+
+export async function deleteDepartment(id: string): Promise<void> {
+    return coreDelete(`/v1/departments/${id}`);
+}
+
+export interface UpdateSpacePayload {
+    name?: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+}
+
+export async function updateSpace(id: string, payload: UpdateSpacePayload): Promise<CoreSpace> {
+    return corePatch(`/v1/spaces/${id}`, payload);
+}
+
+export async function deleteSpace(id: string): Promise<void> {
+    return coreDelete(`/v1/spaces/${id}`);
+}
+
+export interface UpdateFolderPayload {
+    name?: string;
+    description?: string;
+    color?: string;
+}
+
+export async function updateFolder(id: string, payload: UpdateFolderPayload): Promise<CoreFolder> {
+    return corePatch(`/v1/folders/${id}`, payload);
+}
+
+export async function deleteFolder(id: string): Promise<void> {
+    return coreDelete(`/v1/folders/${id}`);
+}

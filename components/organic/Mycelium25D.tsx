@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MyceliumNode } from '@/lib/utils/myceliumDataMapper';
-import { setLearning } from '@/lib/mora/awarenessController';
+import { setThinking } from '@/lib/mora/awarenessController';
 
 // --- CONFIGURATION ---
 const IDLE_BREATH_DURATION = 6;
@@ -266,7 +266,7 @@ interface Mycelium25DProps {
     nodes?: MyceliumNode[];
     onNodeClick?: (nodeId: string) => void;
     activeNodeId?: string | null;
-    variant?: 'folder' | 'node' | 'department';
+    variant?: 'folder' | 'node' | 'department' | 'space';
 }
 
 export function Mycelium25D({
@@ -286,7 +286,7 @@ export function Mycelium25D({
     // Awareness: Trigger learning state when nodes are being loaded/rendered
     useEffect(() => {
         if (safeNodes.length > 0) {
-            setLearning();
+            setThinking();
         }
     }, [safeNodes.length]);
 

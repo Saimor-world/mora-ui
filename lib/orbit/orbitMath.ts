@@ -24,22 +24,26 @@ export interface AnchorPoint {
 }
 
 /**
- * Calculate evenly distributed positions on a circular orbit
+ * Calculate evenly distributed positions on a circular orbit or arc
  * @param count - Number of items to place
  * @param radius - Orbit radius in pixels
  * @param center - Center point {x, y}, defaults to {0, 0}
  * @param startAngle - Starting angle in radians, defaults to -π/2 (top)
+ * @param arcAngle - Arc angle in radians (optional, defaults to 2π for full circle)
  * @returns Array of position objects with x, y coordinates
  */
 export function calculateOrbitPositions(
     count: number,
     radius: number,
     center: { x: number; y: number } = { x: 0, y: 0 },
-    startAngle: number = -Math.PI / 2
+    startAngle: number = -Math.PI / 2,
+    arcAngle?: number
 ): OrbitPosition[] {
     if (count === 0) return [];
 
-    const step = (2 * Math.PI) / count;
+    // If arcAngle provided, use it; otherwise use full circle
+    const totalAngle = arcAngle ?? (2 * Math.PI);
+    const step = count > 1 ? totalAngle / (count - 1) : 0;
 
     return Array.from({ length: count }, (_, i) => {
         const angle = startAngle + i * step;

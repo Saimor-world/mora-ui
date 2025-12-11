@@ -59,13 +59,14 @@ export const Bubble: React.FC<BubbleProps> = ({
 
     return (
         <motion.button
-            className="absolute pointer-events-auto"
+            className="absolute pointer-events-auto z-30"
             style={{
                 left: position.x,
                 top: position.y,
                 width: size,
                 height: size,
-                transform: 'translate(-50%, -50%)'
+                transform: 'translate(-50%, -50%)',
+                willChange: 'transform'
             }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -75,10 +76,20 @@ export const Bubble: React.FC<BubbleProps> = ({
                 delay,
                 ease: [0.4, 0, 0.2, 1]
             }}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => onClick?.(id)}
         >
+            {/* Hover ring */}
+            <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{
+                    border: `1px solid ${color}66`
+                }}
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 0.6, scale: 1.1 }}
+                transition={{ duration: 0.25 }}
+            />
             {/* Glow Layer (Active State) */}
             {isActive && (
                 <motion.div

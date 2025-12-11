@@ -165,7 +165,7 @@ export const SynthesisPanel: React.FC<IntelligencePanelProps> = ({ visible = tru
                                     {/* Footer Info */}
                                     <div className="pt-4 border-t border-white/5 flex justify-between items-center text-[10px] text-emerald-500/40">
                                         <span>Last Analysis: {synthesis?.summary?.last_activity ? new Date(synthesis.summary.last_activity).toLocaleTimeString() : '—'}</span>
-                                        <span>ID: {synthesis?.summary?.id?.slice?.(0, 8) ?? '—'}</span>
+                                        <span>Nodes: {synthesis?.summary?.total_nodes ?? 0}</span>
                                     </div>
                                 </div>
                             )}

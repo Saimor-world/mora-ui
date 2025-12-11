@@ -24,6 +24,13 @@ export const ChatDock: React.FC = () => {
     const [relations, setRelations] = useState<any[]>([]);
     const { activeDepartmentId, activeSpaceId, activeFolderId, activeNode } = useMoraStore();
 
+    // Allow other components (e.g., sidebar) to open the dock
+    useEffect(() => {
+        const handler = () => setIsOpen(true);
+        window.addEventListener('mora:open-chat', handler);
+        return () => window.removeEventListener('mora:open-chat', handler);
+    }, []);
+
     // Sprint Tag 1-2: Load Mindloop-Synthesis on mount
     useEffect(() => {
         fetchSynthesis().then(setSynthesis).catch(() => setSynthesis(null));
@@ -138,7 +145,7 @@ export const ChatDock: React.FC = () => {
     // Minimized Pill
     if (!isOpen) {
         return (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-floating pointer-events-auto">
                 <button
                     onClick={() => setIsOpen(true)}
                     className="flex items-center gap-3 px-4 py-2 rounded-full glass-panel border border-white/10 bg-mora-forest/80 backdrop-blur-md hover:border-mora-gold/50 transition-all shadow-lg group"
@@ -153,7 +160,7 @@ export const ChatDock: React.FC = () => {
     // Open Dock
     return (
         <div
-            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto transition-all duration-500 ease-out
+            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-floating pointer-events-auto transition-all duration-500 ease-out
         ${isExpanded ? 'w-[800px] h-[600px]' : 'w-[500px] h-[300px]'}
       `}
         >

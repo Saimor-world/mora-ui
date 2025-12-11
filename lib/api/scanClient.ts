@@ -11,5 +11,5 @@ export interface ScanResult {
 }
 
 export const triggerFolderScan = async (folderId: string): Promise<ScanResult> => {
-    return corePost<ScanResult>(`/v1/scan/analyze/${folderId}`, {});
+    return corePost(`/v1/scan/analyze/${folderId}`, {}) as Promise<ScanResult>;
 };

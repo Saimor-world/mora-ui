@@ -16,7 +16,7 @@ type Props = {
 };
 
 // Helper to keep colors consistent
-const getBadgeColor = (hex?: string) => hex || "#0EA5E9";
+const getBadgeColor = (hex?: string | null) => hex || "#0EA5E9";
 
 export const DepartmentCluster: React.FC<Props> = ({
     departments,

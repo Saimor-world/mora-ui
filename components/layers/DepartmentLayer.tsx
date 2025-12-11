@@ -1,33 +1,35 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { AlertTriangle } from 'lucide-react';
-import { CreateModal } from '@/components/ui/CreateModal';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
+import { Star } from '@/components/mora/Star';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
-import { GlassPanel } from '@/components/layers/GlassPanel';
-import { SpaceTileGrid } from '@/components/spaces/SpaceTileGrid';
-import { IntelligenceContextBar } from '@/components/layers/IntelligenceContextBar';
 
+/**
+ * DEPARTMENT LAYER - GALAXY VIEW
+ * 
+ * Visualizes a Department as a sector of the universe.
+ * Spaces are rendered as "Galaxies" (Spiral Systems).
+ * 
+ * Masterbibel: "Spaces sind kleine eigene Galaxien"
+ */
 export const DepartmentLayer: React.FC = () => {
     const {
         activeDepartmentId,
         departments,
         spacesByDepartment,
         isLoadingSpaces,
-        coreError,
         loadSpacesForDepartment,
         navigateToCore,
         navigateToSpace,
         addSpace
     } = useMoraStore();
 
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [formData, setFormData] = useState({ name: '', description: '' });
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
     const currentDepartment = departments.find(d => d.id === activeDepartmentId);
+    const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
 
     useEffect(() => {
         if (activeDepartmentId && !spacesByDepartment[activeDepartmentId]) {
@@ -35,141 +37,177 @@ export const DepartmentLayer: React.FC = () => {
         }
     }, [activeDepartmentId, spacesByDepartment, loadSpacesForDepartment]);
 
-    const handleCreateSpace = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!activeDepartmentId || !formData.name.trim()) return;
+    // Calculate Orbital Positions (Moons around Planet)
+    const moonPositions = useMemo(() => {
+        if (spaces.length === 0) return [];
 
-        setIsSubmitting(true);
-        try {
-            await addSpace({
-                department_id: activeDepartmentId,
-                name: formData.name.trim(),
-                description: formData.description.trim() || undefined,
-            });
-            setFormData({ name: '', description: '' });
-            setIsCreateModalOpen(false);
-        } catch (error) {
-            console.error('Failed to create space:', error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+        // PHASE 6.4: Organic Orbital Physics
+        const count = Math.min(spaces.length, 8); // Display max 8 spaces for performance/clutter
+        const baseRadius = 250;
+
+        return spaces.slice(0, count).map((space, i) => {
+            // Golden Angle distribution for organic clustering
+            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+            const angle = i * goldenAngle;
+
+            // Spiral out slightly
+            const radius = baseRadius + (i * 20);
+
+            return {
+                space,
+                x: Math.cos(angle) * radius,
+                y: Math.sin(angle) * radius,
+                angle,
+                radius,
+                delay: i * 0.1
+            };
+        });
+    }, [spaces]);
+
+    // Background Stars
+    const stars = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        size: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.5 + 0.1
+    })), []);
 
     if (!activeDepartmentId) return null;
 
-    // Breadcrumb for context bar
-    const breadcrumb = [
-        { label: 'Home', onClick: navigateToCore },
-        { label: currentDepartment?.name || 'Department' }
-    ];
-
     return (
-        <div className="relative w-full h-full flex items-center justify-center p-8">
+        <div className="relative w-full h-full overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#05100c] via-[#030806] to-[#000000]">
 
-            {/* Context Bar (Top Layer) */}
-            <IntelligenceContextBar
-                breadcrumb={breadcrumb}
-                activeCount={spaces.length}
-                riskLevel="none"
-            />
+            {/* Background Starfield - UPGRADE B3: Twinkling Depth */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none">
+                {stars.map((star, i) => (
+                    <div
+                        key={star.id}
+                        className="absolute rounded-full bg-white"
+                        style={{
+                            left: `${star.x}%`,
+                            top: `${star.y}%`,
+                            width: `${star.size}px`,
+                            height: `${star.size}px`,
+                            opacity: star.opacity,
+                            animation: `twinkle ${3 + (i % 5)}s infinite ease-in-out ${i * 0.2}s`
+                        }}
+                    />
+                ))}
+            </div>
 
-            {/* Glass Panel Container */}
-            <GlassPanel
-                title={currentDepartment?.name || 'Department'}
-                showBackButton
-                onBack={navigateToCore}
-                width="full"
-                height="full"
-                blurIntensity={20}
-                opacity={0.85}
+            {/* Nebula Effect */}
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
+
+            {/* Back Button */}
+            <motion.button
+                onClick={navigateToCore}
+                className="absolute top-8 left-8 z-50 flex items-center gap-2 text-white/50 hover:text-white transition-colors group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: -5 }}
             >
-                <div className="w-full h-full overflow-y-auto custom-scrollbar p-4">
-
-                    {/* Loading State */}
-                    {isLoadingSpaces && (
-                        <div className="h-full flex items-center justify-center">
-                            <LoadingState message="Scanning sector..." />
-                        </div>
-                    )}
-
-                    {/* Error State */}
-                    {!isLoadingSpaces && coreError && (
-                        <div className="h-full flex flex-col items-center justify-center text-red-400/80 gap-2">
-                            <AlertTriangle size={24} />
-                            <p>{coreError}</p>
-                        </div>
-                    )}
-
-                    {/* Space Tiles Grid */}
-                    {!isLoadingSpaces && !coreError && (
-                        <SpaceTileGrid
-                            spaces={spaces}
-                            onSpaceClick={navigateToSpace}
-                            onCreateSpace={() => setIsCreateModalOpen(true)}
-                        />
-                    )}
+                <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
+                    <ArrowLeft size={20} />
                 </div>
-            </GlassPanel>
+                <span className="text-sm tracking-widest font-light">BACK TO ORBIT</span>
+            </motion.button>
 
-            {/* Create Space Modal */}
-            <CreateModal
-                isOpen={isCreateModalOpen}
-                onClose={() => {
-                    setIsCreateModalOpen(false);
-                    setFormData({ name: '', description: '' });
-                }}
-                title="Create New Space"
+            {/* Department Title (Center) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
+                <motion.h1
+                    className="text-[140px] font-thin text-white/[0.04] tracking-[0.25em] whitespace-nowrap select-none font-sans"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                >
+                    {currentDepartment?.name.toUpperCase()}
+                </motion.h1>
+            </div>
+
+            {/* SEMANTIC LAYER ANCHOR (Phase 5.2) */}
+            {/* Phase 6.1: Active Constellation Renderer */}
+            <div
+                id="semantic-layer-anchor"
+                className="absolute inset-0 z-5 pointer-events-none overflow-visible"
+                aria-hidden="true"
             >
-                <form onSubmit={handleCreateSpace} className="space-y-6">
-                    <div>
-                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">
-                            NAME *
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-mora-gold/50 focus:outline-none transition-colors"
-                            placeholder="Enter space name"
-                            required
-                            autoFocus
-                        />
-                    </div>
+                <div className="absolute top-1/2 left-1/2 w-0 h-0 overflow-visible">
+                    <SemanticConstellation
+                        center={{ x: 0, y: 0 }}
+                        satellites={moonPositions.map(m => ({
+                            id: m.space.id,
+                            x: m.x,
+                            y: m.y,
+                            weight: 0.6
+                        }))}
+                    />
+                </div>
+            </div>
 
-                    <div>
-                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">
-                            DESCRIPTION
-                        </label>
-                        <textarea
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-emerald-100 placeholder-emerald-500/30 focus:border-mora-gold/50 focus:outline-none transition-colors resize-none"
-                            placeholder="Optional description"
-                            rows={3}
-                        />
-                    </div>
+            {/* Content Area */}
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+                {isLoadingSpaces ? (
+                    <LoadingState message="Scanning Sector..." />
+                ) : (
+                    <div className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
+                        {/* Center Point (Department Core) */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-emerald-500 rounded-full blur-md opacity-50" />
 
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsCreateModalOpen(false);
-                                setFormData({ name: '', description: '' });
-                            }}
-                            className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-emerald-400 hover:bg-white/5 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting || !formData.name.trim()}
-                            className="flex-1 px-4 py-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-100 hover:bg-emerald-600/30 hover:border-mora-gold/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Space'}
-                        </button>
+                        {/* Moons (Spaces) orbiting Department */}
+                        {moonPositions.map(({ space, x, y, delay }) => (
+                            <motion.div
+                                key={space.id}
+                                className="absolute cursor-pointer"
+                                style={{
+                                    left: `calc(50% + ${x}px)`,
+                                    top: `calc(50% + ${y}px)`,
+                                    transform: 'translate(-50%, -50%)'
+                                }}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay, duration: 0.5 }}
+                                whileHover={{ scale: 1.1 }}
+                                onClick={() => navigateToSpace(space.id)}
+                            >
+                                <Star
+                                    space={{
+                                        id: space.id,
+                                        name: space.name,
+                                        department_id: activeDepartmentId, // Explicitly pass activeDepartmentId
+                                        description: space.description || undefined,
+                                        folder_count: 0 // Keep as 0 for now as 'space' type might not have it yet, avoiding redundant find()
+                                    }}
+                                    position={{ x: 0, y: 0 }}
+                                    size="xl"
+                                    isActive={false}
+                                />
+                                {/* Label for Space (Galaxy) */}
+                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div className="flex flex-col items-center">
+                                        <div className="h-4 w-px bg-gradient-to-b from-transparent to-emerald-500/50 mb-1" />
+                                        <span className="text-xs text-emerald-100 font-light tracking-wide bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-md border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                            {space.name}
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+
+                        {/* Empty State / Create Button */}
+                        {spaces.length === 0 && (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
+                                <div className="text-white/30 font-light tracking-wider">NO SPACES FOUND</div>
+                                <button className="px-6 py-2 rounded-full border border-white/10 hover:bg-white/5 text-emerald-400 transition-colors flex items-center gap-2">
+                                    <Plus size={16} />
+                                    <span>Create Space</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
-                </form>
-            </CreateModal>
+                )}
+            </div>
         </div>
     );
 };

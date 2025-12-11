@@ -48,7 +48,7 @@ export function useIntelFeed() {
     // Update orb to "learning" briefly when loading
     useEffect(() => {
         if (isLoading) {
-            setOrbState('learning');
+            setOrbState('thinking');
         }
     }, [isLoading, setOrbState]);
 

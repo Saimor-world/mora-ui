@@ -6,28 +6,46 @@ import { CompanyCoreView } from '@/components/home/CompanyCoreView';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
 import { FolderLayer } from '@/components/layers/FolderLayer';
-import { OwnerHome } from '@/components/home/OwnerHome';
+import { ClientHealthDashboard } from '@/components/home/ClientHealthDashboard';
 import { AnimatePresence, motion } from 'framer-motion';
 
+/**
+ * ViewPort - Main Content Area Router
+ * 
+ * Routes based on:
+ * - viewLevel: company | core | department | space | folder
+ * - viewMode: owner | demo | workspace
+ * 
+ * OWNER VIEW:
+ * - 🏠 Home = "core" level with owner's OWN company structure
+ * - 🏢 Client Companies = "company" level = ClientHealthDashboard (metrics only, no data!)
+ * 
+ * DEMO/WORKSPACE VIEW:
+ * - 🏠 Home = "core" level = CompanyCoreView with active company's structure
+ * - ⚡ Demo = "core" level with Simple Coffee Group
+ */
 export const ViewPort: React.FC = () => {
     const viewLevel = useMoraStore((state) => state.viewLevel);
+    const viewMode = useMoraStore((state) => state.viewMode);
 
     return (
-        <div className="w-full h-full flex items-center justify-center relative perspective-1000">
+        <div className="w-full h-full relative">
             <AnimatePresence mode="wait">
-                {viewLevel === 'company' && (
+                {/* OWNER: Client Health Dashboard (viewLevel: company) */}
+                {viewLevel === 'company' && viewMode === 'owner' && (
                     <motion.div
-                        key="company"
+                        key="client-health"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 1.1 }}
                         transition={{ duration: 0.5 }}
                         className="absolute inset-0"
                     >
-                        <OwnerHome />
+                        <ClientHealthDashboard />
                     </motion.div>
                 )}
 
+                {/* CORE VIEW - CompanyCoreView (Orbital Universe) */}
                 {viewLevel === 'core' && (
                     <motion.div
                         key="core"
@@ -35,12 +53,13 @@ export const ViewPort: React.FC = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{
                             opacity: 0,
-                            scale: 1.5,  // Zoom in when leaving (diving into department)
-                            filter: 'blur(10px)'
+                            scale: 2.85,
+                            filter: 'blur(16px)',
+                            transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] }
                         }}
                         transition={{
                             duration: 0.8,
-                            ease: [0.4, 0, 0.2, 1]  // Smooth easing
+                            ease: [0.6, 0.05, 0, 0.9]
                         }}
                         className="absolute inset-0"
                     >
@@ -48,12 +67,13 @@ export const ViewPort: React.FC = () => {
                     </motion.div>
                 )}
 
+                {/* DEPARTMENT VIEW */}
                 {viewLevel === 'department' && (
                     <motion.div
                         key="department"
                         initial={{
                             opacity: 0,
-                            scale: 0.5,  // Zoom from small (diving effect)
+                            scale: 0.5,  // Zoom from small
                             filter: 'blur(10px)'
                         }}
                         animate={{
@@ -61,38 +81,76 @@ export const ViewPort: React.FC = () => {
                             scale: 1,
                             filter: 'blur(0px)'
                         }}
-                        exit={{ opacity: 0, scale: 1.1 }}
-                        transition={{
-                            duration: 0.8,
-                            ease: [0.4, 0, 0.2, 1]
+                        exit={{
+                            opacity: 0,
+                            scale: 2.85,  // Deep dive to Space (Tuned)
+                            filter: 'blur(16px)',
+                            transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } // Fast exit
                         }}
-                        className="absolute inset-0"
+                        transition={{
+                            duration: 0.8, // Cinematic entry
+                            ease: [0.6, 0.05, 0, 0.9]
+                        }}
+                        className="absolute inset-0 preserve-3d"
                     >
                         <DepartmentLayer />
                     </motion.div>
                 )}
 
+                {/* SPACE VIEW */}
                 {viewLevel === 'space' && (
                     <motion.div
                         key="space"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.1 }}
-                        transition={{ duration: 0.5 }}
-                        className="absolute inset-0"
+                        initial={{
+                            opacity: 0,
+                            scale: 0.5,
+                            filter: 'blur(10px)'
+                        }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                            filter: 'blur(0px)'
+                        }}
+                        exit={{
+                            opacity: 0,
+                            scale: 2.85,  // Deep dive to Folder (Tuned)
+                            filter: 'blur(16px)',
+                            transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } // Fast exit
+                        }}
+                        transition={{
+                            duration: 0.8, // Cinematic entry
+                            ease: [0.6, 0.05, 0, 0.9]
+                        }}
+                        className="absolute inset-0 preserve-3d"
                     >
                         <SpaceLayer />
                     </motion.div>
                 )}
 
+                {/* FOLDER VIEW */}
                 {viewLevel === 'folder' && (
                     <motion.div
                         key="folder"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.1 }}
-                        transition={{ duration: 0.5 }}
-                        className="absolute inset-0"
+                        initial={{
+                            opacity: 0,
+                            scale: 0.5,
+                            filter: 'blur(10px)'
+                        }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                            filter: 'blur(0px)'
+                        }}
+                        exit={{
+                            opacity: 0,
+                            scale: 1.1,  // Fade out normally
+                            filter: 'blur(0px)'
+                        }}
+                        transition={{
+                            duration: 0.8,
+                            ease: [0.6, 0.05, 0, 0.9]
+                        }}
+                        className="absolute inset-0 preserve-3d"
                     >
                         <FolderLayer />
                     </motion.div>

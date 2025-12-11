@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   allowedDevOrigins: [
+    "http://localhost:3003",
+    "http://127.0.0.1:3003",
     "http://localhost:3002",
     "http://127.0.0.1:3002",
     "http://172.20.10.*",
@@ -11,7 +13,7 @@ const nextConfig = {
     return [
       {
         source: '/api/core/:path*',
-        destination: 'http://localhost:8081/:path*',
+        destination: 'http://localhost:8083/:path*',
       },
     ];
   },

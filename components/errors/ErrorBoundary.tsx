@@ -6,7 +6,7 @@ import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 interface Props {
     children: ReactNode;
     fallback?: ReactNode;
-    onError?: (error: Error, errorInfo: ErrorInfo) => void;
+    onError?: (error: Error, errorInfo?: ErrorInfo) => void;
 }
 
 interface State {
@@ -47,20 +47,30 @@ export class ErrorBoundary extends Component<Props, State> {
         };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    componentDidCatch(error: Error, errorInfo?: ErrorInfo) {
         // Log error to console (in production, send to error tracking service)
-        console.error('[ErrorBoundary] Caught error:', error);
-        console.error('[ErrorBoundary] Error info:', errorInfo);
+        try {
+            console.error('[ErrorBoundary] Caught error:', error);
+            console.error('[ErrorBoundary] Error info:', errorInfo || 'No error info available');
+        } catch (logError) {
+            // If even logging fails, just update state
+            console.error('[ErrorBoundary] Logging failed:', logError);
+        }
 
         // Update state with error details
         this.setState({
+            hasError: true,
             error,
-            errorInfo
+            errorInfo: errorInfo || null
         });
 
-        // Call custom error handler if provided
-        if (this.props.onError) {
-            this.props.onError(error, errorInfo);
+        // Call onError callback if provided
+        if (this.props.onError && errorInfo) {
+            try {
+                this.props.onError(error, errorInfo);
+            } catch (callbackError) {
+                console.error('[ErrorBoundary] onError callback failed:', callbackError);
+            }
         }
     }
 
@@ -107,7 +117,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
                             {/* Message */}
                             <p className="text-sm text-red-200/70 text-center mb-6 leading-relaxed">
-                                We encountered an unexpected error. Don't worry - your data is safe.
+                                We encountered an unexpected error. Your data is safe.
                                 <br />
                                 Try refreshing the page or returning to the home screen.
                             </p>

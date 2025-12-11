@@ -5,7 +5,7 @@ import "./globals.css";
 import FolderRoom from "@/components/folder/FolderRoom";
 import DocumentViewer from "@/components/document/DocumentViewer";
 import { useMoraStore } from "@/lib/store/moraState";
-import { setActive, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
+import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
 import { MoraIntelligenceBar } from "@/components/mora/MoraIntelligenceBar";
 import { SynthesisPanel } from "@/components/intelligence/SynthesisPanel";
 import { Toaster } from "sonner";
@@ -30,12 +30,12 @@ export default function RootLayout({
     }
   }, []);
 
-  // Môra Awareness: Pulse when space/folder changes
-  useEffect(() => {
-    if (activeSpaceId || activeFolderId) {
-      setActive();
-    }
-  }, [activeSpaceId, activeFolderId]);
+    // Mora Awareness: Pulse when space/folder changes
+    useEffect(() => {
+      if (activeSpaceId || activeFolderId) {
+        setFocus();
+      }
+    }, [activeSpaceId, activeFolderId]);
 
   // Update orb when error state changes
   useEffect(() => {
@@ -46,19 +46,10 @@ export default function RootLayout({
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return (
-      <html lang="en" suppressHydrationWarning>
-        <head>
-          <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
-            rel="stylesheet"
-          />
-        </head>
-        <body className="antialiased" suppressHydrationWarning style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }} />
-      </html>
-    );
-  }
+  // REMOVED BLANK SCREEN BLOCKER - render immediately
+  // if (!mounted) {
+  //   return blank body...
+  // }
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -68,14 +59,18 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased" suppressHydrationWarning style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+      <body className="antialiased bg-[#030806]" suppressHydrationWarning style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", backgroundColor: '#030806' }}>
         <ErrorBoundary>
           {children}
-          <FolderRoom />
-          <DocumentViewer />
-          <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
-          {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
-          <Toaster position="top-right" />
+          {mounted && (
+            <>
+              <FolderRoom />
+              <DocumentViewer />
+              <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
+              {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
+              <Toaster position="top-right" />
+            </>
+          )}
         </ErrorBoundary>
       </body>
     </html>

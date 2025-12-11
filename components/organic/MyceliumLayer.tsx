@@ -26,7 +26,8 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
     variant = 'space',
     onNodeClick
 }) => {
-    const { activeSpaceId, activeNodeId } = useMoraStore();
+    const { activeSpaceId, activeNode } = useMoraStore();
+    const activeNodeId = activeNode?.id ?? null;
     const [myceliumNodes, setMyceliumNodes] = useState<MyceliumNode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
                 // Convert nodes to CoreNode format (ensure type compatibility)
                 const coreNodes: CoreNode[] = spaceGraph.nodes.map(node => ({
                     id: node.id,
-                    tenant_id: node.tenant_id,
+                    space_id: activeSpaceId,
                     folder_id: node.folder_id,
                     title: node.title || node.name || 'Untitled',
                     name: node.name || node.title || 'Untitled',
@@ -65,9 +66,6 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
                     url: node.url,
                     content: node.content,
                     metadata: node.metadata || {},
-                    tags: node.tags || [],
-                    embeddings: node.embeddings,
-                    author_id: node.author_id,
                     size: node.size || 0,
                     created_at: node.created_at,
                     updated_at: node.updated_at
