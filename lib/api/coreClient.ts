@@ -75,6 +75,11 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
 
     // SILENT HANDLING: 401/403 = auth issue -> return null, caller uses fallback
     if (response.status === 401 || response.status === 403) {
+        // Critical: If token was invalid, clear it so next refresh doesn't retry bad token
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('saimor_dev_token');
+            document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+        }
         return null;
     }
 

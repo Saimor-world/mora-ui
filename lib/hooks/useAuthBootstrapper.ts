@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { corePost } from '@/lib/api/coreClient';
+import { corePost, coreGet } from '@/lib/api/coreClient';
 
 /**
  * useAuthBootstrapper
@@ -21,8 +21,15 @@ export function useAuthBootstrapper() {
             const hasLocalToken = localStorage.getItem('saimor_dev_token');
 
             if (hasCookie || hasLocalToken) {
-                setIsBootstrapped(true);
-                return;
+                // Verify token validity before accepting it
+                // We use a lightweight call. If it returns null (401), we know token is stale.
+                const isValid = await coreGet('/v1/awareness/pulse'); // Pulse is fastest
+                if (isValid) {
+                    setIsBootstrapped(true);
+                    return;
+                }
+                // Token was invalid and likely cleared by coreClient's 401 handler.
+                // Fall through to fetch a new dev token.
             }
 
             try {
