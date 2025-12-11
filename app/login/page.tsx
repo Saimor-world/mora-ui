@@ -1,10 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, LogIn, UserPlus, Mail, Lock, AlertCircle } from 'lucide-react';
 import { corePost } from '@/lib/api/coreClient';
+
+// Generate stars with seeded random for consistency
+function seededRandom(seed: number) {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+}
+
+interface StarData {
+    id: number;
+    width: number;
+    height: number;
+    left: string;
+    top: string;
+    duration: number;
+    delay: number;
+}
 
 /**
  * SAIMOR LOGIN PAGE
@@ -22,6 +38,21 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [stars, setStars] = useState<StarData[]>([]);
+
+    // Generate stars client-side only to avoid hydration mismatch
+    useEffect(() => {
+        const generatedStars: StarData[] = Array.from({ length: 80 }).map((_, i) => ({
+            id: i,
+            width: seededRandom(i * 1) * 2 + 1,
+            height: seededRandom(i * 2) * 2 + 1,
+            left: `${seededRandom(i * 3) * 100}%`,
+            top: `${seededRandom(i * 4) * 100}%`,
+            duration: 3 + seededRandom(i * 5) * 4,
+            delay: seededRandom(i * 6) * 5
+        }));
+        setStars(generatedStars);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,25 +88,25 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-[#030806] flex items-center justify-center p-4">
-            {/* Background Stars */}
+            {/* Background Stars - Client-side only */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                {Array.from({ length: 80 }).map((_, i) => (
+                {stars.map((star) => (
                     <motion.div
-                        key={i}
+                        key={star.id}
                         className="absolute rounded-full bg-white"
                         style={{
-                            width: Math.random() * 2 + 1,
-                            height: Math.random() * 2 + 1,
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
+                            width: star.width,
+                            height: star.height,
+                            left: star.left,
+                            top: star.top,
                         }}
                         animate={{
                             opacity: [0.1, 0.6, 0.1],
                         }}
                         transition={{
-                            duration: 3 + Math.random() * 4,
+                            duration: star.duration,
                             repeat: Infinity,
-                            delay: Math.random() * 5
+                            delay: star.delay
                         }}
                     />
                 ))}
@@ -104,8 +135,8 @@ export default function LoginPage() {
                         <button
                             onClick={() => setMode('login')}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'login'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : 'text-white/40 hover:text-white/60'
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'text-white/40 hover:text-white/60'
                                 }`}
                         >
                             <LogIn size={16} className="inline mr-2" />
@@ -114,8 +145,8 @@ export default function LoginPage() {
                         <button
                             onClick={() => setMode('register')}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${mode === 'register'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : 'text-white/40 hover:text-white/60'
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'text-white/40 hover:text-white/60'
                                 }`}
                         >
                             <UserPlus size={16} className="inline mr-2" />
