@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { coreGet } from '@/lib/api/coreClient';
 
 // Types
 export interface PulseData {
@@ -41,13 +42,15 @@ export const useIntelligencePulse = () => {
             }
 
             try {
-                const response = await fetch('/api/core/v1/mindloop/synthesis');
+                // Use coreGet to ensure Auth headers are attached!
+                // Raw fetch fails because it doesn't send localStorage token.
+                const jsonData = await coreGet('/v1/mindloop/synthesis');
 
                 if (isMounted) {
-                    if (response.ok) {
-                        const jsonData = await response.json();
-                        setData(jsonData || MOCK_PULSE_LOW);
+                    if (jsonData) {
+                        setData(jsonData);
                     } else {
+                        // Silent fail (coreGet returns null on 401/error)
                         setData(MOCK_PULSE_LOW);
                     }
                     setLastFetch(Date.now());
