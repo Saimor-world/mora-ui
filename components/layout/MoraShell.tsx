@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
 import { ViewPort } from './ViewPort';
@@ -24,6 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 
 export const MoraShell: React.FC = () => {
+    const router = useRouter();
     useAuthBootstrapper(); // Phase 1: Fix Auth
     const { activeNode } = useMoraStore();
     const [stars, setStars] = useState<Array<{
@@ -47,6 +49,18 @@ export const MoraShell: React.FC = () => {
         }));
         setStars(generatedStars);
     }, []);
+
+    // Sleep handler - navigate to lockscreen
+    const handleSleep = () => {
+        // Save session state before sleep
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('mora_session', 'true');
+            const userName = localStorage.getItem('user_name') || 'User';
+            localStorage.setItem('last_user_name', userName);
+        }
+        // Navigate to root which will show lockscreen
+        router.push('/?sleep=true');
+    };
 
     return (
         <div className="relative w-full h-screen overflow-hidden bg-[#030806] text-emerald-50 font-sans selection:bg-mora-gold/30">
@@ -108,7 +122,7 @@ export const MoraShell: React.FC = () => {
             {/* Global Overlays */}
             <ChatDock />
             {/* UPGRADE A1: OS Dock - Central navigation hub */}
-            <Dock />
+            <Dock onSleep={handleSleep} />
             {/* MoraOrb is now rendered in CompanyCoreView (bottom-right, MASTERBIBEL compliant) */}
             <Toaster position="top-right" theme="dark" />
 

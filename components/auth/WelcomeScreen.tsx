@@ -200,6 +200,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 demoCompany = {
                     id: 'comp-demo-fallback',
                     tenant_id: 'tenant-default',
+                    owner_id: 'demo-owner',
                     name: 'Simple Coffee Group',
                     slug: 'simple-coffee',
                     description: 'Demo Company',

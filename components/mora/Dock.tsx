@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, MessageSquare, Settings, LayoutGrid, FileText, Database, Zap, ChevronUp, X, ToggleLeft, Minus } from 'lucide-react';
+import { Home, Search, MessageSquare, Settings, LayoutGrid, FileText, Database, Zap, ChevronUp, X, ToggleLeft, Minus, Moon } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 
@@ -15,7 +15,12 @@ import { usePaneStore } from '@/lib/store/paneStore';
  * - Semantic awareness integration
  * - Pane System Integration (Step 1)
  */
-export const Dock = () => {
+
+interface DockProps {
+    onSleep?: () => void;
+}
+
+export const Dock = ({ onSleep }: DockProps) => {
     const {
         activeSpaceId,
         activeFolderId,
@@ -56,7 +61,8 @@ export const Dock = () => {
         { icon: Search, label: 'Search', action: 'search' },
         { icon: LayoutGrid, label: 'Apps', action: 'apps' },
         { icon: MessageSquare, label: 'Môra', action: 'chat' },
-        { icon: Settings, label: 'Settings', action: 'settings' }
+        { icon: Settings, label: 'Settings', action: 'settings' },
+        { icon: Moon, label: 'Sleep', action: 'sleep' }
     ];
 
     const handleDockClick = (action: string) => {
@@ -101,6 +107,12 @@ export const Dock = () => {
             case 'search':
             case 'chat':
                 // Preserve legacy/placeholder behavior for now
+                break;
+            case 'sleep':
+                // Trigger lockscreen via callback
+                if (onSleep) {
+                    onSleep();
+                }
                 break;
         }
 

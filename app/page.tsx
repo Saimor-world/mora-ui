@@ -1,31 +1,34 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { useMoraStore } from '@/lib/store/moraState';
 
 export default function RootPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useMoraStore();
     const [showLockScreen, setShowLockScreen] = useState(false);
     const [isCheckingSession, setIsCheckingSession] = useState(true);
     const [savedUserName, setSavedUserName] = useState('User');
 
-    // Check for existing session on mount (client-side only)
+    // Check for existing session or sleep parameter on mount (client-side only)
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const hasSession = localStorage.getItem('mora_session');
             const lastUser = localStorage.getItem('last_user_name');
+            const sleepMode = searchParams.get('sleep') === 'true';
 
-            if (hasSession && lastUser) {
+            // Show lockscreen if: sleep mode triggered OR existing session
+            if (sleepMode || (hasSession && lastUser)) {
                 setShowLockScreen(true);
-                setSavedUserName(lastUser);
+                setSavedUserName(lastUser || 'User');
             }
         }
         setIsCheckingSession(false);
-    }, []);
+    }, [searchParams]);
 
     const handleAuthenticated = () => {
         router.push('/home');
@@ -33,11 +36,8 @@ export default function RootPage() {
 
     const handleUnlock = () => {
         setShowLockScreen(false);
-        // If user exists in store, go directly to home
-        if (user) {
-            router.push('/home');
-        }
-        // Otherwise show welcome screen for re-authentication
+        // Always go to home after unlock
+        router.push('/home');
     };
 
     // Loading state
