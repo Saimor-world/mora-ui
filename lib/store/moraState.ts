@@ -202,7 +202,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     // Basic Setters
     setViewLevel: (level) => set({ viewLevel: level }),
     setViewMode: (mode) => {
-        console.log(`🔄 Switching View Mode: ${mode}`);
         set({ viewMode: mode });
 
         // Auto-adjust viewLevel based on mode
@@ -263,7 +262,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // MOCK FALLBACK if data is empty or invalid (even if API call succeeded)
             // FIX: Also check if response is actually an array (backend might return {"detail": "Not authenticated"} as 200 OK)
             if (!data || !Array.isArray(data) || data.length === 0) {
-                console.warn('⚠️ API returned empty/invalid data, using MOCK DATA for companies');
                 data = [
                     {
                         id: 'comp-demo',
@@ -302,7 +300,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.9, payload: { error: msg, handled: true } });
 
             // MOCK FALLBACK for Companies
-            console.warn('⚠️ API failed, using MOCK DATA for companies');
             const mockCompanies: CoreCompany[] = [
                 {
                     id: 'comp-demo',
@@ -343,10 +340,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             if (!data || !Array.isArray(data) || data.length === 0) {
                 const isDemo = get().viewMode === 'demo';
                 if (isDemo) {
-                    console.warn('⚠️ Using MOCK DATA for Demo Company');
                     data = MOCK_DATA.demo.departments as any;
                 } else {
-                    console.warn('⚠️ Using MOCK DATA for Workspace (Solo Founder)');
                     data = MOCK_DATA.solo.departments as any;
                 }
             }
@@ -362,7 +357,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // MOCK FALLBACK on API errors too
             const isDemo = get().viewMode === 'demo';
             const mockData = isDemo ? MOCK_DATA.demo.departments : MOCK_DATA.solo.departments;
-            console.warn('⚠️ API failed, using MOCK DATA:', mockData.length, 'departments');
 
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.8, payload: { error: msg, handled: true } });
             set({ departments: mockData as any, isLoadingDepartments: false, coreError: null, orbState: mindLoop.getCurrentState() });

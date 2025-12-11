@@ -45,14 +45,6 @@ export const NodeDetailPanel: React.FC = () => {
         }
     }, [isEditing, activeNode]);
 
-    // Debug: Log when panel mounts/updates
-    useEffect(() => {
-        if (activeNode) {
-            console.log('[NodeDetailPanel] Rendering panel for node:', activeNode.title, activeNode.id);
-        } else {
-            console.log('[NodeDetailPanel] Panel closed (no activeNode)');
-        }
-    }, [activeNode]);
 
     const nodeTitle = activeNode ? ((activeNode as any).title || (activeNode as any).name || 'Untitled') : 'Untitled';
     const coreBase = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8083';

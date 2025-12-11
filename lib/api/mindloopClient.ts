@@ -56,50 +56,25 @@ export interface EventsQueryOptions {
  * @returns {Promise<SynthesisResponse>} Synthesis data
  */
 export async function fetchSynthesis(): Promise<SynthesisResponse> {
-    // Check if we have any auth token before making the call
-    // NEXT_PUBLIC_ vars are inlined at build time, so we can check directly
-    const envToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT;
-    const hasToken = envToken || (typeof window !== 'undefined' && (
-        document.cookie.includes('saimor_auth') ||
-        localStorage.getItem('saimor_dev_token')
-    ));
-    
-    // Skip API call if not authenticated - return empty synthesis silently
-    if (!hasToken) {
-        return {
-            summary: {
-                total_nodes: 0,
-                total_events: 0,
-                risk_level: 'low',
-                last_activity: new Date().toISOString()
-            }
-        };
-    }
-    
+    const emptyResponse: SynthesisResponse = {
+        summary: {
+            total_nodes: 0,
+            total_events: 0,
+            risk_level: 'low',
+            last_activity: new Date().toISOString()
+        }
+    };
+
     try {
         const data = await coreGet('/v1/mindloop/synthesis');
+        // null = auth failed silently
+        if (!data) {
+            return emptyResponse;
+        }
         return data;
     } catch (error: any) {
-        // Silent fallback for auth errors
-        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
-            return {
-                summary: {
-                    total_nodes: 0,
-                    total_events: 0,
-                    risk_level: 'low',
-                    last_activity: new Date().toISOString()
-                }
-            };
-        }
-        console.error('Mindloop: Failed to fetch synthesis', error);
-        return {
-            summary: {
-                total_nodes: 0,
-                total_events: 0,
-                risk_level: 'low',
-                last_activity: new Date().toISOString()
-            }
-        };
+        // Silent fallback for any error
+        return emptyResponse;
     }
 }
 
@@ -126,13 +101,9 @@ export async function fetchEvents(options: EventsQueryOptions = {}): Promise<Min
         const endpoint = `/v1/mindloop/events${queryString ? `?${queryString}` : ''}`;
 
         const data = await coreGet(endpoint);
+        if (!data) return []; // null = auth failed
         return data.events || [];
     } catch (error: any) {
-        // Silent fallback for auth errors
-        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
-            return [];
-        }
-        console.error('Mindloop: Failed to fetch events', error);
         return [];
     }
 }
@@ -148,13 +119,9 @@ export async function fetchEvents(options: EventsQueryOptions = {}): Promise<Min
 export async function fetchClusters(): Promise<MindloopCluster[]> {
     try {
         const data = await coreGet('/v1/mindloop/clusters');
+        if (!data) return []; // null = auth failed
         return data.clusters || [];
     } catch (error: any) {
-        // Silent fallback for auth errors
-        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
-            return [];
-        }
-        console.error('Mindloop: Failed to fetch clusters', error);
         return [];
     }
 }

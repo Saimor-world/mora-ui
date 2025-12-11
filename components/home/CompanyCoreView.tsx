@@ -211,13 +211,6 @@ export const CompanyCoreView: React.FC = () => {
 
     // Auto-activate correct company based on viewMode
     useEffect(() => {
-        console.log('🔍 CompanyCoreView State:', {
-            companiesCount: companies?.length || 0,
-            activeCompanyId,
-            viewMode,
-            companies: companies?.map(c => ({ id: c.id, name: c.name, is_demo: c.is_demo })) || []
-        });
-
         if ((companies?.length || 0) > 0 && !activeCompanyId) {
             let targetCompany;
 
@@ -243,24 +236,14 @@ export const CompanyCoreView: React.FC = () => {
             }
 
             if (targetCompany) {
-                console.log('✅ AUTO-ACTIVATING COMPANY:', targetCompany.name, '(is_demo:', targetCompany.is_demo, ')');
                 setActiveCompany(targetCompany.id);
-            } else {
-                console.error('❌ No suitable company found! Companies:', companies.map(c => c.name));
             }
         }
     }, [companies, activeCompanyId, viewMode, setActiveCompany]);
 
     // Load departments when company is active - FORCE RELOAD on company change
     useEffect(() => {
-        console.log('📊 Department Load Check:', {
-            activeCompanyId,
-            departmentsCount: departments.length,
-            shouldLoad: !!activeCompanyId
-        });
-
         if (activeCompanyId) {
-            console.log('📡 LOADING DEPARTMENTS for company:', activeCompanyId);
             loadDepartments(activeCompanyId);
         }
     }, [activeCompanyId, loadDepartments, departments.length]);
@@ -268,7 +251,6 @@ export const CompanyCoreView: React.FC = () => {
     // Load nodes for current company - FORCE RELOAD on company change
     useEffect(() => {
         if (activeCompanyId && !nodesByCompany[activeCompanyId]) {
-            console.log('🌟 LOADING NODES for company:', activeCompanyId);
             loadNodesForCompany(activeCompanyId);
         }
     }, [activeCompanyId, nodesByCompany, loadNodesForCompany]);

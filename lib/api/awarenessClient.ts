@@ -36,11 +36,8 @@ export interface AwarenessPulseResponse {
 export async function fetchAwarenessState(): Promise<AwarenessStateResponse> {
     try {
         const data = await coreGet('/v1/awareness/state');
-        return data;
-    } catch (error: any) {
-        // Only log non-auth errors (auth errors are expected before login)
-        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
-            // Silent fallback for unauthenticated state
+        // null = auth failed silently
+        if (!data) {
             return {
                 state: 'demo',
                 last_activity: null,
@@ -50,8 +47,9 @@ export async function fetchAwarenessState(): Promise<AwarenessStateResponse> {
                 timestamp: new Date().toISOString()
             };
         }
-        console.error('Awareness: Failed to fetch state', error);
-        // Return safe fallback
+        return data;
+    } catch (error: any) {
+        // Return safe fallback for any error
         return {
             state: 'idle',
             last_activity: null,
@@ -71,28 +69,15 @@ export async function fetchAwarenessState(): Promise<AwarenessStateResponse> {
  * @returns {Promise<AwarenessPulseResponse>} Pulse state
  */
 export async function fetchAwarenessPulse(): Promise<AwarenessPulseResponse> {
-    // Check if we have any auth token before making the call
-    // NEXT_PUBLIC_ vars are inlined at build time, so we can check directly
-    const envToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT;
-    const hasToken = envToken || (typeof window !== 'undefined' && (
-        document.cookie.includes('saimor_auth') ||
-        localStorage.getItem('saimor_dev_token')
-    ));
-
-    // Skip API call if not authenticated - return demo state silently
-    if (!hasToken) {
-        return { state: 'demo', pulse: 'slow' };
-    }
-
     try {
         const data = await coreGet('/v1/awareness/pulse');
-        return data;
-    } catch (error: any) {
-        // Silent fallback for auth errors
-        if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
+        // null = auth failed silently, use fallback
+        if (!data) {
             return { state: 'demo', pulse: 'slow' };
         }
-        console.error('Awareness: Failed to fetch pulse', error);
+        return data;
+    } catch (error: any) {
+        // Any other error - return fallback
         return { state: 'idle', pulse: 'slow' };
     }
 }

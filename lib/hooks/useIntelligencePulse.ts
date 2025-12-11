@@ -31,19 +31,16 @@ export const useIntelligencePulse = () => {
                 if (isMounted) {
                     if (response.ok) {
                         const jsonData = await response.json();
-                        // Transform/Validate data here if needed
                         setData(jsonData || MOCK_PULSE_LOW);
                     } else {
                         // Silent fail to low pulse
-                        console.warn('Mindloop synthesis API unreachable (status not ok), using fallback.');
                         setData(MOCK_PULSE_LOW);
                     }
                     setLastFetch(Date.now());
                 }
             } catch (error) {
                 if (isMounted) {
-                    // Network error or other fail
-                    console.warn('Mindloop synthesis API failed (network), using fallback.', error);
+                    // Network error - silent fallback
                     setData(MOCK_PULSE_LOW);
                     setLastFetch(Date.now());
                 }

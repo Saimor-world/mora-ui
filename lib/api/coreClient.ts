@@ -45,24 +45,14 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         const fallbackToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT || process.env.NEXT_PUBLIC_API_TOKEN;
         const finalToken = token || devToken || fallbackToken;
 
-        // Debug logging
-        console.log('[coreClient] Token sources:', {
-            cookie: token ? `${token.substring(0, 20)}...` : 'null',
-            localStorage: devToken ? `${devToken.substring(0, 20)}...` : 'null',
-            envVar: fallbackToken ? `${fallbackToken.substring(0, 20)}...` : 'null',
-            using: finalToken ? (token ? 'cookie' : devToken ? 'localStorage' : 'envVar') : 'NONE'
-        });
-
         if (finalToken) {
             headers['Authorization'] = `Bearer ${finalToken}`;
         }
-        // If no token, still attempt request - backend will return 401 if auth required
     }
 
     let response: Response;
     try {
         const url = `${CORE_BASE_URL}${path}`;
-        console.log(`[coreClient] ${options.method ?? 'GET'} ${url}`);
         response = await fetch(url, {
             method: options.method ?? 'GET',
             headers,
@@ -70,9 +60,13 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
             credentials: 'include',
         });
     } catch (err: any) {
-        const errorMessage = err?.message || 'network error';
-        console.error(`[coreClient] Fetch failed for ${CORE_BASE_URL}${path}:`, errorMessage);
-        throw new CoreError(`Core unreachable: ${errorMessage}`, 0);
+        // Network error - throw only for truly unexpected failures
+        throw new CoreError(`Core unreachable: ${err?.message || 'network error'}`, 0);
+    }
+
+    // SILENT HANDLING: 401/403 = auth issue -> return null, caller uses fallback
+    if (response.status === 401 || response.status === 403) {
+        return null;
     }
 
     if (!response.ok) {
