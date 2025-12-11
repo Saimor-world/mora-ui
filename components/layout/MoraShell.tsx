@@ -26,7 +26,7 @@ import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 
 export const MoraShell: React.FC = () => {
     const router = useRouter();
-    const isBootstrapped = useAuthBootstrapper(); // Phase 1: Fix Auth - WAIT for it!
+    const { isBootstrapped } = useAuthBootstrapper(); // Phase 1: Real Auth Required!
     const { activeNode } = useMoraStore();
     const [stars, setStars] = useState<Array<{
         id: number;

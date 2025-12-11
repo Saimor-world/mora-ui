@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { corePost, coreGet } from '@/lib/api/coreClient';
+import { useRouter } from 'next/navigation';
+import { coreGet } from '@/lib/api/coreClient';
 
 /**
  * useAuthBootstrapper
  * 
- * Automatically ensures a valid Saimor Core session exists in Development Mode.
- * If no token is found, it calls the dev-token endpoint.
+ * Ensures a valid session exists. If not authenticated, redirects to login.
+ * NO MORE AUTO DEV-TOKENS - Real authentication required!
  */
 export function useAuthBootstrapper() {
+    const router = useRouter();
     const [isBootstrapped, setIsBootstrapped] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
 
@@ -21,37 +23,25 @@ export function useAuthBootstrapper() {
             const hasLocalToken = localStorage.getItem('saimor_dev_token');
 
             if (hasCookie || hasLocalToken) {
-                // Verify token validity before accepting it
-                // We use a lightweight call. If it returns null (401), we know token is stale.
-                const isValid = await coreGet('/v1/awareness/pulse'); // Pulse is fastest
-                if (isValid) {
+                // Verify token validity
+                const isValid = await coreGet('/v1/auth/me');
+                if (isValid && isValid.user_id) {
                     setIsBootstrapped(true);
                     return;
                 }
-                // Token was invalid and likely cleared by coreClient's 401 handler.
-                // Fall through to fetch a new dev token.
+                // Token was invalid - clear it
+                localStorage.removeItem('saimor_dev_token');
+                document.cookie = 'saimor_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
             }
 
-            try {
-                // Call basic request to get a dev token
-                const res = await corePost('/v1/auth/dev-token', {}, { skipAuth: true });
-
-                if (res && res.token) {
-                    localStorage.setItem('saimor_dev_token', res.token);
-                    setIsBootstrapped(true);
-                    window.dispatchEvent(new Event('saimor-auth-updated'));
-                } else {
-                    throw new Error('No token in response');
-                }
-            } catch (err: any) {
-                setAuthError(err.message);
-                // Mark as bootstrapped anyway so the app can try to render with mocks
-                setIsBootstrapped(true);
-            }
+            // NO TOKEN OR INVALID TOKEN -> Redirect to login
+            // Don't auto-generate dev tokens anymore!
+            setAuthError('Authentication required');
+            router.push('/login');
         };
 
         bootstrap();
-    }, []);
+    }, [router]);
 
     return { isBootstrapped, authError };
 }
