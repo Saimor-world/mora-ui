@@ -8,7 +8,7 @@ import { NodeStar } from '@/components/mora/NodeStar';
 import { useMoraStore } from '@/lib/store/moraState';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
 import { useUser } from '@/lib/hooks/useUser';
-import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw } from 'lucide-react';
+import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw, Mic, Minimize2 } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CursorAgent } from '@/components/mora/CursorAgent'; // UPGRADE D1
 import { useSemanticStore } from '@/lib/store/semanticStore'; // UPGRADE E1
@@ -18,6 +18,8 @@ import { useOrbitalPhysics } from '@/lib/hooks/useOrbitalPhysics';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation'; // UPGRADE E2
 import { SemanticLinesRenderer } from '@/components/semantic/SemanticLinesRenderer'; // UPGRADE E2
 import { useIntelligenceStore } from '@/lib/store/intelligenceStore'; // UPGRADE P4
+import { usePaneStore } from '@/lib/store/paneStore'; // Window Management
+
 
 
 /**
@@ -68,6 +70,8 @@ export const CompanyCoreView: React.FC = () => {
         isLoadingDepartments,
         isLoadingCompanies
     } = useMoraStore();
+
+    const { addPane, focusPane } = usePaneStore();
 
     const { role, user } = useUser();
     const { center, isReady } = useOrbitalPhysics(); // PHASE 1 FIX
@@ -367,29 +371,34 @@ export const CompanyCoreView: React.FC = () => {
             return x - Math.floor(x);
         };
 
-        // VIEWPORT-BASED POSITIONING with seeded variation
-        // Base center with slight variation (±5vw, ±3vh)
-        const centerX = 50 + (seededRandom(1) - 0.5) * 10; // 45-55vw
-        const centerY = 45 + (seededRandom(2) - 0.5) * 6;  // 42-48vh
+        // ORB-CENTERED POSITIONING
+        // Orb is at bottom-right: 48px from edges = (100vw - 48px, 100vh - 48px)
+        // Convert to vw/vh: ~(95vw, 95vh) assuming 1920x1080 screen
+        // For safety, use calc() approach: position relative to bottom-right
+        const orbX = 92; // ~100vw - 48px in vw units (responsive)
+        const orbY = 88; // ~100vh - 48px in vh units (responsive)
 
-        // Orbit radius with variation (15-22vw)
-        const orbitRadiusX = 15 + seededRandom(3) * 7;
-        const orbitRadiusY = 12 + seededRandom(4) * 6;
+        // Orbit radius with variation (20-28vw for visibility)
+        const orbitRadiusX = 20 + seededRandom(3) * 8;
+        const orbitRadiusY = 16 + seededRandom(4) * 6;
 
-        // Start angle variation (seeded)
-        const startAngle = -Math.PI / 2 + (seededRandom(5) - 0.5) * Math.PI / 4;
-        const angleStep = (2 * Math.PI) / count;
+        // Start angle: 150° arc upward from bottom-right
+        // -135° to +15° (150° total), pointing upper-left
+        const arcStart = (-135 * Math.PI) / 180; // Upper-left
+        const arcEnd = (15 * Math.PI) / 180;     // Right
+        const arcSpan = arcEnd - arcStart;
+        const angleStep = arcSpan / Math.max(count - 1, 1);
 
         return visiblePlanets.map((planet, i) => {
             // Each planet gets a slight individual offset too
             const planetSeed = seed + planet.id.charCodeAt(0);
             const individualOffset = (Math.sin(planetSeed) * 0.5 + 0.5) * 2 - 1; // -1 to 1
 
-            const angle = startAngle + (i * angleStep) + (individualOffset * 0.1);
+            const angle = arcStart + (i * angleStep) + (individualOffset * 0.05);
 
-            // Calculate position as VIEWPORT UNITS
-            const x = centerX + Math.cos(angle) * orbitRadiusX;
-            const y = centerY + Math.sin(angle) * orbitRadiusY;
+            // Calculate position as VIEWPORT UNITS (relative to Orb)
+            const x = orbX + Math.cos(angle) * orbitRadiusX;
+            const y = orbY + Math.sin(angle) * orbitRadiusY;
 
             return {
                 planet,
@@ -413,10 +422,11 @@ export const CompanyCoreView: React.FC = () => {
             if (!parentPlanet) {
                 return {
                     space,
-                    x: (Math.random() - 0.5) * 800,
-                    y: (Math.random() - 0.5) * 600,
+                    x: 50 + (Math.random() - 0.5) * 20, // Random near center
+                    y: 50 + (Math.random() - 0.5) * 20,
                     delay: i * 0.05,
-                    orbitRadius: 0,
+                    orbitRadiusX: 0,
+                    orbitRadiusY: 0,
                     orbitAngle: 0
                 };
             }
@@ -428,18 +438,22 @@ export const CompanyCoreView: React.FC = () => {
 
             // Distribute moons evenly around the planet
             const moonAngle = (moonIndex / Math.max(planetSpaceCount, 1)) * Math.PI * 2;
-            const orbitRadius = 85 + (moonIndex * 8); // Increasing orbit distance
 
-            // Calculate moon position relative to planet
-            const moonX = Math.cos(moonAngle) * orbitRadius;
-            const moonY = Math.sin(moonAngle) * orbitRadius;
+            // Orbit radius in relative units (approx 6vw / 10vh)
+            const orbitRadiusX = 6 + (moonIndex * 1.5);
+            const orbitRadiusY = 10 + (moonIndex * 2.5);
+
+            // Calculate moon position relative to planet (VW/VH)
+            const moonX = Math.cos(moonAngle) * orbitRadiusX;
+            const moonY = Math.sin(moonAngle) * orbitRadiusY;
 
             return {
                 space,
-                x: parentPlanet.x + moonX,
-                y: parentPlanet.y + moonY,
+                x: parentPlanet.x + moonX, // VW
+                y: parentPlanet.y + moonY, // VH
                 delay: i * 0.06,
-                orbitRadius,
+                orbitRadiusX,
+                orbitRadiusY,
                 orbitAngle: moonAngle,
                 parentPlanet: parentPlanet
             };
@@ -457,10 +471,11 @@ export const CompanyCoreView: React.FC = () => {
             if (!parentMoon) {
                 return {
                     folder,
-                    x: (Math.random() - 0.5) * 600,
-                    y: (Math.random() - 0.5) * 400,
+                    x: 50 + (Math.random() - 0.5) * 20,
+                    y: 50 + (Math.random() - 0.5) * 20,
                     delay: i * 0.03,
-                    orbitRadius: 0,
+                    orbitRadiusX: 0,
+                    orbitRadiusY: 0,
                     orbitAngle: 0
                 };
             }
@@ -472,17 +487,20 @@ export const CompanyCoreView: React.FC = () => {
 
             // Distribute stars around the moon
             const starAngle = (starIndex / Math.max(moonFolderCount, 1)) * Math.PI * 2;
-            const orbitRadius = 35 + (starIndex * 4); // Tighter orbit around moons
+            // Tighter orbit (approx 2vw / 4vh)
+            const orbitRadiusX = 2 + (starIndex * 0.5);
+            const orbitRadiusY = 4 + (starIndex * 0.8);
 
-            const starX = Math.cos(starAngle) * orbitRadius;
-            const starY = Math.sin(starAngle) * orbitRadius;
+            const starX = Math.cos(starAngle) * orbitRadiusX;
+            const starY = Math.sin(starAngle) * orbitRadiusY;
 
             return {
                 folder,
-                x: parentMoon.x + starX,
-                y: parentMoon.y + starY,
+                x: parentMoon.x + starX, // VW
+                y: parentMoon.y + starY, // VH
                 delay: i * 0.04,
-                orbitRadius,
+                orbitRadiusX,
+                orbitRadiusY,
                 orbitAngle: starAngle,
                 parentMoon: parentMoon
             };
@@ -516,21 +534,20 @@ export const CompanyCoreView: React.FC = () => {
                 return x - Math.floor(x);
             };
 
-            // Distribute across the entire viewport with some clustering around planets
-            const viewportWidth = 1200; // Approximate viewport width
-            const viewportHeight = 800; // Approximate viewport height
-
+            // Distribute across the entire viewport (0-100 VW/VH)
             // Base position: random within viewport
-            let x = seededRandom(0) * viewportWidth - viewportWidth / 2;
-            let y = seededRandom(100) * viewportHeight - viewportHeight / 2;
+            let x = seededRandom(0) * 100;
+            let y = seededRandom(100) * 100;
 
             // Add some clustering around planets (30% chance)
             if (seededRandom(200) < 0.3 && planetPositions.length > 0) {
                 const randomPlanet = planetPositions[Math.floor(seededRandom(300) * planetPositions.length)];
-                const clusterDistance = 200 + seededRandom(400) * 300; // 200-500px from planet
+                const clusterDistanceX = 10 + seededRandom(400) * 10; // 10-20vw
+                const clusterDistanceY = 10 + seededRandom(410) * 10; // 10-20vh
                 const clusterAngle = seededRandom(500) * Math.PI * 2;
-                x = randomPlanet.x + Math.cos(clusterAngle) * clusterDistance;
-                y = randomPlanet.y + Math.sin(clusterAngle) * clusterDistance;
+
+                x = randomPlanet.x + Math.cos(clusterAngle) * clusterDistanceX;
+                y = randomPlanet.y + Math.sin(clusterAngle) * clusterDistanceY;
             }
 
             return {
@@ -616,13 +633,14 @@ export const CompanyCoreView: React.FC = () => {
                 }
 
                 // Position moon in orbit around its parent planet
-                const orbitRadius = 120 + (index % 3) * 30; // Varying orbit distances
+                const orbitRadiusX = 8 + (index % 3) * 2; // VW
+                const orbitRadiusY = 12 + (index % 3) * 3; // VH
                 const orbitAngle = (index / Math.max(nodeStarPositions.length, 1)) * Math.PI * 2;
 
                 return {
                     node,
-                    x: parentPlanet.x + Math.cos(orbitAngle) * (orbitRadius / 10), // Convert to vw
-                    y: parentPlanet.y + Math.sin(orbitAngle) * (orbitRadius / 10), // Convert to vh
+                    x: parentPlanet.x + Math.cos(orbitAngle) * orbitRadiusX,
+                    y: parentPlanet.y + Math.sin(orbitAngle) * orbitRadiusY,
                     delay: delay + 0.2,
                     connectionCount: nodeConnectionCounts.get(node.id) || 0,
                     promotion: 'moon' as const,
@@ -728,8 +746,8 @@ export const CompanyCoreView: React.FC = () => {
                 <motion.div
                     className="absolute top-[-15%] left-[15%] w-[900px] h-[900px] rounded-full"
                     style={{
-                        background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.02) 40%, transparent 70%)',
-                        filter: 'blur(120px)',
+                        background: 'radial-gradient(circle, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 40%, transparent 70%)',
+                        filter: 'blur(100px)',
                     }}
                     animate={{
                         scale: [1, 1.1, 1],
@@ -748,8 +766,8 @@ export const CompanyCoreView: React.FC = () => {
                 <motion.div
                     className="absolute bottom-[-25%] right-[5%] w-[700px] h-[700px] rounded-full"
                     style={{
-                        background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, rgba(59,130,246,0.04) 50%, transparent 70%)',
-                        filter: 'blur(100px)',
+                        background: 'radial-gradient(circle, rgba(212,175,55,0.09) 0%, rgba(59,130,246,0.06) 50%, transparent 70%)',
+                        filter: 'blur(80px)',
                     }}
                     animate={{
                         scale: [1.1, 1, 1.1],
@@ -853,85 +871,108 @@ export const CompanyCoreView: React.FC = () => {
 
                 {/* UPGRADE F1: Enhanced starfield with cosmic passive mode */}
                 {/* STATIC STARS - 100% Hardcoded to prevent Hydration Mismatch */}
-                <g opacity="0.5">
-                    <circle cx="10%" cy="15%" r="1" fill="#ffffff" opacity="0.3" />
-                    <circle cx="25%" cy="8%" r="0.8" fill="#D4AF37" opacity="0.4" />
-                    <circle cx="40%" cy="22%" r="1.2" fill="#ffffff" opacity="0.25" />
-                    <circle cx="55%" cy="5%" r="0.6" fill="#ffffff" opacity="0.35" />
-                    <circle cx="70%" cy="18%" r="1" fill="#D4AF37" opacity="0.3" />
-                    <circle cx="85%" cy="12%" r="0.7" fill="#ffffff" opacity="0.4" />
-                    <circle cx="15%" cy="35%" r="0.9" fill="#ffffff" opacity="0.3" />
-                    <circle cx="30%" cy="42%" r="1.1" fill="#D4AF37" opacity="0.25" />
-                    <circle cx="50%" cy="38%" r="0.8" fill="#ffffff" opacity="0.35" />
-                    <circle cx="65%" cy="45%" r="1" fill="#ffffff" opacity="0.3" />
-                    <circle cx="80%" cy="32%" r="0.6" fill="#D4AF37" opacity="0.4" />
-                    <circle cx="92%" cy="48%" r="0.9" fill="#ffffff" opacity="0.25" />
-                    <circle cx="5%" cy="55%" r="1" fill="#ffffff" opacity="0.35" />
-                    <circle cx="20%" cy="62%" r="0.7" fill="#D4AF37" opacity="0.3" />
-                    <circle cx="35%" cy="58%" r="1.2" fill="#ffffff" opacity="0.25" />
-                    <circle cx="48%" cy="65%" r="0.8" fill="#ffffff" opacity="0.4" />
-                    <circle cx="60%" cy="52%" r="1" fill="#D4AF37" opacity="0.3" />
-                    <circle cx="75%" cy="68%" r="0.6" fill="#ffffff" opacity="0.35" />
-                    <circle cx="88%" cy="72%" r="0.9" fill="#ffffff" opacity="0.25" />
-                    <circle cx="12%" cy="78%" r="1.1" fill="#D4AF37" opacity="0.3" />
-                    <circle cx="28%" cy="85%" r="0.7" fill="#ffffff" opacity="0.4" />
-                    <circle cx="42%" cy="82%" r="1" fill="#ffffff" opacity="0.25" />
-                    <circle cx="58%" cy="88%" r="0.8" fill="#D4AF37" opacity="0.35" />
-                    <circle cx="72%" cy="92%" r="1.2" fill="#ffffff" opacity="0.3" />
-                    <circle cx="90%" cy="85%" r="0.6" fill="#ffffff" opacity="0.4" />
+                {/* DYNAMIC STARS - "Cave of Light" Aesthetic */}
+                <g opacity="0.9">
+                    {isMounted && Array.from({ length: 200 }).map((_, i) => {
+                        const seed = i * 937.11; // Deterministic seed
+                        const x = (Math.sin(seed) * 0.5 + 0.5) * 100;
+                        const y = (Math.cos(seed * 0.73) * 0.5 + 0.5) * 100;
+                        const r = (Math.sin(seed * 3.1) + 1.8) * 0.6; // 0.5 to 1.7px
+                        const opacity = (Math.sin(seed * 1.5) * 0.3 + 0.5); // 0.2 to 0.8
+                        const color = i % 8 === 0 ? "#D4AF37" : (i % 12 === 0 ? "#10B981" : "#FFFFFF");
+
+                        return (
+                            <circle
+                                key={i}
+                                cx={`${x}%`}
+                                cy={`${y}%`}
+                                r={r}
+                                fill={color}
+                                opacity={opacity}
+                                style={{
+                                    filter: i % 15 === 0 ? 'drop-shadow(0 0 2px white)' : 'none'
+                                }}
+                            />
+                        );
+                    })}
                 </g>
             </svg>
 
-            {/* TESLA Header - Minimal */}
-            {currentCompany && viewMode !== 'owner' && (
-                <motion.div
-                    className="absolute top-8 left-1/2 -translate-x-1/2 z-elevated"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    <div className="glass-panel px-8 py-4">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-2 h-2 rounded-full ${viewMode === 'demo' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
-                            <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">
-                                {currentCompany.name.toUpperCase()}
-                            </h1>
-                        </div>
-                        <div className="mt-2 text-xs text-white/40 font-mono tracking-widest">
-                            {visiblePlanets.length} DEPARTMENTS • {visibleSpaces.length} SPACES
-                        </div>
-                    </div>
-                </motion.div>
-            )}
+            {/* Header removed - now using Center Universe Hub */}
 
-            {/* Center State */}
+            {/* CENTER UNIVERSE HUB - Premium Glass Design */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <motion.div
                     className="text-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
                 >
-                    <h1 className="text-6xl font-extralight tracking-[0.5em] text-white/50 mb-4">
-                        SAIMÔR
+                    {/* Logo Placeholder - UPGRADED SUN AESTHETIC */}
+                    <motion.div
+                        className="w-28 h-28 mx-auto mb-6 rounded-full flex items-center justify-center backdrop-blur-md relative overflow-hidden"
+                        style={{
+                            background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.1) 100%)',
+                            boxShadow: '0 0 40px rgba(16,185,129,0.2), inset 0 0 20px rgba(255,255,255,0.1), 0 0 80px rgba(16,185,129,0.1)'
+                        }}
+                        whileHover={{ scale: 1.1, boxShadow: '0 0 60px rgba(16,185,129,0.3), inset 0 0 30px rgba(255,255,255,0.2)' }}
+                        animate={{
+                            boxShadow: [
+                                '0 0 40px rgba(16,185,129,0.2), inset 0 0 20px rgba(255,255,255,0.1)',
+                                '0 0 50px rgba(16,185,129,0.25), inset 0 0 25px rgba(255,255,255,0.15)',
+                                '0 0 40px rgba(16,185,129,0.2), inset 0 0 20px rgba(255,255,255,0.1)'
+                            ]
+                        }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                        {/* Inner Solar Core */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent opacity-50" />
+
+                        <span className="text-5xl font-light text-white/50 relative z-10 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                            {currentCompany?.name?.charAt(0) || 'S'}
+                        </span>
+                    </motion.div>
+
+                    {/* Company Name */}
+                    <h1 className="text-4xl md:text-5xl font-extralight tracking-[0.4em] text-white/70 mb-2">
+                        {currentCompany?.name?.toUpperCase() || 'SAIMÔR'}
                     </h1>
-                    <p className="text-sm text-white/30 font-light tracking-[0.3em]">
-                        {isLoading ? 'INITIALIZING...' :
-                            visiblePlanets.length > 0 ? `${visiblePlanets.length} ORBITAL SYSTEMS` :
-                                'NO DATA'}
-                    </p>
+
+                    {/* Divider */}
+                    <div className="w-32 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent mx-auto my-4" />
+
+                    {/* Stats Bar */}
+                    <div className="flex items-center justify-center gap-8 text-xs text-white/40 font-mono tracking-widest">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500/50" />
+                            <span>{visiblePlanets.length} PLANETS</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-500/50" />
+                            <span>{visibleSpaces.length} MOONS</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-amber-500/50" />
+                            <span>{visibleFolders.length} STARS</span>
+                        </div>
+                    </div>
+
+                    {/* Mode Indicator */}
+                    {viewMode === 'demo' && (
+                        <motion.div
+                            className="mt-4 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 inline-block"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                        >
+                            <span className="text-[10px] text-blue-400 tracking-widest">DEMO MODE</span>
+                        </motion.div>
+                    )}
                 </motion.div>
             </div>
 
-            {/* ORBITAL SYSTEM - Bottom Right Origin (MASTERBIBEL) */}
+            {/* ORBITAL SYSTEM - Fixed Full Screen Overlay */}
             <div
-                className="absolute z-floating"
-                style={{
-                    bottom: 100, // Increased to ensure full visibility (Orb radius ~70px + padding)
-                    right: 100,
-                    width: 0,
-                    height: 0,
-                    overflow: 'visible'
-                }}
+                className="fixed inset-0 z-10 pointer-events-none overflow-hidden"
             >
                 {/* MASTERBIBEL: Mycelium Connection Lines - Department to Stars */}
                 {viewMode !== 'owner' && (
@@ -1008,14 +1049,10 @@ export const CompanyCoreView: React.FC = () => {
                 {/* UPGRADE E1: Semantic Constellations - SVG-based connection visualization */}
                 {viewMode !== 'owner' && (
                     <svg
-                        className="absolute pointer-events-none"
-                        style={{
-                            top: -400,
-                            left: -400,
-                            width: 800,
-                            height: 800,
-                            overflow: 'visible'
-                        }}
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        viewBox="0 0 100 100" // Normalize coordinate system to 0-100 (VW/VH)
+                        preserveAspectRatio="none"
+                        style={{ overflow: 'visible' }}
                     >
                         <defs>
                             <linearGradient id="semanticGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -1038,16 +1075,34 @@ export const CompanyCoreView: React.FC = () => {
                                 animated: boolean;
                             }> = [];
 
+                            // UPGRADE E1: Connect Center (Sun) to Planets - "Neural Pathways"
+                            planetPositions.forEach(planet => {
+                                // Calculate distance to center (50,50) to vary strength
+                                const dx = planet.x - 50;
+                                const dy = planet.y - 50;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                                connections.push({
+                                    id: `sun-${planet.planet.id}`,
+                                    x1: 50, // Center
+                                    y1: 50, // Center
+                                    x2: planet.x,
+                                    y2: planet.y,
+                                    strength: 0.9 - (dist / 100), // Stronger when closer
+                                    animated: true // Always animate Sun connections
+                                });
+                            });
+
                             // Connect planets to their moons
                             planetPositions.forEach(planet => {
                                 const planetMoons = moonPositions.filter(m => m.parentPlanet?.planet?.id === planet.planet?.id);
                                 planetMoons.forEach(moon => {
                                     connections.push({
                                         id: `semantic-${planet.planet.id}-${moon.space.id}`,
-                                        x1: 400 + planet.x,
-                                        y1: 400 + planet.y,
-                                        x2: 400 + moon.x,
-                                        y2: 400 + moon.y,
+                                        x1: planet.x,
+                                        y1: planet.y,
+                                        x2: moon.x,
+                                        y2: moon.y,
                                         strength: 0.8,
                                         animated: false
                                     });
@@ -1060,10 +1115,10 @@ export const CompanyCoreView: React.FC = () => {
                                 moonStars.forEach(star => {
                                     connections.push({
                                         id: `semantic-${moon.space.id}-${star.folder.id}`,
-                                        x1: 400 + moon.x,
-                                        y1: 400 + moon.y,
-                                        x2: 400 + star.x,
-                                        y2: 400 + star.y,
+                                        x1: moon.x,
+                                        y1: moon.y,
+                                        x2: star.x,
+                                        y2: star.y,
                                         strength: 0.6,
                                         animated: false
                                     });
@@ -1094,10 +1149,10 @@ export const CompanyCoreView: React.FC = () => {
 
                                         connections.push({
                                             id: `constellation-${nodeA.node.id}-${nodeB.node.id}`,
-                                            x1: 400 + nodeA.x,
-                                            y1: 400 + nodeA.y,
-                                            x2: 400 + nodeB.x,
-                                            y2: 400 + nodeB.y,
+                                            x1: nodeA.x,
+                                            y1: nodeA.y,
+                                            x2: nodeB.x,
+                                            y2: nodeB.y,
                                             strength: weight,
                                             animated: finalOrbState === 'insight' || finalOrbState === 'thinking' // Animate heavily during thought
                                         });
@@ -1187,8 +1242,8 @@ export const CompanyCoreView: React.FC = () => {
                                         onClick={() => {
                                             if (planet.type === 'company') {
                                                 // COMPLETE COMPANY SWITCH - Load all company data
+                                                // NOTE: Do NOT change viewMode here - preserve current mode
                                                 setActiveCompany(planet.id);
-                                                setViewMode('demo');
                                                 loadDepartments(planet.id);
                                                 // Load nodes for the new company (background stars)
                                                 loadNodesForCompany(planet.id).catch(console.warn);
@@ -1219,16 +1274,20 @@ export const CompanyCoreView: React.FC = () => {
 
                 {viewMode !== 'owner' && moonPositions.length > 0 && (
                     <div className="absolute inset-0 w-full h-full pointer-events-none">
-                        {moonPositions.map(({ space, x, y, delay, orbitRadius, orbitAngle, parentPlanet }) => (
+                        {moonPositions.map(({ space, x, y, delay, parentPlanet }) => (
                             <motion.div
                                 key={space.id}
-                                className="relative"
+                                className="absolute"
                                 initial={{ scale: 0, opacity: 0 }}
+                                style={{
+                                    left: `${x}vw`,
+                                    top: `${y}vh`,
+                                    transform: 'translate(-50%, -50%)'
+                                }}
                                 animate={{
                                     scale: 1,
                                     opacity: 1,
-                                    x: orbitShiftActive ? x * 1.2 : x, // UPGRADE B1: Orbit shift effect
-                                    y: orbitShiftActive ? y * 1.2 : y
+                                    // x/y offsets would need px calibration if used with left/top %, skipping orbitShift for complexity reduction or use transform
                                 }}
                                 transition={{
                                     delay,
@@ -1236,22 +1295,7 @@ export const CompanyCoreView: React.FC = () => {
                                     ease: orbitShiftActive ? [0.25, 0.46, 0.45, 0.94] : "easeOut"
                                 }}
                             >
-                                {/* UPGRADE B1: Orbital trail effect */}
-                                {orbitShiftActive && parentPlanet && (
-                                    <motion.div
-                                        className="absolute rounded-full border border-emerald-400/30"
-                                        style={{
-                                            width: orbitRadius * 2,
-                                            height: orbitRadius * 2,
-                                            left: -orbitRadius,
-                                            top: -orbitRadius,
-                                            transform: `translate(${parentPlanet.x}px, ${parentPlanet.y}px)`
-                                        }}
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 0.3 }}
-                                        transition={{ duration: 1 }}
-                                    />
-                                )}
+                                {/* Orbit trail removed for complexity reduction on VW/VH scale */}
 
                                 <Star
                                     space={{
@@ -1280,17 +1324,21 @@ export const CompanyCoreView: React.FC = () => {
 
                 {/* UPGRADE B1: Stars (Folders) orbiting moons */}
                 {viewMode !== 'owner' && starPositions.length > 0 && (
-                    <div className="absolute">
-                        {starPositions.map(({ folder, x, y, delay, orbitRadius, orbitAngle, parentMoon }) => (
+                    <div className="absolute inset-0 w-full h-full pointer-events-none">
+                        {starPositions.map(({ folder, x, y, delay, parentMoon }) => (
                             <motion.div
                                 key={folder.id}
-                                className="relative"
+                                className="absolute"
                                 initial={{ scale: 0, opacity: 0 }}
+                                style={{
+                                    left: `${x}vw`,
+                                    top: `${y}vh`,
+                                    transform: 'translate(-50%, -50%)'
+
+                                }}
                                 animate={{
                                     scale: 1,
-                                    opacity: 1,
-                                    x: orbitShiftActive ? x * 1.3 : x, // Enhanced orbit shift for stars
-                                    y: orbitShiftActive ? y * 1.3 : y
+                                    opacity: 1
                                 }}
                                 transition={{
                                     delay,
@@ -1343,9 +1391,20 @@ export const CompanyCoreView: React.FC = () => {
                                     whileHover={{ scale: 1.3 }}
                                     onClick={() => {
                                         setOrbState('focus');
-                                        // Navigate to the node's space
+                                        // Navigate to the node's space by opening a window
                                         if (node.space_id) {
-                                            navigateToSpace(node.space_id);
+                                            const paneId = `space-${node.space_id}`;
+                                            addPane({
+                                                id: paneId,
+                                                type: 'space',
+                                                title: node.title || 'Space',
+                                                data: { spaceId: node.space_id },
+                                                minimized: false,
+                                                size: { width: 1000, height: 700 },
+                                                // Center position with upward bias
+                                                position: { x: window.innerWidth / 2 - 500, y: window.innerHeight / 2 - 450 }
+                                            });
+                                            focusPane(paneId);
                                         }
                                         setTimeout(() => setOrbState('idle'), 2000);
                                     }}
@@ -1412,8 +1471,7 @@ export const CompanyCoreView: React.FC = () => {
 
                 {/* Node Stars - Ambient knowledge particles throughout the universe */}
                 {viewMode !== 'owner' && nodeStarPositions.length > 0 && (
-                    <div className="absolute top-1/2 left-1/2"> {/* Center the container to match nodeStarPositions calculations */}
-
+                    <div className="absolute inset-0 pointer-events-none">
                         {/* UPGRADE E2: SEMANTIC CONSTELLATION LAYER */}
                         <div className="absolute inset-0 pointer-events-none z-0">
                             <SemanticLinesRenderer lines={connections} />
@@ -1423,7 +1481,7 @@ export const CompanyCoreView: React.FC = () => {
                             <NodeStar
                                 key={node.id}
                                 node={node}
-                                position={{ x, y }}
+                                position={{ x: `${x}vw`, y: `${y}vh` }}
                                 delay={delay}
                                 size="xs"
                                 onHover={(hover) => hover ? fetchConstellation(node.id, nodePosMap) : clearConstellation()} // UPGRADE E2: Interaction
@@ -1459,7 +1517,7 @@ export const CompanyCoreView: React.FC = () => {
 
             {/* THE SUN - MÔRA ORB (Das Herz) */}
             <motion.button
-                className="fixed bottom-[80px] right-[80px] rounded-full cursor-pointer group z-50"
+                className="fixed bottom-8 right-8 rounded-full cursor-pointer group z-[200]"
                 style={{
                     width: orbParams.size,
                     height: orbParams.size,
@@ -1536,46 +1594,112 @@ export const CompanyCoreView: React.FC = () => {
                 </div>
             </motion.button>
 
-            {/* Health Panel - TESLA Style */}
+            {/* MÔRA INTELLIGENCE DASHBOARD */}
             <AnimatePresence>
                 {showHealthPanel && (
                     <motion.div
-                        className="fixed bottom-[220px] right-[48px] w-96 glass-panel p-6 z-50"
+                        className="fixed bottom-[220px] right-[48px] w-[420px] glass-panel p-0 z-50 overflow-hidden"
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                     >
-                        <button
-                            className="absolute top-4 right-4 text-white/40 hover:text-white/70"
-                            onClick={() => setShowHealthPanel(false)}
-                        >
-                            <X size={18} />
-                        </button>
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-2.5 h-2.5 rounded-full ${finalOrbState === 'idle' ? 'bg-emerald-400' : finalOrbState === 'thinking' ? 'bg-blue-400 animate-pulse' : 'bg-amber-400'}`} />
+                                <h3 className="text-lg font-light text-white/90 tracking-wider">
+                                    MÔRA INTELLIGENCE
+                                </h3>
+                            </div>
+                            <button
+                                className="p-1.5 rounded-full hover:bg-white/5 text-white/40 hover:text-white/70 transition-colors"
+                                onClick={() => setShowHealthPanel(false)}
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
 
-                        <h3 className="text-xl font-light text-white/90 mb-6 tracking-wider">
-                            SYSTEM STATUS
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-white/50 text-sm">State</span>
-                                <span className="text-emerald-400 font-mono text-sm">{finalOrbState.toUpperCase()}</span>
+                        {/* Status Section */}
+                        <div className="p-4 space-y-4">
+                            {/* Universe Stats */}
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+                                    <div className="text-2xl font-light text-emerald-400">{visiblePlanets.length}</div>
+                                    <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Planets</div>
+                                    <div className="text-[8px] text-white/20">(Departments)</div>
+                                </div>
+                                <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+                                    <div className="text-2xl font-light text-blue-400">{visibleSpaces.length}</div>
+                                    <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Moons</div>
+                                    <div className="text-[8px] text-white/20">(Spaces)</div>
+                                </div>
+                                <div className="bg-black/20 rounded-xl p-3 border border-white/5">
+                                    <div className="text-2xl font-light text-amber-400">{visibleFolders.length}</div>
+                                    <div className="text-[10px] text-white/40 uppercase tracking-wider mt-1">Stars</div>
+                                    <div className="text-[8px] text-white/20">(Folders)</div>
+                                </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="glass-panel p-4">
-                                    <div className="text-3xl font-light text-white/90">{visiblePlanets.length}</div>
-                                    <div className="text-xs text-white/40 mt-1">SYSTEMS</div>
+                            {/* AI State */}
+                            <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-xl p-4 border border-emerald-500/20">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-white/50 uppercase tracking-wider">Current State</span>
+                                    <span className="text-sm font-mono text-emerald-400">{finalOrbState.toUpperCase()}</span>
                                 </div>
-                                <div className="glass-panel p-4">
-                                    <div className="text-3xl font-light text-white/90">{visibleSpaces.length}</div>
-                                    <div className="text-xs text-white/40 mt-1">SPACES</div>
+                                <div className="text-sm text-white/70">
+                                    {finalOrbState === 'idle' && 'Awaiting your commands. Navigate the universe or ask Môra anything.'}
+                                    {finalOrbState === 'thinking' && 'Processing intelligence from your workspace...'}
+                                    {finalOrbState === 'focus' && 'Focused on the current task. Ready for deep work.'}
+                                    {finalOrbState === 'alert' && 'Something requires your attention!'}
+                                    {finalOrbState === 'insight' && 'New insights discovered in your data.'}
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 text-xs text-white/40 pt-4 border-t border-white/10">
-                                <Activity size={12} />
+                            {/* Quick Actions */}
+                            <div className="space-y-2">
+                                <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Quick Actions</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setOrbState('thinking');
+                                            setTimeout(() => setOrbState('idle'), 3000);
+                                        }}
+                                        className="flex items-center gap-2 p-2.5 bg-black/20 rounded-lg border border-white/5 hover:border-emerald-500/30 hover:bg-emerald-500/10 transition-all text-left"
+                                    >
+                                        <Sparkles size={14} className="text-emerald-400" />
+                                        <span className="text-xs text-white/70">Analyze Workspace</span>
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            toast.info('Opening voice mode...');
+                                        }}
+                                        className="flex items-center gap-2 p-2.5 bg-black/20 rounded-lg border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/10 transition-all text-left"
+                                    >
+                                        <Mic size={14} className="text-blue-400" />
+                                        <span className="text-xs text-white/70">Voice Mode</span>
+                                    </button>
+                                    <button
+                                        onClick={handleReloadDepartments}
+                                        className="flex items-center gap-2 p-2.5 bg-black/20 rounded-lg border border-white/5 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all text-left"
+                                    >
+                                        <RefreshCw size={14} className="text-amber-400" />
+                                        <span className="text-xs text-white/70">Refresh Data</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setShowHealthPanel(false)}
+                                        className="flex items-center gap-2 p-2.5 bg-black/20 rounded-lg border border-white/5 hover:border-white/20 transition-all text-left"
+                                    >
+                                        <Minimize2 size={14} className="text-white/40" />
+                                        <span className="text-xs text-white/70">Minimize</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* System Status */}
+                            <div className="flex items-center gap-2 text-xs text-white/40 pt-3 border-t border-white/5">
+                                <Activity size={12} className="text-emerald-400" />
                                 <span>All systems operational</span>
+                                <span className="ml-auto text-[10px] font-mono text-white/20">v1.5-beta</span>
                             </div>
                         </div>
                     </motion.div>
