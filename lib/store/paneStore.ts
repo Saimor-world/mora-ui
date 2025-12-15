@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export interface PaneConfig {
     id: string;
-    type: 'document' | 'chat' | 'node-detail' | 'settings' | 'timeline' | 'apps' | 'finder' | 'notes' | 'scanner' | 'grid';
+    type: 'document' | 'chat' | 'node-detail' | 'settings' | 'timeline' | 'apps' | 'finder' | 'notes' | 'scanner' | 'grid' | 'space' | 'integrations' | 'search' | 'users';
     title: string;
     position: { x: number; y: number };
     size: { width: number; height: number };
@@ -35,6 +35,21 @@ export const usePaneStore = create<PaneState>((set, get) => ({
     activePaneId: null,
 
     addPane: (pane) => set((state) => {
+        // Prevent duplicate panes with same ID
+        const existingPane = state.panes.find(p => p.id === pane.id);
+        if (existingPane) {
+            // If pane already exists, just focus it instead of creating duplicate
+            return {
+                panes: state.panes.map(p =>
+                    p.id === pane.id
+                        ? { ...p, zIndex: state.nextZIndex, minimized: false }
+                        : p
+                ),
+                nextZIndex: state.nextZIndex + 1,
+                activePaneId: pane.id
+            };
+        }
+
         const newPane: PaneConfig = {
             ...pane,
             zIndex: state.nextZIndex,

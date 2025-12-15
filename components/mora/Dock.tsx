@@ -1,9 +1,12 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, MessageSquare, Settings, LayoutGrid, FileText, Database, Zap, ChevronUp, X, ToggleLeft, Minus, Moon } from 'lucide-react';
+import { Home, Search, MessageSquare, Settings, LayoutGrid, FileText, Database, Zap, ChevronUp, X, ToggleLeft, Minus, Moon, LogOut, User } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { writeCookie } from '@/lib/auth/cookies';
+import { useUser } from '@/lib/hooks/useUser';
 
 /**
  * OS-STYLE DOCK - Universe Edition
@@ -21,6 +24,7 @@ interface DockProps {
 }
 
 export const Dock = ({ onSleep }: DockProps) => {
+    const router = useRouter();
     const {
         activeSpaceId,
         activeFolderId,
@@ -46,6 +50,8 @@ export const Dock = ({ onSleep }: DockProps) => {
         minimizePane
     } = usePaneStore();
 
+    const { user } = useUser();
+
     // Get minimized panes from store
     const minimizedPanes = panes.filter(p => p.minimized);
 
@@ -62,57 +68,179 @@ export const Dock = ({ onSleep }: DockProps) => {
         { icon: LayoutGrid, label: 'Apps', action: 'apps' },
         { icon: MessageSquare, label: 'Môra', action: 'chat' },
         { icon: Settings, label: 'Settings', action: 'settings' },
-        { icon: Moon, label: 'Sleep', action: 'sleep' }
+        { icon: User, label: 'Switch User', action: 'switch-user' },
+        { icon: LogOut, label: 'Logout', action: 'logout' }
     ];
+
+    // Dropdown menu items (in the ChevronUp menu)
+    const menuItems = [
+        { icon: Moon, label: 'Sleep Mode', action: 'sleep', description: 'Sperrt den Bildschirm' },
+        { icon: User, label: 'Switch User', action: 'switch-user', description: 'Benutzer wechseln' },
+        { icon: LogOut, label: 'Logout', action: 'logout', description: 'Abmelden' }
+    ];
+
+    const handleLogout = () => {
+        // Clear all auth tokens and session data
+        localStorage.removeItem('saimor_dev_token');
+        localStorage.removeItem('saimor_mode');
+        localStorage.removeItem('saimor_role');
+        localStorage.removeItem('saimor_tenant');
+        localStorage.removeItem('last_workspace');
+        localStorage.removeItem('last_activity');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('mora_session');
+        localStorage.removeItem('last_user_name');
+        writeCookie('saimor_auth', '', -1);
+
+        // Reset store state
+        setViewMode('demo');
+        setViewLevel('core');
+        setActiveCompany(null);
+        setActiveDepartment(null);
+        setActiveSpace(null);
+        setActiveFolder(null);
+
+        // Navigate to welcome screen
+        router.push('/');
+    };
+
+    const handleSwitchUser = () => {
+        // Clear session but keep some preferences
+        localStorage.removeItem('saimor_dev_token');
+        writeCookie('saimor_auth', '', -1);
+
+        // Navigate to welcome with fresh state
+        router.push('/');
+    };
 
     const handleDockClick = (action: string) => {
         console.log('Dock action:', action);
 
+        // Helper to calculate centered position with visual bias (slightly higher)
+        const getCenteredPosition = (width: number, height: number) => {
+            const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+            const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+            // Shift up by 10% of height to account for dock visual weight
+            const yBias = windowHeight * 0.1;
+            return {
+                x: Math.floor((windowWidth - width) / 2),
+                y: Math.floor((windowHeight - height) / 2) - yBias
+            };
+        };
+
         switch (action) {
+            case 'home':
+                // Universe Button: Minimize all windows to show the stars
+                panes.forEach(p => !p.minimized && minimizePane(p.id));
+                break;
             case 'settings': {
-                const existing = getPane('settings-pane');
+                const existing = getPane('settings-main');
                 if (existing) {
-                    if (existing.minimized) restorePane('settings-pane');
-                    else focusPane('settings-pane');
+                    if (existing.minimized) restorePane('settings-main');
+                    else focusPane('settings-main');
                 } else {
+                    const size = { width: 700, height: 500 };
                     addPane({
-                        id: 'settings-pane',
+                        id: 'settings-main',
                         type: 'settings',
                         title: 'Settings',
-                        position: { x: 0, y: 0 }, // Position handled by GlassPanel centering
-                        size: { width: 700, height: 500 },
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
                         minimized: false
                     });
                 }
                 break;
             }
             case 'apps': {
-                const existing = getPane('apps-library');
+                const existing = getPane('apps-main');
                 if (existing) {
-                    if (existing.minimized) restorePane('apps-library');
-                    else focusPane('apps-library');
+                    if (existing.minimized) restorePane('apps-main');
+                    else focusPane('apps-main');
                 } else {
+                    const size = { width: 800, height: 600 };
                     addPane({
-                        id: 'apps-library',
-                        type: 'document', // Using document type as generic for now
+                        id: 'apps-main',
+                        type: 'apps',
                         title: 'App Library',
-                        position: { x: 0, y: 0 },
-                        size: { width: 800, height: 600 },
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
                         minimized: false
                     });
                 }
                 break;
             }
-            case 'home':
             case 'search':
             case 'chat':
                 // Preserve legacy/placeholder behavior for now
+                break;
+            case 'logout':
+                handleLogout();
+                break;
+            case 'switch-user':
+                handleSwitchUser();
                 break;
             case 'sleep':
                 // Trigger lockscreen via callback
                 if (onSleep) {
                     onSleep();
                 }
+                break;
+            case 'search': {
+                const existing = getPane('search-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('search-main');
+                    else focusPane('search-main');
+                } else {
+                    const size = { width: 600, height: 400 };
+                    addPane({
+                        id: 'search-main',
+                        type: 'search',
+                        title: 'Search',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
+                break;
+            }
+            case 'files': {
+                const existing = getPane('finder-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('finder-main');
+                    else focusPane('finder-main');
+                } else {
+                    const size = { width: 800, height: 550 };
+                    addPane({
+                        id: 'finder-main',
+                        type: 'finder',
+                        title: 'Finder',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
+                break;
+            }
+            case 'users': {
+                const existing = getPane('users-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('users-main');
+                    else focusPane('users-main');
+                } else {
+                    const size = { width: 700, height: 500 };
+                    addPane({
+                        id: 'users-main',
+                        type: 'users',
+                        title: 'Team & Users',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
+                break;
+            }
+            case 'chat':
+                // Toggle MORA AI Chat (handled by ChatDock component)
                 break;
         }
 
@@ -121,27 +249,34 @@ export const Dock = ({ onSleep }: DockProps) => {
 
     const toggleDemo = () => {
         if (viewMode === 'demo') {
-            // Exit demo → workspace core
+            // Exit demo → Return to Welcome/Login screen for proper auth
+            // This ensures demo data is fully isolated
+            localStorage.removeItem('saimor_dev_token');
+            localStorage.removeItem('saimor_mode');
+            localStorage.removeItem('saimor_role');
+            writeCookie('saimor_auth', '', -1);
+
             setViewMode('workspace');
             setViewLevel('core');
             setActiveCompany(null);
             setActiveDepartment(null);
             setActiveSpace(null);
             setActiveFolder(null);
+
+            // Navigate to welcome screen
+            router.push('/');
         } else {
-            // Enter demo → demo core
-            setViewMode('demo');
-            setViewLevel('core');
-            setActiveCompany(null);
-            setActiveDepartment(null);
-            setActiveSpace(null);
-            setActiveFolder(null);
+            // Enter demo → Also navigate to welcome screen to use proper demo entry
+            router.push('/');
         }
     };
 
     const isActionActive = (action: string) => {
-        if (action === 'settings' && getPane('settings-pane') && !getPane('settings-pane')?.minimized) return true;
-        if (action === 'apps' && getPane('apps-library') && !getPane('apps-library')?.minimized) return true;
+        if (action === 'settings' && getPane('settings-main') && !getPane('settings-main')?.minimized) return true;
+        if (action === 'apps' && getPane('apps-main') && !getPane('apps-main')?.minimized) return true;
+        if (action === 'search' && getPane('search-main') && !getPane('search-main')?.minimized) return true;
+        if (action === 'files' && getPane('finder-main') && !getPane('finder-main')?.minimized) return true;
+        if (action === 'users' && getPane('users-main') && !getPane('users-main')?.minimized) return true;
         if (action === 'home' && !activeSpaceId && !activeFolderId) return true;
         if (action === 'chat' && orbState === 'thinking') return true;
         return false;
@@ -162,7 +297,7 @@ export const Dock = ({ onSleep }: DockProps) => {
                         >
                             <div className="glass-panel p-4 rounded-xl min-w-[280px] backdrop-blur-xl border border-white/10 bg-black/60 shadow-2xl">
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="text-white/80 text-sm font-medium">Recent</span>
+                                    <span className="text-white/80 text-sm font-medium">System</span>
                                     <button
                                         onClick={() => setShowRecent(false)}
                                         className="text-white/50 hover:text-white/80 transition-colors"
@@ -170,18 +305,47 @@ export const Dock = ({ onSleep }: DockProps) => {
                                         <X size={14} />
                                     </button>
                                 </div>
-                                <div className="space-y-2">
-                                    {recentItems.map((item, i) => (
+
+                                {/* System Menu Items */}
+                                <div className="space-y-1 mb-4">
+                                    {menuItems.map((item) => (
                                         <motion.button
-                                            key={item.id}
-                                            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 text-left transition-colors"
+                                            key={item.action}
+                                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/10 text-left transition-colors group"
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
+                                            onClick={() => {
+                                                setShowRecent(false);
+                                                handleDockClick(item.action);
+                                            }}
                                         >
-                                            <item.icon size={16} className="text-emerald-400" />
-                                            <span className="text-white/80 text-sm">{item.name}</span>
+                                            <div className={`p-2 rounded-lg ${item.action === 'sleep' ? 'bg-blue-500/20' : item.action === 'logout' ? 'bg-red-500/20' : 'bg-white/5'}`}>
+                                                <item.icon size={16} className={item.action === 'sleep' ? 'text-blue-400' : item.action === 'logout' ? 'text-red-400' : 'text-emerald-400'} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="text-white/90 text-sm font-medium">{item.label}</div>
+                                                <div className="text-white/40 text-xs">{item.description}</div>
+                                            </div>
                                         </motion.button>
                                     ))}
+                                </div>
+
+                                {/* Recent Items Section */}
+                                <div className="pt-3 border-t border-white/10">
+                                    <span className="text-white/40 text-xs uppercase tracking-wider">Zuletzt verwendet</span>
+                                    <div className="mt-2 space-y-1">
+                                        {recentItems.slice(0, 3).map((item) => (
+                                            <motion.button
+                                                key={item.id}
+                                                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 text-left transition-colors"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                <item.icon size={14} className="text-white/40" />
+                                                <span className="text-white/60 text-sm">{item.name}</span>
+                                            </motion.button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -220,24 +384,26 @@ export const Dock = ({ onSleep }: DockProps) => {
                         )}
                     </motion.button>
 
-                    {/* Demo Mode Toggle */}
-                    <motion.button
-                        layout
-                        className={`p-3 rounded-xl hover:bg-white/10 transition-colors relative group mr-1 ${viewMode === 'demo' ? 'text-blue-400' : 'text-emerald-400'}`}
-                        whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={toggleDemo}
-                    >
-                        <ToggleLeft
-                            size={20}
-                            strokeWidth={1.5}
-                            className={`transition-transform ${viewMode === 'demo' ? 'rotate-180' : ''}`}
-                        />
-                        {/* Tooltip */}
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md">
-                            {viewMode === 'demo' ? 'Exit Demo' : 'Enter Demo'}
-                        </div>
-                    </motion.button>
+                    {/* Demo Mode Toggle - HIDE IF LOGGED IN */}
+                    {!user && (
+                        <motion.button
+                            layout
+                            className={`p-3 rounded-xl hover:bg-white/10 transition-colors relative group mr-1 ${viewMode === 'demo' ? 'text-blue-400' : 'text-emerald-400'}`}
+                            whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={toggleDemo}
+                        >
+                            <ToggleLeft
+                                size={20}
+                                strokeWidth={1.5}
+                                className={`transition-transform ${viewMode === 'demo' ? 'rotate-180' : ''}`}
+                            />
+                            {/* Tooltip */}
+                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md">
+                                {viewMode === 'demo' ? 'Exit Demo' : 'Enter Demo'}
+                            </div>
+                        </motion.button>
+                    )}
 
                     {/* Separator */}
                     <div className="w-px h-6 bg-white/20 mx-1" />
@@ -250,7 +416,7 @@ export const Dock = ({ onSleep }: DockProps) => {
                             <motion.button
                                 layout
                                 key={i}
-                                className={`p-3 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors relative group ${active ? 'bg-white/10 text-white' : ''}`}
+                                className={`dock-item-${item.action} p-3 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors relative group ${active ? 'bg-white/10 text-white' : ''}`}
                                 whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handleDockClick(item.action)}

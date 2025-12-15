@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { SettingsPane } from '@/components/panes/SettingsPane';
@@ -6,6 +8,11 @@ import { FinderPane } from '@/components/panes/FinderPane';
 import { NotesPane } from '@/components/panes/NotesPane';
 import { ScannerPane } from '@/components/panes/ScannerPane';
 import { GridPane } from '@/components/panes/GridPane';
+import { SpacePane } from '@/components/panes/SpacePane';
+import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
+import { DocumentPane } from '@/components/panes/DocumentPane';
+import { SearchPane } from '@/components/panes/SearchPane';
+import { UsersPane } from '@/components/panes/UsersPane';
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
@@ -22,8 +29,16 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <ScannerPane id={pane.id} />;
         case 'grid':
             return <GridPane id={pane.id} />;
+        case 'space':
+            return <SpacePane id={pane.id} />;
+        case 'integrations':
+            return <IntegrationsPane id={pane.id} />;
         case 'document':
-            return <AppLibraryPane id={pane.id} />;
+            return <DocumentPane id={pane.id} />;
+        case 'search':
+            return <SearchPane id={pane.id} />;
+        case 'users':
+            return <UsersPane id={pane.id} />;
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;
