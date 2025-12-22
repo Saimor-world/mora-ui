@@ -2053,7 +2053,7 @@ export const CompanyCoreView: React.FC = () => {
 
                         {/* Agency Input */}
                         <div className="px-4 py-2 border-b border-white/5 bg-black/20">
-                            <MoraCommand />
+                            <MoraCommand onSuccess={() => setShowHealthPanel(false)} />
                         </div>
 
                         {/* Status Section */}

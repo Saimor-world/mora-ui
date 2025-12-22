@@ -7,13 +7,18 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { toast } from '@/lib/toast';
 import { triggerMoraVisual } from '@/components/mora/MoraAICursorController';
 
-export function MoraCommand() {
+interface MoraCommandProps {
+    onSuccess?: () => void;
+}
+
+export function MoraCommand({ onSuccess }: MoraCommandProps) {
     const [input, setInput] = useState('');
     const [thinking, setThinking] = useState(false);
 
     // Context accessors
     const viewLevel = useMoraStore(s => s.viewLevel);
     const activeNode = useMoraStore(s => s.activeNode);
+    const setOrbState = useMoraStore(s => s.setOrbState);
 
     // Navigation actions
     const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
@@ -24,6 +29,7 @@ export function MoraCommand() {
         if (!input.trim() || thinking) return;
 
         setThinking(true);
+        setOrbState('thinking');
         const intent = input;
         setInput('');
 
@@ -41,9 +47,15 @@ export function MoraCommand() {
             // 3. Act
             await executePlan(plan);
 
+            // 4. Success / Cleanup
+            onSuccess?.();
+            setOrbState('idle');
+
         } catch (err) {
             console.error(err);
             toast.error("I lost my train of thought.");
+            setOrbState('alert');
+            setTimeout(() => setOrbState('idle'), 3000);
         } finally {
             setThinking(false);
         }
