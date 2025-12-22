@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Send, Sparkles } from 'lucide-react';
 import { askMora, AgentAction } from '@/lib/api/agencyClient';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from '@/lib/toast';
 import { triggerMoraVisual } from '@/components/mora/MoraAICursorController';
 
@@ -23,6 +24,11 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
     // Navigation actions
     const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
     const navigateToSpace = useMoraStore(s => s.navigateToSpace);
+    const navigateToFolder = useMoraStore(s => s.navigateToFolder);
+    const loadNodeDetails = useMoraStore(s => s.loadNodeDetails);
+
+    // Pane actions for opening documents
+    const addPane = usePaneStore(s => s.addPane);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,7 +47,6 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
             };
 
             // 2. Think (Backend Agency)
-            // toast.loading("Môra is thinking..."); // Using UI state instead of toast for cleaner feel
             const plan = await askMora(intent, context);
 
             // 3. Act
@@ -69,21 +74,43 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
         }
 
         switch (plan.action) {
+            case 'open':
             case 'navigate':
                 if (plan.target) {
-                    // Start visual travel
+                    // Start visual travel (Highlight the target)
                     triggerMoraVisual(`#${plan.target}`, 2000);
 
-                    // Simple heuristic for routing
-                    if (plan.target.includes('dept') || plan.target.includes('department')) {
-                        navigateToDepartment(plan.target);
-                    } else if (plan.target.includes('space')) {
-                        navigateToSpace(plan.target);
-                    } else if (plan.target.includes('comp') || plan.target.includes('company')) {
-                        // TODO: Implement navigateToCompany if needed
-                    } else {
-                        // Fallback generic info
-                        console.warn(`Target ${plan.target} navigation not mapped yet.`);
+                    try {
+                        // Heuristic Routing based on ID
+                        if (plan.target.includes('dept') || plan.target.includes('department')) {
+                            navigateToDepartment(plan.target);
+                        } else if (plan.target.includes('space')) {
+                            navigateToSpace(plan.target);
+                        } else if (plan.target.includes('folder')) {
+                            navigateToFolder(plan.target);
+                        } else if (plan.target.includes('node')) {
+                            // Link/Document opening
+                            await loadNodeDetails(plan.target);
+
+                            // Open Pane for visual confirmation
+                            addPane({
+                                id: `doc-${plan.target}`,
+                                type: 'document',
+                                title: 'Document',
+                                position: { x: window.innerWidth / 4, y: 100 },
+                                size: { width: 600, height: 700 },
+                                minimized: false,
+                                data: { nodeId: plan.target }
+                            });
+                        } else if (plan.target.includes('comp') || plan.target.includes('company')) {
+                            // TODO: Company navigation
+                        } else {
+                            // Fallback warning
+                            console.warn(`Target ${plan.target} navigation not uniquely mapped.`);
+                        }
+                    } catch (e) {
+                        console.error("Navigation failed", e);
+                        toast.warning("I found the location but couldn't go there.");
                     }
                 }
                 break;
