@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Search, MessageSquare, Settings, LayoutGrid, FileText, Database, Zap, ChevronUp, X, ToggleLeft, Minus, Moon, LogOut, User } from 'lucide-react';
+import { Home, Search, MessageSquare, Settings, LayoutGrid, FileText, Database, Zap, ChevronUp, X, ToggleLeft, Minus, Moon, LogOut, User, Mail } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { writeCookie } from '@/lib/auth/cookies';
@@ -67,6 +67,7 @@ export const Dock = ({ onSleep }: DockProps) => {
         { icon: Search, label: 'Search', action: 'search' },
         { icon: LayoutGrid, label: 'Apps', action: 'apps' },
         { icon: MessageSquare, label: 'Môra', action: 'chat' },
+        { icon: Mail, label: 'Mail', action: 'mail' },  // Guided Agency: Gmail
         { icon: Settings, label: 'Settings', action: 'settings' },
         { icon: User, label: 'Switch User', action: 'switch-user' },
         { icon: LogOut, label: 'Logout', action: 'logout' }
@@ -116,16 +117,23 @@ export const Dock = ({ onSleep }: DockProps) => {
     const handleDockClick = (action: string) => {
         console.log('Dock action:', action);
 
-        // Helper to calculate centered position with visual bias (slightly higher)
+        // Helper to calculate centered position with viewport clamping
         const getCenteredPosition = (width: number, height: number) => {
             const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
             const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-            // Shift up by 10% of height to account for dock visual weight
-            const yBias = windowHeight * 0.1;
-            return {
-                x: Math.floor((windowWidth - width) / 2),
-                y: Math.floor((windowHeight - height) / 2) - yBias
-            };
+
+            // Calculate true center
+            let x = Math.floor((windowWidth - width) / 2);
+            let y = Math.floor((windowHeight - height) / 2);
+
+            // Apply slight upward bias (account for dock at bottom)
+            y = Math.max(40, y - 40); // Shift up by 40px but ensure min 40px from top
+
+            // Clamp to ensure pane stays within viewport
+            x = Math.max(20, Math.min(x, windowWidth - width - 20));
+            y = Math.max(40, Math.min(y, windowHeight - height - 100)); // 100px buffer for dock
+
+            return { x, y };
         };
 
         switch (action) {
@@ -162,6 +170,25 @@ export const Dock = ({ onSleep }: DockProps) => {
                         id: 'apps-main',
                         type: 'apps',
                         title: 'App Library',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
+                break;
+            }
+            case 'mail': {
+                // Guided Agency: Open Gmail pane
+                const existing = getPane('mail-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('mail-main');
+                    else focusPane('mail-main');
+                } else {
+                    const size = { width: 500, height: 600 };
+                    addPane({
+                        id: 'mail-main',
+                        type: 'mail',
+                        title: 'Gmail',
                         position: getCenteredPosition(size.width, size.height),
                         size,
                         minimized: false
