@@ -38,7 +38,7 @@ class ConfigManager {
     // IMPORTANT: Next.js requires DIRECT access to process.env.NEXT_PUBLIC_*
     // Dynamic access via process.env[key] does NOT work because values are inlined at build time
     const jwtToken = process.env.NEXT_PUBLIC_JWT_TOKEN || process.env.NEXT_PUBLIC_ADMIN_TOKEN || '';
-    const coreApiUrl = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8083';
+    const coreApiUrl = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8000';
     const authHeader = process.env.NEXT_PUBLIC_AUTH_HEADER || 'Authorization';
     const chatSource = (process.env.NEXT_PUBLIC_CHAT_SOURCE || 'objects') as ChatSource;
     const n8nEmailDigest = process.env.NEXT_PUBLIC_N8N_EMAIL_DIGEST;
@@ -89,9 +89,11 @@ class ConfigManager {
       errors.push('NEXT_PUBLIC_CORE_API_URL is required');
     }
 
-    if (tokensMissing) {
-      errors.push('NEXT_PUBLIC_JWT_TOKEN or NEXT_PUBLIC_ADMIN_TOKEN is required');
-    }
+
+    // Static tokens are no longer strictly required in dev due to dynamic auth
+    // if (tokensMissing) {
+    //   errors.push('NEXT_PUBLIC_JWT_TOKEN or NEXT_PUBLIC_ADMIN_TOKEN is required');
+    // }
 
     // Validate URL format
     if (this.config.coreApiUrl) {
@@ -113,11 +115,7 @@ class ConfigManager {
     // Only throw in development
     if (errors.length > 0 && this.config.isDevelopment) {
       console.error('❌ Configuration Errors:\n', errors.join('\n'));
-      if (tokensMissing) {
-        console.error(
-          '\n💡 Token Hinweis: Siehe .env.local.example für NEXT_PUBLIC_JWT_TOKEN (oder Fallback NEXT_PUBLIC_ADMIN_TOKEN).'
-        );
-      }
+      // Metric hint removed as tokens are dynamic now
     }
   }
 
