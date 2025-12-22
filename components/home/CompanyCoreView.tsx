@@ -11,6 +11,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw, Mic, Minimize2 } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CursorAgent } from '@/components/mora/CursorAgent'; // UPGRADE D1
+import { MoraCommand } from '@/components/mora/MoraCommand'; // UPGRADE B2
 import { useSemanticStore } from '@/lib/store/semanticStore'; // UPGRADE E1
 import { toast } from '@/lib/toast';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
@@ -667,6 +668,43 @@ export const CompanyCoreView: React.FC = () => {
             }
         }
     }, [pulseData, addOrbNotification]);
+
+    // UPGRADE B2: Listen for AI Command Events (Agency Bridge)
+    useEffect(() => {
+        const handleAICommand = (e: CustomEvent) => {
+            const detail = e.detail;
+            if (detail.type === 'highlight') {
+                const selector = detail.target?.selector;
+                if (selector) {
+                    // Try to find element
+                    // Note: We use a slight delay to allow navigation to complete if simultaneous
+                    setTimeout(() => {
+                        let el = document.querySelector(selector);
+                        if (!el && selector.startsWith('#')) {
+                            el = document.getElementById(selector.substring(1));
+                        }
+
+                        if (el) {
+                            const rect = el.getBoundingClientRect();
+                            setCursorAgent({
+                                active: true,
+                                action: 'highlight',
+                                target: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+                            });
+
+                            // Reset to roam after highlight
+                            setTimeout(() => {
+                                setCursorAgent(prev => ({ ...prev, action: 'roam', target: undefined }));
+                            }, detail.duration || 2500);
+                        }
+                    }, 500); // 500ms delay for DOM readiness
+                }
+            }
+        };
+
+        window.addEventListener('mora-ai-action' as any, handleAICommand as any);
+        return () => window.removeEventListener('mora-ai-action' as any, handleAICommand as any);
+    }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // SEMANTIC HIERARCHY SYSTEM - Star to Moon Promotion ("Nervous System")
@@ -2011,6 +2049,11 @@ export const CompanyCoreView: React.FC = () => {
                             >
                                 <X size={16} />
                             </button>
+                        </div>
+
+                        {/* Agency Input */}
+                        <div className="px-4 py-2 border-b border-white/5 bg-black/20">
+                            <MoraCommand />
                         </div>
 
                         {/* Status Section */}
