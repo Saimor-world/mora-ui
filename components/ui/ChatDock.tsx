@@ -7,6 +7,7 @@ import { X, Maximize2, Minimize2, Loader2, Radar } from 'lucide-react';
 import { sendMessage, type AIMessage } from '@/lib/api/aiClient';
 import { fetchNodes, fetchNodeRelations } from '@/lib/api/coreClient';
 import { getFolderEvents, runScan, fetchSynthesis, type MindloopEvent } from '@/lib/api/mindloopClient';
+import { parseAIResponse, executeCursorCommands, suggestCursorAction } from '@/lib/ai/cursorBridge';
 import type { CoreNode } from '@/lib/types/core';
 
 export const ChatDock: React.FC = () => {
@@ -22,7 +23,12 @@ export const ChatDock: React.FC = () => {
     const [folderEvents, setFolderEvents] = useState<MindloopEvent[]>([]);
     // Sprint Tag 4: Relations State
     const [relations, setRelations] = useState<any[]>([]);
-    const { activeDepartmentId, activeSpaceId, activeFolderId, activeNode } = useMoraStore();
+    const { activeDepartmentId, activeSpaceId, activeFolderId, activeNode, activeCompanyId } = useMoraStore();
+
+    // Reset chat when company changes (Account Isolation)
+    useEffect(() => {
+        setMessages([]);
+    }, [activeCompanyId]);
 
     // Allow other components (e.g., sidebar) to open the dock
     useEffect(() => {
@@ -145,7 +151,7 @@ export const ChatDock: React.FC = () => {
     // Minimized Pill
     if (!isOpen) {
         return (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-floating pointer-events-auto">
+            <div className="absolute bottom-6 left-8 z-floating pointer-events-auto">
                 <button
                     onClick={() => setIsOpen(true)}
                     className="flex items-center gap-3 px-4 py-2 rounded-full glass-panel border border-white/10 bg-mora-forest/80 backdrop-blur-md hover:border-mora-gold/50 transition-all shadow-lg group"
@@ -160,7 +166,7 @@ export const ChatDock: React.FC = () => {
     // Open Dock
     return (
         <div
-            className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-floating pointer-events-auto transition-all duration-500 ease-out
+            className={`absolute bottom-6 left-8 z-floating pointer-events-auto transition-all duration-500 ease-out
         ${isExpanded ? 'w-[800px] h-[600px]' : 'w-[500px] h-[300px]'}
       `}
         >
@@ -319,10 +325,25 @@ export const ChatDock: React.FC = () => {
                                 };
 
                                 // Send to AI
-                                const reply = await sendMessage(msg, context, messages);
+                                const rawReply = await sendMessage(msg, context, messages);
 
-                                // Add AI reply
-                                const assistantMessage: AIMessage = { role: 'assistant', content: reply };
+                                // 🤖 CURSOR BRIDGE: Parse AI response for cursor commands
+                                const { cleanContent, commands } = parseAIResponse(rawReply);
+
+                                // Execute cursor commands (AI controls the cursor!)
+                                if (commands.length > 0) {
+                                    console.log('[ChatDock] Executing', commands.length, 'cursor commands');
+                                    executeCursorCommands(commands);
+                                }
+
+                                // Auto-suggest cursor action based on response
+                                const suggestion = suggestCursorAction(cleanContent, context);
+                                if (suggestion && commands.length === 0) {
+                                    executeCursorCommands([suggestion]);
+                                }
+
+                                // Add AI reply (cleaned of commands)
+                                const assistantMessage: AIMessage = { role: 'assistant', content: cleanContent };
                                 setMessages(prev => [...prev, assistantMessage]);
                             } catch (error: any) {
                                 console.error('AI Error:', error);

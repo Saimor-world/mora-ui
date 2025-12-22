@@ -120,6 +120,10 @@ export async function corePatch(path: string, body: any): Promise<any> {
     return coreRequest(path, { method: 'PATCH', body });
 }
 
+export async function corePut(path: string, body: any): Promise<any> {
+    return coreRequest(path, { method: 'PATCH', body }); // Using PATCH as backend typically expects PATCH for partial updates
+}
+
 export async function coreDelete(path: string): Promise<void> {
     await coreRequest(path, { method: 'DELETE' });
 }
@@ -420,17 +424,22 @@ export async function deleteNode(id: string): Promise<void> {
 // Department helpers (Tag 10+)
 export interface CreateDepartmentPayload {
     name: string;
+    slug?: string;  // Auto-generated from name if not provided
     description?: string;
     color?: string;
     icon?: string;
+    company_id?: string;
 }
 
 export const createDepartment = async (payload: CreateDepartmentPayload) => {
-    return corePost('/v1/departments', payload);
+    // Auto-generate slug from name if not provided
+    const slug = payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return corePost('/v1/departments', { ...payload, slug });
 };
 
 export const createSimpleDepartment = async (name: string) => {
-    return corePost('/v1/departments/create-simple', { name });
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return corePost('/v1/departments/create-simple', { name, slug });
 };
 
 // ========== UPDATE & DELETE FUNCTIONS ==========
@@ -477,4 +486,39 @@ export async function updateFolder(id: string, payload: UpdateFolderPayload): Pr
 
 export async function deleteFolder(id: string): Promise<void> {
     return coreDelete(`/v1/folders/${id}`);
+}
+
+// ========== UPLOAD FUNCTION ==========
+
+export async function uploadFile(file: File, folderId: string, title?: string): Promise<CoreNode> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder_id', folderId);
+    if (title) formData.append('title', title);
+
+    const token = readCookie(AUTH_COOKIE) ||
+        (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null) ||
+        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
+        process.env.NEXT_PUBLIC_API_TOKEN;
+
+    if (!token) throw new CoreError('Unauthorized', 401);
+
+    const response = await fetch(`${CORE_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData
+    });
+
+    if (!response.ok) {
+        let message = `Upload Failed: ${response.status} ${response.statusText}`;
+        try {
+            const errorBody = await response.json();
+            if (errorBody.detail) message = errorBody.detail;
+        } catch { }
+        throw new CoreError(message, response.status);
+    }
+
+    return response.json();
 }

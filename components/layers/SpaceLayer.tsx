@@ -222,7 +222,7 @@ export const SpaceLayer: React.FC = () => {
             </div>
 
             {/* Nebula Effect */}
-            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay pointer-events-none" />
+            <div className="absolute inset-0 bg-noise opacity-5 mix-blend-overlay pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
 
             {/* Background Title */}

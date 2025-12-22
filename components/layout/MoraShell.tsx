@@ -11,6 +11,8 @@ import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { IntelligencePlayfield } from '@/components/intelligence/IntelligencePlayfield';
 import { Dock } from '@/components/mora/Dock';
 import { PaneManager } from '@/components/mora/PaneManager';
+import { LockScreen } from '@/components/auth/LockScreen';
+import { MoraAICursorController } from '@/components/mora/MoraAICursorController';
 import { useMoraStore } from '@/lib/store/moraState';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,7 +29,8 @@ import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 export const MoraShell: React.FC = () => {
     const router = useRouter();
     const { isBootstrapped } = useAuthBootstrapper(); // Phase 1: Real Auth Required!
-    const { activeNode } = useMoraStore();
+    const { activeNode, activeCompany, user } = useMoraStore();
+    const [isSleeping, setIsSleeping] = useState(false);
     const [stars, setStars] = useState<Array<{
         id: number;
         cx: string;
@@ -50,16 +53,22 @@ export const MoraShell: React.FC = () => {
         setStars(generatedStars);
     }, []);
 
-    // Sleep handler - navigate to lockscreen
+    // Sleep handler - show lockscreen overlay (session stays active!)
     const handleSleep = () => {
-        // Save session state before sleep
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('mora_session', 'true');
-            const userName = localStorage.getItem('user_name') || 'User';
-            localStorage.setItem('last_user_name', userName);
-        }
-        // Navigate to root which will show lockscreen
-        router.push('/?sleep=true');
+        setIsSleeping(true);
+    };
+
+    // Unlock handler
+    const handleUnlock = () => {
+        setIsSleeping(false);
+    };
+
+    // Logout handler
+    const handleLogout = () => {
+        setIsSleeping(false);
+        localStorage.removeItem('saimor_dev_token');
+        localStorage.removeItem('mora_session');
+        router.push('/');
     };
 
     // CRITICAL: Don't render anything until auth is ready
@@ -72,6 +81,19 @@ export const MoraShell: React.FC = () => {
                     <span className="text-emerald-500/50 text-sm font-light tracking-wider">INITIALIZING...</span>
                 </div>
             </div>
+        );
+    }
+
+    // Show LockScreen overlay when sleeping
+    if (isSleeping) {
+        return (
+            <LockScreen
+                onUnlock={handleUnlock}
+                onLogout={handleLogout}
+                userName={user?.name || localStorage.getItem('last_user_name') || 'User'}
+                companyName={activeCompany?.name || 'SAIMÔR'}
+                companyLogo={activeCompany?.logo_url || (activeCompany?.is_demo ? '/images/simple_coffee_logo.png' : undefined)}
+            />
         );
     }
 
@@ -129,13 +151,17 @@ export const MoraShell: React.FC = () => {
             {/* UPGRADE P4: Intelligence Playfield Overlay (Z-5) */}
             <IntelligencePlayfield />
 
-            {/* UPGRADE P1: Pane System Layer - Above ViewPort, Below Dock */}
-            <PaneManager />
+            {/* UPGRADE P1: Pane System Layer - NOW RENDERED IN layout.tsx TO AVOID DUPLICATES */}
+            {/* <PaneManager /> */}
 
             {/* Global Overlays */}
             <ChatDock />
             {/* UPGRADE A1: OS Dock - Central navigation hub */}
             <Dock onSleep={handleSleep} />
+
+            {/* AI Cursor Controller - Môra can control the cursor */}
+            <MoraAICursorController enabled={true} />
+
             {/* MoraOrb is now rendered in CompanyCoreView (bottom-right, MASTERBIBEL compliant) */}
             <Toaster position="top-right" theme="dark" />
 

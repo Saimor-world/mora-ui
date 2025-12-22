@@ -13,6 +13,8 @@ import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
 import { DocumentPane } from '@/components/panes/DocumentPane';
 import { SearchPane } from '@/components/panes/SearchPane';
 import { UsersPane } from '@/components/panes/UsersPane';
+import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
+import { MailPane } from '@/components/panes/MailPane';  // Guided Agency
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
@@ -39,6 +41,14 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <SearchPane id={pane.id} />;
         case 'users':
             return <UsersPane id={pane.id} />;
+        case 'company-detail':
+            return <CompanyDetailPane
+                id={pane.id}
+                companyId={pane.data?.companyId || ''}
+                companyName={pane.data?.companyName || 'Company'}
+            />;
+        case 'mail':
+            return <MailPane id={pane.id} />;  // Guided Agency: Gmail Pane
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;

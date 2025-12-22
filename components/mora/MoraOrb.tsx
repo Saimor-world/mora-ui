@@ -16,6 +16,10 @@ interface MoraOrbProps {
     interactive?: boolean;
     /** Size variant */
     size?: 'sm' | 'md' | 'lg';
+    /** Company logo URL - integrates company branding into the orb */
+    companyLogo?: string;
+    /** Custom accent color (from company branding) */
+    accentColor?: string;
     /** Notification queue for micro-sparks */
     notifications?: Array<{ id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }>;
     /** Pane spawn callback */
@@ -30,16 +34,14 @@ interface MoraOrbProps {
  * Living system indicator with awareness states.
  * States (priority): warning > active > learning > demo > idle
  * 
- * - idle: Calm breathing
- * - active: User interaction (navigation, folder switch)
- * - learning: Mycelium rendering, relations loading
- * - warning: Core error present
- * - demo: Demo mode active (soft lavender pulse)
+ * Now includes company logo integration for unified branding.
  */
 export function MoraOrb({
     role = 'admin',
     state = 'idle',
     demoMode = false,
+    companyLogo,
+    accentColor,
     notifications = [],
     onClick,
     onPaneSpawn,
@@ -152,15 +154,13 @@ export function MoraOrb({
             case 'idle':
             default:
                 return {
-                    opacity: 0.5,
-                    glowIntensity: 20,
+                    opacity: 0.8,
+                    glowIntensity: 45,
                     pulseDuration: 4,
-                    color: isMember ? '#60A5FA' : '#CEB676',
-                    gradient: isMember
-                        ? 'radial-gradient(circle, rgba(96, 165, 250, 0.4) 0%, rgba(96, 165, 250, 0) 70%)'
-                        : 'radial-gradient(circle, rgba(206, 182, 118, 0.4) 0%, rgba(206, 182, 118, 0) 70%)',
-                    innerBg: isMember ? 'rgba(96, 165, 250, 0.15)' : 'rgba(206, 182, 118, 0.15)',
-                    sparkColor: isMember ? '#60A5FA' : '#CEB676',
+                    color: '#10B981', // Emerald Green as requested
+                    gradient: 'radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, rgba(16, 185, 129, 0) 70%)',
+                    innerBg: 'rgba(16, 185, 129, 0.25)',
+                    sparkColor: '#10B981',
                     ringType: 'idle'
                 };
         }
@@ -265,6 +265,34 @@ export function MoraOrb({
                     }}
                 />
 
+                {/* UPGRADE A2: Sun Rays Effect (Light of Awareness) */}
+                {ringType === 'idle' && (
+                    <>
+                        <motion.div
+                            className="absolute inset-0 rounded-full pointer-events-none"
+                            style={{
+                                background: `conic-gradient(from 0deg, transparent 0%, ${color} 5%, transparent 10%, transparent 25%, ${color} 30%, transparent 35%, transparent 60%, ${color} 65%, transparent 70%, transparent 90%, ${color} 95%, transparent 100%)`,
+                                opacity: 0.3,
+                                scale: 1.8,
+                                filter: 'blur(20px)'
+                            }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+                        />
+                        <motion.div
+                            className="absolute inset-0 rounded-full pointer-events-none"
+                            style={{
+                                background: `conic-gradient(from 45deg, transparent 0%, ${color} 5%, transparent 10%, transparent 30%, ${color} 35%, transparent 40%, transparent 70%, ${color} 75%, transparent 80%)`,
+                                opacity: 0.2,
+                                scale: 1.5,
+                                filter: 'blur(12px)'
+                            }}
+                            animate={{ rotate: -360 }}
+                            transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+                        />
+                    </>
+                )}
+
                 {/* Core Orb - MASTERBIBEL size 68-92px, we use 56px inner */}
                 <motion.div
                     className="relative w-14 h-14 rounded-full border-2 cursor-pointer"
@@ -300,22 +328,49 @@ export function MoraOrb({
                         }
                     }}
                 >
-                    {/* Inner Nucleus */}
-                    <motion.div
-                        className="absolute inset-0 m-auto w-5 h-5 rounded-full"
-                        animate={{
-                            scale: [0.8, 1, 0.8],
-                        }}
-                        transition={{
-                            duration: pulseDuration * 0.8,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
-                        style={{
-                            backgroundColor: color,
-                            opacity: opacity,
-                        }}
-                    />
+                    {/* Inner Nucleus - With Company Logo Integration */}
+                    {companyLogo ? (
+                        <motion.div
+                            className="absolute inset-0 m-auto w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                            animate={{
+                                scale: [0.95, 1.05, 0.95],
+                            }}
+                            transition={{
+                                duration: pulseDuration * 0.8,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            style={{
+                                background: 'rgba(0,0,0,0.6)',
+                                boxShadow: `0 0 15px ${accentColor || color}40`
+                            }}
+                        >
+                            <img
+                                src={companyLogo}
+                                alt="Company"
+                                className="w-8 h-8 object-contain"
+                                style={{
+                                    filter: `drop-shadow(0 0 8px ${accentColor || color}60)`
+                                }}
+                            />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            className="absolute inset-0 m-auto w-5 h-5 rounded-full"
+                            animate={{
+                                scale: [0.8, 1, 0.8],
+                            }}
+                            transition={{
+                                duration: pulseDuration * 0.8,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            style={{
+                                backgroundColor: accentColor || color,
+                                opacity: opacity,
+                            }}
+                        />
+                    )}
                 </motion.div>
 
                 {/* UPGRADE A1: Awareness State Rings */}

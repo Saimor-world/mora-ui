@@ -83,75 +83,25 @@ export const ContextRail: React.FC = () => {
         { id: 'chat', icon: MessageSquare, label: "MÔRA Chat", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
-    // Blitz = CEO/Demo View (Simple Coffee Group - Demo Company)
-    // DETERMINISTIC: Enter Demo → Simple Coffee Group, Exit Demo → Workspace
+    // Blitz = Enter/Exit Demo Mode
+    // CONSISTENT WITH DOCK: Demo toggle ALWAYS navigates to Welcome Screen
     const handleWorkspaceView = async () => {
-        try {
-            closeOverlays();
+        closeOverlays();
 
-            const { viewMode: currentMode, loadCompanies, setActiveCompany, loadDepartments, loadNodesForCompany, setViewMode, setViewLevel } = useMoraStore.getState();
-
-            if (currentMode === 'demo') {
-                // EXIT DEMO: Return to workspace
-                setViewMode('workspace');
-                setViewLevel('core');
-                
-                if (typeof window !== 'undefined') {
-                    window.localStorage.setItem('saimor_mode', 'workspace');
-                }
-
-                await loadCompanies();
-                const updatedCompanies = useMoraStore.getState().companies;
-                
-                // Find user's own company (NOT demo)
-                const userCompany = updatedCompanies.find(c => c.name.toLowerCase().includes('saimor') && !c.is_demo)
-                    || updatedCompanies.find(c => !c.is_demo)
-                    || updatedCompanies[0];
-
-                if (userCompany) {
-                    setActiveCompany(userCompany.id);
-                    await loadDepartments(userCompany.id);
-                    loadNodesForCompany(userCompany.id).catch(console.warn);
-                    console.log('✅ Exited demo, switched to workspace:', userCompany.name);
-                    toast.success(`Workspace: ${userCompany.name}`);
-                } else {
-                    toast.error('No workspace company available');
-                }
-            } else {
-                // ENTER DEMO: Load Simple Coffee Group deterministically
-                setViewMode('demo');
-                setViewLevel('core');
-
-                console.log('⚡ Entering Demo Mode: Simple Coffee Group');
-
-                if (typeof window !== 'undefined') {
-                    window.localStorage.setItem('saimor_mode', 'demo');
-                }
-
-                await loadCompanies();
-                const updatedCompanies = useMoraStore.getState().companies;
-                
-                // DETERMINISTIC: Find "Simple Coffee Group" by exact name or is_demo flag
-                let demoCompany = updatedCompanies.find(c => c.name.toLowerCase().includes('simple coffee group'))
-                    || updatedCompanies.find(c => c.is_demo === true)
-                    || updatedCompanies.find(c => c.name.toLowerCase().includes('coffee'));
-
-                if (demoCompany) {
-                    setActiveCompany(demoCompany.id);
-                    await loadDepartments(demoCompany.id);
-                    loadNodesForCompany(demoCompany.id).catch(console.warn);
-                    console.log('✅ Demo activated:', demoCompany.name);
-                    toast.success(`Demo: ${demoCompany.name}`);
-                } else {
-                    toast.error('No demo company available. Please ensure "Simple Coffee Group" exists.');
-                }
-            }
-
-            await loadTree();
-        } catch (err: any) {
-            console.error('Demo toggle error:', err);
-            toast.error(err?.message || 'Failed to toggle demo mode');
+        // Clean up session state
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('saimor_dev_token');
+            localStorage.removeItem('saimor_mode');
+            localStorage.removeItem('saimor_role');
+            writeCookie('saimor_auth', '', -1);
         }
+
+        // Reset to workspace and navigate to Welcome for proper demo entry
+        setViewMode('workspace');
+        setViewLevel('core');
+
+        // Navigate to Welcome Screen - user must explicitly enter demo from there
+        router.push('/');
     };
 
     const handleLogout = () => {
@@ -251,8 +201,8 @@ export const ContextRail: React.FC = () => {
                             <Building2
                                 size={22}
                                 className={`relative z-10 transition-colors duration-300 ${viewMode === 'owner'
-                                        ? 'text-mora-gold'
-                                        : 'text-white/40 group-hover:text-mora-gold/80'
+                                    ? 'text-mora-gold'
+                                    : 'text-white/40 group-hover:text-mora-gold/80'
                                     }`}
                             />
                             <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-200 pointer-events-none whitespace-nowrap backdrop-blur-md">

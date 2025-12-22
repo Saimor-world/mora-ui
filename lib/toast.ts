@@ -52,9 +52,10 @@ export function showToast(
 }
 
 export const toast = {
-  success: (message: string) => {
+  success: (message: string, options?: { description?: string; duration?: number }) => {
     sonnerToast.success(message, {
-      duration: 3000,
+      duration: options?.duration || 3000,
+      description: options?.description,
       position: 'bottom-right',
       style: {
         background: 'rgba(16, 185, 129, 0.1)',
@@ -65,9 +66,10 @@ export const toast = {
     });
   },
 
-  error: (message: string) => {
+  error: (message: string, options?: { description?: string; duration?: number }) => {
     sonnerToast.error(message, {
-      duration: 4000,
+      duration: options?.duration || 4000,
+      description: options?.description,
       position: 'bottom-right',
       style: {
         background: 'rgba(239, 68, 68, 0.1)',
@@ -78,9 +80,10 @@ export const toast = {
     });
   },
 
-  info: (message: string) => {
+  info: (message: string, options?: { description?: string; duration?: number }) => {
     sonnerToast.info(message, {
-      duration: 3000,
+      duration: options?.duration || 3000,
+      description: options?.description,
       position: 'bottom-right',
       style: {
         background: 'rgba(59, 130, 246, 0.1)',

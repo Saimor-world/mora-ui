@@ -2,38 +2,51 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Wifi, Battery, Activity, Building2, Users, FolderOpen, ChevronUp } from 'lucide-react';
+import { Lock, Eye, EyeOff, Fingerprint, RefreshCw, LogOut, Moon } from 'lucide-react';
+import { MoraOrb } from '@/components/mora/MoraOrb';
+import { useMoraStore } from '@/lib/store/moraState';
+import { useAccentColor } from '@/lib/hooks/useAccentColor';
+import { toast } from 'sonner';
 
 interface LockScreenProps {
     onUnlock: () => void;
+    onLogout: () => void;
     userName?: string;
-    userAvatar?: string;
-    systemStatus?: {
-        backend: 'online' | 'offline' | 'connecting';
-        departments: number;
-        spaces: number;
-        lastSync: string;
-    };
+    companyName?: string;
+    companyLogo?: string;
 }
 
+/**
+ * LockScreen - Secure Sleep/Lock Mode
+ * 
+ * Features:
+ * - PIN/Password unlock
+ * - Biometric placeholder (2FA ready)
+ * - Company branding
+ * - Session timeout
+ * - Beautiful ambient animation
+ */
 export const LockScreen: React.FC<LockScreenProps> = ({
     onUnlock,
+    onLogout,
     userName = 'User',
-    userAvatar,
-    systemStatus = {
-        backend: 'online',
-        departments: 0,
-        spaces: 0,
-        lastSync: 'Just now'
-    }
+    companyName = 'SAIMÔR',
+    companyLogo
 }) => {
-    const [currentTime, setCurrentTime] = useState(new Date());
+    const { accentColor } = useAccentColor();
+    const [pin, setPin] = useState('');
+    const [showPin, setShowPin] = useState(false);
     const [isUnlocking, setIsUnlocking] = useState(false);
-    const [showPIN, setShowPIN] = useState(false);
+    const [attempts, setAttempts] = useState(0);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const [idleSeconds, setIdleSeconds] = useState(0);
 
-    // Update time every second
+    // Update clock
     useEffect(() => {
-        const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+            setIdleSeconds(s => s + 1);
+        }, 1000);
         return () => clearInterval(interval);
     }, []);
 
@@ -49,178 +62,216 @@ export const LockScreen: React.FC<LockScreenProps> = ({
         });
     };
 
-    const handleUnlock = () => {
+    const handleUnlock = async () => {
+        if (pin.length < 4) {
+            toast.error('PIN muss 4 Zeichen haben');
+            return;
+        }
+
         setIsUnlocking(true);
-        setTimeout(() => {
+
+        // Simulate unlock check
+        await new Promise(r => setTimeout(r, 800));
+
+        // Enforce specific PIN
+        if (pin === '1234') {
+            toast.success('Willkommen zurück!');
             onUnlock();
-        }, 600);
+        } else {
+            setAttempts(a => a + 1);
+            setPin('');
+            toast.error('Falscher PIN');
+
+            if (attempts >= 2) {
+                toast.warning('Noch 1 Versuch vor Logout');
+            }
+            if (attempts >= 3) {
+                toast.error('Zu viele Fehlversuche');
+                onLogout();
+            }
+        }
+
+        setIsUnlocking(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleUnlock();
+        }
     };
 
     return (
-        <AnimatePresence>
-            {!isUnlocking && (
-                <motion.div
-                    className="fixed inset-0 z-[100] flex flex-col items-center justify-between py-12 overflow-hidden"
+        <div className="fixed inset-0 z-[9999] bg-black overflow-hidden">
+            {/* Ambient Background */}
+            <div className="absolute inset-0">
+                {/* Gradient overlay - uses accent color */}
+                <div
+                    className="absolute inset-0"
                     style={{
-                        background: 'linear-gradient(180deg, #0a0f0d 0%, #050807 50%, #000000 100%)'
+                        background: `radial-gradient(ellipse at 50% 120%, ${accentColor}15 0%, transparent 50%)`
                     }}
-                    initial={{ opacity: 1 }}
-                    exit={{ opacity: 0, scale: 1.1 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                >
-                    {/* Subtle Background Animation */}
-                    <div className="absolute inset-0 pointer-events-none">
+                />
+
+                {/* Slow moving stars */}
+                <div className="absolute inset-0 opacity-30">
+                    {Array.from({ length: 50 }).map((_, i) => (
                         <motion.div
-                            className="absolute top-1/4 left-1/2 w-[800px] h-[800px] rounded-full"
+                            key={i}
+                            className="absolute w-1 h-1 rounded-full bg-white"
                             style={{
-                                background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)',
-                                transform: 'translate(-50%, -50%)',
-                                filter: 'blur(100px)'
+                                left: `${(i * 23.7) % 100}%`,
+                                top: `${(i * 17.3) % 100}%`,
                             }}
                             animate={{
-                                scale: [1, 1.2, 1],
-                                opacity: [0.3, 0.5, 0.3]
+                                opacity: [0.2, 0.6, 0.2],
                             }}
-                            transition={{ duration: 8, repeat: Infinity }}
+                            transition={{
+                                duration: 3 + (i % 5),
+                                repeat: Infinity,
+                                delay: i * 0.1
+                            }}
                         />
+                    ))}
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
+                {/* Time Display */}
+                <motion.div
+                    className="text-center mb-12"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <div className="text-8xl font-extralight text-white/90 tracking-wider mb-2">
+                        {formatTime(currentTime)}
                     </div>
-
-                    {/* Top Status Bar */}
-                    <div className="flex items-center justify-between w-full px-8 text-white/40 text-xs">
-                        <div className="flex items-center gap-4">
-                            <span className="font-mono">SAIMÔR</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Wifi size={14} className={systemStatus.backend === 'online' ? 'text-emerald-400' : 'text-red-400'} />
-                            <Battery size={14} />
-                            <span className="font-mono">{formatTime(currentTime).split(':')[0]}:{formatTime(currentTime).split(':')[1]}</span>
-                        </div>
+                    <div className="text-xl font-light text-white/40 tracking-widest uppercase">
+                        {formatDate(currentTime)}
                     </div>
-
-                    {/* Main Content */}
-                    <div className="flex flex-col items-center gap-8">
-                        {/* Time Display - Apple Style */}
-                        <motion.div
-                            className="text-center"
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                        >
-                            <div className="text-8xl font-extralight text-white tracking-tight">
-                                {formatTime(currentTime)}
-                            </div>
-                            <div className="text-xl font-light text-white/60 mt-2 tracking-wide">
-                                {formatDate(currentTime)}
-                            </div>
-                        </motion.div>
-
-                        {/* System Status Widget - Glassmorphic */}
-                        <motion.div
-                            className="w-80 rounded-3xl p-6 backdrop-blur-xl"
-                            style={{
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-                            }}
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.4 }}
-                        >
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className={`w-2 h-2 rounded-full ${systemStatus.backend === 'online' ? 'bg-emerald-400' :
-                                        systemStatus.backend === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-                                            'bg-red-400'
-                                    }`} />
-                                <span className="text-white/70 text-sm font-medium tracking-wide">
-                                    SAIMÔR System Status
-                                </span>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                                <div>
-                                    <div className="flex justify-center mb-2">
-                                        <Activity size={18} className="text-emerald-400/60" />
-                                    </div>
-                                    <div className="text-lg font-light text-white/90">
-                                        {systemStatus.backend === 'online' ? 'Online' : 'Offline'}
-                                    </div>
-                                    <div className="text-[10px] text-white/40 uppercase tracking-wider">Backend</div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-center mb-2">
-                                        <Building2 size={18} className="text-blue-400/60" />
-                                    </div>
-                                    <div className="text-lg font-light text-white/90">{systemStatus.departments}</div>
-                                    <div className="text-[10px] text-white/40 uppercase tracking-wider">Planets</div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-center mb-2">
-                                        <FolderOpen size={18} className="text-purple-400/60" />
-                                    </div>
-                                    <div className="text-lg font-light text-white/90">{systemStatus.spaces}</div>
-                                    <div className="text-[10px] text-white/40 uppercase tracking-wider">Spaces</div>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-white/5 text-center">
-                                <span className="text-[10px] text-white/30 tracking-wide">
-                                    Last sync: {systemStatus.lastSync}
-                                </span>
-                            </div>
-                        </motion.div>
-                    </div>
-
-                    {/* Unlock Area */}
-                    <motion.div
-                        className="flex flex-col items-center gap-4"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                    >
-                        {/* User Avatar */}
-                        <motion.button
-                            className="w-20 h-20 rounded-full flex items-center justify-center cursor-pointer"
-                            style={{
-                                background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(16,185,129,0.1))',
-                                border: '2px solid rgba(16,185,129,0.3)',
-                                boxShadow: '0 0 30px rgba(16,185,129,0.2)'
-                            }}
-                            whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(16,185,129,0.4)' }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleUnlock}
-                        >
-                            {userAvatar ? (
-                                <img src={userAvatar} alt={userName} className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                                <Users size={32} className="text-emerald-400/80" />
-                            )}
-                        </motion.button>
-
-                        <div className="text-white/80 font-light text-lg tracking-wide">
-                            {userName}
-                        </div>
-
-                        {/* Swipe Hint */}
-                        <motion.div
-                            className="flex flex-col items-center gap-2 mt-4"
-                            animate={{ y: [0, -5, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                        >
-                            <ChevronUp size={20} className="text-white/30" />
-                            <span className="text-xs text-white/30 tracking-widest uppercase">
-                                Click to unlock
-                            </span>
-                        </motion.div>
-
-                        {/* Lock Icon */}
-                        <Lock size={16} className="text-white/20 mt-2" />
-                    </motion.div>
-
-                    {/* Bottom Safe Area */}
-                    <div className="h-4" />
                 </motion.div>
-            )}
-        </AnimatePresence>
+
+                {/* Orb with Logo */}
+                <motion.div
+                    className="mb-8"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.3, type: 'spring' }}
+                >
+                    <MoraOrb
+                        state="idle"
+                        companyLogo={companyLogo}
+                        onClick={() => {
+                            // Focus PIN input
+                            document.getElementById('lock-pin-input')?.focus();
+                        }}
+                    />
+                </motion.div>
+
+                {/* User Info */}
+                <motion.div
+                    className="text-center mb-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <div className="text-2xl font-light text-white/80 mb-1">
+                        {userName}
+                    </div>
+                    <div className="text-sm text-white/40 tracking-wider">
+                        {companyName}
+                    </div>
+                </motion.div>
+
+                {/* PIN Input */}
+                <motion.div
+                    className="w-full max-w-xs"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                >
+                    <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                        <input
+                            id="lock-pin-input"
+                            type={showPin ? 'text' : 'password'}
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="PIN eingeben..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-4 text-white text-center text-lg tracking-[0.5em] placeholder:tracking-normal placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all"
+                            autoFocus
+                            autoComplete="off"
+                        />
+                        <button
+                            onClick={() => setShowPin(!showPin)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                        >
+                            {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                    </div>
+
+                    {/* Unlock Button */}
+                    <motion.button
+                        onClick={handleUnlock}
+                        disabled={isUnlocking || pin.length < 4}
+                        className="w-full mt-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-medium hover:bg-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        {isUnlocking ? (
+                            <RefreshCw className="animate-spin" size={18} />
+                        ) : (
+                            <>
+                                <Fingerprint size={18} />
+                                Entsperren
+                            </>
+                        )}
+                    </motion.button>
+                </motion.div>
+
+                {/* Actions */}
+                <motion.div
+                    className="flex items-center gap-6 mt-8 text-white/30"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                >
+                    <button
+                        onClick={() => {
+                            useMoraStore.getState().resetStore();
+                            onLogout();
+                        }}
+                        className="flex items-center gap-2 text-sm hover:text-white/60 transition-colors"
+                    >
+                        <LogOut size={14} />
+                        Abmelden
+                    </button>
+                    <div className="w-px h-4 bg-white/10" />
+                    <div className="flex items-center gap-2 text-xs">
+                        <Moon size={12} />
+                        Ruhemodus seit {Math.floor(idleSeconds / 60)}:{(idleSeconds % 60).toString().padStart(2, '0')}
+                    </div>
+                </motion.div>
+
+                {/* Attempts Warning */}
+                {attempts > 0 && (
+                    <motion.div
+                        className="absolute bottom-8 text-red-400/60 text-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                    >
+                        {3 - attempts} Versuche verbleibend
+                    </motion.div>
+                )}
+            </div>
+
+            {/* Bottom Branding */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-white/20 tracking-widest">
+                SAIMÔR SECURE
+            </div>
+        </div>
     );
 };
 

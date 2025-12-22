@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Building2, Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Compass } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Building2, Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Compass, Folder, ArrowRight } from 'lucide-react';
 
 interface PlanetProps {
     department: {
@@ -18,6 +19,7 @@ interface PlanetProps {
     orbitActive?: boolean;
     onClick?: () => void;
     onHover?: (hovered: boolean) => void;
+    onQuickFilesAccess?: (clickPos: { x: number; y: number }) => void;  // Quick access to department files
 }
 
 /**
@@ -27,6 +29,7 @@ interface PlanetProps {
  * - Glass morphism
  * - Large, impactful presence
  * - Minimal UI, maximum clarity
+ * - Context menu for quick file access
  */
 export const Planet: React.FC<PlanetProps> = ({
     department,
@@ -36,8 +39,12 @@ export const Planet: React.FC<PlanetProps> = ({
     size = 'md',
     orbitActive = false,
     onClick,
-    onHover
+    onHover,
+    onQuickFilesAccess
 }) => {
+    const [showContextMenu, setShowContextMenu] = useState(false);
+    const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+    const contextRef = useRef<HTMLDivElement>(null);
     // MASTERBIBEL: Smaller, more ethereal planets - floating bubbles
     const sizeMap = {
         sm: { diameter: 60, iconSize: 20 },
@@ -46,6 +53,42 @@ export const Planet: React.FC<PlanetProps> = ({
     };
 
     const planetSize = sizeMap[size];
+
+    // Close context menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (contextRef.current && !contextRef.current.contains(e.target as Node)) {
+                setShowContextMenu(false);
+            }
+        };
+        if (showContextMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showContextMenu]);
+
+    // Handle right-click
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenuPos({ x: e.clientX, y: e.clientY });
+        setShowContextMenu(true);
+    };
+
+    // Handle quick files action - pass click position for window placement
+    const handleQuickFiles = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowContextMenu(false);
+        onQuickFilesAccess?.(contextMenuPos);
+    };
+
+    // Handle open space action
+    const handleOpenSpace = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowContextMenu(false);
+        onClick?.();
+    };
 
     const getDeptIcon = (name: string): LucideIcon => {
         const key = name.toLowerCase();
@@ -57,8 +100,21 @@ export const Planet: React.FC<PlanetProps> = ({
         return Compass;
     };
 
-    const getDeptStyle = (name: string) => {
+    const getDeptStyle = (name: string, customColor?: string) => {
+        // If department has a custom color, use it
+        if (customColor) {
+            return {
+                gradient: `linear-gradient(135deg, ${customColor}33, ${customColor}0D)`,
+                border: `${customColor}80`,
+                glow: `${customColor}66`,
+                iconColor: 'text-white',
+                activeGradient: `linear-gradient(135deg, ${customColor}4D, ${customColor}1A)`,
+            };
+        }
+
         const key = name.toLowerCase();
+
+        // Engineering / Tech / Development - Sky Blue
         if (key.includes('engineering') || key.includes('product') || key.includes('tech') || key.includes('dev')) {
             return {
                 gradient: 'linear-gradient(135deg, rgba(14,165,233,0.2), rgba(34,211,238,0.05))',
@@ -68,6 +124,8 @@ export const Planet: React.FC<PlanetProps> = ({
                 activeGradient: 'linear-gradient(135deg, rgba(14,165,233,0.3), rgba(34,211,238,0.1))',
             };
         }
+
+        // Finance / Accounting - Amber
         if (key.includes('finance') || key.includes('accounting') || key.includes('buchhaltung')) {
             return {
                 gradient: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.05))',
@@ -77,7 +135,9 @@ export const Planet: React.FC<PlanetProps> = ({
                 activeGradient: 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(251,191,36,0.1))',
             };
         }
-        if (key.includes('marketing') || key.includes('sales') || key.includes('brand') || key.includes('vertrieb')) {
+
+        // Marketing / Sales / Brand / Retail - Fuchsia
+        if (key.includes('marketing') || key.includes('sales') || key.includes('brand') || key.includes('vertrieb') || key.includes('retail') || key.includes('growth')) {
             return {
                 gradient: 'linear-gradient(135deg, rgba(217,70,239,0.2), rgba(139,92,246,0.05))',
                 border: 'rgba(217,70,239,0.5)',
@@ -86,6 +146,8 @@ export const Planet: React.FC<PlanetProps> = ({
                 activeGradient: 'linear-gradient(135deg, rgba(217,70,239,0.3), rgba(139,92,246,0.1))',
             };
         }
+
+        // HR / People - Rose
         if (key.includes('hr') || key.includes('people') || key.includes('personal')) {
             return {
                 gradient: 'linear-gradient(135deg, rgba(244,63,94,0.2), rgba(225,29,72,0.05))',
@@ -95,6 +157,8 @@ export const Planet: React.FC<PlanetProps> = ({
                 activeGradient: 'linear-gradient(135deg, rgba(244,63,94,0.3), rgba(225,29,72,0.1))',
             };
         }
+
+        // Design / Creative - Violet
         if (key.includes('design') || key.includes('creative')) {
             return {
                 gradient: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.05))',
@@ -104,6 +168,18 @@ export const Planet: React.FC<PlanetProps> = ({
                 activeGradient: 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.1))',
             };
         }
+
+        // Café / Coffee / Food - Warm Orange
+        if (key.includes('café') || key.includes('cafe') || key.includes('coffee') || key.includes('roast') || key.includes('kitchen')) {
+            return {
+                gradient: 'linear-gradient(135deg, rgba(251,146,60,0.2), rgba(234,88,12,0.05))',
+                border: 'rgba(251,146,60,0.5)',
+                glow: 'rgba(251,146,60,0.4)',
+                iconColor: 'text-orange-400',
+                activeGradient: 'linear-gradient(135deg, rgba(251,146,60,0.3), rgba(234,88,12,0.1))',
+            };
+        }
+
         // Default (Operations/Admin/Other) - Emerald
         return {
             gradient: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))',
@@ -114,7 +190,7 @@ export const Planet: React.FC<PlanetProps> = ({
         };
     };
 
-    const style = getDeptStyle(department.name);
+    const style = getDeptStyle(department.name, department.color);
     const Icon = getDeptIcon(department.name);
 
     return (
@@ -150,6 +226,7 @@ export const Planet: React.FC<PlanetProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
+            onContextMenu={handleContextMenu}
             onMouseEnter={() => onHover?.(true)}
             onMouseLeave={() => onHover?.(false)}
         >
@@ -252,6 +329,54 @@ export const Planet: React.FC<PlanetProps> = ({
                     )}
                 </div>
             </motion.div>
+
+            {/* Context Menu - via Portal for correct positioning */}
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {showContextMenu && (
+                        <motion.div
+                            ref={contextRef}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="fixed z-[9999] pointer-events-auto"
+                            style={{
+                                left: contextMenuPos.x,
+                                top: contextMenuPos.y
+                            }}
+                        >
+                            <div className="bg-[#0a0f0d]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[180px]">
+                                {/* Header */}
+                                <div className="px-3 py-2 border-b border-white/5 text-xs text-white/40 truncate">
+                                    {department.name}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="py-1">
+                                    {onQuickFilesAccess && (
+                                        <button
+                                            onClick={handleQuickFiles}
+                                            className="w-full px-3 py-2 flex items-center gap-3 hover:bg-emerald-500/10 transition-colors text-left"
+                                        >
+                                            <Folder size={16} className="text-emerald-400" />
+                                            <span className="text-sm text-white/90">Dateien anzeigen</span>
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={handleOpenSpace}
+                                        className="w-full px-3 py-2 flex items-center gap-3 hover:bg-blue-500/10 transition-colors text-left"
+                                    >
+                                        <ArrowRight size={16} className="text-blue-400" />
+                                        <span className="text-sm text-white/90">In Space öffnen</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
         </motion.div>
     );
 };

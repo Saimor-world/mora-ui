@@ -6,10 +6,14 @@ import FolderRoom from "@/components/folder/FolderRoom";
 import DocumentViewer from "@/components/document/DocumentViewer";
 import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
+import { usePaneStore } from "@/lib/store/paneStore";
+import { PaneManager } from "@/components/mora/PaneManager";
 import { MoraIntelligenceBar } from "@/components/mora/MoraIntelligenceBar";
 import { SynthesisPanel } from "@/components/intelligence/SynthesisPanel";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/errors/ErrorBoundary";
+import { OperatorStatusPane } from "@/components/operator/OperatorStatusPane";
+import { AgencyCursor } from "@/components/agency/AgencyCursor";  // Guided Agency
 
 export default function RootLayout({
   children,
@@ -19,8 +23,12 @@ export default function RootLayout({
   const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
   const activeFolderId = useMoraStore((state) => state.activeFolderId);
   const coreError = useMoraStore((state) => state.coreError);
+  const panes = usePaneStore((state) => state.panes);
   const [showIntel, setShowIntel] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Show bar only in 'Deep Views' (when panes are open)
+  const showBar = panes.length > 0;
 
   // Fix hydration mismatch from browser extensions
   useEffect(() => {
@@ -30,12 +38,12 @@ export default function RootLayout({
     }
   }, []);
 
-    // Mora Awareness: Pulse when space/folder changes
-    useEffect(() => {
-      if (activeSpaceId || activeFolderId) {
-        setFocus();
-      }
-    }, [activeSpaceId, activeFolderId]);
+  // Mora Awareness: Pulse when space/folder changes
+  useEffect(() => {
+    if (activeSpaceId || activeFolderId) {
+      setFocus();
+    }
+  }, [activeSpaceId, activeFolderId]);
 
   // Update orb when error state changes
   useEffect(() => {
@@ -64,11 +72,17 @@ export default function RootLayout({
           {children}
           {mounted && (
             <>
+              <PaneManager />
               <FolderRoom />
               <DocumentViewer />
-              <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
+              <div className={`transition-opacity duration-500 ${showBar ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
+              </div>
+
               {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
               <Toaster position="top-right" />
+              <OperatorStatusPane />
+              <AgencyCursor />  {/* Guided Agency: MÔRA Cursor */}
             </>
           )}
         </ErrorBoundary>

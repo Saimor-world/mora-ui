@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
 import { Star } from '@/components/mora/Star';
@@ -25,8 +26,10 @@ export const DepartmentLayer: React.FC = () => {
         loadSpacesForDepartment,
         navigateToCore,
         navigateToSpace,
-        addSpace
+        addSpace,
+        setActiveSpace // Need to set active space so the pane finds data? Actually pane can take data directly.
     } = useMoraStore();
+    const { addPane } = usePaneStore();
 
     const currentDepartment = departments.find(d => d.id === activeDepartmentId);
     const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
@@ -42,10 +45,10 @@ export const DepartmentLayer: React.FC = () => {
         if (spaces.length === 0) return [];
 
         // PHASE 6.4: Organic Orbital Physics
-        const count = Math.min(spaces.length, 8); // Display max 8 spaces for performance/clutter
+        const count = spaces.length; // Show all spaces
         const baseRadius = 250;
 
-        return spaces.slice(0, count).map((space, i) => {
+        return spaces.map((space, i) => {
             // Golden Angle distribution for organic clustering
             const goldenAngle = Math.PI * (3 - Math.sqrt(5));
             const angle = i * goldenAngle;
@@ -97,7 +100,7 @@ export const DepartmentLayer: React.FC = () => {
             </div>
 
             {/* Nebula Effect */}
-            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 mix-blend-overlay pointer-events-none" />
+            <div className="absolute inset-0 bg-noise opacity-5 mix-blend-overlay pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
 
             {/* Back Button */}
@@ -169,7 +172,17 @@ export const DepartmentLayer: React.FC = () => {
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay, duration: 0.5 }}
                                 whileHover={{ scale: 1.1 }}
-                                onClick={() => navigateToSpace(space.id)}
+                                onClick={() => {
+                                    addPane({
+                                        id: `space-${space.id}`,
+                                        type: 'space',
+                                        title: space.name,
+                                        data: { spaceId: space.id },
+                                        position: { x: 100, y: 100 },
+                                        size: { width: 1000, height: 700 },
+                                        minimized: false
+                                    });
+                                }}
                             >
                                 <Star
                                     space={{

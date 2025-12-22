@@ -1,210 +1,140 @@
 /**
- * MOCK DATA SYSTEM
+ * SAIMÔR MOCK DATA - CLEAN VERSION
  * 
- * Provides logical fallback data for:
- * 1. Demo Mode (Simple Coffee Group)
- * 2. Solo Founder Mode (Saimôr HQ)
+ * Only 2 Companies:
+ * 1. Simple Coffee Group (DEMO) - For showcasing
+ * 2. Saimor HQ (YOUR COMPANY) - For real work
  * 
- * Used when backend returns empty data or for offline demos.
+ * MASTERBIBLE HIERARCHY:
+ * - Company = Root
+ * - Planets = Departments  
+ * - Moons = Spaces
+ * - Stars = Folders
+ * - Nodes = Content (background particles)
  */
 
 export const MOCK_DATA = {
-    // 1. SIMPLE COFFEE GROUP (Demo Company)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 1. SIMPLE COFFEE GROUP (DEMO COMPANY)
+    // ═══════════════════════════════════════════════════════════════════════════
     demo: {
+        company: {
+            id: 'comp-simple-coffee',
+            name: 'Simple Coffee Group',
+            description: 'Demo Company for Showcasing SAIMÔR',
+            is_demo: true,
+            logo: null // Placeholder
+        },
         departments: [
-            { id: 'dept-eng', tenant_id: 'tenant-default', name: 'Engineering', slug: 'engineering', description: 'Tech & Development', color: '#3B82F6', order: 0 },
-            { id: 'dept-mkt', tenant_id: 'tenant-default', name: 'Marketing', slug: 'marketing', description: 'Growth & Brand', color: '#D946EF', order: 1 },
-            { id: 'dept-fin', tenant_id: 'tenant-default', name: 'Finance', slug: 'finance', description: 'Financial Planning', color: '#F59E0B', order: 2 },
-            { id: 'dept-hr', tenant_id: 'tenant-default', name: 'HR', slug: 'hr', description: 'People & Culture', color: '#F43F5E', order: 3 },
-            { id: 'dept-design', tenant_id: 'tenant-default', name: 'Design', slug: 'design', description: 'Product Design', color: '#8B5CF6', order: 4 }
+            { id: 'dept-cafe', tenant_id: 'comp-simple-coffee', name: 'Café Operations', slug: 'cafe', description: 'Daily café management', color: '#F59E0B', order: 0 },
+            { id: 'dept-roast', tenant_id: 'comp-simple-coffee', name: 'Roastery', slug: 'roast', description: 'Coffee roasting', color: '#EF4444', order: 1 },
+            { id: 'dept-retail', tenant_id: 'comp-simple-coffee', name: 'Retail', slug: 'retail', description: 'Online & store sales', color: '#10B981', order: 2 }
         ],
         spaces: {
-            'dept-eng': [
-                { id: 'space-web', name: 'Web Platform', description: 'Next.js Frontend', departmentId: 'dept-eng' },
-                { id: 'space-mobile', name: 'Mobile App', description: 'React Native', departmentId: 'dept-eng' },
-                { id: 'space-api', name: 'Backend API', description: 'Node.js Services', departmentId: 'dept-eng' },
-                { id: 'space-devops', name: 'DevOps', description: 'CI/CD & Infra', departmentId: 'dept-eng' }
+            'dept-cafe': [
+                { id: 'space-bar', name: 'Espresso Bar', description: 'Coffee service', departmentId: 'dept-cafe' },
+                { id: 'space-kitchen', name: 'Kitchen', description: 'Food prep', departmentId: 'dept-cafe' }
             ],
-            'dept-mkt': [
-                { id: 'space-campaigns', name: 'Q4 Campaigns', description: 'Holiday Season', departmentId: 'dept-mkt' },
-                { id: 'space-social', name: 'Social Media', description: 'Instagram & LinkedIn', departmentId: 'dept-mkt' },
-                { id: 'space-brand', name: 'Brand Assets', description: 'Logos & Guidelines', departmentId: 'dept-mkt' }
+            'dept-roast': [
+                { id: 'space-beans', name: 'Bean Selection', description: 'Green coffee sourcing', departmentId: 'dept-roast' },
+                { id: 'space-process', name: 'Roast Process', description: 'Roasting profiles', departmentId: 'dept-roast' }
             ],
-            'dept-fin': [
-                { id: 'space-q4', name: 'Q4 Report', description: 'Revenue Analysis', departmentId: 'dept-fin' },
-                { id: 'space-budget', name: 'Budget 2025', description: 'Planning', departmentId: 'dept-fin' }
-            ],
-            'dept-hr': [
-                { id: 'space-recruiting', name: 'Recruiting', description: 'Open Positions', departmentId: 'dept-hr' },
-                { id: 'space-onboarding', name: 'Onboarding', description: 'New Hires', departmentId: 'dept-hr' }
-            ],
-            'dept-design': [
-                { id: 'space-system', name: 'Design System', description: 'Figma Components', departmentId: 'dept-design' },
-                { id: 'space-ui', name: 'UI Kit', description: 'Web & Mobile', departmentId: 'dept-design' }
+            'dept-retail': [
+                { id: 'space-shop', name: 'Online Shop', description: 'E-commerce', departmentId: 'dept-retail' },
+                { id: 'space-events', name: 'Events', description: 'Tastings & workshops', departmentId: 'dept-retail' }
             ]
         },
-
-        // ═══════════════════════════════════════════════════════════════════════════
-        // NODES - For Semantic Hierarchy (Moons need 5+ connections via tags/metadata)
-        // ═══════════════════════════════════════════════════════════════════════════
+        folders: {
+            'space-bar': [
+                { id: 'folder-menu', name: 'Menu', description: 'Drink recipes', space_id: 'space-bar', order: 0 },
+                { id: 'folder-staff', name: 'Staff Schedule', description: 'Shifts', space_id: 'space-bar', order: 1 }
+            ],
+            'space-beans': [
+                { id: 'folder-suppliers', name: 'Suppliers', description: 'Green bean sources', space_id: 'space-beans', order: 0 }
+            ],
+            'space-shop': [
+                { id: 'folder-products', name: 'Products', description: 'Coffee products', space_id: 'space-shop', order: 0 },
+                { id: 'folder-orders', name: 'Orders', description: 'Customer orders', space_id: 'space-shop', order: 1 }
+            ]
+        },
         nodes: [
-            // HIGH IMPORTANCE NODES (Will become MOONS - many tags = many connections)
             {
-                id: 'node-architecture',
-                space_id: 'space-web',
-                title: 'System Architecture',
+                id: 'node-espresso-guide',
+                space_id: 'space-bar',
+                title: 'Espresso Brewing Guide',
                 type: 'document',
-                content: 'Core architecture documentation',
-                metadata: { tags: ['architecture', 'core', 'important', 'shared', 'security', 'performance'], weight: 0.9 },
+                content: 'Perfect espresso extraction...',
+                metadata: { tags: ['coffee', 'guide', 'important'], weight: 0.9 },
                 created_at: '2024-01-15T10:00:00Z',
                 updated_at: '2024-12-01T10:00:00Z'
             },
             {
-                id: 'node-brand-guide',
-                space_id: 'space-brand',
-                title: 'Brand Guidelines',
+                id: 'node-supplier-list',
+                space_id: 'space-beans',
+                title: 'Approved Suppliers',
                 type: 'document',
-                content: 'Official brand standards',
-                metadata: { tags: ['brand', 'design', 'visual', 'important', 'shared', 'marketing'], weight: 0.85 },
-                created_at: '2024-02-10T10:00:00Z',
-                updated_at: '2024-11-28T10:00:00Z'
-            },
-            {
-                id: 'node-q4-strategy',
-                space_id: 'space-campaigns',
-                title: 'Q4 Strategy',
-                type: 'document',
-                content: 'Holiday season marketing plan',
-                metadata: { tags: ['strategy', 'marketing', 'q4', 'revenue', 'important', 'growth'], weight: 0.8 },
-                created_at: '2024-09-01T10:00:00Z',
-                updated_at: '2024-12-05T10:00:00Z'
-            },
-            {
-                id: 'node-budget-master',
-                space_id: 'space-budget',
-                title: 'Master Budget 2025',
-                type: 'document',
-                content: 'Annual budget allocation',
-                metadata: { tags: ['budget', 'finance', 'planning', 'important', 'shared', 'operations'], weight: 0.9 },
-                created_at: '2024-10-01T10:00:00Z',
-                updated_at: '2024-12-08T10:00:00Z'
-            },
-            {
-                id: 'node-hiring-plan',
-                space_id: 'space-recruiting',
-                title: 'Hiring Plan 2025',
-                type: 'document',
-                content: 'Recruitment roadmap',
-                metadata: { tags: ['hiring', 'hr', 'growth', 'team', 'important', 'planning'], weight: 0.75 },
-                created_at: '2024-11-01T10:00:00Z',
-                updated_at: '2024-12-10T10:00:00Z'
-            },
-
-            // MEDIUM IMPORTANCE NODES (Regular stars)
-            {
-                id: 'node-api-docs',
-                space_id: 'space-api',
-                title: 'API Documentation',
-                type: 'document',
-                content: 'REST API reference',
-                metadata: { tags: ['api', 'docs', 'technical'], weight: 0.5 },
-                created_at: '2024-03-15T10:00:00Z',
-                updated_at: '2024-11-20T10:00:00Z'
-            },
-            {
-                id: 'node-social-calendar',
-                space_id: 'space-social',
-                title: 'Social Calendar',
-                type: 'document',
-                content: 'Content schedule',
-                metadata: { tags: ['social', 'calendar', 'marketing'], weight: 0.4 },
-                created_at: '2024-06-01T10:00:00Z',
-                updated_at: '2024-11-25T10:00:00Z'
-            },
-            {
-                id: 'node-design-tokens',
-                space_id: 'space-system',
-                title: 'Design Tokens',
-                type: 'document',
-                content: 'Colors and typography',
-                metadata: { tags: ['design', 'tokens'], weight: 0.5 },
-                created_at: '2024-04-01T10:00:00Z',
-                updated_at: '2024-10-15T10:00:00Z'
-            },
-
-            // LOW IMPORTANCE NODES (Small stars)
-            {
-                id: 'node-meeting-notes',
-                space_id: 'space-web',
-                title: 'Weekly Standup Notes',
-                type: 'note',
-                content: 'Team sync notes',
-                metadata: { tags: ['meeting'], weight: 0.2 },
-                created_at: '2024-12-09T10:00:00Z',
-                updated_at: '2024-12-09T10:00:00Z'
-            },
-            {
-                id: 'node-expense-report',
-                space_id: 'space-q4',
-                title: 'Travel Expenses',
-                type: 'document',
-                content: 'Q4 expense tracking',
-                metadata: { tags: ['expense'], weight: 0.2 },
-                created_at: '2024-12-01T10:00:00Z',
-                updated_at: '2024-12-03T10:00:00Z'
+                content: 'List of coffee bean suppliers...',
+                metadata: { tags: ['suppliers', 'beans'], weight: 0.7 },
+                created_at: '2024-03-01T10:00:00Z',
+                updated_at: '2024-11-15T10:00:00Z'
             }
         ],
-
-        // Relations for constellations (Parent-Child)
-        relations: [
-            // Operations department relations
-            { id: 'rel-1', source_id: 'folder-einkauf', target_id: 'node-budget-2025', type: 'parent_child', weight: 1.0 },
-            { id: 'rel-2', source_id: 'folder-einkauf', target_id: 'node-lieferanten', type: 'parent_child', weight: 1.0 },
-            { id: 'rel-3', source_id: 'folder-verkauf', target_id: 'node-sales-report', type: 'parent_child', weight: 1.0 },
-            // Marketing department relations
-            { id: 'rel-4', source_id: 'folder-q4-2025', target_id: 'node-campaign-brief', type: 'parent_child', weight: 1.0 },
-            { id: 'rel-5', source_id: 'folder-q4-2025', target_id: 'node-creative-assets', type: 'parent_child', weight: 1.0 },
-            // Finance department relations
-            { id: 'rel-6', source_id: 'folder-2024-loans', target_id: 'node-loan-docs', type: 'parent_child', weight: 1.0 },
-            // Product department relations
-            { id: 'rel-7', source_id: 'folder-v2-features', target_id: 'node-feature-spec', type: 'parent_child', weight: 1.0 },
-            // Semantic connections between important nodes (for nervous system visual)
-            { id: 'rel-8', source_id: 'node-architecture', target_id: 'node-api-docs', type: 'semantic', weight: 0.8 },
-            { id: 'rel-9', source_id: 'node-brand-guide', target_id: 'node-design-tokens', type: 'semantic', weight: 0.7 },
-            { id: 'rel-10', source_id: 'node-q4-strategy', target_id: 'node-budget-master', type: 'semantic', weight: 0.9 },
-            { id: 'rel-11', source_id: 'node-hiring-plan', target_id: 'node-budget-master', type: 'semantic', weight: 0.6 }
-        ]
+        relations: []
     },
 
-    // 2. SAIMÔR HQ (Solo Founder)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 2. SAIMOR HQ (YOUR COMPANY)
+    // ═══════════════════════════════════════════════════════════════════════════
     solo: {
+        company: {
+            id: 'comp-saimor-hq',
+            name: 'Saimôr HQ',
+            description: 'Your personal workspace',
+            is_demo: false,
+            logo: null // Placeholder
+        },
         departments: [
-            { id: 'dept-prod', tenant_id: 'tenant-default', name: 'Product', slug: 'product', description: 'Core Product Development', color: '#10B981', order: 0 },
-            { id: 'dept-growth', tenant_id: 'tenant-default', name: 'Growth', slug: 'growth', description: 'Marketing & Sales', color: '#3B82F6', order: 1 },
-            { id: 'dept-ops', tenant_id: 'tenant-default', name: 'Operations', slug: 'operations', description: 'Legal, Admin, Finance', color: '#64748B', order: 2 },
-            { id: 'dept-strat', tenant_id: 'tenant-default', name: 'Strategy', slug: 'strategy', description: 'Vision & Planning', color: '#F59E0B', order: 3 }
+            { id: 'dept-product', tenant_id: 'comp-saimor-hq', name: 'Product', slug: 'product', description: 'Building SAIMÔR', color: '#10B981', order: 0 },
+            { id: 'dept-growth', tenant_id: 'comp-saimor-hq', name: 'Growth', slug: 'growth', description: 'Marketing & Outreach', color: '#3B82F6', order: 1 }
         ],
         spaces: {
-            'dept-prod': [
-                { id: 'space-roadmap', name: 'Roadmap', description: 'Q1 2026 Goals', departmentId: 'dept-prod' },
-                { id: 'space-features', name: 'Features', description: 'Backlog & Specs', departmentId: 'dept-prod' },
-                { id: 'space-bugs', name: 'Bugs', description: 'Issue Tracker', departmentId: 'dept-prod' }
+            'dept-product': [
+                { id: 'space-roadmap', name: 'Roadmap', description: 'Product timeline', departmentId: 'dept-product' },
+                { id: 'space-dev', name: 'Development', description: 'Active sprints', departmentId: 'dept-product' }
             ],
             'dept-growth': [
-                { id: 'space-outreach', name: 'Outreach', description: 'Cold Emailing', departmentId: 'dept-growth' },
-                { id: 'space-content', name: 'Content Plan', description: 'Blog & Socials', departmentId: 'dept-growth' },
-                { id: 'space-analytics', name: 'Analytics', description: 'Metrics & KPIs', departmentId: 'dept-growth' }
-            ],
-            'dept-ops': [
-                { id: 'space-legal', name: 'Legal', description: 'Contracts & IP', departmentId: 'dept-ops' },
-                { id: 'space-finance', name: 'Finance', description: 'Invoices & Taxes', departmentId: 'dept-ops' },
-                { id: 'space-tools', name: 'Tools', description: 'SaaS Subscriptions', departmentId: 'dept-ops' }
-            ],
-            'dept-strat': [
-                { id: 'space-vision', name: 'Vision', description: 'Long-term Goals', departmentId: 'dept-strat' },
-                { id: 'space-pitch', name: 'Pitch Deck', description: 'Investor Slides', departmentId: 'dept-strat' }
+                { id: 'space-marketing', name: 'Marketing', description: 'Campaigns', departmentId: 'dept-growth' },
+                { id: 'space-community', name: 'Community', description: 'User engagement', departmentId: 'dept-growth' }
             ]
         },
-        nodes: []
+        folders: {
+            'space-roadmap': [
+                { id: 'folder-q1', name: 'Q1 2026', description: 'Q1 Goals', space_id: 'space-roadmap', order: 0 }
+            ],
+            'space-dev': [
+                { id: 'folder-beta', name: 'Beta 1.5', description: 'Current sprint', space_id: 'space-dev', order: 0 }
+            ],
+            'space-marketing': [
+                { id: 'folder-content', name: 'Content', description: 'Blog & Social', space_id: 'space-marketing', order: 0 }
+            ]
+        },
+        nodes: [
+            {
+                id: 'node-vision',
+                space_id: 'space-roadmap',
+                title: 'SAIMÔR Vision 2026',
+                type: 'document',
+                content: 'Building the future of knowledge work...',
+                metadata: { tags: ['vision', 'strategy', 'important'], weight: 1.0 },
+                created_at: '2024-12-01T10:00:00Z',
+                updated_at: '2024-12-12T10:00:00Z'
+            }
+        ],
+        relations: []
     }
+};
+
+// Helper to get the right mock data based on mode
+export const getMockData = (mode: 'demo' | 'workspace') => {
+    return mode === 'demo' ? MOCK_DATA.demo : MOCK_DATA.solo;
 };

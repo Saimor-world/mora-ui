@@ -6,7 +6,9 @@ import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { useMoraStore } from '@/lib/store/moraState';
 
-export default function RootPage() {
+import { Suspense } from 'react';
+
+function RootPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useMoraStore();
@@ -17,14 +19,21 @@ export default function RootPage() {
     // Check for existing session or sleep parameter on mount (client-side only)
     useEffect(() => {
         if (typeof window !== 'undefined') {
+            const hasToken = localStorage.getItem('saimor_dev_token');
             const hasSession = localStorage.getItem('mora_session');
             const lastUser = localStorage.getItem('last_user_name');
             const sleepMode = searchParams.get('sleep') === 'true';
 
-            // Show lockscreen if: sleep mode triggered OR existing session
-            if (sleepMode || (hasSession && lastUser)) {
+            // Only show lockscreen if we have a token AND session
+            if (hasToken && (sleepMode || (hasSession && lastUser))) {
                 setShowLockScreen(true);
                 setSavedUserName(lastUser || 'User');
+            } else if (!hasToken) {
+                // No token - clear any stale session data
+                localStorage.removeItem('mora_session');
+                localStorage.removeItem('last_user_name');
+                localStorage.removeItem('saimor_mode');
+                localStorage.removeItem('saimor_role');
             }
         }
         setIsCheckingSession(false);
@@ -54,17 +63,34 @@ export default function RootPage() {
             {showLockScreen ? (
                 <LockScreen
                     onUnlock={handleUnlock}
-                    userName={savedUserName}
-                    systemStatus={{
-                        backend: 'online',
-                        departments: 4,
-                        spaces: 8,
-                        lastSync: 'Just now'
+                    onLogout={() => {
+                        localStorage.removeItem('mora_session');
+                        localStorage.removeItem('saimor_dev_token');
+                        localStorage.removeItem('last_user_name');
+                        localStorage.removeItem('saimor_mode');
+                        localStorage.removeItem('saimor_role');
+                        setShowLockScreen(false);
+                        // Force refresh to clear any in-memory stores
+                        window.location.reload();
                     }}
+                    userName={savedUserName}
+                    companyName="SAIMÔR"
                 />
             ) : (
                 <WelcomeScreen onAuthenticated={handleAuthenticated} />
             )}
         </div>
+    );
+}
+
+export default function RootPage() {
+    return (
+        <Suspense fallback={
+            <div className="relative w-full h-screen bg-[#030806] flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+            </div>
+        }>
+            <RootPageContent />
+        </Suspense>
     );
 }

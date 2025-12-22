@@ -395,4 +395,24 @@
   select:focus option:checked {
     background: linear-gradient(0deg, rgba(52, 211, 153, 0.2) 0%, rgba(52, 211, 153, 0.1) 100%);
   }
+
+  /* === GUIDED AGENCY: Highlight Animation === */
+  @keyframes agency-pulse {
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.6);
+    }
+
+    50% {
+      box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3), 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+  }
+
+  .agency-highlight {
+    animation: agency-pulse 1s ease-in-out infinite;
+    outline: 2px solid rgba(16, 185, 129, 0.8);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
 }

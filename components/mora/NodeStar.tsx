@@ -6,7 +6,7 @@ import type { CoreNode } from '@/lib/types/core';
 
 interface NodeStarProps {
     node: CoreNode;
-    position: { x: number; y: number };
+    position: { x: number | string; y: number | string };
     delay?: number;
     size?: 'xs' | 'sm';
     onHover?: (active: boolean) => void;

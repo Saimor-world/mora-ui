@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
+import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
 import { MOCK_DATA } from '@/lib/data/mockData';
+import { OnboardingWizard } from './OnboardingWizard';
 
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
@@ -21,7 +23,8 @@ interface SessionInfo {
     role?: string;
 }
 
-const CORE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8083';
+// Use the Next.js rewrites proxy to avoid CORS issues
+const CORE_URL = '/api/core';
 
 /**
  * WelcomeScreen - Unified Authentication Entry Point
@@ -36,10 +39,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'role-select'>('welcome');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [selectedRole, setSelectedRole] = useState<'owner' | 'member' | 'demo'>('member');
+    const [companyName, setCompanyName] = useState(''); // For owner registration
+    const [logoUrl, setLogoUrl] = useState<string | null>(null); // For owner company logo
+    const [selectedRole, setSelectedRole] = useState<'owner' | 'member' | 'demo'>('owner'); // Default to owner
     const [isLoading, setIsLoading] = useState(false);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showSessionCard, setShowSessionCard] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState('');
 
     const { setViewMode, setViewLevel, setUser } = useMoraStore();
 
@@ -69,54 +76,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         checkSession();
     }, []);
 
-    const handleContinueSession = async () => {
-        const savedRole = localStorage.getItem('saimor_role');
-        const savedMode = localStorage.getItem('saimor_mode');
-
-        setIsLoading(true);
-
-        try {
-            // Set correct viewMode based on saved role/mode
-            if (savedRole === 'owner') {
-                setViewMode('owner');
-                setViewLevel('company');
-            } else if (savedRole === 'demo' || savedMode === 'demo') {
-                setViewMode('demo');
-
-                // Load Simple Coffee Group for demo mode
-                const { loadCompanies, setActiveCompany, loadDepartments } = useMoraStore.getState();
-                await loadCompanies();
-
-                const companies = useMoraStore.getState().companies;
-                let demoCompany = companies.find(c => c.is_demo === true);
-
-                // Fallbacks if is_demo not set
-                if (!demoCompany) {
-                    demoCompany = companies.find(c => c.name.toLowerCase().includes('coffee'))
-                        || companies.find(c => !c.name.toLowerCase().includes('saimor'));
-                }
-
-                if (demoCompany) {
-                    setActiveCompany(demoCompany.id);
-                    await loadDepartments(demoCompany.id);
-                    console.log('✅ Demo company re-activated:', demoCompany.name);
-                } else {
-                    console.error('❌ No demo company available');
-                }
-            } else {
-                setViewMode('workspace');
-            }
-
-            toast.success("Welcome back!");
-            onAuthenticated();
-        } catch (error) {
-            console.error('Failed to continue session:', error);
-            toast.error("Session restore failed. Please login again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    useEffect(() => {
+        // Clear inputs whenever mode changes to avoid "zombie" values
+        setEmail('');
+        setPassword('');
+        setCompanyName('');
+    }, [mode]);
     const handleLogout = () => {
         localStorage.removeItem('saimor_dev_token');
         localStorage.removeItem('saimor_mode');
@@ -125,11 +90,75 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         localStorage.removeItem('last_workspace');
         localStorage.removeItem('last_activity');
         localStorage.removeItem('user_name');
+        localStorage.removeItem('onboarding_complete'); // Fix: Ensure clean slate
+        useMoraStore.getState().resetStore(); // Fix: Clear Zustand state immediately
         writeCookie('saimor_auth', '', -1);
         setSessionInfo(null);
         setShowSessionCard(false);
         toast.info("Session cleared");
     };
+
+    const handleContinueSession = async () => {
+        const savedRole = localStorage.getItem('saimor_role');
+        const savedTenantId = localStorage.getItem('saimor_tenant');
+        const store = useMoraStore.getState();
+
+        setIsLoading(true);
+
+        try {
+            // 1. Load Data for ALL roles (Critical Fix for Member View)
+            await store.loadCompanies();
+            const companies = useMoraStore.getState().companies;
+            let targetCompany = null;
+
+            if (savedRole === 'demo') {
+                setViewMode('demo');
+                // Find Demo Company
+                targetCompany = companies.find(c => c.is_demo === true)
+                    || companies.find(c => c.name.toLowerCase().includes('coffee'))
+                    || companies.find(c => !c.name.toLowerCase().includes('saimor'));
+            } else {
+                // Normal User/Owner
+                if (savedRole === 'owner') {
+                    setViewMode('owner');
+                    setViewLevel('company');
+                } else {
+                    setViewMode('workspace');
+                    setViewLevel('company');
+                }
+
+                // Find User's Company
+                if (savedTenantId) {
+                    targetCompany = companies.find(c => c.tenant_id === savedTenantId);
+                }
+                // Fallback to first company
+                if (!targetCompany && companies.length > 0) {
+                    targetCompany = companies[0];
+                }
+            }
+
+            // 2. Set Active Company
+            if (targetCompany) {
+                store.setActiveCompany(targetCompany.id);
+                await store.loadDepartments(targetCompany.id);
+                console.log('✅ Session restored for:', targetCompany.name);
+            } else if (savedRole !== 'demo') {
+                console.warn('⚠️ No company found for user.');
+                // Maybe trigger onboarding or error?
+            }
+
+            toast.success("Welcome back!");
+            onAuthenticated();
+        } catch (error) {
+            console.error('Failed to continue session:', error);
+            handleLogout(); // Auto-logout on corrupted session
+            toast.error("Session expired. Please login again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
 
     const saveAuthState = (token: string, role: string, email: string, tenantId: string) => {
         writeCookie('saimor_auth', token, 7); // 7 days
@@ -225,20 +254,25 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 const mockNodes = MOCK_DATA.demo.nodes || [];
 
                 // Inject all necessary mock data for full offline experience
+                // ALWAYS inject demo mock data for consistent universe visualization
                 useMoraStore.setState(state => ({
-                    // 1. Inject Nodes (MOONS)
+                    // 1. Inject Nodes (background particles)
                     nodesByCompany: {
                         ...state.nodesByCompany,
                         [demoCompany!.id]: mockNodes as any
                     },
-                    // 2. Inject Departments if using fallback
-                    departments: demoCompany!.id === 'comp-demo-fallback'
-                        ? (MOCK_DATA.demo.departments as any)
-                        : state.departments,
-                    // 3. Inject Spaces if using fallback
-                    spacesByDepartment: demoCompany!.id === 'comp-demo-fallback'
-                        ? (MOCK_DATA.demo.spaces as any)
-                        : state.spacesByDepartment
+                    // 2. Inject Departments - ALWAYS for demo to ensure planets
+                    departments: MOCK_DATA.demo.departments as any,
+                    // 3. Inject Spaces (Moons) - ALWAYS for demo to ensure moons orbit planets
+                    spacesByDepartment: {
+                        ...state.spacesByDepartment,
+                        ...(MOCK_DATA.demo.spaces as any)
+                    },
+                    // 4. Inject Folders (Stars) for demo - ALWAYS inject for consistent universe
+                    foldersBySpace: {
+                        ...state.foldersBySpace,
+                        ...(MOCK_DATA.demo.folders as any)
+                    }
                 }));
 
                 // Only try to load real departments if we found a real company
@@ -286,17 +320,33 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             saveAuthState(data.token, role, email, data.tenant_id);
 
-            // Set viewMode based on role
+            // Set user in store first
+            const store = useMoraStore.getState();
+            store.setUser({
+                id: data.user_id,
+                name: email.split('@')[0],
+                email: email,
+                role: role
+            });
+
+            // Set View Mode immediately (data will load in /home)
             if (role === 'owner' || role === 'admin') {
                 setViewMode('owner');
                 setViewLevel('company');
                 localStorage.setItem('last_workspace', 'Owner Dashboard');
             } else {
                 setViewMode('workspace');
+                setViewLevel('company');
                 localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
             }
 
+            // Also store session markers
+            localStorage.setItem('mora_session', 'active');
+            localStorage.setItem('last_user_name', email.split('@')[0]);
+
             toast.success(`Welcome, ${email.split('@')[0]}!`);
+
+            // Navigate FIRST, data will load async in /home via useAuthBootstrapper
             onAuthenticated();
         } catch (error: any) {
             console.error('[WelcomeScreen] Login error:', error);
@@ -312,7 +362,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             return;
         }
 
+        if (selectedRole === 'owner' && !companyName.trim()) {
+            toast.error("Please enter a company name");
+            return;
+        }
+
         setIsLoading(true);
+        const toastId = toast.loading("Creating your account...");
 
         try {
             const response = await fetch(`${CORE_URL}/v1/auth/register`, {
@@ -321,8 +377,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 body: JSON.stringify({
                     email,
                     password,
-                    name: email.split('@')[0],
-                    role: selectedRole
+                    role: selectedRole,
+                    company_name: selectedRole === 'owner' ? companyName.trim() : undefined
                 })
             });
 
@@ -336,26 +392,67 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             saveAuthState(data.token, role, email, data.tenant_id);
 
-            // Set viewMode based on role
+            // Fix: Clear onboarding and session flags
+            localStorage.setItem('mora_session', 'active');
+            localStorage.setItem('last_user_name', email.split('@')[0]);
+            localStorage.removeItem('onboarding_complete');
+
+            setUser({
+                id: data.user_id,
+                name: email.split('@')[0],
+                email: email,
+                role: role
+            });
+
+            // Load Initial Data for new user
+            const store = useMoraStore.getState();
+            await store.loadCompanies(); // New company should appear
+            if (data.tenant_id) {
+                const newCompany = store.companies.find(c => c.tenant_id === data.tenant_id);
+                if (newCompany) {
+                    store.setActiveCompany(newCompany.id);
+                }
+            }
+
+            // Routing
             if (role === 'owner' || role === 'admin') {
-                setViewMode('owner');
-                setViewLevel('company');
-                localStorage.setItem('last_workspace', 'Owner Dashboard');
-                toast.success("Account created! Welcome to your Owner Dashboard.");
+                // Determine if we need onboarding (for new owner it is mandatory)
+                setRegisteredEmail(email);
+                setShowOnboarding(true);
+                toast.success('Account created! Let\'s set up your workspace.', { id: toastId });
+                return;
             } else {
                 setViewMode('workspace');
+                setViewLevel('company');
                 localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
-                toast.success("Account created! Welcome to SAIMÔR.");
+                toast.success("Account created! Welcome to SAIMÔR.", { id: toastId });
             }
 
             onAuthenticated();
         } catch (error: any) {
             console.error('[WelcomeScreen] Register error:', error);
-            toast.error(error?.message || "Registration failed");
+            toast.error(error?.message || "Registration failed", { id: toastId });
         } finally {
             setIsLoading(false);
         }
     };
+
+    // Show Onboarding Wizard after registration
+    if (showOnboarding) {
+        return (
+            <OnboardingWizard
+                companyName={companyName}
+                userEmail={registeredEmail || email}
+                onComplete={() => {
+                    setShowOnboarding(false);
+                    // Show the workspace (planets) immediately after creation so user sees their "brain"
+                    setViewMode('workspace');
+                    setViewLevel('company');
+                    onAuthenticated();
+                }}
+            />
+        );
+    }
 
     return (
         <motion.div
@@ -404,7 +501,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             />
 
             {/* Noise Texture Overlay for Organic Feel */}
-            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.015] mix-blend-soft-light pointer-events-none" />
+            {/* Noise texture removed - asset not available */}
 
             <AnimatePresence mode="wait">
                 {mode === 'welcome' && (
@@ -541,81 +638,82 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             className="w-full py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_0_rgba(16,185,129,0.2)]"
                                         >
                                             <span className="font-medium tracking-wide">Continue Session</span>
-                                            <ChevronRight className="w-4 h-4" />
                                         </motion.button>
                                     </div>
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Action Buttons */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5, staggerChildren: 0.1 }}
-                            className="w-full max-w-md space-y-3"
-                        >
-                            {/* Sign In Button */}
-                            <motion.button
-                                onClick={() => setMode('login')}
-                                whileHover={{ scale: 1.02, x: 4 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                        {/* Action Buttons - Only show when no session exists */}
+                        {!showSessionCard && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5, staggerChildren: 0.1 }}
+                                className="w-full max-w-md space-y-3"
                             >
-                                {/* Hover Glow Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                {/* Sign In Button */}
+                                <motion.button
+                                    onClick={() => setMode('login')}
+                                    whileHover={{ scale: 1.02, x: 4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                >
+                                    {/* Hover Glow Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                                <div className="relative p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-300">
-                                    <LogIn className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
-                                </div>
-                                <div className="flex-1 text-left relative z-10">
-                                    <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Sign In</div>
-                                    <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">Access your workspace</div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
-                            </motion.button>
+                                    <div className="relative p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-300">
+                                        <LogIn className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
+                                    </div>
+                                    <div className="flex-1 text-left relative z-10">
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Sign In</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">Access your workspace</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                                </motion.button>
 
-                            {/* Create Account Button */}
-                            <motion.button
-                                onClick={() => setMode('register')}
-                                whileHover={{ scale: 1.02, x: 4 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-mora-gold/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
-                            >
-                                {/* Hover Glow Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-mora-gold/0 via-mora-gold/10 to-mora-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                {/* Create Account Button */}
+                                <motion.button
+                                    onClick={() => setMode('register')}
+                                    whileHover={{ scale: 1.02, x: 4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-mora-gold/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                >
+                                    {/* Hover Glow Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-mora-gold/0 via-mora-gold/10 to-mora-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                                <div className="relative p-3 rounded-xl bg-mora-gold/10 border border-mora-gold/20 group-hover:bg-mora-gold/20 group-hover:border-mora-gold/40 transition-all duration-300">
-                                    <UserPlus className="w-5 h-5 text-mora-gold group-hover:text-mora-gold/90 transition-colors" />
-                                </div>
-                                <div className="flex-1 text-left relative z-10">
-                                    <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Create Account</div>
-                                    <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">Start your journey</div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
-                            </motion.button>
+                                    <div className="relative p-3 rounded-xl bg-mora-gold/10 border border-mora-gold/20 group-hover:bg-mora-gold/20 group-hover:border-mora-gold/40 transition-all duration-300">
+                                        <UserPlus className="w-5 h-5 text-mora-gold group-hover:text-mora-gold/90 transition-colors" />
+                                    </div>
+                                    <div className="flex-1 text-left relative z-10">
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Create Account</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">Start your journey</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
+                                </motion.button>
 
-                            {/* Demo Mode Button */}
-                            <motion.button
-                                onClick={handleDemoMode}
-                                disabled={isLoading}
-                                whileHover={{ scale: isLoading ? 1 : 1.02, x: isLoading ? 0 : 4 }}
-                                whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                                className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
-                            >
-                                {/* Hover Glow Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                {/* Demo Mode Button */}
+                                <motion.button
+                                    onClick={handleDemoMode}
+                                    disabled={isLoading}
+                                    whileHover={{ scale: isLoading ? 1 : 1.02, x: isLoading ? 0 : 4 }}
+                                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                >
+                                    {/* Hover Glow Effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                                <div className="relative p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 transition-all duration-300">
-                                    <Database className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                                </div>
-                                <div className="flex-1 text-left relative z-10">
-                                    <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Demo Mode</div>
-                                    <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Explore Simple Coffee Group</div>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                            </motion.button>
-                        </motion.div>
+                                    <div className="relative p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 transition-all duration-300">
+                                        <Database className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                                    </div>
+                                    <div className="flex-1 text-left relative z-10">
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Demo Mode</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Explore Simple Coffee Group</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                                </motion.button>
+                            </motion.div>
+                        )}
                     </motion.div>
                 )}
 
@@ -679,7 +777,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         </motion.button>
 
                                         <button
-                                            onClick={() => setMode('welcome')}
+                                            onClick={() => {
+                                                setEmail('');
+                                                setPassword('');
+                                                setMode('welcome');
+                                            }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
                                             ← Back to Welcome
@@ -725,6 +827,31 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         placeholder="••••••••"
                                     />
                                 </div>
+
+                                {/* Company Name - Only for Owners */}
+                                {selectedRole === 'owner' && (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-center mb-4">
+                                            <CompanyLogoUpload
+                                                value={logoUrl}
+                                                onChange={setLogoUrl}
+                                                companyName={companyName || 'Company'}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs text-mora-gold/70 mb-2 uppercase">Company Name *</label>
+                                            <input
+                                                type="text"
+                                                value={companyName}
+                                                onChange={(e) => setCompanyName(e.target.value)}
+                                                className="w-full bg-black/30 border border-mora-gold/30 rounded-lg px-4 py-3 text-emerald-50 focus:outline-none focus:border-mora-gold/50 placeholder:text-mora-gold/30"
+                                                placeholder="Your Company Name"
+                                            />
+                                            <p className="text-[10px] text-mora-gold/50 mt-1">This will be your workspace name</p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Role Selection */}
                                 <div>

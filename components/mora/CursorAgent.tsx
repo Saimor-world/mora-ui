@@ -29,7 +29,11 @@ export function CursorAgent({
     awareness = 'idle'
 }: CursorAgentProps & { awareness?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' }) {
     const controls = useAnimation();
-    const [currentPosition, setCurrentPosition] = useState({ x: 0, y: 0 });
+    // Start in center of viewport
+    const [currentPosition, setCurrentPosition] = useState(() => ({
+        x: typeof window !== 'undefined' ? window.innerWidth / 2 : 500,
+        y: typeof window !== 'undefined' ? window.innerHeight / 2 : 400
+    }));
     const [isMoving, setIsMoving] = useState(false);
     const agentRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +53,8 @@ export function CursorAgent({
 
     // UPGRADE D1: Bezier curve movement engine
     const moveToTarget = async (start: { x: number, y: number }, end: { x: number, y: number }) => {
-        if (!active) return;
+        // Don't interrupt ongoing movement
+        if (isMoving) return;
 
         setIsMoving(true);
 
@@ -71,6 +76,8 @@ export function CursorAgent({
         await controls.start({
             x: [start.x, cp1.x, cp2.x, end.x],
             y: [start.y, cp1.y, cp2.y, end.y],
+            scale: 1,
+            opacity: 1,
             transition: {
                 duration: Math.max(0.8, distance / 300) / speed,
                 ease: [0.25, 0.46, 0.45, 0.94], // Custom bezier for natural movement
@@ -82,6 +89,19 @@ export function CursorAgent({
         setIsMoving(false);
         onActionComplete?.(action);
     };
+
+    // Entry animation when becoming active
+    useEffect(() => {
+        if (active) {
+            controls.start({
+                x: currentPosition.x,
+                y: currentPosition.y,
+                scale: 1,
+                opacity: 1,
+                transition: { duration: 0.3, ease: 'easeOut' }
+            });
+        }
+    }, [active]);
 
     // UPGRADE D1: Action handlers
     useEffect(() => {
@@ -119,9 +139,10 @@ export function CursorAgent({
         }
     }, [action, target, active]);
 
-    // UPGRADE D1: Idle roaming when not active
+    // UPGRADE D1: Ambient roaming (Living Behavior)
     useEffect(() => {
-        if (!active) {
+        // Roam if active and either 'roam' explicit action OR 'idle' state
+        if (active && (action === 'idle' || action === 'roam')) {
             const roamInterval = setInterval(() => {
                 if (!isMoving) {
                     const randomTarget = {
@@ -136,18 +157,20 @@ export function CursorAgent({
         }
     }, [active, isMoving, currentPosition]);
 
-    if (!active && !isMoving) return null;
+    if (!active && !isMoving) {
+        return null;
+    }
 
     return (
         <motion.div
             ref={agentRef}
-            className="fixed pointer-events-none z-50"
+            className="fixed pointer-events-none z-[9999]"
             style={{
                 left: 0,
                 top: 0,
                 transform: 'translate(-50%, -50%)'
             }}
-            initial={{ scale: 0, opacity: 0 }}
+            initial={{ scale: 1, opacity: 1, x: currentPosition.x, y: currentPosition.y }}
             animate={controls}
             exit={{ scale: 0, opacity: 0 }}
         >

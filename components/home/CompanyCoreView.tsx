@@ -19,6 +19,7 @@ import { useOrbitalPhysics } from '@/lib/hooks/useOrbitalPhysics';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation'; // UPGRADE E2
 import { SemanticLinesRenderer } from '@/components/semantic/SemanticLinesRenderer'; // UPGRADE E2
 import { useIntelligenceStore } from '@/lib/store/intelligenceStore'; // UPGRADE P4
+import { useIntelligencePulse } from '@/lib/hooks/useIntelligencePulse'; // UPGRADE B3
 import { usePaneStore } from '@/lib/store/paneStore'; // Window Management
 import { useAccentColor } from '@/lib/hooks/useAccentColor'; // Global accent color
 import { DepartmentWizard } from '@/components/wizards/DepartmentWizard'; // Department creation wizard
@@ -180,6 +181,17 @@ export const CompanyCoreView: React.FC = () => {
         active: false,
         action: 'idle'
     });
+
+    // ACTIVATE CURSOR AGENT: Always active in Universe Mode (roaming)
+    useEffect(() => {
+        if (viewMode !== 'owner') {
+            // Slight delay to let things load
+            const timer = setTimeout(() => {
+                setCursorAgent(prev => ({ ...prev, active: true, action: 'roam' }));
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [viewMode]);
 
     // 🔥 FIX: Track which departments have been loaded to prevent duplicate calls
     const loadedDeptIds = useRef<Set<string>>(new Set());
@@ -619,6 +631,43 @@ export const CompanyCoreView: React.FC = () => {
         setNodePositions(nodePosMap);
     }, [nodePosMap, setNodePositions]);
 
+    // UPGRADE E2: Fetch Semantic Constellations
+    useEffect(() => {
+        if (nodePosMap.size > 0) {
+            // Trigger fetch with a "global" key to ensure we get lines for the current view
+            fetchConstellation('global-view', nodePosMap);
+        }
+    }, [nodePosMap, fetchConstellation]);
+
+    // UPGRADE B3: MindLoop Intelligence Pulse
+    const pulseData = useIntelligencePulse();
+    const addOrbNotification = useMoraStore(s => s.addOrbNotification);
+    const lastNotifiedRef = useRef<string>('');
+
+    useEffect(() => {
+        if (pulseData.insights && pulseData.insights.length > 0) {
+            // Get the most relevant insight (first one)
+            const latest = pulseData.insights[0];
+            const key = `${latest.type}-${latest.summary}`;
+
+            // Only notify if it's new (simple de-duplication)
+            if (key !== lastNotifiedRef.current) {
+                lastNotifiedRef.current = key;
+
+                addOrbNotification({
+                    id: `intel-${Date.now()}`,
+                    type: 'insight',
+                    message: latest.summary
+                });
+
+                // Also show a toast for immediate feedback
+                if (latest.summary) {
+                    toast.success(latest.summary, { duration: 4000 });
+                }
+            }
+        }
+    }, [pulseData, addOrbNotification]);
+
     // ═══════════════════════════════════════════════════════════════════════════
     // SEMANTIC HIERARCHY SYSTEM - Star to Moon Promotion ("Nervous System")
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1030,6 +1079,8 @@ export const CompanyCoreView: React.FC = () => {
             <div
                 className="fixed inset-0 z-10 pointer-events-none overflow-hidden"
             >
+                {/* SEMANTIC CONSTELLATIONS - The "Nervous System" */}
+                <SemanticLinesRenderer lines={connections} />
                 {/* MASTERBIBEL: Mycelium Connection Lines - Department to Stars */}
                 {viewMode !== 'owner' && (
                     <svg

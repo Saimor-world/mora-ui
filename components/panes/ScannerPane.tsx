@@ -1,38 +1,251 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { Zap } from 'lucide-react';
+import { useMoraStore } from '@/lib/store/moraState';
+import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { uploadFile } from '@/lib/api/coreClient';
+import { toast } from '@/lib/toast';
+
+interface ScannedFile {
+    id: string;
+    name: string;
+    type: string;
+    size: number;
+    status: 'pending' | 'uploading' | 'analyzing' | 'done' | 'error';
+    result?: string;
+}
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { activeCompanyId } = useMoraStore();
     const pane = getPane(id);
+
+    const [files, setFiles] = useState<ScannedFile[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        const newFiles: ScannedFile[] = droppedFiles.map(f => ({
+            id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            status: 'pending'
+        }));
+
+        setFiles(prev => [...prev, ...newFiles]);
+    }, []);
+
+    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(e.target.files || []);
+        const newFiles: ScannedFile[] = selectedFiles.map(f => ({
+            id: `file-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: f.name,
+            type: f.type,
+            size: f.size,
+            status: 'pending'
+        }));
+
+        setFiles(prev => [...prev, ...newFiles]);
+    };
+
+    const processFile = async (fileId: string) => {
+        setFiles(prev => prev.map(f =>
+            f.id === fileId ? { ...f, status: 'analyzing' } : f
+        ));
+
+        // Simulate AI analysis (in production, this would call a real API)
+        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1500));
+
+        const mockResults = [
+            'Document analyzed: Contains business proposal with 3 key sections.',
+            'Image processed: Detected 2 charts and 1 diagram.',
+            'Text extracted: 1,234 words identified with 98% confidence.',
+            'Content indexed: Added to knowledge base successfully.',
+            'Semantic analysis: 5 key topics identified.'
+        ];
+
+        setFiles(prev => prev.map(f =>
+            f.id === fileId ? {
+                ...f,
+                status: 'done',
+                result: mockResults[Math.floor(Math.random() * mockResults.length)]
+            } : f
+        ));
+
+        toast.success(`Analyzed: ${files.find(f => f.id === fileId)?.name}`);
+    };
+
+    const processAllPending = async () => {
+        const pending = files.filter(f => f.status === 'pending');
+        for (const file of pending) {
+            await processFile(file.id);
+        }
+    };
+
+    const removeFile = (fileId: string) => {
+        setFiles(prev => prev.filter(f => f.id !== fileId));
+    };
+
+    const getFileIcon = (type: string) => {
+        if (type.startsWith('image/')) return Image;
+        if (type.includes('pdf') || type.includes('document')) return FileText;
+        return File;
+    };
+
+    const formatSize = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    // Hook must be called before any returns
+    const isActive = usePaneStore(state => state.activePaneId === id);
+    const pendingCount = files.filter(f => f.status === 'pending').length;
+    const analyzingCount = files.filter(f => f.status === 'analyzing').length;
 
     if (!pane) return null;
 
     return (
         <GlassPanel
             title="Scanner"
-            width={800}
-            height={550}
+            width={700}
+            height={600}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
             draggable
         >
-            <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
-                <div className="p-6 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-                    <Zap size={64} className="text-purple-400" />
+            <div className="flex flex-col h-full p-4 gap-4">
+                {/* Drop Zone */}
+                <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`relative border-2 border-dashed rounded-xl p-8 transition-all text-center ${isDragging
+                        ? 'border-purple-500 bg-purple-500/10'
+                        : 'border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5'
+                        }`}
+                >
+                    <input
+                        type="file"
+                        multiple
+                        onChange={handleFileInput}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    <div className="flex flex-col items-center gap-3">
+                        <div className={`p-4 rounded-2xl transition-colors ${isDragging ? 'bg-purple-500/20' : 'bg-purple-500/10'}`}>
+                            <Upload size={32} className="text-purple-400" />
+                        </div>
+                        <div>
+                            <p className="text-white/70 font-medium">Drop files here or click to upload</p>
+                            <p className="text-xs text-white/30 mt-1">PDFs, images, documents – Môra will analyze them</p>
+                        </div>
+                    </div>
                 </div>
-                <h2 className="text-xl font-medium text-white/80">Scanner</h2>
-                <p className="text-sm text-white/40 text-center max-w-md">
-                    Document processing coming soon.
-                    <br />
-                    Upload files, extract text, and analyze documents with AI.
-                </p>
+
+                {/* Action Bar */}
+                {files.length > 0 && (
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/50">
+                            {files.length} file{files.length !== 1 ? 's' : ''} •
+                            {pendingCount > 0 && ` ${pendingCount} pending`}
+                            {analyzingCount > 0 && ` ${analyzingCount} analyzing`}
+                        </span>
+                        {pendingCount > 0 && (
+                            <button
+                                onClick={processAllPending}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors"
+                            >
+                                <Sparkles size={16} />
+                                <span className="text-sm">Analyze All</span>
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* File List */}
+                <div className="flex-1 overflow-y-auto space-y-2">
+                    <AnimatePresence>
+                        {files.map(file => {
+                            const Icon = getFileIcon(file.type);
+
+                            return (
+                                <motion.div
+                                    key={file.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="bg-black/20 border border-white/5 rounded-xl p-4"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 rounded-lg bg-purple-500/10">
+                                            <Icon size={20} className="text-purple-400" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-white/80 truncate">{file.name}</span>
+                                                <span className="text-xs text-white/30">{formatSize(file.size)}</span>
+                                            </div>
+
+                                            {file.status === 'pending' && (
+                                                <button
+                                                    onClick={() => processFile(file.id)}
+                                                    className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                                                >
+                                                    Click to analyze
+                                                </button>
+                                            )}
+
+                                            {file.status === 'analyzing' && (
+                                                <div className="flex items-center gap-2 mt-2 text-xs text-purple-400">
+                                                    <Loader2 size={12} className="animate-spin" />
+                                                    <span>Analyzing with AI...</span>
+                                                </div>
+                                            )}
+
+                                            {file.status === 'done' && file.result && (
+                                                <div className="flex items-start gap-2 mt-2 text-xs text-emerald-400">
+                                                    <CheckCircle size={12} className="mt-0.5 shrink-0" />
+                                                    <span>{file.result}</span>
+                                                </div>
+                                            )}
+
+                                            {file.status === 'error' && (
+                                                <div className="flex items-center gap-2 mt-2 text-xs text-red-400">
+                                                    <AlertCircle size={12} />
+                                                    <span>Analysis failed</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={() => removeFile(file.id)}
+                                            className="p-1 hover:bg-white/5 rounded transition-colors text-white/30 hover:text-white/60"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
+
+                    {files.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-48 gap-3">
+                            <Zap size={32} className="text-purple-400/50" />
+                            <p className="text-sm text-white/30">No files uploaded yet</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </GlassPanel>
     );

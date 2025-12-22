@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Activity, Users, FolderOpen, Zap, Clock, TrendingUp, AlertCircle, CheckCircle, RefreshCw, FileText, ExternalLink, BarChart3, Filter, ArrowUpDown } from 'lucide-react';
+import { Building2, Activity, Users, FolderOpen, Zap, Clock, TrendingUp, AlertCircle, CheckCircle, RefreshCw, FileText, ExternalLink, BarChart3, Filter, ArrowUpDown, Eye } from 'lucide-react';
 import { fetchCompaniesHealth, type CompanyHealth } from '@/lib/api/coreClient';
 import { MoraOrb } from '@/components/mora/MoraOrb';
+import { useMoraStore } from '@/lib/store/moraState';
 
 /**
  * CLIENT HEALTH DASHBOARD — PREMIUM GLASSMORPHISM EDITION
@@ -18,15 +19,40 @@ import { MoraOrb } from '@/components/mora/MoraOrb';
  * - Summary stats header
  * 
  * Privacy Protected: Owner sees ONLY metrics, NO client data access
+ * 
+ * NAVIGATION: Click "View" to enter client's Universe
  */
 
 export const ClientHealthDashboard: React.FC = () => {
+    const { setActiveCompany, setViewLevel, setViewMode, companies, loadCompanies } = useMoraStore();
     const [healthData, setHealthData] = useState<CompanyHealth[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
     const [sortBy, setSortBy] = useState<'health' | 'activity' | 'name'>('health');
     const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+
+    // Handler to enter company Universe
+    const handleViewCompany = async (companyId: string) => {
+        console.log('[ClientHealth] Entering company universe:', companyId);
+
+        // 1. Set Active Company in Store
+        setActiveCompany(companyId);
+
+        // 2. Load Department Data (Planets)
+        // We assume loadDepartments is available from useMoraStore (imported below via destructuring if needed, 
+        // but it's better to get it from the store hook at the top)
+        const store = useMoraStore.getState();
+        await store.loadDepartments(companyId);
+
+        // 3. Switch View to Core (Universe)
+        setViewLevel('core');
+        setViewMode('workspace'); // Ensure we are in workspace mode
+
+        // Toast feedback
+        const { toast } = await import('sonner');
+        toast.success(`Entered ${store.companies.find(c => c.id === companyId)?.name || 'Universe'}`);
+    };
 
     const loadHealthData = async () => {
         setIsLoading(true);
@@ -237,8 +263,8 @@ export const ClientHealthDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="absolute inset-0 pt-52 pb-24 px-8 overflow-auto">
+            {/* Main Content Grid - pb-32 to avoid dock overlap */}
+            <div className="absolute inset-0 pt-52 pb-32 px-8 overflow-auto">
                 {isLoading && healthData.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                         <motion.div
@@ -274,6 +300,8 @@ export const ClientHealthDashboard: React.FC = () => {
                                     onMouseEnter={() => setHoveredCard(company.company_id)}
                                     onMouseLeave={() => setHoveredCard(null)}
                                     onClick={() => setSelectedCompany(selectedCompany === company.company_id ? null : company.company_id)}
+                                    onDoubleClick={() => handleViewCompany(company.company_id)}
+                                    title="Doppelklick zum Öffnen"
                                 >
                                     {/* Pulse animation for warnings */}
                                     {needsAttention && (
@@ -366,9 +394,15 @@ export const ClientHealthDashboard: React.FC = () => {
                                                         <FileText size={10} />
                                                         Report
                                                     </button>
-                                                    <button className="px-3 py-1 text-[10px] bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white/60 transition-all flex items-center gap-1">
-                                                        <ExternalLink size={10} />
-                                                        View
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleViewCompany(company.company_id);
+                                                        }}
+                                                        className="px-3 py-1 text-[10px] bg-mora-gold/20 hover:bg-mora-gold/30 border border-mora-gold/30 rounded-full text-mora-gold transition-all flex items-center gap-1"
+                                                    >
+                                                        <Eye size={10} />
+                                                        Universum
                                                     </button>
                                                 </motion.div>
                                             )}

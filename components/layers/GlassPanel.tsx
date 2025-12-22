@@ -51,7 +51,7 @@ interface GlassPanelProps {
     /** UPGRADE C1: Resize callback */
     onResize?: (width: number, height: number) => void;
     /** Panel title (optional header) */
-    title?: string;
+    title?: React.ReactNode;
     /** Custom className for additional styling */
     className?: string;
     /** UPGRADE 6.2: Is the panel currently focused? */
@@ -73,8 +73,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     children,
     width = 800,
     height = 'auto',
-    blurIntensity = 20,
-    opacity = 0.85,
+    blurIntensity = 40,
+    opacity = 0.75,
     padding = 2,
     borderRadius = 'lg',
     zIndex = 20,
@@ -199,8 +199,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     width: panelSize.width,
                     height: panelSize.height,
                     boxShadow: isActive
-                        ? '0 0 40px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.3)'
-                        : 'var(--mora-shadow-strong)'
+                        ? '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                        : '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
                 }}
                 exit={disableAnimations ? undefined : {
                     opacity: 0,
@@ -223,18 +223,19 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     height: panelHeight,
                     maxWidth: 'calc(100vw - 32px)',
                     maxHeight: 'calc(100vh - 64px)',
-                    backgroundColor: `rgba(3, 8, 6, ${opacity})`,
+                    backgroundColor: `rgba(10, 20, 15, ${opacity})`, // Slightly greenish tint for SAIMÔR vibe
                     backdropFilter: `blur(${blurIntensity}px)`,
                     WebkitBackdropFilter: `blur(${blurIntensity}px)`, // Safari support
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    borderRadius: '24px' // Hardcoded premium radius
                 }}
             >
                 {/* UPGRADE A1: Noise Texture Overlay */}
-                <div className="absolute inset-0 bg-noise pointer-events-none opacity-50 mix-blend-overlay" />
+                <div className="absolute inset-0 bg-noise pointer-events-none opacity-30 mix-blend-overlay" />
 
-                {/* UPGRADE A1: Gradient Border */}
-                <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-white/10" />
-                <div className="absolute inset-0 rounded-[inherit] pointer-events-none border border-t-white/20 border-l-white/10 border-b-black/40 border-r-black/40 mix-blend-overlay" />
+                {/* UPGRADE A1: Elegant Borders */}
+                <div className="absolute inset-0 rounded-[24px] pointer-events-none border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]" />
+                <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
                 {(title || showBackButton || showCloseButton || showMinimizeButton || tabs.length > 0) && (
                     <div className="shrink-0 border-b" style={{ borderColor: 'var(--mora-glass-border)' }}>
@@ -247,7 +248,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                 {/* Back Button */}
                                 {showBackButton && onBack && (
                                     <button
-                                        onClick={onBack}
+                                        onClick={(e) => { e.stopPropagation(); onBack(); }}
                                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-100/80 transition-all group"
                                     >
                                         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
@@ -259,16 +260,22 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
                                 {/* Title */}
                                 {title && (
-                                    <h2 className="text-lg font-medium tracking-wide text-emerald-50 uppercase">
-                                        {title}
-                                    </h2>
+                                    typeof title === 'string' ? (
+                                        <h2 className="text-lg font-medium tracking-wide text-emerald-50 uppercase">
+                                            {title}
+                                        </h2>
+                                    ) : (
+                                        <div className="text-lg font-medium tracking-wide text-emerald-50 uppercase">
+                                            {title}
+                                        </div>
+                                    )
                                 )}
 
                                 {/* Action Buttons */}
                                 <div className="flex items-center gap-1">
                                     {showMinimizeButton && onMinimize && (
                                         <button
-                                            onClick={onMinimize}
+                                            onClick={(e) => { e.stopPropagation(); onMinimize(); }}
                                             className="p-2 rounded-lg bg-white/5 hover:bg-yellow-500/20 text-emerald-100/60 hover:text-yellow-400 transition-all"
                                             aria-label="Minimize panel"
                                         >
@@ -277,7 +284,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     )}
                                     {showCloseButton && onClose && (
                                         <button
-                                            onClick={onClose}
+                                            onClick={(e) => { e.stopPropagation(); onClose(); }}
                                             className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-emerald-100/60 hover:text-red-400 transition-all"
                                             aria-label="Close panel"
                                         >

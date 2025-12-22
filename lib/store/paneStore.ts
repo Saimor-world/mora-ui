@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export interface PaneConfig {
     id: string;
-    type: 'document' | 'chat' | 'node-detail' | 'settings' | 'timeline' | 'apps' | 'finder' | 'notes' | 'scanner' | 'grid' | 'space' | 'integrations' | 'search' | 'users';
+    type: 'document' | 'chat' | 'node-detail' | 'settings' | 'timeline' | 'apps' | 'finder' | 'notes' | 'scanner' | 'grid' | 'space' | 'integrations' | 'search' | 'users' | 'company-detail' | 'mail';
     title: string;
     position: { x: number; y: number };
     size: { width: number; height: number };
