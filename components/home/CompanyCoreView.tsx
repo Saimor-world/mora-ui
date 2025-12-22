@@ -88,6 +88,10 @@ export const CompanyCoreView: React.FC = () => {
     const [showHealthPanel, setShowHealthPanel] = useState(false);
     const [orbitShiftActive, setOrbitShiftActive] = useState(false); // UPGRADE B1: Orbit shift animations
     const [cosmicMode, setCosmicMode] = useState(true); // UPGRADE F1: Cosmic passive mode
+
+    // Semantic Constellation Hook (Light Connections)
+    const { connections, fetchConstellation, clearConstellation } = useSemanticConstellation();
+
     const [isMounted, setIsMounted] = useState(false); // Fix hydration mismatch
 
     useEffect(() => {
@@ -1715,7 +1719,7 @@ export const CompanyCoreView: React.FC = () => {
                 {/* Node Stars - Ambient knowledge particles throughout the universe */}
                 {viewMode !== 'owner' && nodeStarPositions.length > 0 && (
                     <div className="absolute inset-0 pointer-events-none">
-                        {/* UPGRADE E2: SEMANTIC CONSTELLATION LAYER */}
+                        {/* UPGRADE E2: SEMANTIC CONSTELLATION LAYER - Light Connections */}
                         <div className="absolute inset-0 pointer-events-none z-0">
                             <SemanticLinesRenderer lines={connections} />
                         </div>
@@ -1727,7 +1731,35 @@ export const CompanyCoreView: React.FC = () => {
                                 position={{ x: `${x}vw`, y: `${y}vh` }}
                                 delay={delay}
                                 size="xs"
-                                onHover={(hover) => hover ? fetchConstellation(node.id, nodePosMap) : clearConstellation()} // UPGRADE E2: Interaction
+                                onHover={(hover) => {
+                                    if (hover) {
+                                        // Build map of current positions for the renderer
+                                        const currentPosMap = new Map<string, { x: number, y: number }>();
+
+                                        // Add visible stars (Folders)
+                                        starPositions.forEach(s => {
+                                            // Convert VW/VH to pixels roughly for the line renderer
+                                            // Note: The renderer needs pixels. 
+                                            // This is a simplification. Ideally we track refs.
+                                            currentPosMap.set(s.folder.id, {
+                                                x: (s.x / 100) * window.innerWidth,
+                                                y: (s.y / 100) * window.innerHeight
+                                            });
+                                        });
+
+                                        // Add visible nodes
+                                        nodeStarPositions.forEach(n => {
+                                            currentPosMap.set(n.node.id, {
+                                                x: (n.x / 100) * window.innerWidth,
+                                                y: (n.y / 100) * window.innerHeight
+                                            });
+                                        });
+
+                                        fetchConstellation(node.id, currentPosMap);
+                                    } else {
+                                        clearConstellation();
+                                    }
+                                }}
                             />
                         ))}
                     </div>
