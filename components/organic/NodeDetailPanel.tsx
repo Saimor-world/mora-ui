@@ -47,7 +47,7 @@ export const NodeDetailPanel: React.FC = () => {
 
 
     const nodeTitle = activeNode ? ((activeNode as any).title || (activeNode as any).name || 'Untitled') : 'Untitled';
-    const coreBase = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8083';
+    const coreBase = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
     const filePath = (activeNode as any)?.metadata?.file_path as string | undefined;
     const fileDownloadUrl = useMemo(() => {
         if (!filePath) return null;

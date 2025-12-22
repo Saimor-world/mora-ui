@@ -180,7 +180,7 @@ export default function FolderRoom() {
                 formDataObj.append('name', formData.name.trim() || selectedFile.name);
                 formDataObj.append('title', formData.name.trim() || selectedFile.name);
 
-                const baseUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8083';
+                const baseUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
 
                 // Simulate upload progress
                 const progressInterval = setInterval(() => {
@@ -514,7 +514,7 @@ export default function FolderRoom() {
                                         type="button"
                                         onClick={() => {
                                             setIsCreateModalOpen(false);
-                                setFormData({ name: '', type: 'note', content: '', url: '' });
+                                            setFormData({ name: '', type: 'note', content: '', url: '' });
                                         }}
                                         className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-emerald-400 hover:bg-white/5 transition-colors text-sm"
                                     >

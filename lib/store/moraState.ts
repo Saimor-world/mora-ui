@@ -51,6 +51,7 @@ export interface User {
     email?: string;
     avatar?: string;
     role: UserRole;
+    settings?: Record<string, any>;
 }
 
 export interface Permissions {
@@ -127,6 +128,7 @@ interface MoraState {
     restoreNode: (nodeId: string) => void;
     closeNode: (nodeId: string) => void;
     setUser: (user: User | null) => void; // Phase 6.3: Set user with role
+    resetStore: () => void; // System: Clear all state on logout
 
     // Data Actions - Load
     loadCompanies: () => Promise<void>;
@@ -250,6 +252,26 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
 
     // Data Loading Actions
+    // -------------------------------------------------------------------------
+    // SYSTEM ACTIONS
+    // -------------------------------------------------------------------------
+    resetStore: () => {
+        set({
+            user: null,
+            companies: [],
+            departments: [],
+            spacesByDepartment: {},
+            foldersBySpace: {},
+            activeCompanyId: null,
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            viewMode: 'welcome',
+            viewLevel: 'universe',
+            coreError: null,
+            isLoading: false
+        });
+    },
+
     loadCompanies: async () => {
         set({ isLoadingCompanies: true, coreError: null });
         // Phase 8.1: Dispatch thinking event
@@ -259,9 +281,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         try {
             let data = await fetchCompanies(true);
 
-            // MOCK FALLBACK if data is empty or invalid (even if API call succeeded)
-            // FIX: Also check if response is actually an array (backend might return {"detail": "Not authenticated"} as 200 OK)
-            if (!data || !Array.isArray(data) || data.length === 0) {
+            // MOCK FALLBACK only if we are in DEMO mode
+            if ((!data || !Array.isArray(data) || data.length === 0) && get().viewMode === 'demo') {
                 data = [
                     {
                         id: 'comp-demo',
@@ -272,18 +293,39 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                         is_demo: true,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
-                    },
-                    {
-                        id: 'comp-saimor',
-                        tenant_id: 'tenant-saimor',
-                        owner_id: 'user-saimor',
-                        name: 'Saimôr HQ',
+                    }
+                ] as any;
+            }
+
+            // -------------------------------------------------------------------------
+            // PHASE 8.2: AGENTIC INJECTION - SAIMÔR HQ for Authorized Users
+            // -------------------------------------------------------------------------
+            const userEmail = get().user?.email;
+            const authorizedEmails = [
+                'm.f4hrlaender@gmail.com', // The user
+                'master_real@saimor.io',
+                'nexus@saimor.dev'
+            ];
+
+            if (userEmail && authorizedEmails.includes(userEmail)) {
+                // Check if HQ already exists (to avoid duplicates if backend has it)
+                const hasHQ = data.some((c: any) => c.slug === 'saimor-hq' || c.name === 'Saimor HQ');
+
+                if (!hasHQ) {
+                    const hqCompany: any = {
+                        id: 'comp-saimor-hq',
+                        tenant_id: 'tenant-saimor-hq',
+                        owner_id: get().user?.id || 'sys-admin',
+                        name: 'Saimor HQ',
                         slug: 'saimor-hq',
+                        description: 'Central Intelligence Workspace',
+                        logo_url: null,
                         is_demo: false,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
-                    }
-                ] as any;
+                    };
+                    data.unshift(hqCompany); // Add to top
+                }
             }
 
             set({ companies: data, isLoadingCompanies: false });
@@ -299,30 +341,24 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // Phase 8.1: Alert event
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.9, payload: { error: msg, handled: true } });
 
-            // MOCK FALLBACK for Companies
-            const mockCompanies: CoreCompany[] = [
-                {
-                    id: 'comp-demo',
-                    tenant_id: 'tenant-demo',
-                    owner_id: 'user-demo',
-                    name: 'Simple Coffee Group',
-                    slug: 'simple-coffee-group',
-                    is_demo: true,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                },
-                {
-                    id: 'comp-saimor',
-                    tenant_id: 'tenant-saimor',
-                    owner_id: 'user-saimor',
-                    name: 'Saimôr HQ',
-                    slug: 'saimor-hq',
-                    is_demo: false,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }
-            ];
-            set({ companies: mockCompanies, isLoadingCompanies: false, coreError: null, orbState: mindLoop.getCurrentState() });
+            // MOCK FALLBACK only for DEMO mode
+            if (get().viewMode === 'demo') {
+                const mockCompanies: CoreCompany[] = [
+                    {
+                        id: 'comp-demo',
+                        tenant_id: 'tenant-demo',
+                        owner_id: 'user-demo',
+                        name: 'Simple Coffee Group',
+                        slug: 'simple-coffee-group',
+                        is_demo: true,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }
+                ];
+                set({ companies: mockCompanies, isLoadingCompanies: false, coreError: null, orbState: mindLoop.getCurrentState() });
+            } else {
+                set({ companies: [], isLoadingCompanies: false, coreError: msg, orbState: mindLoop.getCurrentState() });
+            }
         }
     },
 
@@ -335,15 +371,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const targetCompanyId = companyId || get().activeCompanyId || undefined;
             let data = await fetchDepartments(targetCompanyId);
 
-            // MOCK FALLBACK if data is empty or invalid
-            // FIX: Also check if response is actually an array (backend might return {"detail": "Not authenticated"} as 200 OK)
-            if (!data || !Array.isArray(data) || data.length === 0) {
-                const isDemo = get().viewMode === 'demo';
-                if (isDemo) {
-                    data = MOCK_DATA.demo.departments as any;
-                } else {
-                    data = MOCK_DATA.solo.departments as any;
-                }
+            // MOCK FALLBACK only for DEMO mode
+            if ((!data || !Array.isArray(data) || data.length === 0) && get().viewMode === 'demo') {
+                data = MOCK_DATA.demo.departments as any;
             }
 
             set({ departments: data, isLoadingDepartments: false });
@@ -355,8 +385,30 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 : "Failed to load departments.";
 
             // MOCK FALLBACK on API errors too
+            // MOCK FALLBACK on API errors
             const isDemo = get().viewMode === 'demo';
-            const mockData = isDemo ? MOCK_DATA.demo.departments : MOCK_DATA.solo.departments;
+            const userEmail = get().user?.email || '';
+
+            // STRICT AUTH CHECK for SAIMÔR HQ Data
+            const authorizedEmails = [
+                'm.f4hrlaender@gmail.com',
+                'master_real@saimor.io',
+                'nexus@saimor.dev',
+                'demo_new@saimor.dev'
+            ];
+            const isAuthorized = authorizedEmails.includes(userEmail);
+
+            let mockData: any[] = [];
+
+            if (isDemo) {
+                mockData = MOCK_DATA.demo.departments;
+            } else if (isAuthorized) {
+                // Only authorized users can see the "Hidden" HQ fallback
+                mockData = MOCK_DATA.solo.departments;
+            } else {
+                // Regular users see nothing if backend fails
+                mockData = [];
+            }
 
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.8, payload: { error: msg, handled: true } });
             set({ departments: mockData as any, isLoadingDepartments: false, coreError: null, orbState: mindLoop.getCurrentState() });
@@ -372,11 +424,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             let data = await fetchSpaces(deptId);
 
             // ... Mock logic copy ...
-            if (!data || data.length === 0) {
+            // Mock fallback only for DEMO
+            if ((!data || data.length === 0) && get().viewMode === 'demo') {
                 const demoSpaces = MOCK_DATA.demo.spaces[deptId as keyof typeof MOCK_DATA.demo.spaces];
-                const soloSpaces = MOCK_DATA.solo.spaces[deptId as keyof typeof MOCK_DATA.solo.spaces];
                 if (demoSpaces) data = demoSpaces as any;
-                else if (soloSpaces) data = soloSpaces as any;
             }
 
             set(state => ({
@@ -668,7 +719,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     // Department CRUD
     addDepartment: async (payload: { name: string; description?: string; color?: string }) => {
         try {
-            const newDept = await apiCreateDepartment(payload);
+            const newDept = await apiCreateDepartment({
+                ...payload,
+                company_id: get().activeCompanyId // AUTO-INJECT COMPANY ID
+            });
             set(state => ({
                 departments: [...state.departments, newDept]
             }));
