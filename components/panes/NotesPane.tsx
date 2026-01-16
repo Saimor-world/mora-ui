@@ -1,84 +1,160 @@
 import React, { useState, useEffect } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { FileText, Plus, Trash2, Save, Search } from 'lucide-react';
+import { corePost, corePut, coreDelete, fetchNodesByCompany } from '@/lib/api/coreClient';
+import { Search, Plus, Trash2, Save, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Note {
     id: string;
     title: string;
     content: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 
 const NOTES_STORAGE_KEY = 'saimor_notes';
 
 export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { activeCompanyId } = useMoraStore();
     const pane = getPane(id);
 
     const [notes, setNotes] = useState<Note[]>([]);
     const [selectedNote, setSelectedNote] = useState<Note | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [notesFolderId, setNotesFolderId] = useState<string | null>(null);
 
-    // Load notes from localStorage
+    // Initialize Notes Folder
     useEffect(() => {
-        const stored = localStorage.getItem(NOTES_STORAGE_KEY);
-        if (stored) {
+        const init = async () => {
+            if (!activeCompanyId) return;
             try {
-                const parsed = JSON.parse(stored).map((n: any) => ({
-                    ...n,
-                    createdAt: new Date(n.createdAt),
-                    updatedAt: new Date(n.updatedAt)
-                }));
-                setNotes(parsed);
-                if (parsed.length > 0 && !selectedNote) {
-                    setSelectedNote(parsed[0]);
+                // Find or Create 'Notes' folder
+                const folders = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v1/folders?tenant_id=${activeCompanyId}`));
+                let targetId = null;
+                if (folders && Array.isArray(folders)) {
+                    const existing = folders.find((f: any) => f.name === 'Notes');
+                    if (existing) targetId = existing.id;
+                }
+
+                if (!targetId) {
+                    const spaces = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v1/spaces?tenant_id=${activeCompanyId}`));
+                    if (spaces && spaces.length > 0) {
+                        const newFolder = await import('@/lib/api/coreClient').then(m => m.corePost('/v1/folders', {
+                            name: 'Notes', space_id: spaces[0].id, description: 'Personal Notes', icon: 'file-text'
+                        }));
+                        if (newFolder) targetId = newFolder.id;
+                    }
+                }
+                setNotesFolderId(targetId);
+            } catch (e) {
+                console.error("Notes init failed", e);
+            }
+        };
+        init();
+    }, [activeCompanyId]);
+
+    // Load Notes
+    useEffect(() => {
+        const load = async () => {
+            if (!activeCompanyId) return;
+            setIsLoading(true);
+            try {
+                const fetched = await fetchNodesByCompany(activeCompanyId);
+                if (fetched) {
+                    const myNotes = fetched
+                        .filter(n => n.type === 'note')
+                        .map(n => ({
+                            id: n.id,
+                            title: n.name ?? "Untitled",
+                            content: n.content ?? "",
+                            createdAt: n.created_at ?? new Date().toISOString(),
+                            updatedAt: n.updated_at || n.created_at || new Date().toISOString()
+                        }))
+                        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+                    setNotes(myNotes);
                 }
             } catch (e) {
-                console.warn('Failed to parse notes', e);
+                console.error(e);
+            } finally {
+                setIsLoading(false);
             }
-        }
-    }, []);
-
-    // Save notes to localStorage
-    const saveNotes = (updatedNotes: Note[]) => {
-        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(updatedNotes));
-        setNotes(updatedNotes);
-    };
-
-    const createNote = () => {
-        const newNote: Note = {
-            id: `note-${Date.now()}`,
-            title: 'Untitled Note',
-            content: '',
-            createdAt: new Date(),
-            updatedAt: new Date()
         };
-        const updated = [newNote, ...notes];
-        saveNotes(updated);
-        setSelectedNote(newNote);
-        setIsEditing(true);
+        load();
+    }, [activeCompanyId]);
+
+    // Auto-save debouncer
+    useEffect(() => {
+        if (!selectedNote) return;
+
+        const timer = setTimeout(async () => {
+            if (!selectedNote.id.startsWith('temp-')) {
+                setIsSaving(true);
+                try {
+                    await corePut(`/v1/nodes/${selectedNote.id}`, {
+                        name: selectedNote.title,
+                        content: selectedNote.content
+                    });
+                } catch (e) { console.error("Save failed", e); }
+                finally { setIsSaving(false); }
+            }
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [selectedNote?.title, selectedNote?.content]);
+
+    const createNote = async () => {
+        if (!notesFolderId || !activeCompanyId) return;
+
+        try {
+            const newNodeInfo = {
+                name: 'Untitled Note',
+                type: 'note',
+                folder_id: notesFolderId,
+                content: ''
+            };
+
+            const created = await corePost('/v1/nodes', newNodeInfo);
+            if (created) {
+                const newNote: Note = {
+                    id: created.id,
+                    title: created.name,
+                    content: created.content,
+                    createdAt: created.created_at,
+                    updatedAt: created.created_at
+                };
+                setNotes([newNote, ...notes]);
+                setSelectedNote(newNote);
+            }
+        } catch (e) {
+            console.error("Create failed", e);
+        }
     };
 
     const updateNote = (field: 'title' | 'content', value: string) => {
         if (!selectedNote) return;
-        const updated = notes.map(n =>
-            n.id === selectedNote.id
-                ? { ...n, [field]: value, updatedAt: new Date() }
-                : n
-        );
-        saveNotes(updated);
-        setSelectedNote({ ...selectedNote, [field]: value, updatedAt: new Date() });
+
+        // Immediate UI update
+        const updated = { ...selectedNote, [field]: value, updatedAt: new Date().toISOString() };
+        setSelectedNote(updated);
+
+        setNotes(prev => prev.map(n => n.id === updated.id ? updated : n));
     };
 
-    const deleteNote = (noteId: string) => {
-        const updated = notes.filter(n => n.id !== noteId);
-        saveNotes(updated);
-        if (selectedNote?.id === noteId) {
-            setSelectedNote(updated.length > 0 ? updated[0] : null);
+    const deleteNote = async (noteId: string) => {
+        try {
+            await coreDelete(`/v1/nodes/${noteId}`);
+            const updated = notes.filter(n => n.id !== noteId);
+            setNotes(updated);
+            if (selectedNote?.id === noteId) {
+                setSelectedNote(updated.length > 0 ? updated[0] : null);
+            }
+        } catch (e) {
+            console.error("Delete failed", e);
         }
     };
 
@@ -95,16 +171,21 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
     return (
         <GlassPanel
             title="Notes"
-            width={900}
-            height={600}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={isActive}
+            isActive={true}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
             <div className="flex h-full">
                 {/* Sidebar */}
@@ -141,7 +222,7 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -10 }}
-                                    onClick={() => { setSelectedNote(note); setIsEditing(false); }}
+                                    onClick={() => { setSelectedNote(note); }}
                                     className={`p-3 rounded-lg cursor-pointer group transition-colors ${selectedNote?.id === note.id
                                         ? 'bg-yellow-500/10 border border-yellow-500/20'
                                         : 'bg-black/10 border border-transparent hover:bg-white/5'
@@ -162,7 +243,7 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
                                         </button>
                                     </div>
                                     <div className="text-[10px] text-white/20 mt-2">
-                                        {note.updatedAt.toLocaleDateString()}
+                                        {new Date(note.updatedAt).toLocaleDateString()}
                                     </div>
                                 </motion.div>
                             ))}
@@ -203,10 +284,10 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
 
                             {/* Footer */}
                             <div className="p-3 border-t border-white/5 flex items-center justify-between text-xs text-white/30">
-                                <span>Last updated: {selectedNote.updatedAt.toLocaleString()}</span>
-                                <div className="flex items-center gap-1 text-emerald-400">
-                                    <Save size={12} />
-                                    <span>Auto-saved</span>
+                                <span>Last updated: {new Date(selectedNote.updatedAt).toLocaleString()}</span>
+                                <div className={`flex items-center gap-1 ${isSaving ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                                    <Save size={12} className={isSaving ? 'animate-pulse' : ''} />
+                                    <span>{isSaving ? 'Saving...' : 'Saved'}</span>
                                 </div>
                             </div>
                         </>

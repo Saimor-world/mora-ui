@@ -6,6 +6,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { Settings, Shield, Globe, Cpu, User, Moon, Sun, Check, Link2, Trash2, RefreshCw } from 'lucide-react';
 import { GoogleConnect } from '@/components/integrations/GoogleConnect';
+import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { corePost, corePut } from '@/lib/api/coreClient';
 import { useAccentColor } from '@/lib/hooks/useAccentColor';
 import { toast } from 'sonner';
@@ -13,8 +14,8 @@ import { toast } from 'sonner';
 type SettingsTab = 'general' | 'profile' | 'network' | 'system' | 'integrations' | 'admin' | 'intelligence';
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
-    const { user, permissions } = useMoraStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { user, permissions, updateUserSettings } = useMoraStore();
     const pane = getPane(id);
 
     // Settings state
@@ -41,8 +42,10 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
 
     const syncSettings = async (updates: Record<string, any>) => {
         try {
+            // Update local store immediately for reactivity
+            updateUserSettings(updates);
+
             await corePut('/v1/auth/settings', updates);
-            // Optionally update the local store user object too
         } catch (e) {
             console.error('[Settings] Sync failed:', e);
             toast.error('Failed to sync settings to cloud');
@@ -79,6 +82,12 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
         if (typeof window !== 'undefined') {
             localStorage.setItem('saimor_scale', String(scale));
             syncSettings({ scale: scale });
+
+            // Apply immediately for instant visual feedback
+            // (The layout.tsx effect will also apply, but this gives immediate UX)
+            const clampedScale = Math.max(0.8, Math.min(1.2, scale));
+            (document.body.style as any).zoom = clampedScale.toString();
+            document.documentElement.style.setProperty('--mora-interface-scale', clampedScale.toString());
         }
     };
 
@@ -88,8 +97,10 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
         { id: 'general' as const, icon: Settings, label: 'General' },
         { id: 'profile' as const, icon: User, label: 'Profile' },
         { id: 'intelligence' as const, icon: Cpu, label: 'Intelligence' },
-        { id: 'integrations' as const, icon: Link2, label: 'Integrations' },
-        ...(user?.role === 'owner' || user?.role === 'admin' ? [{ id: 'admin' as const, icon: Shield, label: 'Admin' }] : []),
+        ...(user?.role === 'owner' || user?.role === 'admin' ? [
+            { id: 'integrations' as const, icon: Link2, label: 'Integrations' },
+            { id: 'admin' as const, icon: Shield, label: 'Admin' }
+        ] : []),
         { id: 'network' as const, icon: Globe, label: 'Network' },
         { id: 'system' as const, icon: Cpu, label: 'System' },
     ];
@@ -97,8 +108,12 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     return (
         <GlassPanel
             title="System Settings"
-            width={700}
-            height={500}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -108,6 +123,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
             showMinimizeButton
             showBackButton={false}
             draggable
+            resizable
         >
             <div className="flex h-full">
                 {/* Sidebar */}
@@ -130,7 +146,17 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
                 {/* Content */}
                 <div className="flex-1 pl-6 overflow-y-auto">
                     {activeTab === 'integrations' && (
-                        <GoogleConnect />
+                        <div className="space-y-8">
+                            <h3 className="text-lg text-white font-light">Integrations</h3>
+
+                            {/* Email Integration */}
+                            <EmailIntegration />
+
+                            {/* Google Connect (existing) */}
+                            <div className="pt-4 border-t border-white/5">
+                                <GoogleConnect />
+                            </div>
+                        </div>
                     )}
 
                     {activeTab === 'general' && (

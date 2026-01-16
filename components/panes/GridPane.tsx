@@ -28,7 +28,7 @@ const getNodeColor = (type: string) => {
 };
 
 export const GridPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { activeCompanyId, nodesByCompany } = useMoraStore();
     const pane = getPane(id);
 
@@ -74,8 +74,12 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
     return (
         <GlassPanel
             title="Grid View"
-            width={1000}
-            height={700}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -84,6 +88,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
             <div className="flex flex-col h-full">
                 {/* Toolbar */}

@@ -7,6 +7,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = 'http://127.0.0.1:8083';
 
+/**
+ * Build backend URL with /v1/ prefix if not present
+ */
+function buildBackendUrl(slug: string): string {
+  // If slug already starts with v1/, don't add it again
+  const path = slug.startsWith('v1/') ? slug : `v1/${slug}`;
+  return `${BACKEND_URL}/${path}`;
+}
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string[] }> }
@@ -15,7 +24,7 @@ export async function GET(
   const slug = params.slug.join('/');
 
   try {
-    const backendUrl = `${BACKEND_URL}/${slug}`;
+    const backendUrl = buildBackendUrl(slug);
 
     // Extract query parameters
     const url = new URL(request.url);
@@ -79,7 +88,7 @@ export async function POST(
   const slug = params.slug.join('/');
 
   try {
-    const backendUrl = `${BACKEND_URL}/${slug}`;
+    const backendUrl = buildBackendUrl(slug);
 
     // Extract query parameters
     const url = new URL(request.url);
@@ -152,7 +161,7 @@ export async function PUT(
   const slug = params.slug.join('/');
 
   try {
-    const backendUrl = `${BACKEND_URL}/${slug}`;
+    const backendUrl = buildBackendUrl(slug);
 
     console.log(`[API Proxy] PUT ${request.url} -> ${backendUrl}`);
 
@@ -219,7 +228,7 @@ export async function PATCH(
   const slug = params.slug.join('/');
 
   try {
-    const backendUrl = `${BACKEND_URL}/${slug}`;
+    const backendUrl = buildBackendUrl(slug);
 
     // Extract query parameters
     const url = new URL(request.url);
@@ -292,7 +301,7 @@ export async function DELETE(
   const slug = params.slug.join('/');
 
   try {
-    const backendUrl = `${BACKEND_URL}/${slug}`;
+    const backendUrl = buildBackendUrl(slug);
 
     console.log(`[API Proxy] DELETE ${request.url} -> ${backendUrl}`);
 

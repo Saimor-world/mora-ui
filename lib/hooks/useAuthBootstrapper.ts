@@ -27,17 +27,9 @@ export function useAuthBootstrapper() {
             const hasSession = localStorage.getItem('mora_session');
 
             if (hasCookie || hasLocalToken) {
-                // SPECIAL CASE: Demo Mode - bypass backend validation
-                const mode = localStorage.getItem('saimor_mode');
-                if (mode === 'demo' || hasLocalToken === 'demo-token-local') {
-                    console.log('Demo Mode detected, bypassing backend check');
-                    setIsBootstrapped(true);
-                    return;
-                }
-
                 try {
                     // Verify token validity
-                    const result = await coreGet('/v1/auth/me');
+                    const result = await coreGet('/v1/auth/me', { isOptional: true });
                     if (result && result.user_id) {
                         // Auth is valid! Now load data
                         const store = useMoraStore.getState();
@@ -60,21 +52,49 @@ export function useAuthBootstrapper() {
                         await store.loadCompanies().catch(console.error);
 
                         // RESTORE ACTIVE COMPANY
-                        const companies = store.companies;
-                        const currentActive = store.activeCompanyId;
+                        // FIX: Re-fetch state after async loadCompanies to avoid race condition
+                        const freshState = useMoraStore.getState();
+                        const companies = freshState.companies;
+                        const currentActive = freshState.activeCompanyId;
                         const storedCompany = localStorage.getItem('last_workspace');
+
+                        console.log('[AuthBoot] Companies loaded:', companies.length, companies.map(c => c.name));
 
                         // 1. If we have active ID and it's in list -> good
                         // 2. If not, try to find by stored name
+                        let selectedCompanyId: string | null = null;
+
                         if (!currentActive && storedCompany) {
                             const found = companies.find(c => c.name === storedCompany);
                             if (found) {
-                                store.setActiveCompany(found.id);
+                                selectedCompanyId = found.id;
                                 console.log('[AuthBoot] Restored active company:', found.name);
                             }
-                        } else if (!currentActive && companies.length > 0) {
-                            // 3. Fallback: First company (Owner usually has one)
-                            store.setActiveCompany(companies[0].id);
+                        }
+
+                        if (!selectedCompanyId && !currentActive && companies.length > 0) {
+                            // 3. Fallback: Prefer demo company for demo users, else first company
+                            const userRole = result.role || localStorage.getItem('saimor_role');
+                            const demoCompany = companies.find(c => c.is_demo === true);
+
+                            if (userRole === 'demo' && demoCompany) {
+                                selectedCompanyId = demoCompany.id;
+                                console.log('[AuthBoot] Demo user -> using demo company:', demoCompany.name);
+                            } else {
+                                // For owners/members, prefer non-demo company if available
+                                const ownCompany = companies.find(c => !c.is_demo);
+                                selectedCompanyId = ownCompany?.id || companies[0].id;
+                                console.log('[AuthBoot] Owner/Member -> using company:', ownCompany?.name || companies[0].name);
+                            }
+                        }
+
+                        // Set active company and load departments
+                        if (selectedCompanyId) {
+                            store.setActiveCompany(selectedCompanyId);
+                            // Load departments for the selected company
+                            await store.loadDepartments(selectedCompanyId).catch(err => {
+                                console.warn('[AuthBoot] Failed to load departments:', err);
+                            });
                         }
 
                         setIsBootstrapped(true);

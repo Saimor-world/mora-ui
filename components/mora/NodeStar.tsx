@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CoreNode } from '@/lib/types/core';
 
 interface NodeStarProps {
@@ -13,12 +13,17 @@ interface NodeStarProps {
 }
 
 /**
- * NODE STAR COMPONENT — TESLA-STYLE NODE VISUALIZATION
+ * NODE STAR COMPONENT (Represents a STAR / FILE)
  *
- * - Tiny, subtle background stars representing knowledge nodes
+ * In the SAIMÔR Universe metaphor:
+ * - STAR = Node (File, Note, Document)
+ * - Orbiting a Moon (Space) OR floating freely
+ *
+ * Visuals:
+ * - Tiny particles of knowledge
  * - Different colors based on node type
  * - Gentle twinkling animation
- * - No interaction, just ambient presence
+ * - Hover tooltip with Môra explanations
  */
 export const NodeStar: React.FC<NodeStarProps> = ({
     node,
@@ -27,6 +32,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
     size = 'xs',
     onHover
 }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
+
     const sizeMap = {
         xs: { diameter: 2, glowSize: 6 },
         sm: { diameter: 3, glowSize: 8 }
@@ -46,47 +53,163 @@ export const NodeStar: React.FC<NodeStarProps> = ({
         }
     };
 
+    const getNodeTypeLabel = (type?: string) => {
+        switch (type?.toLowerCase()) {
+            case 'document': return 'Dokument';
+            case 'note': return 'Notiz';
+            case 'link': return 'Link';
+            case 'image': return 'Bild';
+            case 'video': return 'Video';
+            default: return 'Knoten';
+        }
+    };
+
     const color = getNodeColor(node.type);
+
+    // Check for importance
+    const tags: string[] = (node.metadata?.tags as string[]) || [];
+    const isImportant =
+        node.metadata?.is_pinned === true ||
+        node.metadata?.is_important === true ||
+        tags.some((tag: string) => ['important', 'urgent', 'priority'].includes(tag.toLowerCase()));
+
+    // Generate Môra explanation for why node is here
+    const getMoraExplanation = () => {
+        if (isImportant) {
+            return "⭐ Dieser Knoten ist als wichtig markiert und hat hohe semantische Verbindungen.";
+        }
+        if (tags.length >= 3) {
+            return `🔗 Stark vernetzt durch ${tags.length} Themen.`;
+        }
+        if (node.metadata?.weight && (node.metadata.weight as number) > 0.7) {
+            return "📈 Hohe Relevanz basierend auf Aktivität.";
+        }
+        return "🌟 Verwandtes Wissen aus diesem Bereich.";
+    };
+
+    const handleMouseEnter = () => {
+        setShowTooltip(true);
+        onHover?.(true);
+    };
+
+    const handleMouseLeave = () => {
+        setShowTooltip(false);
+        onHover?.(false);
+    };
 
     return (
         <motion.div
-            className="absolute pointer-events-auto cursor-pointer" // Enable pointer events for hover
+            className="absolute pointer-events-auto cursor-pointer"
             style={{
                 left: position.x,
                 top: position.y,
                 transform: 'translate(-50%, -50%)',
-                width: 20, // Hitbox size
-                height: 20
+                width: isImportant ? 30 : 20,
+                height: isImportant ? 30 : 20
             }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
                 scale: 1,
-                opacity: [0.3, 0.8, 0.3]
+                opacity: isImportant ? [0.6, 1, 0.6] : [0.3, 0.8, 0.3]
             }}
             transition={{
                 delay,
-                duration: 3 + Math.random() * 2,
+                duration: isImportant ? 2 : 3 + Math.random() * 2,
                 repeat: Infinity,
                 ease: 'easeInOut'
             }}
-            onMouseEnter={() => onHover?.(true)}
-            onMouseLeave={() => onHover?.(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
         >
+            {/* Invisible Hit Area expansion for easier hovering */}
+            <div className="absolute inset-0 -m-4 rounded-full z-10" />
+
+            {/* Môra Tooltip - WHY is this node here? */}
+            <AnimatePresence>
+                {showTooltip && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-[100]"
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        <div className="bg-black/90 backdrop-blur-xl border border-emerald-500/30 rounded-xl px-4 py-3 shadow-xl min-w-[200px] max-w-[280px]">
+                            {/* Node Title */}
+                            <div className="text-sm font-medium text-emerald-50 mb-1 truncate">
+                                {node.title || 'Unbekannter Knoten'}
+                            </div>
+
+                            {/* Type Badge */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <span
+                                    className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                    style={{
+                                        backgroundColor: `${color}20`,
+                                        color: color,
+                                        border: `1px solid ${color}40`
+                                    }}
+                                >
+                                    {getNodeTypeLabel(node.type)}
+                                </span>
+                                {isImportant && (
+                                    <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-mora-gold/20 text-mora-gold border border-mora-gold/40">
+                                        Wichtig
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Môra Explanation */}
+                            <div className="text-xs text-emerald-400/80 italic border-t border-emerald-500/20 pt-2 mt-2">
+                                {getMoraExplanation()}
+                            </div>
+
+                            {/* Tags */}
+                            {tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                    {tags.slice(0, 4).map((tag, i) => (
+                                        <span key={i} className="text-[9px] text-emerald-500/60 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                    {tags.length > 4 && (
+                                        <span className="text-[9px] text-white/40">+{tags.length - 4}</span>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Tooltip Arrow */}
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-emerald-500/30" />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Importance Ring (Only for important nodes) */}
+            {isImportant && (
+                <motion.div
+                    className="absolute inset-0 rounded-full border border-white/10"
+                    animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                />
+            )}
+
             {/* Subtle Glow */}
             <motion.div
                 className="absolute rounded-full pointer-events-none"
                 style={{
-                    width: starSize.glowSize,
-                    height: starSize.glowSize,
-                    background: `radial-gradient(circle, ${color}20, transparent)`,
-                    filter: 'blur(2px)',
+                    width: isImportant ? starSize.glowSize * 2 : starSize.glowSize,
+                    height: isImportant ? starSize.glowSize * 2 : starSize.glowSize,
+                    background: `radial-gradient(circle, ${color}${isImportant ? '40' : '20'}, transparent)`,
+                    filter: 'blur(3px)',
                     left: '50%',
                     top: '50%',
                     transform: 'translate(-50%, -50%)'
                 }}
                 animate={{
-                    scale: [1, 1.3, 1],
-                    opacity: [0.2, 0.4, 0.2]
+                    scale: isImportant ? [1, 1.5, 1] : [1, 1.3, 1],
+                    opacity: isImportant ? [0.3, 0.6, 0.3] : [0.2, 0.4, 0.2]
                 }}
                 transition={{
                     duration: 4 + Math.random() * 2,
@@ -100,10 +223,12 @@ export const NodeStar: React.FC<NodeStarProps> = ({
             <div
                 className="relative rounded-full pointer-events-none"
                 style={{
-                    width: starSize.diameter,
-                    height: starSize.diameter,
-                    background: color,
-                    boxShadow: `0 0 ${starSize.diameter * 2}px ${color}60`,
+                    width: isImportant ? starSize.diameter * 1.5 : starSize.diameter,
+                    height: isImportant ? starSize.diameter * 1.5 : starSize.diameter,
+                    background: isImportant ? '#FFFFFF' : color,
+                    boxShadow: isImportant
+                        ? `0 0 10px #FFFFFF60, 0 0 5px ${color}`
+                        : `0 0 ${starSize.diameter * 2}px ${color}60`,
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
@@ -115,5 +240,6 @@ export const NodeStar: React.FC<NodeStarProps> = ({
 };
 
 export default NodeStar;
+
 
 

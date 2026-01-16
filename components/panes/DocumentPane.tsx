@@ -20,7 +20,7 @@ interface DocumentPaneProps {
  * - PDF info
  */
 export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     // Get document data from pane
@@ -160,6 +160,10 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             title={name || 'Document'}
             width={pane.size?.width || 800}
             height={pane.size?.height || 600}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -168,6 +172,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
             <div className="flex flex-col h-full">
                 {/* Toolbar */}

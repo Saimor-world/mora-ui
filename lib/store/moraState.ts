@@ -33,7 +33,7 @@ import {
 } from "@/lib/api/coreClient";
 import { useAccountStore } from "@/lib/auth/useAccount";
 import { toast } from "@/lib/toast";
-import { MOCK_DATA } from "@/lib/data/mockData";
+
 import { mindLoop } from "@/lib/intelligence/mindLoop"; // Phase 8.1 Integration
 import type { OrbState } from "@/lib/api/awarenessClient";
 
@@ -52,6 +52,7 @@ export interface User {
     avatar?: string;
     role: UserRole;
     settings?: Record<string, any>;
+    tenant_id?: string;
 }
 
 export interface Permissions {
@@ -112,6 +113,11 @@ interface MoraState {
     // Orb Awareness - UPGRADE A1: Five awareness modes (Phase 7.1)
     orbState: OrbState;
     orbNotifications: Array<{ id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }>;
+    cursorAgent: {
+        active: boolean;
+        action: 'idle' | 'highlight' | 'point' | 'roam';
+        target?: { x: number, y: number };
+    };
 
     // Actions
     setViewLevel: (level: ViewLevel) => void;
@@ -124,10 +130,12 @@ interface MoraState {
     setOrbState: (state: OrbState) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
+    setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
     minimizeNode: (node: CoreNode) => void;
     restoreNode: (nodeId: string) => void;
     closeNode: (nodeId: string) => void;
     setUser: (user: User | null) => void; // Phase 6.3: Set user with role
+    updateUserSettings: (settings: Record<string, any>) => void;
     resetStore: () => void; // System: Clear all state on logout
 
     // Data Actions - Load
@@ -155,7 +163,7 @@ interface MoraState {
     deleteFolder: (id: string) => Promise<void>;
 
     // Departments (Phase 7.1)
-    addDepartment: (payload: CreateDepartmentPayload) => Promise<void>;
+    createDepartment: (payload: CreateDepartmentPayload) => Promise<void>;
     updateDepartment: (id: string, payload: UpdateDepartmentPayload) => Promise<void>;
     deleteDepartment: (id: string) => Promise<void>;
 
@@ -196,6 +204,11 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     orbState: 'idle', // Phase 7.1: Start in simple breathing mode
     orbNotifications: [],
     minimizedNodes: [],
+    cursorAgent: {
+        active: false,
+        action: 'idle',
+        target: undefined
+    },
 
     // User & Permissions (Phase 6.3) - Default to demo role
     user: null,
@@ -225,6 +238,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         orbNotifications: [...state.orbNotifications, notification]
     })),
     clearOrbNotifications: () => set({ orbNotifications: [] }),
+    setCursorAgent: (agent) => set((state) => ({
+        cursorAgent: { ...state.cursorAgent, ...agent } as MoraState['cursorAgent']
+    })),
 
     // Phase 6.3: Set user and auto-compute permissions from role
     setUser: (user) => {
@@ -238,6 +254,24 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 user,
                 permissions: getPermissions(user.role)
             });
+
+            // Auto-set viewMode for consistent navigation (Phase 6.3 Cleanup)
+            // FIX: Only System Owners (m.f4hrlaender) see the "Client Health" (owner view)
+            // Tenant Owners (users who signed up) see their "workspace" view.
+            const systemOwners = [
+                'm.f4hrlaender@gmail.com',
+                'master_real@saimor.io',
+                'nexus@saimor.dev',
+                'nextchaptergermany@gmail.com' // Explicitly add the user's current account
+            ];
+
+            if ((user.role === 'owner' || user.role === 'admin') && user.email && systemOwners.includes(user.email)) {
+                get().setViewMode('owner');
+            } else if (user.role === 'demo') {
+                get().setViewMode('demo');
+            } else {
+                get().setViewMode('workspace');
+            }
         } else {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('mora_session');
@@ -248,6 +282,21 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 permissions: ROLE_PERMISSIONS.demo
             });
         }
+    },
+
+    updateUserSettings: (settings) => {
+        set((state) => {
+            if (!state.user) return state;
+            return {
+                user: {
+                    ...state.user,
+                    settings: {
+                        ...(state.user.settings || {}),
+                        ...settings
+                    }
+                }
+            };
+        });
     },
 
 
@@ -265,10 +314,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             activeCompanyId: null,
             activeDepartmentId: null,
             activeSpaceId: null,
-            viewMode: 'welcome',
-            viewLevel: 'universe',
-            coreError: null,
-            isLoading: false
+            viewMode: 'workspace',
+            viewLevel: 'core',
+            coreError: null
         });
     },
 
@@ -280,22 +328,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
         try {
             let data = await fetchCompanies(true);
-
-            // MOCK FALLBACK only if we are in DEMO mode
-            if ((!data || !Array.isArray(data) || data.length === 0) && get().viewMode === 'demo') {
-                data = [
-                    {
-                        id: 'comp-demo',
-                        tenant_id: 'tenant-demo',
-                        owner_id: 'user-demo',
-                        name: 'Simple Coffee Group',
-                        slug: 'simple-coffee-group',
-                        is_demo: true,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }
-                ] as any;
-            }
 
             // -------------------------------------------------------------------------
             // PHASE 8.2: AGENTIC INJECTION - SAIMÔR HQ for Authorized Users
@@ -328,6 +360,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 }
             }
 
+            // Demo mode: Real backend data only, no client-side mock injection
             set({ companies: data, isLoadingCompanies: false });
 
             // Phase 8.1: Success event
@@ -341,24 +374,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // Phase 8.1: Alert event
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.9, payload: { error: msg, handled: true } });
 
-            // MOCK FALLBACK only for DEMO mode
-            if (get().viewMode === 'demo') {
-                const mockCompanies: CoreCompany[] = [
-                    {
-                        id: 'comp-demo',
-                        tenant_id: 'tenant-demo',
-                        owner_id: 'user-demo',
-                        name: 'Simple Coffee Group',
-                        slug: 'simple-coffee-group',
-                        is_demo: true,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    }
-                ];
-                set({ companies: mockCompanies, isLoadingCompanies: false, coreError: null, orbState: mindLoop.getCurrentState() });
-            } else {
-                set({ companies: [], isLoadingCompanies: false, coreError: msg, orbState: mindLoop.getCurrentState() });
-            }
+            // No mock fallback - show error state
+            set({ companies: [], isLoadingCompanies: false, coreError: msg, orbState: mindLoop.getCurrentState() });
         }
     },
 
@@ -366,15 +383,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({ isLoadingDepartments: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadDepartments' } });
         set({ orbState: mindLoop.getCurrentState() });
+
+        // PRODUCTION MODE: Demo now uses real DB data for authenticity
+        // Mock data fallback removed - all modes fetch from backend
+
         try {
             // Use active company if not provided
             const targetCompanyId = companyId || get().activeCompanyId || undefined;
             let data = await fetchDepartments(targetCompanyId);
-
-            // MOCK FALLBACK only for DEMO mode
-            if ((!data || !Array.isArray(data) || data.length === 0) && get().viewMode === 'demo') {
-                data = MOCK_DATA.demo.departments as any;
-            }
 
             set({ departments: data, isLoadingDepartments: false });
             mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'idle', severity: 0.1, payload: { status: 'success' } });
@@ -384,34 +400,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 ? (error.status === 401 || error.status === 403 ? "Not authorized per JWT." : error.message)
                 : "Failed to load departments.";
 
-            // MOCK FALLBACK on API errors too
-            // MOCK FALLBACK on API errors
-            const isDemo = get().viewMode === 'demo';
-            const userEmail = get().user?.email || '';
-
-            // STRICT AUTH CHECK for SAIMÔR HQ Data
-            const authorizedEmails = [
-                'm.f4hrlaender@gmail.com',
-                'master_real@saimor.io',
-                'nexus@saimor.dev',
-                'demo_new@saimor.dev'
-            ];
-            const isAuthorized = authorizedEmails.includes(userEmail);
-
-            let mockData: any[] = [];
-
-            if (isDemo) {
-                mockData = MOCK_DATA.demo.departments;
-            } else if (isAuthorized) {
-                // Only authorized users can see the "Hidden" HQ fallback
-                mockData = MOCK_DATA.solo.departments;
-            } else {
-                // Regular users see nothing if backend fails
-                mockData = [];
-            }
-
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.8, payload: { error: msg, handled: true } });
-            set({ departments: mockData as any, isLoadingDepartments: false, coreError: null, orbState: mindLoop.getCurrentState() });
+            set({ departments: [], isLoadingDepartments: false, coreError: msg, orbState: mindLoop.getCurrentState() });
         }
     },
 
@@ -420,18 +410,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadSpaces' } });
         set({ orbState: mindLoop.getCurrentState() });
 
+        // PRODUCTION MODE: Demo now uses real DB spaces for authenticity
+
         try {
             let data = await fetchSpaces(deptId);
 
-            // ... Mock logic copy ...
-            // Mock fallback only for DEMO
-            if ((!data || data.length === 0) && get().viewMode === 'demo') {
-                const demoSpaces = MOCK_DATA.demo.spaces[deptId as keyof typeof MOCK_DATA.demo.spaces];
-                if (demoSpaces) data = demoSpaces as any;
-            }
-
             set(state => ({
-                spacesByDepartment: { ...state.spacesByDepartment, [deptId]: data },
+                spacesByDepartment: { ...state.spacesByDepartment, [deptId]: data || [] },
                 isLoadingSpaces: false
             }));
 
@@ -502,8 +487,12 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
     loadNodesForCompany: async (companyId: string) => {
         set({ isLoadingNodes: true, coreError: null });
+
+        // PRODUCTION MODE: Demo now uses real DB nodes for authenticity
+
         try {
-            const data = await fetchNodesByCompany(companyId);
+            let data = await fetchNodesByCompany(companyId);
+
             set(state => ({
                 nodesByCompany: { ...state.nodesByCompany, [companyId]: data },
                 isLoadingNodes: false
@@ -717,11 +706,11 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     // Department CRUD
-    addDepartment: async (payload: { name: string; description?: string; color?: string }) => {
+    createDepartment: async (payload: { name: string; description?: string; color?: string }) => {
         try {
             const newDept = await apiCreateDepartment({
                 ...payload,
-                company_id: get().activeCompanyId // AUTO-INJECT COMPANY ID
+                company_id: get().activeCompanyId || undefined // AUTO-INJECT COMPANY ID
             });
             set(state => ({
                 departments: [...state.departments, newDept]

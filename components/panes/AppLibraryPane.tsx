@@ -1,13 +1,17 @@
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { Grid, Box, Zap, Folder, FileText, Link2 } from 'lucide-react';
+import {
+    Grid, Box, Zap, Folder, FileText, Link2,
+    Mail, Users, Calendar, Terminal, Search,
+    MessageCircle, User, Globe, Calculator, Clock
+} from 'lucide-react';
 import { PaneConfig } from '@/lib/store/paneStore';
 
 type PaneType = PaneConfig['type'];
 
 export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, addPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, addPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     // Hook must be called before any returns
@@ -57,20 +61,40 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
         });
     };
 
-    const apps: { name: string; type: PaneType; icon: typeof Folder; color: string }[] = [
-        { name: 'Finder', type: 'finder', icon: Folder, color: 'text-blue-400' },
-        { name: 'Connect', type: 'integrations', icon: Link2, color: 'text-orange-400' },
-        { name: 'Notes', type: 'notes', icon: FileText, color: 'text-yellow-400' },
-        { name: 'Scanner', type: 'scanner', icon: Zap, color: 'text-purple-400' },
-        { name: 'Settings', type: 'settings', icon: Box, color: 'text-white' },
-        { name: 'Grid', type: 'grid', icon: Grid, color: 'text-emerald-400' },
+    // FULL APP LIBRARY - All available apps
+    const apps: { name: string; type: PaneType; icon: typeof Folder; color: string; category: string }[] = [
+        // Core Apps
+        { name: 'Finder', type: 'finder', icon: Folder, color: 'text-blue-400', category: 'core' },
+        { name: 'Mail', type: 'mail', icon: Mail, color: 'text-red-400', category: 'core' },
+        { name: 'Notes', type: 'notes', icon: FileText, color: 'text-yellow-400', category: 'core' },
+        { name: 'Search', type: 'search', icon: Search, color: 'text-purple-400', category: 'core' },
+
+        // Communication
+        { name: 'Team', type: 'team', icon: MessageCircle, color: 'text-emerald-400', category: 'comm' },
+        { name: 'Users', type: 'users', icon: Users, color: 'text-cyan-400', category: 'comm' },
+
+        // Productivity
+        { name: 'Calendar', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'prod' },
+        { name: 'Scanner', type: 'scanner', icon: Zap, color: 'text-pink-400', category: 'prod' },
+
+        // Utilities
+        { name: 'Terminal', type: 'terminal', icon: Terminal, color: 'text-lime-400', category: 'util' },
+        { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'util' },
+        { name: 'Connect', type: 'integrations', icon: Link2, color: 'text-amber-400', category: 'util' },
+        { name: 'Grid View', type: 'grid', icon: Grid, color: 'text-emerald-400', category: 'util' },
+        { name: 'Notes', type: 'notes', icon: FileText, color: 'text-yellow-400', category: 'util' },
     ];
+
 
     return (
         <GlassPanel
-            title="Application Library"
-            width={800}
-            height={600}
+            title="App Library"
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -79,6 +103,7 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
             <div className="grid grid-cols-4 gap-4 p-4">
                 {apps.map((app, i) => (

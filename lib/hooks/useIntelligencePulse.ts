@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { coreGet } from '@/lib/api/coreClient';
 
 // Types
@@ -17,12 +17,20 @@ const MOCK_PULSE_LOW: PulseData = {
     orbStateSuggestion: 'idle'
 };
 
+// Polling configuration with backoff
+const MIN_INTERVAL = 15000;  // 15 seconds minimum
+const MAX_INTERVAL = 120000; // 2 minutes maximum when backend is down
+const BACKOFF_MULTIPLIER = 1.5;
+
 export const useIntelligencePulse = () => {
     const [data, setData] = useState<PulseData>(MOCK_PULSE_LOW);
     const [lastFetch, setLastFetch] = useState<number>(0);
+    const intervalRef = useRef<number>(MIN_INTERVAL);
+    const failureCountRef = useRef<number>(0);
 
     useEffect(() => {
         let isMounted = true;
+        let timeoutId: NodeJS.Timeout;
 
         const fetchData = async () => {
             // Check for auth token before making request
@@ -38,20 +46,29 @@ export const useIntelligencePulse = () => {
                     setData(MOCK_PULSE_LOW);
                     setLastFetch(Date.now());
                 }
+                // Still schedule next check but with longer interval
+                timeoutId = setTimeout(fetchData, MAX_INTERVAL);
                 return;
             }
 
             try {
                 // Use coreGet to ensure Auth headers are attached!
-                // Raw fetch fails because it doesn't send localStorage token.
-                const jsonData = await coreGet('/v1/mindloop/synthesis');
+                const jsonData = await coreGet('/v1/mindloop/synthesis', { isOptional: true });
 
                 if (isMounted) {
                     if (jsonData) {
                         setData(jsonData);
+                        // Success - reset backoff
+                        failureCountRef.current = 0;
+                        intervalRef.current = MIN_INTERVAL;
                     } else {
-                        // Silent fail (coreGet returns null on 401/error)
+                        // Backend returned null (offline/error) - apply backoff
                         setData(MOCK_PULSE_LOW);
+                        failureCountRef.current++;
+                        intervalRef.current = Math.min(
+                            intervalRef.current * BACKOFF_MULTIPLIER,
+                            MAX_INTERVAL
+                        );
                     }
                     setLastFetch(Date.now());
                 }
@@ -59,19 +76,27 @@ export const useIntelligencePulse = () => {
                 if (isMounted) {
                     setData(MOCK_PULSE_LOW);
                     setLastFetch(Date.now());
+                    // Apply backoff on error
+                    failureCountRef.current++;
+                    intervalRef.current = Math.min(
+                        intervalRef.current * BACKOFF_MULTIPLIER,
+                        MAX_INTERVAL
+                    );
                 }
+            }
+
+            // Schedule next fetch with current interval
+            if (isMounted) {
+                timeoutId = setTimeout(fetchData, intervalRef.current);
             }
         };
 
-        // Initial fetch
-        fetchData();
-
-        // Interval
-        const intervalId = setInterval(fetchData, 10000);
+        // Initial fetch with small delay to let page load
+        timeoutId = setTimeout(fetchData, 2000);
 
         return () => {
             isMounted = false;
-            clearInterval(intervalId);
+            clearTimeout(timeoutId);
         };
     }, []);
 

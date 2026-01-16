@@ -70,13 +70,25 @@ export const OrganicInput: React.FC<OrganicInputProps> = ({ onSend, placeholder 
                     className="flex-1 bg-transparent border-none outline-none text-sm text-emerald-100 placeholder-emerald-500/40 font-light z-10"
                 />
 
-                <div className="flex items-center gap-2">
-                    <Mic className="w-4 h-4 text-emerald-500/40 hover:text-emerald-100 cursor-pointer transition-colors" />
-                    {input.length > 0 && (
-                        <button type="submit" className="w-6 h-6 rounded-full bg-mora-gold/20 flex items-center justify-center cursor-pointer animate-in fade-in zoom-in hover:bg-mora-gold/40 transition-colors">
-                            <Send className="w-3 h-3 text-mora-gold" />
-                        </button>
-                    )}
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        title="Voice Input (Coming Soon)"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500/40 hover:text-emerald-100 hover:bg-white/5 cursor-pointer transition-all"
+                    >
+                        <Mic className="w-4 h-4" />
+                    </button>
+                    <button
+                        type="submit"
+                        title={input.length > 0 ? "Send Message" : "Type a message first"}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
+                            input.length > 0
+                                ? 'bg-mora-gold/30 hover:bg-mora-gold/50 scale-100'
+                                : 'bg-emerald-500/10 scale-90 opacity-50'
+                        }`}
+                    >
+                        <Send className={`w-4 h-4 ${input.length > 0 ? 'text-mora-gold' : 'text-emerald-500/30'}`} />
+                    </button>
                 </div>
             </form>
         </div>

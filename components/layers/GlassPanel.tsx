@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion';
 import { X, ChevronLeft, Minus } from 'lucide-react';
 
 interface GlassPanelProps {
@@ -60,6 +60,12 @@ interface GlassPanelProps {
     onFocus?: () => void;
     /** UPGRADE 6.2: Disable internal entry/exit animations (for use inside ViewPort transactions) */
     disableAnimations?: boolean;
+    /** NEW: Initial X position */
+    initialX?: number;
+    /** NEW: Initial Y position */
+    initialY?: number;
+    /** NEW: Position change callback */
+    onPositionChange?: (x: number, y: number) => void;
 }
 
 /**
@@ -96,44 +102,102 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     onFocus,
     title,
     className = '',
-    disableAnimations = false
+    disableAnimations = false,
+    initialX,
+    initialY,
+    onPositionChange
 }) => {
     // UPGRADE C1: Drag and resize state
+    const dragControls = useDragControls();
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
-    const [panelPosition, setPanelPosition] = useState({ x: 0, y: 0 });
+
+    // Determine center position if not provided
+    const getInitialX = () => {
+        if (initialX !== undefined) return initialX;
+        if (typeof window === 'undefined') return 100;
+        return window.innerWidth / 2 - (typeof width === 'number' ? width : 800) / 2;
+    };
+
+    const getInitialY = () => {
+        if (initialY !== undefined) return initialY;
+        if (typeof window === 'undefined') return 100;
+        return window.innerHeight / 2 - (typeof height === 'number' ? height : 600) / 2;
+    };
+
+    const [panelPosition, setPanelPosition] = useState({ x: getInitialX(), y: getInitialY() });
     const [panelSize, setPanelSize] = useState({ width: typeof width === 'number' ? width : 800, height: typeof height === 'number' ? height : 600 });
     const panelRef = useRef<HTMLDivElement>(null);
 
+    // Sync position if initialX/Y change (e.g. from store)
+    useEffect(() => {
+        if (initialX !== undefined && initialY !== undefined) {
+            setPanelPosition({ x: initialX, y: initialY });
+        }
+    }, [initialX, initialY]);
+
     // UPGRADE C1: Drag handlers
-    const handleDragStart = useCallback(() => {
+    const handleDragStart = useCallback((e: any) => {
         setIsDragging(true);
         onFocus?.();
     }, [onFocus]);
 
     const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         setIsDragging(false);
-        setPanelPosition(prev => ({
-            x: prev.x + info.offset.x,
-            y: prev.y + info.offset.y
-        }));
-    }, []);
+        const newX = panelPosition.x + info.offset.x;
+        const newY = panelPosition.y + info.offset.y;
+
+        setPanelPosition({ x: newX, y: newY });
+        onPositionChange?.(newX, newY);
+    }, [panelPosition, onPositionChange]);
 
     // UPGRADE C1: Resize handlers
-    const handleResizeStart = useCallback(() => {
+    const handleResizeStart = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
         setIsResizing(true);
         onFocus?.();
-    }, [onFocus]);
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = panelSize.width;
+        const startHeight = panelSize.height;
+
+        const handleResizeMouseMove = (moveEvent: MouseEvent) => {
+            const newWidth = Math.max(300, startWidth + (moveEvent.clientX - startX));
+            const newHeight = Math.max(200, startHeight + (moveEvent.clientY - startY));
+            setPanelSize({ width: newWidth, height: newHeight });
+        };
+
+        const handleResizeMouseUp = (upEvent: MouseEvent) => {
+            document.removeEventListener('mousemove', handleResizeMouseMove);
+            document.removeEventListener('mouseup', handleResizeMouseUp);
+            setIsResizing(false);
+
+            // Re-fetch current state to ensure we have the latest width/height
+            // Actually, we can just use the values we just set if we are careful, 
+            // but since setState is async, we need the actual values.
+            // A better way is to pass them to handleResizeEnd if it was outside,
+            // but here we have them in scope.
+        };
+
+        document.addEventListener('mousemove', handleResizeMouseMove);
+        document.addEventListener('mouseup', handleResizeMouseUp);
+    }, [panelSize, onFocus]);
+
+    // Update onResize when resizing ends
+    useEffect(() => {
+        if (!isResizing && (panelSize.width !== width || panelSize.height !== height)) {
+            onResize?.(panelSize.width, panelSize.height);
+        }
+    }, [isResizing, panelSize, onResize, width, height]);
 
     const handleResizeEnd = useCallback(() => {
         setIsResizing(false);
-        if (onResize) {
-            onResize(panelSize.width, panelSize.height);
-        }
-    }, [panelSize, onResize]);
+    }, []);
 
     // Handle keyboard shortcuts
-    React.useEffect(() => {
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && onClose && isActive) {
                 onClose();
@@ -185,11 +249,25 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             <motion.div
                 ref={panelRef}
                 drag={draggable}
+                dragControls={dragControls}
+                dragListener={false}
                 dragMomentum={false}
+                dragConstraints={{
+                    top: 10,
+                    left: 10,
+                    right: typeof window !== 'undefined' ? window.innerWidth - 60 : 1000,
+                    bottom: typeof window !== 'undefined' ? window.innerHeight - 100 : 800 // Safety for dock
+                }}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onClick={onFocus}
-                initial={disableAnimations ? false : { opacity: 0, scale: 0.9, y: 20, filter: 'blur(10px)' }} // Deep Dive Entry
+                initial={disableAnimations ? false : {
+                    opacity: 0,
+                    scale: 0.05,
+                    filter: 'blur(20px)',
+                    x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0,
+                    y: typeof window !== 'undefined' ? window.innerHeight - 140 : 0
+                }}
                 animate={{
                     opacity: 1,
                     scale: 1,
@@ -198,27 +276,29 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     y: panelPosition.y,
                     width: panelSize.width,
                     height: panelSize.height,
+                    // Use CSS classes for base shadows, augment for active state
                     boxShadow: isActive
-                        ? '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                        ? '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
                         : '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
                 }}
                 exit={disableAnimations ? undefined : {
                     opacity: 0,
-                    scale: 0.85, // Deep Dive Reversal (Zoom Out)
-                    filter: 'blur(10px)',
-                    transition: { duration: 0.3 }
+                    scale: 0.1,
+                    filter: 'blur(15px)',
+                    x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0,
+                    y: typeof window !== 'undefined' ? window.innerHeight - 140 : 0,
+                    transition: { duration: 0.5, ease: [0.4, 0, 1, 1] }
                 }}
                 transition={{
-                    duration: 0.4,
-                    ease: [0.4, 0, 0.2, 1] // cubic-bezier ease-out
+                    duration: 0.6,
+                    ease: [0.23, 1, 0.32, 1] // Custom organic cubic-bezier for "releasing" feel
                 }}
-                className={`fixed flex flex-col ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
+                // UPGRADE: Added glass-card and glow-pulse (when active)
+                className={`fixed flex flex-col glass-card ${isActive ? 'glow-pulse' : ''} ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
                 style={{
-                    zIndex: zIndex + (isActive ? 1 : 0),
-                    // PORTAL FIX: Now we can safely use 50% / translate because we are in body
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)',
+                    zIndex: zIndex, // Use store-managed z-index directly
+                    left: 0,
+                    top: 0,
                     width: panelWidth,
                     height: panelHeight,
                     maxWidth: 'calc(100vw - 32px)',
@@ -242,8 +322,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                         {/* Title Bar */}
                         {(title || showBackButton || showCloseButton || showMinimizeButton) && (
                             <div
-                                className="flex items-center justify-between"
-                                style={{ padding: paddingValue }}
+                                className="flex items-center justify-between pointer-events-auto"
+                                style={{ padding: paddingValue, cursor: draggable ? 'grab' : 'default' }}
+                                onPointerDown={(e) => draggable && dragControls.start(e)}
                             >
                                 {/* Back Button */}
                                 {showBackButton && onBack && (

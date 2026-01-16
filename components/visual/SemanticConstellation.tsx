@@ -54,11 +54,11 @@ export const SemanticConstellation: React.FC<SemanticConstellationProps> = ({
     return (
         <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
             <defs>
-                {/* Energy Flow Gradient */}
+                {/* Energy Flow Gradient - VERY SUBTLE */}
                 <linearGradient id="energyLink" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#10B981" stopOpacity="0.1" />
-                    <stop offset="50%" stopColor="#10B981" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.1" />
+                    <stop offset="0%" stopColor="#10B981" stopOpacity="0.02" />
+                    <stop offset="50%" stopColor="#10B981" stopOpacity="0.08" />
+                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.02" />
                 </linearGradient>
 
                 {/* Glow Filter */}
@@ -77,31 +77,30 @@ export const SemanticConstellation: React.FC<SemanticConstellationProps> = ({
                     <motion.path
                         d={conn.path}
                         stroke="#10B981"
-                        strokeWidth="1"
-                        strokeOpacity="0.1"
+                        strokeWidth="0.5"
+                        strokeOpacity="0.05"
                         fill="none"
                         initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 0.2 }}
+                        animate={{ pathLength: 1, opacity: 0.05 }}
                         transition={{ duration: 1, delay: i * 0.1 }}
                     />
 
-                    {/* Active Pulse Line - Energy moving from Parent to Child */}
+                    {/* Active Pulse Line - Very subtle */}
                     <motion.path
                         d={conn.path}
                         stroke="url(#energyLink)"
-                        strokeWidth={1 + conn.weight * 2} // Thicker for stronger nodes
-                        strokeOpacity="0.8"
+                        strokeWidth={0.3 + conn.weight * 0.5}
+                        strokeOpacity="0.15"
                         fill="none"
-                        filter="url(#glow-line)"
-                        strokeDasharray="10 20"
+                        strokeDasharray="5 15"
                         initial={{ strokeDashoffset: 0, opacity: 0 }}
                         animate={{
-                            strokeDashoffset: -100,
-                            opacity: [0.3, 0.6, 0.3]
+                            strokeDashoffset: -50,
+                            opacity: [0.05, 0.1, 0.05]
                         }}
                         transition={{
-                            strokeDashoffset: { duration: 3, repeat: Infinity, ease: "linear" },
-                            opacity: { duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }
+                            strokeDashoffset: { duration: 5, repeat: Infinity, ease: "linear" },
+                            opacity: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }
                         }}
                     />
                 </g>

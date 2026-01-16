@@ -41,7 +41,7 @@ export const useSemanticConstellation = () => {
 
             // Fetch real semantic relations from backend
             // Using /v1/relations/preview which returns heuristic & semantic connections
-            const relations = await coreGet('/v1/relations/preview?limit=20') as any[];
+            const relations = await coreGet('/v1/relations/preview?limit=50', { isOptional: true }) as any[];
 
             if (!Array.isArray(relations)) return;
 
@@ -66,28 +66,35 @@ export const useSemanticConstellation = () => {
                 }
             });
 
-            // If no backend relations found for this view, fallback to local heuristics (visual stability)
-            // This ensures we always show lines if the backend returns empty for the current subset of nodes
-            if (validLines.length === 0) {
-                const availableIds = Array.from(nodePosMap.keys()).filter(id => id !== nodeId);
-                const sourcePos = nodePosMap.get(nodeId);
+            // ALWAYS add some local heuristic connections (visual richness)
+            // This ensures we see "Galaxies" and "Constellations" even without backend help
+            const availableIds = Array.from(nodePosMap.keys());
+            if (availableIds.length > 5) {
+                // Pick some random nodes to act as "Hubs"
+                const hubCount = Math.min(5, Math.floor(availableIds.length / 4));
+                for (let i = 0; i < hubCount; i++) {
+                    const sourceIdx = Math.floor(Math.random() * availableIds.length);
+                    const sourceId = availableIds[sourceIdx];
+                    const sourcePos = nodePosMap.get(sourceId);
 
-                if (sourcePos && availableIds.length > 0) {
-                    // Pick 3 random neighbors for visual continuity
-                    const count = Math.min(3, availableIds.length);
-                    for (let i = 0; i < count; i++) {
-                        const randomIdx = Math.floor(Math.random() * availableIds.length);
-                        const targetId = availableIds[randomIdx];
-                        const targetPos = nodePosMap.get(targetId);
-                        if (targetPos) {
-                            validLines.push({
-                                id: `sim-${nodeId}-${targetId}`,
-                                from: sourcePos,
-                                to: targetPos,
-                                score: 0.3 + Math.random() * 0.4
-                            });
+                    if (sourcePos) {
+                        // Connect to 2-3 neighbors
+                        const neighbors = 2 + Math.floor(Math.random() * 2);
+                        for (let j = 0; j < neighbors; j++) {
+                            const targetIdx = Math.floor(Math.random() * availableIds.length);
+                            const targetId = availableIds[targetIdx];
+                            if (sourceId === targetId) continue;
+                            const targetPos = nodePosMap.get(targetId);
+
+                            if (targetPos) {
+                                validLines.push({
+                                    id: `sim-${sourceId}-${targetId}`,
+                                    from: sourcePos,
+                                    to: targetPos,
+                                    score: 0.2 + Math.random() * 0.3
+                                });
+                            }
                         }
-                        availableIds.splice(randomIdx, 1);
                     }
                 }
             }

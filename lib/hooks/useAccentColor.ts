@@ -29,7 +29,7 @@ const DEFAULT_COLOR = ACCENT_COLORS.emerald;
  * - Company branding
  */
 export function useAccentColor() {
-    const [accentColor, setAccentColorState] = useState(DEFAULT_COLOR);
+    const [accentColor, setAccentColorState] = useState<string>(DEFAULT_COLOR);
 
     // Load initial value
     useEffect(() => {

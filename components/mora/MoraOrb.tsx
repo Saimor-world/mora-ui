@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LiquidOrb, CSSFallbackOrb } from './LiquidOrb';
 
 interface MoraOrbProps {
     /** User Role - affects base color */
@@ -35,6 +36,7 @@ interface MoraOrbProps {
  * States (priority): warning > active > learning > demo > idle
  * 
  * Now includes company logo integration for unified branding.
+ * UPGRADE Phase 6: Liquid Intelligence Integration
  */
 export function MoraOrb({
     role = 'admin',
@@ -56,10 +58,38 @@ export function MoraOrb({
         position: { x: number, y: number };
     }>>([]);
     const orbRef = useRef<HTMLDivElement>(null);
+    const [gaze, setGaze] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Gazed Awareness: Subtly track mouse when in focus/watch/thinking
+    useEffect(() => {
+        if (!['watch', 'focus', 'thinking'].includes(state)) {
+            setGaze({ x: 0, y: 0 });
+            return;
+        }
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const centerX = window.innerWidth - 80;
+            const centerY = window.innerHeight - 144;
+
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Limit the "gaze" shift to max 5px
+            const maxShift = 5;
+            const shiftX = (dx / (distance + 0.001)) * Math.min(distance / 100, maxShift);
+            const shiftY = (dy / (distance + 0.001)) * Math.min(distance / 100, maxShift);
+
+            setGaze({ x: shiftX, y: shiftY });
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, [state]);
 
     // UPGRADE A1: Micro-spark notifications
     useEffect(() => {
@@ -151,6 +181,17 @@ export function MoraOrb({
                     sparkColor: '#06B6D4',
                     ringType: 'watch'
                 };
+            case 'demo':
+                return {
+                    opacity: 0.8,
+                    glowIntensity: 40,
+                    pulseDuration: 3.0,
+                    color: '#10B981', // Emerald for demo
+                    gradient: 'radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, rgba(16, 185, 129, 0) 70%)',
+                    innerBg: 'rgba(16, 185, 129, 0.2)',
+                    sparkColor: '#10B981',
+                    ringType: 'demo'
+                };
             case 'idle':
             default:
                 return {
@@ -191,7 +232,6 @@ export function MoraOrb({
 
     const params = getStateParams();
     const { opacity, glowIntensity, pulseDuration, color, gradient, innerBg, sparkColor, ringType } = params;
-    const boxShadowColor = `rgba(${finalState === 'alert' ? '239, 68, 68' : finalState === 'insight' ? '212, 175, 55' : finalState === 'thinking' ? '59, 130, 246' : finalState === 'focus' ? (isMember ? '96, 165, 250' : '16, 185, 129') : (isMember ? '96, 165, 250' : '206, 182, 118')}, ${opacity * 0.6})`;
 
     // MASTERBIBEL: Orb size is 68-92px, we use 80px as base
     return (
@@ -251,8 +291,8 @@ export function MoraOrb({
                 <motion.div
                     className="absolute inset-0 rounded-full"
                     animate={{
-                        scale: [1, 1.3, 1],
-                        opacity: [opacity * 0.3, opacity * 0.5, opacity * 0.3],
+                        scale: [1, 1.4, 1],
+                        opacity: [opacity * 0.4, opacity * 0.7, opacity * 0.4],
                     }}
                     transition={{
                         duration: pulseDuration,
@@ -261,7 +301,7 @@ export function MoraOrb({
                     }}
                     style={{
                         background: gradient,
-                        filter: `blur(${glowIntensity / 2}px)`,
+                        filter: `blur(${glowIntensity}px)`,
                     }}
                 />
 
@@ -293,22 +333,37 @@ export function MoraOrb({
                     </>
                 )}
 
-                {/* Core Orb - MASTERBIBEL size 68-92px, we use 56px inner */}
+                {/* UPGRADE A3: Premium Liquid Light Container */}
                 <motion.div
-                    className="relative w-14 h-14 rounded-full border-2 cursor-pointer"
+                    className="absolute inset-[-40%] rounded-full opacity-60 mix-blend-screen pointer-events-none"
                     animate={{
-                        opacity: [opacity, opacity * 1.2, opacity],
-                        scale: finalState === 'idle' ? [1, 1.02, 1] : 1, // UPGRADE B2: Breathing effect
+                        rotate: [0, 360],
+                        scale: [1, 1.1, 1],
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    style={{
+                        background: `radial-gradient(circle at 30% 30%, ${color}00 0%, ${color}20 40%, ${color}00 70%)`,
+                        filter: 'blur(30px)',
+                    }}
+                />
+
+                {/* Core Orb - LIQUID INTELLIGENCE ENTITY */}
+                <motion.div
+                    className={`relative rounded-full cursor-pointer overflow-visible z-10 ${state === 'focus' || state === 'insight' ? 'orb-glow' : ''}`}
+                    animate={{
+                        opacity: 1,
+                        scale: finalState === 'idle' ? [1, 1.02, 1] : 1.05,
                     }}
                     transition={{
-                        duration: pulseDuration,
+                        duration: pulseDuration * 1.5,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
                     style={{
-                        backgroundColor: innerBg,
-                        borderColor: color,
-                        boxShadow: `0 0 ${glowIntensity}px ${boxShadowColor}`,
+                        width: '80px',
+                        height: '80px',
+                        // Remove background/shadows as the Canvas handles it
+                        borderRadius: '50%',
                     }}
                     onClick={(e) => {
                         if (onClick) onClick();
@@ -319,7 +374,6 @@ export function MoraOrb({
                             const centerX = rect.left + rect.width / 2;
                             const centerY = rect.top + rect.height / 2;
 
-                            // Example: Spawn different things based on click modifiers
                             if (e.ctrlKey && onPaneSpawn) {
                                 onPaneSpawn('chat', { x: centerX, y: centerY });
                             } else if (e.shiftKey && onCursorSpawn) {
@@ -328,12 +382,32 @@ export function MoraOrb({
                         }
                     }}
                 >
+                    {/* LIQUID INTELLIGENCE 3D MESH - With Fallback */}
+                    <div
+                        className="absolute inset-0 pointer-events-none overflow-hidden rounded-full"
+                        style={{
+                            margin: '-10%',
+                            width: '120%',
+                            height: '120%'
+                        }}
+                    >
+                        <React.Suspense fallback={<CSSFallbackOrb color={color} state={finalState as any} />}>
+                            <LiquidOrb
+                                color={color}
+                                state={finalState as any}
+                                intensity={1.0}
+                            />
+                        </React.Suspense>
+                    </div>
+
                     {/* Inner Nucleus - With Company Logo Integration */}
-                    {companyLogo ? (
+                    {companyLogo && (
                         <motion.div
-                            className="absolute inset-0 m-auto w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                            className="absolute inset-0 m-auto w-14 h-14 rounded-full flex items-center justify-center overflow-hidden z-20 pointer-events-none"
                             animate={{
                                 scale: [0.95, 1.05, 0.95],
+                                x: gaze.x,
+                                y: gaze.y
                             }}
                             transition={{
                                 duration: pulseDuration * 0.8,
@@ -354,22 +428,6 @@ export function MoraOrb({
                                 }}
                             />
                         </motion.div>
-                    ) : (
-                        <motion.div
-                            className="absolute inset-0 m-auto w-5 h-5 rounded-full"
-                            animate={{
-                                scale: [0.8, 1, 0.8],
-                            }}
-                            transition={{
-                                duration: pulseDuration * 0.8,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                            style={{
-                                backgroundColor: accentColor || color,
-                                opacity: opacity,
-                            }}
-                        />
                     )}
                 </motion.div>
 
@@ -473,22 +531,35 @@ export function MoraOrb({
                         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                     />
                 )}
-            </motion.div>
 
-            {/* State Label (only for active/learning, subtle) */}
-            {/* State Label (only for focus/thinking, subtle) */}
-            {(finalState === 'focus' || finalState === 'thinking') && (
-                <motion.div
-                    className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                >
-                    <span className="text-[9px] text-emerald-400/40 font-mono uppercase tracking-widest">
-                        MÔRA
-                    </span>
-                </motion.div>
-            )}
+                {/* Demo Ring (Demo Mode Indicator) */}
+                {ringType === 'demo' && (
+                    <>
+                        <motion.div
+                            className="absolute inset-[-10px] rounded-full border border-emerald-500/20"
+                            animate={{
+                                rotate: 360,
+                                scale: [1, 1.05, 1],
+                            }}
+                            transition={{
+                                rotate: { duration: 10, repeat: Infinity, ease: "linear" },
+                                scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                            }}
+                        />
+                        <motion.div
+                            className="absolute inset-[-15px] rounded-full border border-emerald-500/10"
+                            animate={{
+                                rotate: -360,
+                                scale: [1, 1.1, 1],
+                            }}
+                            transition={{
+                                rotate: { duration: 15, repeat: Infinity, ease: "linear" },
+                                scale: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
+                            }}
+                        />
+                    </>
+                )}
+            </motion.div>
         </div>
     );
 }

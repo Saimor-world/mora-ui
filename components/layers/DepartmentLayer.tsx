@@ -79,29 +79,9 @@ export const DepartmentLayer: React.FC = () => {
     if (!activeDepartmentId) return null;
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#05100c] via-[#030806] to-[#000000]">
+        <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Background Starfield - UPGRADE B3: Twinkling Depth */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none">
-                {stars.map((star, i) => (
-                    <div
-                        key={star.id}
-                        className="absolute rounded-full bg-white"
-                        style={{
-                            left: `${star.x}%`,
-                            top: `${star.y}%`,
-                            width: `${star.size}px`,
-                            height: `${star.size}px`,
-                            opacity: star.opacity,
-                            animation: `twinkle ${3 + (i % 5)}s infinite ease-in-out ${i * 0.2}s`
-                        }}
-                    />
-                ))}
-            </div>
-
-            {/* Nebula Effect */}
-            <div className="absolute inset-0 bg-noise opacity-5 mix-blend-overlay pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
+            {/* Background Atmosphere removed to use universal MoraShell background */}
 
             {/* Back Button */}
             <motion.button
@@ -120,7 +100,7 @@ export const DepartmentLayer: React.FC = () => {
             {/* Department Title (Center) */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
                 <motion.h1
-                    className="text-[140px] font-thin text-white/[0.04] tracking-[0.25em] whitespace-nowrap select-none font-sans"
+                    className="text-[140px] font-thin text-white/[0.12] tracking-[0.25em] whitespace-nowrap select-none font-sans"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
@@ -162,7 +142,7 @@ export const DepartmentLayer: React.FC = () => {
                         {moonPositions.map(({ space, x, y, delay }) => (
                             <motion.div
                                 key={space.id}
-                                className="absolute cursor-pointer"
+                                className="absolute cursor-pointer group"
                                 style={{
                                     left: `calc(50% + ${x}px)`,
                                     top: `calc(50% + ${y}px)`,
@@ -171,18 +151,22 @@ export const DepartmentLayer: React.FC = () => {
                                 initial={{ scale: 0, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay, duration: 0.5 }}
-                                whileHover={{ scale: 1.1 }}
+                                whileHover={{ scale: 1.15 }}
                                 onClick={() => {
                                     addPane({
                                         id: `space-${space.id}`,
                                         type: 'space',
                                         title: space.name,
-                                        data: { spaceId: space.id },
+                                        data: {
+                                            spaceId: space.id,
+                                            departmentId: activeDepartmentId  // Pass parent for context
+                                        },
                                         position: { x: 100, y: 100 },
                                         size: { width: 1000, height: 700 },
                                         minimized: false
                                     });
                                 }}
+
                             >
                                 <Star
                                     space={{
@@ -196,13 +180,16 @@ export const DepartmentLayer: React.FC = () => {
                                     size="xl"
                                     isActive={false}
                                 />
-                                {/* Label for Space (Galaxy) */}
-                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <div className="flex flex-col items-center">
-                                        <div className="h-4 w-px bg-gradient-to-b from-transparent to-emerald-500/50 mb-1" />
-                                        <span className="text-xs text-emerald-100 font-light tracking-wide bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-md border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                                            {space.name}
-                                        </span>
+                                {/* Label for Space - ALWAYS VISIBLE */}
+                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                                    <span className="text-[11px] text-white/60 group-hover:text-emerald-300 font-medium tracking-wide transition-colors duration-200">
+                                        {space.name}
+                                    </span>
+                                </div>
+                                {/* Enhanced Hover Info */}
+                                <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                                    <div className="px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-emerald-500/30 shadow-lg">
+                                        <span className="text-[10px] text-emerald-400/80 uppercase tracking-wider">Click to open</span>
                                     </div>
                                 </div>
                             </motion.div>

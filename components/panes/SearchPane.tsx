@@ -26,7 +26,7 @@ interface SearchResult {
 }
 
 export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     const [query, setQuery] = useState('');
@@ -46,11 +46,13 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         setViewLevel
     } = useMoraStore();
 
-    // Flatten spaces and nodes for searching
-    const allSpaces = Object.values(spacesByDepartment).flat();
-    const allNodes = activeCompanyId && nodesByCompany[activeCompanyId]
-        ? nodesByCompany[activeCompanyId]
-        : [];
+    // Flatten spaces and nodes for searching (Memoized to prevent infinite re-render loops)
+    const allSpaces = React.useMemo(() => Object.values(spacesByDepartment).flat(), [spacesByDepartment]);
+    const allNodes = React.useMemo(() => {
+        return activeCompanyId && nodesByCompany[activeCompanyId]
+            ? nodesByCompany[activeCompanyId]
+            : [];
+    }, [activeCompanyId, nodesByCompany]);
 
     // Focus input on mount
     useEffect(() => {
@@ -172,8 +174,12 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     return (
         <GlassPanel
             title="Search"
-            width={600}
-            height={400}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -183,6 +189,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
             showMinimizeButton
             showBackButton={false}
             draggable
+            resizable
         >
             <div className="h-full flex flex-col">
                 {/* Search Input */}

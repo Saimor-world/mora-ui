@@ -12,6 +12,7 @@
  * NOT ALLOWED (Day 1):
  * - click_safe: Disabled
  */
+import { setFocus, setThinking, setIdle } from '@/lib/mora/awarenessController';
 
 // ============================================
 // Types
@@ -92,6 +93,12 @@ export async function executeAction(action: AgencyAction): Promise<boolean> {
 
     logAction(action, 'started');
     notifyListeners(action);
+    setFocus(); // UPGRADE: Orb reacts to action start
+
+    // UPGRADE: Dispatch event for ChatDock etc.
+    window.dispatchEvent(new CustomEvent('mora:agency-update', {
+        detail: { action, status: 'started' }
+    }));
 
     try {
         switch (action.type) {
@@ -109,9 +116,16 @@ export async function executeAction(action: AgencyAction): Promise<boolean> {
         }
 
         logAction(action, 'completed');
+
+        // UPGRADE: Dispatch event for ChatDock etc.
+        window.dispatchEvent(new CustomEvent('mora:agency-update', {
+            detail: { action, status: 'completed' }
+        }));
+
         return true;
     } catch (error) {
         logAction(action, 'failed', String(error));
+        setIdle();
         return false;
     }
 }
@@ -128,6 +142,8 @@ export async function executeProposal(proposal: ActionProposal): Promise<void> {
     _isExecuting = true;
     _currentProposalId = proposal.proposal_id;
     _abortController = new AbortController();
+
+    setThinking(); // UPGRADE: Orb reflects cognitive load of proposal execution
 
     console.log(`[Agency] Starting proposal ${proposal.proposal_id} with ${proposal.actions.length} actions`);
 
@@ -190,14 +206,14 @@ export function subscribe(listener: StateListener): () => void {
 // ============================================
 
 async function moveCursor(targetId: string): Promise<void> {
-    // Dispatch custom event for AgencyCursor component
+    // ATTENTIONAL HANDSHAKE: Dispatch event immediately (non-blocking).
+    // Animation timing is handled by AgencyCursor component's spring physics.
+    // This decouples ATTENTION (cursor) from EXECUTION (navigation).
     const event = new CustomEvent('agency:move_cursor', {
         detail: { targetId }
     });
     window.dispatchEvent(event);
-
-    // Wait for animation
-    await sleep(800);
+    // No blocking sleep. Cursor movement is declarative, not blocking.
 }
 
 async function highlightElement(targetId: string, durationMs: number): Promise<void> {

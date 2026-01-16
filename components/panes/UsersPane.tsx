@@ -36,7 +36,7 @@ const ROLE_CONFIG = {
 };
 
 export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -123,8 +123,12 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     return (
         <GlassPanel
             title="Team & Users"
-            width={700}
-            height={500}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -134,6 +138,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
             showMinimizeButton
             showBackButton={false}
             draggable
+            resizable
         >
             <div className="h-full flex flex-col relative">
                 {/* Header */}
@@ -266,7 +271,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                 {/* Footer */}
                 <div className="p-3 border-t border-white/10 flex items-center justify-between">
                     <div className="text-xs text-white/30">
-                        {viewMode === 'demo' ? 'Demo Mode - Invites simulated' : 'Pro: Unlimited team members'}
+                        {viewMode === 'demo' ? 'Demo Mode' : 'Pro: Unlimited team members'}
                     </div>
                     <button className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
                         <Settings size={12} />

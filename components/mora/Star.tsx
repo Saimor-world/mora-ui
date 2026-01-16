@@ -24,8 +24,16 @@ interface StarProps {
 }
 
 /**
- * STAR COMPONENT — TESLA-STYLE REDESIGN
+ * STAR COMPONENT (Represents a MOON / SPACE)
  * 
+ * In the SAIMÔR Universe metaphor:
+ * - MOON = Space (Project/Workspace)
+ * - Orbiting a Planet (Department)
+ * 
+ * NOTE: Currently named "Star.tsx" but visually represents a MOON.
+ * 
+ * Visuals:
+ * - Points of light orbiting the planet
  * - Minimal, elegant points of light
  * - Subtle glow, no clutter
  * - Information on hover only
@@ -54,6 +62,7 @@ export const Star: React.FC<StarProps> = ({
     return (
         <motion.div
             className="absolute cursor-pointer group"
+            data-agency-id={space.id}
             style={{
                 left: position.x,
                 top: position.y,

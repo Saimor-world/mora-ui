@@ -100,8 +100,19 @@ export function executeCursorCommands(commands: CursorCommand[]): void {
                     break;
 
                 case 'navigate':
-                    // Future: Navigate to a specific view
-                    console.log('[CursorBridge] Navigate command:', cmd);
+                    // --- UPGRADE G2: AUTONOMOUS NAVIGATION ---
+                    if (cmd.target) {
+                        const navEvent = new CustomEvent('mora-navigate', {
+                            detail: { targetId: cmd.target }
+                        });
+                        window.dispatchEvent(navEvent);
+
+                        // Also show a pulse to confirm arrival
+                        const pulseEvent = new CustomEvent('mora-orb-pulse', {
+                            detail: { intensity: 'low', color: 'emerald' }
+                        });
+                        window.dispatchEvent(pulseEvent);
+                    }
                     break;
 
                 default:

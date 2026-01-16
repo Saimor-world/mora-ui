@@ -21,9 +21,11 @@ import { useUser } from '@/lib/hooks/useUser';
 
 interface DockProps {
     onSleep?: () => void;
+    onOpenResonance?: () => void;
 }
 
-export const Dock = ({ onSleep }: DockProps) => {
+export const Dock = ({ onSleep, onOpenResonance }: DockProps) => {
+
     const router = useRouter();
     const {
         activeSpaceId,
@@ -63,11 +65,10 @@ export const Dock = ({ onSleep }: DockProps) => {
     ]);
 
     const dockItems = [
-        { icon: Home, label: 'Universe', action: 'home' },
+        { icon: Mail, label: 'Inbox', action: 'inbox' },  // PRIMARY: Always get back to mail
+        { icon: MessageSquare, label: 'Môra', action: 'chat' },
         { icon: Search, label: 'Search', action: 'search' },
         { icon: LayoutGrid, label: 'Apps', action: 'apps' },
-        { icon: MessageSquare, label: 'Môra', action: 'chat' },
-        { icon: Mail, label: 'Mail', action: 'mail' },  // Guided Agency: Gmail
         { icon: Settings, label: 'Settings', action: 'settings' },
         { icon: User, label: 'Switch User', action: 'switch-user' },
         { icon: LogOut, label: 'Logout', action: 'logout' }
@@ -137,6 +138,26 @@ export const Dock = ({ onSleep }: DockProps) => {
         };
 
         switch (action) {
+            case 'inbox':
+            case 'mail': {
+                // PRIMARY ACTION: Open or focus Mail pane
+                const existing = getPane('mail-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('mail-main');
+                    else focusPane('mail-main');
+                } else {
+                    const size = { width: 500, height: 600 };
+                    addPane({
+                        id: 'mail-main',
+                        type: 'mail',
+                        title: 'Gmail',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
+                break;
+            }
             case 'home':
                 // Universe Button: Minimize all windows to show the stars
                 panes.forEach(p => !p.minimized && minimizePane(p.id));
@@ -196,10 +217,8 @@ export const Dock = ({ onSleep }: DockProps) => {
                 }
                 break;
             }
-            case 'search':
-            case 'chat':
-                // Preserve legacy/placeholder behavior for now
-                break;
+            // Note: 'search' and 'chat' are handled in dedicated case blocks below
+
             case 'logout':
                 handleLogout();
                 break;
@@ -267,38 +286,22 @@ export const Dock = ({ onSleep }: DockProps) => {
                 break;
             }
             case 'chat':
-                // Toggle MORA AI Chat (handled by ChatDock component)
+                // Open the Resonance Room - MÔRA's unified dialogue space
+                if (onOpenResonance) {
+                    onOpenResonance();
+                }
                 break;
+
         }
 
         setShowRecent(false);
     };
 
-    const toggleDemo = () => {
-        if (viewMode === 'demo') {
-            // Exit demo → Return to Welcome/Login screen for proper auth
-            // This ensures demo data is fully isolated
-            localStorage.removeItem('saimor_dev_token');
-            localStorage.removeItem('saimor_mode');
-            localStorage.removeItem('saimor_role');
-            writeCookie('saimor_auth', '', -1);
-
-            setViewMode('workspace');
-            setViewLevel('core');
-            setActiveCompany(null);
-            setActiveDepartment(null);
-            setActiveSpace(null);
-            setActiveFolder(null);
-
-            // Navigate to welcome screen
-            router.push('/');
-        } else {
-            // Enter demo → Also navigate to welcome screen to use proper demo entry
-            router.push('/');
-        }
-    };
+    // toggleDemo function removed - demo mode no longer available via toggle
 
     const isActionActive = (action: string) => {
+        if (action === 'inbox' && getPane('mail-main') && !getPane('mail-main')?.minimized) return true;
+        if (action === 'mail' && getPane('mail-main') && !getPane('mail-main')?.minimized) return true;
         if (action === 'settings' && getPane('settings-main') && !getPane('settings-main')?.minimized) return true;
         if (action === 'apps' && getPane('apps-main') && !getPane('apps-main')?.minimized) return true;
         if (action === 'search' && getPane('search-main') && !getPane('search-main')?.minimized) return true;
@@ -379,12 +382,21 @@ export const Dock = ({ onSleep }: DockProps) => {
                     )}
                 </AnimatePresence>
 
-                {/* Main Dock */}
+                {/* Main Dock - PHASE 9 PREMIUM UPGRADE */}
                 <motion.div
-                    className="glass-panel px-6 py-3 rounded-2xl flex items-center gap-1 backdrop-blur-xl border border-white/10 bg-black/40 shadow-2xl"
+                    className="glass-card glow-pulse px-6 py-3 rounded-2xl flex items-center gap-1"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(16, 185, 129, 0.04) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        boxShadow: `
+                            0 8px 32px rgba(0, 0, 0, 0.5),
+                            0 0 40px rgba(16, 185, 129, 0.1),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                        `
+                    }}
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 1, type: 'spring', stiffness: 200, damping: 20 }}
+                    transition={{ delay: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
                 >
                     {/* Recent Items Toggle */}
                     <motion.button
@@ -411,26 +423,7 @@ export const Dock = ({ onSleep }: DockProps) => {
                         )}
                     </motion.button>
 
-                    {/* Demo Mode Toggle - HIDE IF LOGGED IN */}
-                    {!user && (
-                        <motion.button
-                            layout
-                            className={`p-3 rounded-xl hover:bg-white/10 transition-colors relative group mr-1 ${viewMode === 'demo' ? 'text-blue-400' : 'text-emerald-400'}`}
-                            whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={toggleDemo}
-                        >
-                            <ToggleLeft
-                                size={20}
-                                strokeWidth={1.5}
-                                className={`transition-transform ${viewMode === 'demo' ? 'rotate-180' : ''}`}
-                            />
-                            {/* Tooltip */}
-                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md">
-                                {viewMode === 'demo' ? 'Exit Demo' : 'Enter Demo'}
-                            </div>
-                        </motion.button>
-                    )}
+                    {/* Demo Mode Toggle removed - demo access requires real login */}
 
                     {/* Separator */}
                     <div className="w-px h-6 bg-white/20 mx-1" />

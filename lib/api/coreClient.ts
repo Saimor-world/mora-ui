@@ -15,9 +15,10 @@ export class CoreError extends Error {
 }
 
 type CoreRequestOptions = {
-    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: any;
     skipAuth?: boolean;
+    isOptional?: boolean; // If true, 401 errors won't clear tokens/logout
     headers?: Record<string, string>;
 };
 
@@ -30,6 +31,16 @@ function readCookie(name: string): string | null {
         return decodeURIComponent(raw);
     } catch {
         return raw;
+    }
+}
+
+function isTokenExpired(token: string): boolean {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const exp = payload.exp * 1000; // Convert to milliseconds
+        return Date.now() >= exp;
+    } catch {
+        return true; // If we can't parse, assume expired
     }
 }
 
@@ -48,6 +59,15 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         const finalToken = token || devToken || fallbackToken;
 
         if (finalToken) {
+            // Check if token is expired BEFORE making request
+            if (isTokenExpired(finalToken)) {
+                // Token expired - clear it silently and return null
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('saimor_dev_token');
+                    document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+                }
+                return null;
+            }
             headers['Authorization'] = `Bearer ${finalToken}`;
             hasValidToken = true;
         } else {
@@ -75,8 +95,8 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
 
     // SILENT HANDLING: 401/403 = auth issue -> return null, caller uses fallback
     if (response.status === 401 || response.status === 403) {
-        // Critical: If token was invalid, clear it so next refresh doesn't retry bad token
-        if (typeof window !== 'undefined') {
+        // Critical: If token was invalid AND not optional, clear it so next refresh doesn't retry bad token
+        if (typeof window !== 'undefined' && !options.isOptional) {
             localStorage.removeItem('saimor_dev_token');
             document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
         }
@@ -84,6 +104,11 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
     }
 
     if (!response.ok) {
+        // For optional requests, silently return null on any error (including 500)
+        if (options.isOptional) {
+            return null;
+        }
+
         let message = `Core API Error: ${response.status} ${response.statusText}`;
         try {
             const errorBody = await response.json();
@@ -121,7 +146,7 @@ export async function corePatch(path: string, body: any): Promise<any> {
 }
 
 export async function corePut(path: string, body: any): Promise<any> {
-    return coreRequest(path, { method: 'PATCH', body }); // Using PATCH as backend typically expects PATCH for partial updates
+    return coreRequest(path, { method: 'PUT', body });
 }
 
 export async function coreDelete(path: string): Promise<void> {
@@ -177,7 +202,7 @@ export interface UserProfile {
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
-    return coreGet('/v1/auth/me');
+    return coreGet('/v1/auth/me', { isOptional: true });
 }
 
 // ========== DEMO FLOW ==========
@@ -203,6 +228,29 @@ export async function fetchDemoInstance(): Promise<DemoInstanceState> {
 
 export async function connectDemoSource(source = 'simple_coffee_group'): Promise<any> {
     return corePost('/v1/demo/connect-data-source', { source });
+}
+
+// ========== SYSTEM FUNCTIONS ==========
+
+export interface SystemStats {
+    status: string;
+    timestamp: string;
+    metrics: {
+        cpu: number;
+        memory_usage: number;
+        memory_available_mb: number;
+        os: string;
+        uptime_seconds: number;
+    };
+    intelligence: {
+        mora_load: number;
+        active_analysts: number;
+        cognition_rate: string;
+    };
+}
+
+export async function fetchSystemStats(): Promise<SystemStats | null> {
+    return coreGet('/v1/system/stats', { isOptional: true });
 }
 
 // ========== COMPANY FUNCTIONS ==========
@@ -276,27 +324,32 @@ export async function fetchCompaniesHealth(): Promise<CompaniesHealthResponse> {
 
 export async function fetchDepartments(companyId?: string): Promise<CoreDepartment[]> {
     const query = companyId ? `?company_id=${companyId}` : '';
-    return coreGet(`/v1/departments${query}`);
+    const result = await coreGet(`/v1/departments${query}`, { isOptional: true });
+    return result || [];
 }
 
 export async function fetchSpaces(departmentId?: string): Promise<CoreSpace[]> {
     const query = departmentId ? `?department_id=${departmentId}` : '';
-    return coreGet(`/v1/spaces${query}`);
+    const result = await coreGet(`/v1/spaces${query}`, { isOptional: true });
+    return result || [];
 }
 
 export async function fetchFolders(spaceId: string): Promise<CoreFolder[]> {
-    return coreGet(`/v1/folders?space_id=${spaceId}`);
+    const result = await coreGet(`/v1/folders?space_id=${spaceId}`, { isOptional: true });
+    return result || [];
 }
 
 export async function fetchNodes(folderId: string, options?: { search?: string, type?: string }): Promise<CoreNode[]> {
     let query = `?folder_id=${folderId}`;
     if (options?.search) query += `&search=${encodeURIComponent(options.search)}`;
     if (options?.type && options.type !== 'all') query += `&type=${encodeURIComponent(options.type)}`;
-    return coreGet(`/v1/nodes${query}`);
+    const result = await coreGet(`/v1/nodes${query}`, { isOptional: true });
+    return result || [];
 }
 
 export async function fetchNodesByCompany(companyId: string): Promise<CoreNode[]> {
-    return coreGet(`/v1/nodes?company_id=${companyId}`);
+    const result = await coreGet(`/v1/nodes?company_id=${companyId}`, { isOptional: true });
+    return result || [];
 }
 
 export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
@@ -313,6 +366,8 @@ export type TreeApiResponse = {
 
 // Map backend tree response (departments + spaces + folders + nodes) into the UI-friendly CoreTreeNode shape
 export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[] {
+    if (!response || !response.departments) return [];
+
     const mapNode = (node: any): CoreTreeNode => ({
         id: node.id,
         type: 'node',
@@ -521,4 +576,53 @@ export async function uploadFile(file: File, folderId: string, title?: string): 
     }
 
     return response.json();
+}
+
+// ========== AWARENESS / CORE SIGNALS ==========
+
+export async function recordAwarenessSignal(signalType: string, payload: any = {}): Promise<void> {
+    try {
+        // SECURITY: Always include tenant_id for proper signal isolation
+        const tenantId = typeof window !== 'undefined'
+            ? localStorage.getItem('saimor_tenant') || 'tenant-default'
+            : 'tenant-default';
+
+        await corePost('/v1/system/awareness', {
+            signal_type: signalType,
+            payload: {
+                ...payload,
+                tenant_id: tenantId
+            },
+            timestamp: new Date().toISOString()
+        }, { isOptional: true });
+    } catch (err) {
+        // Silent fail for awareness signals - no logging to keep console clean
+    }
+}
+
+
+// Intelligence / Resonance
+export async function getSemanticallySimilarNodes(nodeId: string): Promise<CoreNode[]> {
+    return coreGet(`/v1/nodes/${nodeId}/similar?limit=3&threshold=0.6`);
+}
+
+// AI Actions
+export interface AIAction {
+    label: string;
+    action_type: string; // 'summarize' | 'chat' | 'explain' | 'related' | 'open'
+    payload: any;
+    confidence: number;
+}
+
+export async function getNodeActions(nodeId: string): Promise<AIAction[]> {
+    try {
+        const response = await coreRequest('/ai/actions', {
+            method: 'POST',
+            body: { node_id: nodeId }
+        });
+        return response.actions || [];
+    } catch (e) {
+        console.error("AI Actions fetch failed", e);
+        return [];
+    }
 }

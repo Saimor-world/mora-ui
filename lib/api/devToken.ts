@@ -3,7 +3,7 @@
  * Automatically fetches and manages JWT tokens for local development
  */
 
-const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8083';
+const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || '/api/core';
 const TOKEN_STORAGE_KEY = 'saimor_dev_token';
 const TOKEN_EXPIRY_KEY = 'saimor_dev_token_expiry';
 

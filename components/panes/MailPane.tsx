@@ -5,8 +5,6 @@
  * 
  * Gmail inbox display (transient, no persistence).
  * "Send to MÔRA" triggers action proposal.
- * 
- * FIXED: Proper pane store integration for draggable/minimizable
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -16,9 +14,9 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { executeProposal } from '@/lib/agency/actionRegistry';
 import type { ActionProposal } from '@/lib/agency/actionRegistry';
 import { toast } from 'sonner';
-
-// API base URL
-const API_BASE = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
+import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
+import { useMoraStore } from '@/lib/store/moraState';
+import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare } from 'lucide-react';
 
 interface MailAttachment {
     filename: string;
@@ -29,9 +27,8 @@ interface MailAttachment {
 interface MailObject {
     id: string;
     message_id?: string;
-    subject: string;
     from_addr: string;
-    to_addr?: string;
+    subject: string;
     date: string;
     snippet: string;
     body_text?: string;
@@ -45,7 +42,8 @@ interface MailPaneProps {
 }
 
 export function MailPane({ id = 'mail-main' }: MailPaneProps) {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { activeCompanyId, loadNodesForCompany } = useMoraStore();
     const pane = getPane(id);
 
     const [mails, setMails] = useState<MailObject[]>([]);
@@ -53,6 +51,12 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const [error, setError] = useState<string | null>(null);
     const [selectedMail, setSelectedMail] = useState<MailObject | null>(null); // For proposal state
     const [viewingMail, setViewingMail] = useState<MailObject | null>(null); // For viewer overlay
+    const [composing, setComposing] = useState(false);
+    const [composeTo, setComposeTo] = useState("");
+    const [composeSubject, setComposeSubject] = useState("");
+    const [composeBody, setComposeBody] = useState("");
+    const [sending, setSending] = useState(false);
+
     const [proposing, setProposing] = useState(false);
     const [saving, setSaving] = useState<string | null>(null);
     const [currentProposal, setCurrentProposal] = useState<ActionProposal | null>(null);
@@ -61,40 +65,32 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const prevCountRef = useRef<number>(0);
     const initializedRef = useRef(false);
 
-    // Fetch mails from Gmail endpoint
     const fetchMails = useCallback(async () => {
         setLoading(true);
         setError(null);
-
         try {
-            const token = localStorage.getItem('saimor_token') || localStorage.getItem('saimor_dev_token') || '';
-            const response = await fetch(`${API_BASE}/v1/integrations/gmail/messages?limit=10`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch mails: ${response.status}`);
+            const response = await coreGet('/v1/mail/messages');
+            let fetchedMails: MailObject[] = [];
+            if (response && Array.isArray(response)) {
+                fetchedMails = response;
+            } else if (response && response.items) {
+                fetchedMails = response.items;
             }
-
-            const data = await response.json();
-            setMails(data);
+            setMails(fetchedMails);
 
             // Notification Logic
-            if (initializedRef.current && data.length > prevCountRef.current) {
-                const newCount = data.length - prevCountRef.current;
+            if (initializedRef.current && fetchedMails.length > prevCountRef.current) {
+                const newCount = fetchedMails.length - prevCountRef.current;
                 toast.success(`${newCount} New Mail${newCount > 1 ? 's' : ''}`, {
-                    description: data[0].subject
+                    description: fetchedMails[0].subject
                 });
             }
-            prevCountRef.current = data.length;
+            prevCountRef.current = fetchedMails.length;
             initializedRef.current = true;
 
-        } catch (err) {
-            setError(String(err));
-            console.error('[MailPane] Fetch error:', err);
+        } catch (err: any) {
+            console.error("Failed to load mail:", err);
+            setError(err.message || "Failed to connect to mail server");
         } finally {
             setLoading(false);
         }
@@ -104,31 +100,19 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         fetchMails();
     }, [fetchMails]);
 
-    // Save mail (Commit explicitly)
     const saveMail = async (mail: MailObject) => {
         setSaving(mail.id);
         try {
-            const token = localStorage.getItem('saimor_token') || localStorage.getItem('saimor_dev_token') || '';
-            const response = await fetch(`${API_BASE}/v1/integrations/gmail/commit`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    mail_id: mail.id,
-                    message_id: mail.message_id || `msg_id_${mail.id}`,
-                    subject: mail.subject,
-                    from_addr: mail.from_addr,
-                    snippet: mail.snippet,
-                    received_at: mail.date
-                })
+            await corePost('/v1/mail/commit', {
+                message_id: mail.message_id || mail.id,
+                mail_id: mail.id,
+                subject: mail.subject,
+                from_addr: mail.from_addr,
+                received_at: mail.date,
+                snippet: mail.snippet
             });
 
-            if (!response.ok) throw new Error('Failed to save mail');
-
             toast.success("Mail Saved", { description: "Stored as Node in System Mail" });
-
         } catch (err) {
             console.error("Save failed", err);
             toast.error("Save Failed");
@@ -137,44 +121,50 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         }
     };
 
-    // Send mail to MÔRA for analysis
     const sendToMora = async (mail: MailObject) => {
         setProposing(true);
         setSelectedMail(mail);
 
         try {
-            const token = localStorage.getItem('saimor_token') || localStorage.getItem('saimor_dev_token') || '';
-            const response = await fetch(`${API_BASE}/v1/agency/propose`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    mail_id: mail.id,
-                    message_id: mail.message_id || `msg_id_${mail.id}`, // Fallback for causality
-                    subject: mail.subject,
-                    from_addr: mail.from_addr,
-                    snippet: mail.snippet,
-                    body_text: mail.body_text
-                })
+            // ✅ FIXED: Use /v1/mail/commit to create node + event (not /v1/agency/propose)
+            const result = await corePost('/v1/mail/commit', {
+                message_id: mail.message_id || mail.id,
+                mail_id: mail.id,
+                subject: mail.subject,
+                from_addr: mail.from_addr,
+                received_at: mail.date,
+                snippet: mail.snippet
             });
 
-            if (!response.ok) {
-                throw new Error(`Failed to get proposal: ${response.status}`);
+            toast.success("Sent to MÔRA", {
+                description: result.space_name
+                    ? `Node created in ${result.space_name}`
+                    : "Node created with MÔRA categorization"
+            });
+
+            // Trigger UI animation (cursor moves to department, highlights space)
+            if (result.space_id) {
+                const proposal: ActionProposal = {
+                    proposal_id: crypto.randomUUID(),
+                    created_at: new Date().toISOString(),
+                    summary: "Navigate to new node",
+                    status: "proposed",
+                    actions: [
+                        { "type": "move_cursor", "target_id": result.space_id, "reason": "Navigating to new mail node" },
+                        { "type": "highlight", "target_id": result.space_id, "duration_ms": 3000, "reason": "Highlighting new mail node" }
+                    ]
+                };
+                setCurrentProposal(proposal);
+                await executeProposal(proposal);
             }
 
-            const data = await response.json();
-            const proposal: ActionProposal = data.proposal;
-            setCurrentProposal(proposal);
-
-            toast.success("Sent to MÔRA", { description: "Event & Node persisted" });
-
-            // Execute the proposal (triggers cursor movement, highlights, etc.)
-            await executeProposal(proposal);
+            // Reload nodes to show new node in Universe
+            if (activeCompanyId) {
+                await loadNodesForCompany(activeCompanyId);
+            }
 
         } catch (err) {
-            console.error('[MailPane] Proposal error:', err);
+            console.error('[MailPane] Commit error:', err);
             setError(String(err));
             toast.error("Failed to send to MÔRA");
         } finally {
@@ -182,7 +172,6 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         }
     };
 
-    // Format date for display
     const formatDate = (dateStr: string) => {
         try {
             const date = new Date(dateStr);
@@ -201,9 +190,13 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
     return (
         <GlassPanel
-            title="Gmail"
-            width={500}
-            height={600}
+            title="Secure Mail Gateway"
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -214,31 +207,37 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             showBackButton={!!viewingMail}
             onBack={() => setViewingMail(null)}
             draggable
+            resizable
         >
             <div className="flex flex-col h-full relative">
-                {/* Header Actions */}
-                {!viewingMail && (
+                {!viewingMail && !composing && (
                     <div className="flex items-center justify-between p-4 border-b border-white/10">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-                                <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-                                </svg>
+                                <Mail className="w-5 h-5 text-red-400" />
                             </div>
                             <div>
-                                <p className="text-xs text-white/50">Inbox</p>
+                                <p className="text-xs text-white/50 font-bold uppercase tracking-wider">Secure Inbox</p>
                             </div>
                         </div>
 
-                        <button
-                            onClick={fetchMails}
-                            className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
-                            title="Refresh"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setComposing(true)}
+                                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                                title="Compose"
+                            >
+                                <PenSquare className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={fetchMails}
+                                disabled={loading}
+                                className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors disabled:opacity-50"
+                                title="Refresh"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -246,25 +245,26 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                 <div className="flex-1 overflow-y-auto">
                     {loading && !viewingMail && (
                         <div className="flex items-center justify-center h-full">
-                            <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+                            <Loader2 className="animate-spin w-8 h-8 text-emerald-500" />
                         </div>
                     )}
 
                     {error && !loading && !viewingMail && (
-                        <div className="p-4 text-center">
-                            <p className="text-red-400 text-sm mb-2">Connection Error</p>
+                        <div className="p-8 text-center">
+                            <p className="text-red-400 text-sm mb-4">{error}</p>
                             <button
                                 onClick={fetchMails}
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm text-white"
+                                className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-all"
                             >
-                                Retry
+                                Retry Connection
                             </button>
                         </div>
                     )}
 
                     {!loading && !error && mails.length === 0 && !viewingMail && (
-                        <div className="p-4 text-center text-white/50">
-                            <p>No new mails</p>
+                        <div className="p-8 text-center text-white/40">
+                            <Inbox className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                            <p className="text-sm">No encrypted messages in queue</p>
                         </div>
                     )}
 
@@ -272,18 +272,23 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                         <div
                             key={mail.id}
                             onClick={() => setViewingMail(mail)}
-                            className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer group"
+                            className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer group flex items-start gap-4"
                         >
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-white/90 font-medium truncate flex-1 pr-2">
-                                    {mail.from_addr.split('<')[0].trim()}
-                                </span>
-                                <span className="text-white/40 text-xs whitespace-nowrap">
-                                    {formatDate(mail.date)}
-                                </span>
+                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 text-xs font-bold shrink-0">
+                                {mail.from_addr.charAt(0).toUpperCase()}
                             </div>
-                            <p className="text-white/80 text-sm truncate mb-1">{mail.subject || '(No Subject)'}</p>
-                            <p className="text-white/50 text-xs line-clamp-2">{mail.snippet}</p>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start mb-1">
+                                    <span className="text-white/90 font-medium truncate">
+                                        {mail.from_addr.split('<')[0].trim()}
+                                    </span>
+                                    <span className="text-white/30 text-[10px] whitespace-nowrap pt-1">
+                                        {formatDate(mail.date)}
+                                    </span>
+                                </div>
+                                <p className="text-white/70 text-sm truncate mb-1">{mail.subject || '(No Subject)'}</p>
+                                <p className="text-white/40 text-xs line-clamp-1">{mail.snippet}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -300,63 +305,147 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                             <div className="flex items-center gap-3 p-4 border-b border-white/10">
                                 <button
                                     onClick={() => setViewingMail(null)}
-                                    className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-white/60"
+                                    className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
                                 >
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
+                                    <ArrowLeft className="w-5 h-5" />
                                 </button>
-                                <h3 className="text-white font-medium truncat">Mail Details</h3>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-white font-medium truncate text-sm">Message Perspective</h3>
+                                    <p className="text-[10px] text-white/40 uppercase tracking-widest">End-to-End Decrypted</p>
+                                </div>
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto">
-                                <h2 className="text-xl text-white font-light mb-4">{viewingMail.subject}</h2>
+                                <h2 className="text-xl text-white font-light mb-6 leading-tight">{viewingMail.subject}</h2>
 
-                                <div className="flex items-center gap-3 mb-6 p-3 bg-white/5 rounded-lg">
-                                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-medium">
+                                <div className="flex items-center gap-4 mb-8 p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 font-bold border border-emerald-500/20">
                                         {viewingMail.from_addr.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
                                         <p className="text-white text-sm font-medium">{viewingMail.from_addr}</p>
-                                        <p className="text-white/40 text-xs">{formatDate(viewingMail.date)}</p>
+                                        <p className="text-white/30 text-xs">{formatDate(viewingMail.date)}</p>
                                     </div>
                                 </div>
 
-                                <div className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">
+                                <div className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-light">
                                     {viewingMail.body_text || viewingMail.snippet}
                                 </div>
+
+                                {viewingMail.attachment_count > 0 && (
+                                    <div className="mt-8 pt-8 border-t border-white/5">
+                                        <p className="text-white/40 text-[10px] uppercase tracking-widest mb-4">Attachments ({viewingMail.attachment_count})</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {viewingMail.attachments?.map((at, i) => (
+                                                <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-colors cursor-default">
+                                                    <Paperclip className="w-4 h-4 text-white/40" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white/80 text-xs truncate">{at.filename}</p>
+                                                        <p className="text-white/20 text-[10px] uppercase">{(at.size / 1024).toFixed(1)} KB • {at.content_type.split('/')[1]}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Action Bar */}
-                            <div className="p-4 border-t border-white/10 flex gap-3 bg-black/40">
+                            <div className="p-6 border-t border-white/10 flex gap-4 bg-black/40 backdrop-blur-xl">
                                 <button
                                     onClick={() => saveMail(viewingMail)}
                                     disabled={saving === viewingMail.id}
-                                    className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                                    className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-medium transition-all border border-white/5 flex items-center justify-center gap-2 group disabled:opacity-50"
                                 >
                                     {saving === viewingMail.id ? (
-                                        <div className="w-4 h-4 animate-spin border-2 border-white/50 border-t-transparent rounded-full" />
+                                        <Loader2 className="w-4 h-4 animate-spin text-white/50" />
                                     ) : (
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                        </svg>
+                                        <Archive className="w-4 h-4 text-white/40 group-hover:text-white transition-colors" />
                                     )}
-                                    Save
+                                    Archive to Mycelium
                                 </button>
 
                                 <button
                                     onClick={() => sendToMora(viewingMail)}
                                     disabled={proposing}
-                                    className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50"
                                 >
                                     {proposing ? (
-                                        <div className="w-4 h-4 animate-spin border-2 border-black/50 border-t-transparent rounded-full" />
+                                        <Loader2 className="w-4 h-4 animate-spin text-black/50" />
                                     ) : (
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <circle cx="12" cy="12" r="10" />
-                                        </svg>
+                                        <Sparkles className="w-4 h-4" />
                                     )}
                                     Send to MÔRA
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Compose Overlay */}
+                <AnimatePresence>
+                    {composing && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="absolute inset-0 bg-[#0a0a0a] z-30 flex flex-col"
+                        >
+                            <div className="flex items-center justify-between p-4 border-b border-white/10">
+                                <h3 className="text-sm font-medium text-white">New Message</h3>
+                                <button onClick={() => setComposing(false)} className="text-white/50 hover:text-white">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="flex-1 p-4 space-y-4">
+                                <input
+                                    type="email"
+                                    placeholder="To"
+                                    value={composeTo}
+                                    onChange={(e) => setComposeTo(e.target.value)}
+                                    className="w-full bg-transparent border-b border-white/10 p-2 text-white outline-none focus:border-emerald-500/50"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Subject"
+                                    value={composeSubject}
+                                    onChange={(e) => setComposeSubject(e.target.value)}
+                                    className="w-full bg-transparent border-b border-white/10 p-2 text-white outline-none focus:border-emerald-500/50 font-medium"
+                                />
+                                <textarea
+                                    placeholder="Message..."
+                                    value={composeBody}
+                                    onChange={(e) => setComposeBody(e.target.value)}
+                                    className="w-full h-full bg-transparent p-2 text-white outline-none resize-none font-light leading-relaxed"
+                                />
+                            </div>
+                            <div className="p-4 border-t border-white/10 flex justify-end">
+                                <button
+                                    onClick={async () => {
+                                        setSending(true);
+                                        try {
+                                            await corePost('/v1/mail/send', {
+                                                to_email: composeTo,
+                                                subject: composeSubject,
+                                                content: composeBody,
+                                                text_content: composeBody
+                                            });
+                                            toast.success("Sent", { description: "Email sent successfully" });
+                                            setComposing(false);
+                                            setComposeTo("");
+                                            setComposeSubject("");
+                                            setComposeBody("");
+                                        } catch (e) {
+                                            toast.error("Failed to send");
+                                        } finally {
+                                            setSending(false);
+                                        }
+                                    }}
+                                    disabled={!composeTo || !composeBody || sending}
+                                    className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                    Send Message
                                 </button>
                             </div>
                         </motion.div>
@@ -370,14 +459,24 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-white/10 overflow-hidden bg-emerald-900/10"
+                            className="border-t border-emerald-500/30 overflow-hidden bg-emerald-500/5 backdrop-blur-xl"
                         >
-                            <div className="p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                                    <span className="text-emerald-400 text-xs font-bold uppercase tracking-wider">MÔRA Active</span>
+                            <div className="p-4 flex items-center justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Autonomous Proposal Ready</span>
+                                    </div>
+                                    <p className="text-white/90 text-sm font-light truncate">{currentProposal.summary}</p>
                                 </div>
-                                <p className="text-white/80 text-sm">{currentProposal.summary}</p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setCurrentProposal(null)}
+                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -386,5 +485,3 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         </GlassPanel>
     );
 }
-
-export default MailPane;

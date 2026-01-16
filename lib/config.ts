@@ -18,6 +18,8 @@ export interface AppConfig {
   n8nEmailDigest?: string;
   n8nBroadcastDoc?: string;
   n8nDuplicateHunter?: string;
+  n8nKnowledgeSync?: string;
+  n8nLearningBrain?: string;
 
   // Development
   enableDiagnostics: boolean;
@@ -36,21 +38,22 @@ class ConfigManager {
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     // IMPORTANT: Next.js requires DIRECT access to process.env.NEXT_PUBLIC_*
-    // Dynamic access via process.env[key] does NOT work because values are inlined at build time
-    const jwtToken = process.env.NEXT_PUBLIC_JWT_TOKEN || process.env.NEXT_PUBLIC_ADMIN_TOKEN || '';
-    const coreApiUrl = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8000';
-    const authHeader = process.env.NEXT_PUBLIC_AUTH_HEADER || 'Authorization';
-    const chatSource = (process.env.NEXT_PUBLIC_CHAT_SOURCE || 'objects') as ChatSource;
+    // Values are inlined at build time. Trimming to ensure no invisible characters.
+    const jwtToken = (process.env.NEXT_PUBLIC_JWT_TOKEN || process.env.NEXT_PUBLIC_ADMIN_TOKEN || '').trim();
+    const coreApiUrl = (process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8000').trim();
+    const authHeader = (process.env.NEXT_PUBLIC_AUTH_HEADER || 'Authorization').trim();
+    const chatSource = (process.env.NEXT_PUBLIC_CHAT_SOURCE || 'objects').trim() as ChatSource;
+
     const n8nEmailDigest = process.env.NEXT_PUBLIC_N8N_EMAIL_DIGEST;
     const n8nBroadcastDoc = process.env.NEXT_PUBLIC_N8N_BROADCAST_DOC;
     const n8nDuplicateHunter = process.env.NEXT_PUBLIC_N8N_DUPLICATE_HUNTER;
+    const n8nKnowledgeSync = process.env.NEXT_PUBLIC_N8N_KNOWLEDGE_SYNC || 'https://n8n.voice.saimor.world/webhook/knowledge-sync';
+    const n8nLearningBrain = process.env.NEXT_PUBLIC_N8N_LEARNING_BRAIN || 'https://n8n.voice.saimor.world/webhook/learning-brain-update';
     const enableDiagnostics = process.env.NEXT_PUBLIC_ENABLE_DIAGNOSTICS === 'true';
 
     // DEV LOGGING
-    if (isDevelopment) {
-      console.log('[ConfigManager] ✅ Loaded config with direct access');
-      console.log('[ConfigManager] JWT Token length:', jwtToken.length);
-      console.log('[ConfigManager] Core API URL:', coreApiUrl);
+    if (isDevelopment && typeof window !== 'undefined') {
+      console.log('[ConfigManager] ✅ Configuration Loaded:', coreApiUrl);
     }
 
     return {
@@ -61,61 +64,30 @@ class ConfigManager {
       n8nEmailDigest,
       n8nBroadcastDoc,
       n8nDuplicateHunter,
+      n8nKnowledgeSync,
+      n8nLearningBrain,
       enableDiagnostics,
       isDevelopment,
     };
   }
 
-  private getEnv(key: string, fallback?: string): string {
-    const value = process.env[key];
-
-    if (value === undefined || value === '') {
-      if (fallback !== undefined) {
-        return fallback;
-      }
-      // Don't throw for optional values
-      return '';
-    }
-
-    return value;
-  }
-
   private validate() {
     const errors: string[] = [];
-    const tokensMissing = !this.config.jwtToken;
-
-    // Required fields
-    if (!this.config.coreApiUrl) {
-      errors.push('NEXT_PUBLIC_CORE_API_URL is required');
-    }
-
-
-    // Static tokens are no longer strictly required in dev due to dynamic auth
-    // if (tokensMissing) {
-    //   errors.push('NEXT_PUBLIC_JWT_TOKEN or NEXT_PUBLIC_ADMIN_TOKEN is required');
-    // }
+    const url = this.config.coreApiUrl;
 
     // Validate URL format
-    if (this.config.coreApiUrl) {
+    // RELAXED VALIDATION: Relative paths (starting with /) are valid for proxies
+    if (url && !url.startsWith('/')) {
       try {
-        new URL(this.config.coreApiUrl);
+        new URL(url);
       } catch (e) {
-        errors.push(`NEXT_PUBLIC_CORE_API_URL is not a valid URL: ${this.config.coreApiUrl}`);
+        errors.push(`NEXT_PUBLIC_CORE_API_URL is not a valid URL: "${url}"`);
       }
     }
 
-    // Validate chat source
-    if (!['objects', 'semantic'].includes(this.config.chatSource)) {
-      console.warn(
-        `Invalid NEXT_PUBLIC_CHAT_SOURCE: ${this.config.chatSource}. Falling back to 'objects'`
-      );
-      this.config.chatSource = 'objects';
-    }
-
-    // Only throw in development
+    // Only log errors in development
     if (errors.length > 0 && this.config.isDevelopment) {
       console.error('❌ Configuration Errors:\n', errors.join('\n'));
-      // Metric hint removed as tokens are dynamic now
     }
   }
 
@@ -172,62 +144,36 @@ class ConfigManager {
 // Singleton instance
 const configManager = new ConfigManager();
 
-/**
- * Get the application configuration
- * @returns Readonly configuration object
- */
 export function getConfig(): Readonly<AppConfig> {
   return configManager.getConfig();
 }
 
-/**
- * Get Core API base URL
- */
 export function getCoreApiUrl(): string {
   return configManager.getCoreApiUrl();
 }
 
-/**
- * Get JWT token for authentication
- */
 export function getJwtToken(): string {
   return configManager.getJwtToken();
 }
 
-/**
- * Get auth header name (defaults to Authorization)
- */
 export function getAuthHeader(): string {
   return configManager.getAuthHeader();
 }
 
-/**
- * Get chat datasource (objects or semantic)
- */
 export function getChatSource(): ChatSource {
   return configManager.getChatSource();
 }
 
-/**
- * Check if diagnostics panel should be shown
- */
 export function isDiagnosticsEnabled(): boolean {
   return configManager.isDiagnosticsEnabled();
 }
 
-/**
- * Check if n8n webhook is configured
- */
 export function isWebhookConfigured(workflow: 'email_digest' | 'broadcast_doc' | 'duplicate_hunter'): boolean {
   return configManager.isWebhookConfigured(workflow);
 }
 
-/**
- * Get n8n webhook URL
- */
 export function getWebhookUrl(workflow: 'email_digest' | 'broadcast_doc' | 'duplicate_hunter'): string | undefined {
   return configManager.getWebhookUrl(workflow);
 }
 
-// Export singleton for direct access if needed
 export default configManager;

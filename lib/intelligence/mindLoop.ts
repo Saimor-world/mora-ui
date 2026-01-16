@@ -1,4 +1,5 @@
 import { CoreNode } from "@/lib/types/core";
+import { recordAwarenessSignal } from "@/lib/api/coreClient";
 
 /**
  * MINDLOOP EVENT MODEL (Phase 8 Active)
@@ -65,6 +66,11 @@ class MindLoopController {
 
         this.eventLog.push(fullEvent);
         // console.log(`[MindLoop] Event: ${fullEvent.type}`, fullEvent);
+
+        // BRIDGE: Send to Backend Conscious Stream (Phase 8.1 Integration)
+        if (['NAV_EVENT', 'SYSTEM_ALERT', 'DATA_CHANGE'].includes(fullEvent.type)) {
+            recordAwarenessSignal(fullEvent.type.toLowerCase(), fullEvent.payload);
+        }
 
         // Prune old events
         this.pruneEvents();

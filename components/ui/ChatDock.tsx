@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { OrganicInput } from '@/components/organic/OrganicInput';
 import { X, Maximize2, Minimize2, Loader2, Radar } from 'lucide-react';
-import { sendMessage, type AIMessage } from '@/lib/api/aiClient';
-import { fetchNodes, fetchNodeRelations } from '@/lib/api/coreClient';
+import { type AIMessage } from '@/lib/api/aiClient';
+import { fetchNodes, fetchNodeRelations, corePost } from '@/lib/api/coreClient';
 import { getFolderEvents, runScan, fetchSynthesis, type MindloopEvent } from '@/lib/api/mindloopClient';
-import { parseAIResponse, executeCursorCommands, suggestCursorAction } from '@/lib/ai/cursorBridge';
+import { executeAgenticLoop } from '@/lib/api/cognitionClient';
+// cursorBridge imported if cursor actions needed in future
 import type { CoreNode } from '@/lib/types/core';
+import { UserAvatar } from '@/components/mora/UserAvatar';
 
 export const ChatDock: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -92,6 +94,27 @@ export const ChatDock: React.FC = () => {
         loadRelations();
     }, [activeNode]);
 
+    // BRIDGE: Listen for Agency Actions to unify MÔRA's voice and body
+    useEffect(() => {
+        const handleAgencyUpdate = (event: any) => {
+            const { action, status } = event.detail;
+            if (status === 'started') {
+                const actionMsg: AIMessage = {
+                    role: 'assistant',
+                    content: action.reason,
+                };
+                if (action.type === 'move_cursor') {
+                    (actionMsg as any).thought = `Focusing on: ${action.target_id}`;
+                }
+                setMessages(prev => [...prev, actionMsg]);
+                if (!isOpen) setIsOpen(true);
+            }
+        };
+
+        window.addEventListener('mora:agency-update', handleAgencyUpdate);
+        return () => window.removeEventListener('mora:agency-update', handleAgencyUpdate);
+    }, [isOpen]);
+
     const handleScan = async () => {
         if (!activeFolderId || isLoading) return;
 
@@ -148,16 +171,19 @@ export const ChatDock: React.FC = () => {
         return "I'm connected to the Core. How can I help you navigate the system today?";
     };
 
-    // Minimized Pill
+    // Minimized Pill - Einladend für nicht-technische User
     if (!isOpen) {
         return (
             <div className="absolute bottom-6 left-8 z-floating pointer-events-auto">
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="flex items-center gap-3 px-4 py-2 rounded-full glass-panel border border-white/10 bg-mora-forest/80 backdrop-blur-md hover:border-mora-gold/50 transition-all shadow-lg group"
+                    title="Klicke hier um MÔRA zu öffnen - deine KI-Assistentin"
+                    className="flex items-center gap-3 px-5 py-3 rounded-full glass-panel border border-white/10 bg-mora-forest/80 backdrop-blur-md hover:border-mora-gold/50 hover:bg-mora-forest/90 transition-all shadow-lg group hover:scale-105 active:scale-95"
                 >
-                    <div className="w-2 h-2 rounded-full bg-mora-gold animate-pulse" />
-                    <span className="text-xs text-emerald-100/80 tracking-widest uppercase group-hover:text-white">Môra AI</span>
+                    <div className="w-3 h-3 rounded-full bg-mora-gold animate-pulse shadow-[0_0_10px_rgba(206,182,118,0.5)]" />
+                    <span className="text-sm text-emerald-100/90 font-medium group-hover:text-white transition-colors">
+                        Frag mich was!
+                    </span>
                 </button>
             </div>
         );
@@ -255,6 +281,129 @@ export const ChatDock: React.FC = () => {
                                 <div className="text-[10px] text-emerald-500/50 uppercase tracking-wider">
                                     {msg.role === 'user' ? 'You' : 'Môra'} • Just now
                                 </div>
+
+                                {/* Tool Execution Visualization */}
+                                {msg.role === 'assistant' && (msg as any).toolCalls && (
+                                    <div className="space-y-2 mb-3">
+                                        {(msg as any).toolCalls.map((tool: any, toolIdx: number) => (
+                                            <div key={toolIdx} className="p-3 rounded-lg border border-mora-gold/20 bg-mora-gold/5 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-mora-gold animate-pulse" />
+                                                    <span className="text-[10px] font-mono text-mora-gold uppercase tracking-wider">
+                                                        Tool: {tool.tool_name}
+                                                    </span>
+                                                    <span className={`ml-auto text-[9px] px-2 py-0.5 rounded-full ${tool.success ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                        {tool.success ? '✓ Success' : '✗ Failed'}
+                                                    </span>
+                                                </div>
+                                                {tool.params && Object.keys(tool.params).length > 0 && (
+                                                    <div className="text-[9px] font-mono text-emerald-400/60 pl-3 border-l border-mora-gold/20">
+                                                        Params: {JSON.stringify(tool.params, null, 2).substring(0, 150)}
+                                                        {JSON.stringify(tool.params).length > 150 && '...'}
+                                                    </div>
+                                                )}
+                                                {/* Smart Result Rendering */}
+                                                {tool.result && tool.tool_name === 'search' && tool.result.results && (
+                                                    <div className="space-y-2 mt-2">
+                                                        <div className="text-[10px] text-emerald-400/80 font-medium pl-3">
+                                                            Found {tool.result.results.length} items:
+                                                        </div>
+                                                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                                            {tool.result.results.slice(0, 5).map((item: any, itemIdx: number) => (
+                                                                <button
+                                                                    key={itemIdx}
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            // Load full node details and open in main view
+                                                                            const { loadNodeDetails, setActiveNode } = useMoraStore.getState();
+                                                                            await loadNodeDetails(item.id);
+                                                                            // Node will be set as active by loadNodeDetails
+                                                                            console.log('✓ Opened node:', item.name || item.title);
+                                                                        } catch (error) {
+                                                                            console.error('Failed to open node:', error);
+                                                                        }
+                                                                    }}
+                                                                    className="w-full text-left p-2 rounded border border-emerald-500/10 bg-black/20 hover:bg-emerald-500/5 hover:border-mora-gold/30 transition-all group"
+                                                                >
+                                                                    <div className="flex items-start gap-2">
+                                                                        <div className="w-1 h-1 rounded-full bg-mora-gold/50 mt-1.5 group-hover:bg-mora-gold" />
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="text-[10px] font-medium text-emerald-100 group-hover:text-mora-gold truncate">
+                                                                                {item.name || item.title || 'Untitled'}
+                                                                            </div>
+                                                                            <div className="text-[9px] text-emerald-500/50 truncate">
+                                                                                {item.type} • {item.id?.substring(0, 8)}...
+                                                                            </div>
+                                                                            {item.preview && (
+                                                                                <div className="text-[8px] text-emerald-400/40 mt-0.5 line-clamp-2">
+                                                                                    {item.preview}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            ))}
+                                                            {tool.result.results.length > 5 && (
+                                                                <div className="text-[9px] text-emerald-500/40 text-center pt-1">
+                                                                    +{tool.result.results.length - 5} more items
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* READ_NODE Tool: Show content beautifully */}
+                                                {tool.result && tool.tool_name === 'read_node' && tool.result.node && (
+                                                    <div className="mt-2 p-3 rounded-lg border border-emerald-500/10 bg-black/30 space-y-2">
+                                                        <div className="flex items-center gap-2 pb-2 border-b border-emerald-500/10">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            <span className="text-[10px] font-medium text-emerald-300">
+                                                                {tool.result.node.title || 'Untitled'}
+                                                            </span>
+                                                            <span className="ml-auto text-[9px] text-emerald-500/50">
+                                                                {tool.result.node.type}
+                                                            </span>
+                                                        </div>
+                                                        {tool.result.node.content && (
+                                                            <div className="text-[9px] text-emerald-100/80 leading-relaxed max-h-[150px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                                                                {tool.result.node.content.substring(0, 500)}
+                                                                {tool.result.node.content.length > 500 && '...'}
+                                                            </div>
+                                                        )}
+                                                        {tool.result.node.metadata && (
+                                                            <div className="text-[8px] text-emerald-500/40 pt-2 border-t border-emerald-500/10">
+                                                                Tags: {tool.result.node.metadata.tags?.join(', ') || 'None'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* NAVIGATE Tool: Show navigation path */}
+                                                {tool.result && tool.tool_name === 'navigate' && (
+                                                    <div className="mt-2 p-2 rounded border border-mora-gold/20 bg-mora-gold/5">
+                                                        <div className="text-[10px] text-mora-gold font-mono">
+                                                            → Navigated to: {tool.result.target_name || tool.result.entity_type}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {/* Other Tools: Default rendering */}
+                                                {tool.result && !['search', 'read_node', 'navigate'].includes(tool.tool_name) && (
+                                                    <div className="text-[9px] font-mono text-emerald-300/70 pl-3 border-l border-emerald-500/20">
+                                                        Result: {typeof tool.result === 'object' ?
+                                                            (tool.result.count ? `Found ${tool.result.count} items` : JSON.stringify(tool.result).substring(0, 100)) :
+                                                            String(tool.result).substring(0, 100)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Cognitive Thought Process */}
+                                {msg.role === 'assistant' && (msg as any).thought && !(msg as any).toolCalls && (
+                                    <div className="text-[9px] text-emerald-400/40 italic font-mono mb-2 p-2 border-l border-emerald-500/10 bg-white/[0.01]">
+                                        Cognitive Process: {(msg as any).thought}
+                                    </div>
+                                )}
+
                                 <div className={`text-sm leading-relaxed p-3 rounded-lg ${msg.role === 'user'
                                     ? 'bg-mora-gold/10 border border-mora-gold/20 text-emerald-100'
                                     : 'text-emerald-100/90'
@@ -263,8 +412,8 @@ export const ChatDock: React.FC = () => {
                                 </div>
                             </div>
                             {msg.role === 'user' && (
-                                <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                                    <span className="text-xs text-emerald-400">U</span>
+                                <div className="shrink-0">
+                                    <UserAvatar role="owner" size={32} showAura={false} />
                                 </div>
                             )}
                         </div>
@@ -324,32 +473,89 @@ export const ChatDock: React.FC = () => {
                                     relations: relations
                                 };
 
-                                // Send to AI
-                                const rawReply = await sendMessage(msg, context, messages);
+                                // TERMINAL OVERRIDE (Phase 3)
+                                if (msg.trim().startsWith('$')) {
+                                    try {
+                                        const termResponse = await corePost('/v1/terminal/execute', {
+                                            command: msg
+                                        });
 
-                                // 🤖 CURSOR BRIDGE: Parse AI response for cursor commands
-                                const { cleanContent, commands } = parseAIResponse(rawReply);
+                                        const output = termResponse?.output || "No output";
+                                        const isSuccess = termResponse?.success;
 
-                                // Execute cursor commands (AI controls the cursor!)
-                                if (commands.length > 0) {
-                                    console.log('[ChatDock] Executing', commands.length, 'cursor commands');
-                                    executeCursorCommands(commands);
+                                        setMessages(prev => [...prev, {
+                                            role: 'assistant',
+                                            content: `\`\`\`bash\n${output}\n\`\`\``,
+                                            thought: `Terminal Command Executed: ${isSuccess ? 'Success' : 'Failed'}`
+                                        } as any]);
+                                    } catch (err: any) {
+                                        setMessages(prev => [...prev, {
+                                            role: 'assistant',
+                                            content: `Terminal Error: ${err.message}`,
+                                            thought: "Command Execution Failed"
+                                        } as any]);
+                                    }
+                                    setIsLoading(false);
+                                    return;
                                 }
 
-                                // Auto-suggest cursor action based on response
-                                const suggestion = suggestCursorAction(cleanContent, context);
-                                if (suggestion && commands.length === 0) {
-                                    executeCursorCommands([suggestion]);
+                                // --- UPGRADE D.1: AGENTIC LOOP INTEGRATION ---
+                                // Show thinking indicator
+                                const thinkingMsgIndex = messages.length + 1;
+                                setMessages(prev => [...prev, {
+                                    role: 'assistant',
+                                    content: '🧠 Analyzing your request...',
+                                    thought: 'Initializing agentic loop...'
+                                } as any]);
+
+                                // Use the new multi-turn agentic loop
+                                const agentResult = await executeAgenticLoop(msg, {
+                                    level: activeNode ? 'node' : activeFolderId ? 'folder' : 'orbit',
+                                    entityId: activeNode?.id || activeFolderId || undefined
+                                });
+
+                                // Remove thinking indicator
+                                setMessages(prev => prev.slice(0, -1));
+
+                                // Handle Pending Confirmations (Safety Halt)
+                                if (agentResult.final_state === 'S4_CONFIRM') {
+                                    const confirmations = agentResult.pending_confirmations.map(c =>
+                                        `- ${c.tool_name} (${c.risk_level}): ${c.what_will_change}`
+                                    ).join('\n');
+
+                                    setMessages(prev => [...prev, {
+                                        role: 'assistant',
+                                        content: `⚠️ Access Control\n\nI need your permission to proceed with the following actions:\n${confirmations}\n\n(Confirmation UI coming soon. Please create manually for now.)`,
+                                        thought: "Stopped at S4_CONFIRM due to write/secret risk."
+                                    } as any]);
+                                    setIsLoading(false);
+                                    return;
                                 }
 
-                                // Add AI reply (cleaned of commands)
-                                const assistantMessage: AIMessage = { role: 'assistant', content: cleanContent };
+                                // Extract tool execution data for visualization
+                                const toolCalls = agentResult.tools_executed?.map(tool => ({
+                                    tool_name: tool.tool,
+                                    params: tool.params,
+                                    success: tool.success,
+                                    result: tool.result,
+                                    error: tool.error
+                                })) || [];
+
+                                // Add AI reply with tool visualization data
+                                const assistantMessage: any = {
+                                    role: 'assistant',
+                                    content: agentResult.final_message,
+                                    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+                                    thought: toolCalls.length === 0 ? agentResult.transparency_note : undefined,
+                                    iterations: agentResult.iterations?.length || 0,
+                                    finalState: agentResult.final_state
+                                };
                                 setMessages(prev => [...prev, assistantMessage]);
                             } catch (error: any) {
                                 console.error('AI Error:', error);
                                 const errorMessage: AIMessage = {
                                     role: 'assistant',
-                                    content: `Entschuldigung, ein Fehler ist aufgetreten: ${error.message || 'Unknown error'}`
+                                    content: `System Error: ${error.message || 'Unknown error during cognition'}`
                                 };
                                 setMessages(prev => [...prev, errorMessage]);
                             } finally {

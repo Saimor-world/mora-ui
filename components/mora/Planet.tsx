@@ -23,11 +23,15 @@ interface PlanetProps {
 }
 
 /**
- * PLANET COMPONENT — TESLA-STYLE REDESIGN
+ * PLANET COMPONENT (Represents a DEPARTMENT)
  * 
- * - Monochrome with subtle color accents
- * - Glass morphism
- * - Large, impactful presence
+ * In the SAIMÔR Universe metaphor:
+ * - PLANET = Department (Abteilung)
+ * - Orbiting the Company Center (Sun)
+ * 
+ * Visuals:
+ * - Tesla-style monochrome with subtle color accents
+ * - Glassmorphic bubble
  * - Minimal UI, maximum clarity
  * - Context menu for quick file access
  */
@@ -193,12 +197,16 @@ export const Planet: React.FC<PlanetProps> = ({
     const style = getDeptStyle(department.name, department.color);
     const Icon = getDeptIcon(department.name);
 
+    // Generate a consistent float duration based on department id
+    const floatDuration = 5 + (department.id.charCodeAt(0) % 4);
+    const floatDelay = (department.id.charCodeAt(1) || 0) % 3;
+
     return (
         <motion.div
-            className="cursor-pointer group"
+            className="absolute cursor-pointer group"
+            data-agency-id={department.id}
             style={{
-                // Only apply position if provided (non-zero)
-                // When parent handles positioning, position should be (0,0)
+                // Position is now handled by parent via CSS (no motion wrapper overhead)
                 ...(position.x !== 0 || position.y !== 0 ? {
                     position: 'absolute' as const,
                     left: position.x,
@@ -206,25 +214,16 @@ export const Planet: React.FC<PlanetProps> = ({
                     transform: 'translate(-50%, -50%)'
                 } : {})
             }}
-            initial={{ scale: 1, opacity: 1 }} // FORCE VISIBLE - DEBUG
+            // Subtle floating animation
             animate={{
-                scale: 1,
-                opacity: 1,
-                x: orbitActive ? [0, 8] : 0,
-                y: orbitActive ? [0, -4] : 0
+                y: [0, -4, 0, 3, 0],
             }}
             transition={{
-                delay,
-                type: orbitActive ? 'tween' : 'spring',
-                duration: orbitActive ? 2 : undefined,
-                repeat: orbitActive ? Infinity : 0,
-                repeatType: orbitActive ? 'reverse' : undefined,
-                ease: orbitActive ? 'easeInOut' : undefined,
-                stiffness: orbitActive ? undefined : 150,
-                damping: orbitActive ? undefined : 20
+                duration: floatDuration,
+                repeat: Infinity,
+                delay: floatDelay,
+                ease: "easeInOut"
             }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
             onClick={onClick}
             onContextMenu={handleContextMenu}
             onMouseEnter={() => onHover?.(true)}
@@ -262,15 +261,18 @@ export const Planet: React.FC<PlanetProps> = ({
                     style={{ backgroundSize: '200px 200px' }}
                 />
 
-                {/* Rotating Cloud Layer */}
+                {/* Atmospheric Glow - Galaxy Core Aesthetic */}
                 <motion.div
-                    className="absolute inset-0 rounded-full opacity-30"
+                    className="absolute inset-0 rounded-full opacity-20"
                     style={{
-                        background: `conic-gradient(from 0deg, transparent 0%, ${style.iconColor.replace('text-', 'bg-').replace('-400', '-200')} 20%, transparent 40%, transparent 100%)`,
-                        filter: 'blur(10px)',
+                        background: `radial-gradient(circle, ${style.glow}, transparent 70%)`,
+                        filter: 'blur(8px)',
                     }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    animate={{
+                        scale: [0.8, 1.2, 0.8],
+                        opacity: [0.1, 0.3, 0.1]
+                    }}
+                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 />
 
                 {/* Glass Highlight - Top Left (3D Effect) */}

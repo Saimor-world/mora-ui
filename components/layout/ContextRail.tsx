@@ -129,7 +129,9 @@ export const ContextRail: React.FC = () => {
         router.replace('/');
     };
 
-    const isOwner = getCurrentRole() === 'owner' || getCurrentRole() === 'admin';
+    // SECURITY: Explicitly exclude demo users from owner features
+    const currentRole = getCurrentRole();
+    const isOwner = ((currentRole as string) === 'owner' || (currentRole as string) === 'admin') && (currentRole as string) !== 'demo';
 
     return (
         <>

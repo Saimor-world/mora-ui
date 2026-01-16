@@ -28,9 +28,14 @@ export const ViewPort: React.FC = () => {
     const viewLevel = useMoraStore((state) => state.viewLevel);
     const viewMode = useMoraStore((state) => state.viewMode);
 
+    // Compute active view to ensure only one renders at a time
+    const activeView = viewLevel === 'company' && viewMode === 'owner'
+        ? 'client-health'
+        : viewLevel;
+
     return (
         <div className="w-full h-full relative">
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
                 {/* OWNER: Client Health Dashboard (viewLevel: company) */}
                 {viewLevel === 'company' && viewMode === 'owner' && (
                     <motion.div

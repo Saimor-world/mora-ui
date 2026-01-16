@@ -62,11 +62,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     const { loadCompanies, setActiveCompany, loadDepartments, activeCompanyId } = useMoraStore();
 
     const steps = [
-        { title: 'Welcome', icon: Sparkles },
-        { title: 'Company', icon: Building2 },
-        { title: 'Departments', icon: Users },
-        { title: 'Connect', icon: Link2 },
-        { title: 'Complete', icon: Zap }
+        { title: 'Willkommen', icon: Sparkles },
+        { title: 'Unternehmen', icon: Building2 },
+        { title: 'Abteilungen', icon: Users },
+        { title: 'Verbinden', icon: Link2 },
+        { title: 'Fertig', icon: Zap }
     ];
 
     const addDepartment = () => {
@@ -107,7 +107,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
     const handleComplete = async () => {
         setIsLoading(true);
-        const toastId = toast.loading('Initializing Môra...');
+        const toastId = toast.loading('Môra wird initialisiert...');
 
         try {
             // 1. Get/Create Company
@@ -173,11 +173,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 await loadDepartments(myCompany.id);
             }
 
-            toast.success('Môra is ready! Welcome to your workspace.', { id: toastId });
+            toast.success('Môra ist bereit! Willkommen in Ihrem Arbeitsbereich.', { id: toastId });
 
         } catch (error: any) {
-            console.error('Onboarding error:', error);
-            toast.error('Setup had issues, but we\'ll proceed. Please reload if needed.', { id: toastId });
+            console.error('Onboarding Fehler:', error);
+            toast.error('Setup hatte Probleme, aber wir fahren fort. Bitte laden Sie die Seite ggf. neu.', { id: toastId });
             // Mark as complete anyway so user isn't stuck
             localStorage.setItem('onboarding_complete', 'true');
         } finally {
@@ -252,7 +252,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                     {isComplete ? <Check size={18} /> : <Icon size={18} />}
                                 </div>
                                 <span className={`text-xs tracking-wide ${isActive ? 'text-emerald-400' : 'text-white/50'}`}>
-                                    {s.title}
+                                    {isActive ? s.title : ''}
                                 </span>
                             </div>
                         );
@@ -282,25 +282,25 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 </motion.div>
 
                                 <h2 className="text-3xl font-light tracking-wide text-white mb-4">
-                                    Welcome to <span className="text-emerald-400">SAIMÔR</span>
+                                    Willkommen bei <span className="text-emerald-400">SAIMÔR</span>
                                 </h2>
 
                                 <p className="text-white/60 max-w-md mx-auto leading-relaxed mb-8">
-                                    Let's set up your workspace. This will create Môra's initial understanding of your organization.
+                                    Richten wir Ihren Arbeitsbereich ein. Dies erstellt Môras erstes Verständnis Ihrer Organisation.
                                 </p>
 
                                 <div className="flex items-center justify-center gap-4 text-sm text-white/40">
                                     <span className="flex items-center gap-2">
                                         <Check size={14} className="text-emerald-500" />
-                                        Define your company
+                                        Unternehmen definieren
                                     </span>
                                     <span className="flex items-center gap-2">
                                         <Check size={14} className="text-emerald-500" />
-                                        Create departments
+                                        Abteilungen erstellen
                                     </span>
                                     <span className="flex items-center gap-2">
                                         <Check size={14} className="text-emerald-500" />
-                                        Start working
+                                        Arbeit beginnen
                                     </span>
                                 </div>
                             </motion.div>
@@ -314,31 +314,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                             >
-                                <h2 className="text-2xl font-light text-white mb-2">Your Company</h2>
-                                <p className="text-white/50 mb-8">Tell Môra about your organization.</p>
+                                <h2 className="text-2xl font-light text-white mb-2">Ihr Unternehmen</h2>
+                                <p className="text-white/50 mb-8">Erzählen Sie Môra von Ihrer Organisation.</p>
 
                                 <div className="space-y-6">
                                     <div>
                                         <label className="block text-xs text-emerald-400/70 mb-2 uppercase tracking-wider">
-                                            Company Name *
+                                            Unternehmensname *
                                         </label>
                                         <input
                                             type="text"
                                             value={companyName}
                                             onChange={(e) => setCompanyName(e.target.value)}
-                                            placeholder="Enter your company name"
+                                            placeholder="Geben Sie Ihren Unternehmensnamen ein"
                                             className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-xs text-white/50 mb-2 uppercase tracking-wider">
-                                            Description (Optional)
+                                            Beschreibung (Optional)
                                         </label>
                                         <textarea
                                             value={companyDescription}
                                             onChange={(e) => setCompanyDescription(e.target.value)}
-                                            placeholder="What does your company do?"
+                                            placeholder="Was macht Ihr Unternehmen?"
                                             rows={3}
                                             className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 resize-none"
                                         />
@@ -346,22 +346,22 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
                                     <div>
                                         <label className="block text-xs text-white/50 mb-2 uppercase tracking-wider">
-                                            Industry (Optional)
+                                            Branche (Optional)
                                         </label>
                                         <select
                                             value={industry}
                                             onChange={(e) => setIndustry(e.target.value)}
                                             className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50"
                                         >
-                                            <option value="">Select industry...</option>
-                                            <option value="technology">Technology</option>
-                                            <option value="consulting">Consulting</option>
-                                            <option value="retail">Retail</option>
-                                            <option value="hospitality">Hospitality</option>
-                                            <option value="healthcare">Healthcare</option>
-                                            <option value="finance">Finance</option>
-                                            <option value="education">Education</option>
-                                            <option value="other">Other</option>
+                                            <option value="">Branche wählen...</option>
+                                            <option value="technology">Technologie</option>
+                                            <option value="consulting">Beratung</option>
+                                            <option value="retail">Einzelhandel</option>
+                                            <option value="hospitality">Gastronomie/Hotellerie</option>
+                                            <option value="healthcare">Gesundheitswesen</option>
+                                            <option value="finance">Finanzen</option>
+                                            <option value="education">Bildung</option>
+                                            <option value="other">Andere</option>
                                         </select>
                                     </div>
                                 </div>
@@ -376,8 +376,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                             >
-                                <h2 className="text-2xl font-light text-white mb-2">Departments</h2>
-                                <p className="text-white/50 mb-6">Create your first departments. These will appear as planets in your workspace.</p>
+                                <h2 className="text-2xl font-light text-white mb-2">Abteilungen</h2>
+                                <p className="text-white/50 mb-6">Erstellen Sie Ihre ersten Abteilungen. Diese erscheinen als Planeten in Ihrem Arbeitsbereich.</p>
 
                                 <div className="space-y-4 max-h-[280px] overflow-y-auto pr-2">
                                     {departments.map((dept, index) => (
@@ -406,14 +406,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                                     type="text"
                                                     value={dept.name}
                                                     onChange={(e) => updateDepartment(dept.id, 'name', e.target.value)}
-                                                    placeholder={`Department ${index + 1} name...`}
+                                                    placeholder={`Name der Abteilung ${index + 1}...`}
                                                     className="w-full bg-transparent border-b border-white/10 pb-2 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
                                                 />
                                                 <input
                                                     type="text"
                                                     value={dept.description}
                                                     onChange={(e) => updateDepartment(dept.id, 'description', e.target.value)}
-                                                    placeholder="Short description (optional)"
+                                                    placeholder="Kurzbeschreibung (optional)"
                                                     className="w-full bg-transparent text-sm text-white/50 placeholder-white/20 focus:outline-none mt-2"
                                                 />
                                             </div>
@@ -437,7 +437,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                         className="mt-4 flex items-center gap-2 text-sm text-emerald-400/70 hover:text-emerald-400 transition-colors"
                                     >
                                         <Plus size={16} />
-                                        Add Department
+                                        Abteilung hinzufügen
                                     </button>
                                 )}
                             </motion.div>
@@ -451,8 +451,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                             >
-                                <h2 className="text-2xl font-light text-white mb-2">Connect Your Data</h2>
-                                <p className="text-white/50 mb-6">Integrate your existing tools to train Môra on your business context instantly.</p>
+                                <h2 className="text-2xl font-light text-white mb-2">Daten verbinden</h2>
+                                <p className="text-white/50 mb-6">Integrieren Sie Ihre bestehenden Tools, um Môra sofort mit Ihrem Geschäftskontext zu trainieren.</p>
 
                                 <div className="bg-black/20 rounded-xl border border-white/5 p-2 max-h-[300px] overflow-y-auto">
                                     <GoogleConnect compact />
@@ -484,11 +484,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 </motion.div>
 
                                 <h2 className="text-3xl font-light tracking-wide text-white mb-4">
-                                    Ready to Launch
+                                    Startklar
                                 </h2>
 
                                 <p className="text-white/60 max-w-md mx-auto leading-relaxed mb-8">
-                                    Môra will now create your workspace with:
+                                    Môra erstellt nun Ihren Arbeitsbereich mit:
                                 </p>
 
                                 <div className="flex flex-col gap-3 max-w-sm mx-auto text-left">
@@ -526,7 +526,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                             }`}
                     >
                         <ArrowLeft size={18} />
-                        Back
+                        Zurück
                     </button>
 
                     <button
@@ -540,16 +540,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                         {isLoading ? (
                             <>
                                 <Loader2 size={18} className="animate-spin" />
-                                Initializing...
+                                Initialisierung...
                             </>
                         ) : step === steps.length - 1 ? (
                             <>
-                                Launch Môra
+                                Môra starten
                                 <Sparkles size={18} />
                             </>
                         ) : (
                             <>
-                                Continue
+                                Weiter
                                 <ArrowRight size={18} />
                             </>
                         )}

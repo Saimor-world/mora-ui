@@ -3,12 +3,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { LayoutGrid, List, Folder, Plus, Network, Search, X, Trash2, RefreshCw, ChevronRight, FileText, Info, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box } from 'lucide-react';
+import { LayoutGrid, List, Folder, Plus, Network, Search, X, Trash2, RefreshCw, ChevronRight, FileText, Info, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box, UploadCloud } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { corePost } from '@/lib/api/coreClient';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { mapSpaceContentToMycelium } from '@/lib/utils/myceliumDataMapper';
+import { mapSpaceContentToMycelium, mapFoldersToMycelium, mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
+import { Mycelium25D } from '@/components/organic/Mycelium25D';
+import type { CoreNode, CoreFolder } from '@/lib/types/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/lib/toast';
 
@@ -47,7 +50,7 @@ const getDeterministicPosition = (id: string, index: number, total: number) => {
 };
 
 export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, addPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, addPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     const {
@@ -85,12 +88,35 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     const [graphNodes, setGraphNodes] = useState<any[]>([]);
     const [isGraphLoading, setIsGraphLoading] = useState(false);
 
-    const targetSpaceId = pane?.data?.spaceId || activeSpaceId;
+    // Ingestion State
+    const [isIngestOpen, setIsIngestOpen] = useState(false);
+    const [localPath, setLocalPath] = useState('');
+    const [ingestStatus, setIngestStatus] = useState<'idle' | 'loading'>('idle');
 
+    const targetSpaceId = pane?.data?.spaceId || activeSpaceId;
+    const targetDepartmentId = pane?.data?.departmentId || activeDepartmentId;
+
+    // FIX: Search for space across ALL departments, not just activeDepartmentId
+    // This fixes the bug where SpacePane opened via Pane couldn't find its data
     const currentSpace = useMemo(() => {
-        if (!targetSpaceId || !activeDepartmentId) return null;
-        return spacesByDepartment[activeDepartmentId]?.find(s => s.id === targetSpaceId);
-    }, [activeDepartmentId, targetSpaceId, spacesByDepartment]);
+        if (!targetSpaceId) return null;
+
+        // First try the pane-provided department (best path)
+        if (targetDepartmentId && spacesByDepartment[targetDepartmentId]) {
+            const found = spacesByDepartment[targetDepartmentId].find(s => s.id === targetSpaceId);
+            if (found) return found;
+        }
+
+        // Fallback: Search across all departments
+        for (const deptId of Object.keys(spacesByDepartment)) {
+            const found = spacesByDepartment[deptId]?.find(s => s.id === targetSpaceId);
+            if (found) return found;
+        }
+
+        return null;
+    }, [targetDepartmentId, targetSpaceId, spacesByDepartment]);
+
+
 
     const items = activeFolder ? folderNodes : (targetSpaceId ? (foldersBySpace[targetSpaceId] || []) : []);
 
@@ -104,14 +130,24 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     useEffect(() => {
         if (viewMode === 'mycelium') {
             setIsGraphLoading(true);
-            const nodes = filteredItems.map((item, index) => ({
-                ...item,
-                pos: getDeterministicPosition(item.id, index, filteredItems.length)
-            }));
+            let nodes: any[] = [];
+
+            if (activeFolder) {
+                // Folder View: Show Nodes inside
+                // Cast items to CoreNode[] because we know context
+                nodes = mapNodesToMycelium(filteredItems as unknown as CoreNode[], {
+                    activeNodeId: selectedNodeId || hoveredNodeId
+                });
+            } else {
+                // Space View: Show Folders (and potentially loose nodes if we had mixed view)
+                // Cast items to CoreFolder[]
+                nodes = mapFoldersToMycelium(filteredItems as unknown as CoreFolder[], selectedNodeId);
+            }
+
             setGraphNodes(nodes);
             setIsGraphLoading(false);
         }
-    }, [filteredItems, viewMode]);
+    }, [filteredItems, viewMode, activeFolder, selectedNodeId, hoveredNodeId]);
 
     // Load folders if needed
     useEffect(() => {
@@ -238,6 +274,29 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
         }
     };
 
+    const handleIngest = async () => {
+        if (!localPath.trim()) return;
+        if (!targetSpaceId) return toast.error("No space active");
+
+        setIngestStatus('loading');
+        try {
+            await corePost('/v1/ingest/local', {
+                local_path: localPath.trim(),
+                space_id: targetSpaceId
+            });
+            toast.success("Ingestion started. MÔRA is scanning...");
+            setIsIngestOpen(false);
+            setLocalPath('');
+            // Trigger refresh after 2s
+            setTimeout(() => loadFoldersForSpace(targetSpaceId), 2000);
+        } catch (error: any) {
+            console.error("Ingestion failed", error);
+            toast.error(error.message || "Ingestion failed");
+        } finally {
+            setIngestStatus('idle');
+        }
+    };
+
     if (!pane) return null;
 
     return (
@@ -257,8 +316,12 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                     )}
                 </div>
             }
-            width={1000}
-            height={700}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             showBackButton={!!activeFolder}
             onBack={() => setActiveFolderLocal(null)}
             onClose={() => removePane(id)}
@@ -269,6 +332,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
             <div className="flex flex-col h-full">
                 {/* Toolbar */}
@@ -335,6 +399,56 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                     <Plus size={16} />
                                     NEW FOLDER
                                 </button>
+
+                                {/* Ingest Button */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsIngestOpen(!isIngestOpen)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm tracking-wide ${isIngestOpen ? 'bg-mora-gold/20 border-mora-gold text-mora-gold' : 'bg-white/5 border-white/10 hover:bg-white/10 text-white/70 hover:text-white'}`}
+                                    >
+                                        <UploadCloud size={16} />
+                                        CONNECT
+                                    </button>
+
+                                    {/* Ingest Popover */}
+                                    {isIngestOpen && (
+                                        <div className="absolute top-12 right-0 z-50 w-80 p-5 bg-[#050d0a]/95 backdrop-blur-2xl border border-mora-gold/30 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-top-2">
+                                            <label className="text-[10px] uppercase tracking-widest text-mora-gold mb-2 block font-medium">Local Knowledge Path</label>
+                                            <div className="text-[10px] text-white/40 mb-3">
+                                                Enter absolute Windows path to a folder to ingest it as a Galaxy.
+                                            </div>
+                                            <input
+                                                value={localPath}
+                                                onChange={e => setLocalPath(e.target.value)}
+                                                placeholder="C:\Users\Name\Projects\..."
+                                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2.5 text-xs text-white mb-4 focus:border-mora-gold/50 outline-none transition-colors"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2 justify-end">
+                                                <button
+                                                    onClick={() => setIsIngestOpen(false)}
+                                                    className="px-3 py-2 text-xs text-white/50 hover:text-white transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    onClick={handleIngest}
+                                                    disabled={ingestStatus === 'loading' || !localPath}
+                                                    className="px-4 py-2 bg-gradient-to-r from-mora-gold/20 to-mora-gold/10 hover:from-mora-gold/30 hover:to-mora-gold/20 border border-mora-gold/30 hover:border-mora-gold/50 rounded-lg text-mora-gold text-xs font-medium flex items-center gap-2 disabled:opacity-50"
+                                                >
+                                                    {ingestStatus === 'loading' ? (
+                                                        <>Scanning...</>
+                                                    ) : (
+                                                        <>
+                                                            <UploadCloud size={12} />
+                                                            Assimilate
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </>
                         )}
                         {activeFolder && (
@@ -406,81 +520,16 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                     onClick={() => setSelectedNodeId(null)}
                                 >
                                     {viewMode === 'mycelium' && (
-                                        <div className="absolute inset-0">
-                                            {/* Star/Constellation SVG */}
-                                            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                                <defs>
-                                                    <filter id="glow">
-                                                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-                                                        <feMerge>
-                                                            <feMergeNode in="coloredBlur" />
-                                                            <feMergeNode in="SourceGraphic" />
-                                                        </feMerge>
-                                                    </filter>
-                                                    <radialGradient id="grad1" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                                        <stop offset="0%" stopColor="white" stopOpacity="0.8" />
-                                                        <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                                                    </radialGradient>
-                                                </defs>
-
-                                                {/* Connection Lines (Constellation Chain) */}
-                                                {graphNodes.map((node, i) => {
-                                                    if (i === 0) return null;
-                                                    const prev = graphNodes[i - 1];
-                                                    return (
-                                                        <line
-                                                            key={`line-${i}`}
-                                                            x1={`${prev.pos.x}%`} y1={`${prev.pos.y}%`}
-                                                            x2={`${node.pos.x}%`} y2={`${node.pos.y}%`}
-                                                            stroke="rgba(255,255,255,0.15)"
-                                                            strokeWidth="1"
-                                                            strokeDasharray="4 4"
-                                                        />
-                                                    );
-                                                })}
-
-                                                {/* Center Glow */}
-                                                <circle cx="50%" cy="50%" r="300" fill="url(#grad1)" fillOpacity="0.03" />
-                                            </svg>
-
-                                            {/* Interactive Nodes */}
-                                            {graphNodes.map((node) => {
-                                                const isSelected = selectedNodeId === node.id;
-                                                const Icon = node.type === 'folder' || (!node.type && node.children) ? Folder : FileText;
-
-                                                return (
-                                                    <motion.div
-                                                        key={node.id}
-                                                        initial={{ scale: 0 }}
-                                                        animate={{ scale: 1 }}
-                                                        className={`absolute flex flex-col items-center justify-center cursor-pointer group ${isSelected ? 'z-20' : 'z-10'}`}
-                                                        style={{
-                                                            left: `${node.pos.x}%`,
-                                                            top: `${node.pos.y}%`,
-                                                            transform: 'translate(-50%, -50%)'
-                                                        }}
-                                                        onClick={(e) => { e.stopPropagation(); setSelectedNodeId(node.id); }}
-                                                        onDoubleClick={(e) => { e.stopPropagation(); handleOpenNode(node); }}
-                                                        onMouseEnter={() => setHoveredNodeId(node.id)}
-                                                        onMouseLeave={() => setHoveredNodeId(null)}
-                                                    >
-                                                        <div
-                                                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isSelected ? 'bg-purple-500 shadow-[0_0_20px_purple] scale-125' : 'bg-black/40 border border-white/20 hover:border-purple-400 hover:bg-purple-500/20 shadow-[0_0_10px_rgba(255,255,255,0.05)]'}`}
-                                                        >
-                                                            <Icon size={16} className={isSelected ? 'text-white' : 'text-purple-300'} />
-                                                        </div>
-                                                        <div className={`mt-2 text-[10px] bg-black/60 px-2 py-1 rounded backdrop-blur border transition-all whitespace-nowrap ${isSelected ? 'border-purple-500 text-white' : 'border-transparent text-white/50 opacity-0 group-hover:opacity-100'}`}>
-                                                            {node.name || node.title}
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })}
-
-                                            {graphNodes.length === 0 && (
-                                                <div className="absolute inset-0 flex items-center justify-center text-white/20">
-                                                    Empty Constellation
-                                                </div>
-                                            )}
+                                        <div className="absolute inset-0 z-0">
+                                            <Mycelium25D
+                                                nodes={graphNodes}
+                                                onNodeClick={(id) => {
+                                                    const item = items.find(n => n.id === id);
+                                                    if (item) handleOpenNode(item);
+                                                }}
+                                                activeNodeId={selectedNodeId || hoveredNodeId}
+                                                variant={activeFolder ? 'folder' : 'space'}
+                                            />
                                         </div>
                                     )}
 
@@ -601,9 +650,15 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                 </div>
                             </div>
 
-                            <div className="mt-auto p-4 border-t border-white/5 bg-white/5">
-                                <button className="w-full py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-xs font-medium transition-colors">
-                                    VIEW KNOWLEDGE GRAPH
+                            <div className="mt-auto p-4 border-t border-white/5 bg-white/5 flex gap-2">
+                                <button
+                                    onClick={() => handleOpenNode(items.find(n => n.id === (hoveredNodeId || selectedNodeId)))}
+                                    className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30 text-xs font-medium transition-colors"
+                                >
+                                    OPEN DOCUMENT
+                                </button>
+                                <button className="px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 text-xs font-medium transition-colors" title="View Graph">
+                                    <Network size={16} />
                                 </button>
                             </div>
                         </div>
@@ -648,6 +703,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                     </form>
                 </CreateModal>
             </div>
-        </GlassPanel>
+        </GlassPanel >
     );
 };

@@ -1,6 +1,6 @@
 import { getDevToken } from './devToken';
 
-const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8081';
+const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8000';
 
 export interface Department {
     id: string;

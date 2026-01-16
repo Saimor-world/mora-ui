@@ -6,7 +6,7 @@ import { askMora, AgentAction } from '@/lib/api/agencyClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from '@/lib/toast';
-import { triggerMoraVisual } from '@/components/mora/MoraAICursorController';
+
 
 interface MoraCommandProps {
     onSuccess?: () => void;
@@ -78,7 +78,7 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
             case 'navigate':
                 if (plan.target) {
                     // Start visual travel (Highlight the target)
-                    triggerMoraVisual(`#${plan.target}`, 2000);
+                    // Visual travel trigger removed (controller simplified)
 
                     try {
                         // Heuristic Routing based on ID

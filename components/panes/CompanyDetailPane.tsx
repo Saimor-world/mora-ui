@@ -30,7 +30,7 @@ interface CompanyDetailPaneProps {
  * - Delete Company (for debugging)
  */
 export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, companyId, companyName }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { companies, loadCompanies } = useMoraStore();
     const pane = getPane(id);
 
@@ -73,8 +73,12 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
     return (
         <GlassPanel
             title={companyName}
-            width={800}
-            height={600}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
@@ -83,6 +87,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
             <div className="flex h-full">
                 {/* Sidebar Tabs */}
@@ -92,8 +97,8 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeTab === tab.id
-                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                    : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : 'text-white/60 hover:bg-white/5 hover:text-white/80'
                                 } ${tab.id === 'danger' ? 'text-red-400 hover:text-red-300' : ''}`}
                         >
                             <tab.icon size={16} />

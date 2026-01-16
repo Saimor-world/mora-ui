@@ -42,12 +42,17 @@ export const MyceliumOverlay: React.FC = () => {
     const [intelBlitz, setIntelBlitz] = useState(false);
 
     // React to Department growth (Pilze sprießen - Mushrooms sprouting)
+    // Safe length calculation - handle null, undefined, and empty arrays
+    const departmentCount = Array.isArray(departments) ? departments.length : 0;
+
     useEffect(() => {
-        if (departments.length > 0) {
+        // Guard against null departments from store
+        if (departmentCount > 0) {
             setGrowthPulse(0.6);
             setTimeout(() => setGrowthPulse(0), 1200);
         }
-    }, [departments.length]);
+    }, [departmentCount]);
+
 
     // React to Space selection (Network activation)
     useEffect(() => {
@@ -265,7 +270,7 @@ export const MyceliumOverlay: React.FC = () => {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-0 opacity-50"
+            className="fixed inset-0 pointer-events-auto z-0 opacity-70 cursor-pointer"
             style={{ mixBlendMode: 'screen' }}
         />
     );

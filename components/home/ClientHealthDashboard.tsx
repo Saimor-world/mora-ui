@@ -415,10 +415,7 @@ export const ClientHealthDashboard: React.FC = () => {
                 )}
             </div>
 
-            {/* Orb (Bottom Right - MASTERBIBEL) */}
-            <div className="absolute bottom-12 right-12 z-30">
-                <MoraOrb state="idle" />
-            </div>
+            {/* Orb is rendered by MoraShell (Single Source of Truth) */}
 
             {/* Premium Status Bar */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none z-10">

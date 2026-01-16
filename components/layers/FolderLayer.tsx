@@ -268,34 +268,12 @@ export const FolderLayer: React.FC = () => {
     if (!activeFolderId) return null;
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#05100c] via-[#030806] to-[#000000]">
-
-            {/* Background Starfield (Twinkling) */}
-            <div className="absolute inset-0 w-full h-full pointer-events-none">
-                {stars.map((star, i) => (
-                    <div
-                        key={star.id}
-                        className="absolute rounded-full bg-white"
-                        style={{
-                            left: `${star.x}%`,
-                            top: `${star.y}%`,
-                            width: `${star.size}px`,
-                            height: `${star.size}px`,
-                            opacity: star.opacity,
-                            animation: `twinkle ${3 + (i % 5)}s infinite ease-in-out ${i * 0.2}s`
-                        }}
-                    />
-                ))}
-            </div>
-
-            {/* Nebula Effect */}
-            {/* Noise texture removed - asset not available */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-900/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative w-full h-full overflow-hidden bg-transparent">
 
             {/* Background Title */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
                 <motion.h1
-                    className="text-[140px] font-thin text-white/[0.04] tracking-[0.25em] whitespace-nowrap select-none font-sans"
+                    className="text-[140px] font-thin text-white/[0.12] tracking-[0.25em] whitespace-nowrap select-none font-sans"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 1.5, ease: "easeOut" }}

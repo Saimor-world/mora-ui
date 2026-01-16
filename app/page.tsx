@@ -24,8 +24,14 @@ function RootPageContent() {
             const lastUser = localStorage.getItem('last_user_name');
             const sleepMode = searchParams.get('sleep') === 'true';
 
-            // Only show lockscreen if we have a token AND session
-            if (hasToken && (sleepMode || (hasSession && lastUser))) {
+            // ACTIVE REDIRECT: If we have a token AND session, go home directly (MASTERBIBEL P1)
+            if (hasToken && hasSession && !sleepMode) {
+                router.push('/home');
+                return;
+            }
+
+            // Only show lockscreen if we have a token AND session AND it is Sleep Mode
+            if (hasToken && sleepMode) {
                 setShowLockScreen(true);
                 setSavedUserName(lastUser || 'User');
             } else if (!hasToken) {

@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User } from 'lucide-react';
+import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
-import { MOCK_DATA } from '@/lib/data/mockData';
+
 import { OnboardingWizard } from './OnboardingWizard';
 
 interface WelcomeScreenProps {
@@ -18,7 +18,7 @@ interface WelcomeScreenProps {
 interface SessionInfo {
     lastWorkspace?: string;
     lastActivity?: string;
-    mode?: 'demo' | 'user' | 'owner';
+    mode?: 'user' | 'owner';
     userName?: string;
     role?: string;
 }
@@ -41,7 +41,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [password, setPassword] = useState('');
     const [companyName, setCompanyName] = useState(''); // For owner registration
     const [logoUrl, setLogoUrl] = useState<string | null>(null); // For owner company logo
-    const [selectedRole, setSelectedRole] = useState<'owner' | 'member' | 'demo'>('owner'); // Default to owner
+    const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // Standardmäßig Owner
     const [isLoading, setIsLoading] = useState(false);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showSessionCard, setShowSessionCard] = useState(false);
@@ -65,7 +65,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 setSessionInfo({
                     lastWorkspace: lastWorkspace || undefined,
                     lastActivity: lastActivity || undefined,
-                    mode: (savedMode as 'demo' | 'user' | 'owner') || 'user',
+                    mode: (savedMode as 'user' | 'owner') || 'user',
                     userName: userName || undefined,
                     role: savedRole || undefined
                 });
@@ -83,19 +83,38 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setCompanyName('');
     }, [mode]);
     const handleLogout = () => {
-        localStorage.removeItem('saimor_dev_token');
-        localStorage.removeItem('saimor_mode');
-        localStorage.removeItem('saimor_role');
-        localStorage.removeItem('saimor_tenant');
-        localStorage.removeItem('last_workspace');
-        localStorage.removeItem('last_activity');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('onboarding_complete'); // Fix: Ensure clean slate
-        useMoraStore.getState().resetStore(); // Fix: Clear Zustand state immediately
+        // SECURITY HARDENING: Complete localStorage purge
+        const keysToRemove = [
+            'saimor_dev_token',
+            'saimor_mode',
+            'saimor_role',
+            'saimor_tenant',
+            'last_workspace',
+            'last_activity',
+            'user_name',
+            'onboarding_complete',
+            'mora_session',
+            'last_user_name',
+            // Additional keys that might exist
+            'saimor_auth_token',
+            'mora_auth_token'
+        ];
+
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+
+        // Also clear any saimor/mora prefixed keys we might have missed
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('saimor_') || key.startsWith('mora_') || key.startsWith('last_')) {
+                localStorage.removeItem(key);
+            }
+        });
+
+        useMoraStore.getState().resetStore();
         writeCookie('saimor_auth', '', -1);
+        writeCookie('mora_auth_token', '', -1);
         setSessionInfo(null);
         setShowSessionCard(false);
-        toast.info("Session cleared");
+        toast.info("Sitzung wurde vollständig bereinigt");
     };
 
     const handleContinueSession = async () => {
@@ -106,53 +125,34 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setIsLoading(true);
 
         try {
-            // 1. Load Data for ALL roles (Critical Fix for Member View)
             await store.loadCompanies();
             const companies = useMoraStore.getState().companies;
             let targetCompany = null;
 
-            if (savedRole === 'demo') {
-                setViewMode('demo');
-                // Find Demo Company
-                targetCompany = companies.find(c => c.is_demo === true)
-                    || companies.find(c => c.name.toLowerCase().includes('coffee'))
-                    || companies.find(c => !c.name.toLowerCase().includes('saimor'));
-            } else {
-                // Normal User/Owner
-                if (savedRole === 'owner') {
-                    setViewMode('owner');
-                    setViewLevel('company');
-                } else {
-                    setViewMode('workspace');
-                    setViewLevel('company');
-                }
-
-                // Find User's Company
-                if (savedTenantId) {
-                    targetCompany = companies.find(c => c.tenant_id === savedTenantId);
-                }
-                // Fallback to first company
-                if (!targetCompany && companies.length > 0) {
-                    targetCompany = companies[0];
-                }
+            // Find User's Company
+            if (savedTenantId) {
+                targetCompany = companies.find(c => c.tenant_id === savedTenantId);
+            }
+            // Fallback to first company
+            if (!targetCompany && companies.length > 0) {
+                targetCompany = companies[0];
             }
 
-            // 2. Set Active Company
+            // Set Active Company
             if (targetCompany) {
                 store.setActiveCompany(targetCompany.id);
                 await store.loadDepartments(targetCompany.id);
-                console.log('✅ Session restored for:', targetCompany.name);
-            } else if (savedRole !== 'demo') {
-                console.warn('⚠️ No company found for user.');
-                // Maybe trigger onboarding or error?
+                console.log('✅ Sitzung wiederhergestellt für:', targetCompany.name);
+            } else {
+                console.warn('⚠️ Keine Firma für Benutzer gefunden.');
             }
 
-            toast.success("Welcome back!");
+            toast.success("Willkommen zurück!");
             onAuthenticated();
         } catch (error) {
-            console.error('Failed to continue session:', error);
-            handleLogout(); // Auto-logout on corrupted session
-            toast.error("Session expired. Please login again.");
+            console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
+            handleLogout();
+            toast.error("Sitzung abgelaufen. Bitte erneut anmelden.");
         } finally {
             setIsLoading(false);
         }
@@ -161,6 +161,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
 
     const saveAuthState = (token: string, role: string, email: string, tenantId: string) => {
+        // SECURITY: Clear ALL auth state first to prevent role pollution
+        const keysToRemove = [
+            'saimor_dev_token', 'saimor_mode', 'saimor_role', 'saimor_tenant',
+            'last_workspace', 'last_activity', 'user_name', 'mora_session', 'last_user_name'
+        ];
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+
+        // Now save clean state
         writeCookie('saimor_auth', token, 7); // 7 days
         localStorage.setItem('saimor_dev_token', token);
         localStorage.setItem('saimor_mode', role === 'owner' ? 'owner' : role === 'demo' ? 'demo' : 'user');
@@ -170,149 +178,52 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         localStorage.setItem('last_activity', new Date().toISOString());
     };
 
-    const handleDemoMode = async () => {
-        setIsLoading(true);
-        const toastId = toast.loading("Starting demo mode...");
-
-        try {
-            // ═══════════════════════════════════════════════════════════════════════════
-            // PHASE 6: CREATE TEMPORARY DEMO USER
-            // ═══════════════════════════════════════════════════════════════════════════
-            const demoUser: MoraUser = {
-                id: 'demo-user-temp',
-                name: 'Demo User',
-                email: 'demo@saimor.dev',
-                role: 'demo'
-            };
-
-            // Set the demo user in store
-            setUser(demoUser);
-
-            // 1. Try to use ENV Token if available (Dev/Preview)
-            const envToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT;
-
-            if (envToken) {
-                console.log('Using ENV Token for Demo');
-                saveAuthState(envToken, 'demo', 'demo@saimor.dev', 'tenant-default');
-            } else {
-                // Create a fake token for demo mode
-                saveAuthState('demo-token-local', 'demo', 'demo@saimor.dev', 'tenant-default');
-            }
-
-            localStorage.setItem('last_workspace', 'Simple Coffee Group');
-            setViewMode('demo');
-
-            // Load data
-            const store = useMoraStore.getState();
-            try {
-                await store.loadCompanies();
-            } catch (e) {
-                console.warn('Failed to load companies in demo init:', e);
-            }
-
-            const companies = useMoraStore.getState().companies;
-            let demoCompany = companies.find(c => c.is_demo === true);
-
-            if (!demoCompany) {
-                demoCompany = companies.find(c => c.name.toLowerCase().includes('coffee'));
-            }
-            if (!demoCompany) {
-                demoCompany = companies.find(c => !c.name.toLowerCase().includes('saimor'));
-            }
-            if (!demoCompany && companies.length > 0) {
-                demoCompany = companies[0];
-            }
-
-            // FALLBACK IF NO COMPANIES LOADED (e.g. Backend Offline)
-            if (!demoCompany) {
-                console.warn('⚠️ No companies found. Using fallback mock company for demo.');
-                demoCompany = {
-                    id: 'comp-demo-fallback',
-                    tenant_id: 'tenant-default',
-                    owner_id: 'demo-owner',
-                    name: 'Simple Coffee Group',
-                    slug: 'simple-coffee',
-                    description: 'Demo Company',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    logo_url: null,
-                    is_demo: true
-                };
-
-                // Inject fallback company into store
-                useMoraStore.setState(state => ({
-                    companies: [...state.companies, demoCompany!]
-                }));
-            }
-
-            if (demoCompany) {
-                store.setActiveCompany(demoCompany.id);
-
-                // ═══════════════════════════════════════════════════════════════════════════
-                // PHASE 6: LOAD MOCK NODES FOR SEMANTIC HIERARCHY (MOONS)
-                // ═══════════════════════════════════════════════════════════════════════════
-                const mockNodes = MOCK_DATA.demo.nodes || [];
-
-                // Inject all necessary mock data for full offline experience
-                // ALWAYS inject demo mock data for consistent universe visualization
-                useMoraStore.setState(state => ({
-                    // 1. Inject Nodes (background particles)
-                    nodesByCompany: {
-                        ...state.nodesByCompany,
-                        [demoCompany!.id]: mockNodes as any
-                    },
-                    // 2. Inject Departments - ALWAYS for demo to ensure planets
-                    departments: MOCK_DATA.demo.departments as any,
-                    // 3. Inject Spaces (Moons) - ALWAYS for demo to ensure moons orbit planets
-                    spacesByDepartment: {
-                        ...state.spacesByDepartment,
-                        ...(MOCK_DATA.demo.spaces as any)
-                    },
-                    // 4. Inject Folders (Stars) for demo - ALWAYS inject for consistent universe
-                    foldersBySpace: {
-                        ...state.foldersBySpace,
-                        ...(MOCK_DATA.demo.folders as any)
-                    }
-                }));
-
-                // Only try to load real departments if we found a real company
-                if (demoCompany.id !== 'comp-demo-fallback') {
-                    store.loadDepartments(demoCompany.id).catch(console.error);
-                }
-
-                toast.success(`Welcome to ${demoCompany.name}`, { id: toastId });
-            } else {
-                toast.success("Demo mode activated", { id: toastId });
-            }
-
-            onAuthenticated();
-            return;
-        } catch (error: any) {
-            console.error('[WelcomeScreen] Demo error:', error);
-            toast.error("Could not start demo mode: " + error.message, { id: toastId });
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleLogin = async () => {
+        console.log('[WelcomeScreen] handleLogin called');
+        console.log('[WelcomeScreen] Current email state:', email);
+        console.log('[WelcomeScreen] Current password state:', password ? '(has value)' : '(empty)');
+        console.log('[WelcomeScreen] Current mode:', mode);
+
         if (!email || !password) {
-            toast.error("Please enter email and password");
+            console.log('[WelcomeScreen] VALIDATION FAILED - email empty:', !email, 'password empty:', !password);
+            toast.error("Bitte E-Mail und Passwort eingeben");
             return;
         }
 
+        const trimmedEmail = email.trim();
         setIsLoading(true);
-
         try {
+            console.log('[WelcomeScreen] Sending request to:', `${CORE_URL}/v1/auth/login`);
             const response = await fetch(`${CORE_URL}/v1/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email: trimmedEmail, password })
             });
+            console.log('[WelcomeScreen] Response status:', response.status);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
-                throw new Error(errorData.detail || 'Login failed');
+                const errorData = await response.json().catch(() => ({ detail: null }));
+                const statusCode = response.status;
+
+                // Provide context-aware error messages
+                let errorMessage = 'Login fehlgeschlagen';
+
+                if (statusCode === 401) {
+                    errorMessage = 'Ungültige E-Mail-Adresse oder falsches Passwort';
+                } else if (statusCode === 404) {
+                    errorMessage = 'Konto existiert nicht. Bitte registrieren Sie sich zuerst.';
+                } else if (statusCode === 429) {
+                    errorMessage = 'Zu viele Login-Versuche. Bitte warten Sie einen Moment.';
+                } else if (statusCode === 403) {
+                    errorMessage = 'Zugriff verweigert. Bitte kontaktieren Sie den Administrator.';
+                } else if (statusCode >= 500) {
+                    errorMessage = 'Server-Fehler. Bitte versuchen Sie es später erneut.';
+                }
+
+                // Use backend error detail if more specific
+                const finalError = errorData?.detail || errorMessage;
+                throw new Error(finalError);
             }
 
             const data = await response.json();
@@ -326,49 +237,63 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 id: data.user_id,
                 name: email.split('@')[0],
                 email: email,
-                role: role
+                role: role as any,
+                tenant_id: data.tenant_id
             });
 
             // Set View Mode immediately (data will load in /home)
-            if (role === 'owner' || role === 'admin') {
+            const systemOwners = ['m.f4hrlaender@gmail.com', 'master_real@saimor.io', 'nextchaptergermany@gmail.com'];
+
+            if ((role === 'owner' || role === 'admin') && systemOwners.includes(email)) {
                 setViewMode('owner');
                 setViewLevel('company');
-                localStorage.setItem('last_workspace', 'Owner Dashboard');
+            } else if (role === 'demo') {
+                setViewMode('demo');
+                setViewLevel('core');
             } else {
                 setViewMode('workspace');
-                setViewLevel('company');
-                localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
+                setViewLevel('core');
             }
 
-            // Also store session markers
             localStorage.setItem('mora_session', 'active');
             localStorage.setItem('last_user_name', email.split('@')[0]);
 
-            toast.success(`Welcome, ${email.split('@')[0]}!`);
-
-            // Navigate FIRST, data will load async in /home via useAuthBootstrapper
+            toast.success(`Willkommen, ${email.split('@')[0]}!`);
             onAuthenticated();
         } catch (error: any) {
-            console.error('[WelcomeScreen] Login error:', error);
-            toast.error(error?.message || "Login failed");
+            console.error('[WelcomeScreen] Login Fehler:', error);
+            toast.error(error?.message || "Login fehlgeschlagen");
         } finally {
             setIsLoading(false);
         }
     };
 
+    // handleDemoMode removed - demo access now requires real login credentials
+
     const handleRegister = async () => {
-        if (!email || !password) {
-            toast.error("Please enter email and password");
+        // Comprehensive input validation
+        if (!email || !email.trim()) {
+            toast.error('E-Mail-Adresse ist erforderlich');
             return;
         }
 
-        if (selectedRole === 'owner' && !companyName.trim()) {
-            toast.error("Please enter a company name");
+        if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+            toast.error('Ungültige E-Mail-Adresse');
+            return;
+        }
+
+        if (!password || password.length < 6) {
+            toast.error('Passwort muss mindestens 6 Zeichen lang sein');
+            return;
+        }
+
+        if (selectedRole === 'owner' && (!companyName || !companyName.trim())) {
+            toast.error('Firmenname ist erforderlich für Owner-Accounts');
             return;
         }
 
         setIsLoading(true);
-        const toastId = toast.loading("Creating your account...");
+        const toastId = toast.loading("Account wird erstellt...");
 
         try {
             const response = await fetch(`${CORE_URL}/v1/auth/register`, {
@@ -383,8 +308,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ detail: 'Registration failed' }));
-                throw new Error(errorData.detail || 'Registration failed');
+                const errorData = await response.json().catch(() => ({ detail: 'Registrierung fehlgeschlagen' }));
+                throw new Error(errorData.detail || 'Registrierung fehlgeschlagen');
             }
 
             const data = await response.json();
@@ -419,19 +344,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 // Determine if we need onboarding (for new owner it is mandatory)
                 setRegisteredEmail(email);
                 setShowOnboarding(true);
-                toast.success('Account created! Let\'s set up your workspace.', { id: toastId });
+                toast.success('Account erstellt! Richten wir Ihren Arbeitsbereich ein.', { id: toastId });
                 return;
             } else {
                 setViewMode('workspace');
                 setViewLevel('company');
                 localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
-                toast.success("Account created! Welcome to SAIMÔR.", { id: toastId });
+                toast.success("Account erstellt! Willkommen bei SAIMÔR.", { id: toastId });
             }
 
             onAuthenticated();
         } catch (error: any) {
-            console.error('[WelcomeScreen] Register error:', error);
-            toast.error(error?.message || "Registration failed", { id: toastId });
+            console.error('[WelcomeScreen] Registrierung Fehler:', error);
+            toast.error(error?.message || "Registrierung fehlgeschlagen", { id: toastId });
         } finally {
             setIsLoading(false);
         }
@@ -518,8 +443,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             transition={{ duration: 1, ease: "easeOut" }}
                             className="flex flex-col items-center gap-8"
                         >
-                            {/* Orb with Pulsing Rings */}
-                            <div className="relative">
+                            {/* Orb with Pulsing Rings - Decorative only, no MoraOrb component */}
+                            <div className="relative w-20 h-20">
                                 <motion.div
                                     animate={{
                                         scale: [1, 1.3, 1],
@@ -545,7 +470,23 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     }}
                                     className="absolute inset-0 w-40 h-40 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 rounded-full border border-mora-gold/20"
                                 />
-                                <MoraOrb state="idle" />
+                                {/* Decorative orb sphere - simpler version without full MoraOrb component */}
+                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-gradient-radial from-emerald-400/30 to-emerald-600/10 blur-sm" />
+                                <motion.div
+                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full"
+                                    style={{
+                                        background: 'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 25%), radial-gradient(circle at 50% 50%, #10B981 0%, rgba(16,185,129,0.6) 50%, rgba(16,185,129,0.2) 80%, transparent 100%)'
+                                    }}
+                                    animate={{
+                                        scale: [1, 1.05, 1],
+                                        opacity: [0.8, 1, 0.8]
+                                    }}
+                                    transition={{
+                                        duration: 4,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                />
                             </div>
 
                             {/* Title Section with Better Typography */}
@@ -566,7 +507,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 >
                                     <div className="h-px w-8 bg-gradient-to-r from-transparent to-emerald-500/30" />
                                     <p className="text-xs text-emerald-500/60 tracking-[0.25em] uppercase font-light">
-                                        Intelligent Knowledge System
+                                        Intelligentes Wissenssystem
                                     </p>
                                     <div className="h-px w-8 bg-gradient-to-l from-transparent to-emerald-500/30" />
                                 </motion.div>
@@ -577,7 +518,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     className="flex items-center justify-center gap-2"
                                 >
                                     <div className="w-1 h-1 rounded-full bg-mora-gold/50 animate-pulse" />
-                                    <span className="text-[10px] text-mora-gold/70 tracking-widest font-medium">BETA 1.4</span>
+                                    <span className="text-[10px] text-mora-gold/70 tracking-widest font-medium">BETA 1.5</span>
                                     <div className="w-1 h-1 rounded-full bg-mora-gold/50 animate-pulse" />
                                 </motion.div>
                             </div>
@@ -608,10 +549,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     <Clock className="w-5 h-5 text-emerald-400" />
                                                 </motion.div>
                                                 <div>
-                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Welcome Back!</div>
+                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Willkommen zurück!</div>
                                                     <div className="text-xs text-emerald-500/60 font-light tracking-wider">
-                                                        {sessionInfo.userName || 'User'}
-                                                        {sessionInfo.role && ` • ${sessionInfo.role.charAt(0).toUpperCase() + sessionInfo.role.slice(1)}`}
+                                                        {sessionInfo.userName || 'Benutzer'}
+                                                        {sessionInfo.role && ` • ${sessionInfo.role === 'owner' ? 'Eigentümer' : 'Mitglied'}`}
                                                     </div>
                                                 </div>
                                             </div>
@@ -619,14 +560,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 onClick={handleLogout}
                                                 className="text-xs text-red-400/50 hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-500/10"
                                             >
-                                                Clear
+                                                Beenden
                                             </button>
                                         </div>
 
                                         {sessionInfo.lastWorkspace && (
                                             <div className="flex items-center gap-2 text-xs mb-5 p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10">
                                                 <Zap className="w-3.5 h-3.5 text-mora-gold" />
-                                                <span className="text-emerald-500/70">Last workspace:</span>
+                                                <span className="text-emerald-500/70">Letzter Arbeitsbereich:</span>
                                                 <span className="text-emerald-100 font-medium">{sessionInfo.lastWorkspace}</span>
                                             </div>
                                         )}
@@ -637,7 +578,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             whileTap={{ scale: 0.98 }}
                                             className="w-full py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_0_rgba(16,185,129,0.2)]"
                                         >
-                                            <span className="font-medium tracking-wide">Continue Session</span>
+                                            <Clock className="w-4 h-4 text-emerald-400" />
+                                            <span className="font-medium tracking-wide">
+                                                {sessionInfo.role === 'demo' ? 'Demo fortsetzen' : 'Sitzung fortsetzen'}
+                                            </span>
                                         </motion.button>
                                     </div>
                                 </div>
@@ -652,66 +596,43 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 transition={{ delay: 0.5, staggerChildren: 0.1 }}
                                 className="w-full max-w-md space-y-3"
                             >
-                                {/* Sign In Button */}
+                                {/* Anmelden Button */}
                                 <motion.button
                                     onClick={() => setMode('login')}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
                                 >
-                                    {/* Hover Glow Effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
                                     <div className="relative p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40 transition-all duration-300">
                                         <LogIn className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Sign In</div>
-                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">Access your workspace</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Anmelden</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">Zugriff auf Ihren Arbeitsbereich</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
 
-                                {/* Create Account Button */}
+                                {/* Account Erstellen Button */}
                                 <motion.button
                                     onClick={() => setMode('register')}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-mora-gold/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
                                 >
-                                    {/* Hover Glow Effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-mora-gold/0 via-mora-gold/10 to-mora-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
                                     <div className="relative p-3 rounded-xl bg-mora-gold/10 border border-mora-gold/20 group-hover:bg-mora-gold/20 group-hover:border-mora-gold/40 transition-all duration-300">
                                         <UserPlus className="w-5 h-5 text-mora-gold group-hover:text-mora-gold/90 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Create Account</div>
-                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">Start your journey</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Account Erstellen</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">Starten Sie Ihre Reise</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
                                 </motion.button>
 
-                                {/* Demo Mode Button */}
-                                <motion.button
-                                    onClick={handleDemoMode}
-                                    disabled={isLoading}
-                                    whileHover={{ scale: isLoading ? 1 : 1.02, x: isLoading ? 0 : 4 }}
-                                    whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
-                                >
-                                    {/* Hover Glow Effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                                    <div className="relative p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 transition-all duration-300">
-                                        <Database className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                                    </div>
-                                    <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Demo Mode</div>
-                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Explore Simple Coffee Group</div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                                </motion.button>
+                                {/* Demo Button removed as requested - user wants to focus on real account flow */}
                             </motion.div>
                         )}
                     </motion.div>
@@ -747,6 +668,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 type="email"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
+                                                autoComplete="off"
+                                                autoCorrect="off"
+                                                autoCapitalize="off"
+                                                spellCheck="false"
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
                                                 placeholder="your@email.com"
                                             />
@@ -761,6 +686,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                                                autoComplete="new-password"
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
                                                 placeholder="••••••••"
                                             />
@@ -773,7 +699,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             whileTap={{ scale: isLoading ? 1 : 0.98 }}
                                             className="w-full mt-8 py-3.5 bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 hover:from-emerald-500/30 hover:to-emerald-500/20 border border-emerald-500/40 hover:border-emerald-500/60 rounded-xl text-emerald-100 font-medium tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_0_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_0_rgba(16,185,129,0.2)]"
                                         >
-                                            {isLoading ? 'Signing in...' : 'Sign In'}
+                                            {isLoading ? 'Melde an...' : 'Anmelden'}
                                         </motion.button>
 
                                         <button
@@ -784,7 +710,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            ← Back to Welcome
+                                            ← Zurück zum Hauptbereich
                                         </button>
                                     </div>
                                 </div>
@@ -802,102 +728,127 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                         exit={{ opacity: 0, y: -20 }}
                         className="relative z-10 w-full max-w-md px-6"
                     >
-                        <div className="bg-[#050d0a]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
-                            <h2 className="text-2xl font-light tracking-widest text-emerald-50 mb-6 text-center">Create Account</h2>
+                        {/* Glass Form Container */}
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-mora-gold/20 via-transparent to-emerald-500/10 rounded-2xl blur-2xl opacity-60" />
+                            <div className="relative bg-[#050d0a]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-[0_8px_32px_0_rgba(16,185,129,0.15)]">
+                                {/* Inner Glow */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent rounded-2xl pointer-events-none" />
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-xs text-emerald-500/50 mb-2 uppercase">Email</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-emerald-50 focus:outline-none focus:border-mora-gold/50"
-                                        placeholder="your@email.com"
-                                    />
-                                </div>
+                                <div className="relative z-10">
+                                    <h2 className="text-2xl font-extralight tracking-[0.2em] text-emerald-50 mb-8 text-center uppercase drop-shadow-[0_0_15px_rgba(206,182,118,0.2)]">
+                                        Account Erstellen
+                                    </h2>
 
-                                <div>
-                                    <label className="block text-xs text-emerald-500/50 mb-2 uppercase">Password</label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-emerald-50 focus:outline-none focus:border-mora-gold/50"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-
-                                {/* Company Name - Only for Owners */}
-                                {selectedRole === 'owner' && (
                                     <div className="space-y-4">
-                                        <div className="flex justify-center mb-4">
-                                            <CompanyLogoUpload
-                                                value={logoUrl}
-                                                onChange={setLogoUrl}
-                                                companyName={companyName || 'Company'}
+                                        <div>
+                                            <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
+                                                E-Mail
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-mora-gold/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
+                                                placeholder="ihre@email.de"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs text-mora-gold/70 mb-2 uppercase">Company Name *</label>
+                                            <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
+                                                Passwort
+                                            </label>
                                             <input
-                                                type="text"
-                                                value={companyName}
-                                                onChange={(e) => setCompanyName(e.target.value)}
-                                                className="w-full bg-black/30 border border-mora-gold/30 rounded-lg px-4 py-3 text-emerald-50 focus:outline-none focus:border-mora-gold/50 placeholder:text-mora-gold/30"
-                                                placeholder="Your Company Name"
+                                                type="password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-mora-gold/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
+                                                placeholder="••••••••"
                                             />
-                                            <p className="text-[10px] text-mora-gold/50 mt-1">This will be your workspace name</p>
                                         </div>
-                                    </div>
-                                )}
 
-                                {/* Role Selection */}
-                                <div>
-                                    <label className="block text-xs text-emerald-500/50 mb-3 uppercase">Account Type</label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedRole('owner')}
-                                            className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${selectedRole === 'owner'
-                                                ? 'border-mora-gold bg-mora-gold/10 text-mora-gold'
-                                                : 'border-white/10 text-emerald-100/70 hover:border-emerald-500/30'
-                                                }`}
+                                        {/* Company Name - Only for Owners */}
+                                        {selectedRole === 'owner' && (
+                                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                                <div className="flex justify-center mb-4">
+                                                    <CompanyLogoUpload
+                                                        value={logoUrl}
+                                                        onChange={setLogoUrl}
+                                                        companyName={companyName || 'Company'}
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] text-mora-gold/70 mb-2.5 uppercase tracking-widest font-medium">
+                                                        Unternehmensname *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={companyName}
+                                                        onChange={(e) => setCompanyName(e.target.value)}
+                                                        className="w-full bg-black/40 border border-mora-gold/30 rounded-xl px-4 py-3.5 text-emerald-50 focus:outline-none focus:border-mora-gold/60 focus:bg-black/60 placeholder:text-mora-gold/30 transition-all duration-300"
+                                                        placeholder="Name Ihres Unternehmens"
+                                                    />
+                                                    <p className="text-[10px] text-mora-gold/50 mt-1.5 flex items-center gap-1">
+                                                        <Sparkles size={10} />
+                                                        Dies wird der Name Ihres Arbeitsbereichs sein
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Role Selection */}
+                                        <div className="pt-2">
+                                            <label className="block text-[10px] text-emerald-500/60 mb-3 uppercase tracking-widest font-medium">
+                                                Account-Typ
+                                            </label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRole('owner')}
+                                                    className={`p-4 rounded-xl border transition-all duration-300 flex flex-col items-center gap-2 relative overflow-hidden group ${selectedRole === 'owner'
+                                                        ? 'border-mora-gold bg-mora-gold/10 text-mora-gold shadow-[0_0_20px_rgba(206,182,118,0.15)]'
+                                                        : 'border-white/10 bg-black/20 text-emerald-100/70 hover:border-emerald-500/30 hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
+                                                    <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
+                                                    <span className="text-xs font-medium relative z-10">Eigentümer</span>
+                                                    <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRole('member')}
+                                                    className={`p-4 rounded-xl border transition-all duration-300 flex flex-col items-center gap-2 relative overflow-hidden group ${selectedRole === 'member'
+                                                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                                                        : 'border-white/10 bg-black/20 text-emerald-100/70 hover:border-emerald-500/30 hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    <User className={`w-5 h-5 ${selectedRole === 'member' ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : ''}`} />
+                                                    <span className="text-xs font-medium relative z-10">Mitglied</span>
+                                                    <span className="text-[10px] opacity-50 relative z-10">Bereich beitreten</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <motion.button
+                                            onClick={handleRegister}
+                                            disabled={isLoading}
+                                            whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                                            whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                                            className="w-full mt-6 py-3.5 bg-gradient-to-r from-mora-gold/15 to-mora-gold/5 hover:from-mora-gold/25 hover:to-mora-gold/15 border border-mora-gold/30 hover:border-mora-gold/50 rounded-xl text-emerald-100 font-medium tracking-wide transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_0_rgba(206,182,118,0.1)] hover:shadow-[0_0_30px_0_rgba(206,182,118,0.2)]"
                                         >
-                                            <Building2 className="w-5 h-5" />
-                                            <span className="text-xs font-medium">Owner</span>
-                                            <span className="text-[10px] opacity-50">Manage clients</span>
-                                        </button>
+                                            {isLoading ? 'Erstelle...' : 'Account Erstellen'}
+                                        </motion.button>
+
                                         <button
-                                            type="button"
-                                            onClick={() => setSelectedRole('member')}
-                                            className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${selectedRole === 'member'
-                                                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
-                                                : 'border-white/10 text-emerald-100/70 hover:border-emerald-500/30'
-                                                }`}
+                                            onClick={() => setMode('welcome')}
+                                            className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            <User className="w-5 h-5" />
-                                            <span className="text-xs font-medium">Member</span>
-                                            <span className="text-[10px] opacity-50">Join workspace</span>
+                                            ← Zurück zum Hauptbereich
                                         </button>
                                     </div>
                                 </div>
-
-                                <button
-                                    onClick={handleRegister}
-                                    disabled={isLoading}
-                                    className="w-full mt-6 py-3 bg-mora-gold/10 hover:bg-mora-gold/20 border border-mora-gold/30 rounded-lg text-emerald-100 transition-all disabled:opacity-50"
-                                >
-                                    {isLoading ? 'Creating...' : 'Create Account'}
-                                </button>
-
-                                <button
-                                    onClick={() => setMode('welcome')}
-                                    className="w-full py-2 text-xs text-emerald-500/50 hover:text-emerald-400"
-                                >
-                                    ← Back
-                                </button>
                             </div>
                         </div>
                     </motion.div>

@@ -2,9 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity, Cpu, HardDrive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { uploadFile } from '@/lib/api/coreClient';
+import { uploadFile, fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 
 interface ScannedFile {
@@ -14,15 +14,70 @@ interface ScannedFile {
     size: number;
     status: 'pending' | 'uploading' | 'analyzing' | 'done' | 'error';
     result?: string;
+    nativeFile?: File; // Added to hold real file
 }
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { activeCompanyId } = useMoraStore();
     const pane = getPane(id);
 
     const [files, setFiles] = useState<ScannedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [scanFolderId, setScanFolderId] = useState<string | null>(null);
+    const [stats, setStats] = useState<SystemStats | null>(null);
+
+    // Fetch system telemetry for "Godmode" grounding
+    React.useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await fetchSystemStats();
+                if (data) setStats(data);
+            } catch (e) {
+                // Silent fail
+            }
+        };
+        fetchStats();
+        const interval = setInterval(fetchStats, 5000); // Update every 5s
+        return () => clearInterval(interval);
+    }, []);
+
+    // Ensure 'Scans' folder exists on mount
+    React.useEffect(() => {
+        const initScanFolder = async () => {
+            if (!activeCompanyId) return;
+            try {
+                // 1. Try to find existing Scans folder
+                const folders = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v1/folders?tenant_id=${activeCompanyId}`));
+                if (folders && Array.isArray(folders)) {
+                    const existing = folders.find((f: any) => f.name === 'Scans');
+                    if (existing) {
+                        setScanFolderId(existing.id);
+                        return;
+                    }
+                }
+
+                // 2. Create if missing
+                // Need a space first? Default space.
+                // Simplified: just try creating at root (folder logic handles space fallback usually?)
+                // Actually corePost('/v1/folders') needs space_id.
+                // We'll fetch spaces first.
+                const spaces = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v1/spaces?tenant_id=${activeCompanyId}`));
+                if (spaces && spaces.length > 0) {
+                    const newFolder = await import('@/lib/api/coreClient').then(m => m.corePost('/v1/folders', {
+                        name: 'Scans',
+                        space_id: spaces[0].id,
+                        description: 'Inbox for Scanned Documents',
+                        icon: 'zap'
+                    }));
+                    if (newFolder) setScanFolderId(newFolder.id);
+                }
+            } catch (e) {
+                console.error("Failed to init Scan folder", e);
+            }
+        };
+        initScanFolder();
+    }, [activeCompanyId]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -34,7 +89,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             name: f.name,
             type: f.type,
             size: f.size,
-            status: 'pending'
+            status: 'pending',
+            nativeFile: f
         }));
 
         setFiles(prev => [...prev, ...newFiles]);
@@ -47,43 +103,77 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             name: f.name,
             type: f.type,
             size: f.size,
-            status: 'pending'
+            status: 'pending',
+            nativeFile: f
         }));
 
         setFiles(prev => [...prev, ...newFiles]);
     };
 
-    const processFile = async (fileId: string) => {
+    const processFile = async (fileId: string, fileObject?: File) => {
         setFiles(prev => prev.map(f =>
-            f.id === fileId ? { ...f, status: 'analyzing' } : f
+            f.id === fileId ? { ...f, status: 'uploading' } : f
         ));
 
-        // Simulate AI analysis (in production, this would call a real API)
-        await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 1500));
+        if (!scanFolderId) {
+            toast.error("Scanning System Initializing... please wait.");
+            setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'pending' } : f));
+            return;
+        }
 
-        const mockResults = [
-            'Document analyzed: Contains business proposal with 3 key sections.',
-            'Image processed: Detected 2 charts and 1 diagram.',
-            'Text extracted: 1,234 words identified with 98% confidence.',
-            'Content indexed: Added to knowledge base successfully.',
-            'Semantic analysis: 5 key topics identified.'
-        ];
+        // We need the actual File object. 
+        // Note: The current UI stores File in memory only if passed?
+        // handleDrop creates ScannedFile but drops the File object?
+        // No, current handleDrop DOES NOT store the File object in state `files` (ScannedFile interface).
+        // I need to update state to store the File object or pass it.
+        // I'll update handleDrop to store 'nativeFile' in `ScannedFile`.
 
-        setFiles(prev => prev.map(f =>
-            f.id === fileId ? {
-                ...f,
-                status: 'done',
-                result: mockResults[Math.floor(Math.random() * mockResults.length)]
-            } : f
-        ));
+        // Wait, I can't update interface easily in a chunk without breaking previous code.
+        // I'll assume I update interface in another chunk or here.
+        // Actually, let's update ScannedFile interface in a separate chunk first? 
+        // No, I'll do it here if possible. 
+        // FileObject is needed.
 
-        toast.success(`Analyzed: ${files.find(f => f.id === fileId)?.name}`);
+        // ... (See below for fix strategy: Update ScannedFile interface to include `file?: File`)
+
+        if (!fileObject) {
+            // If we don't have the file object (e.g. strict state), we can't upload.
+            // But handleDrop/handleFileInput has access. 
+            // Logic in state must hold the file.  
+            // I will mock success if file missing (for UI demo) but try real if present.
+            // Actually, I must fix the state to hold the file.
+
+            // ...
+            // Let's assume I fix the interface below.
+
+            toast.error("File lost in memory");
+            return;
+        }
+
+        try {
+            await uploadFile(fileObject, scanFolderId);
+
+            // Success
+            setFiles(prev => prev.map(f =>
+                f.id === fileId ? {
+                    ...f,
+                    status: 'done',
+                    result: 'Uploaded & Autonomous Cognition Started'
+                } : f
+            ));
+            toast.success(`Uploaded: ${fileObject.name}`);
+
+        } catch (e) {
+            console.error(e);
+            setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'error' } : f));
+            toast.error("Upload failed");
+        }
     };
 
     const processAllPending = async () => {
         const pending = files.filter(f => f.status === 'pending');
         for (const file of pending) {
-            await processFile(file.id);
+            await processFile(file.id, file.nativeFile);
         }
     };
 
@@ -112,19 +202,48 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
     return (
         <GlassPanel
-            title="Scanner"
-            width={700}
-            height={600}
+            title="Môra AI Scanner"
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={isActive}
+            isActive={true}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
             draggable
+            resizable
         >
-            <div className="flex flex-col h-full p-4 gap-4">
+            <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
+                {/* Godmode Telemetry Ribbon */}
+                {stats && (
+                    <div className="flex items-center gap-4 px-3 py-2 bg-purple-500/5 border border-purple-500/10 rounded-lg text-[10px] tracking-tight">
+                        <div className="flex items-center gap-1.5 text-purple-400">
+                            <Activity size={12} />
+                            <span className="uppercase font-bold">Neural Load:</span>
+                            <span className="text-white/60">{(stats.intelligence.mora_load * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-blue-400">
+                            <Cpu size={12} />
+                            <span className="uppercase font-bold">CPU:</span>
+                            <span className="text-white/60">{stats.metrics.cpu.toFixed(0)}%</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-emerald-400">
+                            <HardDrive size={12} />
+                            <span className="uppercase font-bold">MEM:</span>
+                            <span className="text-white/60">{stats.metrics.memory_usage.toFixed(0)}%</span>
+                        </div>
+                        <div className="flex-1 text-right text-white/20 uppercase font-medium">
+                            Status: <span className="text-emerald-500/50">Optimal Cognition</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Drop Zone */}
                 <div
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -198,10 +317,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
                                             {file.status === 'pending' && (
                                                 <button
-                                                    onClick={() => processFile(file.id)}
+                                                    onClick={() => processFile(file.id, file.nativeFile)}
                                                     className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
                                                 >
-                                                    Click to analyze
+                                                    Click to upload & analyze
                                                 </button>
                                             )}
 

@@ -4,7 +4,6 @@ import React, { useMemo } from "react";
 import { useMoraStore } from "@/lib/store/moraState";
 import { useUser } from "@/lib/hooks/useUser";
 import { useIntelFeed } from "@/lib/mora/useIntelFeed";
-import { MoraOrb } from "@/components/mora/MoraOrb";
 import { Sparkles, Activity, AlertTriangle, Command } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -16,6 +15,7 @@ interface Props {
 export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpen }) => {
     const { role } = useUser();
     const orbState = useMoraStore((s) => s.orbState);
+    const viewMode = useMoraStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
     const { hint } = useIntelFeed();
 
@@ -23,9 +23,9 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
         if (coreError) return "SYSTEM CONNECTION LOST";
         if (orbState === "thinking") return "ABSORBING KNOWLEDGE...";
         if (orbState === "focus") return "ACTIVE NAVIGATION";
-        if (orbState === "demo") return "DEMO MODE ACTIVE";
+        if (viewMode === "demo") return "DEMO MODE ACTIVE";
         return "AWAITING INPUT";
-    }, [orbState, coreError]);
+    }, [orbState, coreError, viewMode]);
 
     const intelText = hint?.summary || hint?.title || "Môra is observing the workspace...";
 
@@ -43,16 +43,14 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
                         }`}
                 >
 
-                    {/* Orb Container (Left Anchor) */}
+                    {/* Status Indicator (Compact - Orb is in MoraShell) */}
                     <div className="relative shrink-0">
                         <div className="w-12 h-12 flex items-center justify-center">
-                            <div className="scale-75 transform transition-transform group-hover:scale-90">
-                                <MoraOrb
-                                    role={role === 'owner' ? 'admin' : role === 'demo' ? 'member' : role as 'admin' | 'member' | 'manager'}
-                                    state={orbState}
-                                    demoMode={false}
-                                />
-                            </div>
+                            <div className={`w-3 h-3 rounded-full transition-all ${orbState === 'thinking' ? 'bg-mora-gold animate-pulse' :
+                                orbState === 'focus' ? 'bg-emerald-400' :
+                                    coreError ? 'bg-red-400 animate-pulse' :
+                                        'bg-emerald-500/50'
+                                }`} />
                         </div>
                     </div>
 

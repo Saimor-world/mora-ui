@@ -94,6 +94,20 @@ export const toast = {
     });
   },
 
+  warning: (message: string, options?: { description?: string; duration?: number }) => {
+    sonnerToast.warning(message, {
+      duration: options?.duration || 3500,
+      description: options?.description,
+      position: 'bottom-right',
+      style: {
+        background: 'rgba(245, 158, 11, 0.1)',
+        border: '1px solid rgba(245, 158, 11, 0.3)',
+        color: '#f59e0b',
+        backdropFilter: 'blur(12px)',
+      },
+    });
+  },
+
   loading: (message: string) => {
     return sonnerToast.loading(message, {
       position: 'bottom-right',
