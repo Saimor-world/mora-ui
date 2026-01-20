@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building2, Users, FolderOpen, Sparkles,
     ArrowRight, ArrowLeft, Check, Loader2,
-    Plus, X, Briefcase, Globe, Zap, Link2
+    Plus, X, Zap
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
-import { GoogleConnect } from '@/components/integrations/GoogleConnect';
 
 /**
  * ONBOARDING WIZARD
@@ -65,7 +64,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         { title: 'Willkommen', icon: Sparkles },
         { title: 'Unternehmen', icon: Building2 },
         { title: 'Abteilungen', icon: Users },
-        { title: 'Verbinden', icon: Link2 },
         { title: 'Fertig', icon: Zap }
     ];
 
@@ -99,8 +97,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             case 0: return true; // Welcome
             case 1: return companyName.trim().length >= 2; // Company
             case 2: return true; // Departments (Optional)
-            case 3: return true; // Connect (optional)
-            case 4: return true; // Complete
+            case 3: return true; // Complete
             default: return false;
         }
     };
@@ -443,25 +440,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                             </motion.div>
                         )}
 
-                        {/* Step 3: Connectors */}
+                        {/* Step 3: Complete */}
                         {step === 3 && (
-                            <motion.div
-                                key="connectors"
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                            >
-                                <h2 className="text-2xl font-light text-white mb-2">Daten verbinden</h2>
-                                <p className="text-white/50 mb-6">Integrieren Sie Ihre bestehenden Tools, um Môra sofort mit Ihrem Geschäftskontext zu trainieren.</p>
-
-                                <div className="bg-black/20 rounded-xl border border-white/5 p-2 max-h-[300px] overflow-y-auto">
-                                    <GoogleConnect compact />
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* Step 4: Complete */}
-                        {step === 4 && (
                             <motion.div
                                 key="complete"
                                 initial={{ opacity: 0, x: 20 }}

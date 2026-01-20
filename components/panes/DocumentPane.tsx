@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { Save, Edit2, Eye, FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X } from 'lucide-react';
+import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
 
@@ -10,12 +10,12 @@ interface DocumentPaneProps {
 }
 
 /**
- * DocumentPane - View and Edit Documents
+ * DocumentPane - View Documents (read-only)
  * 
  * LOADS REAL DATA from backend API!
  * Supports:
  * - Markdown files (rendered)
- * - Text files (editable)
+ * - Text files (read-only)
  * - Images (preview)  
  * - PDF info
  */
@@ -32,9 +32,6 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const [type, setType] = useState(initialType || '');
     const [metadata, setMetadata] = useState(initialMetadata || {});
     const [relations, setRelations] = useState<any[]>([]);
-    const [isEditing, setIsEditing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [hasChanges, setHasChanges] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -100,31 +97,17 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const getRelationExplanation = (relation: any): string => {
         switch (relation.type) {
             case 'same_folder':
-                return '📁 Im gleichen Ordner';
+                return 'Same folder';
             case 'same_type':
-                return '📄 Gleicher Dateityp';
+                return 'Same type';
             case 'shared_tags':
-                return '🏷️ Gemeinsame Schlagwörter';
+                return 'Shared tags';
             case 'same_author':
-                return '👤 Vom gleichen Autor';
+                return 'Same author';
             case 'semantic':
-                return '🧠 Inhaltlich ähnlich';
+                return 'Similar content';
             default:
-                return '🔗 Verbunden';
-        }
-    };
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            // TODO: Implement actual save to backend
-            toast.success('Dokument gespeichert');
-            setHasChanges(false);
-            setIsEditing(false);
-        } catch (error) {
-            toast.error('Speichern fehlgeschlagen');
-        } finally {
-            setIsSaving(false);
+                return 'Related';
         }
     };
 
@@ -183,36 +166,8 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                         <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">
                             {fileExtension || type || 'doc'}
                         </span>
-                        {hasChanges && (
-                            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px]">
-                                Nicht gespeichert
-                            </span>
-                        )}
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* View/Edit Toggle - only for editable files */}
-                        {!isPDF && !isImage && !isVideo && (
-                            <button
-                                onClick={() => setIsEditing(!isEditing)}
-                                className={`p-2 rounded-lg transition-colors ${isEditing ? 'bg-emerald-500/20 text-emerald-400' : 'hover:bg-white/5 text-white/60'}`}
-                                title={isEditing ? 'Ansehen' : 'Bearbeiten'}
-                            >
-                                {isEditing ? <Eye size={16} /> : <Edit2 size={16} />}
-                            </button>
-                        )}
-
-                        {/* Save */}
-                        {hasChanges && (
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
-                                title="Speichern"
-                            >
-                                <Save size={16} className={isSaving ? 'animate-pulse' : ''} />
-                            </button>
-                        )}
-
                         {/* Copy */}
                         {!isPDF && !isImage && !isVideo && content && (
                             <button
@@ -262,18 +217,6 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                                 </div>
                             )}
                         </div>
-                    ) : isEditing ? (
-                        /* Text Editor */
-                        <textarea
-                            value={content}
-                            onChange={(e) => {
-                                setContent(e.target.value);
-                                setHasChanges(true);
-                            }}
-                            className="w-full h-full bg-transparent text-white/90 font-mono text-sm leading-relaxed resize-none focus:outline-none p-4"
-                            placeholder="Text eingeben..."
-                            spellCheck={false}
-                        />
                     ) : isMarkdown && content ? (
                         /* Markdown Rendered View */
                         <div
@@ -290,12 +233,6 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                         <div className="flex flex-col items-center justify-center h-full gap-4 text-white/30">
                             <FileText size={48} />
                             <p>Diese Datei hat keinen Inhalt</p>
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className="px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors text-sm"
-                            >
-                                Inhalt hinzufügen
-                            </button>
                         </div>
                     )}
                 </div>
@@ -331,7 +268,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 {/* Footer with Metadata */}
                 {metadata && Object.keys(metadata).length > 0 && (
                     <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4">
-                        {metadata.size && <span>Größe: {(metadata.size / 1024).toFixed(1)} KB</span>}
+                        {metadata.size && <span>Size: {(metadata.size / 1024).toFixed(1)} KB</span>}
                         {metadata.tags && Array.isArray(metadata.tags) && <span>Tags: {metadata.tags.join(', ')}</span>}
                         {nodeId && <span className="font-mono">ID: {nodeId.slice(0, 8)}...</span>}
                     </div>

@@ -7,13 +7,14 @@ import { useUser } from "@/lib/hooks/useUser";
 import { coreGet } from "@/lib/api/coreClient";
 import { executeAgenticLoop } from "@/lib/api/cognitionClient";
 import { MoraOrb } from "./MoraOrb";
+import { ConfirmationCard } from "./ConfirmationCard";
 import {
     Send,
     Sparkles,
     X,
     Maximize2,
     Minimize2,
-    Brain,
+    Brain, // Add UploadCloud if needed, using Sparkles for now
     MessageCircle,
     ChevronDown
 } from "lucide-react";
@@ -41,9 +42,16 @@ interface Thought {
 interface ResonanceMessage {
     id: string;
     type: "mora" | "user";
-    content: string;
+    content: string; // The text content
     timestamp: Date;
     isThinking?: boolean;
+    pendingAction?: {
+        tool_name: string;
+        params: any;
+        risk_level: string;
+        confirmation_token: string;
+        action_id: string;
+    };
 }
 
 interface Props {
@@ -72,6 +80,8 @@ export const ResonanceRoom: React.FC<Props> = ({
     const orbState = useMoraStore((s) => s.orbState);
     const viewMode = useMoraStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
+
+
 
     // Auto-scroll to bottom
     const scrollToBottom = useCallback(() => {
@@ -167,17 +177,24 @@ export const ResonanceRoom: React.FC<Props> = ({
             if (response) {
                 // Handle Pending Confirmations (Safety Halt)
                 if (response.final_state === 'S4_CONFIRM') {
-                    const confirmations = response.pending_confirmations.map(c =>
-                        `• ${c.tool_name}: ${c.what_will_change}`
-                    ).join('\n');
-
-                    const confirmMessage: ResonanceMessage = {
-                        id: `mora-confirm-${Date.now()}`,
-                        type: "mora",
-                        content: `⚠️ Autorisierung erforderlich\n\n${confirmations}\n\n(Bitte bestätigen Sie die Aktion manuell.)`,
-                        timestamp: new Date()
-                    };
-                    setMessages(prev => [...prev, confirmMessage]);
+                    // Handle single confirmation for now (MVP)
+                    const confirm = response.pending_confirmations[0];
+                    if (confirm) {
+                        const confirmMessage: ResonanceMessage = {
+                            id: `mora-confirm-${Date.now()}`,
+                            type: "mora",
+                            content: `⚠️ Autorisierung erforderlich\n\nIch benötige Ihre Bestätigung für: ${confirm.tool_name}.\n\nDie Änderung betrifft: ${confirm.what_will_change}`,
+                            timestamp: new Date(),
+                            pendingAction: {
+                                tool_name: confirm.tool_name,
+                                params: confirm.tool_params,
+                                risk_level: confirm.risk_level,
+                                confirmation_token: confirm.confirmation_token || "",
+                                action_id: confirm.action_id || `trace-${Date.now()}`
+                            }
+                        };
+                        setMessages(prev => [...prev, confirmMessage]);
+                    }
                 } else {
                     // Show the final response
                     const toolInfo = response.tools_executed.length > 0
@@ -198,6 +215,101 @@ export const ResonanceRoom: React.FC<Props> = ({
                         tools: toolInfo,
                         mode: response.transparency_note
                     });
+
+                    // ═══════════════════════════════════════════════════════════════
+                    // MÔRA CURSOR INTELLIGENCE - The Extended Arm
+                    // When MÔRA uses tools, her cursor shows what she's doing
+                    // ═══════════════════════════════════════════════════════════════
+                    for (const tool of response.tools_executed) {
+                        const store = useMoraStore.getState();
+
+                        // NAVIGATE TOOL - Move to entity and change view
+                        if (tool.tool === 'navigate' && tool.success && tool.result) {
+                            const { target_type, target_id, target_name } = tool.result;
+
+                            console.log(`🎯 MÔRA Navigation: ${target_type} → ${target_name} (${target_id})`);
+
+                            // Activate cursor agent for visual feedback
+                            store.setCursorAgent({ active: true, action: 'point' });
+
+                            switch (target_type) {
+                                case 'department':
+                                    store.navigateToDepartment(target_id);
+                                    break;
+                                case 'space':
+                                    store.navigateToSpace(target_id);
+                                    break;
+                                case 'folder':
+                                    store.navigateToFolder(target_id);
+                                    break;
+                                case 'node':
+                                    await store.loadNodeDetails(target_id);
+                                    break;
+                            }
+
+                            // Emit cursor movement event
+                            window.dispatchEvent(new CustomEvent('mora:cursor', {
+                                detail: {
+                                    action: 'navigate',
+                                    targetId: target_id,
+                                    targetType: target_type,
+                                    message: `Navigiere zu ${target_name}`
+                                }
+                            }));
+                        }
+
+                        // POINT_AT TOOL - Move cursor to element (visual only)
+                        if (tool.tool === 'point_at' && tool.success && tool.result) {
+                            const { target_type, target_id, reason, cursor_hint, should_pulse } = tool.result;
+
+                            console.log(`👆 MÔRA Pointing: ${target_type}:${target_id} - "${reason}"`);
+
+                            // Activate cursor with pointing action
+                            store.setCursorAgent({ active: true, action: 'point' });
+
+                            // Emit cursor movement event with position hint
+                            window.dispatchEvent(new CustomEvent('mora:presence-update', {
+                                detail: {
+                                    active: true,
+                                    x: cursor_hint?.x || 50,
+                                    y: cursor_hint?.y || 50,
+                                    mode: 'observing',
+                                    targetType: target_type,
+                                    targetId: target_id,
+                                    message: reason,
+                                    pulse: should_pulse
+                                }
+                            }));
+
+                            // Also emit highlight event if element should pulse
+                            if (should_pulse) {
+                                window.dispatchEvent(new CustomEvent('mora:highlight', {
+                                    detail: {
+                                        targetType: target_type,
+                                        targetId: target_id,
+                                        duration: 2000,
+                                        color: '#10B981'
+                                    }
+                                }));
+                            }
+                        }
+
+                        // HIGHLIGHT TOOL - Temporarily highlight an element
+                        if (tool.tool === 'highlight' && tool.success && tool.result) {
+                            const { target_type, target_id, duration_ms, color } = tool.result;
+
+                            console.log(`✨ MÔRA Highlight: ${target_type}:${target_id}`);
+
+                            window.dispatchEvent(new CustomEvent('mora:highlight', {
+                                detail: {
+                                    targetType: target_type,
+                                    targetId: target_id,
+                                    duration: duration_ms || 2000,
+                                    color: color || '#10B981'
+                                }
+                            }));
+                        }
+                    }
                 }
             }
         } catch (e) {
@@ -239,7 +351,9 @@ export const ResonanceRoom: React.FC<Props> = ({
                     }`}
             >
                 {/* Glass Container */}
-                <div className="relative w-full h-full bg-[#030806]/95 backdrop-blur-2xl border border-emerald-500/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col">
+                <div
+                    className="relative w-full h-full bg-[#030806]/95 backdrop-blur-2xl border border-emerald-500/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col transition-colors duration-300"
+                >
 
                     {/* Ambient Glow */}
                     <div className="absolute inset-0 pointer-events-none">
@@ -360,8 +474,31 @@ export const ResonanceRoom: React.FC<Props> = ({
                                             }`}>
                                             <span>{msg.timestamp.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
                                             {msg.type === "mora" && <span className="w-1 h-1 rounded-full bg-white/10" />}
-                                            {msg.type === "mora" && <span>Neural Flux: 0.92</span>}
+                                            <span>Neural Flux: 0.92</span>
                                         </div>
+
+                                        {/* Confirmation Card Integration */}
+                                        {msg.pendingAction && (
+                                            <ConfirmationCard
+                                                action={msg.pendingAction}
+                                                onConfirmed={(result) => {
+                                                    setMessages(prev => [...prev, {
+                                                        id: `sys-succ-${Date.now()}`,
+                                                        type: 'mora',
+                                                        content: `Aktion "${msg.pendingAction?.tool_name}" erfolgreich ausgeführt.`,
+                                                        timestamp: new Date()
+                                                    }]);
+                                                }}
+                                                onRejected={() => {
+                                                    setMessages(prev => [...prev, {
+                                                        id: `sys-rej-${Date.now()}`,
+                                                        type: 'user',
+                                                        content: `Aktion abgelehnt.`,
+                                                        timestamp: new Date()
+                                                    }]);
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </motion.div>
@@ -433,11 +570,10 @@ export const ResonanceRoom: React.FC<Props> = ({
 
                         {/* Hint Text */}
                         <span className="text-[9px] text-emerald-500/30">
-                            Enter zum Senden • Shift+Enter für neue Zeile
-                        </span>
-                        <span className="text-[9px] text-emerald-500/30">
+                            Enter zum Senden - Shift+Enter fuer neue Zeile
                         </span>
                     </div>
+
                 </div>
             </motion.div>
         </AnimatePresence>

@@ -75,9 +75,13 @@ export function useAuthBootstrapper() {
                         if (!selectedCompanyId && !currentActive && companies.length > 0) {
                             // 3. Fallback: Prefer demo company for demo users, else first company
                             const userRole = result.role || localStorage.getItem('saimor_role');
+                            const userEmail = result.email || localStorage.getItem('last_user_name') + '@saimor.io';
                             const demoCompany = companies.find(c => c.is_demo === true);
 
-                            if (userRole === 'demo' && demoCompany) {
+                            // Treat specific demo email as demo user regardless of "owner" role
+                            const isDemoUser = userRole === 'demo' || userEmail === 'demo@saimor.io';
+
+                            if (isDemoUser && demoCompany) {
                                 selectedCompanyId = demoCompany.id;
                                 console.log('[AuthBoot] Demo user -> using demo company:', demoCompany.name);
                             } else {

@@ -48,6 +48,7 @@ export const Planet: React.FC<PlanetProps> = ({
 }) => {
     const [showContextMenu, setShowContextMenu] = useState(false);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+    const [isMoraHighlighted, setIsMoraHighlighted] = useState(false);
     const contextRef = useRef<HTMLDivElement>(null);
     // MASTERBIBEL: Smaller, more ethereal planets - floating bubbles
     const sizeMap = {
@@ -70,6 +71,23 @@ export const Planet: React.FC<PlanetProps> = ({
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }
     }, [showContextMenu]);
+
+    // MÔRA HIGHLIGHT LISTENER - When MÔRA points at this department
+    useEffect(() => {
+        const handleMoraHighlight = (e: CustomEvent) => {
+            const { targetType, targetId, duration, color } = e.detail;
+            if (targetType === 'department' && targetId === department.id) {
+                console.log(`🔆 MÔRA is highlighting: ${department.name}`);
+                setIsMoraHighlighted(true);
+
+                // Auto-remove highlight after duration
+                setTimeout(() => setIsMoraHighlighted(false), duration || 2000);
+            }
+        };
+
+        window.addEventListener('mora:highlight' as any, handleMoraHighlight as any);
+        return () => window.removeEventListener('mora:highlight' as any, handleMoraHighlight as any);
+    }, [department.id, department.name]);
 
     // Handle right-click
     const handleContextMenu = (e: React.MouseEvent) => {

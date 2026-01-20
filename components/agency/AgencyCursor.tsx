@@ -38,11 +38,19 @@ export function AgencyCursor() {
 
         if (element) {
             const rect = element.getBoundingClientRect();
+            const targetX = rect.left + rect.width / 2;
+            const targetY = rect.top + rect.height / 2;
+
             setPosition({
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2
+                x: targetX,
+                y: targetY
             });
             setIsVisible(true);
+
+            // Dispatch event for CursorTrailEffect
+            window.dispatchEvent(new CustomEvent('agency:cursor_move', {
+                detail: { x: targetX, y: targetY }
+            }));
         } else {
             console.warn(`[AgencyCursor] Target not found: ${targetId}`);
         }

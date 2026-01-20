@@ -8,7 +8,7 @@ import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { PaneManager } from "@/components/mora/PaneManager";
-import { MoraIntelligenceBar } from "@/components/mora/MoraIntelligenceBar";
+import { UserAvatar } from "@/components/user/UserAvatar";
 import { SynthesisPanel } from "@/components/intelligence/SynthesisPanel";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -18,6 +18,10 @@ import { MoraThoughtStream } from "@/components/mora/MoraThoughtStream";
 import { MoraLivingBackground } from "@/components/mora/MoraLivingBackground";
 import { CognitionBadge } from "@/components/mora/CognitionBadge";
 import { EventsViewer } from "@/components/debug/EventsViewer";
+import { OrbMessageEffect } from "@/components/effects/OrbMessageEffect";
+import { CursorTrailEffect } from "@/components/effects/CursorTrailEffect";
+
+import { usePathname } from "next/navigation";
 
 export default function RootLayout({
   children,
@@ -30,9 +34,10 @@ export default function RootLayout({
   const panes = usePaneStore((state) => state.panes);
   const [showIntel, setShowIntel] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
-  // Show bar ALWAYS (OS Dock behavior)
-  const showBar = true;
+  // Show bar (OS Dock/UI) only if NOT on login page
+  const showBar = pathname !== "/" && pathname !== "/login";
 
   // Fix hydration mismatch from browser extensions
   useEffect(() => {
@@ -121,15 +126,19 @@ export default function RootLayout({
               <PaneManager />
               <FolderRoom />
               <DocumentViewer />
-              <div className={`transition-opacity duration-500 ${showBar ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-                <MoraIntelligenceBar onOpenIntelligence={() => setShowIntel(!showIntel)} isOpen={showIntel} />
-              </div>
+              {showBar && (
+                <div className="transition-opacity duration-500 opacity-100 pointer-events-auto">
+                  <UserAvatar onClick={() => setShowIntel(!showIntel)} showLabel={true} />
+                </div>
+              )}
 
               {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
               <Toaster position="top-right" />
               {/* DISABLED: Felt like mock/simulation */}
               {/* <OperatorStatusPane /> */}
               <AgencyCursor />  {/* Guided Agency: MÔRA Cursor */}
+              <CursorTrailEffect /> {/* Phase 9: Living Cursor (Firefly Trail) */}
+              <OrbMessageEffect /> {/* Phase 8: MÔRA Voice Overlay */}
               {/* <MoraThoughtStream /> - DISABLED: Felt like mock */}
 
               {/* <EventsViewer /> - DISABLED: Dev only */}

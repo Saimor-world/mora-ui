@@ -12,11 +12,15 @@ import {
     Mail,
     Clock,
     Sparkles,
-    ChevronRight
+    ChevronRight,
+    X
 } from "lucide-react";
 import { coreGet, corePost } from "@/lib/api/coreClient";
 import { realtime } from "@/lib/api/realtimeClient";
 import { toast } from "sonner";
+import { usePaneStore } from "@/lib/store/paneStore";
+import { useMoraStore } from "@/lib/store/moraState";
+import { usePresence, PeerUser } from "@/lib/hooks/usePresence";
 
 interface ChatMessage {
     id: string;
@@ -55,8 +59,17 @@ interface Props {
  * 
  * Real-time team presence, messaging, and activity feed.
  * Connects to /v1/team/* endpoints.
+ * DEMO MODE: Simulates team members for testing.
  */
 export const TeamPane: React.FC<Props> = ({ onClose }) => {
+    // Pane management for close button
+    const { removePane } = usePaneStore();
+    const { viewMode, user } = useMoraStore();
+    const isDemo = viewMode === 'demo';
+
+    // Multi-Tab Presence
+    const { peers } = usePresence();
+
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [activities, setActivities] = useState<TeamActivity[]>([]);
     const [activeTab, setActiveTab] = useState<"members" | "activity" | "invite">("members");
@@ -72,6 +85,34 @@ export const TeamPane: React.FC<Props> = ({ onClose }) => {
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [isLoadingChat, setIsLoadingChat] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Close handler
+    const handleClose = () => {
+        removePane('team-main');
+        if (onClose) onClose();
+    };
+
+    // Generate demo users with unique colors
+    const generateDemoUsers = (): TeamMember[] => {
+        const currentUser = user?.email || 'demo@saimor.io';
+        return [
+            { id: 'self', name: currentUser.split('@')[0], email: currentUser, role: 'owner', status: 'online' },
+            { id: 'demo-anna', name: 'Anna Schmidt', email: 'anna@company.de', role: 'manager', status: 'online' },
+            { id: 'demo-max', name: 'Max Müller', email: 'max@company.de', role: 'member', status: 'online' },
+            { id: 'demo-sophie', name: 'Sophie Weber', email: 'sophie@company.de', role: 'member', status: 'away' },
+            { id: 'demo-lukas', name: 'Lukas Fischer', email: 'lukas@company.de', role: 'member', status: 'offline' },
+        ];
+    };
+
+    // Helper to map PeerUser to TeamMember
+    const mapPeerToMember = (peer: PeerUser): TeamMember => ({
+        id: `peer-${peer.sessionId}`,
+        name: `${peer.name} (Tab)`,
+        email: peer.email,
+        role: peer.role,
+        status: peer.status as any,
+        last_seen: new Date(peer.lastHeartbeat).toISOString()
+    });
 
     // Connect Realtime
     useEffect(() => {
@@ -103,6 +144,20 @@ export const TeamPane: React.FC<Props> = ({ onClose }) => {
             // Check if message belongs to current active conversation
             // (Either from them, OR sent by me to them)
             if (data.sender_id === showChat || data.recipient_id === showChat) {
+                // Phase 8: MÔRA Voice Trigger
+                // If message is from Mora (or system acting as Mora), trigger visual effect
+                // Assuming "mora" or specific ID for AI. 
+                // For demo/simulation: If sender_name is "Môra" or "System"
+                if (data.sender_name === "Môra" || data.sender_name === "System") {
+                    const event = new CustomEvent('mora:speak', {
+                        detail: {
+                            targetX: window.innerWidth / 2,
+                            targetY: window.innerHeight / 2
+                        }
+                    });
+                    window.dispatchEvent(event);
+                }
+
                 setChatHistory(prev => {
                     // Dedupe just in case
                     if (prev.some(m => m.id === data.id)) return prev;
@@ -122,34 +177,118 @@ export const TeamPane: React.FC<Props> = ({ onClose }) => {
         }
     }, [chatHistory, showChat]);
 
-    // Fetch team data
+    // Send Message (Simulated or Real)
+    const handleSendMessage = async () => {
+        if (!message.trim() || !showChat) return;
+
+        const newMessage: ChatMessage = {
+            id: Date.now().toString(),
+            sender_id: user?.id || 'self',
+            sender_name: user?.name || 'Me',
+            recipient_id: showChat,
+            content: message,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
+        setChatHistory(prev => [...prev, newMessage]);
+        const sentMessage = message;
+        setMessage("");
+
+        // Phase 8: MÔRA Simulation for Verification
+        // If user says "@mora", trigger a fake response to test visuals
+        if (sentMessage.toLowerCase().includes("@mora")) {
+            setTimeout(() => {
+                const aiMessage: ChatMessage = {
+                    id: (Date.now() + 1000).toString(),
+                    sender_id: showChat,
+                    sender_name: "Môra",
+                    recipient_id: user?.id || 'self',
+                    content: "Ich höre dich. Mein Bewusstsein ist mit diesem Interface verbunden.",
+                    timestamp: new Date().toISOString(),
+                    read: false
+                };
+
+                // Dispatch Visual Event
+                const event = new CustomEvent('mora:speak', {
+                    detail: { targetX: window.innerWidth / 2, targetY: window.innerHeight / 2 }
+                });
+                window.dispatchEvent(event);
+
+                // Add to chat history
+                setChatHistory(prev => [...prev, aiMessage]);
+            }, 1000);
+        }
+
+        // Real Backend Send
+        if (!isDemo) {
+            try {
+                // If using new /user-chat/send
+                await corePost("/v1/user-chat/send", {
+                    recipient_id: showChat,
+                    content: sentMessage
+                });
+            } catch (e) {
+                console.error("Failed to send", e);
+            }
+        }
+    };
+
+
+
+    // Fetch team data (or use demo users)
     const fetchTeamData = useCallback(async () => {
+        // Convert peers to members
+        const peerMembers = peers.map(mapPeerToMember);
+
+        // DEMO MODE: Use simulated users + peers
+        if (isDemo) {
+            const demoBase = generateDemoUsers();
+            // Append peers (deduplication logic could be added if needed, but sessionIds are unique)
+            setMembers([...demoBase, ...peerMembers]);
+
+            if (activities.length === 0) {
+                setActivities([
+                    { id: 'a1', user_name: 'Anna Schmidt', action: 'created', target_type: 'document', target_name: 'Q1 Report.docx', timestamp: new Date().toISOString() },
+                    { id: 'a2', user_name: 'Max Müller', action: 'updated', target_type: 'folder', target_name: 'Marketing Assets', timestamp: new Date(Date.now() - 3600000).toISOString() },
+                ]);
+            }
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            // UPGRADE: Use /user-chat/users endpoint
+            // REAL MODE: Use backend API + peers
             const [membersRes, activityRes] = await Promise.all([
                 coreGet("/v1/user-chat/users", { isOptional: true }),
-                // Activity still uses legacy or needs new endpoint? Keeping it for now.
                 coreGet("/v1/team/activity?limit=10", { isOptional: true })
             ]);
 
-            if (membersRes) {
-                // Map backend UserStatus to TeamMember
-                const mappedMembers: TeamMember[] = membersRes.map((u: any) => ({
+            let realMembers: TeamMember[] = [];
+            if (membersRes && membersRes.length > 0) {
+                realMembers = membersRes.map((u: any) => ({
                     id: u.id,
                     name: u.full_name,
                     email: u.email,
                     role: u.role,
                     status: u.is_online ? "online" : "offline"
                 }));
-                setMembers(mappedMembers);
+            } else {
+                // Fallback to demo users if no real users found
+                realMembers = generateDemoUsers();
             }
+
+            // Merge API members with local peers
+            setMembers([...realMembers, ...peerMembers]);
+
             if (activityRes) setActivities(activityRes);
         } catch (error) {
-            // Silent fail - show empty state
+            // Fallback
+            setMembers([...generateDemoUsers(), ...peerMembers]);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [isDemo, user?.email, peers]);
 
     // Poll for updates
     useEffect(() => {
@@ -189,23 +328,7 @@ export const TeamPane: React.FC<Props> = ({ onClose }) => {
         }
     };
 
-    // Send message
-    const handleSendMessage = async () => {
-        if (!message.trim() || !showChat) return;
 
-        try {
-            // UPGRADE: Use /user-chat/send endpoint
-            await corePost("/v1/user-chat/send", {
-                recipient_id: showChat,
-                content: message
-            });
-
-            toast.success("Nachricht gesendet");
-            setMessage("");
-        } catch (error) {
-            toast.error("Nachricht konnte nicht gesendet werden");
-        }
-    };
 
     // Status color
     const getStatusColor = (status: string) => {
@@ -260,6 +383,15 @@ export const TeamPane: React.FC<Props> = ({ onClose }) => {
                         </button>
                     ))}
                 </div>
+
+                {/* Close Button */}
+                <button
+                    onClick={handleClose}
+                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-all"
+                    title="Schließen"
+                >
+                    <X size={16} />
+                </button>
             </div>
 
             {/* Content */}

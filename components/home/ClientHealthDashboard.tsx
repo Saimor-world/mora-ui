@@ -183,7 +183,7 @@ export const ClientHealthDashboard: React.FC = () => {
                         </button>
                     </div>
                     <p className="text-xs text-white/40 tracking-widest uppercase">
-                        {healthData.length} Workspaces • Updated {lastRefresh.toLocaleTimeString()}
+                        {healthData.length} Workspaces - Updated {lastRefresh.toLocaleTimeString()}
                     </p>
                 </div>
             </motion.div>

@@ -3,13 +3,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { LayoutGrid, List, Folder, Plus, Network, Search, X, Trash2, RefreshCw, ChevronRight, FileText, Info, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box, UploadCloud } from 'lucide-react';
+import { LayoutGrid, List, Folder, Plus, Network, Search, Trash2, RefreshCw, ChevronRight, FileText, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { corePost } from '@/lib/api/coreClient';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { mapSpaceContentToMycelium, mapFoldersToMycelium, mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
+import { mapFoldersToMycelium, mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
 import { Mycelium25D } from '@/components/organic/Mycelium25D';
 import type { CoreNode, CoreFolder } from '@/lib/types/core';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -56,18 +55,14 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     const {
         activeSpaceId,
         activeDepartmentId,
-        departments,
         spacesByDepartment,
         foldersBySpace,
         isLoadingFolders,
         loadFoldersForSpace,
         addFolder,
-        addSpace,
         deleteSpace,
-        activeFolderId,
         loadSpacesForDepartment,
         loadNodesForFolder,
-        setActiveFolder,
     } = useMoraStore();
 
     // Local state
@@ -77,7 +72,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     // Explorer State
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-    const [nodeDetails, setNodeDetails] = useState<any>(null);
 
     // Local state for the pane
     const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('grid');
@@ -86,12 +80,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [graphNodes, setGraphNodes] = useState<any[]>([]);
-    const [isGraphLoading, setIsGraphLoading] = useState(false);
-
-    // Ingestion State
-    const [isIngestOpen, setIsIngestOpen] = useState(false);
-    const [localPath, setLocalPath] = useState('');
-    const [ingestStatus, setIngestStatus] = useState<'idle' | 'loading'>('idle');
 
     const targetSpaceId = pane?.data?.spaceId || activeSpaceId;
     const targetDepartmentId = pane?.data?.departmentId || activeDepartmentId;
@@ -129,7 +117,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     // Prepare Graph Data
     useEffect(() => {
         if (viewMode === 'mycelium') {
-            setIsGraphLoading(true);
             let nodes: any[] = [];
 
             if (activeFolder) {
@@ -145,7 +132,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             }
 
             setGraphNodes(nodes);
-            setIsGraphLoading(false);
         }
     }, [filteredItems, viewMode, activeFolder, selectedNodeId, hoveredNodeId]);
 
@@ -172,48 +158,24 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
 
     // ... (rest of local state) ...
 
-    // Mock semantic data loader (replace with real API call later)
-    useEffect(() => {
-        const targetId = hoveredNodeId || selectedNodeId;
-        if (!targetId) {
-            setNodeDetails(null);
+    const handleOpenNode = (node: any) => {
+        if (!node) return;
+        if (node.type === 'folder' || (!node.type && node.children === undefined)) {
+            setActiveFolderLocal(node.id);
             return;
         }
 
-        // Simulating semantic fetch
-        const timer = setTimeout(() => {
-            setNodeDetails({
-                relations: [
-                    { id: 'r1', name: 'Project Alpha', type: 'project', resonance: 85 },
-                    { id: 'r2', name: 'Q4 Budget', type: 'finance', resonance: 62 },
-                ],
-                tags: ['urgent', 'review-needed'],
-                author: 'System'
-            });
-        }, 300);
-
-        return () => clearTimeout(timer);
-    }, [hoveredNodeId, selectedNodeId]);
-
-    const handleOpenNode = (node: any) => {
-        if (node.type === 'folder' || (!node.type && node.children === undefined)) { // Check for folder or space items which are folders
-            setActiveFolderLocal(node.id);
-        } else if (node.type === 'document' || node.type === 'note' || node.type === 'intel_report') {
-            const paneId = crypto.randomUUID();
-            addPane({
-                id: paneId,
-                type: 'notes',
-                title: node.title,
-                data: { nodeId: node.id },
-                size: { width: 600, height: 800 },
-                position: { x: window.innerWidth / 2 - 300, y: window.innerHeight / 2 - 400 },
-                minimized: false
-            });
-            focusPane(paneId);
-            toast.success(`Opened ${node.title}`);
-        } else {
-            toast.info(`No app installed for ${node.type}`);
-        }
+        const paneId = `document-${node.id}`;
+        addPane({
+            id: paneId,
+            type: 'document',
+            title: node.title || 'Document',
+            data: { nodeId: node.id },
+            size: { width: 800, height: 600 },
+            position: { x: window.innerWidth / 2 - 400, y: window.innerHeight / 2 - 300 },
+            minimized: false
+        });
+        focusPane(paneId);
     };
 
     const handleCreateFolder = async (e: React.FormEvent) => {
@@ -248,17 +210,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     };
 
     // Handlers
-    const handleAddSpace = async () => {
-        if (!activeDepartmentId) return toast.error("No department selected");
-        const fallbackName = `Space ${Math.floor(Date.now() / 1000)}`;
-        try {
-            await addSpace({ department_id: activeDepartmentId, name: fallbackName });
-            toast.success(`Space "${fallbackName}" created`);
-            await loadSpacesForDepartment(activeDepartmentId);
-        } catch (e: any) {
-            toast.error(e?.message || "Failed to create space");
-        }
-    };
 
     const handleDeleteSpace = async () => {
         if (!targetSpaceId) return toast.error("No space selected");
@@ -274,28 +225,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
         }
     };
 
-    const handleIngest = async () => {
-        if (!localPath.trim()) return;
-        if (!targetSpaceId) return toast.error("No space active");
-
-        setIngestStatus('loading');
-        try {
-            await corePost('/v1/ingest/local', {
-                local_path: localPath.trim(),
-                space_id: targetSpaceId
-            });
-            toast.success("Ingestion started. MÔRA is scanning...");
-            setIsIngestOpen(false);
-            setLocalPath('');
-            // Trigger refresh after 2s
-            setTimeout(() => loadFoldersForSpace(targetSpaceId), 2000);
-        } catch (error: any) {
-            console.error("Ingestion failed", error);
-            toast.error(error.message || "Ingestion failed");
-        } finally {
-            setIngestStatus('idle');
-        }
-    };
 
     if (!pane) return null;
 
@@ -400,55 +329,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                     NEW FOLDER
                                 </button>
 
-                                {/* Ingest Button */}
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setIsIngestOpen(!isIngestOpen)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all text-sm tracking-wide ${isIngestOpen ? 'bg-mora-gold/20 border-mora-gold text-mora-gold' : 'bg-white/5 border-white/10 hover:bg-white/10 text-white/70 hover:text-white'}`}
-                                    >
-                                        <UploadCloud size={16} />
-                                        CONNECT
-                                    </button>
-
-                                    {/* Ingest Popover */}
-                                    {isIngestOpen && (
-                                        <div className="absolute top-12 right-0 z-50 w-80 p-5 bg-[#050d0a]/95 backdrop-blur-2xl border border-mora-gold/30 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-top-2">
-                                            <label className="text-[10px] uppercase tracking-widest text-mora-gold mb-2 block font-medium">Local Knowledge Path</label>
-                                            <div className="text-[10px] text-white/40 mb-3">
-                                                Enter absolute Windows path to a folder to ingest it as a Galaxy.
-                                            </div>
-                                            <input
-                                                value={localPath}
-                                                onChange={e => setLocalPath(e.target.value)}
-                                                placeholder="C:\Users\Name\Projects\..."
-                                                className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2.5 text-xs text-white mb-4 focus:border-mora-gold/50 outline-none transition-colors"
-                                                autoFocus
-                                            />
-                                            <div className="flex gap-2 justify-end">
-                                                <button
-                                                    onClick={() => setIsIngestOpen(false)}
-                                                    className="px-3 py-2 text-xs text-white/50 hover:text-white transition-colors"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    onClick={handleIngest}
-                                                    disabled={ingestStatus === 'loading' || !localPath}
-                                                    className="px-4 py-2 bg-gradient-to-r from-mora-gold/20 to-mora-gold/10 hover:from-mora-gold/30 hover:to-mora-gold/20 border border-mora-gold/30 hover:border-mora-gold/50 rounded-lg text-mora-gold text-xs font-medium flex items-center gap-2 disabled:opacity-50"
-                                                >
-                                                    {ingestStatus === 'loading' ? (
-                                                        <>Scanning...</>
-                                                    ) : (
-                                                        <>
-                                                            <UploadCloud size={12} />
-                                                            Assimilate
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
                             </>
                         )}
                         {activeFolder && (
@@ -459,7 +339,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                     </div>
                 </div>
 
-                {/* Main Content Area (Split View: Browser + Inspector) */}
+                {/* Main Content Area */}
                 <div className="flex-1 flex overflow-hidden">
                     {/* Browser Area */}
                     <div className="flex-1 relative overflow-hidden bg-black/40">
@@ -591,78 +471,6 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                         </AnimatePresence>
                     </div>
 
-                    {/* SEMANTIC INSPECTOR SIDEBAR */}
-                    {(selectedNodeId || hoveredNodeId) && (
-                        <div className="w-[300px] border-l border-white/10 bg-black/20 backdrop-blur-md flex flex-col overflow-y-auto custom-scrollbar">
-                            <div className="p-6 border-b border-white/5">
-                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 flex items-center justify-center mb-4 mx-auto shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                                    {items.find(n => n.id === (hoveredNodeId || selectedNodeId))?.type === 'folder' ? <Folder size={32} className="text-emerald-400" /> : <div className="text-emerald-400 font-mono text-xl">DOC</div>}
-                                </div>
-                                <h3 className="text-lg font-medium text-white text-center leading-tight mb-1">
-                                    {items.find(n => n.id === (hoveredNodeId || selectedNodeId))?.title || items.find(n => n.id === (hoveredNodeId || selectedNodeId))?.name || 'Unknown'}
-                                </h3>
-                                <p className="text-xs text-white/40 text-center uppercase tracking-wider">
-                                    {items.find(n => n.id === (hoveredNodeId || selectedNodeId))?.type || 'Space Item'}
-                                </p>
-                            </div>
-
-                            <div className="p-6 space-y-6">
-                                <div>
-                                    <h4 className="text-xs font-semibold text-emerald-500/70 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                        <Info size={12} /> Semantic Context
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {nodeDetails?.relations?.length > 0 ? (
-                                            nodeDetails.relations.map((rel: any) => (
-                                                <div key={rel.id} className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-emerald-500/30 transition-colors cursor-pointer group">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-emerald-400 font-medium">{rel.name}</span>
-                                                        <span className="text-[10px] text-white/30 bg-white/5 px-1.5 py-0.5 rounded uppercase">{rel.type}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-emerald-500/50" style={{ width: `${rel.resonance}%` }} />
-                                                        </div>
-                                                        <span className="text-[10px] text-emerald-500/70">{rel.resonance}%</span>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="p-3 rounded-lg bg-white/5 border border-white/5 text-xs text-white/60">
-                                                Semantic analysis active. No direct relations found yet.
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">Attributes</h4>
-                                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs">
-                                        <div className="text-white/30">ID</div>
-                                        <div className="text-white/60 truncate font-mono">{(hoveredNodeId || selectedNodeId)?.substring(0, 8)}...</div>
-
-                                        <div className="text-white/30">Owner</div>
-                                        <div className="text-white/60">System</div>
-
-                                        <div className="text-white/30">Perms</div>
-                                        <div className="text-white/60">Read/Write</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-auto p-4 border-t border-white/5 bg-white/5 flex gap-2">
-                                <button
-                                    onClick={() => handleOpenNode(items.find(n => n.id === (hoveredNodeId || selectedNodeId)))}
-                                    className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30 text-xs font-medium transition-colors"
-                                >
-                                    OPEN DOCUMENT
-                                </button>
-                                <button className="px-3 py-2 rounded-lg border border-white/10 text-white/40 hover:bg-white/5 text-xs font-medium transition-colors" title="View Graph">
-                                    <Network size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 <CreateModal

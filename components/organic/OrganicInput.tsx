@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Sparkles, Mic, Send } from 'lucide-react';
+import { Sparkles, Send } from 'lucide-react';
 
 interface OrganicInputProps {
     onSend?: (msg: string) => void;
@@ -47,11 +47,6 @@ export const OrganicInput: React.FC<OrganicInputProps> = ({ onSend, placeholder 
                             <span className="text-mora-gold text-sm group-hover:translate-x-1 transition-transform">Môra</span>
                         </button>
 
-                        <div className="text-[10px] uppercase text-emerald-500/50 px-3 py-1 mt-2">Collaborators</div>
-                        <button onClick={() => addMention('@Anna')} className="w-full text-left flex items-center gap-2 p-2 rounded-lg hover:bg-emerald-500/20 transition-colors group">
-                            <div className="w-4 h-4 rounded-full bg-emerald-800 border border-emerald-500 flex items-center justify-center text-[8px] text-emerald-100">AL</div>
-                            <span className="text-emerald-100 text-sm group-hover:translate-x-1 transition-transform">Anna Lee</span>
-                        </button>
                     </div>
                 </div>
             )}
@@ -71,13 +66,6 @@ export const OrganicInput: React.FC<OrganicInputProps> = ({ onSend, placeholder 
                 />
 
                 <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        title="Voice Input (Coming Soon)"
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-500/40 hover:text-emerald-100 hover:bg-white/5 cursor-pointer transition-all"
-                    >
-                        <Mic className="w-4 h-4" />
-                    </button>
                     <button
                         type="submit"
                         title={input.length > 0 ? "Send Message" : "Type a message first"}

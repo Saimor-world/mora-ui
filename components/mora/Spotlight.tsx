@@ -1,23 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useMoraStore } from "@/lib/store/moraState";
-import { usePaneStore } from "@/lib/store/paneStore";
 import {
     Search,
-    Command,
-    Folder,
     FileText,
     Settings,
-    Users,
-    Mail,
     Grid,
     Home,
-    Zap,
-    MessageSquare,
-    Moon,
-    LogOut,
     ArrowRight,
     Hash,
     Building2,
@@ -63,13 +52,13 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         activeCompanyId,
         setViewLevel,
         setActiveCompany,
+        setActiveDepartment,
+        setActiveSpace,
+        setActiveFolder,
         setViewMode,
-        viewMode,
         navigateToDepartment,
         navigateToSpace
     } = useMoraStore();
-
-    const activeCompany = useMemo(() => companies.find(c => c.id === activeCompanyId), [companies, activeCompanyId]);
 
     const { addPane, getPane, focusPane, restorePane, panes, minimizePane } = usePaneStore();
 
@@ -115,8 +104,8 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         // === QUICK ACTIONS ===
         result.push({
             id: "action-settings",
-            label: "Einstellungen öffnen",
-            description: "MÔRA-Präferenzen konfigurieren",
+            label: "Settings",
+            description: "Local system preferences",
             icon: <Settings size={16} className="text-white/60" />,
             category: "action",
             keywords: ["settings", "preferences", "config", "options", "einstellungen"],
@@ -124,19 +113,19 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         });
 
         result.push({
-            id: "action-finder",
-            label: "Finder öffnen",
-            description: "Dateien und Knoten durchsuchen",
-            icon: <Folder size={16} className="text-blue-400" />,
+            id: "action-files",
+            label: "Files",
+            description: "Uploads and file nodes",
+            icon: <FileText size={16} className="text-emerald-400" />,
             category: "action",
-            keywords: ["finder", "files", "browse", "explorer", "dateien"],
-            onSelect: () => openPane("finder", "finder-main", "Finder", { width: 800, height: 550 })
+            keywords: ["files", "uploads", "dateien"],
+            onSelect: () => openPane("files", "files-main", "Files", { width: 700, height: 500 })
         });
 
         result.push({
             id: "action-search",
-            label: "Alles durchsuchen",
-            description: "Semantische Suche im Arbeitsbereich",
+            label: "Search",
+            description: "Local search",
             icon: <Search size={16} className="text-emerald-400" />,
             category: "action",
             keywords: ["search", "find", "query", "suche"],
@@ -144,55 +133,39 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         });
 
         result.push({
-            id: "action-mail",
-            label: "E-Mails öffnen",
-            description: "Ihren Posteingang prüfen",
-            icon: <Mail size={16} className="text-orange-400" />,
+            id: "action-grid",
+            label: "Grid View",
+            description: "Read-only node grid",
+            icon: <Grid size={16} className="text-emerald-400" />,
             category: "action",
-            keywords: ["mail", "email", "inbox", "gmail", "post"],
-            onSelect: () => openPane("mail", "mail-main", "Gmail", { width: 500, height: 600 })
-        });
-
-        result.push({
-            id: "action-notes",
-            label: "Notizen öffnen",
-            description: "Schnelle Memos und Notizen",
-            icon: <FileText size={16} className="text-yellow-400" />,
-            category: "action",
-            keywords: ["notes", "memo", "write", "document", "notizen"],
-            onSelect: () => openPane("notes", "notes-main", "Notes", { width: 600, height: 500 })
-        });
-
-        result.push({
-            id: "action-users",
-            label: "Team & Benutzer",
-            description: "Teammitglieder verwalten",
-            icon: <Users size={16} className="text-purple-400" />,
-            category: "action",
-            keywords: ["users", "team", "members", "people", "benutzer"],
-            onSelect: () => openPane("users", "users-main", "Team & Users")
+            keywords: ["grid", "nodes", "overview"],
+            onSelect: () => openPane("grid", "grid-main", "Grid View", { width: 800, height: 600 })
         });
 
         result.push({
             id: "action-apps",
-            label: "App-Bibliothek",
-            description: "Alle verfügbaren Anwendungen",
+            label: "App Library",
+            description: "Installed apps",
             icon: <Grid size={16} className="text-emerald-400" />,
             category: "action",
-            keywords: ["apps", "library", "applications", "apps"],
+            keywords: ["apps", "library", "applications"],
             onSelect: () => openPane("apps", "apps-main", "App Library", { width: 800, height: 600 })
         });
 
         result.push({
             id: "action-home",
-            label: "Zum Hauptbereich",
-            description: "Zurück zum Universum",
+            label: "Home",
+            description: "Back to universe",
             icon: <Home size={16} className="text-white/60" />,
             category: "navigation",
             keywords: ["home", "universe", "dashboard", "main", "start"],
             onSelect: () => {
-                // Minimize all panes to show the universe
                 panes.forEach(p => !p.minimized && minimizePane(p.id));
+                setViewLevel('core');
+                setActiveCompany(activeCompanyId || null);
+                setActiveDepartment(null);
+                setActiveSpace(null);
+                setActiveFolder(null);
                 onClose();
             }
         });
@@ -248,7 +221,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         });
 
         return result;
-    }, [departments, companies, activeCompanyId, spacesByDepartment, openPane, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany]);
+    }, [departments, companies, activeCompanyId, spacesByDepartment, openPane, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany, setViewMode]);
 
     // Filter actions based on query
     const filteredActions = useMemo(() => {
@@ -379,7 +352,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                         <div ref={listRef} className="max-h-[450px] overflow-y-auto custom-scrollbar overflow-x-hidden">
                             {filteredActions.length === 0 ? (
                                 <div className="p-12 text-center text-emerald-500/30 flex flex-col items-center gap-3">
-                                    <Zap size={32} className="opacity-20 translate-y-2" />
+                                    <Search size={32} className="opacity-20 translate-y-2" />
                                     <span className="text-sm italic">Keine Treffer für "{query}"</span>
                                 </div>
                             ) : (

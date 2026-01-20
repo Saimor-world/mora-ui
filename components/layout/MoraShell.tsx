@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
 import { ViewPort } from './ViewPort';
-import { ChatDock } from '@/components/ui/ChatDock';
-import { ContextRail } from '@/components/layout/ContextRail';
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
-import { IntelligencePlayfield } from '@/components/intelligence/IntelligencePlayfield';
 import { Dock } from '@/components/mora/Dock';
 import { PaneManager } from '@/components/mora/PaneManager';
 import { LockScreen } from '@/components/auth/LockScreen';
@@ -16,14 +13,15 @@ import { LockScreen } from '@/components/auth/LockScreen';
 import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CursorAgent } from '@/components/mora/CursorAgent';
-import { IntelligenceDashboard } from '@/components/mora/IntelligenceDashboard';
+import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { NeuralGrid } from '@/components/visual/NeuralGrid';
 import { UserCursor } from '@/components/layout/UserCursor';
-import { useUser } from '@/lib/hooks/useUser';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
+import { StarField } from '@/components/visual/StarField';
 
 
 
@@ -40,51 +38,23 @@ import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 export const MoraShell: React.FC = () => {
     const router = useRouter();
     const { isBootstrapped } = useAuthBootstrapper(); // Phase 1: Real Auth Required!
-    const { activeNode, user } = useMoraStore();
+    const {
+        user,
+        setCursorAgent,
+        cursorAgent,
+        viewMode,
+        orbState: storeOrbState,
+        orbNotifications
+    } = useMoraStore();
+    const { addPane, focusPane, getPane, restorePane } = usePaneStore();
+
+    const role = user?.role || 'demo';
+
     const [isSleeping, setIsSleeping] = useState(false);
     const [isResonanceOpen, setIsResonanceOpen] = useState(false);
     const [isResonanceExpanded, setIsResonanceExpanded] = useState(false);
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
-    const [stars, setStars] = useState<Array<{
-        id: number;
-        cx: string;
-        cy: string;
-        r: number;
-        fill: string;
-        filter?: string;
-    }>>([]);
-
-    const {
-        viewMode,
-        orbState: storeOrbState,
-        orbNotifications,
-        setOrbState,
-        activeCompanyId,
-        cursorAgent,
-        setCursorAgent
-    } = useMoraStore();
-    const { role } = useUser();
-
     const [apiOrbState, setApiOrbState] = useState<OrbState>('idle');
-    const [showIntelligence, setShowIntelligence] = useState(false);
-
-    // Generate stars client-side only to avoid hydration mismatch
-    useEffect(() => {
-        const generatedStars = Array.from({ length: 40 }, (_, i) => ({
-            id: i,
-            cx: `${Math.random() * 100}%`,
-            cy: `${Math.random() * 100}%`,
-            r: Math.random() * 1.5 + 0.5,
-            fill: "#10B981",
-            filter: "url(#glow-shell)"
-        }));
-        setStars(generatedStars);
-    }, []);
-
-    // Sleep handler - show lockscreen overlay (session stays active!)
-    const handleSleep = () => {
-        setIsSleeping(true);
-    };
 
     // Unlock handler
     const handleUnlock = () => {
@@ -99,6 +69,15 @@ export const MoraShell: React.FC = () => {
         router.push('/');
     };
 
+    // Listen for Resonance trigger
+    useEffect(() => {
+        const handler = () => {
+            setIsResonanceOpen(true);
+        };
+        window.addEventListener('mora:open-resonance', handler);
+        return () => window.removeEventListener('mora:open-resonance', handler);
+    }, []);
+
     // Spotlight keyboard shortcut (Cmd+K / Ctrl+K)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,14 +85,51 @@ export const MoraShell: React.FC = () => {
                 e.preventDefault();
                 setIsSpotlightOpen(prev => !prev);
             }
-            if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
-                e.preventDefault();
-                setShowIntelligence(prev => !prev);
-            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    // Open node detail from global search
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const custom = e as CustomEvent;
+            const nodeId = custom?.detail?.nodeId;
+            if (!nodeId) return;
+
+            const paneId = `document-${nodeId}`;
+            const existing = getPane(paneId);
+            if (existing) {
+                if (existing.minimized) restorePane(paneId);
+                else focusPane(paneId);
+                return;
+            }
+
+            const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+            const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+            const paneWidth = 800;
+            const paneHeight = 600;
+
+            let x = Math.floor((windowWidth - paneWidth) / 2);
+            let y = Math.floor((windowHeight - paneHeight) / 2) - 40;
+            x = Math.max(20, Math.min(x, windowWidth - paneWidth - 20));
+            y = Math.max(40, Math.min(y, windowHeight - paneHeight - 100));
+
+            addPane({
+                id: paneId,
+                type: 'document',
+                title: 'Document',
+                data: { nodeId },
+                position: { x, y },
+                size: { width: paneWidth, height: paneHeight },
+                minimized: false
+            });
+            focusPane(paneId);
+        };
+
+        window.addEventListener('open-node-detail', handler as EventListener);
+        return () => window.removeEventListener('open-node-detail', handler as EventListener);
+    }, [addPane, focusPane, getPane, restorePane]);
 
     // Awareness pulse polling with exponential backoff
     useEffect(() => {
@@ -143,6 +159,37 @@ export const MoraShell: React.FC = () => {
             clearTimeout(timeoutId);
         };
     }, []);
+
+    // REALTIME BRIDGE (Phase 3)
+    // Connects WebSocket stream to internal event bus
+    useEffect(() => {
+        // Dynamic import to avoid SSR issues with WebSocket
+        const initRealtime = async () => {
+            const { realtime } = await import('@/lib/api/realtimeClient');
+
+            const handleGhostPresence = (data: any) => {
+                // Dispatch to window for GhostOverlay to consume
+                // Data is { x: %, y: %, mode: string, active: boolean }
+                const event = new CustomEvent('mora:ghost-update', {
+                    detail: data
+                });
+                window.dispatchEvent(event);
+            };
+
+            realtime.on('ghost_presence', handleGhostPresence);
+            realtime.connect();
+
+            return () => {
+                realtime.off('ghost_presence', handleGhostPresence);
+                // We typically don't disconnect current session on unmount of Shell, 
+                // but for cleanness we could. For now, we keep connection alive.
+            };
+        };
+
+        if (isBootstrapped) {
+            initRealtime();
+        }
+    }, [isBootstrapped]);
 
     // Cursor Agent Roaming Logic
     useEffect(() => {
@@ -213,48 +260,18 @@ export const MoraShell: React.FC = () => {
     }
 
     return (
-        <div className="relative w-screen h-screen overflow-hidden bg-black text-white select-none">
+        <div className="relative w-full h-full overflow-hidden bg-black text-white select-none">
 
             {/* 1. LAYER: Neural Scanning Grid (Tesla/SpaceX Style) */}
-            <div className="fixed inset-0 w-screen h-screen z-0">
+            <div className="fixed inset-0 z-0">
                 <NeuralGrid state={finalOrbState} />
             </div>
 
-            {/* 2. LAYER: Ambient Stars & Floating Particles */}
-            <svg className="fixed inset-0 w-screen h-screen pointer-events-none opacity-40 z-0">
-                <defs>
-                    <filter id="glow-shell">
-                        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-                {stars.map((star) => (
-                    <motion.circle
-                        key={`star-${star.id}`}
-                        cx={star.cx}
-                        cy={star.cy}
-                        r={star.r}
-                        fill={star.fill}
-                        filter="url(#glow-shell)"
-                        animate={{
-                            opacity: [0.3, 0.8, 0.3],
-                            scale: [0.9, 1.1, 0.9]
-                        }}
-                        transition={{
-                            duration: 4 + Math.random() * 6,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            delay: Math.random() * 5
-                        }}
-                    />
-                ))}
-            </svg>
+            {/* 2. LAYER: Ambient Stars (Canvas Optimized + Galaxy Expansion) */}
+            <StarField warp={!isBootstrapped || isSpotlightOpen} />
 
             {/* 3. LAYER: Mycelium Neural Layer (Organic Flow - VISIBLE!) */}
-            <div className="fixed inset-0 w-screen h-screen z-0 opacity-40">
+            <div className="fixed inset-0 z-0 opacity-40">
                 <MyceliumOverlay />
             </div>
 
@@ -286,14 +303,8 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
-            {/* Legacy ChatDock - to be deprecated in favor of ResonanceRoom */}
-            {/* <ChatDock /> */}
-
             {/* UPGRADE A1: OS Dock - Central navigation hub */}
-            <Dock
-                onSleep={handleSleep}
-                onOpenResonance={() => setIsResonanceOpen(true)}
-            />
+            <Dock />
 
 
 
@@ -316,15 +327,9 @@ export const MoraShell: React.FC = () => {
                     role={role === 'owner' || role === 'admin' ? 'admin' : 'member'}
                     demoMode={viewMode === 'demo'}
                     notifications={orbNotifications}
-                    onClick={() => setShowIntelligence(!showIntelligence)}
+                    onClick={() => setIsResonanceOpen((prev) => !prev)}
                 />
             </div>
-
-            <IntelligenceDashboard
-                isOpen={showIntelligence}
-                onClose={() => setShowIntelligence(false)}
-                orbState={finalOrbState}
-            />
 
 
             <CursorAgent
@@ -336,6 +341,7 @@ export const MoraShell: React.FC = () => {
             />
 
             {/* UPGRADE A2: Intelligent Interaction Layer */}
+            <GhostOverlay />
             <UserCursor enabled={true} />
 
             {/* Phase 3: MÔRA Proactive Intelligence - DISABLED (felt like mock) */}
@@ -344,4 +350,3 @@ export const MoraShell: React.FC = () => {
         </div>
     );
 };
-

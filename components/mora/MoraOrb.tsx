@@ -119,6 +119,34 @@ export function MoraOrb({
         });
     }, [notifications, activeSparks]);
 
+    // Event Listeners for System Events (Phase 8: Voice)
+    useEffect(() => {
+        const handleSpeak = () => {
+            // Temporary pulse up
+            // We can't easily change prop state here if it's passed from parent,
+            // but we can override the internal params temporarily or assume
+            // parent handles state change? 
+            // BETTER: Dispatch visual flare directly or use internal override.
+            // Since internalState maps props, we might need a local override.
+            // Let's assume for now the Orb just reacts visually via CSS or we force a re-render.
+            // Actually, let's just use the OrbMessageEffect for the projectile, 
+            // and here maybe just a subtle scale bump?
+            if (orbRef.current) {
+                orbRef.current.animate([
+                    { transform: 'scale(1)' },
+                    { transform: 'scale(1.1) filter(brightness(1.5))' },
+                    { transform: 'scale(1)' }
+                ], {
+                    duration: 400,
+                    easing: 'ease-out'
+                });
+            }
+        };
+
+        window.addEventListener('mora:speak', handleSpeak);
+        return () => window.removeEventListener('mora:speak', handleSpeak);
+    }, []);
+
     if (!mounted) return null;
 
     // State-based visual parameters - UPGRADE A1: Five awareness modes

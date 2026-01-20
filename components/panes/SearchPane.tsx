@@ -173,7 +173,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
 
     return (
         <GlassPanel
-            title="Search"
+            title="Search (Local)"
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -288,25 +288,14 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                     </div>
                                 </div>
                             )}
-
-                            {/* Search Tips */}
-                            <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                                <div className="text-xs text-white/40 mb-2">💡 Search Tips</div>
-                                <ul className="text-xs text-white/50 space-y-1">
-                                    <li>• Type to search across all content</li>
-                                    <li>• Use ↑↓ to navigate, Enter to select</li>
-                                    <li>• Press Escape to clear</li>
-                                </ul>
-                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* AI Ready Badge */}
                 <div className="p-3 border-t border-white/10">
                     <div className="flex items-center gap-2 text-xs text-white/30">
-                        <Sparkles size={12} className="text-emerald-400" />
-                        <span>AI-enhanced search coming soon</span>
+                        <Search size={12} className="text-emerald-400" />
+                        <span>Local search only</span>
                     </div>
                 </div>
             </div>

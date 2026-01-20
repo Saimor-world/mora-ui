@@ -1,11 +1,7 @@
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import {
-    Grid, Box, Zap, Folder, FileText, Link2,
-    Mail, Users, Calendar, Terminal, Search,
-    MessageCircle, User, Globe, Calculator, Clock
-} from 'lucide-react';
+import { Grid, Box, FileText, Search } from 'lucide-react';
 import { PaneConfig } from '@/lib/store/paneStore';
 
 type PaneType = PaneConfig['type'];
@@ -33,6 +29,7 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
             } else {
                 focusPane(existingPane.id);
             }
+            removePane(id);
             return;
         }
 
@@ -59,30 +56,16 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
             size: { width: paneWidth, height: paneHeight },
             minimized: false
         });
+        focusPane(expectedId);
+        removePane(id);
     };
 
     // FULL APP LIBRARY - All available apps
-    const apps: { name: string; type: PaneType; icon: typeof Folder; color: string; category: string }[] = [
-        // Core Apps
-        { name: 'Finder', type: 'finder', icon: Folder, color: 'text-blue-400', category: 'core' },
-        { name: 'Mail', type: 'mail', icon: Mail, color: 'text-red-400', category: 'core' },
-        { name: 'Notes', type: 'notes', icon: FileText, color: 'text-yellow-400', category: 'core' },
-        { name: 'Search', type: 'search', icon: Search, color: 'text-purple-400', category: 'core' },
-
-        // Communication
-        { name: 'Team', type: 'team', icon: MessageCircle, color: 'text-emerald-400', category: 'comm' },
-        { name: 'Users', type: 'users', icon: Users, color: 'text-cyan-400', category: 'comm' },
-
-        // Productivity
-        { name: 'Calendar', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'prod' },
-        { name: 'Scanner', type: 'scanner', icon: Zap, color: 'text-pink-400', category: 'prod' },
-
-        // Utilities
-        { name: 'Terminal', type: 'terminal', icon: Terminal, color: 'text-lime-400', category: 'util' },
-        { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'util' },
-        { name: 'Connect', type: 'integrations', icon: Link2, color: 'text-amber-400', category: 'util' },
-        { name: 'Grid View', type: 'grid', icon: Grid, color: 'text-emerald-400', category: 'util' },
-        { name: 'Notes', type: 'notes', icon: FileText, color: 'text-yellow-400', category: 'util' },
+    const apps: { name: string; type: PaneType; icon: typeof FileText; color: string; category: string }[] = [
+        { name: 'Files', type: 'files', icon: FileText, color: 'text-emerald-400', category: 'core' },
+        { name: 'Grid View', type: 'grid', icon: Grid, color: 'text-emerald-400', category: 'core' },
+        { name: 'Search', type: 'search', icon: Search, color: 'text-emerald-400', category: 'core' },
+        { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'system' },
     ];
 
 

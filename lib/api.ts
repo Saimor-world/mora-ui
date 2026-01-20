@@ -4,9 +4,7 @@
  */
 
 import { getAuthHeader, getCoreApiUrl, getJwtToken } from './config';
-import { showToast } from './toast';
 import { announceHealthTransition } from './health';
-import { useMoraStore } from './store/moraState'; // Import Store for Demo Mode check
 
 // API Error types for better error handling
 export class ApiError extends Error {
@@ -67,47 +65,6 @@ async function fetchWithTimeout(
 }
 
 
-/**
- * DEMO MODE FALLBACK RESPONSES
- * Returns minimal data when backend is unavailable in demo mode.
- * NOTE: Real data should come from backend - this is only for graceful degradation.
- */
-function getDemoFallbackResponse(endpoint: string): any {
-  // Chat / Cognition
-  if (endpoint.includes('/chat')) {
-    return {
-      message: "Backend is offline. Please start the SAIMÔR Core server.",
-      sources: []
-    };
-  }
-
-  if (endpoint.includes('/pulse')) {
-    return {
-      state: 'offline',
-      insights: []
-    };
-  }
-
-  // Team Collaboration
-  if (endpoint.includes('/team/members')) {
-    return [];
-  }
-
-  if (endpoint.includes('/team/activity')) {
-    return [];
-  }
-
-  // Core Objects
-  if (endpoint.includes('/objects')) {
-    return {
-      objects: [],
-      total: 0
-    };
-  }
-
-  // Default empty for unknown
-  return {};
-}
 
 /**
  * Generic authenticated fetch wrapper
@@ -115,26 +72,13 @@ function getDemoFallbackResponse(endpoint: string): any {
  * - Handles timeouts
  * - Handles 401s with clear messages
  * - Provides detailed error info
- * - GOD MODE: Intercepts 401s in Demo Mode
+ * - Demo mode relies on real backend responses (no mock fallbacks)
  */
 export async function authFetch<T = any>(
   endpoint: string,
   options: RequestInit = {},
   timeoutMs: number = DEFAULT_TIMEOUT_MS
 ): Promise<T> {
-  // GOD MODE: Check if we are in Demo Mode
-  // If so, and we don't have a token, return valid mock data instead of erroring
-  try {
-    const isDemo = useMoraStore.getState().viewMode === 'demo';
-    const hasToken = !!getJwtToken();
-
-    if (isDemo && !hasToken) {
-      // Silent Interception
-      return getDemoFallbackResponse(endpoint) as T;
-    }
-  } catch (e) {
-    // Store might not be initialized, ignore
-  }
 
   const baseUrl = getCoreApiUrl();
   const token = getJwtToken();
@@ -223,16 +167,6 @@ export async function authFetch<T = any>(
       throw error;
     }
 
-    // GOD MODE: Network Error Interception
-    // If we are in Demo Mode and the fetch fails (likely backend offline),
-    // we SILENTLY return the mock response instead of throwing an error.
-    try {
-      const isDemo = useMoraStore.getState().viewMode === 'demo';
-      if (isDemo) {
-        console.debug(`[God Mode] Backend unreachable for ${endpoint}, using mock.`);
-        return getDemoFallbackResponse(endpoint) as T;
-      }
-    } catch (e) { }
 
     // Network errors (silently fail - health check handles status)
     if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -261,18 +195,6 @@ export async function healthCheck(): Promise<{
   qdrant?: { status: string };
   llm?: { status: string };
 }> {
-  // GOD MODE: In Demo Mode, always return healthy status for UI continuity
-  try {
-    const isDemo = useMoraStore.getState().viewMode === 'demo';
-    if (isDemo) {
-      return {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        db: { status: 'mock_connected' },
-        llm: { status: 'mock_ready' }
-      };
-    }
-  } catch (e) { }
 
   const baseUrl = getCoreApiUrl();
   const token = getJwtToken();

@@ -1,6 +1,6 @@
 "use client";
 
-const AUTH_COOKIE = "saimor_auth";
+const AUTH_COOKIE = "mora_auth_token";
 
 type EventHandler = (data: any) => void;
 
@@ -45,7 +45,7 @@ class RealtimeClient {
 
         this.isConnecting = true;
 
-        // Using localhost:8083 as per backend config
+        // Using localhost:8083 (Main Core API) - Unified System
         // In production this would use an env variable
         const wsHost = process.env.NEXT_PUBLIC_CORE_WS_URL || 'ws://localhost:8083';
         const wsUrl = `${wsHost}/v1/realtime/subscribe?token=${token}&event_types=all`;

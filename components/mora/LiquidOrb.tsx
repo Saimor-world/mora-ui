@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { MeshDistortMaterial, Sphere, Float, Environment } from '@react-three/drei';
 import * as THREE from 'three';
+
+let WEBGL_UNAVAILABLE = false;
+let WEBGL_CONTEXT_LOST_LOGGED = false;
+const WEBGL_DISABLED_BY_ENV = (() => {
+    const flag = process.env.NEXT_PUBLIC_DISABLE_WEBGL;
+    if (flag === 'true') return true;
+    if (flag === 'false') return false;
+    return process.env.NODE_ENV !== 'production';
+})();
 
 interface LiquidOrbProps {
     color: string;
@@ -83,22 +92,58 @@ const LiquidMesh: React.FC<LiquidOrbProps> = ({ color, state, intensity = 1 }) =
  * Setup the 3D scene with automatic WebGL fallback.
  */
 export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
-    const [webglFailed, setWebglFailed] = useState(false);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [webglFailed, setWebglFailed] = useState(() => WEBGL_UNAVAILABLE || WEBGL_DISABLED_BY_ENV);
+    const glRef = useRef<THREE.WebGLRenderer | null>(null);
+
+    const markWebglFailed = useCallback((reason: string) => {
+        if (!WEBGL_CONTEXT_LOST_LOGGED) {
+            console.warn(`[LiquidOrb] ${reason}, switching to CSS fallback`);
+            WEBGL_CONTEXT_LOST_LOGGED = true;
+        }
+        WEBGL_UNAVAILABLE = true;
+        setWebglFailed(true);
+    }, []);
 
     // Check WebGL availability on mount
     useEffect(() => {
+        if (WEBGL_DISABLED_BY_ENV) {
+            WEBGL_UNAVAILABLE = true;
+            if (!WEBGL_CONTEXT_LOST_LOGGED && process.env.NODE_ENV !== 'production') {
+                console.warn('[LiquidOrb] WebGL disabled by config, using CSS fallback');
+                WEBGL_CONTEXT_LOST_LOGGED = true;
+            }
+            setWebglFailed(true);
+            return;
+        }
+        if (WEBGL_UNAVAILABLE) {
+            setWebglFailed(true);
+            return;
+        }
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
             if (!gl) {
-                console.warn('[LiquidOrb] WebGL not available, using CSS fallback');
-                setWebglFailed(true);
+                markWebglFailed('WebGL not available');
             }
         } catch (e) {
-            console.warn('[LiquidOrb] WebGL check failed:', e);
-            setWebglFailed(true);
+            markWebglFailed('WebGL check failed');
         }
+    }, [markWebglFailed]);
+
+    // Cleanup renderer on unmount to reduce context churn
+    useEffect(() => {
+        return () => {
+            if (glRef.current) {
+                try {
+                    glRef.current.dispose();
+                    glRef.current.forceContextLoss();
+                } catch {
+                    // Ignore disposal errors
+                } finally {
+                    glRef.current = null;
+                }
+            }
+        };
     }, []);
 
     // If WebGL failed, show CSS fallback immediately
@@ -110,15 +155,16 @@ export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
         <div className="w-full h-full relative cursor-pointer">
             <Canvas
                 camera={{ position: [0, 0, 4], fov: 45 }}
-                gl={{ alpha: true, antialias: true, failIfMajorPerformanceCaveat: false }}
+                gl={{ alpha: true, antialias: true, failIfMajorPerformanceCaveat: false, powerPreference: 'low-power' }}
                 onCreated={({ gl }) => {
+                    glRef.current = gl;
                     // Listen for WebGL context lost events
                     gl.domElement.addEventListener('webglcontextlost', (e) => {
                         e.preventDefault();
-                        console.warn('[LiquidOrb] WebGL context lost, switching to CSS fallback');
-                        setWebglFailed(true);
-                    });
+                        markWebglFailed('WebGL context lost');
+                    }, { once: true });
                 }}
+                dpr={[1, 1.5]}
             >
                 {/* Lighting setup for "Jewel" look */}
                 <ambientLight intensity={0.5} />
@@ -143,17 +189,137 @@ export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
 };
 
 /**
- * CSS-Only Fallback Orb
+ * CSS-Only Fallback Orb - PREMIUM MYSTICAL VERSION
  * Used when WebGL is unavailable or context is lost.
+ * Now with 3D depth, inner swirls, ethereal mist, and magical subsurface glow.
  */
 export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
+    // State-based animations
+    const pulseSpeed = state === 'thinking' ? '3s' : state === 'alert' ? '1.5s' : '6s';
+    const glowIntensity = state === 'alert' ? 50 : state === 'thinking' ? 36 : 30;
+
     return (
-        <div
-            className="w-full h-full rounded-full animate-pulse"
-            style={{
-                background: `radial-gradient(circle at 30% 30%, ${color}90 0%, ${color}60 40%, ${color}30 70%, transparent 100%)`,
-                boxShadow: `0 0 40px ${color}40, inset 0 0 20px ${color}20`,
-            }}
-        />
+        <div className="w-full h-full relative">
+            {/* LAYER 0: Ethereal Mist (Outer Atmosphere) */}
+            <div
+                className="absolute inset-[-30%] rounded-full animate-pulse"
+                style={{
+                    background: `radial-gradient(circle at center, ${color}30 0%, ${color}10 30%, transparent 60%)`,
+                    filter: 'blur(40px)',
+                    animationDuration: `${parseFloat(pulseSpeed) * 1.5}s`,
+                }}
+            />
+
+            {/* LAYER 1: Deep Shadow (3D Base) */}
+            <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                    background: `radial-gradient(circle at 70% 70%, transparent 30%, rgba(0,0,0,0.8) 100%)`,
+                    transform: 'translate(3%, 3%)',
+                    filter: 'blur(8px)',
+                }}
+            />
+
+            {/* LAYER 2: Subsurface Glow (Inner Energy) */}
+            <div
+                className="absolute inset-[-20%] rounded-full animate-pulse"
+                style={{
+                    background: `radial-gradient(circle at center, ${color}50 0%, ${color}25 40%, transparent 70%)`,
+                    filter: `blur(${glowIntensity}px)`,
+                    animationDuration: pulseSpeed,
+                }}
+            />
+
+            {/* LAYER 3: Main Orb Body */}
+            <div
+                className="absolute inset-0 rounded-full overflow-hidden"
+                style={{
+                    background: `
+                        radial-gradient(circle at 35% 35%, ${color}FF 0%, ${color}CC 20%, ${color}80 50%, ${color}40 80%, transparent 100%)
+                    `,
+                    boxShadow: `
+                        inset -10px -10px 30px rgba(0,0,0,0.6),
+                        inset 8px 8px 20px rgba(255,255,255,0.2),
+                        0 0 ${glowIntensity}px ${color}80,
+                        0 10px 40px rgba(0,0,0,0.5)
+                    `,
+                }}
+            >
+                {/* LAYER 3a: Inner Swirl Energy */}
+                <div
+                    className="absolute inset-0 rounded-full animate-spin"
+                    style={{
+                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, ${color}40 25%, transparent 50%, ${color}30 75%, transparent 100%)`,
+                        filter: 'blur(8px)',
+                        animationDuration: '16s',
+                    }}
+                />
+
+                {/* LAYER 3b: Secondary Swirl (Counter-rotation) */}
+                <div
+                    className="absolute inset-[10%] rounded-full"
+                    style={{
+                        background: `conic-gradient(from 45deg at 50% 50%, transparent 0%, ${color}30 30%, transparent 60%, ${color}20 90%, transparent 100%)`,
+                        filter: 'blur(6px)',
+                        animation: `spin 18s linear infinite reverse`,
+                    }}
+                />
+
+                {/* LAYER 3c: Glass Highlight (Top-Left) */}
+                <div
+                    className="absolute rounded-full"
+                    style={{
+                        width: '50%',
+                        height: '50%',
+                        top: '8%',
+                        left: '8%',
+                        background: 'radial-gradient(circle at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 40%, transparent 70%)',
+                        filter: 'blur(4px)',
+                    }}
+                />
+
+                {/* LAYER 3d: Secondary Highlight (Bottom-Right Rim) */}
+                <div
+                    className="absolute rounded-full"
+                    style={{
+                        width: '30%',
+                        height: '30%',
+                        bottom: '15%',
+                        right: '15%',
+                        background: 'radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 60%)',
+                        filter: 'blur(6px)',
+                    }}
+                />
+            </div>
+
+            {/* LAYER 4: Outer Ring Glow */}
+            <div
+                className="absolute inset-[-5%] rounded-full animate-pulse"
+                style={{
+                    border: `2px solid ${color}40`,
+                    boxShadow: `0 0 25px ${color}30`,
+                    animationDuration: pulseSpeed,
+                }}
+            />
+
+            {/* LAYER 5: Breathing Pulse Ring */}
+            <div
+                className="absolute inset-[-10%] rounded-full"
+                style={{
+                    border: `1px solid ${color}25`,
+                    opacity: 0.35,
+                }}
+            />
+
+            {/* LAYER 6: Mystical Particle Ring */}
+            <div
+                className="absolute inset-[-15%] rounded-full animate-spin"
+                style={{
+                    background: `conic-gradient(from 0deg, transparent 0%, ${color}20 5%, transparent 8%, transparent 20%, ${color}15 23%, transparent 26%, transparent 40%, ${color}10 43%, transparent 46%, transparent 60%, ${color}20 63%, transparent 66%, transparent 80%, ${color}15 83%, transparent 86%)`,
+                    filter: 'blur(2px)',
+                    animationDuration: '45s',
+                }}
+            />
+        </div>
     );
 };

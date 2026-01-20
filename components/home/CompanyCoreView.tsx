@@ -9,7 +9,7 @@ import { NodeStar } from '@/components/mora/NodeStar';
 import { useMoraStore } from '@/lib/store/moraState';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
 import { useUser } from '@/lib/hooks/useUser';
-import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw, Mic, Minimize2 } from 'lucide-react';
+import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw, Minimize2 } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CursorAgent } from '@/components/mora/CursorAgent'; // UPGRADE D1
 import { MoraCommand } from '@/components/mora/MoraCommand'; // UPGRADE B2
@@ -68,7 +68,7 @@ export const CompanyCoreView: React.FC = () => {
         isLoadingCompanies
     } = useMoraStore();
 
-    const { addPane, focusPane } = usePaneStore();
+    const { addPane } = usePaneStore();
 
     const { role, user } = useUser();
     const { accentColor } = useAccentColor(); // Global accent color
@@ -294,10 +294,9 @@ export const CompanyCoreView: React.FC = () => {
         });
     }, [activeCompanyId, departments, spacesByDepartment, loadSpacesForDepartment]);
 
-    // Load departments when company is active - FORCE RELOAD on company change
+    // Load departments when company is active
     useEffect(() => {
         if (activeCompanyId) {
-            console.log('[CompanyCoreView] 🚀 Force loading departments for company:', activeCompanyId);
             loadDepartments(activeCompanyId);
         }
     }, [activeCompanyId, loadDepartments]);
@@ -445,10 +444,10 @@ export const CompanyCoreView: React.FC = () => {
         const orbX = 50; // Center VW
         const orbY = 50; // Center VH
 
-        // Orbit radius (Wide orbit to clear the central text)
-        // UPGRADE: Wider distribution to fill screen (Day 11 Physics Tune)
-        const orbitRadiusX = 38 + seededRandom(3) * 7; // 38-45vw
-        const orbitRadiusY = 25 + seededRandom(4) * 5; // 25-30vh
+        // Orbit radius (Tuned for safe margins - 15% clear zone)
+        // Reduced from 38vw/25vh to ensure planets stay within bounds
+        const orbitRadiusX = 28 + seededRandom(3) * 6; // 28-34vw (Max X ~84vw)
+        const orbitRadiusY = 18 + seededRandom(4) * 6; // 18-24vh (Max Y ~74vh)
 
         // Full 360 orbit
         const arcStart = 0;
@@ -868,7 +867,7 @@ export const CompanyCoreView: React.FC = () => {
 
 
     return (
-        <div className="fixed inset-0 w-full h-full min-w-screen min-h-screen overflow-hidden bg-transparent">
+        <div className="fixed inset-0 w-full h-full min-w-full min-h-full overflow-hidden bg-transparent">
 
             {/* EMPTY STATE - Minimal Hint for New Universes */}
             {departments.length === 0 && !isLoading && (
@@ -899,43 +898,11 @@ export const CompanyCoreView: React.FC = () => {
                 </div>
             )}
 
-            {/* 🔍 DEBUG INFO - OBEN LINKS (über Dock) */}
-            <div className="fixed top-6 left-6 z-[200] px-4 py-3 rounded-xl bg-black/60 backdrop-blur-xl border border-emerald-500/30 shadow-lg">
-                <div className="text-[10px] font-mono text-emerald-400 space-y-1">
-                    <div className="font-bold mb-2 tracking-wider">📊 UNIVERSE STATE</div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                        <span className="text-white/40">Planets:</span><span className="text-white font-bold">{debugState.departmentsCount}</span>
-                        <span className="text-white/40">Moons:</span><span className="text-white font-bold">{debugState.moonPositionsCount}</span>
-                        <span className="text-white/40">Nodes:</span><span className="text-white font-bold">{debugState.nodesCount}</span>
-                        <span className="text-white/40">Mode:</span><span className="text-white font-bold uppercase">{debugState.viewMode}</span>
-                    </div>
-                </div>
-            </div>
+            {/* DEBUG INFO REMOVED - Clean interface per user request */}
 
-            {/* Control Bar: Planets CRUD */}
-            <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-lg">
-                <button
-                    onClick={handleCreateDepartment}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-100 text-xs uppercase tracking-wide"
-                >
-                    <PlusCircle size={14} />
-                    Add Planet
-                </button>
-                <button
-                    onClick={handleDeleteDepartment}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-100 text-xs uppercase tracking-wide"
-                >
-                    <Trash2 size={14} />
-                    Delete Planet
-                </button>
-                <button
-                    onClick={handleReloadDepartments}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 text-xs uppercase tracking-wide"
-                >
-                    <RefreshCw size={14} />
-                    Reload
-                </button>
-            </div>
+
+            {/* Control Bar removed - Department management now in Settings > Admin */}
+
             {/* Atmosphere and starfield removed to use universal MoraShell background */}
 
             {/* Header removed - now using Center Universe Hub */}
@@ -1003,12 +970,14 @@ export const CompanyCoreView: React.FC = () => {
                     <svg
                         className="absolute pointer-events-none"
                         style={{
-                            top: -600,
-                            left: -600,
-                            width: 1200,
-                            height: 1200,
+                            left: '50%',
+                            top: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '300vmax', // Covers largest dimension
+                            height: '300vmax',
                             overflow: 'visible'
                         }}
+                        viewBox="-1500 -1500 3000 3000" // Centered coordinate system
                     >
                         <defs>
                             {/* PREMIUM LIGHT THREADS - Ethereal Glow */}
@@ -1344,14 +1313,11 @@ export const CompanyCoreView: React.FC = () => {
                                         }}
                                         onHover={(hovered) => handlePlanetHover(planet.id, hovered)}
                                         onQuickFilesAccess={(clickPos) => {
-                                            // Open FinderPane near the click position (native context menu style)
-                                            const paneId = `finder-${planet.id}`;
-                                            // Position window near click, but ensure it stays on screen
-                                            const paneWidth = 900;
-                                            const paneHeight = 600;
-                                            let posX = clickPos.x + 10; // 10px offset from click
+                                            const paneId = 'files-main';
+                                            const paneWidth = 700;
+                                            const paneHeight = 500;
+                                            let posX = clickPos.x + 10;
                                             let posY = clickPos.y - 50;
-                                            // Keep on screen
                                             if (posX + paneWidth > window.innerWidth) {
                                                 posX = clickPos.x - paneWidth - 10;
                                             }
@@ -1362,9 +1328,8 @@ export const CompanyCoreView: React.FC = () => {
 
                                             addPane({
                                                 id: paneId,
-                                                type: 'finder',
-                                                title: `Dateien — ${planet.name}`,
-                                                data: { departmentId: planet.id, departmentName: planet.name },
+                                                type: 'files',
+                                                title: 'Files',
                                                 minimized: false,
                                                 size: { width: paneWidth, height: paneHeight },
                                                 position: { x: Math.floor(posX), y: Math.floor(posY) }

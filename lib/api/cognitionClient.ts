@@ -143,6 +143,8 @@ export interface AgentPendingConfirmation {
     reason: string;
     risk_level: string; // "write" | "secrets"
     what_will_change: string;
+    confirmation_token?: string;
+    action_id?: string;
 }
 
 export interface AgentResponse {
@@ -171,7 +173,7 @@ export async function executeAgenticLoop(
             intent,
             view_level: viewContext?.level,
             active_entity_id: viewContext?.entityId,
-            allow_tool_execution: true,
+            allow_tool_execution: false,
             max_iterations: 10
         });
         return response;

@@ -3,7 +3,7 @@ import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, Core
 type AccountRole = 'admin' | 'owner' | 'manager' | 'member' | 'demo';
 
 const CORE_BASE_URL = "/api/core";
-const AUTH_COOKIE = "saimor_auth";
+const AUTH_COOKIE = "mora_auth_token";
 
 export class CoreError extends Error {
     status: number;
@@ -196,6 +196,7 @@ export async function authLogin(payload: AuthPayload): Promise<AuthSession> {
 export interface UserProfile {
     user_id: string;
     email?: string;
+    full_name?: string;
     role: AccountRole;
     tenant_id: string;
     demo_mode?: boolean;
@@ -334,8 +335,18 @@ export async function fetchSpaces(departmentId?: string): Promise<CoreSpace[]> {
     return result || [];
 }
 
+export async function fetchSpacesByCompany(companyId: string): Promise<CoreSpace[]> {
+    const result = await coreGet(`/v1/spaces?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
+    return result || [];
+}
+
 export async function fetchFolders(spaceId: string): Promise<CoreFolder[]> {
     const result = await coreGet(`/v1/folders?space_id=${spaceId}`, { isOptional: true });
+    return result || [];
+}
+
+export async function fetchFoldersByCompany(companyId: string): Promise<CoreFolder[]> {
+    const result = await coreGet(`/v1/folders?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
     return result || [];
 }
 
@@ -568,6 +579,37 @@ export async function uploadFile(file: File, folderId: string, title?: string): 
 
     if (!response.ok) {
         let message = `Upload Failed: ${response.status} ${response.statusText}`;
+        try {
+            const errorBody = await response.json();
+            if (errorBody.detail) message = errorBody.detail;
+        } catch { }
+        throw new CoreError(message, response.status);
+    }
+
+    return response.json();
+}
+
+export async function importCompanyStructure(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = readCookie(AUTH_COOKIE) ||
+        (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null) ||
+        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
+        process.env.NEXT_PUBLIC_API_TOKEN;
+
+    if (!token) throw new CoreError('Unauthorized', 401);
+
+    const response = await fetch(`${CORE_BASE_URL}/v1/companies/import`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`
+        },
+        body: formData
+    });
+
+    if (!response.ok) {
+        let message = `Import Failed: ${response.status} ${response.statusText}`;
         try {
             const errorBody = await response.json();
             if (errorBody.detail) message = errorBody.detail;
