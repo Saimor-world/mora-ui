@@ -2,22 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Toaster } from 'sonner';
 import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
 import { ViewPort } from './ViewPort';
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { Dock } from '@/components/mora/Dock';
-import { PaneManager } from '@/components/mora/PaneManager';
 import { LockScreen } from '@/components/auth/LockScreen';
 
 import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { motion, AnimatePresence } from 'framer-motion';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CursorAgent } from '@/components/mora/CursorAgent';
 import { GhostOverlay } from '@/components/mora/GhostOverlay';
+import { AgencyCursor } from '@/components/agency/AgencyCursor';
 import { NeuralGrid } from '@/components/visual/NeuralGrid';
 import { UserCursor } from '@/components/layout/UserCursor';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
@@ -46,7 +44,7 @@ export const MoraShell: React.FC = () => {
         orbState: storeOrbState,
         orbNotifications
     } = useMoraStore();
-    const { addPane, focusPane, getPane, restorePane } = usePaneStore();
+    const { openPane } = usePaneStore();
 
     const role = user?.role || 'demo';
 
@@ -97,39 +95,18 @@ export const MoraShell: React.FC = () => {
             const nodeId = custom?.detail?.nodeId;
             if (!nodeId) return;
 
-            const paneId = `document-${nodeId}`;
-            const existing = getPane(paneId);
-            if (existing) {
-                if (existing.minimized) restorePane(paneId);
-                else focusPane(paneId);
-                return;
-            }
-
-            const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-            const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-            const paneWidth = 800;
-            const paneHeight = 600;
-
-            let x = Math.floor((windowWidth - paneWidth) / 2);
-            let y = Math.floor((windowHeight - paneHeight) / 2) - 40;
-            x = Math.max(20, Math.min(x, windowWidth - paneWidth - 20));
-            y = Math.max(40, Math.min(y, windowHeight - paneHeight - 100));
-
-            addPane({
-                id: paneId,
+            openPane({
+                id: `document-${nodeId}`,
                 type: 'document',
                 title: 'Document',
                 data: { nodeId },
-                position: { x, y },
-                size: { width: paneWidth, height: paneHeight },
-                minimized: false
+                size: { width: 800, height: 600 }
             });
-            focusPane(paneId);
         };
 
         window.addEventListener('open-node-detail', handler as EventListener);
         return () => window.removeEventListener('open-node-detail', handler as EventListener);
-    }, [addPane, focusPane, getPane, restorePane]);
+    }, [openPane]);
 
     // Awareness pulse polling with exponential backoff
     useEffect(() => {
@@ -309,7 +286,6 @@ export const MoraShell: React.FC = () => {
 
 
             {/* MoraOrb is now rendered in CompanyCoreView (bottom-right, MASTERBIBEL compliant) */}
-            <Toaster position="top-right" theme="dark" />
 
             {/* Node Detail Panel (GlassPanel - Universe Edition) */}
             <NodeDetailPanel />
@@ -339,6 +315,7 @@ export const MoraShell: React.FC = () => {
                 awareness={finalOrbState}
                 onActionComplete={() => setCursorAgent({ active: false, action: 'idle' })}
             />
+            <AgencyCursor />
 
             {/* UPGRADE A2: Intelligent Interaction Layer */}
             <GhostOverlay />

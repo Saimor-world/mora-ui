@@ -9,6 +9,16 @@ import { GridPane } from '@/components/panes/GridPane';
 import { SpacePane } from '@/components/panes/SpacePane';
 import { DocumentPane } from '@/components/panes/DocumentPane';
 import { SearchPane } from '@/components/panes/SearchPane';
+import { TeamPane } from '@/components/panes/TeamPane';
+import { MailPane } from '@/components/panes/MailPane';
+import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
+import { CalendarPane } from '@/components/panes/CalendarPane';
+import { TerminalPane } from '@/components/panes/TerminalPane';
+import { NotesPane } from '@/components/panes/NotesPane';
+import { FinderPane } from '@/components/panes/FinderPane';
+import { ScannerPane } from '@/components/panes/ScannerPane';
+import { UsersPane } from '@/components/panes/UsersPane';
+import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
@@ -27,6 +37,32 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <DocumentPane id={pane.id} />;
         case 'search':
             return <SearchPane id={pane.id} />;
+        case 'team':
+            return <TeamPane id={pane.id} />;
+        case 'mail':
+            return <MailPane id={pane.id} />;
+        case 'integrations':
+            return <IntegrationsPane id={pane.id} />;
+        case 'calendar':
+            return <CalendarPane id={pane.id} />;
+        case 'terminal':
+            return <TerminalPane id={pane.id} />;
+        case 'notes':
+            return <NotesPane id={pane.id} />;
+        case 'finder':
+            return <FinderPane id={pane.id} />;
+        case 'scanner':
+            return <ScannerPane id={pane.id} />;
+        case 'users':
+            return <UsersPane id={pane.id} />;
+        case 'company-detail':
+            return (
+                <CompanyDetailPane
+                    id={pane.id}
+                    companyId={pane.data?.companyId}
+                    companyName={pane.data?.companyName}
+                />
+            );
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
     Search,
     FileText,
@@ -10,8 +11,18 @@ import {
     ArrowRight,
     Hash,
     Building2,
-    Layers
+    Layers,
+    Users,
+    Mail,
+    Calendar,
+    Terminal,
+    StickyNote,
+    Folder,
+    ScanLine,
+    Wrench
 } from "lucide-react";
+import { useMoraStore } from "@/lib/store/moraState";
+import { usePaneStore } from "@/lib/store/paneStore";
 
 /**
  * SPOTLIGHT - Global Command Palette (Cmd+K)
@@ -60,7 +71,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         navigateToSpace
     } = useMoraStore();
 
-    const { addPane, getPane, focusPane, restorePane, panes, minimizePane } = usePaneStore();
+    const { openPane, panes, minimizePane } = usePaneStore();
 
     // Focus input when opened
     useEffect(() => {
@@ -74,28 +85,15 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     // Helper to open/focus pane
-    const openPane = useCallback((type: string, id: string, title: string, size = { width: 700, height: 500 }) => {
-        const existing = getPane(id);
-        if (existing) {
-            if (existing.minimized) restorePane(id);
-            else focusPane(id);
-        } else {
-            const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-            const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-            addPane({
-                id,
-                type: type as any,
-                title,
-                position: {
-                    x: Math.floor((windowWidth - size.width) / 2),
-                    y: Math.floor((windowHeight - size.height) / 2) - 40
-                },
-                size,
-                minimized: false
-            });
-        }
+    const openFromSpotlight = useCallback((type: string, id: string, title: string, size = { width: 700, height: 500 }) => {
+        openPane({
+            id,
+            type: type as any,
+            title,
+            size
+        });
         onClose();
-    }, [getPane, restorePane, focusPane, addPane, onClose]);
+    }, [openPane, onClose]);
 
     // Build actions list
     const actions = useMemo<SpotlightAction[]>(() => {
@@ -109,7 +107,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             icon: <Settings size={16} className="text-white/60" />,
             category: "action",
             keywords: ["settings", "preferences", "config", "options", "einstellungen"],
-            onSelect: () => openPane("settings", "settings-main", "Settings")
+            onSelect: () => openFromSpotlight("settings", "settings-main", "Settings")
         });
 
         result.push({
@@ -119,7 +117,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             icon: <FileText size={16} className="text-emerald-400" />,
             category: "action",
             keywords: ["files", "uploads", "dateien"],
-            onSelect: () => openPane("files", "files-main", "Files", { width: 700, height: 500 })
+            onSelect: () => openFromSpotlight("files", "files-main", "Files", { width: 700, height: 500 })
         });
 
         result.push({
@@ -129,7 +127,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             icon: <Search size={16} className="text-emerald-400" />,
             category: "action",
             keywords: ["search", "find", "query", "suche"],
-            onSelect: () => openPane("search", "search-main", "Search", { width: 600, height: 400 })
+            onSelect: () => openFromSpotlight("search", "search-main", "Search", { width: 600, height: 400 })
         });
 
         result.push({
@@ -139,7 +137,97 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             icon: <Grid size={16} className="text-emerald-400" />,
             category: "action",
             keywords: ["grid", "nodes", "overview"],
-            onSelect: () => openPane("grid", "grid-main", "Grid View", { width: 800, height: 600 })
+            onSelect: () => openFromSpotlight("grid", "grid-main", "Grid View", { width: 800, height: 600 })
+        });
+
+        result.push({
+            id: "action-finder",
+            label: "Finder",
+            description: "Browse folders and files",
+            icon: <Folder size={16} className="text-emerald-300" />,
+            category: "action",
+            keywords: ["finder", "folders", "files"],
+            onSelect: () => openFromSpotlight("finder", "finder-main", "Finder", { width: 900, height: 620 })
+        });
+
+        result.push({
+            id: "action-notes",
+            label: "Notes",
+            description: "Personal notes",
+            icon: <StickyNote size={16} className="text-yellow-400" />,
+            category: "action",
+            keywords: ["notes", "note", "memo"],
+            onSelect: () => openFromSpotlight("notes", "notes-main", "Notes", { width: 860, height: 620 })
+        });
+
+        result.push({
+            id: "action-scanner",
+            label: "Scanner",
+            description: "Upload + analyze files",
+            icon: <ScanLine size={16} className="text-purple-400" />,
+            category: "action",
+            keywords: ["scanner", "scan", "upload"],
+            onSelect: () => openFromSpotlight("scanner", "scanner-main", "Scanner", { width: 840, height: 600 })
+        });
+
+        result.push({
+            id: "action-team",
+            label: "Team",
+            description: "Team presence & chat",
+            icon: <Users size={16} className="text-emerald-400" />,
+            category: "action",
+            keywords: ["team", "presence", "chat"],
+            onSelect: () => openFromSpotlight("team", "team-main", "Team", { width: 780, height: 620 })
+        });
+
+        result.push({
+            id: "action-users",
+            label: "Users",
+            description: "Team members & invites",
+            icon: <Users size={16} className="text-emerald-300" />,
+            category: "action",
+            keywords: ["users", "members", "roles"],
+            onSelect: () => openFromSpotlight("users", "users-main", "Team & Users", { width: 760, height: 600 })
+        });
+
+        result.push({
+            id: "action-mail",
+            label: "Mail",
+            description: "Secure mail gateway",
+            icon: <Mail size={16} className="text-red-400" />,
+            category: "action",
+            keywords: ["mail", "email", "inbox"],
+            onSelect: () => openFromSpotlight("mail", "mail-main", "Secure Mail", { width: 860, height: 640 })
+        });
+
+        result.push({
+            id: "action-calendar",
+            label: "Calendar",
+            description: "Events and scheduling",
+            icon: <Calendar size={16} className="text-orange-400" />,
+            category: "action",
+            keywords: ["calendar", "events", "schedule"],
+            onSelect: () => openFromSpotlight("calendar", "calendar-main", "Calendar", { width: 840, height: 620 })
+        });
+
+        result.push({
+            id: "action-terminal",
+            label: "Terminal",
+            description: "Command line interface",
+            icon: <Terminal size={16} className="text-mora-gold" />,
+            category: "action",
+            keywords: ["terminal", "cli", "commands"],
+            onSelect: () => openFromSpotlight("terminal", "terminal-main", "Terminal", { width: 860, height: 560 })
+        });
+
+        result.push({
+            id: "action-integrations",
+            label: "Integrations",
+            description: "Connected services",
+            icon: <Wrench size={16} className="text-blue-300" />,
+            category: "action",
+            keywords: ["integrations", "connectors"],
+            onSelect: () => openFromSpotlight("integrations", "integrations-main", "Integrations", { width: 760, height: 560 })
         });
 
         result.push({
@@ -149,7 +237,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             icon: <Grid size={16} className="text-emerald-400" />,
             category: "action",
             keywords: ["apps", "library", "applications"],
-            onSelect: () => openPane("apps", "apps-main", "App Library", { width: 800, height: 600 })
+            onSelect: () => openFromSpotlight("apps", "apps-main", "App Library", { width: 800, height: 600 })
         });
 
         result.push({
@@ -221,7 +309,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         });
 
         return result;
-    }, [departments, companies, activeCompanyId, spacesByDepartment, openPane, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany, setViewMode]);
+    }, [departments, companies, activeCompanyId, spacesByDepartment, openFromSpotlight, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany, setViewMode]);
 
     // Filter actions based on query
     const filteredActions = useMemo(() => {
@@ -342,7 +430,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                             />
                             <div className="flex items-center gap-2">
                                 <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-emerald-500/40 font-mono">
-                                    <span className="text-xs">⌘</span>
+                                    <span className="text-xs">Ctrl</span>
                                     <span>K</span>
                                 </kbd>
                             </div>
@@ -353,7 +441,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                             {filteredActions.length === 0 ? (
                                 <div className="p-12 text-center text-emerald-500/30 flex flex-col items-center gap-3">
                                     <Search size={32} className="opacity-20 translate-y-2" />
-                                    <span className="text-sm italic">Keine Treffer für "{query}"</span>
+                                    <span className="text-sm italic">Keine Treffer fuer "{query}"</span>
                                 </div>
                             ) : (
                                 <div className="py-2">
@@ -366,7 +454,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                                             <div key={cat} className="mb-2 last:mb-0">
                                                 <div className="px-5 py-2 text-[10px] font-bold tracking-[0.2em] text-emerald-500/30 uppercase flex items-center gap-2">
                                                     <div className="w-1 h-1 rounded-full bg-emerald-500/30" />
-                                                    {cat === 'navigation' ? 'Navigation' : cat === 'action' ? 'Aktionen' : 'Einträge'}
+                                                    {cat === 'navigation' ? 'Navigation' : cat === 'action' ? 'Aktionen' : 'Eintraege'}
                                                 </div>
 
                                                 {catActions.map((action) => {
@@ -428,11 +516,11 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                         {/* High-End Footer */}
                         <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex items-center justify-between text-[10px] text-emerald-500/30 uppercase tracking-[0.15em] font-medium">
                             <div className="flex items-center gap-6">
-                                <span className="flex items-center gap-1.5"><span className="text-emerald-500/60">↑↓</span> Navigieren</span>
-                                <span className="flex items-center gap-1.5"><span className="text-emerald-500/60">↵</span> Auswählen</span>
+                                <span className="flex items-center gap-1.5"><span className="text-emerald-500/60">Up/Down</span> Navigieren</span>
+                                <span className="flex items-center gap-1.5"><span className="text-emerald-500/60">Enter</span> Auswaehlen</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <span className="text-emerald-500/60">ESC</span> Schließen
+                                <span className="text-emerald-500/60">ESC</span> Schliessen
                             </div>
                         </div>
                     </div>

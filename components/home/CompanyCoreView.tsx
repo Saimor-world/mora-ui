@@ -68,7 +68,7 @@ export const CompanyCoreView: React.FC = () => {
         isLoadingCompanies
     } = useMoraStore();
 
-    const { addPane } = usePaneStore();
+    const { openPane } = usePaneStore();
 
     const { role, user } = useUser();
     const { accentColor } = useAccentColor(); // Global accent color
@@ -1326,11 +1326,10 @@ export const CompanyCoreView: React.FC = () => {
                                             }
                                             if (posY < 50) posY = 50;
 
-                                            addPane({
+                                            openPane({
                                                 id: paneId,
                                                 type: 'files',
                                                 title: 'Files',
-                                                minimized: false,
                                                 size: { width: paneWidth, height: paneHeight },
                                                 position: { x: Math.floor(posX), y: Math.floor(posY) }
                                             });
