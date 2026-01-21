@@ -174,126 +174,245 @@ export function CursorAgent({
             animate={controls}
             exit={{ scale: 0, opacity: 0 }}
         >
-            {/* UPGRADE D1: Agent body - glowing orb with intelligence */}
+            {/* MASTERBIBEL: Lichtfee (Light Fairy) - emerges from Orb */}
             <div className="relative">
-                {/* Outer glow */}
+                {/* LICHTFEE: Outer Aura Glow - Multi-layer */}
                 <motion.div
-                    className="absolute inset-0 rounded-full"
+                    className="absolute -inset-4 rounded-full"
                     style={{
-                        background: `radial-gradient(circle, ${visuals.glow} 0%, transparent 70%)`,
-                        filter: 'blur(8px)'
+                        background: `
+                            radial-gradient(circle at 30% 30%, ${visuals.glow} 0%, transparent 50%),
+                            radial-gradient(circle at 70% 70%, ${visuals.color}40 0%, transparent 50%)
+                        `,
+                        filter: 'blur(12px)'
                     }}
                     animate={{
-                        scale: isMoving ? [1, 1.2, 1] : [1, 1.1, 1],
-                        opacity: [0.3, 0.6, 0.3]
+                        scale: isMoving ? [1, 1.4, 1] : [1, 1.2, 1],
+                        opacity: isMoving ? [0.5, 0.8, 0.5] : [0.3, 0.5, 0.3],
+                        rotate: [0, 180, 360]
                     }}
                     transition={{
-                        duration: isMoving ? 0.6 : 3,
+                        duration: isMoving ? 1.5 : 6,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
                 />
 
-                {/* Core agent */}
+                {/* LICHTFEE: Wing-like light extensions */}
                 <motion.div
-                    className="relative w-6 h-6 rounded-full border-2 flex items-center justify-center"
-                    style={{
-                        backgroundColor: visuals.color + 'CC', // Add some transparency
-                        borderColor: visuals.border,
-                        boxShadow: `0 0 20px ${visuals.glow}`
-                    }}
+                    className="absolute -inset-2"
                     animate={{
-                        scale: action === 'highlight' ? [1, 1.2, 1] : 1,
-                        rotate: isMoving ? [0, 360] : 0
+                        scale: [1, 1.1, 1],
+                        opacity: [0.4, 0.7, 0.4]
                     }}
                     transition={{
-                        scale: { duration: 0.3, repeat: action === 'highlight' ? 2 : 0 },
-                        rotate: { duration: 2, repeat: Infinity, ease: "linear" }
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
                     }}
                 >
-                    {/* Intelligence indicator */}
+                    {/* Left Wing */}
                     <motion.div
-                        className="w-2 h-2 rounded-full bg-white"
+                        className="absolute left-0 top-1/2 w-4 h-6 -translate-y-1/2 -translate-x-3"
+                        style={{
+                            background: `linear-gradient(135deg, ${visuals.color}60 0%, transparent 80%)`,
+                            borderRadius: '50% 0 50% 50%',
+                            filter: 'blur(2px)'
+                        }}
                         animate={{
-                            scale: [0.8, 1.2, 0.8],
-                            opacity: [0.7, 1, 0.7]
+                            rotate: isMoving ? [-15, 15, -15] : [-5, 5, -5],
+                            scaleX: isMoving ? [1, 1.3, 1] : [1, 1.1, 1]
                         }}
                         transition={{
-                            duration: 1.5,
+                            duration: isMoving ? 0.3 : 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                    />
+                    {/* Right Wing */}
+                    <motion.div
+                        className="absolute right-0 top-1/2 w-4 h-6 -translate-y-1/2 translate-x-3"
+                        style={{
+                            background: `linear-gradient(-135deg, ${visuals.color}60 0%, transparent 80%)`,
+                            borderRadius: '0 50% 50% 50%',
+                            filter: 'blur(2px)'
+                        }}
+                        animate={{
+                            rotate: isMoving ? [15, -15, 15] : [5, -5, 5],
+                            scaleX: isMoving ? [1, 1.3, 1] : [1, 1.1, 1]
+                        }}
+                        transition={{
+                            duration: isMoving ? 0.3 : 2,
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
                     />
                 </motion.div>
 
-                {/* UPGRADE D1: Pointing arm for 'point' action */}
+                {/* LICHTFEE: Core Body - Organic glowing center */}
+                <motion.div
+                    className="relative w-7 h-7 rounded-full flex items-center justify-center overflow-visible"
+                    style={{
+                        background: `radial-gradient(circle at 35% 35%, ${visuals.color} 0%, ${visuals.color}90 40%, rgba(0,0,0,0.3) 100%)`,
+                        boxShadow: `
+                            0 0 25px ${visuals.glow},
+                            0 0 50px ${visuals.glow}40,
+                            inset 2px 2px 6px rgba(255,255,255,0.3),
+                            inset -2px -2px 6px rgba(0,0,0,0.2)
+                        `
+                    }}
+                    animate={{
+                        scale: action === 'highlight' ? [1, 1.3, 1] : [1, 1.05, 1],
+                    }}
+                    transition={{
+                        scale: { duration: action === 'highlight' ? 0.4 : 3, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                >
+                    {/* Glass highlight */}
+                    <div
+                        className="absolute rounded-full"
+                        style={{
+                            width: '50%',
+                            height: '50%',
+                            top: '12%',
+                            left: '12%',
+                            background: 'radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 60%, transparent 100%)',
+                            filter: 'blur(1px)'
+                        }}
+                    />
+
+                    {/* Core Soul Spark */}
+                    <motion.div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{
+                            background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.3) 60%, transparent 100%)',
+                            boxShadow: `0 0 12px white, 0 0 20px ${visuals.color}`
+                        }}
+                        animate={{
+                            scale: [0.9, 1.2, 0.9],
+                            opacity: [0.8, 1, 0.8]
+                        }}
+                        transition={{
+                            duration: 1.2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                    />
+                </motion.div>
+
+                {/* LICHTFEE: Pointing Light Beam for 'point' action */}
                 {action === 'point' && (
                     <motion.div
                         className="absolute top-1/2 left-1/2 origin-left"
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: 1 }}
-                        transition={{ delay: 0.5, duration: 0.3 }}
+                        initial={{ scaleX: 0, opacity: 0 }}
+                        animate={{ scaleX: 1, opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
                     >
                         <div
-                            className="w-8 h-0.5 rounded-full"
+                            className="w-10 h-1 rounded-full"
                             style={{
-                                backgroundColor: visuals.color,
+                                background: `linear-gradient(90deg, ${visuals.color} 0%, ${visuals.color}00 100%)`,
                                 transform: 'translateY(-50%)',
-                                boxShadow: `0 0 8px ${visuals.glow}`
+                                boxShadow: `0 0 10px ${visuals.glow}`
                             }}
                         />
-                        <div
+                        <motion.div
                             className="absolute right-0 top-1/2 w-2 h-2 rounded-full transform -translate-y-1/2"
                             style={{
-                                backgroundColor: visuals.color,
-                                boxShadow: `0 0 6px ${visuals.color}`
+                                backgroundColor: 'white',
+                                boxShadow: `0 0 8px ${visuals.color}, 0 0 16px white`
+                            }}
+                            animate={{
+                                scale: [1, 1.5, 1],
+                                opacity: [0.8, 1, 0.8]
+                            }}
+                            transition={{
+                                duration: 0.6,
+                                repeat: Infinity,
+                                ease: "easeInOut"
                             }}
                         />
                     </motion.div>
                 )}
 
-                {/* Stardust Trail - UPGRADE D4: Subtle particle wake */}
-                {isMoving && [0, 1, 2, 3].map((i) => (
+                {/* LICHTFEE: Stardust Trail - Magical particle wake */}
+                {isMoving && Array.from({ length: 6 }).map((_, i) => (
                     <motion.div
                         key={`trail-${i}`}
-                        className="absolute inset-0 rounded-full blur-[1px]"
-                        style={{ backgroundColor: visuals.color + '66' }}
-                        initial={{ scale: 0.5, opacity: 0 }}
+                        className="absolute rounded-full"
+                        style={{
+                            width: 3 + (i % 3),
+                            height: 3 + (i % 3),
+                            left: '50%',
+                            top: '50%',
+                            marginLeft: -(3 + (i % 3)) / 2,
+                            marginTop: -(3 + (i % 3)) / 2,
+                            background: `radial-gradient(circle, ${visuals.color} 0%, ${visuals.color}00 70%)`,
+                            boxShadow: `0 0 4px ${visuals.glow}`
+                        }}
+                        initial={{ scale: 0, opacity: 0 }}
                         animate={{
-                            scale: [0.8, 0],
-                            opacity: [0.6, 0],
-                            x: (Math.random() - 0.5) * 20,
-                            y: (Math.random() - 0.5) * 20
+                            scale: [1, 0],
+                            opacity: [0.8, 0],
+                            x: (Math.random() - 0.5) * 40 - 15, // Trail behind
+                            y: (Math.random() - 0.5) * 30
                         }}
                         transition={{
-                            duration: 0.8,
+                            duration: 0.6 + i * 0.1,
                             ease: "easeOut",
                             repeat: Infinity,
-                            delay: i * 0.1
+                            delay: i * 0.08
+                        }}
+                    />
+                ))}
+
+                {/* Ambient floating sparkles when idle */}
+                {!isMoving && Array.from({ length: 4 }).map((_, i) => (
+                    <motion.div
+                        key={`sparkle-${i}`}
+                        className="absolute rounded-full"
+                        style={{
+                            width: 2,
+                            height: 2,
+                            background: 'white',
+                            boxShadow: `0 0 4px ${visuals.color}`
+                        }}
+                        animate={{
+                            x: [0, Math.cos(i * Math.PI / 2) * 20, 0],
+                            y: [0, Math.sin(i * Math.PI / 2) * 20, 0],
+                            opacity: [0, 0.8, 0],
+                            scale: [0.5, 1, 0.5]
+                        }}
+                        transition={{
+                            duration: 3 + i,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.5
                         }}
                     />
                 ))}
             </div>
 
-            {/* Action label */}
+            {/* Action label - more elegant */}
             {action !== 'idle' && (
                 <motion.div
-                    className="absolute top-8 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                    className="absolute top-10 left-1/2 -translate-x-1/2 whitespace-nowrap"
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -5 }}
                 >
                     <div
-                        className="text-xs px-2 py-1 rounded border"
+                        className="text-[10px] px-2 py-1 rounded-full backdrop-blur-sm"
                         style={{
-                            color: visuals.color,
-                            borderColor: visuals.color + '33',
-                            backgroundColor: 'rgba(0,0,0,0.6)'
+                            color: 'white',
+                            background: `linear-gradient(135deg, ${visuals.color}40 0%, rgba(0,0,0,0.6) 100%)`,
+                            border: `1px solid ${visuals.color}30`,
+                            boxShadow: `0 0 10px ${visuals.glow}30`
                         }}
                     >
-                        {action === 'highlight' ? 'Highlighting' :
-                            action === 'point' ? 'Pointing' :
-                                action === 'roam' ? 'Exploring' : 'Active'}
+                        {action === 'highlight' ? '✨ Highlighting' :
+                            action === 'point' ? '👆 Pointing' :
+                                action === 'roam' ? '🔮 Exploring' : '💫 Active'}
                     </div>
                 </motion.div>
             )}

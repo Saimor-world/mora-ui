@@ -198,20 +198,37 @@ export const Dock = () => {
     return (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100]">
             <motion.div
-                className="glass-card glow-pulse px-6 py-3 rounded-2xl flex items-center gap-1"
+                className="glass-card px-6 py-3 rounded-2xl flex items-center gap-1 relative overflow-hidden"
                 style={{
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(16, 185, 129, 0.04) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 10, 8, 0.85) 50%, rgba(16, 185, 129, 0.06) 100%)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
                     boxShadow: `
-                        0 8px 32px rgba(0, 0, 0, 0.5),
-                        0 0 40px rgba(16, 185, 129, 0.1),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                        0 12px 40px rgba(0, 0, 0, 0.6),
+                        0 0 60px rgba(16, 185, 129, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                        inset 0 -1px 0 rgba(0, 0, 0, 0.3)
                     `
                 }}
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
             >
+                {/* Animated gradient overlay */}
+                <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: 'linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent)',
+                        backgroundSize: '200% 100%'
+                    }}
+                    animate={{
+                        backgroundPosition: ['200% 0', '-200% 0']
+                    }}
+                    transition={{
+                        duration: 8,
+                        repeat: Infinity,
+                        ease: 'linear'
+                    }}
+                />
                 <div className="w-px h-6 bg-white/20 mx-1" />
 
                 {dockItems.map((item, i) => {
@@ -226,10 +243,16 @@ export const Dock = () => {
                             whileTap={{ scale: 0.95 }}
                             onClick={() => handleDockClick(item.action)}
                         >
-                            <item.icon size={20} strokeWidth={1.5} />
+                            <item.icon size={20} strokeWidth={1.5} className={active ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]' : ''} />
 
                             {active && (
-                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-emerald-400 rounded-full" />
+                                <motion.div
+                                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-400 rounded-full"
+                                    layoutId={`dock-indicator-${item.action}`}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.8)' }}
+                                />
                             )}
 
                             <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md">

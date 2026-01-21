@@ -261,9 +261,63 @@ export function MoraOrb({
     const params = getStateParams();
     const { opacity, glowIntensity, pulseDuration, color, gradient, innerBg, sparkColor, ringType } = params;
 
-    // MASTERBIBEL: Orb size is 68-92px, we use 80px as base
+    // MASTERBIBEL: Orb is the "semantic sun" - 68-92px, 48px from edges
+    // Generate orbiting particles for sun-like corona effect
+    const orbitingParticles = Array.from({ length: 8 }, (_, i) => ({
+        id: i,
+        angle: (i * 45) * (Math.PI / 180),
+        radius: 52 + (i % 3) * 8,
+        duration: 12 + (i % 4) * 3,
+        size: 2 + (i % 3),
+        delay: i * 0.5
+    }));
+
     return (
         <div className="relative select-none" ref={orbRef}>
+            {/* SEMANTIC SUN: Orbiting Light Particles (Corona) */}
+            {orbitingParticles.map(particle => (
+                <motion.div
+                    key={`orbit-${particle.id}`}
+                    className="absolute pointer-events-none"
+                    style={{
+                        left: '50%',
+                        top: '50%',
+                        width: particle.size,
+                        height: particle.size,
+                        marginLeft: -particle.size / 2,
+                        marginTop: -particle.size / 2,
+                    }}
+                    animate={{
+                        x: [
+                            Math.cos(particle.angle) * particle.radius,
+                            Math.cos(particle.angle + Math.PI) * particle.radius,
+                            Math.cos(particle.angle + Math.PI * 2) * particle.radius
+                        ],
+                        y: [
+                            Math.sin(particle.angle) * particle.radius,
+                            Math.sin(particle.angle + Math.PI) * particle.radius,
+                            Math.sin(particle.angle + Math.PI * 2) * particle.radius
+                        ],
+                        opacity: [0.3, 0.8, 0.3],
+                        scale: [0.8, 1.2, 0.8]
+                    }}
+                    transition={{
+                        duration: particle.duration,
+                        repeat: Infinity,
+                        ease: "linear",
+                        delay: particle.delay
+                    }}
+                >
+                    <div
+                        className="w-full h-full rounded-full"
+                        style={{
+                            background: `radial-gradient(circle, ${color} 0%, ${color}00 70%)`,
+                            boxShadow: `0 0 ${particle.size * 3}px ${color}80`
+                        }}
+                    />
+                </motion.div>
+            ))}
+
             {/* UPGRADE A1: Micro-spark notifications */}
             <AnimatePresence>
                 {activeSparks.map(spark => (
