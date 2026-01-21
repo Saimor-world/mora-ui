@@ -3,19 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import {
-    Home,
-    Search,
-    Settings,
-    FileText,
-    LayoutGrid,
-    LogOut,
-    Minus,
-    Users,
-    Mail,
-    Calendar,
-    Terminal
-} from 'lucide-react';
+import { Home, Search, Settings, FileText, LayoutGrid, LogOut, Minus } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { writeCookie } from '@/lib/auth/cookies';
@@ -41,21 +29,17 @@ export const Dock = () => {
     const {
         panes,
         restorePane,
+        addPane,
+        focusPane,
         getPane,
-        minimizePane,
-        openPane
+        minimizePane
     } = usePaneStore();
 
     const minimizedPanes = panes.filter(p => p.minimized);
 
     const dockItems = [
         { icon: Home, label: 'Home', action: 'home' },
-        { icon: LayoutGrid, label: 'Apps', action: 'apps' },
         { icon: FileText, label: 'Files', action: 'files' },
-        { icon: Users, label: 'Team', action: 'team' },
-        { icon: Mail, label: 'Mail', action: 'mail' },
-        { icon: Calendar, label: 'Calendar', action: 'calendar' },
-        { icon: Terminal, label: 'Terminal', action: 'terminal' },
         { icon: Search, label: 'Search', action: 'search' },
         { icon: Settings, label: 'Settings', action: 'settings' },
         { icon: LogOut, label: 'Logout', action: 'logout' }
@@ -82,6 +66,19 @@ export const Dock = () => {
         router.push('/');
     };
 
+    const getCenteredPosition = (width: number, height: number) => {
+        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+        const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+
+        let x = Math.floor((windowWidth - width) / 2);
+        let y = Math.floor((windowHeight - height) / 2) - 40;
+
+        x = Math.max(20, Math.min(x, windowWidth - width - 20));
+        y = Math.max(40, Math.min(y, windowHeight - height - 100));
+
+        return { x, y };
+    };
+
     const handleDockClick = (action: string) => {
         console.log('Dock action:', action);
 
@@ -95,83 +92,57 @@ export const Dock = () => {
                 setActiveFolder(null);
                 break;
             case 'settings': {
-                const size = { width: 700, height: 500 };
-                openPane({
-                    id: 'settings-main',
-                    type: 'settings',
-                    title: 'Settings',
-                    size
-                });
-                break;
-            }
-            case 'apps': {
-                const size = { width: 800, height: 600 };
-                openPane({
-                    id: 'apps-main',
-                    type: 'apps',
-                    title: 'App Library',
-                    size
-                });
+                const existing = getPane('settings-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('settings-main');
+                    else focusPane('settings-main');
+                } else {
+                    const size = { width: 700, height: 500 };
+                    addPane({
+                        id: 'settings-main',
+                        type: 'settings',
+                        title: 'Settings',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
                 break;
             }
             case 'search': {
-                const size = { width: 600, height: 400 };
-                openPane({
-                    id: 'search-main',
-                    type: 'search',
-                    title: 'Search',
-                    size
-                });
+                const existing = getPane('search-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('search-main');
+                    else focusPane('search-main');
+                } else {
+                    const size = { width: 600, height: 400 };
+                    addPane({
+                        id: 'search-main',
+                        type: 'search',
+                        title: 'Search',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
                 break;
             }
             case 'files': {
-                const size = { width: 700, height: 500 };
-                openPane({
-                    id: 'files-main',
-                    type: 'files',
-                    title: 'Files',
-                    size
-                });
-                break;
-            }
-            case 'team': {
-                const size = { width: 780, height: 620 };
-                openPane({
-                    id: 'team-main',
-                    type: 'team',
-                    title: 'Team',
-                    size
-                });
-                break;
-            }
-            case 'mail': {
-                const size = { width: 860, height: 640 };
-                openPane({
-                    id: 'mail-main',
-                    type: 'mail',
-                    title: 'Secure Mail',
-                    size
-                });
-                break;
-            }
-            case 'calendar': {
-                const size = { width: 840, height: 620 };
-                openPane({
-                    id: 'calendar-main',
-                    type: 'calendar',
-                    title: 'Calendar',
-                    size
-                });
-                break;
-            }
-            case 'terminal': {
-                const size = { width: 860, height: 560 };
-                openPane({
-                    id: 'terminal-main',
-                    type: 'terminal',
-                    title: 'Terminal',
-                    size
-                });
+                const existing = getPane('files-main');
+                if (existing) {
+                    if (existing.minimized) restorePane('files-main');
+                    else focusPane('files-main');
+                } else {
+                    const size = { width: 700, height: 500 };
+                    addPane({
+                        id: 'files-main',
+                        type: 'files',
+                        title: 'Files',
+                        position: getCenteredPosition(size.width, size.height),
+                        size,
+                        minimized: false
+                    });
+                }
                 break;
             }
             case 'logout':
@@ -184,13 +155,8 @@ export const Dock = () => {
 
     const isActionActive = (action: string) => {
         if (action === 'settings' && getPane('settings-main') && !getPane('settings-main')?.minimized) return true;
-        if (action === 'apps' && getPane('apps-main') && !getPane('apps-main')?.minimized) return true;
         if (action === 'search' && getPane('search-main') && !getPane('search-main')?.minimized) return true;
         if (action === 'files' && getPane('files-main') && !getPane('files-main')?.minimized) return true;
-        if (action === 'team' && getPane('team-main') && !getPane('team-main')?.minimized) return true;
-        if (action === 'mail' && getPane('mail-main') && !getPane('mail-main')?.minimized) return true;
-        if (action === 'calendar' && getPane('calendar-main') && !getPane('calendar-main')?.minimized) return true;
-        if (action === 'terminal' && getPane('terminal-main') && !getPane('terminal-main')?.minimized) return true;
         if (action === 'home' && !activeSpaceId && !activeFolderId) return true;
         return false;
     };

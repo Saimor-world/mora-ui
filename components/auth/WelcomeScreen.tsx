@@ -39,7 +39,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'role-select'>('welcome');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [inviteCode, setInviteCode] = useState('');
     const [companyName, setCompanyName] = useState(''); // For owner registration
     const [logoUrl, setLogoUrl] = useState<string | null>(null); // For owner company logo
     const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // Standardmäßig Owner
@@ -50,7 +49,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [registeredEmail, setRegisteredEmail] = useState('');
 
     const { setViewMode, setViewLevel, setUser } = useMoraStore();
-    const hasInvite = inviteCode.trim().length > 0;
 
     // Check for existing session on mount
     useEffect(() => {
@@ -82,7 +80,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         // Clear inputs whenever mode changes to avoid "zombie" values
         setEmail('');
         setPassword('');
-        setInviteCode('');
         setCompanyName('');
     }, [mode]);
     const handleLogout = () => {
@@ -274,7 +271,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     // handleDemoMode removed - demo access now requires real login credentials
 
     const handleRegister = async () => {
-        const usingInvite = inviteCode.trim().length > 0;
         // Comprehensive input validation
         if (!email || !email.trim()) {
             toast.error('E-Mail-Adresse ist erforderlich');
@@ -291,7 +287,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             return;
         }
 
-        if (!usingInvite && selectedRole === 'owner' && (!companyName || !companyName.trim())) {
+        if (selectedRole === 'owner' && (!companyName || !companyName.trim())) {
             toast.error('Firmenname ist erforderlich für Owner-Accounts');
             return;
         }
@@ -306,9 +302,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 body: JSON.stringify({
                     email,
                     password,
-                    role: usingInvite ? undefined : selectedRole,
-                    company_name: !usingInvite && selectedRole === 'owner' ? companyName.trim() : undefined,
-                    invite_code: usingInvite ? inviteCode.trim() : undefined
+                    role: selectedRole,
+                    company_name: selectedRole === 'owner' ? companyName.trim() : undefined
                 })
             });
 
@@ -772,21 +767,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             />
                                         </div>
 
-                                        <div>
-                                            <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
-                                                Invite Code (optional)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={inviteCode}
-                                                onChange={(e) => setInviteCode(e.target.value)}
-                                                className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-mora-gold/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                                placeholder="INVITE-XXXX"
-                                            />
-                                        </div>
-
                                         {/* Company Name - Only for Owners */}
-                                        {!hasInvite && selectedRole === 'owner' && (
+                                        {selectedRole === 'owner' && (
                                             <div className="space-y-4 pt-4 border-t border-white/5">
                                                 <div className="flex justify-center mb-4">
                                                     <CompanyLogoUpload
@@ -816,7 +798,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         )}
 
                                         {/* Role Selection */}
-                                        {!hasInvite && (
                                         <div className="pt-2">
                                             <label className="block text-[10px] text-emerald-500/60 mb-3 uppercase tracking-widest font-medium">
                                                 Account-Typ
@@ -849,7 +830,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 </button>
                                             </div>
                                         </div>
-                                        )}
 
                                         <motion.button
                                             onClick={handleRegister}

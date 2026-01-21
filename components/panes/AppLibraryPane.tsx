@@ -1,26 +1,13 @@
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import {
-    Grid,
-    Box,
-    FileText,
-    Search,
-    Users,
-    Mail,
-    Calendar,
-    Terminal,
-    StickyNote,
-    Folder,
-    ScanLine,
-    Wrench
-} from 'lucide-react';
+import { Grid, Box, FileText, Search } from 'lucide-react';
 import { PaneConfig } from '@/lib/store/paneStore';
 
 type PaneType = PaneConfig['type'];
 
 export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, addPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     // Hook must be called before any returns
@@ -29,47 +16,55 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
     if (!pane) return null;
 
     const handleAppClick = (appType: PaneType, appName: string) => {
+        // Prevent duplicate windows for system apps (Apple/Windows style behavior)
+        const panes = usePaneStore.getState().panes;
         const expectedId = `${appType}-main`;
-        const sizeByType: Partial<Record<PaneType, { width: number; height: number }>> = {
-            settings: { width: 700, height: 500 },
-            search: { width: 600, height: 400 },
-            files: { width: 800, height: 600 },
-            finder: { width: 900, height: 620 },
-            team: { width: 780, height: 620 },
-            users: { width: 760, height: 600 },
-            mail: { width: 860, height: 640 },
-            calendar: { width: 840, height: 620 },
-            notes: { width: 860, height: 620 },
-            terminal: { width: 860, height: 560 },
-            scanner: { width: 840, height: 600 },
-            integrations: { width: 760, height: 560 },
-            grid: { width: 900, height: 640 }
-        };
-        const paneSize = sizeByType[appType] || { width: 800, height: 600 };
 
-        openPane({
+        // Check by ID first (consistent with Dock.tsx)
+        const existingPane = panes.find(p => p.id === expectedId);
+
+        if (existingPane) {
+            if (existingPane.minimized) {
+                usePaneStore.getState().restorePane(existingPane.id);
+            } else {
+                focusPane(existingPane.id);
+            }
+            removePane(id);
+            return;
+        }
+
+        // Calculate centered position based on window size with viewport clamping
+        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+        const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+        const paneWidth = appType === 'settings' ? 700 : 800;
+        const paneHeight = appType === 'settings' ? 500 : 600;
+
+        // Calculate true center and apply slight upward bias
+        let centerX = Math.floor((windowWidth - paneWidth) / 2);
+        let centerY = Math.floor((windowHeight - paneHeight) / 2) - 40;
+
+        // Clamp to ensure pane stays within viewport
+        centerX = Math.max(20, Math.min(centerX, windowWidth - paneWidth - 20));
+        centerY = Math.max(40, Math.min(centerY, windowHeight - paneHeight - 100));
+
+        // Create new window - centered on screen
+        addPane({
             id: expectedId,
             type: appType,
             title: appName,
-            size: paneSize
+            position: { x: centerX, y: centerY },
+            size: { width: paneWidth, height: paneHeight },
+            minimized: false
         });
+        focusPane(expectedId);
         removePane(id);
     };
 
     // FULL APP LIBRARY - All available apps
     const apps: { name: string; type: PaneType; icon: typeof FileText; color: string; category: string }[] = [
         { name: 'Files', type: 'files', icon: FileText, color: 'text-emerald-400', category: 'core' },
-        { name: 'Finder', type: 'finder', icon: Folder, color: 'text-emerald-300', category: 'core' },
         { name: 'Grid View', type: 'grid', icon: Grid, color: 'text-emerald-400', category: 'core' },
         { name: 'Search', type: 'search', icon: Search, color: 'text-emerald-400', category: 'core' },
-        { name: 'Notes', type: 'notes', icon: StickyNote, color: 'text-yellow-400', category: 'core' },
-        { name: 'Scanner', type: 'scanner', icon: ScanLine, color: 'text-purple-400', category: 'core' },
-        { name: 'Team', type: 'team', icon: Users, color: 'text-emerald-400', category: 'collaboration' },
-        { name: 'Users', type: 'users', icon: Users, color: 'text-emerald-300', category: 'collaboration' },
-        { name: 'Mail', type: 'mail', icon: Mail, color: 'text-red-400', category: 'collaboration' },
-        { name: 'Calendar', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'collaboration' },
-        { name: 'Terminal', type: 'terminal', icon: Terminal, color: 'text-mora-gold', category: 'system' },
-        { name: 'Integrations', type: 'integrations', icon: Wrench, color: 'text-blue-300', category: 'system' },
         { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'system' },
     ];
 

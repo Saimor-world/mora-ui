@@ -49,7 +49,7 @@ const getDeterministicPosition = (id: string, index: number, total: number) => {
 };
 
 export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, addPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
 
     const {
@@ -165,13 +165,17 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             return;
         }
 
-        openPane({
-            id: `document-${node.id}`,
+        const paneId = `document-${node.id}`;
+        addPane({
+            id: paneId,
             type: 'document',
             title: node.title || 'Document',
             data: { nodeId: node.id },
-            size: { width: 800, height: 600 }
+            size: { width: 800, height: 600 },
+            position: { x: window.innerWidth / 2 - 400, y: window.innerHeight / 2 - 300 },
+            minimized: false
         });
+        focusPane(paneId);
     };
 
     const handleCreateFolder = async (e: React.FormEvent) => {

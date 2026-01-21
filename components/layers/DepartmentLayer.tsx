@@ -29,7 +29,7 @@ export const DepartmentLayer: React.FC = () => {
         addSpace,
         setActiveSpace // Need to set active space so the pane finds data? Actually pane can take data directly.
     } = useMoraStore();
-    const { openPane } = usePaneStore();
+    const { addPane } = usePaneStore();
 
     const currentDepartment = departments.find(d => d.id === activeDepartmentId);
     const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
@@ -153,7 +153,7 @@ export const DepartmentLayer: React.FC = () => {
                                 transition={{ delay, duration: 0.5 }}
                                 whileHover={{ scale: 1.15 }}
                                 onClick={() => {
-                                    openPane({
+                                    addPane({
                                         id: `space-${space.id}`,
                                         type: 'space',
                                         title: space.name,
@@ -161,8 +161,9 @@ export const DepartmentLayer: React.FC = () => {
                                             spaceId: space.id,
                                             departmentId: activeDepartmentId  // Pass parent for context
                                         },
+                                        position: { x: 100, y: 100 },
                                         size: { width: 1000, height: 700 },
-                                        position: { x: 100, y: 100 }
+                                        minimized: false
                                     });
                                 }}
 

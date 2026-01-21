@@ -2,13 +2,24 @@
 
 import { useEffect, useState } from "react";
 import "./globals.css";
+import FolderRoom from "@/components/folder/FolderRoom";
+import DocumentViewer from "@/components/document/DocumentViewer";
 import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { PaneManager } from "@/components/mora/PaneManager";
 import { UserAvatar } from "@/components/user/UserAvatar";
+import { SynthesisPanel } from "@/components/intelligence/SynthesisPanel";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OperatorStatusPane } from "@/components/operator/OperatorStatusPane";
+import { AgencyCursor } from "@/components/agency/AgencyCursor";  // Guided Agency
+import { MoraThoughtStream } from "@/components/mora/MoraThoughtStream";
+import { MoraLivingBackground } from "@/components/mora/MoraLivingBackground";
+import { CognitionBadge } from "@/components/mora/CognitionBadge";
+import { EventsViewer } from "@/components/debug/EventsViewer";
+import { OrbMessageEffect } from "@/components/effects/OrbMessageEffect";
+import { CursorTrailEffect } from "@/components/effects/CursorTrailEffect";
 
 import { usePathname } from "next/navigation";
 
@@ -20,7 +31,8 @@ export default function RootLayout({
   const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
   const activeFolderId = useMoraStore((state) => state.activeFolderId);
   const coreError = useMoraStore((state) => state.coreError);
-  const openPane = usePaneStore((state) => state.openPane);
+  const panes = usePaneStore((state) => state.panes);
+  const [showIntel, setShowIntel] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -112,22 +124,24 @@ export default function RootLayout({
 
             <>
               <PaneManager />
+              <FolderRoom />
+              <DocumentViewer />
               {showBar && (
                 <div className="transition-opacity duration-500 opacity-100 pointer-events-auto">
-                  <UserAvatar
-                    onClick={() => openPane({
-                      id: 'settings-main',
-                      type: 'settings',
-                      title: 'Settings',
-                      size: { width: 700, height: 500 }
-                    })}
-                    showLabel={true}
-                  />
+                  <UserAvatar onClick={() => setShowIntel(!showIntel)} showLabel={true} />
                 </div>
               )}
 
+              {showIntel && <SynthesisPanel visible onClose={() => setShowIntel(false)} />}
               <Toaster position="top-right" />
+              {/* DISABLED: Felt like mock/simulation */}
+              {/* <OperatorStatusPane /> */}
+              <AgencyCursor />  {/* Guided Agency: MÔRA Cursor */}
+              <CursorTrailEffect /> {/* Phase 9: Living Cursor (Firefly Trail) */}
+              <OrbMessageEffect /> {/* Phase 8: MÔRA Voice Overlay */}
+              {/* <MoraThoughtStream /> - DISABLED: Felt like mock */}
 
+              {/* <EventsViewer /> - DISABLED: Dev only */}
             </>
           )}
         </ErrorBoundary>

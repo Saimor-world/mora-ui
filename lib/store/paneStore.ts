@@ -2,9 +2,7 @@ import { create } from 'zustand';
 
 export interface PaneConfig {
     id: string;
-    type: 'document' | 'settings' | 'apps' | 'files' | 'grid' | 'space' | 'search'
-        | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
-        | 'finder' | 'scanner' | 'users' | 'company-detail';
+    type: 'document' | 'settings' | 'apps' | 'files' | 'grid' | 'space' | 'search';
 
     title: string;
     position: { x: number; y: number };
@@ -13,15 +11,6 @@ export interface PaneConfig {
     zIndex: number;
     tabs?: Array<{ id: string, title: string, content: any }>;
     activeTabId?: string;
-    data?: any;
-}
-
-export interface PaneOpenRequest {
-    id: string;
-    type: PaneConfig['type'];
-    title: string;
-    size: { width: number; height: number };
-    position?: { x: number; y: number };
     data?: any;
 }
 
@@ -53,26 +42,12 @@ const normalizeFrontmost = (panes: PaneConfig[], activePaneId: string | null) =>
     return { activePaneId };
 };
 
-const getCenteredPosition = (size: { width: number; height: number }) => {
-    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-
-    let x = Math.floor((windowWidth - size.width) / 2);
-    let y = Math.floor((windowHeight - size.height) / 2) - 40;
-
-    x = Math.max(20, Math.min(x, windowWidth - size.width - 20));
-    y = Math.max(40, Math.min(y, windowHeight - size.height - 100));
-
-    return { x, y };
-};
-
 interface PaneState {
     panes: PaneConfig[];
     nextZIndex: number;
     activePaneId: string | null;
 
     // Actions
-    openPane: (request: PaneOpenRequest) => void;
     addPane: (pane: Omit<PaneConfig, 'zIndex'>) => void;
     removePane: (id: string) => void;
     updatePane: (id: string, updates: Partial<PaneConfig>) => void;
@@ -89,32 +64,6 @@ export const usePaneStore = create<PaneState>((set, get) => ({
     panes: [],
     nextZIndex: 100,
     activePaneId: null,
-
-    openPane: (request) => {
-        const existing = get().getPane(request.id);
-        if (existing) {
-            if (request.title !== existing.title || request.data !== existing.data) {
-                get().updatePane(request.id, { title: request.title, data: request.data });
-            }
-            if (existing.minimized) {
-                get().restorePane(request.id);
-            } else {
-                get().focusPane(request.id);
-            }
-            return;
-        }
-
-        const position = request.position ?? getCenteredPosition(request.size);
-        get().addPane({
-            id: request.id,
-            type: request.type,
-            title: request.title,
-            position,
-            size: request.size,
-            minimized: false,
-            data: request.data
-        });
-    },
 
     addPane: (pane) => set((state) => {
         const nextPanes = pane.type === 'apps'

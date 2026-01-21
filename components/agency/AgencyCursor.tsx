@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * AgencyCursor - Guided Agency Day 1
+ * AgencyCursor — Guided Agency Day 1
  * 
- * Visual cursor that MORA controls.
+ * Visual cursor that MÔRA controls.
  * Separate from user's mouse cursor.
  * 
  * Features:
  * - Animated movement to target elements
- * - Visual indicator of MORA's focus
+ * - Visual indicator of MÔRA's focus
  * - Abort button always visible during execution
  */
 
@@ -86,7 +86,7 @@ export function AgencyCursor() {
 
     return (
         <>
-            {/* MORA Cursor */}
+            {/* MÔRA Cursor */}
             <AnimatePresence>
                 {isVisible && (
                     <motion.div
@@ -141,7 +141,7 @@ export function AgencyCursor() {
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
-                            MORA Stoppen
+                            MÔRA Stoppen
                         </button>
                     </motion.div>
                 )}
@@ -164,7 +164,7 @@ export function AgencyCursor() {
               max-w-md text-center
             "
                     >
-                        <span className="text-emerald-400">MORA:</span>{' '}
+                        <span className="text-emerald-400">MÔRA:</span>{' '}
                         {currentAction.reason}
                     </motion.div>
                 )}
