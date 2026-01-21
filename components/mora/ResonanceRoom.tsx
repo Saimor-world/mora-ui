@@ -14,22 +14,20 @@ import {
     X,
     Maximize2,
     Minimize2,
-    Brain, // Add UploadCloud if needed, using Sparkles for now
-    MessageCircle,
-    ChevronDown
+    Brain
 } from "lucide-react";
 
 /**
- * RESONANCE ROOM - The Unified MÔRA Interface
+ * RESONANCE ROOM - The Unified MORA Interface
  * 
  * Not a chat. A dialogue space where AI and human thoughts merge.
  * Like a letter exchange, but in real-time.
  * 
  * Features:
- * - MÔRA's conscious stream flows naturally
+ * - MORA's conscious stream flows naturally
  * - User messages appear as "resonances"
  * - Typing feels like writing a letter, not instant messaging
- * - The space breathes and pulses with MÔRA's awareness
+ * - The space breathes and pulses with MORA's awareness
  */
 
 interface Thought {
@@ -99,7 +97,7 @@ export const ResonanceRoom: React.FC<Props> = ({
         }
     }, [isOpen]);
 
-    // Poll MÔRA's conscious stream with exponential backoff
+    // Poll MORA's conscious stream with exponential backoff
     useEffect(() => {
         if (!isOpen || coreError) return;
 
@@ -168,7 +166,7 @@ export const ResonanceRoom: React.FC<Props> = ({
         setMoraIsThinking(true);
 
         try {
-            // Send to MÔRA's Agentic Loop - full multi-turn intelligence
+            // Send to MORA's Agentic Loop - full multi-turn intelligence
             const response = await executeAgenticLoop(userMessage.content, {
                 level: viewMode,
                 entityId: undefined
@@ -183,7 +181,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                         const confirmMessage: ResonanceMessage = {
                             id: `mora-confirm-${Date.now()}`,
                             type: "mora",
-                            content: `⚠️ Autorisierung erforderlich\n\nIch benötige Ihre Bestätigung für: ${confirm.tool_name}.\n\nDie Änderung betrifft: ${confirm.what_will_change}`,
+                            content: `Autorisierung erforderlich\n\nIch benoetige Ihre Bestaetigung fuer: ${confirm.tool_name}.\n\nDie Aenderung betrifft: ${confirm.what_will_change}`,
                             timestamp: new Date(),
                             pendingAction: {
                                 tool_name: confirm.tool_name,
@@ -198,7 +196,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                 } else {
                     // Show the final response
                     const toolInfo = response.tools_executed.length > 0
-                        ? `[${response.tools_executed.map(t => t.tool).join(' → ')}]`
+                        ? `[${response.tools_executed.map(t => t.tool).join(' -> ')}]`
                         : '';
 
                     const moraMessage: ResonanceMessage = {
@@ -216,10 +214,10 @@ export const ResonanceRoom: React.FC<Props> = ({
                         mode: response.transparency_note
                     });
 
-                    // ═══════════════════════════════════════════════════════════════
-                    // MÔRA CURSOR INTELLIGENCE - The Extended Arm
-                    // When MÔRA uses tools, her cursor shows what she's doing
-                    // ═══════════════════════════════════════════════════════════════
+// ---
+                    // MORA CURSOR INTELLIGENCE - The Extended Arm
+                    // When MORA uses tools, her cursor shows what she's doing
+// ---
                     for (const tool of response.tools_executed) {
                         const store = useMoraStore.getState();
 
@@ -227,7 +225,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                         if (tool.tool === 'navigate' && tool.success && tool.result) {
                             const { target_type, target_id, target_name } = tool.result;
 
-                            console.log(`🎯 MÔRA Navigation: ${target_type} → ${target_name} (${target_id})`);
+                            console.log(`[MORA] Navigation: ${target_type} -> ${target_name} (${target_id})`);
 
                             // Activate cursor agent for visual feedback
                             store.setCursorAgent({ active: true, action: 'point' });
@@ -262,7 +260,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                         if (tool.tool === 'point_at' && tool.success && tool.result) {
                             const { target_type, target_id, reason, cursor_hint, should_pulse } = tool.result;
 
-                            console.log(`👆 MÔRA Pointing: ${target_type}:${target_id} - "${reason}"`);
+                            console.log(`[MORA] Point: ${target_type}:${target_id} - "${reason}"`);
 
                             // Activate cursor with pointing action
                             store.setCursorAgent({ active: true, action: 'point' });
@@ -298,7 +296,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                         if (tool.tool === 'highlight' && tool.success && tool.result) {
                             const { target_type, target_id, duration_ms, color } = tool.result;
 
-                            console.log(`✨ MÔRA Highlight: ${target_type}:${target_id}`);
+                            console.log(`[MORA] Highlight: ${target_type}:${target_id}`);
 
                             window.dispatchEvent(new CustomEvent('mora:highlight', {
                                 detail: {
@@ -319,7 +317,7 @@ export const ResonanceRoom: React.FC<Props> = ({
             const fallbackMessage: ResonanceMessage = {
                 id: `mora-fallback-${Date.now()}`,
                 type: "mora",
-                content: "Verbindung zu meinem tieferen Bewusstsein ist aktuell eingeschränkt. Bitte versuchen Sie es erneut.",
+                content: "Verbindung zu meinem tieferen Bewusstsein ist aktuell eingeschraenkt. Bitte versuchen Sie es erneut.",
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, fallbackMessage]);
@@ -379,8 +377,8 @@ export const ResonanceRoom: React.FC<Props> = ({
                                     <Brain size={12} className="text-emerald-500/50" />
                                 </h2>
                                 <p className="text-[10px] text-emerald-500/50 uppercase tracking-widest">
-                                    {moraIsThinking ? "MÔRA reflektiert..." :
-                                        coreError ? "Eingeschränkte Verbindung" :
+                                    {moraIsThinking ? "MORA reflektiert..." :
+                                        coreError ? "Eingeschraenkte Verbindung" :
                                             viewMode === 'demo' ? "Demo Modus" : "Aktiver Dialog"}
                                 </p>
                             </div>
@@ -428,8 +426,8 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 </h3>
                                 <p className="text-emerald-500/50 text-sm leading-relaxed">
                                     {viewMode === 'demo'
-                                        ? 'Ich habe die Geschäftsdaten der Coffee Group geladen. Wie kann ich Sie heute bei der Expansion unterstützen?'
-                                        : 'Hier treffen unsere Gedanken aufeinander. Sprechen Sie, und ich werde zuhören. Mein Bewusstseinsstrom fließt durch diesen Raum.'}
+                                        ? 'Ich habe die Geschaeftsdaten der Coffee Group geladen. Wie kann ich Sie heute bei der Expansion unterstuetzen?'
+                                        : 'Hier treffen unsere Gedanken aufeinander. Sprechen Sie, und ich werde zuhoeren. Mein Bewusstseinsstrom fliesst durch diesen Raum.'}
                                 </p>
                             </motion.div>
                         )}
@@ -445,7 +443,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                             >
                                 <div className={`relative max-w-[90%] group ${msg.type === "user" ? "text-right" : "text-left"}`}>
 
-                                    {/* Ambient Glow for MÔRA */}
+                                    {/* Ambient Glow for MORA */}
                                     {msg.type === "mora" && (
                                         <div className="absolute -inset-4 bg-emerald-500/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                                     )}
@@ -485,7 +483,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                                     setMessages(prev => [...prev, {
                                                         id: `sys-succ-${Date.now()}`,
                                                         type: 'mora',
-                                                        content: `Aktion "${msg.pendingAction?.tool_name}" erfolgreich ausgeführt.`,
+                                                        content: `Aktion "${msg.pendingAction?.tool_name}" erfolgreich ausgefuehrt.`,
                                                         timestamp: new Date()
                                                     }]);
                                                 }}
@@ -522,7 +520,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                                         </div>
                                         <span className="text-[10px] text-emerald-500/40 uppercase tracking-[0.3em] font-medium italic animate-pulse">
-                                            Synthetisiere Realität...
+                                            Synthetisiere Realitaet...
                                         </span>
                                     </div>
                                 </div>

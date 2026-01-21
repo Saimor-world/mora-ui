@@ -28,7 +28,7 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
     const loadNodeDetails = useMoraStore(s => s.loadNodeDetails);
 
     // Pane actions for opening documents
-    const addPane = usePaneStore(s => s.addPane);
+    const openPane = usePaneStore(s => s.openPane);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,13 +93,11 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
                             await loadNodeDetails(plan.target);
 
                             // Open Pane for visual confirmation
-                            addPane({
+                            openPane({
                                 id: `doc-${plan.target}`,
                                 type: 'document',
                                 title: 'Document',
-                                position: { x: window.innerWidth / 4, y: 100 },
                                 size: { width: 600, height: 700 },
-                                minimized: false,
                                 data: { nodeId: plan.target }
                             });
                         } else if (plan.target.includes('comp') || plan.target.includes('company')) {
