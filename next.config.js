@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+const coreApiUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
+const shouldRewriteCore = typeof coreApiUrl === 'string' && /^https?:\/\//.test(coreApiUrl);
+const coreRewriteTarget = shouldRewriteCore ? coreApiUrl.replace(/\/$/, '') : null;
+
 const nextConfig = {
   reactStrictMode: true,
   // GUARDRAIL: Only port 3000 for development. No other ports allowed.
@@ -15,12 +19,13 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   async rewrites() {
+    if (!coreRewriteTarget) return [];
     return [
       {
         // Frontend calls /api/core/v1/...
-        // Hetzner Gateway handles /v1/... endpoints
+        // Use absolute core URL only when explicitly configured.
         source: '/api/core/:path*',
-        destination: 'https://api.saimor.world/:path*',
+        destination: `${coreRewriteTarget}/:path*`,
       },
     ];
   },
