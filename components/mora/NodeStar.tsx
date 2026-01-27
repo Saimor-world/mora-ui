@@ -35,8 +35,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
     const [showTooltip, setShowTooltip] = useState(false);
 
     const sizeMap = {
-        xs: { diameter: 2, glowSize: 6 },
-        sm: { diameter: 3, glowSize: 8 }
+        xs: { diameter: 6, glowSize: 14 }, // Tripled size for visibility
+        sm: { diameter: 8, glowSize: 20 }
     };
 
     const starSize = sizeMap[size];
@@ -60,7 +60,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
             case 'link': return 'Link';
             case 'image': return 'Bild';
             case 'video': return 'Video';
-            default: return 'Knoten';
+            default: return 'Element';
         }
     };
 
@@ -84,7 +84,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
         if (node.metadata?.weight && (node.metadata.weight as number) > 0.7) {
             return "📈 Hohe Relevanz basierend auf Aktivität.";
         }
-        return "🌟 Verwandtes Wissen aus diesem Bereich.";
+        return "📄 Datei im Wissensnetz";
     };
 
     const handleMouseEnter = () => {

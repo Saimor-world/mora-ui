@@ -40,7 +40,7 @@ class ConfigManager {
     // IMPORTANT: Next.js requires DIRECT access to process.env.NEXT_PUBLIC_*
     // Values are inlined at build time. Trimming to ensure no invisible characters.
     const jwtToken = (process.env.NEXT_PUBLIC_JWT_TOKEN || process.env.NEXT_PUBLIC_ADMIN_TOKEN || '').trim();
-    const coreApiUrl = (process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8000').trim();
+    const coreApiUrl = (process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8081').trim();
     const authHeader = (process.env.NEXT_PUBLIC_AUTH_HEADER || 'Authorization').trim();
     const chatSource = (process.env.NEXT_PUBLIC_CHAT_SOURCE || 'objects').trim() as ChatSource;
 

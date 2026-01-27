@@ -11,6 +11,7 @@ import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { usePathname } from "next/navigation";
+import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
 
 export default function RootLayout({
   children,
@@ -105,31 +106,28 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
         <ErrorBoundary>
-          {/* BACKGROUND REMOVED - MoraShell provides NeuralGrid + MyceliumOverlay */}
-          {/* <MoraLivingBackground /> */}
-          {children}
-          {mounted && (
-
-            <>
-              <PaneManager />
-              {showBar && (
-                <div className="transition-opacity duration-500 opacity-100 pointer-events-auto">
-                  <UserAvatar
-                    onClick={() => openPane({
-                      id: 'settings-main',
-                      type: 'settings',
-                      title: 'Settings',
-                      size: { width: 700, height: 500 }
-                    })}
-                    showLabel={true}
-                  />
-                </div>
-              )}
-
-              <Toaster position="top-right" />
-
-            </>
-          )}
+          <MoraSessionProvider>
+            {children}
+            {mounted && (
+              <>
+                <PaneManager />
+                {showBar && (
+                  <div className="transition-opacity duration-500 opacity-100 pointer-events-auto">
+                    <UserAvatar
+                      onClick={() => openPane({
+                        id: 'settings-main',
+                        type: 'settings',
+                        title: 'Settings',
+                        size: { width: 700, height: 500 }
+                      })}
+                      showLabel={true}
+                    />
+                  </div>
+                )}
+                <Toaster position="top-right" />
+              </>
+            )}
+          </MoraSessionProvider>
         </ErrorBoundary>
       </body>
     </html>

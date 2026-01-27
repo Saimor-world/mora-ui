@@ -28,7 +28,7 @@ const getNodeColor = (type: string) => {
 };
 
 export const GridPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { activeCompanyId, nodesByCompany } = useMoraStore();
     const pane = getPane(id);
 
@@ -156,6 +156,21 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                                             exit={{ opacity: 0, scale: 0.9 }}
                                             transition={{ delay: i * 0.02 }}
                                             className={`p-4 rounded-xl border ${colorClass} hover:scale-105 transition-transform cursor-pointer`}
+                                            onClick={() => {
+                                                openPane({
+                                                    id: `doc-${node.id}`,
+                                                    type: 'document',
+                                                    title: node.title || 'Untitled',
+                                                    size: { width: 800, height: 600 },
+                                                    data: {
+                                                        nodeId: node.id,
+                                                        content: node.content,
+                                                        name: node.title,
+                                                        type: node.type,
+                                                        metadata: node.metadata
+                                                    }
+                                                });
+                                            }}
                                         >
                                             <div className="flex items-start gap-3">
                                                 <div className={`p-2 rounded-lg ${colorClass}`}>

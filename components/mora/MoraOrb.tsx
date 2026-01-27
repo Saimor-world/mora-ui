@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LiquidOrb, CSSFallbackOrb } from './LiquidOrb';
+import { PlasmaOrb } from './PlasmaOrb';
 
 interface MoraOrbProps {
     /** User Role - affects base color */
@@ -155,33 +155,33 @@ export function MoraOrb({
             case 'alert':
                 return {
                     opacity: 0.95,
-                    glowIntensity: 50,
+                    glowIntensity: 70, // Boosted
                     pulseDuration: 1.0,
-                    color: '#EF4444', // Alert red
-                    gradient: 'radial-gradient(circle, rgba(239, 68, 68, 0.8) 0%, rgba(239, 68, 68, 0) 70%)',
-                    innerBg: 'rgba(239, 68, 68, 0.3)',
+                    color: '#EF4444',
+                    gradient: 'radial-gradient(circle, rgba(239, 68, 68, 0.9) 0%, rgba(239, 68, 68, 0) 70%)',
+                    innerBg: 'rgba(239, 68, 68, 0.4)',
                     sparkColor: '#EF4444',
                     ringType: 'alert'
                 };
             case 'insight':
                 return {
                     opacity: 0.9,
-                    glowIntensity: 45,
+                    glowIntensity: 60, // Boosted
                     pulseDuration: 2.0,
-                    color: '#D4AF37', // Insight gold
-                    gradient: 'radial-gradient(circle, rgba(212, 175, 55, 0.7) 0%, rgba(212, 175, 55, 0) 70%)',
-                    innerBg: 'rgba(212, 175, 55, 0.25)',
+                    color: '#D4AF37',
+                    gradient: 'radial-gradient(circle, rgba(212, 175, 55, 0.8) 0%, rgba(212, 175, 55, 0) 70%)',
+                    innerBg: 'rgba(212, 175, 55, 0.35)',
                     sparkColor: '#D4AF37',
                     ringType: 'insight'
                 };
             case 'thinking':
                 return {
                     opacity: 0.8,
-                    glowIntensity: 35,
+                    glowIntensity: 50, // Boosted
                     pulseDuration: 2.5,
-                    color: '#3B82F6', // Thinking blue
-                    gradient: 'radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(59, 130, 246, 0) 70%)',
-                    innerBg: 'rgba(59, 130, 246, 0.2)',
+                    color: '#3B82F6',
+                    gradient: 'radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, rgba(59, 130, 246, 0) 70%)',
+                    innerBg: 'rgba(59, 130, 246, 0.3)',
                     sparkColor: '#3B82F6',
                     ringType: 'thinking'
                 };
@@ -224,11 +224,11 @@ export function MoraOrb({
             default:
                 return {
                     opacity: 0.8,
-                    glowIntensity: 45,
+                    glowIntensity: 60, // Boosted
                     pulseDuration: 4,
-                    color: '#10B981', // Emerald Green as requested
-                    gradient: 'radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, rgba(16, 185, 129, 0) 70%)',
-                    innerBg: 'rgba(16, 185, 129, 0.25)',
+                    color: '#10B981',
+                    gradient: 'radial-gradient(circle, rgba(16, 185, 129, 0.7) 0%, rgba(16, 185, 129, 0) 70%)',
+                    innerBg: 'rgba(16, 185, 129, 0.35)',
                     sparkColor: '#10B981',
                     ringType: 'idle'
                 };
@@ -369,12 +369,12 @@ export function MoraOrb({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
             >
-                {/* Outer Glow Ring */}
+                {/* Outer Glow Ring - SOLAR CORONA */}
                 <motion.div
                     className="absolute inset-0 rounded-full"
                     animate={{
-                        scale: [1, 1.4, 1],
-                        opacity: [opacity * 0.4, opacity * 0.7, opacity * 0.4],
+                        scale: [1, 1.6, 1],
+                        opacity: [opacity * 0.5, opacity * 0.9, opacity * 0.5],
                     }}
                     transition={{
                         duration: pulseDuration,
@@ -383,7 +383,7 @@ export function MoraOrb({
                     }}
                     style={{
                         background: gradient,
-                        filter: `blur(${glowIntensity}px)`,
+                        filter: `blur(${glowIntensity + 20}px)`,
                     }}
                 />
 
@@ -415,17 +415,35 @@ export function MoraOrb({
                     </>
                 )}
 
-                {/* UPGRADE A3: Premium Liquid Light Container */}
+                {/* UPGRADE A3: Premium Liquid Light Container - SOLAR ATMOSPHERE */}
                 <motion.div
-                    className="absolute inset-[-40%] rounded-full opacity-60 mix-blend-screen pointer-events-none"
+                    className="absolute inset-[-60%] rounded-full opacity-50 mix-blend-screen pointer-events-none"
                     animate={{
                         rotate: [0, 360],
-                        scale: [1, 1.1, 1],
+                        scale: [1, 1.15, 1],
                     }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                     style={{
-                        background: `radial-gradient(circle at 30% 30%, ${color}00 0%, ${color}20 40%, ${color}00 70%)`,
-                        filter: 'blur(30px)',
+                        background: `radial-gradient(circle at 30% 30%, ${color}00 0%, ${color}30 40%, ${color}00 70%)`,
+                        filter: 'blur(40px)',
+                    }}
+                />
+
+                {/* SOLAR ATMOSPHERE - Heiße Corona (innerer Ring) */}
+                <motion.div
+                    className="absolute inset-[-15%] rounded-full pointer-events-none"
+                    animate={{
+                        scale: [1, 1.1, 1],
+                        opacity: [0.4, 0.7, 0.4],
+                    }}
+                    transition={{
+                        duration: pulseDuration * 0.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                    }}
+                    style={{
+                        background: `radial-gradient(circle, ${color}60 0%, ${color}20 50%, transparent 70%)`,
+                        filter: 'blur(8px)',
                     }}
                 />
 
@@ -465,22 +483,48 @@ export function MoraOrb({
                     }}
                 >
                     {/* LIQUID INTELLIGENCE 3D MESH - With Fallback */}
+                    {/* FIXED: Removed overflow-hidden to allow glow effects */}
                     <div
-                        className="absolute inset-0 pointer-events-none overflow-hidden rounded-full"
+                        className="absolute inset-0 pointer-events-none rounded-full"
                         style={{
-                            margin: '-10%',
-                            width: '120%',
-                            height: '120%'
+                            margin: '-25%',
+                            width: '150%',
+                            height: '150%'
                         }}
                     >
-                        <React.Suspense fallback={<CSSFallbackOrb color={color} state={finalState as any} />}>
-                            <LiquidOrb
-                                color={color}
-                                state={finalState as any}
-                                intensity={1.0}
-                            />
-                        </React.Suspense>
+                        <PlasmaOrb
+                            color={color}
+                            state={finalState as any}
+                            size={96}
+                            onClick={() => { }}
+                        />
                     </div>
+
+                    {/* MILKY SURFACE GLOW - "Glassy/Milky" Overlay */}
+                    <motion.div
+                        className="absolute inset-0 rounded-full pointer-events-none mix-blend-overlay bg-noise"
+                        style={{
+                            background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 40%, transparent 80%)',
+                            opacity: 0.7,
+                            filter: 'blur(1px)'
+                        }}
+                    />
+
+                    {/* BRAIN-WAVE PULSE (Nested Learning Indicator) */}
+                    {state === 'idle' && (
+                        <motion.div
+                            className="absolute inset-0 rounded-full border border-white/5 pointer-events-none"
+                            animate={{
+                                scale: [1, 1.4, 1.6],
+                                opacity: [0, 0.2, 0],
+                            }}
+                            transition={{
+                                duration: 8,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                        />
+                    )}
 
                     {/* Inner Nucleus - With Company Logo Integration */}
                     {companyLogo && (

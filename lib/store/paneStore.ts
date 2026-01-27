@@ -2,9 +2,9 @@ import { create } from 'zustand';
 
 export interface PaneConfig {
     id: string;
-    type: 'document' | 'settings' | 'apps' | 'files' | 'grid' | 'space' | 'search'
-        | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
-        | 'finder' | 'scanner' | 'users' | 'company-detail';
+    type: 'document' | 'settings' | 'apps' | 'grid' | 'space' | 'search'
+    | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
+    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline';
 
     title: string;
     position: { x: number; y: number };
@@ -53,13 +53,17 @@ const normalizeFrontmost = (panes: PaneConfig[], activePaneId: string | null) =>
     return { activePaneId };
 };
 
-const getCenteredPosition = (size: { width: number; height: number }) => {
+const getCenteredPosition = (size: { width: number; height: number }, offset: number = 0) => {
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
-    let x = Math.floor((windowWidth - size.width) / 2);
-    let y = Math.floor((windowHeight - size.height) / 2) - 40;
+    // Apply cascade offset for multiple windows (20px per open window)
+    const cascadeOffset = offset * 25;
 
+    let x = Math.floor((windowWidth - size.width) / 2) + cascadeOffset;
+    let y = Math.floor((windowHeight - size.height) / 2) - 40 + cascadeOffset;
+
+    // Ensure window stays on screen
     x = Math.max(20, Math.min(x, windowWidth - size.width - 20));
     y = Math.max(40, Math.min(y, windowHeight - size.height - 100));
 
@@ -104,7 +108,9 @@ export const usePaneStore = create<PaneState>((set, get) => ({
             return;
         }
 
-        const position = request.position ?? getCenteredPosition(request.size);
+        // Calculate cascade offset based on number of open panes
+        const openPaneCount = get().panes.filter(p => !p.minimized).length;
+        const position = request.position ?? getCenteredPosition(request.size, openPaneCount);
         get().addPane({
             id: request.id,
             type: request.type,

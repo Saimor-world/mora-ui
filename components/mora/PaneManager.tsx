@@ -4,7 +4,7 @@ import React from 'react';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { SettingsPane } from '@/components/panes/SettingsPane';
 import { AppLibraryPane } from '@/components/panes/AppLibraryPane';
-import { FilesPane } from '@/components/panes/FilesPane';
+
 import { GridPane } from '@/components/panes/GridPane';
 import { SpacePane } from '@/components/panes/SpacePane';
 import { DocumentPane } from '@/components/panes/DocumentPane';
@@ -19,6 +19,8 @@ import { FinderPane } from '@/components/panes/FinderPane';
 import { ScannerPane } from '@/components/panes/ScannerPane';
 import { UsersPane } from '@/components/panes/UsersPane';
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
+import { ChatPane } from '@/components/panes/ChatPane';
+import { TimelinePane } from '@/components/panes/TimelinePane';
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
@@ -27,8 +29,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <SettingsPane id={pane.id} />;
         case 'apps':
             return <AppLibraryPane id={pane.id} />;
-        case 'files':
-            return <FilesPane id={pane.id} />;
+
         case 'grid':
             return <GridPane id={pane.id} />;
         case 'space':
@@ -63,6 +64,10 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
                     companyName={pane.data?.companyName}
                 />
             );
+        case 'chat':
+            return <ChatPane id={pane.id} />;
+        case 'timeline':
+            return <TimelinePane id={pane.id} />;
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;

@@ -26,7 +26,7 @@ export const HotspotMarkers: React.FC<HotspotMarkersProps> = ({ hotspots }) => {
     return (
         <div className="absolute inset-0 pointer-events-none z-0">
             {/* We need the same coordinate space as the nodeStars. 
-                 CompanyCoreView renders nodeStars in a container centered at 50% 50%.
+                 UniverseView renders nodeStars in a container centered at 50% 50%.
                  IntelligencePlayfield is absolute inset-0.
                  So we need to transform-translate center to match.
              */}

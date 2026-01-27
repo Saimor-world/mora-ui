@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 import {
     Search,
-    FileText,
+
     Settings,
     Grid,
     Home,
@@ -110,15 +110,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             onSelect: () => openFromSpotlight("settings", "settings-main", "Settings")
         });
 
-        result.push({
-            id: "action-files",
-            label: "Files",
-            description: "Uploads and file nodes",
-            icon: <FileText size={16} className="text-emerald-400" />,
-            category: "action",
-            keywords: ["files", "uploads", "dateien"],
-            onSelect: () => openFromSpotlight("files", "files-main", "Files", { width: 700, height: 500 })
-        });
+
 
         result.push({
             id: "action-search",

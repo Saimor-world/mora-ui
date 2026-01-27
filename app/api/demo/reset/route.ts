@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
-        const coreUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
+        const coreUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
 
         // Fetch a dev token first to avoid 401/404 when no JWT is provided
         const tokenResp = await fetch(`${coreUrl}/v1/auth/dev-token`, { method: 'POST' });

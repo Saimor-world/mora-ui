@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { CompanyCoreView } from '@/components/home/CompanyCoreView';
+import { UniverseView } from '@/components/home/UniverseView';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
 import { FolderLayer } from '@/components/layers/FolderLayer';
@@ -21,7 +21,7 @@ import { AnimatePresence, motion } from 'framer-motion';
  * - 🏢 Client Companies = "company" level = ClientHealthDashboard (metrics only, no data!)
  * 
  * DEMO/WORKSPACE VIEW:
- * - 🏠 Home = "core" level = CompanyCoreView with active company's structure
+ * - 🏠 Home = "core" level = UniverseView with active company's structure
  * - ⚡ Demo = "core" level with Simple Coffee Group
  */
 export const ViewPort: React.FC = () => {
@@ -50,7 +50,7 @@ export const ViewPort: React.FC = () => {
                     </motion.div>
                 )}
 
-                {/* CORE VIEW - CompanyCoreView (Orbital Universe) */}
+                {/* CORE VIEW - UniverseView (Orbital Universe) */}
                 {viewLevel === 'core' && (
                     <motion.div
                         key="core"
@@ -68,7 +68,7 @@ export const ViewPort: React.FC = () => {
                         }}
                         className="absolute inset-0"
                     >
-                        <CompanyCoreView />
+                        <UniverseView />
                     </motion.div>
                 )}
 

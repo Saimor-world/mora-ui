@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { FileText, Folder as FolderIcon, Upload, Loader2, RefreshCw, AlertCircle, ChevronRight, Home, Sparkles } from 'lucide-react';
-import { fetchTree, getSemanticallySimilarNodes } from '@/lib/api/coreClient';
+import { FileText, Folder as FolderIcon, Upload, Loader2, RefreshCw, AlertCircle, ChevronRight, Home, Sparkles, Globe, Circle } from 'lucide-react';
+import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
+import { getSemanticallySimilarNodes } from '@/lib/api/coreClient';
 import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { FileUploadZone } from '@/components/organic/FileUploadZone';
@@ -11,6 +12,13 @@ import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
 import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
 
+
+interface IntakeContext {
+    suggested_category?: string;
+    suggested_location?: string;
+    detected_patterns?: string[];
+    business_summary?: string;
+}
 
 interface PendingAction {
     tool_name: string;
@@ -21,6 +29,8 @@ interface PendingAction {
     file_id: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
+    // P6: Guided Intake
+    intake_context?: IntakeContext;
 }
 
 
@@ -35,7 +45,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         foldersBySpace,
         loadFoldersForSpace,
         nodesByFolder,
-        loadNodesForFolder
+        loadNodesForFolder,
+        // DATA CONSISTENCY FIX: Use shared treeData from store instead of local state
+        treeData,
+        loadTree,
+        isLoadingTree
     } = useMoraStore();
     const pane = getPane(id);
 
@@ -72,7 +86,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // Navigation
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([]);
-    const [rawTree, setRawTree] = useState<CoreTreeNode[]>([]);
+    // DATA CONSISTENCY FIX: Use treeData from store instead of local rawTree state
+    // This ensures Finder shows the SAME data as Universe (UniverseView)
+    const rawTree = treeData || [];
 
     // Helper to find node in tree
     const findNodeInTree = useCallback((nodes: CoreTreeNode[], targetId: string): CoreTreeNode | null => {
@@ -104,11 +120,30 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
         // Root view (Company level - showing Spaces/Departments)
         if (!currentFolderId) {
-            // Filter tree for active company if needed, or just show top level
-            // fetchTree likely returns company roots or spaces.
-            // Assuming rawTree is list of root items (Spaces usually).
-            const visibleFolders = rawTree.filter(n => ['space', 'department', 'folder'].includes(n.type));
-            const visibleFiles = rawTree.filter(n => !['space', 'department', 'folder'].includes(n.type));
+            // UNIFIED FILTER: Apply same logic as Universe (deduplication + cap=25)
+            // Extract all department nodes from tree
+            let deptNodes: any[] = [];
+            const roots = Array.isArray(rawTree) ? rawTree : [rawTree];
+
+            roots.forEach(node => {
+                if (node.type === 'department') {
+                    deptNodes.push(node);
+                } else if (node.children) {
+                    node.children.forEach((child: any) => {
+                        if (child.type === 'department') deptNodes.push(child);
+                    });
+                }
+            });
+
+            // DEDUPLICATION: Remove duplicate department names (same as Universe)
+            const uniqueDepts = deptNodes.filter((dept, index, arr) =>
+                arr.findIndex(d => d.name.toLowerCase() === dept.name.toLowerCase()) === index
+            );
+
+            // CAP AT 25: Same UI/rendering limit as Universe
+            const visibleFolders = uniqueDepts.slice(0, 25);
+            const visibleFiles: any[] = []; // No files at root level
+
             return { folders: visibleFolders, files: visibleFiles };
         }
 
@@ -137,26 +172,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [currentFolderId, rawTree, getCurrentContent, buildBreadcrumbs]);
 
-    // Load ALL Tree Data once
+    // DATA CONSISTENCY FIX: Use loadTree from store instead of direct fetchTree
+    // This ensures both Universe and Finder use the same data source
     const loadContent = async () => {
-        setIsLoading(true);
         try {
-            const tree = await fetchTree();
-            // Filter tree by activeCompanyId if tree contains multiple companies
-            // Assuming fetchTree returns global tree or company scoped. 
-            // Phase 4 usually scoped `fetchTree` to user/company.
-            if (tree) {
-                setRawTree(tree);
-                if (departmentId) {
-                    // Find department in tree and set it as init
-                    const deptNode = findNodeInTree(tree, departmentId);
-                    if (deptNode) setCurrentFolderId(departmentId);
-                }
+            await loadTree();
+            // After tree loads, handle departmentId navigation if needed
+            if (departmentId && treeData) {
+                const deptNode = findNodeInTree(treeData, departmentId);
+                if (deptNode) setCurrentFolderId(departmentId);
             }
         } catch (e) {
             console.error("Tree load failed", e);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -178,6 +205,19 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setShowUpload(false);
         setIsUploading(true);
 
+        // P6: Orb reacts - thinking (lila) während Upload/Analyse
+        setThinking();
+
+        // P6: Timeline event - intake started (P2-Pattern)
+        window.dispatchEvent(new CustomEvent('mora:agency-update', {
+            detail: {
+                type: 'proposal',
+                status: 'started',
+                intent: 'intake',
+                message: `${fileList[0]?.name || 'Datei'} wird analysiert...`
+            }
+        }));
+
         let successCount = 0;
         try {
             for (const file of fileList) {
@@ -187,6 +227,20 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     const response = await requestCreateNodeFromFile(uploaded.id);
                     if (response?.status === 'pending_confirmation') {
+                        // P6: Orb switches to focus (blau) - waiting for user
+                        setFocus();
+
+                        // P6: Timeline event - ready for confirmation
+                        const intakeContext = response.intake_context;
+                        window.dispatchEvent(new CustomEvent('mora:agency-update', {
+                            detail: {
+                                type: 'proposal',
+                                status: 'complete',
+                                intent: 'intake',
+                                message: intakeContext?.business_summary || `${uploaded.filename} bereit zur Einordnung`
+                            }
+                        }));
+
                         setPendingAction({
                             tool_name: response.tool_name || 'create_node_from_file',
                             params: {
@@ -199,26 +253,41 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             action_id: response.action_id || `file_${uploaded.id}`,
                             file_id: uploaded.id,
                             confirm_endpoint: `/v1/files/${uploaded.id}/confirm-node`,
-                            confirm_payload: { confirmation_token: response.confirmation_token }
+                            confirm_payload: { confirmation_token: response.confirmation_token },
+                            // P6: Pass intake_context to ConfirmationCard
+                            intake_context: response.intake_context
                         });
                         break;
                     }
 
                     if (response?.status === 'executed') {
                         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                        // P6: Auto-executed, return to idle
+                        setIdle();
                     }
                 } catch (e) {
                     console.error(`Failed to upload ${file.name}:`, e);
+                    // P6: Timeline event - failed
+                    window.dispatchEvent(new CustomEvent('mora:agency-update', {
+                        detail: {
+                            type: 'proposal',
+                            status: 'failed',
+                            intent: 'intake',
+                            message: `Upload fehlgeschlagen: ${file.name}`
+                        }
+                    }));
                 }
             }
-            if (successCount > 0) {
+            if (successCount > 0 && !pendingAction) {
                 toast.success(`${successCount} file(s) uploaded`);
                 loadContent();
-            } else {
+            } else if (successCount === 0) {
                 toast.error('Failed to upload files');
+                setIdle();
             }
         } catch (e) {
             toast.error('Upload error');
+            setIdle();
         } finally {
             setIsUploading(false);
         }
@@ -275,7 +344,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 onClick={loadContent}
                                 className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
                             >
-                                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                                {/* DATA CONSISTENCY FIX: Use isLoadingTree from store */}
+                                <RefreshCw size={16} className={(isLoading || isLoadingTree) ? 'animate-spin' : ''} />
                             </button>
                             <button
                                 onClick={() => setShowUpload(true)}
@@ -289,7 +359,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {/* Content */}
                     <div className="flex-1 overflow-y-auto p-4">
-                        {isLoading && files.length === 0 ? (
+                        {/* DATA CONSISTENCY FIX: Use isLoadingTree from store */}
+                        {(isLoading || isLoadingTree) && files.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-48 gap-3 text-white/30">
                                 <Loader2 size={32} className="animate-spin" />
                                 <span>Loading content...</span>
@@ -310,12 +381,25 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 hover:bg-blue-500/10 transition-colors flex flex-col gap-2 cursor-pointer group relative"
                                     >
                                         <div className="flex justify-between items-start">
-                                            <FolderIcon size={32} className="text-blue-400/80 group-hover:text-blue-400" />
+                                            {folder.type === 'department' ? (
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 bg-emerald-400/20 blur-sm rounded-full" />
+                                                    <Globe size={32} className="text-emerald-400 relative z-10" />
+                                                </div>
+                                            ) : folder.type === 'space' ? (
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 bg-cyan-400/20 blur-sm rounded-full" />
+                                                    <Circle size={28} className="text-cyan-400 relative z-10" />
+                                                </div>
+                                            ) : (
+                                                <FolderIcon size={32} className="text-blue-400/80 group-hover:text-blue-400" />
+                                            )}
+
                                             {folder.type === 'department' && (
-                                                <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] border border-indigo-500/30">DEPT</span>
+                                                <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] border border-emerald-500/30">PLANET</span>
                                             )}
                                             {folder.type === 'space' && (
-                                                <span className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] border border-cyan-500/30">SPACE</span>
+                                                <span className="px-1.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 text-[10px] border border-cyan-500/30">MOON</span>
                                             )}
                                         </div>
                                         <span className="text-sm text-white/80 truncate font-medium">{folder.name}</span>
@@ -398,15 +482,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     {pendingAction && (
                         <ConfirmationCard
                             action={pendingAction}
+                            variant="intake"
                             onConfirmed={() => {
                                 setPendingAction(null);
-                                toast.success('Node created');
-                                window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                                // P6: Orb returns to idle after confirmation
+                                setIdle();
                                 loadContent();
                             }}
                             onRejected={async () => {
                                 const active = pendingAction;
                                 setPendingAction(null);
+                                // P6: Orb returns to idle after reject
+                                setIdle();
                                 if (active) {
                                     try {
                                         await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
@@ -415,6 +502,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         console.error('Reject failed', err);
                                     }
                                 }
+                            }}
+                            onDismiss={() => {
+                                // P6: "Später" - dismiss UI without policy reject
+                                // Pending stays pending (token still valid for 5 min)
+                                setPendingAction(null);
+                                setIdle();
+                                toast.info('Einordnung verschoben');
                             }}
                         />
                     )}

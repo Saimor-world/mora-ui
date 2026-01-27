@@ -22,15 +22,15 @@ export const MoraLivingBackground: React.FC = () => {
         setMounted(true);
     }, []);
 
-    // Stars - Generated once on mount
+    // Stars - MORE STARS! Much brighter universe (user request)
     const stars = useMemo(() => {
         if (!mounted) return [];
-        return Array.from({ length: 50 }).map((_, i) => ({
+        return Array.from({ length: 200 }).map((_, i) => ({
             id: i,
             x: Math.random() * 100,
             y: Math.random() * 100,
-            size: Math.random() * 2 + 1,
-            opacity: Math.random() * 0.6 + 0.3,
+            size: Math.random() * 3 + 0.5, // Bigger stars
+            opacity: Math.random() * 0.8 + 0.4, // Brighter
             delay: Math.random() * 5,
             duration: 2 + Math.random() * 3
         }));
@@ -52,22 +52,22 @@ export const MoraLivingBackground: React.FC = () => {
 
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-            {/* Base - Lighter Emerald Atmosphere (not so dark) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0a1a14] via-[#061210] to-[#030a08]" />
+            {/* Base - VIEL HELLER für Boomer-Freundlichkeit! */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#142e28] via-[#0e241e] to-[#081815]" />
 
-            {/* Nebula Glow - Lighter Green */}
+            {/* Nebula Glow - BRIGHTER */}
             <motion.div
                 animate={{
-                    opacity: isThinking ? 0.25 : 0.15,
+                    opacity: isThinking ? 0.35 : 0.25, // Much brighter
                     scale: isThinking ? 1.05 : 1.0,
                 }}
                 transition={{ duration: 4, ease: "easeInOut" }}
                 className="absolute top-0 left-0 w-full h-full"
                 style={{
                     background: `
-                        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 60%),
-                        radial-gradient(ellipse 60% 50% at 80% 70%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
-                        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 40%)
+                        radial-gradient(ellipse 80% 60% at 20% 30%, rgba(16, 185, 129, 0.25) 0%, transparent 60%),
+                        radial-gradient(ellipse 60% 50% at 80% 70%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(212, 175, 55, 0.12) 0%, transparent 40%)
                     `
                 }}
             />
@@ -126,8 +126,8 @@ export const MoraLivingBackground: React.FC = () => {
                 ))}
             </div>
 
-            {/* Soft Vignette (lighter than before) */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_30%,_rgba(0,0,0,0.3)_100%)]" />
+            {/* Soft Vignette (almost invisible now) */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_50%,_rgba(0,0,0,0.15)_100%)]" />
 
             {/* Subtle Grid Lines (very faint) */}
             <div

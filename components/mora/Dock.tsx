@@ -8,6 +8,7 @@ import {
     Search,
     Settings,
     FileText,
+    Folder,
     LayoutGrid,
     LogOut,
     Minus,
@@ -51,7 +52,7 @@ export const Dock = () => {
     const dockItems = [
         { icon: Home, label: 'Home', action: 'home' },
         { icon: LayoutGrid, label: 'Apps', action: 'apps' },
-        { icon: FileText, label: 'Files', action: 'files' },
+        { icon: Folder, label: 'Finder', action: 'finder' },
         { icon: Users, label: 'Team', action: 'team' },
         { icon: Mail, label: 'Mail', action: 'mail' },
         { icon: Calendar, label: 'Calendar', action: 'calendar' },
@@ -124,12 +125,12 @@ export const Dock = () => {
                 });
                 break;
             }
-            case 'files': {
-                const size = { width: 700, height: 500 };
+            case 'finder': {
+                const size = { width: 900, height: 600 };
                 openPane({
-                    id: 'files-main',
-                    type: 'files',
-                    title: 'Files',
+                    id: 'finder-main',
+                    type: 'finder',
+                    title: 'Finder',
                     size
                 });
                 break;
@@ -186,7 +187,7 @@ export const Dock = () => {
         if (action === 'settings' && getPane('settings-main') && !getPane('settings-main')?.minimized) return true;
         if (action === 'apps' && getPane('apps-main') && !getPane('apps-main')?.minimized) return true;
         if (action === 'search' && getPane('search-main') && !getPane('search-main')?.minimized) return true;
-        if (action === 'files' && getPane('files-main') && !getPane('files-main')?.minimized) return true;
+        if (action === 'finder' && getPane('finder-main') && !getPane('finder-main')?.minimized) return true;
         if (action === 'team' && getPane('team-main') && !getPane('team-main')?.minimized) return true;
         if (action === 'mail' && getPane('mail-main') && !getPane('mail-main')?.minimized) return true;
         if (action === 'calendar' && getPane('calendar-main') && !getPane('calendar-main')?.minimized) return true;

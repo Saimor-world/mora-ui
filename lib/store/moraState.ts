@@ -119,6 +119,10 @@ interface MoraState {
         target?: { x: number, y: number };
     };
 
+    // P1-B: Speculative Orb Awareness (Zero Latency)
+    speculativeState?: OrbState;
+    speculativeUntil?: number;
+
     // Actions
     setViewLevel: (level: ViewLevel) => void;
     setViewMode: (mode: ViewMode) => void; // NEW: Switch between Owner/Demo/Workspace
@@ -128,6 +132,8 @@ interface MoraState {
     setActiveFolder: (id: string | null) => void;
     setActiveNode: (node: CoreNode | null) => void;
     setOrbState: (state: OrbState) => void;
+    setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
+    clearSpeculativeState: () => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
@@ -146,7 +152,7 @@ interface MoraState {
     loadNodesForFolder: (folderId: string, options?: { search?: string, type?: string }) => Promise<void>;
     loadNodesForCompany: (companyId: string) => Promise<void>;
     loadNodeDetails: (nodeId: string) => Promise<void>;
-    loadTree: (tenantId?: string) => Promise<void>;
+    loadTree: (tenantId?: string, companyId?: string) => Promise<void>;
 
     // Tree Actions
     toggleTreeNode: (id: string) => void;
@@ -202,6 +208,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     isLoadingTree: false,
     coreError: null,
     orbState: 'idle', // Phase 7.1: Start in simple breathing mode
+    speculativeState: undefined,
+    speculativeUntil: undefined,
     orbNotifications: [],
     minimizedNodes: [],
     cursorAgent: {
@@ -233,7 +241,44 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     setActiveSpace: (id) => set({ activeSpaceId: id }),
     setActiveFolder: (id) => set({ activeFolderId: id }),
     setActiveNode: (node) => set({ activeNode: node }),
-    setOrbState: (state) => set({ orbState: state }),
+    setOrbState: (state) => {
+        const now = Date.now();
+        const current = get();
+
+        // P1-B: PollGuard - Don't overwrite speculative state if active
+        if (current.speculativeState && current.speculativeUntil && current.speculativeUntil > now) {
+            // Polling tried to set state, but we are in a speculative window.
+            // Ignore polling update, keep speculative state visible.
+            return;
+        }
+
+        set({ orbState: state });
+    },
+    setSpeculativeState: (state, ttlMs = 1200) => {
+        // P1-B: Instant Speculative Update
+        // Forces the Orb to this state immediately, blocking polling updates for ttlMs
+        const now = Date.now();
+
+        // Debounce: If already in this state and valid, extend TTL but don't re-render
+        if (get().orbState === state && get().speculativeState === state) {
+            set({ speculativeUntil: now + ttlMs });
+            return;
+        }
+
+        set({
+            orbState: state, // Immediate visual update
+            speculativeState: state,
+            speculativeUntil: now + ttlMs
+        });
+    },
+    clearSpeculativeState: () => {
+        set({
+            speculativeState: undefined,
+            speculativeUntil: undefined
+            // We don't reset orbState immediately to avoid flicker; 
+            // let the next poll (or manual setIdle) handle it naturally.
+        });
+    },
     addOrbNotification: (notification) => set((state) => ({
         orbNotifications: [...state.orbNotifications, notification]
     })),
@@ -311,12 +356,20 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             departments: [],
             spacesByDepartment: {},
             foldersBySpace: {},
+            nodesByFolder: {},
+            nodesByCompany: {},
             activeCompanyId: null,
             activeDepartmentId: null,
             activeSpaceId: null,
+            activeFolderId: null,
+            activeNode: null,
+            treeData: null,
+            expandedTreeNodes: new Set<string>(),
+            minimizedNodes: [],
             viewMode: 'workspace',
             viewLevel: 'core',
-            coreError: null
+            coreError: null,
+            orbState: 'idle'
         });
     },
 
@@ -336,7 +389,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const authorizedEmails = [
                 'm.f4hrlaender@gmail.com', // The user
                 'master_real@saimor.io',
-                'nexus@saimor.dev'
+                'nexus@saimor.dev',
+                'demo@saimor.io',          // Demo Account
+                'nextchaptergermany@gmail.com' // Next Chapter Account
             ];
 
             if (userEmail && authorizedEmails.includes(userEmail)) {
@@ -390,7 +445,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         try {
             // Use active company if not provided
             const targetCompanyId = companyId || get().activeCompanyId || undefined;
+            console.log('[MoraState] Loading Departments for:', targetCompanyId);
+
             let data = await fetchDepartments(targetCompanyId);
+            console.log('[MoraState] Departments Fetched:', data?.length || 0, data);
+
+            if (!data || data.length === 0) {
+                console.warn('[MoraState] WARNING: No departments returned! Possible seed issue.');
+            }
 
             set({ departments: data, isLoadingDepartments: false });
             mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'idle', severity: 0.1, payload: { status: 'success' } });
@@ -530,14 +592,16 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
 
-    loadTree: async (tenantId?: string) => {
+    loadTree: async (tenantId?: string, companyId?: string) => {
         set({ isLoadingTree: true, coreError: null });
         try {
             const resolvedTenant = tenantId || useAccountStore.getState().currentAccount?.tenantId;
-            const tree = await fetchTree(resolvedTenant || undefined);
+            const targetCompany = companyId || get().activeCompanyId || undefined;
+
+            const tree = await fetchTree(resolvedTenant || undefined, targetCompany);
             if ((tree?.length || 0) === 0) {
                 // Retry once to avoid empty renders during demo refresh
-                const retryTree = await fetchTree(resolvedTenant || undefined);
+                const retryTree = await fetchTree(resolvedTenant || undefined, targetCompany);
                 const hasData = (retryTree?.length || 0) > 0;
                 set({
                     treeData: retryTree,

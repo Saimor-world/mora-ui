@@ -2,9 +2,16 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Check, X, AlertTriangle, ShieldAlert, FileCheck } from 'lucide-react';
 import { corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
+
+interface IntakeContext {
+    suggested_category?: string;
+    suggested_location?: string;
+    detected_patterns?: string[];
+    business_summary?: string;
+}
 
 interface PendingAction {
     tool_name: string;
@@ -14,16 +21,24 @@ interface PendingAction {
     action_id: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
+    // P6: Guided Intake
+    intake_context?: IntakeContext;
 }
 
 interface Props {
     action: PendingAction;
     onConfirmed: (result: any) => void;
     onRejected: () => void;
+    onDismiss?: () => void;  // P6: "Später" dismisses UI without policy reject
+    variant?: 'default' | 'intake';  // P6: Guided Intake variant
 }
 
-export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejected }) => {
+export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejected, onDismiss, variant }) => {
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // P6: Auto-detect intake variant if intake_context is present
+    const isIntake = variant === 'intake' || !!action.intake_context;
+    const intake = action.intake_context;
 
     const handleConfirm = async () => {
         setIsProcessing(true);
@@ -32,8 +47,8 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             const payload = action.confirm_payload || {
                 tool_name: action.tool_name,
                 params: action.params,
-                confirmation_token: action.confirmation_token, // The Key!
-                trace_id: action.action_id // Use action_id as trace_id or verify connectivity
+                confirmation_token: action.confirmation_token,
+                trace_id: action.action_id
             };
 
             const res = await corePost(endpoint, payload);
@@ -44,9 +59,18 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 res?.result;
 
             if (success) {
-                toast.success("Action approved.");
+                toast.success(isIntake ? "Eingeordnet" : "Action approved.");
                 if (typeof window !== 'undefined' && action.tool_name === 'create_node_from_file') {
                     window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                    // P6: Timeline event for intake completion
+                    window.dispatchEvent(new CustomEvent('mora:agency-update', {
+                        detail: {
+                            type: 'action',
+                            status: 'complete',
+                            intent: 'intake',
+                            message: intake?.business_summary || 'Erfolgreich eingeordnet'
+                        }
+                    }));
                 }
                 onConfirmed(res?.data || res?.result || res);
             } else {
@@ -61,6 +85,79 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         }
     };
 
+    // P6: Handle "Später" - dismiss UI without policy reject
+    const handleDismiss = () => {
+        if (onDismiss) {
+            onDismiss();
+        } else {
+            // Fallback: just clear the UI, pending stays pending
+            onRejected();
+        }
+    };
+
+    // P6: Intake Variant - Calm Competence design
+    if (isIntake && intake) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden"
+            >
+                {/* Header - Neutral, not alarming */}
+                <div className="px-4 py-3 flex items-start gap-3">
+                    <FileCheck className="text-white/60 shrink-0 mt-0.5" size={18} />
+                    <div className="flex-1">
+                        <p className="text-white font-medium text-sm">
+                            {intake.business_summary}
+                        </p>
+                        <p className="text-white/50 text-xs mt-1">
+                            Vorschlag: {intake.suggested_location}
+                        </p>
+                        {intake.detected_patterns && intake.detected_patterns.length > 0 && (
+                            <div className="flex gap-1.5 mt-2 flex-wrap">
+                                {intake.detected_patterns.map((pattern, i) => (
+                                    <span
+                                        key={i}
+                                        className="px-2 py-0.5 text-[10px] rounded bg-white/5 text-white/40 border border-white/5"
+                                    >
+                                        {pattern}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Actions - Neutral styling */}
+                <div className="flex items-center gap-2 p-3 border-t border-white/5">
+                    {/* Später = UI dismiss, NOT Policy-Reject */}
+                    <button
+                        onClick={handleDismiss}
+                        disabled={isProcessing}
+                        className="text-white/40 hover:text-white/60 text-xs font-medium transition-colors px-3 py-2"
+                    >
+                        Später
+                    </button>
+                    <div className="flex-1" />
+                    {/* Primary action - dezent, nicht grün */}
+                    <button
+                        onClick={handleConfirm}
+                        disabled={isProcessing}
+                        className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors flex items-center gap-2"
+                    >
+                        {isProcessing ? (
+                            <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Check size={14} />
+                        )}
+                        Einordnen
+                    </button>
+                </div>
+            </motion.div>
+        );
+    }
+
+    // Default variant - Original security warning style
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}

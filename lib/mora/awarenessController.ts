@@ -9,89 +9,47 @@ import { useMoraStore } from '@/lib/store/moraState';
 
 export type OrbState = 'idle' | 'focus' | 'thinking' | 'alert' | 'insight';
 
-let focusTimeout: NodeJS.Timeout | null = null;
-let thinkingTimeout: NodeJS.Timeout | null = null;
-let alertTimeout: NodeJS.Timeout | null = null;
-let insightTimeout: NodeJS.Timeout | null = null;
+// P1-B: Timeouts now handled by store's speculativeUntil logic
+// We keep these for legacy cleanup if needed, but primary logic moves to store.
+let legacyTimeout: NodeJS.Timeout | null = null;
 
 /**
  * UPGRADE A1: Set Orb to focus state (user attention, navigation)
- * Auto-reverts to idle after 1.2s
+ * P1-B: Uses speculative state for instant 0ms reaction
  */
 export function setFocus() {
     const store = useMoraStore.getState();
-
-    // Don't override alert state
     if (store.coreError) return;
-
-    store.setOrbState('focus');
-
-    // Clear previous timeout
-    if (focusTimeout) clearTimeout(focusTimeout);
-
-    // Revert to idle after 1.2s
-    focusTimeout = setTimeout(() => {
-        const currentState = useMoraStore.getState();
-        if (currentState.orbState === 'focus' && !currentState.coreError) {
-            currentState.setOrbState('idle');
-        }
-    }, 1200);
+    store.setSpeculativeState('focus', 1200);
 }
 
 /**
  * UPGRADE A1: Set Orb to thinking state (AI processing, analysis)
- * Auto-reverts to idle after 3s
+ * P1-B: Uses speculative state for instant 0ms reaction
  */
 export function setThinking() {
     const store = useMoraStore.getState();
-
-    // Don't override alert or focus state
-    if (store.coreError || store.orbState === 'focus') return;
-
-    store.setOrbState('thinking');
-
-    // Clear previous timeout
-    if (thinkingTimeout) clearTimeout(thinkingTimeout);
-
-    // Revert to idle after 3s
-    thinkingTimeout = setTimeout(() => {
-        const currentState = useMoraStore.getState();
-        if (currentState.orbState === 'thinking' && !currentState.coreError) {
-            currentState.setOrbState('idle');
-        }
-    }, 3000);
+    if (store.coreError) return; // Only error blocks thinking
+    store.setSpeculativeState('thinking', 3000);
 }
 
 /**
  * UPGRADE A1: Set Orb to alert state (critical errors, urgent issues)
- * Persists until error is cleared
+ * Persists via local state override
  */
 export function setAlert() {
-    useMoraStore.getState().setOrbState('alert');
+    // Alerts are critical, so we use a long TTL or manual clear logic
+    useMoraStore.getState().setSpeculativeState('alert', 10000);
 }
 
 /**
  * UPGRADE A1: Set Orb to insight state (AI discoveries, recommendations)
- * Auto-reverts to idle after 4s
+ * P1-B: Uses speculative state for instant 0ms reaction
  */
 export function setInsight() {
     const store = useMoraStore.getState();
-
-    // Don't override alert state
     if (store.coreError) return;
-
-    store.setOrbState('insight');
-
-    // Clear previous timeout
-    if (insightTimeout) clearTimeout(insightTimeout);
-
-    // Revert to idle after 4s
-    insightTimeout = setTimeout(() => {
-        const currentState = useMoraStore.getState();
-        if (currentState.orbState === 'insight' && !currentState.coreError) {
-            currentState.setOrbState('idle');
-        }
-    }, 4000);
+    store.setSpeculativeState('insight', 4000);
 }
 
 // UPGRADE A1: Notification system for micro-sparks
@@ -151,6 +109,7 @@ export function getNotifications(): OrbNotification[] {
 export function setIdle() {
     const store = useMoraStore.getState();
     if (!store.coreError) {
+        store.clearSpeculativeState();
         store.setOrbState('idle');
     }
 }
@@ -173,8 +132,5 @@ export function updateOrbFromSystemState() {
  * Cleanup timeouts (call on unmount if needed)
  */
 export function cleanupAwareness() {
-    if (focusTimeout) clearTimeout(focusTimeout);
-    if (thinkingTimeout) clearTimeout(thinkingTimeout);
-    if (alertTimeout) clearTimeout(alertTimeout);
-    if (insightTimeout) clearTimeout(insightTimeout);
+    // P1-B: No listeners to clean up
 }

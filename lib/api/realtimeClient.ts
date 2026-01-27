@@ -45,9 +45,9 @@ class RealtimeClient {
 
         this.isConnecting = true;
 
-        // Using localhost:8083 (Main Core API) - Unified System
+        // Using localhost:8081 (Main Core API) - Unified System
         // In production this would use an env variable
-        const wsHost = process.env.NEXT_PUBLIC_CORE_WS_URL || 'ws://localhost:8083';
+        const wsHost = process.env.NEXT_PUBLIC_CORE_WS_URL || 'ws://127.0.0.1:8081';
         const wsUrl = `${wsHost}/v1/realtime/subscribe?token=${token}&event_types=all`;
 
         try {

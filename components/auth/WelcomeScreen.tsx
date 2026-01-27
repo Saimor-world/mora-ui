@@ -9,6 +9,7 @@ import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
 
+import { signIn } from "next-auth/react";
 import { OnboardingWizard } from './OnboardingWizard';
 
 interface WelcomeScreenProps {
@@ -112,7 +113,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
         });
 
-        useMoraStore.getState().resetStore();
+        // Explicitly clear all stores
+        const store = useMoraStore.getState();
+        store.resetStore();
+        store.setUser(null);
+
+        // Force reload relevant parts to ensure clean UI
+        store.setViewLevel('core');
+        store.setViewMode('workspace');
         writeCookie('saimor_auth', '', -1);
         writeCookie('mora_auth_token', '', -1);
         setSessionInfo(null);
@@ -183,86 +191,41 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
 
     const handleLogin = async () => {
-        console.log('[WelcomeScreen] handleLogin called');
-        console.log('[WelcomeScreen] Current email state:', email);
-        console.log('[WelcomeScreen] Current password state:', password ? '(has value)' : '(empty)');
-        console.log('[WelcomeScreen] Current mode:', mode);
-
         if (!email || !password) {
-            console.log('[WelcomeScreen] VALIDATION FAILED - email empty:', !email, 'password empty:', !password);
             toast.error("Bitte E-Mail und Passwort eingeben");
             return;
         }
 
-        const trimmedEmail = email.trim();
         setIsLoading(true);
         try {
-            console.log('[WelcomeScreen] Sending request to:', `${CORE_URL}/v1/auth/login`);
-            const response = await fetch(`${CORE_URL}/v1/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: trimmedEmail, password })
+            // NextAuth Login Call
+            const result = await signIn("credentials", {
+                redirect: false,
+                username: email,
+                password: password
             });
-            console.log('[WelcomeScreen] Response status:', response.status);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ detail: null }));
-                const statusCode = response.status;
+            if (result?.error) {
+                if (result.error === "CredentialsSignin") {
+                    throw new Error("Ungültige Zugangsdaten");
+                }
+                throw new Error(result.error);
+            }
 
-                // Provide context-aware error messages
-                let errorMessage = 'Login fehlgeschlagen';
+            if (result?.ok) {
+                // Pre-set some store values to avoid flicker, though session will take over
+                toast.success(`Willkommen, ${email.split('@')[0]}!`);
 
-                if (statusCode === 401) {
-                    errorMessage = 'Ungültige E-Mail-Adresse oder falsches Passwort';
-                } else if (statusCode === 404) {
-                    errorMessage = 'Konto existiert nicht. Bitte registrieren Sie sich zuerst.';
-                } else if (statusCode === 429) {
-                    errorMessage = 'Zu viele Login-Versuche. Bitte warten Sie einen Moment.';
-                } else if (statusCode === 403) {
-                    errorMessage = 'Zugriff verweigert. Bitte kontaktieren Sie den Administrator.';
-                } else if (statusCode >= 500) {
-                    errorMessage = 'Server-Fehler. Bitte versuchen Sie es später erneut.';
+                // Special handling for Demo User
+                if (email === 'demo') {
+                    setViewMode('demo');
+                } else {
+                    setViewMode('workspace');
                 }
 
-                // Use backend error detail if more specific
-                const finalError = errorData?.detail || errorMessage;
-                throw new Error(finalError);
+                onAuthenticated();
             }
 
-            const data = await response.json();
-            const role = data.role || 'member';
-
-            saveAuthState(data.token, role, email, data.tenant_id);
-
-            // Set user in store first
-            const store = useMoraStore.getState();
-            store.setUser({
-                id: data.user_id,
-                name: email.split('@')[0],
-                email: email,
-                role: role as any,
-                tenant_id: data.tenant_id
-            });
-
-            // Set View Mode immediately (data will load in /home)
-            const systemOwners = ['m.f4hrlaender@gmail.com', 'master_real@saimor.io', 'nextchaptergermany@gmail.com'];
-
-            if ((role === 'owner' || role === 'admin') && systemOwners.includes(email)) {
-                setViewMode('owner');
-                setViewLevel('company');
-            } else if (role === 'demo') {
-                setViewMode('demo');
-                setViewLevel('core');
-            } else {
-                setViewMode('workspace');
-                setViewLevel('core');
-            }
-
-            localStorage.setItem('mora_session', 'active');
-            localStorage.setItem('last_user_name', email.split('@')[0]);
-
-            toast.success(`Willkommen, ${email.split('@')[0]}!`);
-            onAuthenticated();
         } catch (error: any) {
             console.error('[WelcomeScreen] Login Fehler:', error);
             toast.error(error?.message || "Login fehlgeschlagen");
@@ -637,7 +600,27 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
                                 </motion.button>
 
-                                {/* Demo Button removed as requested - user wants to focus on real account flow */}
+                                {/* Quick Demo Button - Re-enabling for High-Fidelity Experience */}
+                                <motion.button
+                                    onClick={() => {
+                                        setEmail('demo');
+                                        setPassword('demo123');
+                                        handleLogin();
+                                    }}
+                                    whileHover={{ scale: 1.02, x: 4 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="relative p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 group-hover:bg-blue-500/20 group-hover:border-blue-500/40 transition-all duration-300">
+                                        <Sparkles className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                                    </div>
+                                    <div className="flex-1 text-left relative z-10">
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Quick Demo</div>
+                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">"Simple Coffee Group" erkunden</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                                </motion.button>
                             </motion.div>
                         )}
                     </motion.div>
@@ -817,38 +800,38 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                         {/* Role Selection */}
                                         {!hasInvite && (
-                                        <div className="pt-2">
-                                            <label className="block text-[10px] text-emerald-500/60 mb-3 uppercase tracking-widest font-medium">
-                                                Account-Typ
-                                            </label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedRole('owner')}
-                                                    className={`p-4 rounded-xl border transition-all duration-300 flex flex-col items-center gap-2 relative overflow-hidden group ${selectedRole === 'owner'
-                                                        ? 'border-mora-gold bg-mora-gold/10 text-mora-gold shadow-[0_0_20px_rgba(206,182,118,0.15)]'
-                                                        : 'border-white/10 bg-black/20 text-emerald-100/70 hover:border-emerald-500/30 hover:bg-white/5'
-                                                        }`}
-                                                >
-                                                    {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
-                                                    <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                    <span className="text-xs font-medium relative z-10">Eigentümer</span>
-                                                    <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedRole('member')}
-                                                    className={`p-4 rounded-xl border transition-all duration-300 flex flex-col items-center gap-2 relative overflow-hidden group ${selectedRole === 'member'
-                                                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                                                        : 'border-white/10 bg-black/20 text-emerald-100/70 hover:border-emerald-500/30 hover:bg-white/5'
-                                                        }`}
-                                                >
-                                                    <User className={`w-5 h-5 ${selectedRole === 'member' ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : ''}`} />
-                                                    <span className="text-xs font-medium relative z-10">Mitglied</span>
-                                                    <span className="text-[10px] opacity-50 relative z-10">Bereich beitreten</span>
-                                                </button>
+                                            <div className="pt-2">
+                                                <label className="block text-[10px] text-emerald-500/60 mb-3 uppercase tracking-widest font-medium">
+                                                    Account-Typ
+                                                </label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedRole('owner')}
+                                                        className={`p-4 rounded-xl border transition-all duration-300 flex flex-col items-center gap-2 relative overflow-hidden group ${selectedRole === 'owner'
+                                                            ? 'border-mora-gold bg-mora-gold/10 text-mora-gold shadow-[0_0_20px_rgba(206,182,118,0.15)]'
+                                                            : 'border-white/10 bg-black/20 text-emerald-100/70 hover:border-emerald-500/30 hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
+                                                        <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
+                                                        <span className="text-xs font-medium relative z-10">Eigentümer</span>
+                                                        <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedRole('member')}
+                                                        className={`p-4 rounded-xl border transition-all duration-300 flex flex-col items-center gap-2 relative overflow-hidden group ${selectedRole === 'member'
+                                                            ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                                                            : 'border-white/10 bg-black/20 text-emerald-100/70 hover:border-emerald-500/30 hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        <User className={`w-5 h-5 ${selectedRole === 'member' ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : ''}`} />
+                                                        <span className="text-xs font-medium relative z-10">Mitglied</span>
+                                                        <span className="text-[10px] opacity-50 relative z-10">Bereich beitreten</span>
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
                                         )}
 
                                         <motion.button

@@ -37,7 +37,7 @@ export const PulseRing: React.FC<PulseRingProps> = ({ pulse }) => {
                     height: '160px',
                     transform: 'translate(50%, 50%)' // Wait, simple bottom/right aligns edges. 
                     // Orb centers itself via translate(-50%, -50%)?
-                    // Let's check CompanyCoreView orb code...
+                    // Let's check UniverseView orb code...
                     // Orb: bottom-[48px] right-[48px], no translate? 
                     // Ah, inside the div wrapper it might be.
                     // To be safe, let's use a large radial gradient that is forgiving of exact enter.
@@ -56,7 +56,7 @@ export const PulseRing: React.FC<PulseRingProps> = ({ pulse }) => {
                 // Better:
                 initial={{ x: '50%', y: '50%' }} // Initial translate to center of itself relative to bottom-right point?
                 // Let's assume the orb is roughly centered at `bottom: 48 + size/2`, `right: 48 + size/2`?
-                // Let's inspect CompanyCoreView orb wrapper:
+                // Let's inspect UniverseView orb wrapper:
                 // <div className="fixed bottom-[48px] right-[48px] ..."> 
                 //    <MoraOrb ... />
                 // <div>

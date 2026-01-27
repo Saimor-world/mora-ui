@@ -47,7 +47,7 @@ export const getFilePreview = async (nodeId: string): Promise<FilePreview> => {
 };
 
 export const getDownloadUrl = (nodeId: string): string => {
-    const NEXT_PUBLIC_SAIMOR_CORE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
+    const NEXT_PUBLIC_SAIMOR_CORE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
     return `${NEXT_PUBLIC_SAIMOR_CORE_URL}/v1/files/${nodeId}/download`;
 };
 

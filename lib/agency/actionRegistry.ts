@@ -13,18 +13,30 @@
  * - click_safe: Disabled
  */
 import { setFocus, setThinking, setIdle } from '@/lib/mora/awarenessController';
+import { getActionIntent, getProposalIntent, getStatusMessage } from './intentMicrocopy';
 
 // ============================================
 // Types
 // ============================================
 
-export type AgencyActionType = 'move_cursor' | 'highlight' | 'focus_pane';
+export type AgencyActionType =
+    | 'move_cursor'
+    | 'highlight'
+    | 'focus_pane'
+    | 'navigate_department'
+    | 'navigate_space'
+    | 'navigate_folder'
+    | 'open_pane';
 
 export interface AgencyAction {
     type: AgencyActionType;
     target_id: string;
     reason: string;
     duration_ms?: number;
+    // Extended fields for open_pane action
+    pane_type?: string;
+    title?: string;
+    data?: Record<string, unknown>;
 }
 
 export interface ActionProposal {
@@ -95,9 +107,15 @@ export async function executeAction(action: AgencyAction): Promise<boolean> {
     notifyListeners(action);
     setFocus(); // UPGRADE: Orb reacts to action start
 
-    // UPGRADE: Dispatch event for ChatDock etc.
+    // P3: Dispatch event with German intent for Timeline/ChatDock
     window.dispatchEvent(new CustomEvent('mora:agency-update', {
-        detail: { action, status: 'started' }
+        detail: {
+            type: 'action',
+            status: 'start',
+            intent: getActionIntent(action.type),
+            actionId: `${action.type}-${Date.now()}`,
+            data: action
+        }
     }));
 
     try {
@@ -111,15 +129,36 @@ export async function executeAction(action: AgencyAction): Promise<boolean> {
             case 'focus_pane':
                 await focusPane(action.target_id);
                 break;
+            case 'navigate_department':
+                await navigateDepartment(action.target_id);
+                break;
+            case 'navigate_space':
+                await navigateSpace(action.target_id);
+                break;
+            case 'navigate_folder':
+                await navigateFolder(action.target_id);
+                break;
+            case 'open_pane':
+                await openPaneAction(action.target_id, action.pane_type || 'document', action.title, action.data);
+                break;
             default:
                 throw new Error(`Unknown action type: ${(action as any).type}`);
         }
 
         logAction(action, 'completed');
 
-        // UPGRADE: Dispatch event for ChatDock etc.
+        // P1-B: Release speculative hold so Orb can return to idle/polling
+        setIdle();
+
+        // P3: Dispatch completion event
         window.dispatchEvent(new CustomEvent('mora:agency-update', {
-            detail: { action, status: 'completed' }
+            detail: {
+                type: 'action',
+                status: 'complete',
+                intent: getStatusMessage('action', 'complete'),
+                actionId: `${action.type}-${Date.now()}`,
+                data: action
+            }
         }));
 
         return true;
@@ -145,6 +184,17 @@ export async function executeProposal(proposal: ActionProposal): Promise<void> {
 
     setThinking(); // UPGRADE: Orb reflects cognitive load of proposal execution
 
+    // P3: Dispatch proposal start with German intent
+    window.dispatchEvent(new CustomEvent('mora:agency-update', {
+        detail: {
+            type: 'proposal',
+            status: 'start',
+            intent: getProposalIntent(proposal.summary || ''),
+            proposalId: proposal.proposal_id,
+            data: proposal
+        }
+    }));
+
     console.log(`[Agency] Starting proposal ${proposal.proposal_id} with ${proposal.actions.length} actions`);
 
     for (const action of proposal.actions) {
@@ -163,6 +213,20 @@ export async function executeProposal(proposal: ActionProposal): Promise<void> {
     _currentProposalId = null;
     _abortController = null;
     notifyListeners(null);
+
+    // P1-B Polish: Sequence complete, now we rest.
+    setIdle();
+
+    // P3: Dispatch proposal complete with German intent
+    window.dispatchEvent(new CustomEvent('mora:agency-update', {
+        detail: {
+            type: 'proposal',
+            status: 'complete',
+            intent: getStatusMessage('proposal', 'complete'),
+            proposalId: proposal.proposal_id,
+            data: proposal
+        }
+    }));
 
     console.log(`[Agency] Proposal ${proposal.proposal_id} complete`);
 }
@@ -241,9 +305,51 @@ async function highlightElement(targetId: string, durationMs: number): Promise<v
 }
 
 async function focusPane(paneId: string): Promise<void> {
-    // Dispatch custom event for PaneManager
+    // Dispatch custom event for MoraShell AgencyEventBus
     const event = new CustomEvent('agency:focus_pane', {
         detail: { paneId }
+    });
+    window.dispatchEvent(event);
+
+    await sleep(300);
+}
+
+async function navigateDepartment(departmentId: string): Promise<void> {
+    // Dispatch custom event for MoraShell AgencyEventBus
+    const event = new CustomEvent('agency:navigate_department', {
+        detail: { departmentId }
+    });
+    window.dispatchEvent(event);
+
+    await sleep(500); // Navigation takes longer
+}
+
+async function navigateSpace(spaceId: string): Promise<void> {
+    const event = new CustomEvent('agency:navigate_space', {
+        detail: { spaceId }
+    });
+    window.dispatchEvent(event);
+
+    await sleep(500);
+}
+
+async function navigateFolder(folderId: string): Promise<void> {
+    const event = new CustomEvent('agency:navigate_folder', {
+        detail: { folderId }
+    });
+    window.dispatchEvent(event);
+
+    await sleep(500);
+}
+
+async function openPaneAction(
+    paneId: string,
+    paneType: string,
+    title?: string,
+    data?: Record<string, unknown>
+): Promise<void> {
+    const event = new CustomEvent('agency:open_pane', {
+        detail: { paneId, paneType, title: title || paneType, data }
     });
     window.dispatchEvent(event);
 

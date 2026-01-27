@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Planet } from '@/components/mora/Planet';
 import { Star } from '@/components/mora/Star';
 import { NodeStar } from '@/components/mora/NodeStar';
+import { StarField } from '@/components/home/StarField';
+import { UniverseControls } from '@/components/home/UniverseControls';
 
 import { useMoraStore } from '@/lib/store/moraState';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
@@ -25,22 +27,41 @@ import { useIntelligencePulse } from '@/lib/hooks/useIntelligencePulse'; // UPGR
 import { usePaneStore } from '@/lib/store/paneStore'; // Window Management
 import { useAccentColor } from '@/lib/hooks/useAccentColor'; // Global accent color
 import { DepartmentWizard } from '@/components/wizards/DepartmentWizard'; // Department creation wizard
+import { BootSequence } from '@/components/ui/BootSequence'; // OS-style boot sequence
 
 /**
- * COMPANY CORE VIEW (The Universe)
+ * UNIVERSE VIEW (The Core Interface)
  * 
- * This is the main interface of the SAIMÔR OS.
- * Metaphor Mapping:
- * - Company Center = Sun (Logo) || User Orb (Bottom-Right)
- * - Departments    = PLANETS (Orbiting the Sun)
- * - Spaces/Projects = MOONS (Orbiting Planets)
- * - Folders        = STARS (Orbiting Moons)
- * - Files/Nodes    = NODE STARS (Free floating or clustered)
+ * DESIGN PHILOSOPHY:
+ * The Universe View is the primary spatial interface of SAIMÔR.
+ * It maps hierarchical data to orbital mechanics:
+ * 
+ * 1. SUN (Center)      = Active Company / Context
+ * 2. PLANETS (Orbit 1) = Departments (Abteilungen) - e.g. "Finance", "HR"
+ * 3. MOONS (Orbit 2)   = Spaces (Teams/Projects) - Orbiting their parent Department
+ * 4. STARS (Orbit 3)   = Folders - Orbiting their parent Space
+ * 5. NODES (Free)      = Files/Knowledge - Floating freely or clustered by semantic relevance
+ * 
+ * DATA FLOW:
+ * - Data is fetched via `useMoraStore` (merged treeData + flat lists).
+ * - "Visible Planets" are derived from this data.
+ * - If data exists, the Universe is "Alive". If empty, it shows "Universe Silent".
+ * 
+ * VISUALS:
+ * - Uses SVG for orbital lines (Connections).
+ * - Uses DOM/Motion for interactive elements (Planets/Moons).
+ * - Background is a deep radial gradient to simulated deep space depth.
  */
-// ⚡ MAX DEPARTMENTS LIMIT - prevents infinite loop
-const MAX_DEPARTMENTS = 10;
+// ⚡ MAX DEPARTMENTS LIMIT - Set to 25 for UI/rendering (User Request: cap=25, no data loss)
+const MAX_DEPARTMENTS = 25;
 
-export const CompanyCoreView: React.FC = () => {
+// Helper for deterministic random numbers
+function seededRandom(seed: number) {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+}
+
+export const UniverseView: React.FC = () => {
     const {
         viewMode,
         setViewMode,
@@ -65,7 +86,9 @@ export const CompanyCoreView: React.FC = () => {
         loadCompanies,
         setActiveCompany,
         isLoadingDepartments,
-        isLoadingCompanies
+        isLoadingCompanies,
+        // DATA CONSISTENCY FIX: Also load tree for Finder consistency
+        loadTree
     } = useMoraStore();
 
     const { openPane } = usePaneStore();
@@ -190,9 +213,9 @@ export const CompanyCoreView: React.FC = () => {
     // 🌌 UNIVERSE INITIALIZATION PER COMPANY/USER - Tesla-Style Consistency
     // Orbital-Konfiguration basierend auf companyId + userId für konsistente Universen
     const universeSeed = useMemo(() => {
-        const userId = user?.user_id || 'anonymous';
+        const userId = user?.email || 'anonymous';
         return `${activeCompanyId}-${userId}`;
-    }, [activeCompanyId, user?.user_id]);
+    }, [activeCompanyId, user?.email]);
 
     const isLoading = isLoadingDepartments || isLoadingCompanies;
 
@@ -239,7 +262,7 @@ export const CompanyCoreView: React.FC = () => {
         if (lastWorkspace) {
             targetCompany = companies.find(c => c.name === lastWorkspace);
             if (targetCompany) {
-                console.log('[CompanyCoreView] Restored last workspace:', targetCompany.name);
+                console.log('[UniverseView] Restored last workspace:', targetCompany.name);
             }
         }
 
@@ -265,14 +288,38 @@ export const CompanyCoreView: React.FC = () => {
         }
 
         // 3. Fallback to first available if absolutely nothing found
-        if (!targetCompany) {
+        if (!targetCompany && companies.length > 0) {
             targetCompany = companies[0];
         }
 
         if (targetCompany) {
+            console.log('[UniverseView] Auto-activating company:', targetCompany.name);
             setActiveCompany(targetCompany.id);
+            loadDepartments(targetCompany.id);
         }
-    }, [companies, activeCompanyId, viewMode, setActiveCompany]);
+    }, [companies, activeCompanyId, viewMode, activeCompanyId]);
+
+    // 🔥 REACTIVE SWITCH: When User explicitly changes ViewMode via Controls
+    useEffect(() => {
+        if (!companies || companies.length === 0) return;
+
+        let desiredCompany;
+        if (viewMode === 'demo') {
+            // Find Demo Company
+            desiredCompany = companies.find(c => c.is_demo || c.name.toLowerCase().includes('coffee'));
+        } else if (viewMode === 'workspace' || viewMode === 'owner') {
+            // Find User Company (Saimor or non-demo)
+            desiredCompany = companies.find(c => c.name.toLowerCase().includes('saimor') && !c.is_demo) || companies.find(c => !c.is_demo);
+        }
+
+        // If we found a proper target and it's DIFFERENT from current, SWITCH!
+        if (desiredCompany && desiredCompany.id !== activeCompanyId) {
+            console.log('[ModeSwitch] Switching context to:', desiredCompany.name);
+            setActiveCompany(desiredCompany.id);
+            loadDepartments(desiredCompany.id);
+            toast.success(`Context: ${desiredCompany.name}`);
+        }
+    }, [viewMode, companies, activeCompanyId, setActiveCompany, loadDepartments]);
 
     // 🔥 FIX: Auto-load spaces for visible departments (Universe Experience)
     // Instead of lazy-loading on hover, we load them to populate the universe with Moons
@@ -295,11 +342,14 @@ export const CompanyCoreView: React.FC = () => {
     }, [activeCompanyId, departments, spacesByDepartment, loadSpacesForDepartment]);
 
     // Load departments when company is active
+    // DATA CONSISTENCY FIX: Also load tree to keep Finder in sync
     useEffect(() => {
         if (activeCompanyId) {
             loadDepartments(activeCompanyId);
+            // Load tree data for Finder consistency
+            loadTree().catch(console.warn);
         }
-    }, [activeCompanyId, loadDepartments]);
+    }, [activeCompanyId, loadDepartments, loadTree]);
 
     // Load nodes for current company - FORCE RELOAD on company change
     useEffect(() => {
@@ -348,36 +398,105 @@ export const CompanyCoreView: React.FC = () => {
     // TESLA-STYLE: Minimal data, maximum impact
     // 🔥 FIX: Limit to MAX_DEPARTMENTS (10) to prevent performance issues
     // ✨ UNIQUE DEPARTMENTS: Ensure each department symbol is unique and distinguishable
+    // UNIFIED DATA SOURCE: Use treeData (consistent with Finder) or fallback to departments
+    const { treeData } = useMoraStore();
+
     const visiblePlanets = useMemo(() => {
         if (viewMode === 'owner') {
             return companies.slice(0, 6).map(company => ({
                 id: company.id,
                 name: company.name,
-                color: company.is_demo ? '#3B82F6' : '#10B981', // Blue for demo, green for real
+                color: company.is_demo ? '#3B82F6' : '#10B981',
                 description: company.description || '',
                 type: 'company' as const
             }));
         }
 
-        // UNIQUE DEPARTMENT LOGIC: Filter for distinct, non-duplicate departments
+        // PREFER TREE DATA (Hierarchical & Consistent with Finder)
+        if (treeData && treeData.length > 0) {
+            // Find department nodes in tree (usually top level or children of company root)
+            let deptNodes: any[] = [];
+
+            // Check if root is company or list of depts
+            const roots = Array.isArray(treeData) ? treeData : [treeData];
+
+            roots.forEach(node => {
+                if (node.type === 'department') {
+                    deptNodes.push(node);
+                } else if (node.children) {
+                    node.children.forEach((child: any) => {
+                        if (child.type === 'department') deptNodes.push(child);
+                    });
+                }
+            });
+
+            if (deptNodes.length > 0) {
+                // SEMANTIC CLEANUP: Deduplicate by name to avoid clutter (e.g. multiple 'Finance' planets)
+                const uniqueDeptNodes = deptNodes.filter((dept, index, arr) =>
+                    arr.findIndex(d => d.name.toLowerCase() === dept.name.toLowerCase()) === index
+                );
+
+                // UPDATED: Cap at 25 per user feedback (no hard data loss, UI/rendering only)
+                return uniqueDeptNodes.slice(0, MAX_DEPARTMENTS).map((dept, idx) => ({
+                    id: dept.id,
+                    name: dept.name,
+                    // VIBRANT COLORS: Rotate through a vivid palette
+                    color: ['#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#F43F5E', '#6366F1'][idx % 8],
+                    description: dept.name,
+                    type: 'department' as const
+                }));
+            }
+        }
+
+        // FALLBACK: Legacy Departments array
         const uniqueDepartments = departments
             .filter((dept, index, arr) =>
-                // Remove exact duplicates by name
                 arr.findIndex(d => d.name.toLowerCase() === dept.name.toLowerCase()) === index
             )
-            .slice(0, MAX_DEPARTMENTS); // Still limit for performance
+            .slice(0, MAX_DEPARTMENTS); // Cap at 25 (UI/rendering limit)
 
-        return uniqueDepartments.map(dept => ({
+        return uniqueDepartments.map((dept, idx) => ({
             id: dept.id,
             name: dept.name,
-            color: dept.color || '#10B981',
+            color: dept.color || ['#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#F43F5E', '#6366F1'][idx % 8],
             description: dept.name,
             type: 'department' as const
         }));
-    }, [viewMode, companies, departments]);
+    }, [viewMode, companies, departments, treeData]);
 
     const visibleMoons = useMemo(() => {
         if (viewMode === 'owner') return [];
+
+        // PREFER TREE DATA (Hierarchical & Consistent with Finder)
+        if (treeData && treeData.length > 0) {
+            const moons: any[] = [];
+
+            // Helper to find spaces recursively or directly
+            const traverseForSpaces = (nodes: any[]) => {
+                nodes.forEach(node => {
+                    // If this is a Dept, its children might be Spaces
+                    if (node.type === 'department') {
+                        if (node.children) {
+                            node.children.forEach((child: any) => {
+                                if (child.type === 'space') {
+                                    moons.push({
+                                        id: child.id,
+                                        name: child.name,
+                                        departmentId: node.id,
+                                        type: 'moon' as const
+                                    });
+                                }
+                            });
+                        }
+                    } else if (node.children) {
+                        traverseForSpaces(node.children);
+                    }
+                });
+            };
+
+            traverseForSpaces(Array.isArray(treeData) ? treeData : [treeData]);
+            return moons.slice(0, 30); // Limit global moons for performance
+        }
 
         // Use the same unique departments filtering as planets
         const uniqueDepartments = departments
@@ -392,17 +511,47 @@ export const CompanyCoreView: React.FC = () => {
             const uniqueSpaces = deptSpaces.filter((space, index, arr) =>
                 arr.findIndex(s => s.name.toLowerCase() === space.name.toLowerCase()) === index
             );
-            return uniqueSpaces.slice(0, 5).map(space => ({ // Max 5 spaces per dept
+            return uniqueSpaces.slice(0, 1).map(space => ({ // Max 1 space per dept (User Request: "Nur ein Moon")
                 ...space,
                 departmentId: dept.id,
                 type: 'moon' as const // Explicit type for clarity
             }));
         });
-    }, [viewMode, departments, spacesByDepartment]);
+    }, [viewMode, departments, spacesByDepartment, treeData]);
 
     // STARS (Folders) computation - Orbiting Moons
     const visibleFolderStars = useMemo(() => {
         if (viewMode === 'owner') return [];
+
+        // PREFER TREE DATA
+        if (treeData && treeData.length > 0) {
+            const stars: any[] = [];
+
+            const traverseForFolders = (nodes: any[]) => {
+                nodes.forEach(node => {
+                    // Check for Spaces -> Folders
+                    if (node.type === 'space') {
+                        if (node.children) {
+                            node.children.forEach((child: any) => {
+                                if (child.type === 'folder') {
+                                    stars.push({
+                                        id: child.id,
+                                        name: child.name,
+                                        spaceId: node.id,
+                                        type: 'star' as const
+                                    });
+                                }
+                            });
+                        }
+                    } else if (node.children) {
+                        traverseForFolders(node.children);
+                    }
+                });
+            };
+
+            traverseForFolders(Array.isArray(treeData) ? treeData : [treeData]);
+            return stars.slice(0, 50);
+        }
 
         // Get folders for visible moons only (limited to avoid overload)
         return visibleMoons.flatMap(space => {
@@ -417,7 +566,7 @@ export const CompanyCoreView: React.FC = () => {
                 type: 'star' as const
             }));
         });
-    }, [viewMode, visibleMoons, foldersBySpace]);
+    }, [viewMode, visibleMoons, foldersBySpace, treeData]);
 
     // UPGRADE B1: Enhanced planetary orbit system - VIEWPORT UNITS with SEEDED VARIATION
     const planetPositions = useMemo(() => {
@@ -446,16 +595,25 @@ export const CompanyCoreView: React.FC = () => {
 
         // Orbit radius (Tuned for safe margins - 15% clear zone)
         // Reduced from 38vw/25vh to ensure planets stay within bounds
-        const orbitRadiusX = 28 + seededRandom(3) * 6; // 28-34vw (Max X ~84vw)
-        const orbitRadiusY = 18 + seededRandom(4) * 6; // 18-24vh (Max Y ~74vh)
+        // EXPANDED ORBIT: Use more screen space (User Request: "Verteilt im ganzen Universe")
+        // EXPANDED ORBIT: Tuned for better visibility (User Feedback: "Where is data?")
+        // Reduced from 42vw to 34vw to ensure planets are safely within viewport
+        const orbitRadiusX = 34 + seededRandom(3) * 5; // 34-39vw (Safe Zone)
+        const orbitRadiusY = 28 + seededRandom(4) * 5; // 28-33vh (Safe Zone)
+
+        console.log('[UniverseDebug] Calculating Orbit:', { count, companyId, radiusX: orbitRadiusX, radiusY: orbitRadiusY });
 
         // Full 360 orbit
         const arcStart = 0;
         const arcEnd = Math.PI * 2;
         const arcSpan = arcEnd - arcStart;
+        // SORT PLANETS deterministicially by Name/ID to ensure consistent orbital slot assignment
+        // This prevents planets from 'swapping' places if the API returns them in different order
+        const sortedPlanets = [...visiblePlanets].sort((a, b) => a.id.localeCompare(b.id));
+
         const angleStep = arcSpan / Math.max(count, 1); // Divide by count for full circle
 
-        return visiblePlanets.map((planet, i) => {
+        return sortedPlanets.map((planet, i) => {
             // Each planet gets a slight individual offset too
             const planetSeed = seed + planet.id.charCodeAt(0);
             const individualOffset = (Math.sin(planetSeed) * 0.5 + 0.5) * 2 - 1; // -1 to 1
@@ -579,10 +737,21 @@ export const CompanyCoreView: React.FC = () => {
         const currentNodes = activeCompanyId ? nodesByCompany[activeCompanyId] || [] : [];
         if (currentNodes.length === 0) return [];
 
-        // UNIQUE NODES: Filter for distinct node titles to prevent duplicates
-        const uniqueNodes = currentNodes.filter((node, index, arr) =>
-            arr.findIndex(n => n.title?.toLowerCase() === node.title?.toLowerCase()) === index
-        );
+        // UNIQUE NODES & STRICT FILE FILTER (User Request: "Stars = Files")
+        // Only show nodes that are actually documents/files.
+        const uniqueNodes = currentNodes.filter((node, index, arr) => {
+            // Must be distinct
+            const isDistinct = arr.findIndex(n => n.title?.toLowerCase() === node.title?.toLowerCase()) === index;
+            if (!isDistinct) return false;
+
+            // Must be a file
+            const typeStr = node.type as string;
+            const isFile = typeStr === 'document' || typeStr === 'file' || !!node.metadata?.file_path;
+
+            // Allow if metadata explicitly says "is_file" or similar, or if it has an extension in title?
+            // For now, rely on type.
+            return isFile;
+        });
 
         // Generate positions based on company seed for consistency
         const seed = universeSeed;
@@ -592,7 +761,7 @@ export const CompanyCoreView: React.FC = () => {
             hash = hash & hash;
         }
 
-        return uniqueNodes.slice(0, 50).map((node, i) => { // Limit to 50 nodes for performance
+        return uniqueNodes.slice(0, 50).map((node, i) => { // Limit to 50 nodes
             // Deterministic positioning based on node ID and company seed
             const nodeSeed = hash + node.id.charCodeAt(0) + node.id.charCodeAt(node.id.length - 1);
             const seededRandom = (offset: number) => {
@@ -600,20 +769,32 @@ export const CompanyCoreView: React.FC = () => {
                 return x - Math.floor(x);
             };
 
-            // Distribute across the entire viewport (0-100 VW/VH)
-            // Base position: random within viewport
+            // DEFAULT: Deep Space (if orphan)
             let x = seededRandom(0) * 100;
             let y = seededRandom(100) * 100;
 
-            // Add some clustering around planets (30% chance)
-            if (seededRandom(200) < 0.3 && planetPositions.length > 0) {
-                const randomPlanet = planetPositions[Math.floor(seededRandom(300) * planetPositions.length)];
-                const clusterDistanceX = 10 + seededRandom(400) * 10; // 10-20vw
-                const clusterDistanceY = 10 + seededRandom(410) * 10; // 10-20vh
-                const clusterAngle = seededRandom(500) * Math.PI * 2;
+            // ANCHOR LOGIC (User Request: "Stars in Moons")
+            // Try to find the parent folder in our visible universe
+            const parentFolderPos = folderStarPositions.find(f => f.folder.id === node.folder_id);
 
-                x = randomPlanet.x + Math.cos(clusterAngle) * clusterDistanceX;
-                y = randomPlanet.y + Math.sin(clusterAngle) * clusterDistanceY;
+            if (parentFolderPos) {
+                // Orbit the folder (Static Cluster)
+                // Use index to distribute evenly around the folder
+                const angle = (i * 1.1) + seededRandom(5);
+                const dist = 3 + seededRandom(10) * 2; // 3-5vw distance
+
+                x = parentFolderPos.x + Math.cos(angle) * dist;
+                y = parentFolderPos.y + Math.sin(angle) * dist;
+            } else if (moonPositions.length > 0) {
+                // Fallback: Attach to specific Moon if mapped, or closest Moon?
+                // For now, if orphaned, cluster near the Center or random Moon to avoid "Lost in Space"
+                const randomMoon = moonPositions[Math.floor(seededRandom(50) * moonPositions.length)];
+                if (randomMoon) {
+                    const angle = seededRandom(60) * Math.PI * 2;
+                    const dist = 8 + seededRandom(70) * 4;
+                    x = randomMoon.x + Math.cos(angle) * dist;
+                    y = randomMoon.y + Math.sin(angle) * dist;
+                }
             }
 
             return {
@@ -822,81 +1003,54 @@ export const CompanyCoreView: React.FC = () => {
 
     const currentCompany = companies.find(c => c.id === activeCompanyId);
 
-    // Company-specific starfield generation
-    const stableStars = useMemo(() => {
-        // Use company-specific seed for deterministic but unique starfields
-        const seed = universeSeed;
-        let hash = 0;
-        for (let i = 0; i < seed.length; i++) {
-            hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-
-        return Array.from({ length: 300 }, (_, i) => {
-            // Deterministic pseudo-random based on seed + index
-            const seededRandom = (seed: number) => {
-                const x = Math.sin(seed + i * 7.3) * 10000;
-                return x - Math.floor(x);
-            };
-
-            const cx = seededRandom(hash + i) * 100;
-            const cy = seededRandom(hash + i + 100) * 100;
-            const size = seededRandom(hash + i + 200) < 0.1 ? 1.8 :
-                seededRandom(hash + i + 300) < 0.3 ? 1 : 0.5;
-            const brightness = seededRandom(hash + i + 400) < 0.1 ? 0.7 :
-                seededRandom(hash + i + 500) < 0.3 ? 0.4 : 0.25;
-            const colorIndex = Math.floor(seededRandom(hash + i + 600) * 5);
-            const color = colorIndex === 0 ? '#D4AF37' :
-                colorIndex === 1 ? '#10B981' :
-                    colorIndex === 2 ? '#3B82F6' : '#FFFFFF';
-            const hasGlow = seededRandom(hash + i + 700) < 0.2;
-
-            return {
-                id: i,
-                cx,
-                cy,
-                size,
-                brightness,
-                color,
-                hasGlow,
-                duration: 4 + (seededRandom(hash + i + 800) * 5)
-            };
-        });
-    }, [universeSeed]);
 
 
+
+    // Derived state for UI
+
+    const [isBooted, setIsBooted] = useState(false);
+
+    // Stable callback to prevent effect loops
+    const handleBootComplete = useCallback(() => {
+        console.log('[Boot] Sequence complete');
+        setIsBooted(true);
+    }, []);
 
     return (
         <div className="fixed inset-0 w-full h-full min-w-full min-h-full overflow-hidden bg-transparent">
+            {/* BACKGROUND UNIVERSE (Gradient + Stars) - REMOVED: Managed by MoraShell */}
+            {/* <StarField seed={universeSeed} /> */}
 
-            {/* EMPTY STATE - Minimal Hint for New Universes */}
-            {departments.length === 0 && !isLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none z-30">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 1 }}
-                        className="space-y-4"
-                    >
-                        <h2 className="text-3xl text-emerald-500/30 font-extralight tracking-[0.5em] uppercase">Universe Silent</h2>
-                        <div className="w-px h-12 bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent mx-auto" />
-                        <p className="text-xs text-emerald-100/40 tracking-widest uppercase">
-                            Create your first Planet to begin
-                        </p>
-                    </motion.div>
-
-                    {/* Subtle pointer to top bar */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.5, duration: 1 }}
-                        className="absolute top-24 left-1/2 -translate-x-1/2 text-emerald-500/20"
-                    >
-                        <div className="w-px h-8 bg-emerald-500/20 mx-auto mb-2" />
-                        <div className="text-[10px] tracking-widest uppercase">Controls</div>
-                    </motion.div>
+            {/* BOOT SEQUENCE */}
+            {!isBooted && (
+                <div className="absolute inset-0 z-[100]">
+                    <BootSequence
+                        onComplete={handleBootComplete}
+                        user={user ? { name: user?.full_name || user?.email || 'User', role: user?.role || 'USER' } : null}
+                        companyName={companies.find(c => c.id === activeCompanyId)?.name || 'UNKNOWN SECTOR'}
+                        environment={process.env.NODE_ENV}
+                    />
                 </div>
             )}
+
+
+
+            {/* Subtle pointer to top bar */}
+
+            <UniverseControls
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                activeCompany={currentCompany ? { id: currentCompany.id, name: currentCompany.name } : undefined}
+                companies={companies.map(c => ({ id: c.id, name: c.name }))}
+                onSwitchCompany={(id) => {
+                    console.log('[ContextSwitch] Manual switch to:', id);
+                    setActiveCompany(id);
+                    loadDepartments(id);
+                    // Also reload nodes to ensure deep space is correct
+                    loadNodesForCompany(id).catch(console.warn);
+                    toast.success("Context Switched");
+                }}
+            />
 
             {/* DEBUG INFO REMOVED - Clean interface per user request */}
 
@@ -923,7 +1077,7 @@ export const CompanyCoreView: React.FC = () => {
                                 ? '/images/simple_coffee_logo.png'
                                 : null)
                         }
-                        companyName={currentCompany?.name || 'SAIMÔR'}
+                        companyName={currentCompany?.name || 'Workspace'}
                         size="lg"
                         animated={true}
                         accentColor={accentColor}
@@ -932,7 +1086,7 @@ export const CompanyCoreView: React.FC = () => {
 
                     {/* Company Name */}
                     <h1 className="text-4xl md:text-5xl font-extralight tracking-[0.4em] text-white/80 mb-2">
-                        {currentCompany?.name?.toUpperCase() || 'SAIMÔR'}
+                        {currentCompany?.name?.toUpperCase() || 'WORKSPACE'}
                     </h1>
 
                     {/* Divider */}
@@ -1304,18 +1458,29 @@ export const CompanyCoreView: React.FC = () => {
                                             // UPGRADE B1: Orbit shift animation on navigation
                                             setOrbitShiftActive(true);
                                             setPlanetOrbitActive(true);
+                                            // INTELLIGENCE: Orb reacts to navigation
+                                            setOrbState('thinking');
+                                            setTimeout(() => setOrbState('focus'), 400); // Transition to focus
+
+                                            // Navigation Action
+                                            navigateToDepartment(planet.id);
+
+                                            // REAL SYSTEM: Instant feedback (800ms transition)
+                                            setOrbitShiftActive(true);
+                                            setPlanetOrbitActive(true);
                                             setOrbState('focus');
+
                                             setTimeout(() => {
                                                 setOrbitShiftActive(false);
                                                 setPlanetOrbitActive(false);
                                                 setOrbState('idle');
-                                            }, 2500);
+                                            }, 800);
                                         }}
                                         onHover={(hovered) => handlePlanetHover(planet.id, hovered)}
                                         onQuickFilesAccess={(clickPos) => {
-                                            const paneId = 'files-main';
-                                            const paneWidth = 700;
-                                            const paneHeight = 500;
+                                            const paneId = 'finder-main';
+                                            const paneWidth = 900;
+                                            const paneHeight = 620;
                                             let posX = clickPos.x + 10;
                                             let posY = clickPos.y - 50;
                                             if (posX + paneWidth > window.innerWidth) {
@@ -1328,8 +1493,8 @@ export const CompanyCoreView: React.FC = () => {
 
                                             openPane({
                                                 id: paneId,
-                                                type: 'files',
-                                                title: 'Files',
+                                                type: 'finder',
+                                                title: 'Finder',
                                                 size: { width: paneWidth, height: paneHeight },
                                                 position: { x: Math.floor(posX), y: Math.floor(posY) }
                                             });
@@ -1441,7 +1606,7 @@ export const CompanyCoreView: React.FC = () => {
                 {/* Node Stars - Ambient knowledge particles throughout the universe */}
                 {/* IMPORTANT: Exclude nodes already rendered as promotedMoons to prevent duplicate keys */}
                 {viewMode !== 'owner' && nodeStarPositions.length > 0 && (
-                    <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute inset-0 pointer-events-none z-20">
                         {/* UPGRADE E2: SEMANTIC CONSTELLATION LAYER - Light Connections */}
                         <div className="absolute inset-0 pointer-events-none z-0">
                             <SemanticLinesRenderer lines={connections} />
@@ -1494,169 +1659,17 @@ export const CompanyCoreView: React.FC = () => {
                 {/* ✨ SEMANTIC CLUSTER - Important Nodes Constellation (Production Version) */}
                 {/* Shows semantic relationships between high-connection nodes */}
                 {/* ═══════════════════════════════════════════════════════════════════════════ */}
-                {viewMode !== 'owner' && promotedMoons.length > 2 && (
-                    <div className="fixed top-24 left-6 z-40 pointer-events-none">
-                        <motion.div
-                            className="relative"
-                            style={{ width: 180, height: 180 }}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 1.5, duration: 1 }}
-                        >
-                            {/* Soft Glow Background */}
-                            <motion.div
-                                className="absolute inset-0 rounded-full"
-                                style={{
-                                    background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)',
-                                    filter: 'blur(20px)'
-                                }}
-                                animate={{
-                                    scale: [1, 1.08, 1],
-                                    opacity: [0.4, 0.6, 0.4]
-                                }}
-                                transition={{ duration: 8, repeat: Infinity }}
-                            />
 
-                            {/* Constellation Lines */}
-                            <svg className="absolute inset-0 w-full h-full" style={{ overflow: 'visible' }}>
-                                <defs>
-                                    <linearGradient id="clusterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.3" />
-                                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.3" />
-                                    </linearGradient>
-                                </defs>
-
-                                {/* Connect nodes in a natural cluster */}
-                                {promotedMoons.slice(0, 6).map((_, i) => {
-                                    const angle = (i / Math.min(promotedMoons.length, 6)) * Math.PI * 2;
-                                    const nextAngle = ((i + 1) / Math.min(promotedMoons.length, 6)) * Math.PI * 2;
-                                    const radius = 50 + (i % 2) * 15;
-                                    const nextRadius = 50 + ((i + 1) % 2) * 15;
-
-                                    return (
-                                        <motion.line
-                                            key={`cluster-line-${i}`}
-                                            x1={90 + Math.cos(angle) * radius}
-                                            y1={90 + Math.sin(angle) * radius}
-                                            x2={90 + Math.cos(nextAngle) * nextRadius}
-                                            y2={90 + Math.sin(nextAngle) * nextRadius}
-                                            stroke="url(#clusterGradient)"
-                                            strokeWidth="0.8"
-                                            strokeLinecap="round"
-                                            initial={{ pathLength: 0, opacity: 0 }}
-                                            animate={{ pathLength: 1, opacity: 0.25 }}
-                                            transition={{ duration: 2, delay: 1.8 + i * 0.15 }}
-                                        />
-                                    );
-                                })}
-
-                                {/* Center connections */}
-                                {promotedMoons.slice(0, 6).map((_, i) => {
-                                    const angle = (i / Math.min(promotedMoons.length, 6)) * Math.PI * 2;
-                                    const radius = 50 + (i % 2) * 15;
-
-                                    return (
-                                        <motion.line
-                                            key={`cluster-center-${i}`}
-                                            x1={90}
-                                            y1={90}
-                                            x2={90 + Math.cos(angle) * radius}
-                                            y2={90 + Math.sin(angle) * radius}
-                                            stroke="rgba(255,255,255,0.1)"
-                                            strokeWidth="0.5"
-                                            initial={{ pathLength: 0, opacity: 0 }}
-                                            animate={{ pathLength: 1, opacity: 0.1 }}
-                                            transition={{ duration: 1.5, delay: 2 + i * 0.1 }}
-                                        />
-                                    );
-                                })}
-                            </svg>
-
-                            {/* Center Core */}
-                            <motion.div
-                                className="absolute rounded-full"
-                                style={{
-                                    left: 82,
-                                    top: 82,
-                                    width: 16,
-                                    height: 16,
-                                    background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5), rgba(16,185,129,0.3))',
-                                    boxShadow: '0 0 15px rgba(16,185,129,0.3)'
-                                }}
-                                animate={{
-                                    scale: [1, 1.15, 1],
-                                    opacity: [0.6, 0.8, 0.6]
-                                }}
-                                transition={{ duration: 5, repeat: Infinity }}
-                            />
-
-                            {/* Cluster Stars */}
-                            {promotedMoons.slice(0, 6).map((moonData, i) => {
-                                const angle = (i / Math.min(promotedMoons.length, 6)) * Math.PI * 2;
-                                const radius = 50 + (i % 2) * 15;
-                                const x = 90 + Math.cos(angle) * radius - 3;
-                                const y = 90 + Math.sin(angle) * radius - 3;
-                                const size = 5 + Math.min((moonData.connectionCount || 0) * 0.4, 4);
-
-                                return (
-                                    <motion.div
-                                        key={`cluster-star-${moonData.node.id}`}
-                                        className="absolute rounded-full cursor-pointer pointer-events-auto group"
-                                        style={{
-                                            left: x,
-                                            top: y,
-                                            width: size,
-                                            height: size,
-                                            background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.85), rgba(212,175,55,0.5))',
-                                            boxShadow: `0 0 ${size * 1.5}px rgba(212,175,55,0.4)`
-                                        }}
-                                        initial={{ scale: 0, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 0.8 }}
-                                        whileHover={{ scale: 1.8, opacity: 1 }}
-                                        transition={{ delay: 2.2 + i * 0.12, duration: 0.5 }}
-                                        onClick={() => {
-                                            // Navigate to node's space
-                                            if (moonData.node.space_id) {
-                                                navigateToSpace(moonData.node.space_id);
-                                            }
-                                        }}
-                                    >
-                                        {/* Tooltip on hover */}
-                                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                            <div className="px-2 py-0.5 rounded bg-black/70 backdrop-blur-sm text-[9px] text-white/70">
-                                                {moonData.node.title || 'Node'}
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </motion.div>
-                    </div>
-                )}
+                {/* BOOT SEQUENCE / SILENT STATE */}
 
 
+                {/* Department Creation Wizard */}
+                <DepartmentWizard
+                    isOpen={isWizardOpen}
+                    onClose={handleWizardClose}
+                    companyId={activeCompanyId || ''}
+                />
             </div>
-            {/* Status Bar Removed */}
-
-            {/* MÔRA ORB - NOW RENDERED IN MoraShell.tsx (single source of truth) */}
-            {/* Removed duplicate orb - see MoraShell.tsx line 307 */}
-
-            <style jsx global>{`
-                .glass-panel {
-                    background: rgba(0, 0, 0, 0.4);
-                    backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    border-radius: 16px;
-                }
-            `}</style>
-
-
-            {/* Department Creation Wizard */}
-            <DepartmentWizard
-                isOpen={isWizardOpen}
-                onClose={handleWizardClose}
-                companyId={activeCompanyId || ''}
-            />
-        </div >
+        </div>
     );
 };

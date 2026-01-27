@@ -139,8 +139,9 @@ export function CursorAgent({
         }
     }, [action, target, active]);
 
-    // UPGRADE D1: Ambient roaming (Living Behavior)
-    useEffect(() => {
+    // DISABLED: Autonomous roaming (Môra only moves when user actively interacts)
+    // User wants Môra as Disney fairy companion - only moves when HELPING, not idle
+    /* useEffect(() => {
         // Roam if active and either 'roam' explicit action OR 'idle' state
         if (active && (action === 'idle' || action === 'roam')) {
             const roamInterval = setInterval(() => {
@@ -155,7 +156,7 @@ export function CursorAgent({
 
             return () => clearInterval(roamInterval);
         }
-    }, [active, isMoving, currentPosition]);
+    }, [active, isMoving, currentPosition]); */
 
     if (!active && !isMoving) {
         return null;

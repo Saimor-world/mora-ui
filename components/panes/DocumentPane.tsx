@@ -81,6 +81,11 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
     const isVideo = ['mp4', 'webm', 'mov'].includes(fileExtension);
 
+    // Generate image URL from file_path if available
+    const imageUrl = url || (metadata?.file_path && nodeId
+        ? `/api/core/files/${nodeId}/download`
+        : null);
+
     // Simple markdown renderer
     const renderMarkdown = (md: string) => {
         return md
@@ -208,13 +213,35 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     ) : isImage ? (
                         /* Image Viewer */
                         <div className="h-full flex items-center justify-center p-4 bg-black/20">
-                            {url ? (
-                                <img src={url} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                            {imageUrl ? (
+                                <img src={imageUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                            ) : content ? (
+                                /* Demo image with text description (no real file) */
+                                <div className="text-center max-w-md">
+                                    <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
+                                    <p className="text-white/70 text-sm mb-2">Bild-Beschreibung:</p>
+                                    <p className="text-white/50 text-sm italic">{content}</p>
+                                    <p className="text-white/30 text-xs mt-4">(Demo-Datei - keine echte Bilddatei)</p>
+                                </div>
                             ) : (
                                 <div className="text-center text-white/50">
                                     <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
-                                    <p>Bild-Vorschau</p>
+                                    <p>Keine Vorschau verfügbar</p>
                                 </div>
+                            )}
+                        </div>
+                    ) : isPDF ? (
+                        /* PDF View - Demo mode shows description, real files would embed viewer */
+                        <div className="h-full flex flex-col items-center justify-center p-6 bg-black/20">
+                            <File size={64} className="text-red-400/60 mb-4" />
+                            <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
+                            {content ? (
+                                <>
+                                    <p className="text-white/50 text-sm text-center max-w-md mb-4">{content}</p>
+                                    <p className="text-white/30 text-xs">(Demo-PDF - Inhaltsbeschreibung)</p>
+                                </>
+                            ) : (
+                                <p className="text-white/40 text-sm">PDF-Dokument</p>
                             )}
                         </div>
                     ) : isMarkdown && content ? (

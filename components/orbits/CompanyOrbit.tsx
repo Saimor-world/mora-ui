@@ -59,7 +59,7 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
         const visualCenter = calculateVisualCenter(window.innerWidth, window.innerHeight);
         // Convert global center (accounts for sidebars) into local canvas coordinates
         return {
-            x: visualCenter.x - 72, // left offset used in CompanyCoreView container
+            x: visualCenter.x - 72, // left offset used in UniverseView container
             y: visualCenter.y
         };
     }, []);

@@ -180,7 +180,7 @@ export default function FolderRoom() {
                 formDataObj.append('name', formData.name.trim() || selectedFile.name);
                 formDataObj.append('title', formData.name.trim() || selectedFile.name);
 
-                const baseUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
+                const baseUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
 
                 // Simulate upload progress
                 const progressInterval = setInterval(() => {

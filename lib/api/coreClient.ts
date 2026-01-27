@@ -178,17 +178,8 @@ export async function authLogin(payload: AuthPayload): Promise<AuthSession> {
     try {
         return await corePost('/v1/auth/login', payload, { skipAuth: true });
     } catch (err: any) {
-        // Fallback for environments that don't yet expose /auth/login (e.g. old core build)
-        if (err instanceof CoreError && (err.status === 404 || err.status === 0)) {
-            const dev = await corePost('/v1/auth/dev-token', {}, { skipAuth: true });
-            return {
-                user_id: dev.user_id || 'dev_user',
-                email: payload.email,
-                role: (payload.role as AccountRole) || 'demo',
-                tenant_id: dev.tenant_id || dev.tenant || 'tenant-default',
-                token: dev.token,
-            };
-        }
+        // REAL SYSTEM: No dev-token bypass.
+        // If login fails, throw error to UI.
         throw err;
     }
 }
@@ -203,7 +194,7 @@ export interface UserProfile {
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
-    return coreGet('/v1/auth/me', { isOptional: true });
+    return coreGet('/v1/auth/me');
 }
 
 // ========== DEMO FLOW ==========
@@ -422,14 +413,20 @@ export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[
     return (response.departments || []).map(mapDepartment);
 }
 
-export async function fetchTree(tenantId?: string): Promise<CoreTreeNode[]> {
-    const query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+export async function fetchTree(tenantId?: string, companyId?: string): Promise<CoreTreeNode[]> {
+    let query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+    if (companyId) {
+        query += query ? `&company_id=${encodeURIComponent(companyId)}` : `?company_id=${encodeURIComponent(companyId)}`;
+    }
     const response = await coreGet(`/v1/tree${query}`) as TreeApiResponse;
     return mapTreeResponseToNodes(response);
 }
 
-export async function fetchTreeData(tenantId?: string): Promise<TreeApiResponse> {
-    const query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+export async function fetchTreeData(tenantId?: string, companyId?: string): Promise<TreeApiResponse> {
+    let query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
+    if (companyId) {
+        query += query ? `&company_id=${encodeURIComponent(companyId)}` : `?company_id=${encodeURIComponent(companyId)}`;
+    }
     return coreGet(`/v1/tree${query}`);
 }
 

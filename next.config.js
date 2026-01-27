@@ -17,10 +17,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        // Frontend calls /api/core/v1/... which should go to backend /v1/...
-        // DO NOT add extra /v1/ - frontend already includes it!
+        // Frontend calls /api/core/v1/...
+        // Hetzner Gateway handles /v1/... endpoints
         source: '/api/core/:path*',
-        destination: 'http://localhost:8083/:path*',
+        destination: 'https://api.saimor.world/:path*',
       },
     ];
   },

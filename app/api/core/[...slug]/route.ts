@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = 'http://127.0.0.1:8083';
+const BACKEND_URL = 'http://127.0.0.1:8081';
 
 /**
  * Build backend URL with /v1/ prefix if not present

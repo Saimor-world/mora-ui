@@ -69,6 +69,11 @@ export const useSemanticConstellation = () => {
             // ALWAYS add some local heuristic connections (visual richness)
             // This ensures we see "Galaxies" and "Constellations" even without backend help
             const availableIds = Array.from(nodePosMap.keys());
+            const seenPairs = new Set<string>(); // Track seen connections to avoid duplicates
+
+            // Also track existing IDs from backend relations
+            validLines.forEach(line => seenPairs.add(line.id));
+
             if (availableIds.length > 5) {
                 // Pick some random nodes to act as "Hubs"
                 const hubCount = Math.min(5, Math.floor(availableIds.length / 4));
@@ -84,11 +89,17 @@ export const useSemanticConstellation = () => {
                             const targetIdx = Math.floor(Math.random() * availableIds.length);
                             const targetId = availableIds[targetIdx];
                             if (sourceId === targetId) continue;
+
+                            // Create normalized pair key (A-B same as B-A)
+                            const pairKey = [sourceId, targetId].sort().join('-');
+                            if (seenPairs.has(pairKey)) continue;
+                            seenPairs.add(pairKey);
+
                             const targetPos = nodePosMap.get(targetId);
 
                             if (targetPos) {
                                 validLines.push({
-                                    id: `sim-${sourceId}-${targetId}`,
+                                    id: `sim-${pairKey}`,
                                     from: sourcePos,
                                     to: targetPos,
                                     score: 0.2 + Math.random() * 0.3

@@ -3,7 +3,7 @@ import { Mail, Briefcase, Calendar, Check, Loader2, X, AlertTriangle, RefreshCw 
 import { toast } from '@/lib/toast';
 
 // We fetch credentials status from backend
-const API_BASE = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
 
 interface GoogleService {
     id: string;

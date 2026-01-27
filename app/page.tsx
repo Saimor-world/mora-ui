@@ -5,45 +5,29 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { useMoraStore } from '@/lib/store/moraState';
-
 import { Suspense } from 'react';
+import { useSession } from "next-auth/react";
 
 function RootPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user } = useMoraStore();
+    const { data: session, status } = useSession();
     const [showLockScreen, setShowLockScreen] = useState(false);
-    const [isCheckingSession, setIsCheckingSession] = useState(true);
-    const [savedUserName, setSavedUserName] = useState('User');
 
-    // Check for existing session or sleep parameter on mount (client-side only)
+    // Auth redirect logic using NextAuth Session
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const hasToken = localStorage.getItem('saimor_dev_token');
-            const hasSession = localStorage.getItem('mora_session');
-            const lastUser = localStorage.getItem('last_user_name');
-            const sleepMode = searchParams.get('sleep') === 'true';
+        if (status === 'loading') return;
 
-            // ACTIVE REDIRECT: If we have a token AND session, go home directly (MASTERBIBEL P1)
-            if (hasToken && hasSession && !sleepMode) {
-                router.push('/home');
-                return;
-            }
+        const sleepMode = searchParams.get('sleep') === 'true';
 
-            // Only show lockscreen if we have a token AND session AND it is Sleep Mode
-            if (hasToken && sleepMode) {
+        if (status === 'authenticated') {
+            if (sleepMode) {
                 setShowLockScreen(true);
-                setSavedUserName(lastUser || 'User');
-            } else if (!hasToken) {
-                // No token - clear any stale session data
-                localStorage.removeItem('mora_session');
-                localStorage.removeItem('last_user_name');
-                localStorage.removeItem('saimor_mode');
-                localStorage.removeItem('saimor_role');
+            } else {
+                router.push('/home');
             }
         }
-        setIsCheckingSession(false);
-    }, [searchParams]);
+    }, [status, searchParams, router]);
 
     const handleAuthenticated = () => {
         router.push('/home');
@@ -51,12 +35,14 @@ function RootPageContent() {
 
     const handleUnlock = () => {
         setShowLockScreen(false);
-        // Always go to home after unlock
         router.push('/home');
     };
 
-    // Loading state
-    if (isCheckingSession) {
+    // Calculate user name from session for Lock Screen
+    const userName = session?.user?.email?.split('@')[0] || 'User';
+
+    // Show loading while session check happens
+    if (status === 'loading') {
         return (
             <div className="relative w-full h-screen bg-[#030806] flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
@@ -70,16 +56,16 @@ function RootPageContent() {
                 <LockScreen
                     onUnlock={handleUnlock}
                     onLogout={() => {
+                        // Clear sensitive data on Logout (via LockScreen)
                         localStorage.removeItem('mora_session');
                         localStorage.removeItem('saimor_dev_token');
                         localStorage.removeItem('last_user_name');
                         localStorage.removeItem('saimor_mode');
                         localStorage.removeItem('saimor_role');
                         setShowLockScreen(false);
-                        // Force refresh to clear any in-memory stores
                         window.location.reload();
                     }}
-                    userName={savedUserName}
+                    userName={userName}
                     companyName="SAIMÔR"
                 />
             ) : (
