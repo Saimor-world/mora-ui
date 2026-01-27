@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { coreGet } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 
 /**
  * useAuthBootstrapper
@@ -34,6 +34,13 @@ export function useAuthBootstrapper() {
                     if (hasNextAuth && currentToken) {
                         localStorage.setItem('saimor_dev_token', currentToken);
                         localStorage.setItem('last_user_name', session.user?.email?.split('@')[0] || 'User');
+                    }
+
+                    // Check core availability first to avoid auth redirect loops
+                    const health = await coreGet('/v1/health', { skipAuth: true, isOptional: true });
+                    if (!health) {
+                        setAuthError('Core unavailable. Start the core API on port 8081.');
+                        return;
                     }
 
                     // Verify token validity with Backend
@@ -113,8 +120,13 @@ export function useAuthBootstrapper() {
                     console.log('Token/Data loading failed', err);
                 }
 
-                // If we reach here, either verification failed or data loading failed
-                // CRITICAL: Only redirect if we are NOT on root (to prevent loop)
+                // If we reach here, verification failed but core is reachable.
+                // Clear session to prevent redirect loops and return to login.
+                if (status === 'authenticated') {
+                    setAuthError('Session expired. Please log in again.');
+                    await signOut({ redirect: false });
+                }
+
                 if (pathname !== '/') {
                     localStorage.removeItem('saimor_dev_token');
                     localStorage.removeItem('mora_session');

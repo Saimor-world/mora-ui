@@ -72,6 +72,18 @@ const LoadingScreen: React.FC = () => (
     </div>
 );
 
+const ErrorScreen: React.FC<{ message: string }> = ({ message }) => (
+    <div className="w-full h-screen bg-[#030806] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center px-6">
+            <div className="text-red-400 text-xs tracking-[0.3em] uppercase">Core offline</div>
+            <div className="text-white/70 text-sm max-w-md">{message}</div>
+            <div className="text-white/40 text-xs">
+                Start core: <span className="font-mono">python run.py</span>
+            </div>
+        </div>
+    </div>
+);
+
 // =============================================================================
 // MAIN SHELL COMPONENT
 // =============================================================================
@@ -80,7 +92,7 @@ export const MoraShell: React.FC = () => {
     const router = useRouter();
 
     // Auth
-    const { isBootstrapped } = useAuthBootstrapper();
+    const { isBootstrapped, authError } = useAuthBootstrapper();
 
     // Store
     const {
@@ -146,6 +158,10 @@ export const MoraShell: React.FC = () => {
     // ==========================================================================
 
     // Loading
+    if (authError) {
+        return <ErrorScreen message={authError} />;
+    }
+
     if (!isBootstrapped) {
         return <LoadingScreen />;
     }
