@@ -5,15 +5,22 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = 'http://127.0.0.1:8081';
+const LOCAL_BACKEND_URL = 'http://127.0.0.1:8081';
+const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.saimor.world/api';
 
 /**
  * Build backend URL with /v1/ prefix if not present
  */
+function resolveBackendBase(slug: string): string {
+  if (slug.startsWith('v1/mora/agent/')) return REMOTE_AGENT_URL;
+  return LOCAL_BACKEND_URL;
+}
+
 function buildBackendUrl(slug: string): string {
   // If slug already starts with v1/, don't add it again
   const path = slug.startsWith('v1/') ? slug : `v1/${slug}`;
-  return `${BACKEND_URL}/${path}`;
+  const baseUrl = resolveBackendBase(slug);
+  return `${baseUrl}/${path}`;
 }
 
 export async function GET(
