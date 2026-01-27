@@ -1,4 +1,4 @@
-# MÔRA-UI Authentication – Full Guide
+# Mora-UI Authentication – Full Guide
 
 ## Overview
 Mora-UI uses JWT (JSON Web Token) authentication to communicate with the Saimôr Core API. The token is passed in the `Authorization` header as a Bearer token for all API requests.

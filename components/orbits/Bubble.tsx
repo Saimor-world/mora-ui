@@ -7,7 +7,7 @@ import { LucideIcon } from 'lucide-react';
 /**
  * BUBBLE COMPONENT
  * Reusable orbital bubble for Companies, Departments, Spaces, etc.
- * Designed for the MÔRA Orbit System
+ * Designed for the Mora Orbit System
  */
 
 export interface BubbleProps {

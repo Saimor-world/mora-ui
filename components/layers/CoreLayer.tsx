@@ -148,7 +148,7 @@ export const CoreLayer: React.FC = () => {
 
             {/* Status Text (below the controller-managed Orb) */}
             <div className="relative z-10 mt-48 text-center w-96">
-                <h1 className="text-4xl font-light tracking-[0.3em] text-emerald-50 mb-3">MÃ”RA</h1>
+                <h1 className="text-4xl font-light tracking-[0.3em] text-emerald-50 mb-3">Mora</h1>
                 <p className="text-xs text-emerald-400/50 tracking-widest uppercase">
                     {isLoadingDepartments ? 'Initializing System...' : (coreError ? 'Connection Error' : 'System Online')}
                 </p>

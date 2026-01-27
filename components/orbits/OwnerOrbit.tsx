@@ -8,7 +8,7 @@ import { calculateOrbitPositions, calculateDynamicRadius, type AnchorPoint, posi
 
 /**
  * OWNER ORBIT SYSTEM
- * Displays companies in orbital formation around MÔRA
+ * Displays companies in orbital formation around Mora
  * Only visible when user role is 'owner'
  */
 

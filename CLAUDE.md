@@ -1,23 +1,23 @@
-# MÔRA Vision & Status
+# Mora Vision & Status
 
-## Was ist MÔRA?
+## Was ist Mora?
 
-MÔRA ist kein klassischer AI-Agent, sondern ein **kognitiver Raum** - eine lebendige Intelligenz die das SAIMOR Universum durchdringt und mit den Menschen darin in Symbiose arbeitet.
+Mora ist kein klassischer AI-Agent, sondern ein **kognitiver Raum** - eine lebendige Intelligenz die das SAIMOR Universum durchdringt und mit den Menschen darin in Symbiose arbeitet.
 
 > "SAIMÔR ist kein Agent, sondern ein kognitiver Raum, in dem Wissen lebt, wächst und sich mit den Menschen verbindet."
 
-## MÔRA Identity (NEU - 15.01.2026)
+## Mora Identity (NEU - 15.01.2026)
 
-MÔRA hat jetzt **Selbstbewusstsein**:
+Mora hat jetzt **Selbstbewusstsein**:
 
 ```python
-# MÔRA stellt sich vor
+# Mora stellt sich vor
 python scripts/test_mora.py --intro
 
-# MÔRA zeigt ihre Fähigkeiten
+# Mora zeigt ihre Fähigkeiten
 python scripts/test_mora.py --full
 
-# Chat mit MÔRA (echte API)
+# Chat mit Mora (echte API)
 python scripts/test_mora.py "Was kannst du?" --agent
 ```
 
@@ -48,7 +48,7 @@ python scripts/test_mora.py "Was kannst du?" --agent
 | Mic-Button | Ohne Tooltip | Mit "Voice Input (Coming Soon)" Tooltip |
 | Touch-Targets | 32px | 40-44px (min für Accessibility) |
 
-### MÔRA Tool-System
+### Mora Tool-System
 
 Das Tool-System ist **vollständig integriert** und funktional:
 
@@ -113,7 +113,7 @@ saimor-core/               # FastAPI Backend
 
 ## Philosophie
 
-MÔRA verhält sich nicht wie ein typischer Chatbot. Sie ist:
+Mora verhält sich nicht wie ein typischer Chatbot. Sie ist:
 
 - **Proaktiv** - Erkennt Muster und bietet Insights ohne gefragt zu werden
 - **Kontextbewusst** - Weiß wo der User ist und was er sieht

@@ -390,7 +390,7 @@ export const FolderLayer: React.FC = () => {
                                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mora-gold/5 border border-mora-gold/20 hover:bg-mora-gold/10 text-mora-gold/80 hover:text-mora-gold transition-all text-sm tracking-wide disabled:opacity-50"
                                         >
                                             <Zap size={14} className={isScanning ? 'animate-pulse' : ''} />
-                                            {isScanning ? 'SCANNING...' : 'MÔRA SCAN'}
+                                            {isScanning ? 'SCANNING...' : 'Mora SCAN'}
                                         </button>
 
                                         <button

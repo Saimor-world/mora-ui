@@ -118,6 +118,7 @@ interface MoraState {
         action: 'idle' | 'highlight' | 'point' | 'roam';
         target?: { x: number, y: number };
     };
+    hasBooted: boolean;
 
     // P1-B: Speculative Orb Awareness (Zero Latency)
     speculativeState?: OrbState;
@@ -137,6 +138,7 @@ interface MoraState {
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
+    setHasBooted: (hasBooted: boolean) => void;
     minimizeNode: (node: CoreNode) => void;
     restoreNode: (nodeId: string) => void;
     closeNode: (nodeId: string) => void;
@@ -217,6 +219,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         action: 'idle',
         target: undefined
     },
+    hasBooted: false,
 
     // User & Permissions (Phase 6.3) - Default to demo role
     user: null,
@@ -286,6 +289,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     setCursorAgent: (agent) => set((state) => ({
         cursorAgent: { ...state.cursorAgent, ...agent } as MoraState['cursorAgent']
     })),
+    setHasBooted: (hasBooted) => set({ hasBooted }),
 
     // Phase 6.3: Set user and auto-compute permissions from role
     setUser: (user) => {
@@ -369,7 +373,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             viewMode: 'workspace',
             viewLevel: 'core',
             coreError: null,
-            orbState: 'idle'
+            orbState: 'idle',
+            hasBooted: false
         });
     },
 

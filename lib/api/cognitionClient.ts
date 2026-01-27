@@ -1,8 +1,8 @@
 /**
- * Autonomous Cognition Client - Frontend Integration for MÔRA's Proactive Intelligence
+ * Autonomous Cognition Client - Frontend Integration for Mora's Proactive Intelligence
  * 
  * This client connects to the new /v1/autonomous/* endpoints and exposes
- * MÔRA's proactive intelligence capabilities to the frontend.
+ * Mora's proactive intelligence capabilities to the frontend.
  */
 
 import { coreGet, corePost } from './coreClient';
@@ -47,7 +47,7 @@ export interface CognitionStatus {
 }
 
 /**
- * Get proactive suggestions from MÔRA.
+ * Get proactive suggestions from Mora.
  * These are AI-generated insights based on workspace analysis.
  */
 export async function getProactiveSuggestions(): Promise<ProactiveSuggestion[]> {
@@ -159,7 +159,7 @@ export interface AgentResponse {
 }
 
 /**
- * Execute MÔRA Agentic Loop (Multi-Turn Tool Execution)
+ * Execute Mora Agentic Loop (Multi-Turn Tool Execution)
  * 
  * @param intent User's natural language request
  * @param viewContext Optional context about what user is seeing
@@ -169,11 +169,12 @@ export async function executeAgenticLoop(
     viewContext?: { level: string; entityId?: string }
 ): Promise<AgentResponse> {
     try {
+        const allowToolExecution = process.env.NEXT_PUBLIC_ALLOW_TOOL_EXECUTION !== 'false';
         const response = await corePost('/v1/cognition/agent', {
             intent,
             view_level: viewContext?.level,
             active_entity_id: viewContext?.entityId,
-            allow_tool_execution: false,
+            allow_tool_execution: allowToolExecution,
             max_iterations: 10
         });
         return response;

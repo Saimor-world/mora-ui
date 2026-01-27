@@ -1,4 +1,4 @@
-# AI Provider Setup - MÔRA Chat
+# AI Provider Setup - Mora Chat
 
 ## Aktuelles Problem
 Der Chat funktioniert nicht mit Claude API. Mögliche Ursachen:

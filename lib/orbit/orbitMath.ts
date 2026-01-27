@@ -1,9 +1,9 @@
 /**
  * ORBIT MATH ENGINE
- * Handles all orbital positioning calculations for the MÔRA system
+ * Handles all orbital positioning calculations for the Mora system
  *
  * Used for:
- * - Owner View: Company bubbles orbiting MÔRA
+ * - Owner View: Company bubbles orbiting Mora
  * - Company View: Department bubbles orbiting company center
  * - Space/Folder Views: Entity positioning
  */

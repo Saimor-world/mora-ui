@@ -223,7 +223,7 @@ export const MoraShell: React.FC = () => {
                 LAYER 3: UI OVERLAYS
             ================================================================= */}
 
-            {/* Resonance Room (MÔRA Chat) */}
+            {/* Resonance Room (Mora Chat) */}
             <ResonanceRoom
                 isOpen={isResonanceOpen}
                 onClose={() => setIsResonanceOpen(false)}
@@ -243,7 +243,7 @@ export const MoraShell: React.FC = () => {
                 onClose={() => setIsSpotlightOpen(false)}
             />
 
-            {/* MÔRA Orb */}
+            {/* Mora Orb */}
             <div className="fixed bottom-24 right-8 z-[500] pointer-events-auto">
                 <MoraOrb
                     state={finalOrbState}

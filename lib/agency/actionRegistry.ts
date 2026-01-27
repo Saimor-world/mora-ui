@@ -1,11 +1,11 @@
 /**
  * Action Registry — Guided Agency Day 1
  * 
- * Whitelist-based action system for MÔRA.
+ * Whitelist-based action system for Mora.
  * All actions are logged, visible, and abortable.
  * 
  * ALLOWED ACTIONS:
- * - move_cursor: Move MÔRA cursor to target element
+ * - move_cursor: Move Mora cursor to target element
  * - highlight: Highlight element with overlay
  * - focus_pane: Focus/bring pane to front
  * 

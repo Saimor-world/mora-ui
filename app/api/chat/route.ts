@@ -225,7 +225,7 @@ Hier sind die letzten Aktivitäten in diesem Kontext:`;
 This node is related to:`;
         context.relations.forEach((r: any) => {
             // Note: r.target is just an ID. Ideally we'd have the title, but heuristic service returns IDs.
-            // MÔRA can at least see the connection exists.
+            // Mora can at least see the connection exists.
             prompt += `\n- [${r.type}] -> Node ${r.target} (Strength: ${r.strength})`;
         });
     }

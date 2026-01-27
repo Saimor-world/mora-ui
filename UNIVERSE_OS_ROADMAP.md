@@ -23,7 +23,7 @@ A fully functional Universe OS for Small Teams and Companies. Not a Windows/Linu
 - [x] Intent inference from signals
 
 ### Phase C: Resonance Room
-- [x] Unified MÔRA dialogue interface created
+- [x] Unified Mora dialogue interface created
 - [x] Connected to Dock "Môra" button
 - [x] Real-time thought stream integration
 - [x] Letter-exchange style messaging
@@ -70,7 +70,7 @@ A fully functional Universe OS for Small Teams and Companies. Not a Windows/Linu
 - `metadata.is_pinned = true`
 
 
-### 5. ~~MÔRA Indicator Consolidation~~ ✅ VERIFIED GOOD
+### 5. ~~Mora Indicator Consolidation~~ ✅ VERIFIED GOOD
 **Current Architecture (verified as optimal):**
 - `MoraIntelligenceBar`: Status bar with Orb + Cmd+K shortcut hint (shows only with panes)
 - `MoraThoughtStream`: Subtle thought teaser (bottom-left, always visible)
@@ -110,7 +110,7 @@ A fully functional Universe OS for Small Teams and Companies. Not a Windows/Linu
 ### 9. Calendar Integration
 - Google Calendar sync
 - Event visualization in Universe
-- Scheduling within MÔRA
+- Scheduling within Mora
 
 ### 10. Team Chat (Beyond Resonance Room)
 - Team-to-team messaging
@@ -142,7 +142,7 @@ A fully functional Universe OS for Small Teams and Companies. Not a Windows/Linu
 ## 📝 NOTES
 
 ### Orb Position
-The MÔRA Orb is positioned **bottom-right** (not center). This is intentional and documented in `MoraShell.tsx` line 170.
+The Mora Orb is positioned **bottom-right** (not center). This is intentional and documented in `MoraShell.tsx` line 170.
 
 ### LLM Configuration
 To enable real LLM thoughts, add to `saimor-core/.env`:
@@ -153,4 +153,4 @@ GEMINI_MODEL=gemini-1.5-flash
 
 ---
 
-*Last updated by MÔRA Autonomous Development*
+*Last updated by Mora Autonomous Development*

@@ -3,7 +3,7 @@ import { create } from 'zustand';
 /**
  * DOCK STORE (Skeleton)
  * 
- * Manages the Dock/Chat state for the SAIMÔR/MÔRA OS.
+ * Manages the Dock/Chat state for the SAIMÔR/Mora OS.
  * 
  * Future functionality:
  * - Track dock expansion state

@@ -1,4 +1,4 @@
-# 📊 MÔRA UI LIVE STATE — CURRENT REALITY
+# 📊 Mora UI LIVE STATE — CURRENT REALITY
 **Version:** 2.1 (Universe Edition)
 **Last Updated:** 2025-12-08
 **Status:** Dynamic snapshot of what currently exists
@@ -31,7 +31,7 @@
 
 ## 🌌 UNIVERSE MODEL IMPLEMENTATION STATUS
 
-### ORB (MÔRA HEART) — IMPLEMENTED ✅
+### ORB (Mora HEART) — IMPLEMENTED ✅
 **File:** `components/mora/MoraOrb.tsx`
 **Position:** `fixed bottom-[48px] right-[48px]` ✅ CORRECT
 **States:** idle/active/learning/warning/demo ✅ IMPLEMENTED

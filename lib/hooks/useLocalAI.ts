@@ -83,7 +83,7 @@ export function useLocalAI(): UseLocalAIReturn {
         try {
             await moraAI.chat(
                 [
-                    { role: 'system', content: 'Du bist MÔRA, die KI-Assistentin von SAIMÔR. Antworte präzise und hilfreich auf Deutsch.' },
+                    { role: 'system', content: 'Du bist Mora, die KI-Assistentin von SAIMÔR. Antworte präzise und hilfreich auf Deutsch.' },
                     { role: 'user', content: message }
                 ],
                 {

@@ -57,7 +57,7 @@ export const IntelligenceDashboard: React.FC<IntelligenceDashboardProps> = ({
                         <div className="flex items-center gap-3">
                             <div className={`w-2.5 h-2.5 rounded-full ${orbState === 'idle' ? 'bg-emerald-400' : orbState === 'thinking' ? 'bg-blue-400 animate-pulse' : orbState === 'alert' ? 'bg-red-500' : 'bg-amber-400'}`} />
                             <h3 className="text-lg font-light text-white/90 tracking-wider">
-                                MÔRA INTELLIGENCE
+                                Mora INTELLIGENCE
                             </h3>
                         </div>
                         <button
@@ -167,7 +167,7 @@ export const IntelligenceDashboard: React.FC<IntelligenceDashboardProps> = ({
                         {/* System Status */}
                         <div className="flex items-center gap-2 text-[10px] text-white/30 pt-3 border-t border-white/5 font-mono">
                             <Activity size={10} className="text-emerald-500/50" />
-                            <span>MÔRA CORE CONNECTED</span>
+                            <span>Mora CORE CONNECTED</span>
                             <span className="ml-auto opacity-50 tracking-tighter">SECURE.256.TUNNEL</span>
                         </div>
                     </div>

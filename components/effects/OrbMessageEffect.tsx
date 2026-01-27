@@ -11,7 +11,7 @@ interface SpeakEventDetail {
 /**
  * OrbMessageEffect
  * 
- * Visualizes MÔRA's voice as a particle traveling from the Orb (bottom-right)
+ * Visualizes Mora's voice as a particle traveling from the Orb (bottom-right)
  * to the chat interface (or target position).
  */
 export const OrbMessageEffect: React.FC = () => {

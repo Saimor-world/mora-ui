@@ -184,7 +184,7 @@ GET /v1/tree                → Used by: Initial data load
 ```
 lib/api/coreClient.ts       → All CRUD operations
 lib/api/mindloopClient.ts   → Intel/context operations
-lib/api/intelClient.ts      → MÔRA Scan operations
+lib/api/intelClient.ts      → Mora Scan operations
 ```
 
 ---
@@ -243,7 +243,7 @@ lib/api/intelClient.ts      → MÔRA Scan operations
 
 ## Architecture Compliance Report
 
-### ✅ SAIMÔR/MÔRA Principles Preserved
+### ✅ SAIMÔR/Mora Principles Preserved
 
 | Principle | Status | Implementation |
 |-----------|--------|----------------|

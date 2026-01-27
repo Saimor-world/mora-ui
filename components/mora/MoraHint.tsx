@@ -16,7 +16,7 @@ interface MoraHintProps {
 }
 
 /**
- * MÔRA HINT BAR
+ * Mora HINT BAR
  * 
  * Displays heuristic hints from Môra.
  * No AI - just simple pattern-based suggestions.

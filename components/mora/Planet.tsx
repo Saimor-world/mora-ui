@@ -72,12 +72,12 @@ export const Planet: React.FC<PlanetProps> = ({
         }
     }, [showContextMenu]);
 
-    // MÔRA HIGHLIGHT LISTENER - When MÔRA points at this department
+    // Mora HIGHLIGHT LISTENER - When Mora points at this department
     useEffect(() => {
         const handleMoraHighlight = (e: CustomEvent) => {
             const { targetType, targetId, duration, color } = e.detail;
             if (targetType === 'department' && targetId === department.id) {
-                console.log(`🔆 MÔRA is highlighting: ${department.name}`);
+                console.log(`🔆 Mora is highlighting: ${department.name}`);
                 setIsMoraHighlighted(true);
 
                 // Auto-remove highlight after duration

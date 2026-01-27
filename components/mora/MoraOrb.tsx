@@ -30,7 +30,7 @@ interface MoraOrbProps {
 }
 
 /**
- * MÔRA PRESENCE ORB
+ * Mora PRESENCE ORB
  * 
  * Living system indicator with awareness states.
  * States (priority): warning > active > learning > demo > idle

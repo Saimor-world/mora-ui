@@ -1,4 +1,4 @@
-# 🟢 EHRLICHER SYSTEM-AUDIT - MÔRA OS v2.1
+# 🟢 EHRLICHER SYSTEM-AUDIT - Mora OS v2.1
 **Aktualisiert:** 2026-01-07 14:55
 **Ziel:** Echtes OS-Verhalten wie Windows/macOS
 
@@ -34,7 +34,7 @@
 ### Intelligence Status
 - **Audit Claim**: "Simulated Intelligence Cycle"
 - **Realität**: **WIDERLEGT**. `agency_service.py` nutzt echte LLM Calls (Gemini/Ollama) mit echten DB-Statistiken im Kontext. Das "Simulated" Label bezieht sich nur auf den Demo-Modus.
-- **Fazit**: MÔRA ist intelligent.
+- **Fazit**: Mora ist intelligent.
 
 ---
 

@@ -9,7 +9,7 @@ import { MindLoopTimeline } from '@/components/timeline/MindLoopTimeline';
 /**
  * P0-4: TimelinePane - Production wrapper for MindLoopTimeline
  *
- * Shows the chain of events for MÔRA's cognitive loop in a proper GlassPanel pane.
+ * Shows the chain of events for Mora's cognitive loop in a proper GlassPanel pane.
  */
 export const TimelinePane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();

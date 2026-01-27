@@ -87,6 +87,8 @@ export const UniverseView: React.FC = () => {
         setActiveCompany,
         isLoadingDepartments,
         isLoadingCompanies,
+        hasBooted,
+        setHasBooted,
         // DATA CONSISTENCY FIX: Also load tree for Finder consistency
         loadTree
     } = useMoraStore();
@@ -1008,13 +1010,11 @@ export const UniverseView: React.FC = () => {
 
     // Derived state for UI
 
-    const [isBooted, setIsBooted] = useState(false);
-
     // Stable callback to prevent effect loops
     const handleBootComplete = useCallback(() => {
         console.log('[Boot] Sequence complete');
-        setIsBooted(true);
-    }, []);
+        setHasBooted(true);
+    }, [setHasBooted]);
 
     return (
         <div className="fixed inset-0 w-full h-full min-w-full min-h-full overflow-hidden bg-transparent">
@@ -1022,7 +1022,7 @@ export const UniverseView: React.FC = () => {
             {/* <StarField seed={universeSeed} /> */}
 
             {/* BOOT SEQUENCE */}
-            {!isBooted && (
+            {!hasBooted && (
                 <div className="absolute inset-0 z-[100]">
                     <BootSequence
                         onComplete={handleBootComplete}

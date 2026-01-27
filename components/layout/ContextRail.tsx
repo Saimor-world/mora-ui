@@ -80,7 +80,7 @@ export const ContextRail: React.FC = () => {
         },
         { id: 'search', icon: Search, label: 'Search', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },
         { id: 'activity', icon: Activity, label: 'Activity', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },
-        { id: 'chat', icon: MessageSquare, label: "MÔRA Chat", action: () => { closeOverlays(); openChatDock(); } },
+        { id: 'chat', icon: MessageSquare, label: "Mora Chat", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
     // Blitz = Enter/Exit Demo Mode

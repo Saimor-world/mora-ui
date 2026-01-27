@@ -1,5 +1,5 @@
 /**
- * useAutonomousCognition - React Hook for MÔRA's Proactive Intelligence
+ * useAutonomousCognition - React Hook for Mora's Proactive Intelligence
  * 
  * This hook provides:
  * - Proactive suggestions polling

@@ -1,5 +1,5 @@
 /**
- * MÔRA Cursor Bridge - AI Controls the Cursor
+ * Mora Cursor Bridge - AI Controls the Cursor
  * 
  * This module allows AI responses to trigger cursor actions.
  * The AI can embed commands in its response which get parsed and executed.

@@ -1,5 +1,5 @@
 /**
- * useAwareness - MÔRA Awareness Pulse Polling
+ * useAwareness - Mora Awareness Pulse Polling
  *
  * Polls the awareness API with exponential backoff on errors.
  * Returns the current orb state.

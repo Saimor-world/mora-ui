@@ -1,5 +1,5 @@
 /**
- * Intel Client - MÔRA Intelligence Scan API
+ * Intel Client - Mora Intelligence Scan API
  * Sprint Tag 3-5: Trigger Intel-Report generation
  */
 
@@ -16,7 +16,7 @@ export interface IntelScanResponse {
 }
 
 /**
- * Trigger MÔRA Intelligence Scan for a folder
+ * Trigger Mora Intelligence Scan for a folder
  * Creates an intel_report node with Mindloop synthesis data
  */
 export async function triggerMoraScan(folderId: string): Promise<IntelScanResponse> {

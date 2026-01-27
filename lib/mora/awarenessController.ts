@@ -1,5 +1,5 @@
 /**
- * MÔRA Awareness Controller - UPGRADE A1
+ * Mora Awareness Controller - UPGRADE A1
  *
  * Manages the Môra Orb state based on system activity.
  * Five awareness modes: idle > focus > thinking > alert > insight

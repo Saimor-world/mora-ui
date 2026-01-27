@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ChatPane - MÔRA AI Conversation Interface
+ * ChatPane - Mora AI Conversation Interface
  * 
  * MASTERBIBEL: Môra is your Disney fairy AI companion.
  * This pane allows direct conversation with Môra (via Ollama/Gemini/etc).
@@ -132,7 +132,7 @@ Was kann ich für dich tun?`,
             } else if (intent.type === 'search' && intent.target) {
                 responseContent = executeSearch(intent.target);
             } else {
-                // Call MÔRA Agent API
+                // Call Mora Agent API
                 try {
                     const agentResponse = await moraAgentClient.chat({
                         message: userMessage.content,

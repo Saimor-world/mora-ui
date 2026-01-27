@@ -6,7 +6,7 @@ import { motion, useAnimation, useMotionValue, useSpring } from 'framer-motion';
 /**
  * GHOST OVERLAY (The Living Cursor)
  * 
- * Represents MÔRA's backend attention stream.
+ * Represents Mora's backend attention stream.
  * 
  * FEATURES:
  * - Fluid, organic movement (Spring physics)
@@ -52,7 +52,7 @@ export const GhostOverlay: React.FC = () => {
 
             if (newMode) setMode(newMode);
 
-            // Pulse effect when MÔRA points at something
+            // Pulse effect when Mora points at something
             if (pulse) {
                 scale.set(1.5);
                 setTimeout(() => scale.set(1), 300);

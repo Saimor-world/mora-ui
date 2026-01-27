@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
-# Quick Test Script - MÔRA Chat Functionality
+# Quick Test Script - Mora Chat Functionality
 
-Write-Host "🧪 MÔRA Chat Quick Test" -ForegroundColor Cyan
+Write-Host "🧪 Mora Chat Quick Test" -ForegroundColor Cyan
 Write-Host "========================`n" -ForegroundColor Cyan
 
 # Check if UI is running

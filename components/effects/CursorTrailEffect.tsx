@@ -8,7 +8,7 @@ import { useMoraStore } from '@/lib/store/moraState';
  * 
  * High-performance Canvas rendering for the "Living Cursor" trail.
  * - Tracks user mouse
- * - Tracks Agency Cursor (MÔRA) when active
+ * - Tracks Agency Cursor (Mora) when active
  * - Creates a bioluminescent particle trail (Firefly effect)
  */
 interface Point {

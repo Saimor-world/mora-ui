@@ -20,7 +20,7 @@ import {
 /**
  * P0-4: MindLoop Timeline - Production Timeline Pane
  *
- * Shows the chain of events for MÔRA's cognitive loop:
+ * Shows the chain of events for Mora's cognitive loop:
  * - Thought: LLM reasoning
  * - Proposal: Proposed actions
  * - Pending: Awaiting confirmation

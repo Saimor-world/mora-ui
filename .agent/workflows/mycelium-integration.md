@@ -1,4 +1,4 @@
-# 🌿 MÔRA UI - Procedural Mycelium Integration Plan
+# 🌿 Mora UI - Procedural Mycelium Integration Plan
 
 ## 🎯 Vision
 Create a **living, procedurally generated mycelium network** that:

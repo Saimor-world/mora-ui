@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
 
 /**
- * MÔRA CURSOR AGENT - DER VERLÄNGERTE ARM DER KI
+ * Mora CURSOR AGENT - DER VERLÄNGERTE ARM DER KI
  * 
  * Laut Masterbibel 1.2.3 (C):
  * - Der Cursor ist die körperliche Manifestation der KI

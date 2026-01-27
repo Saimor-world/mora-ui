@@ -459,12 +459,12 @@ export function Mycelium25D({
                 {/* Môra Micro-Hint */}
                 {connections.length === 0 && safeNodes.length > 0 && (
                     <span className="text-mora-gold/30">
-                        • MÔRA: No connections detected
+                        • Mora: No connections detected
                     </span>
                 )}
                 {connections.length > 0 && !isCalmMode && (
                     <span className="text-mora-gold/30">
-                        • MÔRA: {connections.length} links active
+                        • Mora: {connections.length} links active
                     </span>
                 )}
             </div>

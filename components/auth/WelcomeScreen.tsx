@@ -465,7 +465,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     transition={{ duration: 1.5, ease: "easeOut" }}
                                     className="text-6xl font-extralight text-emerald-50 drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]"
                                 >
-                                    MÔRA
+                                    Mora
                                 </motion.h1>
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}

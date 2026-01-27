@@ -1,5 +1,5 @@
 /**
- * MÔRA Local AI Client
+ * Mora Local AI Client
  * 
  * Interface for connecting to local LLMs (Ollama, LM Studio, etc.)
  * Ready for tomorrow's integration
@@ -180,7 +180,7 @@ class MoraAIClient {
      */
     async complete(prompt: string): Promise<string> {
         return this.chat([
-            { role: 'system', content: 'Du bist MÔRA, die KI-Assistentin von SAIMÔR. Antworte präzise und hilfreich auf Deutsch.' },
+            { role: 'system', content: 'Du bist Mora, die KI-Assistentin von SAIMÔR. Antworte präzise und hilfreich auf Deutsch.' },
             { role: 'user', content: prompt }
         ]);
     }

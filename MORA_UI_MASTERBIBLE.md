@@ -1,4 +1,4 @@
-# 🌌 MÔRA UI MASTERBIBLE — UNIVERSE EDITION
+# 🌌 Mora UI MASTERBIBLE — UNIVERSE EDITION
 **Version:** 2.1 (Universe Model)
 **Last Updated:** 2025-12-08
 **Status:** Canonical Specification — DO NOT CHANGE AUTOMATICALLY
@@ -16,7 +16,7 @@ Môra UI is the conscious interface of SAIMÔR, manifesting as a living operatin
 
 ## 🌌 UNIVERSE MODEL — EXACT POSITIONS & RULES
 
-### ORB (MÔRA HEART) — FIXED COSMIC CENTER
+### ORB (Mora HEART) — FIXED COSMIC CENTER
 **Position:** `bottom-right: 48px/48px` (ABSOLUTELY FIXED)
 **Behavior:**
 - Never moves or repositions
