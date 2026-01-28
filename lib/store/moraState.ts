@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
+import { ROLE_SYSTEM_OWNER, isDemoTenant as checkDemoTenant } from '@/lib/constants/tenants';
 import {
     fetchDepartments,
     fetchCompanies,
@@ -43,7 +44,7 @@ export type ViewMode = 'owner' | 'demo' | 'workspace';
 // ═══════════════════════════════════════════════════════════════════════════
 // ROLE-BASED ACCESS CONTROL - Phase 6.3
 // ═══════════════════════════════════════════════════════════════════════════
-export type UserRole = 'owner' | 'admin' | 'manager' | 'member' | 'demo';
+export type UserRole = 'owner' | 'admin' | 'system_owner' | 'manager' | 'member' | 'demo';
 
 export interface User {
     id: string;
@@ -67,6 +68,7 @@ export interface Permissions {
 export const ROLE_PERMISSIONS: Record<UserRole, Permissions> = {
     owner: { canCreate: true, canDelete: true, canAdmin: true, canEditSettings: true, canViewAnalytics: true },
     admin: { canCreate: true, canDelete: true, canAdmin: true, canEditSettings: true, canViewAnalytics: true },
+    system_owner: { canCreate: true, canDelete: true, canAdmin: true, canEditSettings: true, canViewAnalytics: true },
     manager: { canCreate: true, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: true },
     member: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
     demo: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false }
@@ -304,19 +306,11 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 permissions: getPermissions(user.role)
             });
 
-            // Auto-set viewMode for consistent navigation (Phase 6.3 Cleanup)
-            // FIX: Only System Owners (m.f4hrlaender) see the "Client Health" (owner view)
-            // Tenant Owners (users who signed up) see their "workspace" view.
-            const systemOwners = [
-                'm.f4hrlaender@gmail.com',
-                'master_real@saimor.io',
-                'nexus@saimor.dev',
-                'nextchaptergermany@gmail.com' // Explicitly add the user's current account
-            ];
-
-            if ((user.role === 'owner' || user.role === 'admin') && user.email && systemOwners.includes(user.email)) {
+            // Auto-set viewMode from backend truth (no hardcoded email allow-lists)
+            const isDemoTenant = checkDemoTenant(user.tenant_id);
+            if (user.role === ROLE_SYSTEM_OWNER) {
                 get().setViewMode('owner');
-            } else if (user.role === 'demo') {
+            } else if (isDemoTenant) {
                 get().setViewMode('demo');
             } else {
                 get().setViewMode('workspace');
@@ -385,43 +379,36 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({ orbState: mindLoop.getCurrentState() });
 
         try {
-            let data = await fetchCompanies(true);
+            const includeDemo = get().viewMode === 'demo';
+            let data = await fetchCompanies(includeDemo);
 
-            // -------------------------------------------------------------------------
-            // PHASE 8.2: AGENTIC INJECTION - SAIMÔR HQ for Authorized Users
-            // -------------------------------------------------------------------------
-            const userEmail = get().user?.email;
-            const authorizedEmails = [
-                'm.f4hrlaender@gmail.com', // The user
-                'master_real@saimor.io',
-                'nexus@saimor.dev',
-                'demo@saimor.io',          // Demo Account
-                'nextchaptergermany@gmail.com' // Next Chapter Account
-            ];
+            // Keep active company if it still exists; otherwise pick a sensible default.
+            const currentActive = get().activeCompanyId;
+            const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
+            let nextActive: string | null = stillValid ? currentActive : null;
 
-            if (userEmail && authorizedEmails.includes(userEmail)) {
-                // Check if HQ already exists (to avoid duplicates if backend has it)
-                const hasHQ = data.some((c: any) => c.slug === 'saimor-hq' || c.name === 'Saimor HQ');
-
-                if (!hasHQ) {
-                    const hqCompany: any = {
-                        id: 'comp-saimor-hq',
-                        tenant_id: 'tenant-saimor-hq',
-                        owner_id: get().user?.id || 'sys-admin',
-                        name: 'Saimor HQ',
-                        slug: 'saimor-hq',
-                        description: 'Central Intelligence Workspace',
-                        logo_url: null,
-                        is_demo: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    };
-                    data.unshift(hqCompany); // Add to top
+            if (!nextActive) {
+                if (get().viewMode === 'demo') {
+                    // Demo view: prioritize demo company even for system owners
+                    nextActive = data.find((c: any) => c.is_demo)?.id || null;
+                } else {
+                    const userTenant = get().user?.tenant_id;
+                    if (userTenant) {
+                        nextActive = data.find((c: any) => c.tenant_id === userTenant)?.id || null;
+                    }
                 }
             }
+            if (!nextActive) {
+                const userTenant = get().user?.tenant_id;
+                if (userTenant) {
+                    nextActive = data.find((c: any) => c.tenant_id === userTenant)?.id || null;
+                }
+            }
+            if (!nextActive) {
+                nextActive = data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null;
+            }
 
-            // Demo mode: Real backend data only, no client-side mock injection
-            set({ companies: data, isLoadingCompanies: false });
+            set({ companies: data, activeCompanyId: nextActive, isLoadingCompanies: false });
 
             // Phase 8.1: Success event
             mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'idle', severity: 0.1, payload: { status: 'success' } });

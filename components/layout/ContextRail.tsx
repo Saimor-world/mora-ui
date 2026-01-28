@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { writeCookie } from '@/lib/auth/cookies';
 import { useRouter } from 'next/navigation';
+import { isDemoTenant } from '@/lib/constants/tenants';
 
 /**
  * ContextRail - Left Navigation Sidebar
@@ -49,17 +50,28 @@ export const ContextRail: React.FC = () => {
     const handleHomeClick = async () => {
         closeOverlays();
 
-        // ALLE: Go to own Workspace (eigene Departments, Spaces, Folders)
-        setViewMode('workspace');
+        const tenantId =
+            currentAccount?.tenantId ||
+            (typeof window !== 'undefined' ? localStorage.getItem('saimor_tenant') : null) ||
+            'tenant-default';
+
+        // Go to own Workspace (eigene Departments, Spaces, Folders)
+        setViewMode(isDemoTenant(tenantId) ? 'demo' : 'workspace');
         setViewLevel('core');
         console.log('🏠 Home → Eigene Saimor-Struktur');
 
         // RESET Active Company to User's Company (Fix for "No Data after Demo")
         const { companies, setActiveCompany, loadDepartments, loadNodesForCompany } = useMoraStore.getState();
-        const userCompany = companies.find(c => !c.is_demo); // Find non-demo company
+        const userCompany =
+            companies.find(c => c.tenant_id === tenantId) ||
+            companies[0];
 
         if (userCompany) {
             setActiveCompany(userCompany.id);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('last_company_id', userCompany.id);
+                localStorage.setItem('last_workspace', userCompany.name);
+            }
             await loadDepartments(userCompany.id);
             loadNodesForCompany(userCompany.id).catch(console.warn);
         } else {
@@ -75,7 +87,7 @@ export const ContextRail: React.FC = () => {
         {
             id: 'home',
             icon: Home,
-            label: getCurrentRole() === 'owner' ? 'Owner Dashboard' : 'Home',
+            label: getCurrentRole() === 'system_owner' ? 'Owner Dashboard' : 'Home',
             action: handleHomeClick
         },
         { id: 'search', icon: Search, label: 'Search', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },

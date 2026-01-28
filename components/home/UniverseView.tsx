@@ -18,6 +18,7 @@ import { MoraCommand } from '@/components/mora/MoraCommand'; // UPGRADE B2
 import { useSemanticStore } from '@/lib/store/semanticStore'; // UPGRADE E1
 import { toast } from '@/lib/toast';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { isDemoTenant } from '@/lib/constants/tenants';
 
 import { useOrbitalPhysics } from '@/lib/hooks/useOrbitalPhysics';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation'; // UPGRADE E2
@@ -211,6 +212,7 @@ export const UniverseView: React.FC = () => {
     // 🔥 FIX: Track which departments have been loaded to prevent duplicate calls
     const loadedDeptIds = useRef<Set<string>>(new Set());
     const isLoadingSpacesRef = useRef<boolean>(false);
+    const prevViewModeRef = useRef<string | null>(null);
 
     // 🌌 UNIVERSE INITIALIZATION PER COMPANY/USER - Tesla-Style Consistency
     // Orbital-Konfiguration basierend auf companyId + userId für konsistente Universen
@@ -249,79 +251,20 @@ export const UniverseView: React.FC = () => {
         init();
     }, [companies?.length, loadCompanies]);
 
-    // Auto-activate correct company based on viewMode AND persistence
+    // Reload company list when view mode changes (demo vs workspace vs owner)
     useEffect(() => {
-        // Wait for companies to load
-        if ((companies?.length || 0) === 0) return;
-
-        // If we already have an active company, we are good.
-        if (activeCompanyId) return;
-
-        let targetCompany;
-
-        // 1. Try to restore from localStorage
-        const lastWorkspace = localStorage.getItem('last_workspace');
-        if (lastWorkspace) {
-            targetCompany = companies.find(c => c.name === lastWorkspace);
-            if (targetCompany) {
-                console.log('[UniverseView] Restored last workspace:', targetCompany.name);
-            }
+        if (prevViewModeRef.current === null) {
+            prevViewModeRef.current = viewMode;
+            return;
         }
-
-        // 2. If not found, use logic based on ViewMode
-        if (!targetCompany) {
-            if (viewMode === 'demo') {
-                // DEMO: Find demo company (Simple Coffee Group)
-                targetCompany = companies.find(c => c.is_demo === true);
-                if (!targetCompany) {
-                    targetCompany = companies.find(c => c.name.toLowerCase().includes('coffee'));
-                }
-                if (!targetCompany) {
-                    targetCompany = companies.find(c => !c.name.toLowerCase().includes('saimor'));
-                }
-            } else {
-                // WORKSPACE/OWNER: Find user's OWN company (NOT demo)
-                // Priority: 1. Company with "saimor" in name, 2. Any non-demo company, 3. First company
-                targetCompany = companies.find(c => c.name.toLowerCase().includes('saimor') && !c.is_demo);
-                if (!targetCompany) {
-                    targetCompany = companies.find(c => !c.is_demo);
-                }
-            }
+        if (prevViewModeRef.current !== viewMode) {
+            prevViewModeRef.current = viewMode;
+            loadedDeptIds.current.clear();
+            loadCompanies().catch(console.warn);
         }
+    }, [viewMode, loadCompanies]);
 
-        // 3. Fallback to first available if absolutely nothing found
-        if (!targetCompany && companies.length > 0) {
-            targetCompany = companies[0];
-        }
-
-        if (targetCompany) {
-            console.log('[UniverseView] Auto-activating company:', targetCompany.name);
-            setActiveCompany(targetCompany.id);
-            loadDepartments(targetCompany.id);
-        }
-    }, [companies, activeCompanyId, viewMode, activeCompanyId]);
-
-    // 🔥 REACTIVE SWITCH: When User explicitly changes ViewMode via Controls
-    useEffect(() => {
-        if (!companies || companies.length === 0) return;
-
-        let desiredCompany;
-        if (viewMode === 'demo') {
-            // Find Demo Company
-            desiredCompany = companies.find(c => c.is_demo || c.name.toLowerCase().includes('coffee'));
-        } else if (viewMode === 'workspace' || viewMode === 'owner') {
-            // Find User Company (Saimor or non-demo)
-            desiredCompany = companies.find(c => c.name.toLowerCase().includes('saimor') && !c.is_demo) || companies.find(c => !c.is_demo);
-        }
-
-        // If we found a proper target and it's DIFFERENT from current, SWITCH!
-        if (desiredCompany && desiredCompany.id !== activeCompanyId) {
-            console.log('[ModeSwitch] Switching context to:', desiredCompany.name);
-            setActiveCompany(desiredCompany.id);
-            loadDepartments(desiredCompany.id);
-            toast.success(`Context: ${desiredCompany.name}`);
-        }
-    }, [viewMode, companies, activeCompanyId, setActiveCompany, loadDepartments]);
+    // Active company selection is handled centrally (auth bootstrap + store loadCompanies).
 
     // 🔥 FIX: Auto-load spaces for visible departments (Universe Experience)
     // Instead of lazy-loading on hover, we load them to populate the universe with Moons
@@ -435,7 +378,7 @@ export const UniverseView: React.FC = () => {
             if (deptNodes.length > 0) {
                 // SEMANTIC CLEANUP: Deduplicate by name to avoid clutter (e.g. multiple 'Finance' planets)
                 const uniqueDeptNodes = deptNodes.filter((dept, index, arr) =>
-                    arr.findIndex(d => d.name.toLowerCase() === dept.name.toLowerCase()) === index
+                    arr.findIndex(d => (d.name || '').toLowerCase() === (dept.name || '').toLowerCase()) === index
                 );
 
                 // UPDATED: Cap at 25 per user feedback (no hard data loss, UI/rendering only)
@@ -453,7 +396,7 @@ export const UniverseView: React.FC = () => {
         // FALLBACK: Legacy Departments array
         const uniqueDepartments = departments
             .filter((dept, index, arr) =>
-                arr.findIndex(d => d.name.toLowerCase() === dept.name.toLowerCase()) === index
+                arr.findIndex(d => (d.name || '').toLowerCase() === (dept.name || '').toLowerCase()) === index
             )
             .slice(0, MAX_DEPARTMENTS); // Cap at 25 (UI/rendering limit)
 
@@ -503,7 +446,7 @@ export const UniverseView: React.FC = () => {
         // Use the same unique departments filtering as planets
         const uniqueDepartments = departments
             .filter((dept, index, arr) =>
-                arr.findIndex(d => d.name.toLowerCase() === dept.name.toLowerCase()) === index
+                arr.findIndex(d => (d.name || '').toLowerCase() === (dept.name || '').toLowerCase()) === index
             )
             .slice(0, 6); // Limit for performance
 
@@ -511,7 +454,7 @@ export const UniverseView: React.FC = () => {
             const deptSpaces = spacesByDepartment[dept.id] || [];
             // UNIQUE SPACES: Also filter for distinct space names
             const uniqueSpaces = deptSpaces.filter((space, index, arr) =>
-                arr.findIndex(s => s.name.toLowerCase() === space.name.toLowerCase()) === index
+                arr.findIndex(s => (s.name || '').toLowerCase() === (space.name || '').toLowerCase()) === index
             );
             return uniqueSpaces.slice(0, 1).map(space => ({ // Max 1 space per dept (User Request: "Nur ein Moon")
                 ...space,
@@ -560,7 +503,7 @@ export const UniverseView: React.FC = () => {
             const spaceFolders = foldersBySpace[space.id] || [];
             // UNIQUE FOLDERS: Filter for distinct folder names
             const uniqueFolders = spaceFolders.filter((folder, index, arr) =>
-                arr.findIndex(f => f.name.toLowerCase() === folder.name.toLowerCase()) === index
+                arr.findIndex(f => (f.name || '').toLowerCase() === (folder.name || '').toLowerCase()) === index
             );
             return uniqueFolders.slice(0, 5).map(folder => ({ // Max 5 folders per space
                 ...folder,
@@ -1041,15 +984,33 @@ export const UniverseView: React.FC = () => {
                 viewMode={viewMode}
                 setViewMode={setViewMode}
                 activeCompany={currentCompany ? { id: currentCompany.id, name: currentCompany.name } : undefined}
-                companies={companies.map(c => ({ id: c.id, name: c.name }))}
+                companies={(role === 'system_owner' && user?.tenant_id)
+                    ? (viewMode === 'demo'
+                        ? companies.filter(c => c.is_demo)
+                        : companies.filter(c => c.tenant_id === user.tenant_id)
+                    ).map(c => ({ id: c.id, name: c.name }))
+                    : companies.map(c => ({ id: c.id, name: c.name }))}
                 onSwitchCompany={(id) => {
                     console.log('[ContextSwitch] Manual switch to:', id);
+                    const chosen = companies.find(c => c.id === id);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('last_company_id', id);
+                        if (chosen?.name) {
+                            localStorage.setItem('last_workspace', chosen.name);
+                        }
+                    }
                     setActiveCompany(id);
                     loadDepartments(id);
                     // Also reload nodes to ensure deep space is correct
                     loadNodesForCompany(id).catch(console.warn);
                     toast.success("Context Switched");
                 }}
+                visibleModes={
+                    role === 'system_owner'
+                        ? ['owner', 'workspace', 'demo']
+                        : (isDemoTenant(user?.tenant_id) ? ['owner', 'workspace', 'demo'] : ['workspace'])
+                }
+                workspaceLabel={role === 'system_owner' ? 'HQ' : 'Space'}
             />
 
             {/* DEBUG INFO REMOVED - Clean interface per user request */}
@@ -1073,9 +1034,7 @@ export const UniverseView: React.FC = () => {
                     <CompanyLogo
                         src={
                             currentCompany?.logo_url ||
-                            (currentCompany?.is_demo || currentCompany?.name?.toLowerCase().includes('coffee')
-                                ? '/images/simple_coffee_logo.png'
-                                : null)
+                            (currentCompany?.is_demo ? '/images/simple_coffee_logo.png' : null)
                         }
                         companyName={currentCompany?.name || 'Workspace'}
                         size="lg"
