@@ -56,6 +56,10 @@ export const SpaceLayer: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [graphNodes, setGraphNodes] = useState<any[]>([]);
     const [isGraphLoading, setIsGraphLoading] = useState(false);
+    const safeGraphNodes = useMemo(
+        () => graphNodes.filter((node) => typeof node?.id === 'string' && node.id.length > 0),
+        [graphNodes]
+    );
 
     // ... (Keep handlers) ...
     const handleAddSpace = async () => {
@@ -334,7 +338,7 @@ export const SpaceLayer: React.FC = () => {
                                         <div className="absolute inset-0">
                                             {/* UPGRADE E1: Semantic SVG Constellations */}
                                             <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                                {graphNodes.map((node: any) => {
+                                                {safeGraphNodes.map((node: any) => {
                                                     // Safety check
                                                     if (!node.id) return null;
                                                     const seed1 = typeof node.id === 'string' ? node.id.charCodeAt(0) || 0 : 0;
@@ -356,8 +360,8 @@ export const SpaceLayer: React.FC = () => {
                                                     );
                                                 })}
                                                 {/* Semantic connections */}
-                                                {graphNodes.slice(0, -1).map((node: any, i: number) => {
-                                                    const nextNode = graphNodes[i + 1];
+                                                {safeGraphNodes.slice(0, -1).map((node: any, i: number) => {
+                                                    const nextNode = safeGraphNodes[i + 1];
                                                     if (!nextNode) return null;
                                                     return (
                                                         <motion.line

@@ -18,6 +18,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Avoid eval-based devtool output that can trigger parse issues in the browser.
+      config.devtool = 'source-map';
+    }
+    return config;
+  },
   async rewrites() {
     if (!coreRewriteTarget) return [];
     return [

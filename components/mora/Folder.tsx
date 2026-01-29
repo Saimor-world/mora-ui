@@ -196,8 +196,8 @@ export const Folder: React.FC<FolderProps> = ({
                         </div>
                     )}
                     {folder.node_count && folder.node_count > 0 && (
-                        <div className="text-[9px] text-indigo-300/50 mt-0.5">
-                            {folder.node_count} items
+                        <div className="text-[9px] text-indigo-300/60 mt-0.5">
+                            {folder.node_count} Dateien
                         </div>
                     )}
                 </div>

@@ -161,28 +161,63 @@ export const FolderLayer: React.FC = () => {
         }));
     }, [graphNodes]);
 
+    const safeGraphLayout = useMemo(
+        () => graphLayout.filter((node) => Number.isFinite(node.x) && Number.isFinite(node.y)),
+        [graphLayout]
+    );
+
     const graphLinks = useMemo(() => {
         const nodesById = new Map(graphLayout.map(node => [node.id, node]));
-        const links: Array<{ id: string; x1: number; y1: number; x2: number; y2: number; strength: number }> = [];
+        const links: Array<{
+            id: string;
+            sourceId: string;
+            targetId: string;
+            x1: number;
+            y1: number;
+            x2: number;
+            y2: number;
+            strength: number;
+            distance: number;
+        }> = [];
 
         graphLayout.forEach(node => {
             (node.connections || []).forEach((targetId: string) => {
                 if (node.id > targetId) return; // de-dup
                 const target = nodesById.get(targetId);
                 if (!target) return;
+                const dx = target.x - node.x;
+                const dy = target.y - node.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
                 links.push({
                     id: `${node.id}-${targetId}`,
+                    sourceId: node.id,
+                    targetId,
                     x1: node.x,
                     y1: node.y,
                     x2: target.x,
                     y2: target.y,
-                    strength: 0.3
+                    strength: 0.3,
+                    distance
                 });
             });
         });
 
-        return links;
+        // Prefer shorter, clearer links
+        const maxLinks = Math.min(60, links.length);
+        return links
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, maxLinks);
     }, [graphLayout]);
+
+    const safeGraphLinks = useMemo(
+        () => graphLinks.filter((link) => (
+            Number.isFinite(link.x1) &&
+            Number.isFinite(link.y1) &&
+            Number.isFinite(link.x2) &&
+            Number.isFinite(link.y2)
+        )),
+        [graphLinks]
+    );
 
     const handleCreateNode = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -379,23 +414,28 @@ export const FolderLayer: React.FC = () => {
                                                         <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.1" />
                                                     </linearGradient>
                                                 </defs>
-                                                {graphLinks.map((link, index) => (
-                                                    <motion.line
-                                                        key={link.id}
-                                                        x1={link.x1}
-                                                        y1={link.y1}
-                                                        x2={link.x2}
-                                                        y2={link.y2}
-                                                        stroke="url(#folder-graph-gradient)"
-                                                        strokeWidth={0.6}
-                                                        opacity={0.18}
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: [0.12, 0.35, 0.12] }}
-                                                        transition={{ duration: 4, repeat: Infinity, delay: index * 0.1 }}
-                                                    />
-                                                ))}
+                                                {safeGraphLinks.map((link, index) => {
+                                                    const isActive = hoveredGraphNodeId
+                                                        ? (link.sourceId === hoveredGraphNodeId || link.targetId === hoveredGraphNodeId)
+                                                        : false;
+                                                    return (
+                                                        <motion.line
+                                                            key={link.id}
+                                                            x1={link.x1}
+                                                            y1={link.y1}
+                                                            x2={link.x2}
+                                                            y2={link.y2}
+                                                            stroke="url(#folder-graph-gradient)"
+                                                            strokeWidth={isActive ? 0.9 : 0.5}
+                                                            opacity={isActive ? 0.55 : 0.18}
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: isActive ? [0.4, 0.8, 0.4] : [0.12, 0.3, 0.12] }}
+                                                            transition={{ duration: 4, repeat: Infinity, delay: index * 0.08 }}
+                                                        />
+                                                    );
+                                                })}
 
-                                                {graphLayout.map((node: any) => (
+                                                {safeGraphLayout.map((node: any) => (
                                                     <g
                                                         key={node.id}
                                                         onMouseEnter={() => setHoveredGraphNodeId(node.id)}

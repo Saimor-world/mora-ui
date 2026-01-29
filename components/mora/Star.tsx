@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 
 interface StarProps {
     space: {
@@ -52,16 +52,17 @@ export const Star: React.FC<StarProps> = ({
     isPromoted = false
 }) => {
     const sizeMap = {
-        sm: { diameter: 6, iconSize: 0 },
-        md: { diameter: 10, iconSize: 0 },
-        lg: { diameter: 16, iconSize: 0 },
-        xl: { diameter: 32, iconSize: 0 }
+        sm: { diameter: 12, iconSize: 8 },
+        md: { diameter: 16, iconSize: 10 },
+        lg: { diameter: 22, iconSize: 12 },
+        xl: { diameter: 32, iconSize: 14 }
     };
 
     const starSize = sizeMap[size];
     const hasContent = (space.folder_count || 0) > 0;
-    const coreColor = space.color || '#F59E0B';
+    const coreColor = space.color || '#60A5FA';
     const glowColor = coreColor;
+    const Icon = LayoutGrid;
 
     return (
         <motion.div
@@ -94,20 +95,23 @@ export const Star: React.FC<StarProps> = ({
             onMouseEnter={() => onHover?.(true)}
             onMouseLeave={() => onHover?.(false)}
         >
+            {/* Larger hit area for easier clicking */}
+            <div className="absolute inset-0 -m-3 rounded-full" />
+
             {/* Promoted Halo */}
             {isPromoted && (
                 <motion.div
-                    className="absolute inset-[-6px] rounded-full border border-amber-400/40"
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.7, 0.35] }}
+                    className="absolute inset-[-8px] rounded-full border border-amber-400/40"
+                    animate={{ scale: [1, 1.18, 1], opacity: [0.35, 0.7, 0.35] }}
                     transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
                 />
             )}
 
-            {/* Star Glow */}
+            {/* Moon Glow */}
             <motion.div
                 className="absolute inset-0 rounded-full"
                 style={{
-                    background: `radial-gradient(circle, ${glowColor}55, transparent)`,
+                    background: `radial-gradient(circle, ${glowColor}66 0%, ${glowColor}20 45%, transparent 70%)`,
                     filter: 'blur(8px)',
                 }}
                 animate={isHoveredByPlanet ? {
@@ -117,19 +121,52 @@ export const Star: React.FC<StarProps> = ({
                 transition={{ duration: 2, repeat: Infinity }}
             />
 
-            {/* Star Core - Generic Light Point */}
+            {/* Moon Core */}
             <div
-                className="relative rounded-full backdrop-blur-sm flex items-center justify-center"
+                className="relative rounded-full flex items-center justify-center"
                 style={{
                     width: starSize.diameter,
                     height: starSize.diameter,
-                    background: hasContent ? coreColor : `${coreColor}80`,
+                    background: `radial-gradient(circle at 30% 30%, ${coreColor}BB 0%, ${coreColor}66 50%, rgba(0,0,0,0.4) 100%)`,
                     boxShadow: hasContent
-                        ? `0 0 10px ${glowColor}CC`
-                        : `0 0 5px ${glowColor}66`,
-                    border: 'none'
+                        ? `0 0 12px ${glowColor}AA, inset 0 0 6px rgba(255,255,255,0.2)`
+                        : `0 0 6px ${glowColor}66`,
+                    border: `1px solid ${coreColor}55`
                 }}
-            />
+            >
+                {/* Subtle crater highlight */}
+                <div
+                    className="absolute rounded-full"
+                    style={{
+                        width: starSize.diameter * 0.35,
+                        height: starSize.diameter * 0.35,
+                        top: '18%',
+                        left: '18%',
+                        background: 'rgba(255,255,255,0.18)',
+                        filter: 'blur(1px)'
+                    }}
+                />
+                {hasContent && (
+                    <Icon size={starSize.iconSize} className="text-white/70" strokeWidth={1.5} />
+                )}
+            </div>
+
+            {/* Orbit ring for active/hovered moons */}
+            {(isActive || isPromoted) && (
+                <motion.div
+                    className="absolute rounded-full border border-white/20"
+                    style={{
+                        left: '50%',
+                        top: '50%',
+                        width: 'calc(100% + 20px)',
+                        height: 'calc(100% + 20px)',
+                        transform: 'translate(-50%, -50%) rotate(25deg) scaleX(1.35)',
+                        transformOrigin: '50% 50%'
+                    }}
+                    animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.03, 1] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+            )}
 
             {/* Label on Hover - TESLA Style */}
             <motion.div

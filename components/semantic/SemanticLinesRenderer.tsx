@@ -37,9 +37,14 @@ export const SemanticLinesRenderer: React.FC<SemanticLinesRendererProps> = ({ li
             </defs>
 
             <AnimatePresence>
-                {lines.map((line) => {
+                {lines.filter(line => (
+                    Number.isFinite(line.from?.x) &&
+                    Number.isFinite(line.from?.y) &&
+                    Number.isFinite(line.to?.x) &&
+                    Number.isFinite(line.to?.y)
+                )).map((line) => {
                     // Score determines visibility (0.3 = barely visible, 1.0 = clear)
-                    const opacity = Math.max(0.15, Math.min(0.5, line.score * 0.5));
+                    const opacity = Math.max(0.25, Math.min(0.75, line.score * 0.7));
 
                     // Simple curved path
                     const dx = line.to.x - line.from.x;
@@ -63,7 +68,7 @@ export const SemanticLinesRenderer: React.FC<SemanticLinesRendererProps> = ({ li
                             key={line.id}
                             d={path}
                             stroke="rgba(255, 255, 255, 0.4)"
-                            strokeWidth={0.15}  // HAIR-THIN!
+                            strokeWidth={0.35}  // Visible but still delicate
                             strokeLinecap="round"
                             fill="none"
                             filter="url(#hairlineGlow)"

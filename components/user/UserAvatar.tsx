@@ -22,32 +22,44 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
     const [isHovered, setIsHovered] = useState(false);
     const viewMode = useMoraStore((s) => s.viewMode);
 
-    // Generate FIRE PARTICLES - chaotic, organic movement inside the orb
+    // Generate INNER MOTES - gentle, organic movement inside the orb
     // MUST be called before any early return!
     const fireParticles = useMemo(() => {
-        return Array.from({ length: 12 }, (_, i) => ({
+        return Array.from({ length: 8 }, (_, i) => ({
             id: i,
             // Random starting position inside the orb (constrained to inner area)
             startX: (Math.random() - 0.5) * 20,
             startY: (Math.random() - 0.5) * 20,
             // Particle properties
-            size: 2 + Math.random() * 4,
-            duration: 1.5 + Math.random() * 2,
+            size: 2 + Math.random() * 3,
+            duration: 3 + Math.random() * 2,
             delay: Math.random() * 2,
-            // Fire rises - particles drift upward with random horizontal wobble
-            riseHeight: 8 + Math.random() * 16,
-            wobble: (Math.random() - 0.5) * 12,
+            // Gentle drift, no harsh flames
+            drift: 6 + Math.random() * 10,
+            wobble: (Math.random() - 0.5) * 8,
+        }));
+    }, []);
+
+    const innerOrbs = useMemo(() => {
+        return Array.from({ length: 3 }, (_, i) => ({
+            id: i,
+            size: 6 + Math.random() * 6,
+            startX: (Math.random() - 0.5) * 14,
+            startY: (Math.random() - 0.5) * 14,
+            drift: 4 + Math.random() * 6,
+            duration: 6 + Math.random() * 4,
+            delay: i * 0.8,
         }));
     }, []);
 
     // Outer floating sparks that escape occasionally
     const escapingSparks = useMemo(() => {
-        return Array.from({ length: 4 }, (_, i) => ({
+        return Array.from({ length: 3 }, (_, i) => ({
             id: i,
             angle: (i * 90 + Math.random() * 30) * (Math.PI / 180),
-            distance: 32 + Math.random() * 12,
+            distance: 22 + Math.random() * 10,
             size: 2 + Math.random() * 2,
-            duration: 3 + Math.random() * 2,
+            duration: 4 + Math.random() * 2,
             delay: i * 0.8 + Math.random(),
         }));
     }, []);
@@ -163,73 +175,171 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     />
                 ))}
 
-                {/* MAIN ORB - Wild organic flame-like shape containing fire */}
+                {/* MAIN ORB - Soft organic shape containing inner light */}
                 <motion.div
-                    className="relative w-14 h-20 flex items-center justify-center overflow-hidden"
+                    className="relative w-14 h-14 flex items-center justify-center overflow-hidden"
                     style={{
                         background: `
-                            radial-gradient(ellipse 80% 100% at 50% 60%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 100%),
-                            radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12) 0%, transparent 50%)
+                            radial-gradient(circle at 50% 55%, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 100%),
+                            radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15) 0%, transparent 55%)
                         `,
                         boxShadow: `
-                            inset 0 0 25px rgba(0,0,0,0.4),
-                            inset 2px 2px 10px rgba(255,255,255,0.08),
-                            0 0 35px ${userColor.glow},
-                            0 0 60px ${userColor.glow}25,
-                            0 6px 20px rgba(0,0,0,0.5)
+                            inset 0 0 22px rgba(0,0,0,0.4),
+                            inset 2px 2px 8px rgba(255,255,255,0.1),
+                            0 0 32px ${userColor.glow},
+                            0 0 55px ${userColor.glow}22,
+                            0 6px 18px rgba(0,0,0,0.45)
                         `,
                         border: `1px solid ${userColor.ring}`,
                     }}
                     animate={{
-                        // WILD flame-like shape - spiky top, round bottom
+                        // Soft, friendly organic shape (not spiky)
                         borderRadius: [
-                            '50% 50% 55% 45% / 30% 30% 60% 60%',  // Pointy top
-                            '45% 55% 50% 50% / 35% 25% 55% 65%',  // Lean right
-                            '55% 45% 45% 55% / 25% 35% 65% 55%',  // Lean left
-                            '48% 52% 52% 48% / 32% 28% 58% 62%',  // Wobble
-                            '50% 50% 55% 45% / 30% 30% 60% 60%',  // Back to pointy
+                            '58% 42% 55% 45% / 55% 50% 50% 45%',
+                            '45% 55% 50% 50% / 48% 55% 45% 52%',
+                            '52% 48% 46% 54% / 58% 45% 55% 42%',
+                            '55% 45% 58% 42% / 50% 52% 48% 55%',
+                            '58% 42% 55% 45% / 55% 50% 50% 45%',
                         ],
-                        scaleX: [1, 0.95, 1.05, 0.97, 1],
-                        scaleY: [1, 1.03, 0.98, 1.02, 1],
+                        scaleX: [1, 0.98, 1.02, 0.99, 1],
+                        scaleY: [1, 1.02, 0.99, 1.01, 1],
                     }}
                     transition={{
-                        duration: 3,  // Faster morphing
+                        duration: 4,
                         repeat: Infinity,
                         ease: 'easeInOut',
                     }}
                 >
-                    {/* FIRE PARTICLES - Chaotic flames inside the orb */}
+                    {/* INNER ORBS - Soft floating spheres */}
+                    {innerOrbs.map(orb => (
+                        <motion.div
+                            key={`inner-orb-${orb.id}`}
+                            className="absolute rounded-full pointer-events-none"
+                            style={{
+                                width: orb.size,
+                                height: orb.size,
+                                left: '50%',
+                                top: '50%',
+                                marginLeft: -orb.size / 2,
+                                marginTop: -orb.size / 2,
+                                background: `radial-gradient(circle, ${userColor.bright} 0%, ${userColor.primary}80 60%, transparent 100%)`,
+                                filter: 'blur(0.6px)',
+                                boxShadow: `0 0 ${orb.size * 2}px ${userColor.glow}`,
+                            }}
+                            animate={{
+                                x: [orb.startX, orb.startX + orb.drift, orb.startX - orb.drift * 0.6, orb.startX],
+                                y: [orb.startY, orb.startY - orb.drift * 0.6, orb.startY + orb.drift * 0.4, orb.startY],
+                                opacity: [0.4, 0.8, 0.5, 0.4],
+                                scale: [0.9, 1.05, 0.95, 0.9],
+                            }}
+                            transition={{
+                                duration: orb.duration,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: orb.delay,
+                            }}
+                        />
+                    ))}
+
+                    {/* FACE GLINTS - subtle "eyes" hint for friendly vibe */}
+                    {[
+                        { id: 'left', x: -6.5, y: -2 },
+                        { id: 'right', x: 6.5, y: -2 }
+                    ].map(glint => (
+                        <motion.div
+                            key={`face-glint-${glint.id}`}
+                            className="absolute rounded-full pointer-events-none"
+                            style={{
+                                width: 3.8,
+                                height: 3.8,
+                                left: '50%',
+                                top: '50%',
+                                marginLeft: glint.x - 1.9,
+                                marginTop: glint.y - 1.9,
+                                background: 'rgba(255,255,255,0.7)',
+                                boxShadow: '0 0 8px rgba(255,255,255,0.35)'
+                            }}
+                            animate={{
+                                scaleY: [1, 0.6, 1],
+                                opacity: [0.55, 0.9, 0.65]
+                            }}
+                            transition={{
+                                duration: 5,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: glint.id === 'left' ? 0.2 : 0.4
+                            }}
+                        />
+                    ))}
+
+                    {/* CHEEK BLUSH - soft warmth for a friendly face */}
+                    {[
+                        { id: 'left', x: -9, y: 2 },
+                        { id: 'right', x: 9, y: 2 }
+                    ].map(blush => (
+                        <motion.div
+                            key={`face-blush-${blush.id}`}
+                            className="absolute rounded-full pointer-events-none"
+                            style={{
+                                width: 6,
+                                height: 4.5,
+                                left: '50%',
+                                top: '50%',
+                                marginLeft: blush.x - 3,
+                                marginTop: blush.y - 2.2,
+                                background: `radial-gradient(circle, ${userColor.bright}55 0%, transparent 70%)`,
+                                filter: 'blur(1.5px)'
+                            }}
+                            animate={{ opacity: [0.2, 0.45, 0.2] }}
+                            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                    ))}
+
+                    {/* MOUTH - tiny curved smile */}
+                    <motion.div
+                        className="absolute pointer-events-none"
+                        style={{
+                            left: '50%',
+                            top: '50%',
+                            width: 10,
+                            height: 6,
+                            marginLeft: -5,
+                            marginTop: 4,
+                            borderBottom: '1.5px solid rgba(255,255,255,0.35)',
+                            borderRadius: '0 0 10px 10px'
+                        }}
+                        animate={{ opacity: [0.25, 0.5, 0.25] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+
+                    {/* INNER MOTES - Gentle drifting particles */}
                     {fireParticles.map(particle => (
                         <motion.div
                             key={`fire-${particle.id}`}
                             className="absolute pointer-events-none"
                             style={{
                                 width: particle.size,
-                                height: particle.size * 1.5, // Flames are taller than wide
-                                borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%', // Teardrop shape
-                                background: `linear-gradient(to top, ${userColor.primary}, ${userColor.bright}, ${userColor.core})`,
-                                filter: 'blur(0.5px)',
+                                height: particle.size,
+                                borderRadius: '50%',
+                                background: `radial-gradient(circle, ${userColor.primary} 0%, ${userColor.bright}80 60%, transparent 100%)`,
+                                filter: 'blur(0.8px)',
                                 boxShadow: `0 0 ${particle.size * 2}px ${userColor.glow}`,
                             }}
                             animate={{
-                                // Fire rises and wobbles chaotically
                                 x: [
                                     particle.startX,
-                                    particle.startX + particle.wobble * 0.5,
-                                    particle.startX - particle.wobble * 0.3,
                                     particle.startX + particle.wobble,
+                                    particle.startX - particle.wobble * 0.6,
                                     particle.startX
                                 ],
                                 y: [
-                                    particle.startY + 5,
-                                    particle.startY - particle.riseHeight * 0.3,
-                                    particle.startY - particle.riseHeight * 0.6,
-                                    particle.startY - particle.riseHeight,
-                                    particle.startY + 5
+                                    particle.startY,
+                                    particle.startY - particle.drift * 0.5,
+                                    particle.startY + particle.drift * 0.4,
+                                    particle.startY
                                 ],
-                                opacity: [0, 0.9, 0.95, 0.7, 0],
-                                scale: [0.3, 1, 1.1, 0.8, 0.2],
-                                rotate: [0, -15, 10, -20, 0],
+                                opacity: [0.2, 0.6, 0.4, 0.2],
+                                scale: [0.7, 1, 0.85, 0.7],
                             }}
                             transition={{
                                 duration: particle.duration,
@@ -240,28 +350,27 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                         />
                     ))}
 
-                    {/* CENTRAL FLAME CORE - The brightest point */}
+                    {/* SOFT CORE - Friendly inner glow */}
                     <motion.div
                         className="absolute"
                         style={{
-                            width: 10,
+                            width: 14,
                             height: 14,
-                            bottom: '30%',
                             left: '50%',
-                            marginLeft: -5,
-                            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
-                            background: `linear-gradient(to top, ${userColor.primary}, ${userColor.core}, white)`,
-                            boxShadow: `0 0 20px ${userColor.bright}, 0 0 40px ${userColor.glow}`,
-                            filter: 'blur(1px)',
+                            top: '50%',
+                            marginLeft: -7,
+                            marginTop: -7,
+                            borderRadius: '50%',
+                            background: `radial-gradient(circle, ${userColor.core} 0%, ${userColor.primary}90 55%, transparent 100%)`,
+                            boxShadow: `0 0 18px ${userColor.bright}, 0 0 30px ${userColor.glow}`,
+                            filter: 'blur(0.6px)',
                         }}
                         animate={{
-                            scaleX: [1, 1.2, 0.9, 1.15, 1],
-                            scaleY: [1, 1.3, 1.1, 1.25, 1],
-                            x: [-1, 2, -2, 1, -1],
-                            opacity: [0.9, 1, 0.85, 1, 0.9],
+                            scale: [0.9, 1.08, 0.95, 1.05, 0.9],
+                            opacity: [0.6, 0.9, 0.7, 0.85, 0.6],
                         }}
                         transition={{
-                            duration: 0.8,
+                            duration: 3,
                             repeat: Infinity,
                             ease: 'easeInOut',
                         }}
@@ -282,7 +391,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     />
                 </motion.div>
 
-                {/* HALO RING - Wild organic ring that follows the flame shape */}
+                {/* HALO RING - Soft organic ring that follows the shape */}
                 <motion.div
                     className="absolute pointer-events-none"
                     style={{
@@ -296,17 +405,17 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     animate={{
                         opacity: [0.4, 0.7, 0.4],
                         scale: [1, 1.04, 1],
-                        // Match the wild flame shape
+                        // Match the soft blob shape
                         borderRadius: [
-                            '50% 50% 55% 45% / 35% 35% 55% 55%',
-                            '45% 55% 50% 50% / 40% 30% 50% 60%',
-                            '55% 45% 45% 55% / 30% 40% 60% 50%',
-                            '48% 52% 52% 48% / 37% 33% 53% 57%',
-                            '50% 50% 55% 45% / 35% 35% 55% 55%',
+                            '58% 42% 55% 45% / 55% 50% 50% 45%',
+                            '45% 55% 50% 50% / 48% 55% 45% 52%',
+                            '52% 48% 46% 54% / 58% 45% 55% 42%',
+                            '55% 45% 58% 42% / 50% 52% 48% 55%',
+                            '58% 42% 55% 45% / 55% 50% 50% 45%',
                         ],
                     }}
                     transition={{
-                        duration: 3,
+                        duration: 4,
                         repeat: Infinity,
                         ease: 'easeInOut'
                     }}

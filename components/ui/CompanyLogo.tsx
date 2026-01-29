@@ -98,7 +98,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
             <div className={`${config.image} rounded-full overflow-hidden flex items-center justify-center relative z-10`}
                 style={{ background: hasValidImage ? 'transparent' : 'rgba(0,0,0,0.3)' }}
             >
-                {hasValidImage ? (
+                {hasValidImage && (
                     <img
                         src={src}
                         alt={companyName}
@@ -111,14 +111,16 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
                             transition: 'opacity 0.3s ease'
                         }}
                     />
-                ) : (
+                )}
+                {(!hasValidImage || !imageLoaded) && (
                     <span
                         className={`${config.text} font-light`}
                         style={{
                             background: `linear-gradient(180deg, rgba(255,255,255,0.9) 0%, ${accentColor} 100%)`,
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
-                            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.2))'
+                            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.2))',
+                            opacity: hasValidImage && !imageLoaded ? 0.7 : 1
                         }}
                     >
                         {initial}
