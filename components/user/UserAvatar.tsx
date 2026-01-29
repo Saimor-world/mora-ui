@@ -11,59 +11,49 @@ interface UserAvatarProps {
 }
 
 /**
- * USER AVATAR - PULSIERENDE FLAMME (Pulsating Flame)
+ * USER AVATAR - LICHTWESEN (Light Being) with Organic Fire Effect
  *
- * Inspired by Gemini Variante 4: "Organisch & Lebendig"
- * - Pulsierender Energiekern wie ein Herz aus Licht
- * - Verästelte Flammenzungen die sich nach oben auflösen
- * - Wild, leidenschaftlich, lebendig
+ * MASTERBIBEL: Each user is a unique Lichtwesen (light fairy/being)
+ * with personalized aura colors. The inner particles move chaotically
+ * like flames trapped inside a glass sphere - organic, alive, not geometric.
  */
 export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = true }) => {
     const { user, role, isLoading } = useUser();
     const [isHovered, setIsHovered] = useState(false);
     const viewMode = useMoraStore((s) => s.viewMode);
 
-    // MAIN FLAME TONGUES - Wild, branching flames rising upward
-    const flameTongues = useMemo(() => {
-        return Array.from({ length: 8 }, (_, i) => ({
+    // Generate FIRE PARTICLES - chaotic, organic movement inside the orb
+    // MUST be called before any early return!
+    const fireParticles = useMemo(() => {
+        return Array.from({ length: 12 }, (_, i) => ({
             id: i,
-            // Spread across the width
-            offsetX: (i - 3.5) * 4 + (Math.random() - 0.5) * 6,
-            // Each tongue has different height and behavior
-            height: 20 + Math.random() * 25,
-            width: 3 + Math.random() * 4,
-            duration: 0.8 + Math.random() * 0.6,
-            delay: i * 0.1 + Math.random() * 0.2,
-            // Wobble intensity
-            wobble: 3 + Math.random() * 5,
-        }));
-    }, []);
-
-    // BRANCHING SPARKS - Small particles that branch off from flames
-    const branchingSparks = useMemo(() => {
-        return Array.from({ length: 16 }, (_, i) => ({
-            id: i,
-            startX: (Math.random() - 0.5) * 30,
-            startY: -5 - Math.random() * 20,
-            // Sparks drift outward and up
-            driftX: (Math.random() - 0.5) * 25,
-            driftY: -15 - Math.random() * 20,
-            size: 1.5 + Math.random() * 2.5,
-            duration: 1 + Math.random() * 1.5,
+            // Random starting position inside the orb (constrained to inner area)
+            startX: (Math.random() - 0.5) * 20,
+            startY: (Math.random() - 0.5) * 20,
+            // Particle properties
+            size: 2 + Math.random() * 4,
+            duration: 1.5 + Math.random() * 2,
             delay: Math.random() * 2,
+            // Fire rises - particles drift upward with random horizontal wobble
+            riseHeight: 8 + Math.random() * 16,
+            wobble: (Math.random() - 0.5) * 12,
         }));
     }, []);
 
-    // CORE PULSES - The beating heart effect
-    const corePulses = useMemo(() => {
-        return Array.from({ length: 3 }, (_, i) => ({
+    // Outer floating sparks that escape occasionally
+    const escapingSparks = useMemo(() => {
+        return Array.from({ length: 4 }, (_, i) => ({
             id: i,
-            delay: i * 0.3,
-            scale: 1 + i * 0.15,
+            angle: (i * 90 + Math.random() * 30) * (Math.PI / 180),
+            distance: 32 + Math.random() * 12,
+            size: 2 + Math.random() * 2,
+            duration: 3 + Math.random() * 2,
+            delay: i * 0.8 + Math.random(),
         }));
     }, []);
 
     // Generate unique AURA COLOR from user identity
+    // MUST be called before any early return!
     const userColor = useMemo(() => {
         const seed = user?.email || user?.user_id || 'guest';
         let hash = 0;
@@ -72,28 +62,32 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
             hash = hash & hash;
         }
 
-        // Role-based color selection
+        // Role-based color selection for the aura
         const roleHues = {
-            owner: 35 + (Math.abs(hash) % 15),    // Deep Gold/Orange
+            owner: 42 + (Math.abs(hash) % 15),    // Gold/Amber
             admin: 340 + (Math.abs(hash) % 20),   // Rose
-            member: 45 + (Math.abs(hash) % 20),   // Warm Amber
+            member: 150 + (Math.abs(hash) % 30),  // Emerald
         };
 
         const hue = roleHues[role as keyof typeof roleHues] || roleHues.member;
+        const saturation = 70 + (Math.abs(hash) % 15);
+        const lightness = 55 + (Math.abs(hash) % 10);
 
         return {
-            base: `hsl(${hue}, 90%, 45%)`,           // Deep base
-            mid: `hsl(${hue}, 95%, 55%)`,            // Mid tone
-            bright: `hsl(${hue}, 100%, 65%)`,        // Bright
-            core: `hsl(${hue - 5}, 100%, 85%)`,      // Near white core
-            glow: `hsla(${hue}, 100%, 60%, 0.7)`,    // Glow
+            primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+            bright: `hsl(${hue}, ${saturation + 10}%, ${lightness + 15}%)`,
+            glow: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.6)`,
+            ring: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.3)`,
+            core: `hsl(${hue}, ${saturation - 20}%, ${lightness + 25}%)`, // Bright core
             halo: role === 'owner'
-                ? 'rgba(255, 180, 50, 0.6)'
-                : 'rgba(255, 200, 100, 0.4)',
+                ? 'rgba(212, 175, 55, 0.7)'
+                : 'rgba(16, 185, 129, 0.5)',
+            hue
         };
     }, [user?.email, user?.user_id, role]);
 
-    // Display name
+    // Display name - derive from email
+    // MUST be called before any early return!
     const displayName = useMemo(() => {
         if (user?.email) {
             const localPart = user.email.split('@')[0];
@@ -102,6 +96,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
         return viewMode === 'demo' ? 'Demo User' : 'User';
     }, [user?.email, viewMode]);
 
+    // NOW we can do early return after all hooks are called
     if (isLoading || !user) {
         return null;
     }
@@ -113,50 +108,51 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
+            {/* LICHTWESEN Container */}
             <motion.div
-                className="relative cursor-pointer"
-                style={{ width: 56, height: 80 }}
-                whileHover={{ scale: 1.1 }}
+                className="relative cursor-pointer group"
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
             >
-                {/* OUTER GLOW - Warm ambient light */}
+                {/* OUTER AURA - Soft breathing glow */}
                 <motion.div
-                    className="absolute"
+                    className="absolute inset-[-20px] rounded-full"
                     style={{
-                        left: -20,
-                        top: 0,
-                        right: -20,
-                        bottom: -10,
-                        background: `radial-gradient(ellipse 60% 80% at 50% 70%, ${userColor.glow}, transparent 70%)`,
-                        filter: 'blur(12px)',
+                        background: `radial-gradient(circle, ${userColor.glow} 0%, transparent 70%)`,
+                        filter: 'blur(16px)',
                     }}
                     animate={{
-                        opacity: isHovered ? [0.6, 0.9, 0.7] : [0.4, 0.6, 0.4],
-                        scale: isHovered ? [1, 1.15, 1.05] : [1, 1.1, 1],
+                        scale: isHovered ? [1, 1.3, 1.15, 1.35, 1] : [1, 1.15, 1.08, 1.2, 1],
+                        opacity: isHovered ? [0.5, 0.8, 0.6, 0.85, 0.5] : [0.3, 0.5, 0.4, 0.55, 0.3],
                     }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                    transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: 'easeInOut'
+                    }}
                 />
 
-                {/* BRANCHING SPARKS - Float up and outward */}
-                {branchingSparks.map(spark => (
+                {/* ESCAPING SPARKS - Occasional particles that drift outward */}
+                {escapingSparks.map(spark => (
                     <motion.div
                         key={`spark-${spark.id}`}
                         className="absolute pointer-events-none"
                         style={{
                             left: '50%',
-                            bottom: '25%',
+                            top: '50%',
                             width: spark.size,
                             height: spark.size,
                             marginLeft: -spark.size / 2,
+                            marginTop: -spark.size / 2,
                             borderRadius: '50%',
                             background: userColor.bright,
-                            boxShadow: `0 0 ${spark.size * 2}px ${userColor.glow}`,
+                            boxShadow: `0 0 ${spark.size * 3}px ${userColor.glow}`,
                         }}
                         animate={{
-                            x: [spark.startX, spark.startX + spark.driftX * 0.5, spark.startX + spark.driftX],
-                            y: [spark.startY, spark.startY + spark.driftY * 0.6, spark.startY + spark.driftY],
+                            x: [0, Math.cos(spark.angle) * spark.distance * 0.5, Math.cos(spark.angle) * spark.distance],
+                            y: [0, Math.sin(spark.angle) * spark.distance * 0.5 - 8, Math.sin(spark.angle) * spark.distance - 12],
                             opacity: [0, 0.9, 0],
-                            scale: [0.5, 1, 0.2],
+                            scale: [0.5, 1, 0.3],
                         }}
                         transition={{
                             duration: spark.duration,
@@ -167,171 +163,174 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     />
                 ))}
 
-                {/* FLAME TONGUES - Wild, licking upward */}
-                {flameTongues.map(tongue => (
+                {/* MAIN ORB - Wild organic flame-like shape containing fire */}
+                <motion.div
+                    className="relative w-14 h-20 flex items-center justify-center overflow-hidden"
+                    style={{
+                        background: `
+                            radial-gradient(ellipse 80% 100% at 50% 60%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.5) 100%),
+                            radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12) 0%, transparent 50%)
+                        `,
+                        boxShadow: `
+                            inset 0 0 25px rgba(0,0,0,0.4),
+                            inset 2px 2px 10px rgba(255,255,255,0.08),
+                            0 0 35px ${userColor.glow},
+                            0 0 60px ${userColor.glow}25,
+                            0 6px 20px rgba(0,0,0,0.5)
+                        `,
+                        border: `1px solid ${userColor.ring}`,
+                    }}
+                    animate={{
+                        // WILD flame-like shape - spiky top, round bottom
+                        borderRadius: [
+                            '50% 50% 55% 45% / 30% 30% 60% 60%',  // Pointy top
+                            '45% 55% 50% 50% / 35% 25% 55% 65%',  // Lean right
+                            '55% 45% 45% 55% / 25% 35% 65% 55%',  // Lean left
+                            '48% 52% 52% 48% / 32% 28% 58% 62%',  // Wobble
+                            '50% 50% 55% 45% / 30% 30% 60% 60%',  // Back to pointy
+                        ],
+                        scaleX: [1, 0.95, 1.05, 0.97, 1],
+                        scaleY: [1, 1.03, 0.98, 1.02, 1],
+                    }}
+                    transition={{
+                        duration: 3,  // Faster morphing
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                    }}
+                >
+                    {/* FIRE PARTICLES - Chaotic flames inside the orb */}
+                    {fireParticles.map(particle => (
+                        <motion.div
+                            key={`fire-${particle.id}`}
+                            className="absolute pointer-events-none"
+                            style={{
+                                width: particle.size,
+                                height: particle.size * 1.5, // Flames are taller than wide
+                                borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%', // Teardrop shape
+                                background: `linear-gradient(to top, ${userColor.primary}, ${userColor.bright}, ${userColor.core})`,
+                                filter: 'blur(0.5px)',
+                                boxShadow: `0 0 ${particle.size * 2}px ${userColor.glow}`,
+                            }}
+                            animate={{
+                                // Fire rises and wobbles chaotically
+                                x: [
+                                    particle.startX,
+                                    particle.startX + particle.wobble * 0.5,
+                                    particle.startX - particle.wobble * 0.3,
+                                    particle.startX + particle.wobble,
+                                    particle.startX
+                                ],
+                                y: [
+                                    particle.startY + 5,
+                                    particle.startY - particle.riseHeight * 0.3,
+                                    particle.startY - particle.riseHeight * 0.6,
+                                    particle.startY - particle.riseHeight,
+                                    particle.startY + 5
+                                ],
+                                opacity: [0, 0.9, 0.95, 0.7, 0],
+                                scale: [0.3, 1, 1.1, 0.8, 0.2],
+                                rotate: [0, -15, 10, -20, 0],
+                            }}
+                            transition={{
+                                duration: particle.duration,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: particle.delay,
+                            }}
+                        />
+                    ))}
+
+                    {/* CENTRAL FLAME CORE - The brightest point */}
                     <motion.div
-                        key={`tongue-${tongue.id}`}
-                        className="absolute pointer-events-none"
+                        className="absolute"
                         style={{
+                            width: 10,
+                            height: 14,
+                            bottom: '30%',
                             left: '50%',
-                            bottom: '20%',
-                            marginLeft: tongue.offsetX - tongue.width / 2,
-                            width: tongue.width,
-                            height: tongue.height,
-                            background: `linear-gradient(to top,
-                                ${userColor.base} 0%,
-                                ${userColor.mid} 30%,
-                                ${userColor.bright} 60%,
-                                ${userColor.core} 85%,
-                                transparent 100%)`,
-                            borderRadius: '50% 50% 40% 40% / 100% 100% 0% 0%',
+                            marginLeft: -5,
+                            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                            background: `linear-gradient(to top, ${userColor.primary}, ${userColor.core}, white)`,
+                            boxShadow: `0 0 20px ${userColor.bright}, 0 0 40px ${userColor.glow}`,
                             filter: 'blur(1px)',
-                            transformOrigin: 'bottom center',
                         }}
                         animate={{
-                            scaleY: [0.7, 1.2, 0.9, 1.1, 0.7],
-                            scaleX: [1, 0.8, 1.1, 0.9, 1],
-                            x: [0, tongue.wobble, -tongue.wobble * 0.7, tongue.wobble * 0.5, 0],
-                            rotate: [0, tongue.wobble * 0.8, -tongue.wobble * 0.6, tongue.wobble * 0.4, 0],
-                            opacity: [0.7, 1, 0.85, 0.95, 0.7],
+                            scaleX: [1, 1.2, 0.9, 1.15, 1],
+                            scaleY: [1, 1.3, 1.1, 1.25, 1],
+                            x: [-1, 2, -2, 1, -1],
+                            opacity: [0.9, 1, 0.85, 1, 0.9],
                         }}
                         transition={{
-                            duration: tongue.duration,
+                            duration: 0.8,
                             repeat: Infinity,
                             ease: 'easeInOut',
-                            delay: tongue.delay,
                         }}
                     />
-                ))}
 
-                {/* CORE BASE - The solid glowing heart */}
-                <motion.div
-                    className="absolute"
-                    style={{
-                        left: '50%',
-                        bottom: '15%',
-                        width: 28,
-                        height: 32,
-                        marginLeft: -14,
-                        background: `radial-gradient(ellipse 100% 120% at 50% 80%,
-                            ${userColor.core} 0%,
-                            ${userColor.bright} 30%,
-                            ${userColor.mid} 60%,
-                            ${userColor.base} 100%)`,
-                        borderRadius: '50% 50% 45% 45% / 60% 60% 40% 40%',
-                        boxShadow: `
-                            0 0 20px ${userColor.glow},
-                            0 0 40px ${userColor.glow},
-                            inset 0 -5px 15px ${userColor.base}
-                        `,
-                    }}
-                    animate={{
-                        scale: [1, 1.08, 0.95, 1.05, 1],
-                        opacity: [0.9, 1, 0.92, 1, 0.9],
-                    }}
-                    transition={{
-                        duration: 0.6,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                    }}
-                />
-
-                {/* PULSING RINGS - Heartbeat effect */}
-                {corePulses.map(pulse => (
-                    <motion.div
-                        key={`pulse-${pulse.id}`}
-                        className="absolute pointer-events-none"
+                    {/* GLASS HIGHLIGHT - Top reflection */}
+                    <div
+                        className="absolute rounded-full pointer-events-none"
                         style={{
-                            left: '50%',
-                            bottom: '18%',
-                            width: 24,
-                            height: 28,
-                            marginLeft: -12,
-                            border: `1px solid ${userColor.bright}`,
-                            borderRadius: '50% 50% 45% 45% / 60% 60% 40% 40%',
-                        }}
-                        animate={{
-                            scale: [1, pulse.scale + 0.3, pulse.scale + 0.5],
-                            opacity: [0.6, 0.3, 0],
-                        }}
-                        transition={{
-                            duration: 1.2,
-                            repeat: Infinity,
-                            ease: 'easeOut',
-                            delay: pulse.delay,
+                            width: '45%',
+                            height: '25%',
+                            top: '8%',
+                            left: '15%',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%)',
+                            borderRadius: '50%',
+                            filter: 'blur(1px)',
                         }}
                     />
-                ))}
+                </motion.div>
 
-                {/* INNER CORE - Brightest point */}
-                <motion.div
-                    className="absolute"
-                    style={{
-                        left: '50%',
-                        bottom: '28%',
-                        width: 8,
-                        height: 12,
-                        marginLeft: -4,
-                        background: `radial-gradient(ellipse at 50% 60%,
-                            white 0%,
-                            ${userColor.core} 40%,
-                            transparent 100%)`,
-                        borderRadius: '50%',
-                        filter: 'blur(1px)',
-                    }}
-                    animate={{
-                        opacity: [0.8, 1, 0.85, 1, 0.8],
-                        scale: [1, 1.3, 0.9, 1.2, 1],
-                    }}
-                    transition={{
-                        duration: 0.4,
-                        repeat: Infinity,
-                        ease: 'easeInOut',
-                    }}
-                />
-
-                {/* HALO - Subtle outer ring */}
+                {/* HALO RING - Wild organic ring that follows the flame shape */}
                 <motion.div
                     className="absolute pointer-events-none"
                     style={{
-                        left: -4,
-                        right: -4,
-                        bottom: '10%',
-                        height: 50,
+                        left: -6,
+                        right: -6,
+                        top: -4,
+                        bottom: -8,
                         border: `1px solid ${userColor.halo}`,
-                        borderRadius: '50% 50% 45% 45% / 55% 55% 45% 45%',
                         boxShadow: `0 0 15px ${userColor.halo}`,
                     }}
                     animate={{
-                        opacity: [0.3, 0.6, 0.3],
-                        scale: [1, 1.02, 1],
+                        opacity: [0.4, 0.7, 0.4],
+                        scale: [1, 1.04, 1],
+                        // Match the wild flame shape
+                        borderRadius: [
+                            '50% 50% 55% 45% / 35% 35% 55% 55%',
+                            '45% 55% 50% 50% / 40% 30% 50% 60%',
+                            '55% 45% 45% 55% / 30% 40% 60% 50%',
+                            '48% 52% 52% 48% / 37% 33% 53% 57%',
+                            '50% 50% 55% 45% / 35% 35% 55% 55%',
+                        ],
                     }}
                     transition={{
                         duration: 3,
                         repeat: Infinity,
-                        ease: 'easeInOut',
+                        ease: 'easeInOut'
                     }}
                 />
             </motion.div>
 
-            {/* Name Label */}
+            {/* Name Label (on hover) */}
             <AnimatePresence>
                 {isHovered && showLabel && (
                     <motion.div
                         initial={{ opacity: 0, x: -10, scale: 0.9 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -10, scale: 0.9 }}
-                        className="absolute left-full ml-4 bottom-4 whitespace-nowrap"
+                        className="absolute left-full ml-4 top-1/2 -translate-y-1/2 whitespace-nowrap"
                     >
                         <div
-                            className="bg-black/90 backdrop-blur-xl border rounded-xl px-4 py-2.5"
+                            className="bg-black/85 backdrop-blur-xl border rounded-xl px-4 py-2.5"
                             style={{
-                                borderColor: `${userColor.mid}50`,
-                                boxShadow: `0 0 20px ${userColor.glow}30, 0 8px 32px rgba(0,0,0,0.5)`
+                                borderColor: userColor.ring,
+                                boxShadow: `0 0 20px ${userColor.glow}30, 0 8px 32px rgba(0,0,0,0.4)`
                             }}
                         >
                             <div className="text-sm text-white font-medium">{displayName}</div>
-                            <div className="text-xs capitalize" style={{ color: userColor.bright }}>{role}</div>
+                            <div className="text-xs capitalize" style={{ color: userColor.primary }}>{role}</div>
                         </div>
                     </motion.div>
                 )}
