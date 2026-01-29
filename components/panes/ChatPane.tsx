@@ -16,6 +16,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { corePost } from '@/lib/api/coreClient';
 import { moraAgentClient } from '@/lib/api/moraAgentClient';
+import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { Send, Sparkles, Loader2, Bot, User, Wand2 } from 'lucide-react';
 
 interface Message {
@@ -141,7 +142,15 @@ Was kann ich für dich tun?`,
                     });
 
                     if (agentResponse?.response) {
-                        responseContent = agentResponse.response;
+                        // Parse AI response for cursor commands (e.g. [[MORA_ACTION:{...}]])
+                        const { cleanContent, commands } = parseAIResponse(agentResponse.response);
+                        responseContent = cleanContent;
+
+                        // Execute any cursor commands Mora embedded in her response
+                        if (commands.length > 0) {
+                            console.log('[ChatPane] Executing cursor commands:', commands);
+                            executeCursorCommands(commands);
+                        }
 
                         // Visualize Tool Usage (If any tools were used)
                         if (agentResponse.tool_uses && agentResponse.tool_uses.length > 0) {
