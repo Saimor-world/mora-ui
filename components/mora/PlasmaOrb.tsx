@@ -137,7 +137,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
 
         const centerX = size / 2;
         const centerY = size / 2;
-        const radius = size * 0.4;
+        const radius = size * 0.46;
 
         const noise = noiseRef.current;
 

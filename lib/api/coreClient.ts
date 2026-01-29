@@ -1,6 +1,6 @@
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
 
-type AccountRole = 'admin' | 'owner' | 'manager' | 'member' | 'demo';
+type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
 
 const CORE_BASE_URL = "/api/core";
 const AUTH_COOKIE = "mora_auth_token";
@@ -190,6 +190,7 @@ export interface UserProfile {
     full_name?: string;
     role: AccountRole;
     tenant_id: string;
+    scope?: string;
     demo_mode?: boolean;
 }
 

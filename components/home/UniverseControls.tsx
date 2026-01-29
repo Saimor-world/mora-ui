@@ -10,6 +10,8 @@ interface UniverseControlsProps {
     activeCompany: { id: string; name: string } | undefined;
     companies?: { id: string; name: string }[];
     onSwitchCompany?: (companyId: string) => void;
+    visibleModes?: ViewMode[];
+    workspaceLabel?: string;
 }
 
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
@@ -17,7 +19,9 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     setViewMode,
     activeCompany,
     companies = [],
-    onSwitchCompany
+    onSwitchCompany,
+    visibleModes = ['owner', 'workspace', 'demo'],
+    workspaceLabel = 'Space'
 }) => {
 
     // Cycle to next company
@@ -33,33 +37,40 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
 
     return (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-2xl">
-            {/* Owner Mode */}
-            <ControlButton
-                isActive={viewMode === 'owner'}
-                onClick={() => setViewMode('owner')}
-                icon={Shield}
-                label="Owner"
-            />
+            {visibleModes.includes('owner') && (
+                <ControlButton
+                    isActive={viewMode === 'owner'}
+                    onClick={() => setViewMode('owner')}
+                    icon={Shield}
+                    label="Owner"
+                />
+            )}
 
-            <div className="w-px h-4 bg-white/20 mx-1" />
+            {visibleModes.includes('owner') && visibleModes.includes('workspace') && (
+                <div className="w-px h-4 bg-white/20 mx-1" />
+            )}
 
-            {/* Workspace Mode */}
-            <ControlButton
-                isActive={viewMode === 'workspace'}
-                onClick={() => setViewMode('workspace')}
-                icon={LayoutGrid}
-                label="Space"
-            />
+            {visibleModes.includes('workspace') && (
+                <ControlButton
+                    isActive={viewMode === 'workspace'}
+                    onClick={() => setViewMode('workspace')}
+                    icon={LayoutGrid}
+                    label={workspaceLabel}
+                />
+            )}
 
-            <div className="w-px h-4 bg-white/20 mx-1" />
+            {visibleModes.includes('workspace') && visibleModes.includes('demo') && (
+                <div className="w-px h-4 bg-white/20 mx-1" />
+            )}
 
-            {/* Demo Mode */}
-            <ControlButton
-                isActive={viewMode === 'demo'}
-                onClick={() => setViewMode('demo')}
-                icon={Activity}
-                label="Demo"
-            />
+            {visibleModes.includes('demo') && (
+                <ControlButton
+                    isActive={viewMode === 'demo'}
+                    onClick={() => setViewMode('demo')}
+                    icon={Activity}
+                    label="Demo"
+                />
+            )}
 
             {/* Current Context Indicator - Now Clickable Switcher */}
             {activeCompany && (

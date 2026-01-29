@@ -5,20 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Planet } from '@/components/mora/Planet';
 import { Star } from '@/components/mora/Star';
 import { NodeStar } from '@/components/mora/NodeStar';
-import { StarField } from '@/components/home/StarField';
+import { Folder } from '@/components/mora/Folder';
 import { UniverseControls } from '@/components/home/UniverseControls';
 
 import { useMoraStore } from '@/lib/store/moraState';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
 import { useUser } from '@/lib/hooks/useUser';
-import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw, Minimize2 } from 'lucide-react';
-import { MoraOrb } from '@/components/mora/MoraOrb';
-import { CursorAgent } from '@/components/mora/CursorAgent'; // UPGRADE D1
-import { MoraCommand } from '@/components/mora/MoraCommand'; // UPGRADE B2
-import { useSemanticStore } from '@/lib/store/semanticStore'; // UPGRADE E1
+import { X, Activity, TrendingUp, Zap, Sparkles, Clock, Users, PlusCircle, Trash2, RefreshCw, Minimize2, Briefcase, Building2, BarChart3, Compass, Cpu, Database, Factory, Flame, FlaskConical, Gem, Globe2, HeartPulse, Home, Lightbulb, Megaphone, Palette, Shield, ShoppingBag, Target, Wrench } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { isDemoTenant } from '@/lib/constants/tenants';
+import { TENANT_HQ, isDemoTenant } from '@/lib/constants/tenants';
+import type { CoreNode, CoreFolder } from '@/lib/types/core';
 
 import { useOrbitalPhysics } from '@/lib/hooks/useOrbitalPhysics';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation'; // UPGRADE E2
@@ -62,24 +59,88 @@ function seededRandom(seed: number) {
     return x - Math.floor(x);
 }
 
+const PROMOTED_MOONS_PER_PLANET = 2;
+const PROMOTED_STARS_PER_MOON = 2;
+const PROMOTED_NODES_PER_FOLDER = 2;
+const ORBIT_STEPS = [0, Math.PI * 2 / 3, Math.PI * 4 / 3, Math.PI * 2];
+
+const KEYWORD_WEIGHTS: Array<{ pattern: RegExp; weight: number }> = [
+    { pattern: /(marketing|brand|growth|campaign|ads|social|local)/i, weight: 2.2 },
+    { pattern: /(sales|crm|pipeline|lead|partner)/i, weight: 1.8 },
+    { pattern: /(product|research|design|ux|ui)/i, weight: 1.4 },
+    { pattern: /(engineering|dev|platform|data|analytics)/i, weight: 1.2 },
+    { pattern: /(ops|operations|legal|finance|hr|people)/i, weight: 1.1 },
+];
+
+const scoreText = (text?: string) => {
+    if (!text) return 0;
+    return KEYWORD_WEIGHTS.reduce((total, entry) => (
+        entry.pattern.test(text) ? total + entry.weight : total
+    ), 0);
+};
+
+const isImportantNode = (node: CoreNode) => {
+    const tags: string[] = (node.metadata?.tags as string[]) || [];
+    return (
+        node.metadata?.is_pinned === true ||
+        node.metadata?.is_important === true ||
+        tags.some((tag: string) => ['important', 'urgent', 'priority'].includes(tag.toLowerCase()))
+    );
+};
+
+const getNodeTags = (node: CoreNode) => {
+    const tags: string[] = (node.metadata?.tags as string[]) || [];
+    return tags.map(tag => tag.toLowerCase());
+};
+
+const getNodeKeywords = (node: CoreNode) => {
+    const text = `${node.title || ''} ${node.name || ''}`.toLowerCase();
+    return text
+        .split(/[^a-z0-9]+/i)
+        .filter(token => token.length > 3);
+};
+
+const scoreNodeSimilarity = (a: CoreNode, b: CoreNode) => {
+    const tagsA = getNodeTags(a);
+    const tagsB = getNodeTags(b);
+    const sharedTags = tagsA.filter(tag => tagsB.includes(tag)).length;
+
+    const keywordsA = getNodeKeywords(a);
+    const keywordsB = getNodeKeywords(b);
+    const sharedKeywords = keywordsA.filter(word => keywordsB.includes(word)).length;
+
+    let score = 0;
+    score += Math.min(0.6, sharedTags * 0.25);
+    score += Math.min(0.2, sharedKeywords * 0.05);
+    if (a.type === b.type) score += 0.15;
+    if (isImportantNode(a) && isImportantNode(b)) score += 0.1;
+    return Math.min(1, score);
+};
+
 export const UniverseView: React.FC = () => {
     const {
         viewMode,
         setViewMode,
+        viewLevel,
         departments,
         loadDepartments,
         navigateToDepartment,
         activeDepartmentId,
         activeCompanyId,
+        setActiveDepartment,
         spacesByDepartment,
         loadSpacesForDepartment,
         navigateToSpace,
+        setActiveSpace,
         foldersBySpace,
         loadFoldersForSpace,
         navigateToFolder,
+        navigateToCore,
         activeSpaceId,
+        activeFolderId,
         nodesByCompany,
         loadNodesForCompany,
+        loadNodeDetails,
         orbState: storeOrbState,
         setOrbState,
         orbNotifications,
@@ -96,15 +157,44 @@ export const UniverseView: React.FC = () => {
 
     const { openPane } = usePaneStore();
 
-    const { role, user } = useUser();
+    const { role, user, tenantId } = useUser();
+    const isDemoResult = isDemoTenant(tenantId);
+    const visibleModes = useMemo(() => (
+        role === 'system_owner'
+            ? ['owner', 'workspace', 'demo']
+            : (isDemoResult ? ['owner', 'workspace', 'demo'] : ['workspace'])
+    ), [role, isDemoResult]);
+
+
+    const contextCompanies = useMemo(() => {
+        if (role === 'system_owner') {
+            if (viewMode === 'demo') {
+                return companies.filter(c => c.is_demo);
+            }
+            if (viewMode === 'workspace') {
+                return companies.filter(c => c.tenant_id === TENANT_HQ);
+            }
+            return companies;
+        }
+        if (isDemoResult) {
+            if (viewMode === 'demo') {
+                return companies.filter(c => c.is_demo);
+            }
+            if (viewMode === 'workspace') {
+                return companies.filter(c => c.tenant_id === TENANT_HQ);
+            }
+        }
+        return companies;
+    }, [role, viewMode, isDemoResult, companies]);
     const { accentColor } = useAccentColor(); // Global accent color
     const { center, isReady } = useOrbitalPhysics(); // PHASE 1 FIX
     const [apiOrbState, setApiOrbState] = useState<OrbState>('idle');
-    const [isHovered, setIsHovered] = useState(false);
     const [planetOrbitActive, setPlanetOrbitActive] = useState(false);
     const [hoveredPlanet, setHoveredPlanet] = useState<string | null>(null);
+    const [heldPlanetId, setHeldPlanetId] = useState<string | null>(null);
     const [orbitShiftActive, setOrbitShiftActive] = useState(false); // UPGRADE B1: Orbit shift animations
     const [cosmicMode, setCosmicMode] = useState(true); // UPGRADE F1: Cosmic passive mode
+    const [lastCompanyName, setLastCompanyName] = useState<string | null>(null);
 
     // Semantic Constellation Hook (Light Connections)
     const { connections, fetchConstellation, clearConstellation } = useSemanticConstellation();
@@ -223,9 +313,113 @@ export const UniverseView: React.FC = () => {
 
     const isLoading = isLoadingDepartments || isLoadingCompanies;
 
+    const activeSpaceDepartmentId = useMemo(() => {
+        if (!activeSpaceId) return null;
+        for (const [deptId, spaces] of Object.entries(spacesByDepartment || {})) {
+            if (spaces?.some(space => space.id === activeSpaceId)) {
+                return deptId;
+            }
+        }
+        return null;
+    }, [activeSpaceId, spacesByDepartment]);
+
+    const spaceDepartmentMap = useMemo(() => {
+        const map = new Map<string, string>();
+        Object.entries(spacesByDepartment || {}).forEach(([deptId, spaces]) => {
+            spaces?.forEach(space => map.set(space.id, deptId));
+        });
+        return map;
+    }, [spacesByDepartment]);
+
+    const activeFolderSpaceId = useMemo(() => {
+        if (!activeFolderId) return null;
+        for (const [spaceId, folders] of Object.entries(foldersBySpace || {})) {
+            if (folders?.some(folder => folder.id === activeFolderId)) {
+                return spaceId;
+            }
+        }
+        return null;
+    }, [activeFolderId, foldersBySpace]);
+
+    const activeFolderDepartmentId = useMemo(() => {
+        if (!activeFolderSpaceId) return null;
+        for (const [deptId, spaces] of Object.entries(spacesByDepartment || {})) {
+            if (spaces?.some(space => space.id === activeFolderSpaceId)) {
+                return deptId;
+            }
+        }
+        return null;
+    }, [activeFolderSpaceId, spacesByDepartment]);
+
+    const focusPlanetId = useMemo(() => {
+        if (viewMode === 'owner') return null;
+        if (hoveredPlanet) return hoveredPlanet;
+        if (heldPlanetId) return heldPlanetId;
+        if (viewLevel !== 'core') {
+            return activeDepartmentId || activeSpaceDepartmentId || activeFolderDepartmentId || null;
+        }
+        return null;
+    }, [viewMode, hoveredPlanet, heldPlanetId, viewLevel, activeDepartmentId, activeSpaceDepartmentId, activeFolderDepartmentId]);
+
+    const focusSpaceId = useMemo(() => {
+        if (viewMode === 'owner') return null;
+        return activeSpaceId || activeFolderSpaceId || null;
+    }, [viewMode, activeSpaceId, activeFolderSpaceId]);
+
+    const focusFolderId = useMemo(() => {
+        if (viewMode === 'owner') return null;
+        return activeFolderId || null;
+    }, [viewMode, activeFolderId]);
+
+    const HOLD_MS = 20000;
+    const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const clearPlanetHold = useCallback(() => {
+        if (holdTimeoutRef.current) {
+            clearTimeout(holdTimeoutRef.current);
+            holdTimeoutRef.current = null;
+        }
+    }, []);
+
+    const schedulePlanetHold = useCallback((deptId: string) => {
+        clearPlanetHold();
+        setHeldPlanetId(deptId);
+        holdTimeoutRef.current = setTimeout(() => {
+            setHeldPlanetId(prev => (prev === deptId ? null : prev));
+        }, HOLD_MS);
+    }, [clearPlanetHold]);
+
+    useEffect(() => {
+        return () => clearPlanetHold();
+    }, [clearPlanetHold]);
+
+    useEffect(() => {
+        // Reset hold when switching company/view
+        clearPlanetHold();
+        setHeldPlanetId(null);
+    }, [activeCompanyId, viewMode, clearPlanetHold]);
+
+    const hoverOrbitActive = Boolean(hoveredPlanet || heldPlanetId);
+    const orbitActive = planetOrbitActive || hoverOrbitActive;
+    const getOrbitOffsets = useCallback((originX: number, originY: number, targetX: number, targetY: number) => {
+        const baseVecX = targetX - originX;
+        const baseVecY = targetY - originY;
+        const orbitRadius = Math.sqrt(baseVecX * baseVecX + baseVecY * baseVecY);
+        const baseAngle = Math.atan2(baseVecY, baseVecX);
+
+        return ORBIT_STEPS.map(step => {
+            const angle = baseAngle + step;
+            const rx = Math.cos(angle) * orbitRadius;
+            const ry = Math.sin(angle) * orbitRadius;
+            return { x: rx - baseVecX, y: ry - baseVecY };
+        });
+    }, []);
+
     // 🔥 FIX: Debounced space loading - only on hover
     const handlePlanetHover = useCallback((deptId: string, hovered: boolean) => {
         setHoveredPlanet(hovered ? deptId : null);
+        schedulePlanetHold(deptId);
+        setPlanetOrbitActive(hovered);
 
         // LAZY LOAD: Only load spaces when hovering over a planet
         if (hovered && !spacesByDepartment[deptId] && !loadedDeptIds.current.has(deptId) && !isLoadingSpacesRef.current) {
@@ -239,7 +433,7 @@ export const UniverseView: React.FC = () => {
                 });
             }, 300);
         }
-    }, [spacesByDepartment, loadSpacesForDepartment]);
+    }, [spacesByDepartment, loadSpacesForDepartment, schedulePlanetHold]);
 
     // Load companies first
     useEffect(() => {
@@ -250,6 +444,15 @@ export const UniverseView: React.FC = () => {
         };
         init();
     }, [companies?.length, loadCompanies]);
+
+    useEffect(() => {
+        if (activeCompanyId || (contextCompanies?.length || 0) === 0) return;
+        if (typeof window === 'undefined') return;
+        const lastCompanyId = localStorage.getItem('last_company_id');
+        if (lastCompanyId && contextCompanies.some(c => c.id === lastCompanyId)) {
+            setActiveCompany(lastCompanyId);
+        }
+    }, [activeCompanyId, contextCompanies, setActiveCompany]);
 
     // Reload company list when view mode changes (demo vs workspace vs owner)
     useEffect(() => {
@@ -381,15 +584,19 @@ export const UniverseView: React.FC = () => {
                     arr.findIndex(d => (d.name || '').toLowerCase() === (dept.name || '').toLowerCase()) === index
                 );
 
-                // UPDATED: Cap at 25 per user feedback (no hard data loss, UI/rendering only)
-                return uniqueDeptNodes.slice(0, MAX_DEPARTMENTS).map((dept, idx) => ({
-                    id: dept.id,
-                    name: dept.name,
-                    // VIBRANT COLORS: Rotate through a vivid palette
-                    color: ['#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#F43F5E', '#6366F1'][idx % 8],
-                    description: dept.name,
-                    type: 'department' as const
-                }));
+                const shouldUseTree = departments.length === 0 || uniqueDeptNodes.length >= departments.length;
+
+                if (shouldUseTree) {
+                    // UPDATED: Cap at 25 per user feedback (no hard data loss, UI/rendering only)
+                    return uniqueDeptNodes.slice(0, MAX_DEPARTMENTS).map((dept, idx) => ({
+                        id: dept.id,
+                        name: dept.name,
+                        // VIBRANT COLORS: Rotate through a vivid palette
+                        color: ['#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#06B6D4', '#F43F5E', '#6366F1'][idx % 8],
+                        description: dept.name,
+                        type: 'department' as const
+                    }));
+                }
             }
         }
 
@@ -408,6 +615,77 @@ export const UniverseView: React.FC = () => {
             type: 'department' as const
         }));
     }, [viewMode, companies, departments, treeData]);
+
+    const departmentIconMap = useMemo(() => {
+        const iconPool = [
+            Compass,
+            Briefcase,
+            Megaphone,
+            BarChart3,
+            Cpu,
+            Database,
+            Wrench,
+            Factory,
+            Sparkles,
+            Palette,
+            Target,
+            Shield,
+            HeartPulse,
+            Lightbulb,
+            ShoppingBag,
+            Building2,
+            Home,
+            Globe2,
+            Flame,
+            Gem,
+            FlaskConical
+        ];
+
+        const keywordIcons: Array<{ pattern: RegExp; icon: any }> = [
+            { pattern: /(marketing|brand|growth|campaign|ads|social|local)/i, icon: Megaphone },
+            { pattern: /(sales|crm|pipeline|lead|partner)/i, icon: Target },
+            { pattern: /(product|research|design|ux|ui)/i, icon: Palette },
+            { pattern: /(engineering|dev|platform|data|analytics)/i, icon: Cpu },
+            { pattern: /(ops|operations|legal|finance|hr|people)/i, icon: Briefcase },
+            { pattern: /(health|care|medical|support)/i, icon: HeartPulse },
+            { pattern: /(security|compliance|risk)/i, icon: Shield },
+            { pattern: /(store|retail|shop)/i, icon: ShoppingBag },
+            { pattern: /(research|lab|science)/i, icon: FlaskConical },
+        ];
+
+        const used = new Set<any>();
+        const map = new Map<string, any>();
+        const sorted = [...visiblePlanets].sort((a, b) => a.id.localeCompare(b.id));
+
+        const assignIcon = (deptId: string, icon: any) => {
+            if (!used.has(icon)) {
+                used.add(icon);
+                map.set(deptId, icon);
+                return true;
+            }
+            return false;
+        };
+
+        sorted.forEach((dept) => {
+            const match = keywordIcons.find(entry => entry.pattern.test(dept.name || ''));
+            if (match) {
+                assignIcon(dept.id, match.icon);
+            }
+        });
+
+        sorted.forEach((dept, index) => {
+            if (map.has(dept.id)) return;
+            const icon = iconPool.find(candidate => !used.has(candidate));
+            if (icon) {
+                assignIcon(dept.id, icon);
+            } else {
+                const fallback = iconPool[index % iconPool.length] || Compass;
+                map.set(dept.id, fallback);
+            }
+        });
+
+        return map;
+    }, [visiblePlanets]);
 
     const visibleMoons = useMemo(() => {
         if (viewMode === 'owner') return [];
@@ -546,7 +824,6 @@ export const UniverseView: React.FC = () => {
         const orbitRadiusX = 34 + seededRandom(3) * 5; // 34-39vw (Safe Zone)
         const orbitRadiusY = 28 + seededRandom(4) * 5; // 28-33vh (Safe Zone)
 
-        console.log('[UniverseDebug] Calculating Orbit:', { count, companyId, radiusX: orbitRadiusX, radiusY: orbitRadiusY });
 
         // Full 360 orbit
         const arcStart = 0;
@@ -569,10 +846,14 @@ export const UniverseView: React.FC = () => {
             const x = orbX + Math.cos(angle) * orbitRadiusX;
             const y = orbY + Math.sin(angle) * orbitRadiusY;
 
+            // Clamp to keep labels within safe viewport zone
+            const safeX = Math.min(88, Math.max(12, x));
+            const safeY = Math.min(78, Math.max(22, y));
+
             return {
                 planet,
-                x, // vw units
-                y, // vh units
+                x: safeX, // vw units
+                y: safeY, // vh units
                 angle,
                 radius: orbitRadiusX,
                 delay: i * 0.1
@@ -638,10 +919,12 @@ export const UniverseView: React.FC = () => {
             const parentMoon = moonPositions.find(m => m.space && m.space.id === folder.spaceId);
 
             if (!parentMoon) {
+                const fallbackSeed = Array.from(folder.id || '').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+                const seededFallback = (offset: number) => seededRandom(fallbackSeed + offset + i * 7);
                 return {
                     folder,
-                    x: 50 + (Math.random() - 0.5) * 20,
-                    y: 50 + (Math.random() - 0.5) * 20,
+                    x: 50 + (seededFallback(1) - 0.5) * 20,
+                    y: 50 + (seededFallback(9) - 0.5) * 20,
                     delay: i * 0.03,
                     orbitRadiusX: 0,
                     orbitRadiusY: 0,
@@ -675,6 +958,31 @@ export const UniverseView: React.FC = () => {
             };
         });
     }, [visibleFolderStars, moonPositions]);
+
+    const moonOrbitOffsetMap = useMemo(() => {
+        const map = new Map<string, Array<{ x: number; y: number }>>();
+        moonPositions.forEach(moon => {
+            if (!moon.parentPlanet) return;
+            map.set(
+                moon.space.id,
+                getOrbitOffsets(moon.parentPlanet.x, moon.parentPlanet.y, moon.x, moon.y)
+            );
+        });
+        return map;
+    }, [moonPositions, getOrbitOffsets]);
+
+    const folderOrbitOffsetMap = useMemo(() => {
+        const map = new Map<string, Array<{ x: number; y: number }>>();
+        folderStarPositions.forEach(star => {
+            const parentMoon = star.parentMoon?.space.id;
+            if (!parentMoon) return;
+            const offsets = moonOrbitOffsetMap.get(parentMoon);
+            if (offsets) {
+                map.set(star.folder.id, offsets);
+            }
+        });
+        return map;
+    }, [folderStarPositions, moonOrbitOffsetMap]);
 
 
     // Node Stars - Distributed throughout the universe (UNIQUE NODES)
@@ -742,14 +1050,56 @@ export const UniverseView: React.FC = () => {
                 }
             }
 
-            return {
-                node,
-                x,
-                y,
-                delay: i * 0.02 // Staggered animation
-            };
+        return {
+            node,
+            x,
+            y,
+            delay: i * 0.02 // Staggered animation
+        };
+    });
+    }, [activeCompanyId, nodesByCompany, universeSeed, folderStarPositions, moonPositions]);
+
+    const focusPlanetSpaceIds = useMemo(() => {
+        if (!focusPlanetId) return new Set<string>();
+        const spaces = spacesByDepartment[focusPlanetId] || [];
+        return new Set(spaces.map(space => space.id));
+    }, [focusPlanetId, spacesByDepartment]);
+
+    const visibleMoonPositions = useMemo(() => {
+        if (!focusPlanetId) return [];
+        return moonPositions.filter(m => m.space.departmentId === focusPlanetId);
+    }, [focusPlanetId, moonPositions]);
+
+    const visibleFolderStarPositions = useMemo(() => {
+        if (!focusPlanetId && !focusSpaceId) return [];
+        return folderStarPositions.filter(star => {
+            const spaceId = star.parentMoon?.space.id;
+            if (!spaceId) return false;
+            if (focusSpaceId) return spaceId === focusSpaceId;
+            return star.parentMoon?.space.departmentId === focusPlanetId;
         });
-    }, [activeCompanyId, nodesByCompany, universeSeed, planetPositions]);
+    }, [focusPlanetId, focusSpaceId, folderStarPositions]);
+
+    const visibleNodeStarPositions = useMemo(() => {
+        if (!focusPlanetId && !focusSpaceId && !focusFolderId) return [];
+        return nodeStarPositions.filter(({ node }) => {
+            if (focusFolderId) return node.folder_id === focusFolderId;
+            if (focusSpaceId) return node.space_id === focusSpaceId;
+            if (focusPlanetSpaceIds.size) return focusPlanetSpaceIds.has(node.space_id);
+            return false;
+        });
+    }, [focusPlanetId, focusSpaceId, focusFolderId, nodeStarPositions, focusPlanetSpaceIds]);
+
+    const visibleNodePositionsByFolder = useMemo(() => {
+        const map = new Map<string, Array<{ id: string; x: number; y: number; node: CoreNode }>>();
+        visibleNodeStarPositions.forEach(({ node, x, y }) => {
+            if (!node.folder_id) return;
+            const list = map.get(node.folder_id) || [];
+            list.push({ id: node.id, x, y, node });
+            map.set(node.folder_id, list);
+        });
+        return map;
+    }, [visibleNodeStarPositions]);
 
     // 🔍 DEBUG STATE: Now safe to reference all positions
     const debugState = useMemo(() => ({
@@ -779,13 +1129,7 @@ export const UniverseView: React.FC = () => {
         setNodePositions(nodePosMap);
     }, [nodePosMap, setNodePositions]);
 
-    // UPGRADE E2: Fetch Semantic Constellations
-    useEffect(() => {
-        if (nodePosMap.size > 0) {
-            // Trigger fetch with a "global" key to ensure we get lines for the current view
-            fetchConstellation('global-view', nodePosMap);
-        }
-    }, [nodePosMap, fetchConstellation]);
+    // UPGRADE E2: Semantic Constellations are fetched on node hover only
 
     // UPGRADE B3: MindLoop Intelligence Pulse
     const pulseData = useIntelligencePulse();
@@ -856,97 +1200,163 @@ export const UniverseView: React.FC = () => {
     // ═══════════════════════════════════════════════════════════════════════════
     // SEMANTIC HIERARCHY SYSTEM - Star to Moon Promotion ("Nervous System")
     // ═══════════════════════════════════════════════════════════════════════════
-    const MOON_PROMOTION_THRESHOLD = 5; // Nodes with 5+ connections become moons
+    const activeNodes: CoreNode[] = useMemo(() => (
+        activeCompanyId ? (nodesByCompany[activeCompanyId] || []) : []
+    ), [activeCompanyId, nodesByCompany]);
 
-    // Calculate connection counts for each node (simulated based on folder/space relationships)
-    const nodeConnectionCounts = useMemo(() => {
-        const counts = new Map<string, number>();
-        const currentNodes = activeCompanyId ? nodesByCompany[activeCompanyId] || [] : [];
+    const { nodesBySpace, nodesByFolder } = useMemo(() => {
+        const bySpace = new Map<string, CoreNode[]>();
+        const byFolder = new Map<string, CoreNode[]>();
 
-        currentNodes.forEach(node => {
-            // Base connections from folder structure
-            let connectionCount = 0;
+        activeNodes.forEach(node => {
+            if (!bySpace.has(node.space_id)) bySpace.set(node.space_id, []);
+            bySpace.get(node.space_id)!.push(node);
 
-            // Count nodes in same space (semantic siblings)
-            const siblingsInSpace = currentNodes.filter(n =>
-                n.space_id === node.space_id && n.id !== node.id
-            ).length;
-            connectionCount += Math.min(siblingsInSpace, 3); // Cap at 3 per source
-
-            // Bonus for nodes with rich metadata/tags
-            if (node.metadata?.tags && Array.isArray(node.metadata.tags)) {
-                connectionCount += node.metadata.tags.length;
+            if (node.folder_id) {
+                if (!byFolder.has(node.folder_id)) byFolder.set(node.folder_id, []);
+                byFolder.get(node.folder_id)!.push(node);
             }
-
-            // Bonus for high-weight/important nodes
-            if (node.metadata?.weight && node.metadata.weight > 0.5) {
-                connectionCount += 2;
-            }
-
-            counts.set(node.id, connectionCount);
         });
 
-        return counts;
-    }, [activeCompanyId, nodesByCompany]);
+        return { nodesBySpace: bySpace, nodesByFolder: byFolder };
+    }, [activeNodes]);
 
-    // Promoted Moons: Stars that have grown important enough to become moons
-    // These are visible in the HOME view, orbiting their parent planets
-    const promotedMoons = useMemo(() => {
-        if (viewMode === 'owner') return [];
+    const spaceScores = useMemo(() => {
+        const scores = new Map<string, number>();
+        visibleMoons.forEach(space => {
+            const nodes = nodesBySpace.get(space.id) || [];
+            const importantCount = nodes.filter(isImportantNode).length;
+            const weightSum = nodes.reduce((sum, node) => sum + (Number(node.metadata?.weight) || 0), 0);
+            const textScore = scoreText(`${space.name || ''} ${space.description || ''}`);
+            const score = (nodes.length * 0.12) + (importantCount * 0.7) + (weightSum * 0.45) + textScore;
+            scores.set(space.id, score);
+        });
+        return scores;
+    }, [visibleMoons, nodesBySpace]);
 
-        return nodeStarPositions
-            .filter(({ node }) => {
-                const connectionCount = nodeConnectionCounts.get(node.id) || 0;
-                return connectionCount >= MOON_PROMOTION_THRESHOLD;
-            })
-            .map(({ node, x, y, delay }, index) => {
-                // Find the parent planet (department) for this node
-                const parentDept = (departments || []).find(d =>
-                    spacesByDepartment[d.id]?.some(space => space.id === node.space_id)
-                );
-                const parentPlanet = (planetPositions || []).find(p => p.planet && p.planet.id === parentDept?.id);
-
-                if (!parentPlanet) {
-                    return { node, x, y, delay, connectionCount: nodeConnectionCounts.get(node.id) || 0, promotion: 'moon' as const };
-                }
-
-                // Position moon in orbit around its parent planet
-                const orbitRadiusX = 8 + (index % 3) * 2; // VW
-                const orbitRadiusY = 12 + (index % 3) * 3; // VH
-                const orbitAngle = (index / Math.max(nodeStarPositions.length, 1)) * Math.PI * 2;
-
-                return {
-                    node,
-                    x: parentPlanet.x + Math.cos(orbitAngle) * orbitRadiusX,
-                    y: parentPlanet.y + Math.sin(orbitAngle) * orbitRadiusY,
-                    delay: delay + 0.2,
-                    connectionCount: nodeConnectionCounts.get(node.id) || 0,
-                    promotion: 'moon' as const,
-                    parentPlanet
-                };
+    const folderScores = useMemo(() => {
+        const scores = new Map<string, number>();
+        Object.values(foldersBySpace).forEach((folders) => {
+            folders.forEach((folder: CoreFolder) => {
+                const nodes = nodesByFolder.get(folder.id) || [];
+                const importantCount = nodes.filter(isImportantNode).length;
+                const weightSum = nodes.reduce((sum, node) => sum + (Number(node.metadata?.weight) || 0), 0);
+                const textScore = scoreText(`${folder.name || ''} ${folder.description || ''}`);
+                const score = (nodes.length * 0.18) + (importantCount * 0.8) + (weightSum * 0.45) + textScore;
+                scores.set(folder.id, score);
             });
-    }, [nodeStarPositions, nodeConnectionCounts, viewMode, departments, spacesByDepartment, planetPositions]);
+        });
+        return scores;
+    }, [foldersBySpace, nodesByFolder]);
 
-    // Orb parameters - TESLA-STYLE
-    const getOrbParams = () => {
-        const baseSize = isHovered ? 140 : 130; // MASSIVE
-        switch (finalOrbState) {
-            case 'alert':
-                return { size: baseSize, color: '#EF4444', glowIntensity: 80 };
-            case 'focus':
-                return { size: baseSize, color: '#10B981', glowIntensity: 70 };
-            case 'thinking':
-                return { size: baseSize, color: '#3B82F6', glowIntensity: 60 };
-            case 'insight':
-                return { size: baseSize, color: '#D4AF37', glowIntensity: 75 };
-            default:
-                return { size: baseSize, color: '#10B981', glowIntensity: 50 };
-        }
-    };
+    const nodeScores = useMemo(() => {
+        const scores = new Map<string, number>();
+        activeNodes.forEach(node => {
+            const tags: string[] = (node.metadata?.tags as string[]) || [];
+            const weight = Number(node.metadata?.weight) || 0;
+            const textScore = scoreText(`${node.title || node.name || ''} ${node.content || ''}`);
+            const score = (weight * 1.2) + (isImportantNode(node) ? 1.5 : 0) + (Math.min(tags.length, 4) * 0.4) + (textScore * 0.6);
+            scores.set(node.id, score);
+        });
+        return scores;
+    }, [activeNodes]);
 
-    const orbParams = getOrbParams();
+    const maxSpaceScore = useMemo(() => {
+        const values = Array.from(spaceScores.values());
+        return values.length ? Math.max(1, ...values) : 1;
+    }, [spaceScores]);
+
+    const maxFolderScore = useMemo(() => {
+        const values = Array.from(folderScores.values());
+        return values.length ? Math.max(1, ...values) : 1;
+    }, [folderScores]);
+
+    const maxNodeScore = useMemo(() => {
+        const values = Array.from(nodeScores.values());
+        return values.length ? Math.max(1, ...values) : 1;
+    }, [nodeScores]);
+
+    const promotedMoonIds = useMemo(() => {
+        const ids = new Set<string>();
+        if (viewMode === 'owner') return ids;
+
+        const byDept = new Map<string, Array<{ id: string; score: number }>>();
+        visibleMoons.forEach(space => {
+            const score = spaceScores.get(space.id) || 0;
+            const list = byDept.get(space.departmentId) || [];
+            list.push({ id: space.id, score });
+            byDept.set(space.departmentId, list);
+        });
+
+        byDept.forEach(entries => {
+            entries.sort((a, b) => b.score - a.score);
+            entries.slice(0, PROMOTED_MOONS_PER_PLANET).forEach(entry => ids.add(entry.id));
+        });
+
+        if (activeSpaceId) ids.add(activeSpaceId);
+        return ids;
+    }, [viewMode, visibleMoons, spaceScores, activeSpaceId]);
+
+    const promotedFolderIdsBySpace = useMemo(() => {
+        const map = new Map<string, string[]>();
+        if (viewMode === 'owner') return map;
+
+        Object.entries(foldersBySpace).forEach(([spaceId, folders]) => {
+            const scored = folders.map(folder => ({
+                id: folder.id,
+                score: folderScores.get(folder.id) || 0
+            }));
+            scored.sort((a, b) => b.score - a.score);
+            const top = scored.slice(0, PROMOTED_STARS_PER_MOON).map(entry => entry.id);
+
+            if (activeFolderId && folders.some(folder => folder.id === activeFolderId) && !top.includes(activeFolderId)) {
+                top.unshift(activeFolderId);
+            }
+
+            map.set(spaceId, top);
+        });
+
+        return map;
+    }, [viewMode, foldersBySpace, folderScores, activeFolderId]);
+
+    const promotedFolderIds = useMemo(() => {
+        const ids = new Set<string>();
+        promotedFolderIdsBySpace.forEach(list => {
+            list.forEach(id => ids.add(id));
+        });
+        return ids;
+    }, [promotedFolderIdsBySpace]);
+
+    const promotedNodeIds = useMemo(() => {
+        const ids = new Set<string>();
+        if (viewMode === 'owner') return ids;
+
+        promotedFolderIds.forEach(folderId => {
+            const nodes = nodesByFolder.get(folderId) || [];
+            const scored = nodes.map(node => ({ id: node.id, score: nodeScores.get(node.id) || 0 }));
+            scored.sort((a, b) => b.score - a.score);
+            scored.slice(0, PROMOTED_NODES_PER_FOLDER).forEach(entry => ids.add(entry.id));
+        });
+        return ids;
+    }, [viewMode, promotedFolderIds, nodesByFolder, nodeScores]);
 
     const currentCompany = companies.find(c => c.id === activeCompanyId);
+    const fallbackCompanyName = useMemo(() => {
+        if (currentCompany?.name) return currentCompany.name;
+        const tenantMatch = tenantId ? companies.find(c => c.tenant_id === tenantId) : null;
+        return tenantMatch?.name || companies[0]?.name || null;
+    }, [currentCompany?.name, tenantId, companies]);
+
+    useEffect(() => {
+        if (currentCompany?.name) {
+            setLastCompanyName(currentCompany.name);
+        }
+    }, [currentCompany?.name]);
+
+    const displayCompanyName = fallbackCompanyName
+        || lastCompanyName
+        || (typeof window !== 'undefined' ? localStorage.getItem('last_workspace') : null)
+        || 'Workspace';
 
 
 
@@ -984,15 +1394,11 @@ export const UniverseView: React.FC = () => {
                 viewMode={viewMode}
                 setViewMode={setViewMode}
                 activeCompany={currentCompany ? { id: currentCompany.id, name: currentCompany.name } : undefined}
-                companies={(role === 'system_owner' && user?.tenant_id)
-                    ? (viewMode === 'demo'
-                        ? companies.filter(c => c.is_demo)
-                        : companies.filter(c => c.tenant_id === user.tenant_id)
-                    ).map(c => ({ id: c.id, name: c.name }))
-                    : companies.map(c => ({ id: c.id, name: c.name }))}
+                companies={contextCompanies.map(c => ({ id: c.id, name: c.name }))}
                 onSwitchCompany={(id) => {
                     console.log('[ContextSwitch] Manual switch to:', id);
                     const chosen = companies.find(c => c.id === id);
+                    const targetTenant = chosen?.tenant_id || tenantId || undefined;
                     if (typeof window !== 'undefined') {
                         localStorage.setItem('last_company_id', id);
                         if (chosen?.name) {
@@ -1003,13 +1409,10 @@ export const UniverseView: React.FC = () => {
                     loadDepartments(id);
                     // Also reload nodes to ensure deep space is correct
                     loadNodesForCompany(id).catch(console.warn);
+                    loadTree(targetTenant, id).catch(console.warn);
                     toast.success("Context Switched");
                 }}
-                visibleModes={
-                    role === 'system_owner'
-                        ? ['owner', 'workspace', 'demo']
-                        : (isDemoTenant(user?.tenant_id) ? ['owner', 'workspace', 'demo'] : ['workspace'])
-                }
+                visibleModes={visibleModes}
                 workspaceLabel={role === 'system_owner' ? 'HQ' : 'Space'}
             />
 
@@ -1025,27 +1428,36 @@ export const UniverseView: React.FC = () => {
             {/* CENTER UNIVERSE HUB - Premium Glass Design */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none pb-24">
                 <motion.div
-                    className="text-center"
+                    className="text-center pointer-events-auto"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.3, duration: 0.6 }}
                 >
                     {/* Company Logo - Universal Component */}
-                    <CompanyLogo
-                        src={
-                            currentCompany?.logo_url ||
-                            (currentCompany?.is_demo ? '/images/simple_coffee_logo.png' : null)
-                        }
-                        companyName={currentCompany?.name || 'Workspace'}
-                        size="lg"
-                        animated={true}
-                        accentColor={accentColor}
-                        className="mx-auto mb-8"
-                    />
+                    <button
+                        type="button"
+                        onClick={() => {
+                            navigateToCore();
+                            setOrbState('idle');
+                        }}
+                        className="mx-auto mb-8 block cursor-pointer"
+                        aria-label="Zurück zur Übersicht"
+                    >
+                        <CompanyLogo
+                            src={
+                                currentCompany?.logo_url ||
+                                (currentCompany?.is_demo ? '/images/simple_coffee_logo.png' : null)
+                            }
+                            companyName={displayCompanyName}
+                            size="lg"
+                            animated={true}
+                            accentColor={accentColor}
+                        />
+                    </button>
 
                     {/* Company Name */}
                     <h1 className="text-4xl md:text-5xl font-extralight tracking-[0.4em] text-white/80 mb-2">
-                        {currentCompany?.name?.toUpperCase() || 'WORKSPACE'}
+                        {displayCompanyName.toUpperCase()}
                     </h1>
 
                     {/* Divider */}
@@ -1078,95 +1490,6 @@ export const UniverseView: React.FC = () => {
             >
                 {/* SEMANTIC CONSTELLATIONS - The "Nervous System" */}
                 <SemanticLinesRenderer lines={connections} />
-                {/* MASTERBIBEL: Mycelium Connection Lines - Department to Stars */}
-                {viewMode !== 'owner' && (
-                    <svg
-                        className="absolute pointer-events-none"
-                        style={{
-                            left: '50%',
-                            top: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: '300vmax', // Covers largest dimension
-                            height: '300vmax',
-                            overflow: 'visible'
-                        }}
-                        viewBox="-1500 -1500 3000 3000" // Centered coordinate system
-                    >
-                        <defs>
-                            {/* PREMIUM LIGHT THREADS - Ethereal Glow */}
-                            <linearGradient id="myceliumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.15" />
-                                <stop offset="50%" stopColor="#60A5FA" stopOpacity="0.25" />
-                                <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.15" />
-                            </linearGradient>
-
-                            {/* Light Thread Glow Filter */}
-                            <filter id="lightThreadGlow" x="-100%" y="-100%" width="300%" height="300%">
-                                <feGaussianBlur stdDeviation="3" result="blur" />
-                                <feMerge>
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                        </defs>
-                        {/* UPGRADE B1: Enhanced mycelium connections - Planet to Moon to Star */}
-                        {planetPositions.map(({ planet, x: px, y: py }) => {
-                            if (planet.type !== 'department') return null;
-                            const planetMoons = moonPositions.filter(m => m.space.departmentId === planet.id);
-                            return planetMoons.map((moon, moonIdx) => (
-                                <g key={`connections-${planet.id}-${moon.space.id}`}>
-                                    {/* Planet to Moon - LIGHT THREAD */}
-                                    <motion.line
-                                        x1={600 + px}
-                                        y1={600 + py}
-                                        x2={600 + moon.x}
-                                        y2={600 + moon.y}
-                                        stroke="url(#myceliumGradient)"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        filter="url(#lightThreadGlow)"
-                                        initial={{ pathLength: 0, opacity: 0 }}
-                                        animate={{
-                                            pathLength: 1,
-                                            opacity: hoveredPlanet === planet.id ? [0.3, 0.6, 0.3] : 0.12
-                                        }}
-                                        transition={{
-                                            duration: hoveredPlanet === planet.id ? 2 : 1.2,
-                                            repeat: hoveredPlanet === planet.id ? Infinity : 0,
-                                            delay: moonIdx * 0.1
-                                        }}
-                                    />
-
-                                    {/* Moon to Stars connections */}
-                                    {moon.space.id && folderStarPositions
-                                        .filter(star => star.parentMoon?.space.id === moon.space.id)
-                                        .map((star, starIdx) => (
-                                            <motion.line
-                                                key={`moon-star-${moon.space.id}-${star.folder.id}`}
-                                                x1={600 + moon.x}
-                                                y1={600 + moon.y}
-                                                x2={600 + star.x}
-                                                y2={600 + star.y}
-                                                stroke="url(#myceliumGradient)"
-                                                strokeWidth="0.4"
-                                                initial={{ pathLength: 0, opacity: 0 }}
-                                                animate={{
-                                                    pathLength: 1,
-                                                    opacity: hoveredPlanet === planet.id ? 0.3 : 0.08
-                                                }}
-                                                transition={{
-                                                    duration: 0.8,
-                                                    delay: moonIdx * 0.1 + starIdx * 0.05 + 0.3
-                                                }}
-                                            />
-                                        ))}
-                                </g>
-                            ));
-                        })}
-                    </svg>
-                )}
-
                 {/* UPGRADE E1: Semantic Constellations - SVG-based connection visualization */}
                 {viewMode !== 'owner' && (
                     <svg
@@ -1178,10 +1501,10 @@ export const UniverseView: React.FC = () => {
                         <defs>
                             {/* NEURAL PATHWAY GRADIENT - Premium Light */}
                             <linearGradient id="semanticGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.4" />
-                                <stop offset="30%" stopColor="#60A5FA" stopOpacity="0.3" />
-                                <stop offset="70%" stopColor="#8B5CF6" stopOpacity="0.3" />
-                                <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.4" />
+                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.7" />
+                                <stop offset="30%" stopColor="#60A5FA" stopOpacity="0.55" />
+                                <stop offset="70%" stopColor="#8B5CF6" stopOpacity="0.55" />
+                                <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.7" />
                             </linearGradient>
 
                             {/* Pure White Light for Sun Rays */}
@@ -1204,8 +1527,8 @@ export const UniverseView: React.FC = () => {
 
                         {/* Render semantic constellation lines */}
                         {(() => {
-                            // UPGRADE E1: Generate semantic connections between visible entities
-                            const connections: Array<{
+                            if (!focusPlanetId) return null;
+                            const semanticConnections: Array<{
                                 id: string;
                                 x1: number;
                                 y1: number;
@@ -1213,111 +1536,126 @@ export const UniverseView: React.FC = () => {
                                 y2: number;
                                 strength: number;
                                 animated: boolean;
+                                orbit?: {
+                                    x1?: number[];
+                                    y1?: number[];
+                                    x2?: number[];
+                                    y2?: number[];
+                                };
                             }> = [];
 
-                            // REMOVED: Sun-to-Planet connections
-                            // Planets are now STATIC - no permanent lines to center
-                            // The "Sun" is the ORB (bottom-right), not the center logo
+                            const focusPlanet = planetPositions.find(p => p.planet?.id === focusPlanetId);
+                            if (!focusPlanet) return null;
 
-                            // Only show connections between related entities (moons, stars, nodes)
-                            // NOT from the center logo to planets
+                            const isFocusedPlanet = hoveredPlanet === focusPlanetId || heldPlanetId === focusPlanetId || activeDepartmentId === focusPlanetId;
 
-                            // Connect planets to their moons (INTELLIGENCE-BASED ONLY)
-                            // "Colored strokes around planets... only if important"
-                            planetPositions.forEach(planet => {
-                                const planetMoons = moonPositions.filter(m => m.parentPlanet?.planet?.id === planet.planet?.id);
-                                planetMoons.forEach((moon, idx) => {
-                                    // MOCK INTELLIGENCE: Deterministic importance based on ID
-                                    // In a real system, this comes from the backend cognition layer
-                                    const seed = (moon.space.id.charCodeAt(0) + moon.space.id.charCodeAt(moon.space.id.length - 1)) % 100;
-                                    const importance = seed / 100; // 0.0 to 1.0
+                            visibleMoonPositions.forEach(moon => {
+                                const spaceScore = spaceScores.get(moon.space.id) || 0;
+                                const normalizedSpace = spaceScore / maxSpaceScore;
+                                const isFocusedMoon = isFocusedPlanet || moon.space.id === activeSpaceId;
+                                const showMoonConnection = isFocusedMoon || promotedMoonIds.has(moon.space.id);
+                                if (!showMoonConnection) return;
+                                const moonOrbitOffsets = moonOrbitOffsetMap.get(moon.space.id);
 
-                                    // Only show connection if important (>0.6) OR active/hovered
-                                    // This creates the "strokes" effect only for relevant items
-                                    const isRelevant = importance > 0.6 || moon.space.id === activeSpaceId;
-
-                                    if (isRelevant) {
-                                        connections.push({
-                                            id: `semantic-${planet.planet.id}-${moon.space.id}`,
-                                            x1: planet.x,
-                                            y1: planet.y,
-                                            x2: moon.x,
-                                            y2: moon.y,
-                                            strength: Math.max(0.4, importance), // Minimum visibility
-                                            animated: importance > 0.8 // Pulse for very important items
-                                        });
-                                    }
+                                semanticConnections.push({
+                                    id: `semantic-planet-${focusPlanetId}-${moon.space.id}`,
+                                    x1: focusPlanet.x,
+                                    y1: focusPlanet.y,
+                                    x2: moon.x,
+                                    y2: moon.y,
+                                    strength: 0.25 + (normalizedSpace * 0.55),
+                                    animated: isFocusedMoon || normalizedSpace > 0.75,
+                                    orbit: moonOrbitOffsets ? {
+                                        x2: moonOrbitOffsets.map(o => moon.x + o.x),
+                                        y2: moonOrbitOffsets.map(o => moon.y + o.y)
+                                    } : undefined
                                 });
-                            });
 
-                            // Connect moons to their stars (Folders)
-                            moonPositions.forEach(moon => {
-                                const moonStars = folderStarPositions.filter(s => s.parentMoon?.space.id === moon.space.id);
-                                moonStars.forEach((star, idx) => {
-                                    // Mock importance for stars
-                                    const seed = (star.folder.id.charCodeAt(0) + idx) % 100;
-                                    const importance = seed / 100;
+                                const moonStars = visibleFolderStarPositions.filter(s => s.parentMoon?.space.id === moon.space.id);
+                                moonStars.forEach(star => {
+                                    const folderScore = folderScores.get(star.folder.id) || 0;
+                                    const normalizedFolder = folderScore / maxFolderScore;
+                                    const isFocusedStar = isFocusedMoon || star.folder.id === activeFolderId;
+                                    const showStarConnection = isFocusedStar || promotedFolderIds.has(star.folder.id);
+                                    if (!showStarConnection) return;
+                                    const folderOrbitOffsets = folderOrbitOffsetMap.get(star.folder.id) || moonOrbitOffsets;
 
-                                    // Stars often have connections to their Moon parent
-                                    connections.push({
-                                        id: `semantic-${moon.space.id}-${star.folder.id}`,
+                                    semanticConnections.push({
+                                        id: `semantic-moon-${moon.space.id}-${star.folder.id}`,
                                         x1: moon.x,
                                         y1: moon.y,
                                         x2: star.x,
                                         y2: star.y,
-                                        strength: importance * 0.5,
-                                        animated: false
+                                        strength: 0.2 + (normalizedFolder * 0.4),
+                                        animated: isFocusedStar || normalizedFolder > 0.75,
+                                        orbit: moonOrbitOffsets ? {
+                                            x1: moonOrbitOffsets.map(o => moon.x + o.x),
+                                            y1: moonOrbitOffsets.map(o => moon.y + o.y),
+                                            x2: moonOrbitOffsets.map(o => star.x + o.x),
+                                            y2: moonOrbitOffsets.map(o => star.y + o.y)
+                                        } : undefined
+                                    });
+
+                                    const folderNodes = (visibleNodePositionsByFolder.get(star.folder.id) || [])
+                                        .map(entry => ({
+                                            ...entry,
+                                            score: nodeScores.get(entry.id) || 0
+                                        }))
+                                        .sort((a, b) => b.score - a.score);
+
+                                    const maxNodeLinks = isFocusedStar ? 6 : 4;
+                                    const nodeCandidates = folderNodes.slice(0, maxNodeLinks);
+                                    const nodeLinkTargets = nodeCandidates.filter(entry => isFocusedStar || promotedNodeIds.has(entry.id));
+
+                                    nodeLinkTargets.forEach(nodePos => {
+                                        const normalizedNode = nodePos.score / maxNodeScore;
+                                        semanticConnections.push({
+                                            id: `semantic-star-${star.folder.id}-${nodePos.id}`,
+                                            x1: star.x,
+                                            y1: star.y,
+                                            x2: nodePos.x,
+                                            y2: nodePos.y,
+                                            strength: 0.18 + (normalizedNode * 0.3),
+                                            animated: normalizedNode > 0.8,
+                                            orbit: folderOrbitOffsets ? {
+                                                x1: folderOrbitOffsets.map(o => star.x + o.x),
+                                                y1: folderOrbitOffsets.map(o => star.y + o.y),
+                                                x2: folderOrbitOffsets.map(o => nodePos.x + o.x),
+                                                y2: folderOrbitOffsets.map(o => nodePos.y + o.y)
+                                            } : undefined
+                                        });
                                     });
                                 });
                             });
 
-                            return connections.map(connection => {
-                                const isSunConnection = connection.id.startsWith('sun-');
-                                const baseOpacity = connection.strength * 0.4;
-
-                                // Organic Curve Calculation (Bezier)
-                                const dx = connection.x2 - connection.x1;
-                                const dy = connection.y2 - connection.y1;
-                                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                                // Curvature based on distance (subtle arc)
-                                const curvature = 0.1;
-                                const midX = (connection.x1 + connection.x2) / 2;
-                                const midY = (connection.y1 + connection.y2) / 2;
-
-                                // Orthogonal offset for control point
-                                // Deterministic direction based on ID hash or coordinates to keep it stable
-                                const angle = Math.atan2(dy, dx);
-                                const offset = distance * curvature;
-                                const ctrlX = midX - Math.sin(angle) * offset;
-                                const ctrlY = midY + Math.cos(angle) * offset;
-
-                                const pathData = `M ${connection.x1} ${connection.y1} Q ${ctrlX} ${ctrlY} ${connection.x2} ${connection.y2}`;
+                            return semanticConnections.map(connection => {
+                                const baseOpacity = Math.min(0.85, 0.35 + (connection.strength * 0.6));
+                                const hasOrbit = orbitActive && connection.orbit;
+                                const x1 = (hasOrbit && connection.orbit?.x1) ? connection.orbit.x1 : connection.x1;
+                                const y1 = (hasOrbit && connection.orbit?.y1) ? connection.orbit.y1 : connection.y1;
+                                const x2 = (hasOrbit && connection.orbit?.x2) ? connection.orbit.x2 : connection.x2;
+                                const y2 = (hasOrbit && connection.orbit?.y2) ? connection.orbit.y2 : connection.y2;
+                                const transition = {
+                                    duration: hasOrbit ? 18 : (connection.animated ? 3.5 : 0.9),
+                                    repeat: (hasOrbit || connection.animated) ? Infinity : 0,
+                                    ease: hasOrbit ? "linear" : "easeInOut"
+                                };
 
                                 return (
                                     <g key={connection.id}>
-                                        {/* Organic Path Stroke */}
-                                        <motion.path
-                                            d={pathData}
-                                            stroke={isSunConnection ? "url(#sunRayGradient)" : "url(#semanticGradient)"}
-                                            strokeWidth={isSunConnection ? 2 : connection.strength * 2.5}
+                                        {/* Primary Glow Line */}
+                                        <motion.line
+                                            x1={connection.x1}
+                                            y1={connection.y1}
+                                            x2={connection.x2}
+                                            y2={connection.y2}
+                                            animate={{ x1, y1, x2, y2, opacity: baseOpacity }}
+                                            stroke="url(#semanticGradient)"
+                                            strokeWidth={connection.animated ? 1.6 : 1.1}
                                             strokeLinecap="round"
-                                            fill="none"
                                             filter="url(#neuralGlow)"
-                                            initial={{ pathLength: 0, opacity: 0 }}
-                                            animate={connection.animated ? {
-                                                pathLength: [0.9, 1, 0.9],
-                                                opacity: [baseOpacity, baseOpacity * 1.5, baseOpacity],
-                                                strokeWidth: [connection.strength * 2.5, connection.strength * 3.5, connection.strength * 2.5]
-                                            } : {
-                                                pathLength: 1,
-                                                opacity: baseOpacity
-                                            }}
-                                            transition={{
-                                                duration: connection.animated ? 4 : 1,
-                                                repeat: connection.animated ? Infinity : 0,
-                                                ease: "easeInOut"
-                                            }}
+                                            initial={{ opacity: 0 }}
+                                            transition={transition}
                                         />
 
                                         {/* Core Light Thread */}
@@ -1326,19 +1664,32 @@ export const UniverseView: React.FC = () => {
                                             y1={connection.y1}
                                             x2={connection.x2}
                                             y2={connection.y2}
-                                            stroke={isSunConnection ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)"}
-                                            strokeWidth={isSunConnection ? 0.8 : 0.4}
+                                            stroke="rgba(255,255,255,0.3)"
+                                            strokeWidth={connection.animated ? 0.8 : 0.5}
                                             strokeLinecap="round"
-                                            initial={{ pathLength: 0, opacity: 0 }}
+                                            initial={{ opacity: 0 }}
                                             animate={{
-                                                pathLength: 1,
-                                                opacity: isSunConnection ? [0.3, 0.6, 0.3] : connection.strength * 0.3
+                                                x1,
+                                                y1,
+                                                x2,
+                                                y2,
+                                                opacity: connection.animated ? [0.3, 0.7, 0.3] : connection.strength * 0.4
                                             }}
-                                            transition={{
-                                                duration: isSunConnection ? 3 : 0.8,
-                                                repeat: isSunConnection ? Infinity : 0,
-                                                ease: "easeInOut"
+                                            transition={transition}
+                                        />
+
+                                        {/* Endpoint Glow */}
+                                        <motion.circle
+                                            cx={connection.x2}
+                                            cy={connection.y2}
+                                            r={connection.animated ? 0.45 : 0.3}
+                                            fill="rgba(255,255,255,0.6)"
+                                            animate={{
+                                                cx: x2,
+                                                cy: y2,
+                                                opacity: connection.animated ? [0.4, 0.9, 0.4] : 0.45
                                             }}
+                                            transition={transition}
                                         />
                                     </g>
                                 );
@@ -1360,7 +1711,7 @@ export const UniverseView: React.FC = () => {
                             const isActive = planet.type === 'department'
                                 ? planet.id === activeDepartmentId
                                 : planet.id === activeCompanyId;
-                            const isHoveredPlanet = hoveredPlanet === planet.id;
+                            const isHoveredPlanet = hoveredPlanet === planet.id || heldPlanetId === planet.id;
 
                             return (
                                 <div
@@ -1395,11 +1746,12 @@ export const UniverseView: React.FC = () => {
                                     <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent pointer-events-none z-10" />
                                     <Planet
                                         department={planet}
+                                        iconOverride={departmentIconMap.get(planet.id)}
                                         position={{ x: 0, y: 0 }}
                                         delay={delay}
                                         isActive={isActive}
                                         size={isActive ? 'lg' : 'md'}
-                                        orbitActive={planetOrbitActive}
+                                        orbitActive={orbitActive}
                                         onClick={() => {
                                             if (planet.type === 'company') {
                                                 // COMPLETE COMPANY SWITCH - Load all company data
@@ -1466,151 +1818,215 @@ export const UniverseView: React.FC = () => {
                 </div>
 
 
-                {viewMode !== 'owner' && moonPositions.length > 0 && (
-                    <div className="absolute inset-0 w-full h-full pointer-events-none">
-                        {moonPositions.map(({ space, x, y, delay, parentPlanet }) => (
-                            <motion.div
-                                key={space.id}
-                                className="absolute"
-                                initial={{ scale: 0, opacity: 0 }}
-                                style={{
-                                    left: `${x}vw`,
-                                    top: `${y}vh`,
-                                    transform: 'translate(-50%, -50%)'
-                                }}
-                                animate={{
-                                    scale: 1,
-                                    opacity: 1,
-                                    // x/y offsets would need px calibration if used with left/top %, skipping orbitShift for complexity reduction or use transform
-                                }}
-                                transition={{
-                                    delay,
-                                    duration: orbitShiftActive ? 1.5 : 0.8,
-                                    ease: orbitShiftActive ? [0.25, 0.46, 0.45, 0.94] : "easeOut"
-                                }}
-                            >
-                                {/* Orbit trail removed for complexity reduction on VW/VH scale */}
-
-                                <Star
-                                    space={{
-                                        id: space.id,
-                                        name: space.name,
-                                        department_id: space.departmentId,
-                                        color: '#60A5FA', // Blue for moons (spaces)
-                                        description: space.description || undefined,
-                                        folder_count: (foldersBySpace[space.id] || []).length
+                {viewMode !== 'owner' && visibleMoonPositions.length > 0 && (
+                    <div className="absolute inset-0 w-full h-full pointer-events-auto">
+                        {visibleMoonPositions.map(({ space, x, y, delay, parentPlanet }) => {
+                            const originX = parentPlanet?.x ?? x;
+                            const originY = parentPlanet?.y ?? y;
+                            const moonOrbitOffsets = parentPlanet
+                                ? (moonOrbitOffsetMap.get(space.id) || getOrbitOffsets(originX, originY, x, y))
+                                : null;
+                            return (
+                                <motion.div
+                                    key={space.id}
+                                    className="absolute"
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    style={{
+                                        left: `${x}vw`,
+                                        top: `${y}vh`,
+                                        transform: 'translate(-50%, -50%)'
                                     }}
-                                    position={{ x: 0, y: 0 }} // Relative positioning
-                                    delay={delay}
-                                    isActive={activeSpaceId === space.id}
-                                    orbitActive={planetOrbitActive}
-                                    isHoveredByPlanet={hoveredPlanet === space.departmentId}
-                                    onClick={() => {
-                                        setOrbState('focus');
-                                        navigateToSpace(space.id);
-                                        setTimeout(() => setOrbState('idle'), 2000);
+                                    animate={{
+                                        scale: 1,
+                                        opacity: 1,
+                                        x: (orbitActive && moonOrbitOffsets) ? moonOrbitOffsets.map(o => o.x) : 0,
+                                        y: (orbitActive && moonOrbitOffsets) ? moonOrbitOffsets.map(o => o.y) : 0
                                     }}
-                                />
-                            </motion.div>
-                        ))}
+                                    transition={{
+                                        delay,
+                                        duration: orbitActive ? 18 : (orbitShiftActive ? 1.5 : 0.8),
+                                        repeat: orbitActive ? Infinity : 0,
+                                        ease: orbitActive ? "linear" : "easeInOut"
+                                    }}
+                                >
+                                    <Star
+                                        space={{
+                                            id: space.id,
+                                            name: space.name,
+                                            department_id: space.departmentId,
+                                            color: parentPlanet?.planet?.color || '#60A5FA', // Match planet hue
+                                            description: space.description || undefined,
+                                            folder_count: (foldersBySpace[space.id] || []).length
+                                        }}
+                                        position={{ x: '50%', y: '50%' }} // Center within wrapper
+                                        delay={delay}
+                                        isActive={activeSpaceId === space.id}
+                                        size={(activeSpaceId === space.id || promotedMoonIds.has(space.id)) ? 'lg' : 'md'}
+                                        orbitActive={orbitActive}
+                                        isPromoted={promotedMoonIds.has(space.id)}
+                                        isHoveredByPlanet={hoveredPlanet === space.departmentId || heldPlanetId === space.departmentId}
+                                        onHover={(hovered) => {
+                                            if (hovered && parentMoon?.space.departmentId) {
+                                                schedulePlanetHold(parentMoon.space.departmentId);
+                                            }
+                                        }}
+                                        onClick={() => {
+                                            setOrbState('focus');
+                                            navigateToSpace(space.id);
+                                            setTimeout(() => setOrbState('idle'), 2000);
+                                        }}
+                                    />
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
 
                 {/* STARS (Folders) orbiting moons */}
-                {viewMode !== 'owner' && folderStarPositions.length > 0 && (
-                    <div className="absolute inset-0 w-full h-full pointer-events-none">
-                        {folderStarPositions.map(({ folder, x, y, delay, parentMoon }) => (
-                            <motion.div
-                                key={folder.id}
-                                className="absolute"
-                                initial={{ scale: 0, opacity: 0 }}
-                                style={{
-                                    left: `${x}vw`,
-                                    top: `${y}vh`,
-                                    transform: 'translate(-50%, -50%)'
+                {viewMode !== 'owner' && visibleFolderStarPositions.length > 0 && (
+                    <div className="absolute inset-0 w-full h-full pointer-events-auto">
+                        {visibleFolderStarPositions.map(({ folder, x, y, delay, parentMoon }) => {
+                            const moonOrbitOffsets = parentMoon?.space.id
+                                ? moonOrbitOffsetMap.get(parentMoon.space.id)
+                                : null;
 
-                                }}
-                                animate={{
-                                    scale: 1,
-                                    opacity: 1
-                                }}
-                                transition={{
-                                    delay,
-                                    duration: orbitShiftActive ? 1.8 : 0.6,
-                                    ease: orbitShiftActive ? [0.25, 0.46, 0.45, 0.94] : "easeOut"
-                                }}
-                            >
-                                <NodeStar
-                                    node={{
-                                        id: folder.id,
-                                        space_id: parentMoon?.space.id || '',
-                                        title: folder.name,
-                                        type: 'other', // Folders are represented as 'other' type nodes
-                                        content: folder.description || '',
-                                        created_at: folder.created_at,
-                                        updated_at: folder.created_at
+                            return (
+                                <motion.div
+                                    key={folder.id}
+                                    className="absolute"
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    style={{
+                                        left: `${x}vw`,
+                                        top: `${y}vh`,
+                                        transform: 'translate(-50%, -50%)'
                                     }}
-                                    position={{ x: 0, y: 0 }}
-                                    delay={delay}
-                                    size="sm" // Smaller for folder stars
-                                />
-                            </motion.div>
-                        ))}
+                                    animate={{
+                                        scale: 1,
+                                        opacity: 1,
+                                        x: (orbitActive && moonOrbitOffsets) ? moonOrbitOffsets.map(o => o.x) : 0,
+                                        y: (orbitActive && moonOrbitOffsets) ? moonOrbitOffsets.map(o => o.y) : 0
+                                    }}
+                                    transition={{
+                                        delay,
+                                        duration: orbitActive ? 18 : (orbitShiftActive ? 1.8 : 0.6),
+                                        repeat: orbitActive ? Infinity : 0,
+                                        ease: orbitActive ? "linear" : (orbitShiftActive ? [0.25, 0.46, 0.45, 0.94] : "easeOut")
+                                    }}
+                                >
+                                    <Folder
+                                        folder={{
+                                            id: folder.id,
+                                            name: folder.name,
+                                            space_id: parentMoon?.space.id,
+                                            description: folder.description || '',
+                                            node_count: nodesByFolder.get(folder.id)?.length || 0,
+                                            type: 'folder'
+                                        }}
+                                        position={{ x: '50%', y: '50%' }}
+                                        delay={delay}
+                                        size={promotedFolderIds.has(folder.id) ? 'md' : 'sm'}
+                                        isActive={activeFolderId === folder.id}
+                                        orbitActive={orbitActive}
+                                        isPromoted={promotedFolderIds.has(folder.id)}
+                                        onHover={(hover) => {
+                                            if (hover && parentMoon?.space.departmentId) {
+                                                schedulePlanetHold(parentMoon.space.departmentId);
+                                            }
+                                        }}
+                                        onClick={() => {
+                                            setOrbState('focus');
+                                            if (parentMoon?.space.id) {
+                                                setActiveSpace(parentMoon.space.id);
+                                            }
+                                            if (parentMoon?.space.departmentId) {
+                                                setActiveDepartment(parentMoon.space.departmentId);
+                                            }
+                                            navigateToFolder(folder.id);
+                                            setTimeout(() => setOrbState('idle'), 1600);
+                                        }}
+                                    />
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
 
-                {/* PROMOTED MOONS removed - important nodes now shown only in Semantic Cluster (top-left) */}
-                {/* This prevents duplicate moon-like elements around planets */}
-
                 {/* Node Stars - Ambient knowledge particles throughout the universe */}
-                {/* IMPORTANT: Exclude nodes already rendered as promotedMoons to prevent duplicate keys */}
-                {viewMode !== 'owner' && nodeStarPositions.length > 0 && (
-                    <div className="absolute inset-0 pointer-events-none z-20">
-                        {/* UPGRADE E2: SEMANTIC CONSTELLATION LAYER - Light Connections */}
-                        <div className="absolute inset-0 pointer-events-none z-0">
-                            <SemanticLinesRenderer lines={connections} />
-                        </div>
+                {viewMode !== 'owner' && visibleNodeStarPositions.length > 0 && (
+                    <div className="absolute inset-0 pointer-events-auto z-20">
+                        {visibleNodeStarPositions.map(({ node, x, y, delay }) => {
+                            const nodeOrbitOffsets = node.folder_id
+                                ? folderOrbitOffsetMap.get(node.folder_id)
+                                : moonOrbitOffsetMap.get(node.space_id);
 
-                        {nodeStarPositions
-                            .filter(({ node }) => !promotedMoons.some(pm => pm.node.id === node.id))
-                            .map(({ node, x, y, delay }) => (
-                                <NodeStar
+                            return (
+                                <motion.div
                                     key={node.id}
-                                    node={node}
-                                    position={{ x: `${x}vw`, y: `${y}vh` }}
-                                    delay={delay}
-                                    size="xs"
-                                    onHover={(hover) => {
-                                        if (hover) {
-                                            // Build map of current positions for the renderer
-                                            const currentPosMap = new Map<string, { x: number, y: number }>();
-
-                                            // Add visible stars (Folders)
-                                            folderStarPositions.forEach(s => {
-                                                // Convert VW/VH to pixels roughly for the line renderer
-                                                // Note: The renderer needs pixels. 
-                                                // This is a simplification. Ideally we track refs.
-                                                currentPosMap.set(s.folder.id, {
-                                                    x: (s.x / 100) * window.innerWidth,
-                                                    y: (s.y / 100) * window.innerHeight
-                                                });
-                                            });
-
-                                            // Add visible nodes
-                                            nodeStarPositions.forEach(n => {
-                                                currentPosMap.set(n.node.id, {
-                                                    x: (n.x / 100) * window.innerWidth,
-                                                    y: (n.y / 100) * window.innerHeight
-                                                });
-                                            });
-
-                                            fetchConstellation(node.id, currentPosMap);
-                                        } else {
-                                            clearConstellation();
-                                        }
+                                    className="absolute"
+                                    style={{
+                                        left: `${x}vw`,
+                                        top: `${y}vh`,
+                                        transform: 'translate(-50%, -50%)'
                                     }}
-                                />
-                            ))}
+                                    animate={{
+                                        x: (orbitActive && nodeOrbitOffsets) ? nodeOrbitOffsets.map(o => o.x) : 0,
+                                        y: (orbitActive && nodeOrbitOffsets) ? nodeOrbitOffsets.map(o => o.y) : 0
+                                    }}
+                                    transition={{
+                                        duration: orbitActive ? 18 : 0.6,
+                                        repeat: orbitActive ? Infinity : 0,
+                                        ease: orbitActive ? "linear" : "easeOut"
+                                    }}
+                                >
+                                    <NodeStar
+                                        node={node}
+                                        position={{ x: '50%', y: '50%' }}
+                                        delay={delay}
+                                        size="xs"
+                                        isPromoted={promotedNodeIds.has(node.id)}
+                                        onClick={() => {
+                                            setOrbState('thinking');
+                                            loadNodeDetails(node.id).catch(console.warn);
+                                            setTimeout(() => setOrbState('idle'), 1400);
+                                        }}
+                                        onHover={(hover) => {
+                                            if (hover) {
+                                                if (orbitActive) {
+                                                    clearConstellation();
+                                                    return;
+                                                }
+                                                const deptId = spaceDepartmentMap.get(node.space_id) || focusPlanetId || null;
+                                                if (deptId) {
+                                                    schedulePlanetHold(deptId);
+                                                }
+                                                // Build map of current positions for the renderer
+                                                const currentPosMap = new Map<string, { x: number, y: number }>();
+
+                                                // Add visible stars (Folders) - keep VW/VH (0-100) to match SVG viewBox
+                                                visibleFolderStarPositions.forEach(s => {
+                                                    currentPosMap.set(s.folder.id, {
+                                                        x: s.x,
+                                                        y: s.y
+                                                    });
+                                                });
+
+                                                // Add visible nodes (VW/VH)
+                                                visibleNodeStarPositions.forEach(n => {
+                                                    currentPosMap.set(n.node.id, {
+                                                        x: n.x,
+                                                        y: n.y
+                                                    });
+                                                });
+
+                                                fetchConstellation(node.id, currentPosMap);
+                                            } else {
+                                                clearConstellation();
+                                            }
+                                        }}
+                                    />
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 )}
 

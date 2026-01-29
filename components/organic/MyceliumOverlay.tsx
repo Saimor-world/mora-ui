@@ -13,9 +13,9 @@ import { useMoraStore } from '@/lib/store/moraState';
 // ============================================================================
 
 const GRID_SIZE = 150;                      // Spatial hash cell size
-const MAX_CONNECTIONS_PER_PARTICLE = 6;     // More connections for denser network
-const CONNECTION_DISTANCE = 150;            // Longer hyphen-like connections
-const BASE_PARTICLE_DENSITY = 15000;        // More particles (was 20000 = less dense)
+const MAX_CONNECTIONS_PER_PARTICLE = 4;     // Lighter network (let stars breathe)
+const CONNECTION_DISTANCE = 140;            // Tighter, less dominant connections
+const BASE_PARTICLE_DENSITY = 24000;        // Lower density for clearer starfield
 
 interface Particle {
     x: number;
@@ -33,7 +33,7 @@ interface Particle {
 export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     // Sprint Tag 5-7: Add activeFolderId for Folder-Pulse
-    const { departments, activeSpaceId, activeFolderId, activeNode } = useMoraStore();
+    const { departments, activeSpaceId, activeFolderId, activeNode, orbState } = useMoraStore();
 
     // Reactive visual states
     const [shimmerIntensity, setShimmerIntensity] = useState(0);
@@ -82,6 +82,18 @@ export const MyceliumOverlay: React.FC = () => {
         }
     }, [activeFolderId]);
 
+    // React to Orb state shifts (light pulse)
+    useEffect(() => {
+        if (orbState === 'insight' || orbState === 'focus') {
+            setShimmerIntensity(0.6);
+            setTimeout(() => setShimmerIntensity(0), 900);
+        }
+        if (orbState === 'alert') {
+            setGrowthPulse(0.5);
+            setTimeout(() => setGrowthPulse(0), 700);
+        }
+    }, [orbState]);
+
     // Sprint Tag 5-7: Listen for Intel-Report creation (Synapsen-Blitz)
     useEffect(() => {
         const handleIntelReport = (event: Event) => {
@@ -125,8 +137,8 @@ export const MyceliumOverlay: React.FC = () => {
                     y,
                     vx: (Math.random() - 0.5) * 0.2,  // Slower, more organic drift
                     vy: (Math.random() - 0.5) * 0.2,
-                    size: Math.random() * 3 + 1.5,    // Larger spore-like particles
-                    alpha: Math.random() * 0.45 + 0.2, // More visible
+                    size: Math.random() * 2.6 + 1.2,   // Organic spores, but lighter
+                    alpha: Math.random() * 0.35 + 0.12, // Softer base visibility
                     pulse: Math.random() * Math.PI * 2,
                     cellX: Math.floor(x / GRID_SIZE),
                     cellY: Math.floor(y / GRID_SIZE),
@@ -179,6 +191,8 @@ export const MyceliumOverlay: React.FC = () => {
                 p.pulse += 0.02 + (growthPulse * 0.05);
             });
 
+            const baseVisibility = 0.04;
+
             // Draw connections using spatial optimization
             particles.forEach(p => {
                 if (p.connections >= MAX_CONNECTIONS_PER_PARTICLE) return;
@@ -200,18 +214,26 @@ export const MyceliumOverlay: React.FC = () => {
 
                             if (distSq < CONNECTION_DISTANCE * CONNECTION_DISTANCE) {
                                 const dist = Math.sqrt(distSq);
-                                const opacity = 0.25 * (1 - dist / CONNECTION_DISTANCE); // Thicker connections
+                                const opacity = 0.22 * (1 - dist / CONNECTION_DISTANCE) + baseVisibility;
                                 const shimmer = shimmerIntensity * 0.4;
 
-                                // Hyphen-like organic connections with gradient
+                                // Hyphen-like organic connections with gradient (orb-reactive)
                                 const gradient = ctx.createLinearGradient(p.x, p.y, p2.x, p2.y);
-                                gradient.addColorStop(0, `rgba(234, 179, 8, ${opacity + shimmer})`); // Gold
-                                gradient.addColorStop(0.5, `rgba(16, 185, 129, ${opacity * 0.7 + shimmer})`); // Emerald
-                                gradient.addColorStop(1, `rgba(234, 179, 8, ${opacity + shimmer})`); // Gold
+                                const coreColor = orbState === 'insight'
+                                    ? 'rgba(245, 158, 11, '
+                                    : orbState === 'thinking'
+                                        ? 'rgba(59, 130, 246, '
+                                        : orbState === 'alert'
+                                            ? 'rgba(239, 68, 68, '
+                                            : 'rgba(16, 185, 129, ';
+                                const glow = Math.min(1, opacity + shimmer);
+                                gradient.addColorStop(0, `${coreColor}${glow})`);
+                                gradient.addColorStop(0.5, `rgba(234, 179, 8, ${Math.min(1, opacity * 0.7 + shimmer)})`);
+                                gradient.addColorStop(1, `${coreColor}${glow})`);
 
                                 ctx.beginPath();
                                 ctx.strokeStyle = gradient;
-                                ctx.lineWidth = 1 + shimmer * 2;  // Thicker hyphen-like strands
+                                ctx.lineWidth = 0.9 + shimmer * 1.8;
                                 ctx.moveTo(p.x, p.y);
                                 ctx.lineTo(p2.x, p2.y);
                                 ctx.stroke();
@@ -226,14 +248,20 @@ export const MyceliumOverlay: React.FC = () => {
 
             // Draw particles (spore-like)
             particles.forEach(p => {
-                const currentAlpha = p.alpha + Math.sin(p.pulse) * 0.1 + (shimmerIntensity * 0.3); // Stronger breathing
-                const currentSize = p.size + (growthPulse * 1.2); // More growth
+                const currentAlpha = Math.min(
+                    1,
+                    p.alpha +
+                    Math.sin(p.pulse) * 0.09 +
+                    (shimmerIntensity * 0.25) +
+                    baseVisibility
+                );
+                const currentSize = p.size + (growthPulse * 1.1);
 
                 // Outer glow (always visible, organic halo)
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, currentSize * 1.5, 0, Math.PI * 2);
                 const outerGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize * 1.5);
-                outerGradient.addColorStop(0, `rgba(234, 179, 8, ${currentAlpha * 0.3})`);
+                outerGradient.addColorStop(0, `rgba(234, 179, 8, ${currentAlpha * 0.45})`);
                 outerGradient.addColorStop(1, 'rgba(234, 179, 8, 0)');
                 ctx.fillStyle = outerGradient;
                 ctx.fill();
@@ -243,7 +271,7 @@ export const MyceliumOverlay: React.FC = () => {
                 ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
                 const coreGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize);
                 coreGradient.addColorStop(0, `rgba(234, 179, 8, ${currentAlpha})`);
-                coreGradient.addColorStop(1, `rgba(16, 185, 129, ${currentAlpha * 0.7})`);
+                coreGradient.addColorStop(1, `rgba(16, 185, 129, ${currentAlpha * 0.8})`);
                 ctx.fillStyle = coreGradient;
                 ctx.fill();
 
@@ -270,7 +298,7 @@ export const MyceliumOverlay: React.FC = () => {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-auto z-0 opacity-70 cursor-pointer"
+            className="fixed inset-0 pointer-events-none z-0 opacity-35"
             style={{ mixBlendMode: 'screen' }}
         />
     );

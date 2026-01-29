@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
-import { ROLE_SYSTEM_OWNER, isDemoTenant as checkDemoTenant } from '@/lib/constants/tenants';
+import { ROLE_SYSTEM_OWNER, TENANT_HQ, isDemoTenant as checkDemoTenant } from '@/lib/constants/tenants';
 import {
     fetchDepartments,
     fetchCompanies,
@@ -121,6 +121,7 @@ interface MoraState {
         target?: { x: number, y: number };
     };
     hasBooted: boolean;
+    isLoggingOut: boolean;
 
     // P1-B: Speculative Orb Awareness (Zero Latency)
     speculativeState?: OrbState;
@@ -141,6 +142,7 @@ interface MoraState {
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
     setHasBooted: (hasBooted: boolean) => void;
+    setIsLoggingOut: (isLoggingOut: boolean) => void;
     minimizeNode: (node: CoreNode) => void;
     restoreNode: (nodeId: string) => void;
     closeNode: (nodeId: string) => void;
@@ -222,6 +224,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         target: undefined
     },
     hasBooted: false,
+    isLoggingOut: false,
 
     // User & Permissions (Phase 6.3) - Default to demo role
     user: null,
@@ -239,6 +242,38 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         } else if (mode === 'demo' || mode === 'workspace') {
             // Demo/Workspace: Show departments
             set({ viewLevel: 'core' });
+        }
+
+        // Align active company to the selected mode (prevents HQ/Demo mismatch)
+        const { companies, user, activeCompanyId } = get();
+        if (!companies.length) return;
+
+        const tenantId = user?.tenant_id;
+        const isDemoTenant = checkDemoTenant(tenantId);
+        const demoCompanyId = companies.find((c) => c.is_demo)?.id || null;
+        const hqCompanyId = companies.find((c) => c.tenant_id === TENANT_HQ)?.id || null;
+
+        let nextActive = activeCompanyId;
+
+        if (mode === 'demo') {
+            nextActive = demoCompanyId || nextActive;
+        } else if (mode === 'workspace') {
+            if (isDemoTenant) {
+                nextActive = hqCompanyId || nextActive;
+            } else if (tenantId) {
+                nextActive = companies.find((c) => c.tenant_id === tenantId)?.id || nextActive;
+            }
+        } else if (mode === 'owner') {
+            if (nextActive && !companies.some((c) => c.id === nextActive)) {
+                nextActive = null;
+            }
+            if (!nextActive) {
+                nextActive = companies.find((c) => !c.is_demo)?.id || companies[0]?.id || null;
+            }
+        }
+
+        if (nextActive && companies.some((c) => c.id === nextActive) && nextActive !== activeCompanyId) {
+            set({ activeCompanyId: nextActive });
         }
     },
     setActiveCompany: (id) => set({ activeCompanyId: id }),
@@ -292,6 +327,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         cursorAgent: { ...state.cursorAgent, ...agent } as MoraState['cursorAgent']
     })),
     setHasBooted: (hasBooted) => set({ hasBooted }),
+    setIsLoggingOut: (isLoggingOut) => set({ isLoggingOut }),
 
     // Phase 6.3: Set user and auto-compute permissions from role
     setUser: (user) => {
@@ -368,7 +404,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             viewLevel: 'core',
             coreError: null,
             orbState: 'idle',
-            hasBooted: false
+            hasBooted: false,
+            isLoggingOut: false
         });
     },
 
@@ -379,30 +416,31 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({ orbState: mindLoop.getCurrentState() });
 
         try {
-            const includeDemo = get().viewMode === 'demo';
+            const viewMode = get().viewMode;
+            const userRole = get().user?.role;
+            const includeDemo = viewMode === 'demo' || userRole === ROLE_SYSTEM_OWNER;
             let data = await fetchCompanies(includeDemo);
 
             // Keep active company if it still exists; otherwise pick a sensible default.
             const currentActive = get().activeCompanyId;
-            const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
-            let nextActive: string | null = stillValid ? currentActive : null;
+            const userTenant = get().user?.tenant_id;
+            const isDemoTenant = checkDemoTenant(userTenant);
+            const demoCompanyId = data.find((c: any) => c.is_demo)?.id || null;
+            const hqCompanyId = data.find((c: any) => c.tenant_id === TENANT_HQ)?.id || null;
 
-            if (!nextActive) {
-                if (get().viewMode === 'demo') {
-                    // Demo view: prioritize demo company even for system owners
-                    nextActive = data.find((c: any) => c.is_demo)?.id || null;
-                } else {
-                    const userTenant = get().user?.tenant_id;
-                    if (userTenant) {
-                        nextActive = data.find((c: any) => c.tenant_id === userTenant)?.id || null;
-                    }
-                }
+            let nextActive: string | null = null;
+
+            if (viewMode === 'demo') {
+                nextActive = currentActive === demoCompanyId ? currentActive : demoCompanyId;
+            } else if (viewMode === 'workspace' && isDemoTenant) {
+                nextActive = currentActive === hqCompanyId ? currentActive : hqCompanyId;
+            } else {
+                const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
+                nextActive = stillValid ? currentActive : null;
             }
-            if (!nextActive) {
-                const userTenant = get().user?.tenant_id;
-                if (userTenant) {
-                    nextActive = data.find((c: any) => c.tenant_id === userTenant)?.id || null;
-                }
+
+            if (!nextActive && userTenant) {
+                nextActive = data.find((c: any) => c.tenant_id === userTenant)?.id || null;
             }
             if (!nextActive) {
                 nextActive = data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null;

@@ -16,12 +16,6 @@ interface UserAvatarProps {
  * MASTERBIBEL: Each user is a unique Lichtwesen (light fairy/being)
  * with personalized aura colors. Not a traditional avatar, but a
  * floating, glowing entity that represents the user's presence.
- *
- * Features:
- * - Floating light particles orbiting the core
- * - Multi-layer aura with breathing animation
- * - Role-based accent colors (gold for owner, emerald for member)
- * - Organic, non-circular shape using blur and gradients
  */
 export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = true }) => {
     const { user, role, isLoading } = useUser();
@@ -29,6 +23,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
     const viewMode = useMoraStore((s) => s.viewMode);
 
     // Generate floating particles for the Lichtwesen
+    // MUST be called before any early return!
     const floatingParticles = useMemo(() => {
         return Array.from({ length: 6 }, (_, i) => ({
             id: i,
@@ -40,11 +35,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
         }));
     }, []);
 
-    if (isLoading || !user) {
-        return null;
-    }
-
     // Generate unique AURA COLOR from user identity
+    // MUST be called before any early return!
     const userColor = useMemo(() => {
         const seed = user?.email || user?.user_id || 'guest';
         let hash = 0;
@@ -54,11 +46,10 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
         }
 
         // Role-based color selection for the aura
-        // Owner: Gold/Amber, Admin: Rose/Pink, Member: Emerald/Cyan
         const roleHues = {
-            owner: 42 + (Math.abs(hash) % 15),    // Gold range: 42-56
-            admin: 340 + (Math.abs(hash) % 20),   // Rose range: 340-360
-            member: 150 + (Math.abs(hash) % 30),  // Emerald/Cyan: 150-180
+            owner: 42 + (Math.abs(hash) % 15),
+            admin: 340 + (Math.abs(hash) % 20),
+            member: 150 + (Math.abs(hash) % 30),
         };
 
         const hue = roleHues[role as keyof typeof roleHues] || roleHues.member;
@@ -71,27 +62,30 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
             ring: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.3)`,
             secondary: `hsl(${(hue + 30) % 360}, ${saturation - 10}%, ${lightness + 10}%)`,
             halo: role === 'owner'
-                ? 'rgba(212, 175, 55, 0.7)'  // Gold for owners
-                : 'rgba(16, 185, 129, 0.5)', // Emerald for others
+                ? 'rgba(212, 175, 55, 0.7)'
+                : 'rgba(16, 185, 129, 0.5)',
             hue
         };
     }, [user?.email, user?.user_id, role]);
 
     // Display name - derive from email
+    // MUST be called before any early return!
     const displayName = useMemo(() => {
         if (user?.email) {
             const localPart = user.email.split('@')[0];
-            // Capitalize first letter
             return localPart.charAt(0).toUpperCase() + localPart.slice(1);
         }
         return viewMode === 'demo' ? 'Demo User' : 'User';
-    }, [user, viewMode]);
+    }, [user?.email, viewMode]);
 
-
+    // NOW we can do early return after all hooks are called
+    if (isLoading || !user) {
+        return null;
+    }
 
     return (
         <div
-            className="fixed bottom-6 left-6 z-40 pointer-events-auto"
+            className="fixed bottom-8 left-8 z-40 pointer-events-auto"
             onClick={onClick}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -102,7 +96,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
             >
-                {/* ORBITING LIGHT PARTICLES - Floating around the Lichtwesen */}
+                {/* ORBITING LIGHT PARTICLES */}
                 {floatingParticles.map(particle => (
                     <motion.div
                         key={`particle-${particle.id}`}
@@ -150,7 +144,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     </motion.div>
                 ))}
 
-                {/* MULTI-LAYER AURA - Organic breathing effect */}
+                {/* MULTI-LAYER AURA */}
                 <motion.div
                     className="absolute inset-[-16px] rounded-full"
                     style={{
@@ -172,7 +166,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     }}
                 />
 
-                {/* SECONDARY AURA LAYER - Offset for depth */}
+                {/* SECONDARY AURA LAYER */}
                 <motion.div
                     className="absolute inset-[-10px] rounded-full"
                     style={{
@@ -190,7 +184,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                     }}
                 />
 
-                {/* LICHTWESEN CORE - Organic, glowing center */}
+                {/* LICHTWESEN CORE */}
                 <div
                     className="relative w-14 h-14 rounded-full flex items-center justify-center overflow-visible"
                     style={{
@@ -206,7 +200,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                         `,
                     }}
                 >
-                    {/* GOLDEN HALO RING - Role indicator */}
+                    {/* GOLDEN HALO RING */}
                     <motion.div
                         className="absolute inset-[-12px] rounded-full"
                         style={{
@@ -224,7 +218,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                         }}
                     />
 
-                    {/* INNER LIGHT - Glass highlight */}
+                    {/* INNER LIGHT */}
                     <div
                         className="absolute rounded-full"
                         style={{
@@ -237,7 +231,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
                         }}
                     />
 
-                    {/* CORE SPARK - The soul */}
+                    {/* CORE SPARK */}
                     <motion.div
                         className="absolute w-3 h-3 rounded-full"
                         style={{

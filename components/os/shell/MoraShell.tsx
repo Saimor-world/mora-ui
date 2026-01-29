@@ -25,6 +25,7 @@ import { useRouter } from 'next/navigation';
 
 // Store
 import { useMoraStore } from '@/lib/store/moraState';
+import { useAccountStore } from '@/lib/auth/useAccount';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import type { OrbState } from '@/lib/api/awarenessClient';
 
@@ -42,6 +43,7 @@ import { ViewPort } from '@/components/layout/ViewPort';
 // Background Layers
 import { StarField } from '@/components/visual/StarField';
 import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
+import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
@@ -103,8 +105,11 @@ export const MoraShell: React.FC = () => {
         orbState: storeOrbState,
         orbNotifications,
         activeCompanyId,
-        companies
+        companies,
+        resetStore,
+        isLoggingOut
     } = useMoraStore();
+    const { logout } = useAccountStore();
 
     const activeCompany = companies.find(c => c.id === activeCompanyId);
     const role = user?.role || 'demo';
@@ -145,6 +150,8 @@ export const MoraShell: React.FC = () => {
         setIsSleeping(false);
         localStorage.removeItem('saimor_dev_token');
         localStorage.removeItem('mora_session');
+        logout();
+        resetStore();
         router.push('/');
     };
 
@@ -188,6 +195,9 @@ export const MoraShell: React.FC = () => {
 
             {/* Stars */}
             <StarField warp={isSpotlightOpen} />
+
+            {/* Forest Light Canopy (Sunlight + Aura) */}
+            <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
 
             {/* Mycelium Neural Network */}
             <div className="fixed inset-0 z-0 opacity-40">
@@ -244,7 +254,7 @@ export const MoraShell: React.FC = () => {
             />
 
             {/* Mora Orb */}
-            <div className="fixed bottom-24 right-8 z-[500] pointer-events-auto">
+            <div id="mora-orb-anchor" className="fixed bottom-8 right-8 z-[500] pointer-events-auto">
                 <MoraOrb
                     state={finalOrbState}
                     role={role === 'owner' || role === 'admin' ? 'admin' : 'member'}
@@ -258,17 +268,33 @@ export const MoraShell: React.FC = () => {
                 LAYER 4: INTERACTION
             ================================================================= */}
 
-            <CursorAgent
-                active={cursorAgent.active}
-                action={cursorAgent.action}
-                target={cursorAgent.target}
-                awareness={finalOrbState}
-                onActionComplete={() => setCursorAgent({ active: false, action: 'idle' })}
-            />
+            {!isLoggingOut && (
+                <>
+                    <CursorAgent
+                        active={cursorAgent.active}
+                        action={cursorAgent.action}
+                        target={cursorAgent.target}
+                        awareness={finalOrbState}
+                        onActionComplete={() => setCursorAgent({ active: false, action: 'idle' })}
+                    />
 
-            <AgencyCursor />
-            <GhostOverlay />
-            <UserCursor enabled={true} />
+                    <AgencyCursor />
+                    <GhostOverlay />
+                    <UserCursor enabled={true} />
+                </>
+            )}
+
+            {/* Logout Transition Overlay */}
+            {isLoggingOut && (
+                <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-md flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-xs uppercase tracking-[0.4em] text-emerald-400/80 mb-3">
+                            Logging Out
+                        </div>
+                        <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent animate-pulse mx-auto" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

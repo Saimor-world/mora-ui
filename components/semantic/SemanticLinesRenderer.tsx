@@ -45,25 +45,25 @@ export const SemanticLinesRenderer: React.FC<SemanticLinesRendererProps> = ({ li
                     </feMerge>
                 </filter>
 
-                {/* Gradient: Subtle white/emerald - very faint */}
+                {/* Gradient: Brighter white/emerald for visibility */}
                 <linearGradient id="constellationGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#10B981" stopOpacity="0.15" />
-                    <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.08" />
-                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.15" />
+                    <stop offset="0%" stopColor="#10B981" stopOpacity="0.55" />
+                    <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#10B981" stopOpacity="0.55" />
                 </linearGradient>
 
-                {/* Pure Light Gradient - very subtle */}
+                {/* Pure Light Gradient - stronger core */}
                 <linearGradient id="lightThreadGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(255,255,255,0.03)" />
-                    <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
-                    <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
+                    <stop offset="50%" stopColor="rgba(255,255,255,0.55)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0.25)" />
                 </linearGradient>
             </defs>
 
             <AnimatePresence>
                 {lines.map((line) => {
                     const isHighScore = line.score > 0.8;
-                    const baseOpacity = Math.max(0.03, Math.min(0.15, line.score * 0.2));
+                    const baseOpacity = Math.max(0.18, Math.min(0.55, line.score * 0.7));
 
                     // 🍄 MYCELIUM UPGRADE: Curved bezier paths (not straight lines!)
                     const dx = line.to.x - line.from.x;
@@ -90,7 +90,7 @@ export const SemanticLinesRenderer: React.FC<SemanticLinesRendererProps> = ({ li
                             <motion.path
                                 d={myceliumPath}
                                 stroke="url(#constellationGradient)"
-                                strokeWidth={isHighScore ? 1.5 : 0.5}
+                                strokeWidth={isHighScore ? 2 : 1}
                                 strokeLinecap="round"
                                 fill="none"
                                 filter="url(#semanticGlow)"
@@ -110,7 +110,7 @@ export const SemanticLinesRenderer: React.FC<SemanticLinesRendererProps> = ({ li
                             <motion.path
                                 d={myceliumPath}
                                 stroke="url(#lightThreadGradient)"
-                                strokeWidth={isHighScore ? 0.6 : 0.3}
+                                strokeWidth={isHighScore ? 1.1 : 0.7}
                                 strokeLinecap="round"
                                 fill="none"
                                 strokeDasharray={isHighScore ? "5 5" : undefined}

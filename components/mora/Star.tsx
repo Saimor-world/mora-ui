@@ -13,7 +13,7 @@ interface StarProps {
         description?: string;
         folder_count?: number;
     };
-    position: { x: number; y: number };
+    position: { x: number | string; y: number | string };
     delay?: number;
     isActive?: boolean;
     size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -21,6 +21,7 @@ interface StarProps {
     onClick?: () => void;
     onHover?: (hovered: boolean) => void;
     isHoveredByPlanet?: boolean;
+    isPromoted?: boolean;
 }
 
 /**
@@ -47,17 +48,20 @@ export const Star: React.FC<StarProps> = ({
     orbitActive = false,
     onClick,
     onHover,
-    isHoveredByPlanet = false
+    isHoveredByPlanet = false,
+    isPromoted = false
 }) => {
     const sizeMap = {
-        sm: { diameter: 4, iconSize: 0 },
-        md: { diameter: 6, iconSize: 0 },
+        sm: { diameter: 6, iconSize: 0 },
+        md: { diameter: 10, iconSize: 0 },
         lg: { diameter: 16, iconSize: 0 },
         xl: { diameter: 32, iconSize: 0 }
     };
 
     const starSize = sizeMap[size];
     const hasContent = (space.folder_count || 0) > 0;
+    const coreColor = space.color || '#F59E0B';
+    const glowColor = coreColor;
 
     return (
         <motion.div
@@ -90,11 +94,20 @@ export const Star: React.FC<StarProps> = ({
             onMouseEnter={() => onHover?.(true)}
             onMouseLeave={() => onHover?.(false)}
         >
+            {/* Promoted Halo */}
+            {isPromoted && (
+                <motion.div
+                    className="absolute inset-[-6px] rounded-full border border-amber-400/40"
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.7, 0.35] }}
+                    transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+                />
+            )}
+
             {/* Star Glow */}
             <motion.div
                 className="absolute inset-0 rounded-full"
                 style={{
-                    background: 'radial-gradient(circle, rgba(245,158,11,0.4), transparent)',
+                    background: `radial-gradient(circle, ${glowColor}55, transparent)`,
                     filter: 'blur(8px)',
                 }}
                 animate={isHoveredByPlanet ? {
@@ -110,10 +123,10 @@ export const Star: React.FC<StarProps> = ({
                 style={{
                     width: starSize.diameter,
                     height: starSize.diameter,
-                    background: hasContent ? '#F59E0B' : 'rgba(245,158,11,0.5)',
+                    background: hasContent ? coreColor : `${coreColor}80`,
                     boxShadow: hasContent
-                        ? '0 0 10px rgba(245,158,11,0.8)'
-                        : '0 0 5px rgba(245,158,11,0.4)',
+                        ? `0 0 10px ${glowColor}CC`
+                        : `0 0 5px ${glowColor}66`,
                     border: 'none'
                 }}
             />

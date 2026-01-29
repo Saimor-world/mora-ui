@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 
-export type AccountRole = 'admin' | 'owner' | 'member' | 'manager' | 'demo';
+export type AccountRole = 'admin' | 'owner' | 'system_owner' | 'member' | 'manager' | 'demo';
 
 export interface Account {
     userId: string;
     email?: string;
     role: AccountRole;
     tenantId: string;
+    scope?: string;
     token: string;
 }
 
@@ -16,7 +17,7 @@ interface AccountState {
     login: (account: Account) => void;
     logout: () => void;
     loadFromCookie: () => string | null;
-    setFromProfile: (profile: { user_id: string; email?: string; role: AccountRole; tenant_id: string }, token?: string) => void;
+    setFromProfile: (profile: { user_id: string; email?: string; role: AccountRole; tenant_id: string; scope?: string }, token?: string) => void;
 }
 
 const AUTH_COOKIE = 'mora_auth_token';
@@ -86,10 +87,10 @@ export const useAccountStore = create<AccountState>((set, get) => ({
                 email: profile.email,
                 role: profile.role,
                 tenantId: profile.tenant_id,
+                scope: profile.scope,
                 token: sessionToken,
             },
             sessionToken,
         });
     },
 }));
-

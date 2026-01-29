@@ -10,6 +10,8 @@ interface NodeStarProps {
     delay?: number;
     size?: 'xs' | 'sm';
     onHover?: (active: boolean) => void;
+    onClick?: () => void;
+    isPromoted?: boolean;
 }
 
 /**
@@ -30,16 +32,21 @@ export const NodeStar: React.FC<NodeStarProps> = ({
     position,
     delay = 0,
     size = 'xs',
-    onHover
+    onHover,
+    onClick,
+    isPromoted = false
 }) => {
     const [showTooltip, setShowTooltip] = useState(false);
 
     const sizeMap = {
-        xs: { diameter: 6, glowSize: 14 }, // Tripled size for visibility
-        sm: { diameter: 8, glowSize: 20 }
+        xs: { diameter: 6, glowSize: 18 }, // Stable, visible
+        sm: { diameter: 10, glowSize: 26 }
     };
 
-    const starSize = sizeMap[size];
+    const baseSize = sizeMap[size];
+    const starSize = isPromoted
+        ? { diameter: baseSize.diameter * 1.6, glowSize: baseSize.glowSize * 1.8 }
+        : baseSize;
 
     // Color based on node type
     const getNodeColor = (type?: string) => {
@@ -47,6 +54,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
             case 'document': return '#10B981'; // Emerald
             case 'note': return '#3B82F6'; // Blue
             case 'link': return '#8B5CF6'; // Purple
+            case 'folder': return '#F59E0B'; // Amber
             case 'image': return '#F59E0B'; // Amber
             case 'video': return '#EF4444'; // Red
             default: return '#6B7280'; // Gray
@@ -58,6 +66,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
             case 'document': return 'Dokument';
             case 'note': return 'Notiz';
             case 'link': return 'Link';
+            case 'folder': return 'Ordner';
             case 'image': return 'Bild';
             case 'video': return 'Video';
             default: return 'Element';
@@ -97,6 +106,10 @@ export const NodeStar: React.FC<NodeStarProps> = ({
         onHover?.(false);
     };
 
+    const seed = (node.id?.charCodeAt(0) || 0) + (node.id?.charCodeAt(node.id.length - 1) || 0);
+    const pulseDuration = isImportant ? 2.6 : 3.4 + (seed % 3);
+    const baseOpacity = isImportant ? 0.95 : isPromoted ? 0.85 : 0.75;
+
     return (
         <motion.div
             className="absolute pointer-events-auto cursor-pointer"
@@ -105,21 +118,23 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                 top: position.y,
                 transform: 'translate(-50%, -50%)',
                 width: isImportant ? 30 : 20,
-                height: isImportant ? 30 : 20
+                height: isImportant ? 30 : 20,
+                opacity: baseOpacity
             }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
-                scale: 1,
-                opacity: isImportant ? [0.6, 1, 0.6] : [0.3, 0.8, 0.3]
+                scale: isImportant ? [1, 1.04, 1] : isPromoted ? [1, 1.03, 1] : [1, 1.01, 1],
+                opacity: baseOpacity
             }}
             transition={{
                 delay,
-                duration: isImportant ? 2 : 3 + Math.random() * 2,
+                duration: pulseDuration,
                 repeat: Infinity,
                 ease: 'easeInOut'
             }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
+            onClick={onClick}
         >
             {/* Invisible Hit Area expansion for easier hovering */}
             <div className="absolute inset-0 -m-4 rounded-full z-10" />
@@ -187,7 +202,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
             </AnimatePresence>
 
             {/* Importance Ring (Only for important nodes) */}
-            {isImportant && (
+            {isImportant && !isPromoted && (
                 <motion.div
                     className="absolute inset-0 rounded-full border border-white/10"
                     animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
@@ -195,13 +210,23 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                 />
             )}
 
+            {/* Promoted Halo */}
+            {isPromoted && (
+                <motion.div
+                    className="absolute inset-0 rounded-full border"
+                    style={{ borderColor: `${color}80` }}
+                    animate={{ scale: [1, 1.35, 1], opacity: [0.5, 0.2, 0.5] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                />
+            )}
+
             {/* Subtle Glow */}
             <motion.div
                 className="absolute rounded-full pointer-events-none"
                 style={{
-                    width: isImportant ? starSize.glowSize * 2 : starSize.glowSize,
-                    height: isImportant ? starSize.glowSize * 2 : starSize.glowSize,
-                    background: `radial-gradient(circle, ${color}${isImportant ? '40' : '20'}, transparent)`,
+                    width: (isImportant ? starSize.glowSize * 2 : starSize.glowSize) * (isPromoted ? 1.2 : 1),
+                    height: (isImportant ? starSize.glowSize * 2 : starSize.glowSize) * (isPromoted ? 1.2 : 1),
+                    background: `radial-gradient(circle, ${color}${isPromoted ? '55' : (isImportant ? '40' : '20')}, transparent)`,
                     filter: 'blur(3px)',
                     left: '50%',
                     top: '50%',
@@ -225,7 +250,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                 style={{
                     width: isImportant ? starSize.diameter * 1.5 : starSize.diameter,
                     height: isImportant ? starSize.diameter * 1.5 : starSize.diameter,
-                    background: isImportant ? '#FFFFFF' : color,
+                    background: isImportant || isPromoted ? '#FFFFFF' : color,
                     boxShadow: isImportant
                         ? `0 0 10px #FFFFFF60, 0 0 5px ${color}`
                         : `0 0 ${starSize.diameter * 2}px ${color}60`,

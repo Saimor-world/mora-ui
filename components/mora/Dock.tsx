@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { signOut } from 'next-auth/react';
 import {
     Home,
     Search,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useAccountStore } from '@/lib/auth/useAccount';
 import { writeCookie } from '@/lib/auth/cookies';
 
 /**
@@ -31,13 +33,17 @@ export const Dock = () => {
         activeSpaceId,
         activeFolderId,
         setViewLevel,
-        setActiveCompany,
         setActiveDepartment,
         setActiveSpace,
         setActiveFolder,
+        resetStore,
+        setHasBooted,
+        setIsLoggingOut,
+        setOrbState,
         minimizedNodes,
         restoreNode
     } = useMoraStore();
+    const { logout } = useAccountStore();
 
     const {
         panes,
@@ -62,7 +68,12 @@ export const Dock = () => {
         { icon: LogOut, label: 'Logout', action: 'logout' }
     ];
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        // Enter logout transition (hide cursors / show overlay)
+        setIsLoggingOut(true);
+        setOrbState('idle');
+
+        // Clear all local storage
         localStorage.removeItem('saimor_dev_token');
         localStorage.removeItem('saimor_mode');
         localStorage.removeItem('saimor_role');
@@ -74,13 +85,21 @@ export const Dock = () => {
         localStorage.removeItem('last_user_name');
         writeCookie('saimor_auth', '', -1);
 
+        // Reset UI state (keep activeCompany to avoid flicker)
         setViewLevel('core');
-        setActiveCompany(null);
         setActiveDepartment(null);
         setActiveSpace(null);
         setActiveFolder(null);
 
-        router.push('/');
+        // Clear stores
+        logout();
+        resetStore();
+        // Prevent boot flash during logout transition
+        setHasBooted(true);
+        setIsLoggingOut(true);
+
+        // Sign out from NextAuth (this handles the redirect)
+        await signOut({ callbackUrl: '/' });
     };
 
     const handleDockClick = (action: string) => {
@@ -90,7 +109,6 @@ export const Dock = () => {
             case 'home':
                 panes.forEach(p => !p.minimized && minimizePane(p.id));
                 setViewLevel('core');
-                setActiveCompany(null);
                 setActiveDepartment(null);
                 setActiveSpace(null);
                 setActiveFolder(null);

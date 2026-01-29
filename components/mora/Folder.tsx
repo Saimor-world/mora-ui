@@ -17,7 +17,7 @@ interface FolderProps {
         type?: 'folder' | 'document' | 'image' | 'video' | 'audio' | 'archive';
     };
     /** Folder position relative to Orb */
-    position: { x: number; y: number };
+    position: { x: number | string; y: number | string };
     /** Animation delay */
     delay?: number;
     /** Is this folder currently active/selected */
@@ -30,6 +30,8 @@ interface FolderProps {
     onClick?: () => void;
     /** Hover handler */
     onHover?: (hovered: boolean) => void;
+    /** Promoted highlight */
+    isPromoted?: boolean;
 }
 
 /**
@@ -48,7 +50,8 @@ export const Folder: React.FC<FolderProps> = ({
     size = 'sm',
     orbitActive = false,
     onClick,
-    onHover
+    onHover,
+    isPromoted = false
 }) => {
     // Folder size mapping
     const sizeMap = {
@@ -118,6 +121,15 @@ export const Folder: React.FC<FolderProps> = ({
             onMouseEnter={() => onHover?.(true)}
             onMouseLeave={() => onHover?.(false)}
         >
+            {/* Promoted Halo */}
+            {isPromoted && (
+                <motion.div
+                    className="absolute inset-[-6px] rounded-md border border-amber-400/50"
+                    animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.85, 0.4] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+            )}
+
             {/* Folder Core */}
             <motion.div
                 className="relative rounded-md flex items-center justify-center backdrop-blur-sm border"

@@ -76,36 +76,50 @@ export function useAuthBootstrapper() {
                         const freshState = useMoraStore.getState();
                         const companies = freshState.companies;
                         const currentActive = freshState.activeCompanyId;
-                        const storedCompany = localStorage.getItem('last_workspace');
+                        const viewMode = freshState.viewMode;
+                        const role = result.role || freshState.user?.role || 'member';
+
+                        const storedCompanyId = localStorage.getItem('last_company_id');
+                        const storedWorkspaceName = localStorage.getItem('last_workspace');
+
+                        const isDemoTenant = tenantId === 'tenant-demo';
+                        const demoCompanies = companies.filter(c => c.is_demo);
+                        const hqCompanies = companies.filter(c => c.tenant_id === 'tenant-saimor-hq');
+                        const tenantCompanies = tenantId
+                            ? companies.filter(c => c.tenant_id === tenantId)
+                            : companies;
+
+                        let allowedCompanies = companies;
+                        if (viewMode === 'demo') {
+                            allowedCompanies = demoCompanies;
+                        } else if (viewMode === 'workspace') {
+                            allowedCompanies = isDemoTenant ? hqCompanies : tenantCompanies;
+                        } else if (viewMode === 'owner' && role !== 'system_owner') {
+                            allowedCompanies = tenantCompanies;
+                        }
 
                         let selectedCompanyId: string | null = null;
-
-                        if (!currentActive && storedCompany) {
-                            const found = companies.find(c => c.name === storedCompany);
+                        if (currentActive && allowedCompanies.some(c => c.id === currentActive)) {
+                            selectedCompanyId = currentActive;
+                        } else if (storedCompanyId && allowedCompanies.some(c => c.id === storedCompanyId)) {
+                            selectedCompanyId = storedCompanyId;
+                        } else if (storedWorkspaceName) {
+                            const found = allowedCompanies.find(c => c.name === storedWorkspaceName);
                             if (found) {
                                 selectedCompanyId = found.id;
                             }
-                        }
-
-                        if (!selectedCompanyId && !currentActive && companies.length > 0) {
-                            const userRole = result.role;
-                            const userEmail = result.email || session?.user?.email;
-                            const isDemoUser = userRole === 'demo' || userEmail === 'demo@saimor.io';
-                            const demoCompany = companies.find(c => c.is_demo === true);
-
-                            if (isDemoUser && demoCompany) {
-                                selectedCompanyId = demoCompany.id;
-                            } else {
-                                const ownCompany = companies.find(c => !c.is_demo);
-                                selectedCompanyId = ownCompany?.id || companies[0].id;
-                            }
+                        } else if (allowedCompanies.length > 0) {
+                            selectedCompanyId = allowedCompanies[0].id;
                         }
 
                         if (selectedCompanyId) {
                             store.setActiveCompany(selectedCompanyId);
+                            localStorage.setItem('last_company_id', selectedCompanyId);
                             // IMPORTANT: Load tree for THIS company context
+                            const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+                            const targetTenant = selectedCompany?.tenant_id || tenantId;
                             await Promise.all([
-                                store.loadTree(tenantId, selectedCompanyId).catch((err) => console.log('Tree load fail', err)),
+                                store.loadTree(targetTenant, selectedCompanyId).catch((err) => console.log('Tree load fail', err)),
                                 store.loadDepartments(selectedCompanyId).catch((err) => console.log('Dept load fail', err))
                             ]);
                         } else {

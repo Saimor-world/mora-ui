@@ -487,15 +487,14 @@ export function MoraOrb({
                     <div
                         className="absolute inset-0 pointer-events-none rounded-full"
                         style={{
-                            margin: '-25%',
-                            width: '150%',
-                            height: '150%'
+                            width: '100%',
+                            height: '100%'
                         }}
                     >
                         <PlasmaOrb
                             color={color}
                             state={finalState as any}
-                            size={96}
+                            size={80}
                             onClick={() => { }}
                         />
                     </div>
@@ -561,7 +560,7 @@ export function MoraOrb({
                 {ringType === 'thinking' && (
                     <motion.div
                         className="absolute inset-0 rounded-full border-2"
-                        style={{ borderColor: color }}
+                        style={{ borderColor: color, filter: 'blur(0.6px)' }}
                         animate={{
                             rotate: 360,
                             scale: [1, 1.1, 1],
@@ -590,7 +589,7 @@ export function MoraOrb({
                 {ringType === 'focus' && (
                     <motion.div
                         className="absolute inset-0 rounded-full border"
-                        style={{ borderColor: color, borderWidth: 2 }}
+                        style={{ borderColor: color, borderWidth: 2, filter: 'blur(0.6px)' }}
                         animate={{
                             scale: [1, 1.2, 1],
                             opacity: [0.6, 1, 0.6],
@@ -606,7 +605,7 @@ export function MoraOrb({
                 {ringType === 'insight' && (
                     <motion.div
                         className="absolute inset-0 rounded-full border"
-                        style={{ borderColor: color, borderWidth: 3 }}
+                        style={{ borderColor: color, borderWidth: 3, filter: 'blur(0.6px)' }}
                         animate={{
                             scale: [1, 1.3, 1],
                             rotate: [0, 180, 360],
@@ -635,7 +634,7 @@ export function MoraOrb({
                 {ringType === 'alert' && (
                     <motion.div
                         className="absolute inset-0 rounded-full border-2"
-                        style={{ borderColor: color }}
+                        style={{ borderColor: color, filter: 'blur(0.6px)' }}
                         animate={{
                             scale: [1, 1.5, 1],
                             opacity: [0.9, 0.3, 0.9],
@@ -652,7 +651,7 @@ export function MoraOrb({
                 {ringType === 'watch' && (
                     <motion.div
                         className="absolute inset-0 rounded-full border-t-2 border-r-2 border-transparent"
-                        style={{ borderTopColor: color, borderRightColor: color, opacity: 0.6 }}
+                        style={{ borderTopColor: color, borderRightColor: color, opacity: 0.6, filter: 'blur(0.6px)' }}
                         animate={{ rotate: 360 }}
                         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                     />
@@ -660,30 +659,20 @@ export function MoraOrb({
 
                 {/* Demo Ring (Demo Mode Indicator) */}
                 {ringType === 'demo' && (
-                    <>
-                        <motion.div
-                            className="absolute inset-[-10px] rounded-full border border-emerald-500/20"
-                            animate={{
-                                rotate: 360,
-                                scale: [1, 1.05, 1],
-                            }}
-                            transition={{
-                                rotate: { duration: 10, repeat: Infinity, ease: "linear" },
-                                scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                            }}
-                        />
-                        <motion.div
-                            className="absolute inset-[-15px] rounded-full border border-emerald-500/10"
-                            animate={{
-                                rotate: -360,
-                                scale: [1, 1.1, 1],
-                            }}
-                            transition={{
-                                rotate: { duration: 15, repeat: Infinity, ease: "linear" },
-                                scale: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }
-                            }}
-                        />
-                    </>
+                    <motion.div
+                        className="absolute inset-[-12px] rounded-full border border-emerald-500/25"
+                        style={{ boxShadow: '0 0 24px rgba(16,185,129,0.25)', filter: 'blur(0.6px)' }}
+                        animate={{
+                            rotate: 360,
+                            scale: [1, 1.06, 1],
+                            opacity: [0.35, 0.75, 0.35]
+                        }}
+                        transition={{
+                            duration: 10,
+                            repeat: Infinity,
+                            ease: "linear"
+                        }}
+                    />
                 )}
             </motion.div>
         </div>

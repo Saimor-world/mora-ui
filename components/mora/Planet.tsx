@@ -12,6 +12,7 @@ interface PlanetProps {
         color?: string;
         description?: string;
     };
+    iconOverride?: LucideIcon;
     position: { x: number; y: number };
     delay?: number;
     isActive?: boolean;
@@ -44,7 +45,8 @@ export const Planet: React.FC<PlanetProps> = ({
     orbitActive = false,
     onClick,
     onHover,
-    onQuickFilesAccess
+    onQuickFilesAccess,
+    iconOverride
 }) => {
     const [showContextMenu, setShowContextMenu] = useState(false);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
@@ -213,7 +215,7 @@ export const Planet: React.FC<PlanetProps> = ({
     };
 
     const style = getDeptStyle(department.name, department.color);
-    const Icon = getDeptIcon(department.name);
+    const Icon = iconOverride || getDeptIcon(department.name);
 
     // Generate a consistent float duration based on department id
     const floatDuration = 5 + (department.id.charCodeAt(0) % 4);

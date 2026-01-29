@@ -32,9 +32,18 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
     // Calculate Orb position (bottom-right, matching MoraShell)
     const getOrbPosition = useCallback(() => {
         if (typeof window === 'undefined') return { x: 0, y: 0 };
+        const anchor = document.getElementById('mora-orb-anchor');
+        if (anchor) {
+            const rect = anchor.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+        }
+        // Fallback: matches MoraShell (right-8, bottom-24) with 80px orb
         return {
-            x: window.innerWidth - 80,
-            y: window.innerHeight - 120
+            x: window.innerWidth - 72,
+            y: window.innerHeight - 136
         };
     }, []);
 
@@ -137,93 +146,125 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
     };
 
     const config = getVisualConfig();
+    const orbPos = getOrbPosition();
+    const tetherOpacity = agentState === 'pointing' ? 0.8 : agentState === 'returning' ? 0.35 : 0.55;
 
     return (
         <AnimatePresence>
-            <motion.div
-                className="fixed pointer-events-none z-[200]"
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{
-                    x: position.x - config.size / 2,
-                    y: position.y - config.size / 2,
-                    opacity: config.opacity,
-                    scale: 1,
-                }}
-                exit={{ opacity: 0, scale: 0 }}
-                transition={{
-                    type: 'spring',
-                    damping: 25,
-                    stiffness: 120,
-                    mass: 0.5
-                }}
-            >
-                {/* Floating Animation handled purely by CSS/Motion to avoid React State depth errors */}
+            <>
+                {/* Light tether between Orb and Cursor */}
+                <motion.svg
+                    key="mora-tether"
+                    className="fixed inset-0 pointer-events-none z-[190]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: tetherOpacity }}
+                    exit={{ opacity: 0 }}
+                >
+                    <defs>
+                        <linearGradient id="mora-tether-gradient" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor={config.glow} stopOpacity="0.05" />
+                            <stop offset="60%" stopColor={config.glow} stopOpacity="0.35" />
+                            <stop offset="100%" stopColor={config.color} stopOpacity="0.6" />
+                        </linearGradient>
+                    </defs>
+                    <motion.line
+                        x1={orbPos.x}
+                        y1={orbPos.y}
+                        x2={position.x}
+                        y2={position.y}
+                        stroke="url(#mora-tether-gradient)"
+                        strokeWidth={1.5}
+                        strokeDasharray={agentState === 'pointing' ? '0' : '6 10'}
+                        animate={{ strokeDashoffset: [0, 16] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                    />
+                </motion.svg>
+
                 <motion.div
-                    animate={agentState === 'active' ? {
-                        y: [0, -10, 0],
-                        x: [0, 5, 0]
-                    } : {}}
+                    className="fixed pointer-events-none z-[200]"
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{
+                        x: position.x - config.size / 2,
+                        y: position.y - config.size / 2,
+                        opacity: config.opacity,
+                        scale: 1,
+                    }}
+                    exit={{ opacity: 0, scale: 0 }}
                     transition={{
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: "easeInOut"
+                        type: 'spring',
+                        damping: 25,
+                        stiffness: 120,
+                        mass: 0.5
                     }}
                 >
-                    {/* Shadow / Glow */}
-                    {config.trail && (
-                        <motion.div
-                            className="absolute rounded-full"
+                    {/* Floating Animation handled purely by CSS/Motion to avoid React State depth errors */}
+                    <motion.div
+                        animate={agentState === 'active' ? {
+                            y: [0, -10, 0],
+                            x: [0, 5, 0]
+                        } : {}}
+                        transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                    >
+                        {/* Shadow / Glow */}
+                        {config.trail && (
+                            <motion.div
+                                className="absolute rounded-full"
+                                style={{
+                                    width: config.size * 3,
+                                    height: config.size * 3,
+                                    left: -config.size,
+                                    top: -config.size,
+                                    background: `radial-gradient(circle, ${config.glow}40, transparent 70%)`,
+                                    filter: 'blur(8px)'
+                                }}
+                            />
+                        )}
+
+                        {/* Core Light */}
+                        <div
+                            className="rounded-full"
                             style={{
-                                width: config.size * 3,
-                                height: config.size * 3,
-                                left: -config.size,
-                                top: -config.size,
-                                background: `radial-gradient(circle, ${config.glow}40, transparent 70%)`,
-                                filter: 'blur(8px)'
+                                width: config.size,
+                                height: config.size,
+                                background: `radial-gradient(circle at 30% 30%, ${config.color}, ${config.color}80)`,
+                                boxShadow: `0 0 ${config.size}px ${config.glow}80, 0 0 ${config.size * 2}px ${config.glow}40`
                             }}
                         />
+                    </motion.div>
+
+                    {/* Pointing Rings */}
+                    {agentState === 'pointing' && (
+                        <motion.div
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{ left: -config.size / 2, top: -config.size / 2, width: config.size * 2, height: config.size * 2 }}
+                        >
+                            <motion.div
+                                className="absolute inset-0 rounded-full border-2"
+                                style={{ borderColor: config.color }}
+                                animate={{ scale: [1, 2], opacity: [1, 0] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                            />
+                        </motion.div>
                     )}
 
-                    {/* Core Light */}
-                    <div
-                        className="rounded-full"
-                        style={{
-                            width: config.size,
-                            height: config.size,
-                            background: `radial-gradient(circle at 30% 30%, ${config.color}, ${config.color}80)`,
-                            boxShadow: `0 0 ${config.size}px ${config.glow}80, 0 0 ${config.size * 2}px ${config.glow}40`
-                        }}
-                    />
-                </motion.div>
-
-                {/* Pointing Rings */}
-                {agentState === 'pointing' && (
-                    <motion.div
-                        className="absolute inset-0 flex items-center justify-center"
-                        style={{ left: -config.size / 2, top: -config.size / 2, width: config.size * 2, height: config.size * 2 }}
-                    >
+                    {/* Message Bubble */}
+                    {message && agentState === 'pointing' && (
                         <motion.div
-                            className="absolute inset-0 rounded-full border-2"
-                            style={{ borderColor: config.color }}
-                            animate={{ scale: [1, 2], opacity: [1, 0] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                        />
-                    </motion.div>
-                )}
-
-                {/* Message Bubble */}
-                {message && agentState === 'pointing' && (
-                    <motion.div
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        <div className="px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-sm border border-white/20 text-xs text-white/90">
-                            {message}
-                        </div>
-                    </motion.div>
-                )}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <div className="px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-sm border border-white/20 text-xs text-white/90">
+                                {message}
+                            </div>
+                        </motion.div>
+                    )}
             </motion.div>
+            </>
         </AnimatePresence>
     );
 };

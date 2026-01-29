@@ -10,7 +10,6 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { triggerFolderScan } from '@/lib/api/scanClient';
 import { mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
-import { getRelationsForSpace, RelationEdge } from '@/lib/api/relationsClient';
 import type { CoreNode } from '@/lib/types/core';
 import { motion } from 'framer-motion';
 import { toast } from '@/lib/toast';
@@ -43,7 +42,6 @@ const TYPE_COLORS: Record<string, string> = {
     intel_report: "text-mora-gold",
 };
 
-import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
 
 export const FolderLayer: React.FC = () => {
     // ... (Keep existing hooks) ...
@@ -68,7 +66,7 @@ export const FolderLayer: React.FC = () => {
     } = useMoraStore();
 
     // ... (Keep state) ...
-    const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('mycelium');
+    const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('list');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({
@@ -81,6 +79,7 @@ export const FolderLayer: React.FC = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [graphNodes, setGraphNodes] = useState<any[]>([]);
     const [isGraphLoading, setIsGraphLoading] = useState(false);
+    const [hoveredGraphNodeId, setHoveredGraphNodeId] = useState<string | null>(null);
 
     // ... (Keep helpers) ...
     const handleAddFolder = async () => {
@@ -119,62 +118,6 @@ export const FolderLayer: React.FC = () => {
 
     const nodes = activeFolderId ? (nodesByFolder[activeFolderId] || []) : [];
 
-    // Phase 7.2: Semantic Evaluation Pipeline (Relevance Scoring)
-    const nodeStarPositions = useMemo(() => {
-        if (nodes.length === 0) return [];
-
-        // Helper: Calculate weight based on Type and Recency
-        const getWeight = (node: CoreNode) => {
-            // 1. Recency Factor (0.0 - 1.0)
-            const dateStr = node.updated_at || node.created_at;
-            let recencyScore = 0.5;
-            if (dateStr) {
-                const date = new Date(dateStr).getTime();
-                const now = Date.now();
-                const daysDiff = (now - date) / (1000 * 60 * 60 * 24);
-                recencyScore = Math.max(0.2, Math.min(1.0, 1.0 - (daysDiff / 30)));
-            }
-
-            // 2. Type Factor (Importance)
-            const typeWeights: Record<string, number> = {
-                document: 1.0,
-                note: 0.8,
-                task: 0.7,
-                link: 0.5,
-                other: 0.4
-            };
-            const typeScore = typeWeights[node.type] || 0.5;
-
-            // Combined Score (70% Type, 30% Recency)
-            return (typeScore * 0.7) + (recencyScore * 0.3);
-        };
-
-        // Phase 8.2: Semantic Gravity (Sort by weight)
-        const weightedNodes = nodes.map(node => ({
-            ...node,
-            weight: getWeight(node)
-        })).sort((a, b) => b.weight - a.weight);
-
-        const count = Math.min(weightedNodes.length, 25); // Increased max count
-
-        // Spiral Distribution with Semantic Gravity
-        return weightedNodes.slice(0, count).map((node, i) => {
-            // Golden Angle for cleaner organic distribution
-            const phi = 137.5 * (Math.PI / 180);
-            const angle = i * phi;
-
-            // Radius grows with index (so high weight items at i=0 are closer to center)
-            const r = 180 + (i * 15);
-
-            return {
-                id: node.id,
-                x: Math.cos(angle) * r,
-                y: Math.sin(angle) * r,
-                weight: node.weight
-            };
-        });
-    }, [nodes]);
-
     // ... (Keep filter logic) ...
     const filteredNodes = useMemo(() => {
         if (!searchQuery.trim()) return nodes;
@@ -205,8 +148,41 @@ export const FolderLayer: React.FC = () => {
     }, [activeFolderId, viewMode, nodes]);
 
     useEffect(() => {
-        setViewMode('mycelium');
+        setViewMode('list');
     }, [activeFolderId]);
+
+    const graphScale = 180;
+
+    const graphLayout = useMemo(() => {
+        return graphNodes.map((node: any) => ({
+            ...node,
+            x: (node.position?.[0] || 0) * graphScale,
+            y: (node.position?.[1] || 0) * graphScale,
+        }));
+    }, [graphNodes]);
+
+    const graphLinks = useMemo(() => {
+        const nodesById = new Map(graphLayout.map(node => [node.id, node]));
+        const links: Array<{ id: string; x1: number; y1: number; x2: number; y2: number; strength: number }> = [];
+
+        graphLayout.forEach(node => {
+            (node.connections || []).forEach((targetId: string) => {
+                if (node.id > targetId) return; // de-dup
+                const target = nodesById.get(targetId);
+                if (!target) return;
+                links.push({
+                    id: `${node.id}-${targetId}`,
+                    x1: node.x,
+                    y1: node.y,
+                    x2: target.x,
+                    y2: target.y,
+                    strength: 0.3
+                });
+            });
+        });
+
+        return links;
+    }, [graphLayout]);
 
     const handleCreateNode = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -250,14 +226,6 @@ export const FolderLayer: React.FC = () => {
         setActiveNode(node);
     };
 
-    const stars = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: Math.random() * 2 + 0.5,
-        opacity: Math.random() * 0.5 + 0.1
-    })), []);
-
     const breadcrumb = [
         { label: 'Home', onClick: () => { } },
         { label: currentDepartment?.name || 'Dept' },
@@ -280,21 +248,6 @@ export const FolderLayer: React.FC = () => {
                 >
                     {currentFolder?.name.toUpperCase()}
                 </motion.h1>
-            </div>
-
-            {/* SEMANTIC LAYER ANCHOR (Phase 5.2) */}
-            {/* Phase 6.1: Active Constellation Renderer for Nodes */}
-            <div
-                id="semantic-layer-anchor"
-                className="absolute inset-0 z-5 pointer-events-none overflow-visible"
-                aria-hidden="true"
-            >
-                <div className="absolute top-1/2 left-1/2 w-0 h-0 overflow-visible">
-                    <SemanticConstellation
-                        center={{ x: 0, y: 0 }}
-                        satellites={nodeStarPositions}
-                    />
-                </div>
             </div>
 
             <div className="absolute inset-0 flex items-start justify-center overflow-y-auto pt-8 pb-12 px-6 z-10">
@@ -414,52 +367,76 @@ export const FolderLayer: React.FC = () => {
                                     {/* Semantic Constellation View */}
                                     {viewMode === 'mycelium' && (
                                         <div className="absolute inset-0">
-                                            {/* UPGRADE E1: Semantic SVG Constellations */}
-                                            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                                {graphNodes.map((node: any) => {
-                                                    // Safety check
-                                                    if (!node.id) return null;
-                                                    const seed1 = node.id.charCodeAt(0) || 0;
-                                                    const seed2 = node.id.charCodeAt(1) || 0;
-                                                    return (
-                                                        <motion.circle
-                                                            key={node.id}
-                                                            cx={`${20 + Math.sin(seed1) * 60}%`}
-                                                            cy={`${30 + Math.cos(seed2) * 40}%`}
-                                                            r={2}
-                                                            fill={TYPE_COLORS[node.type]?.replace('text-', '') || '#6B7280'}
-                                                            opacity={0.6}
-                                                            animate={{
-                                                                scale: [1, 1.1, 1],
-                                                            }}
-                                                        />
-                                                    );
-                                                })}
+                                            <svg
+                                                className="absolute inset-0 w-full h-full"
+                                                viewBox={`${-graphScale * 2} ${-graphScale * 2} ${graphScale * 4} ${graphScale * 4}`}
+                                                preserveAspectRatio="xMidYMid meet"
+                                            >
+                                                <defs>
+                                                    <linearGradient id="folder-graph-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stopColor="#10B981" stopOpacity="0.1" />
+                                                        <stop offset="50%" stopColor="#60A5FA" stopOpacity="0.3" />
+                                                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.1" />
+                                                    </linearGradient>
+                                                </defs>
+                                                {graphLinks.map((link, index) => (
+                                                    <motion.line
+                                                        key={link.id}
+                                                        x1={link.x1}
+                                                        y1={link.y1}
+                                                        x2={link.x2}
+                                                        y2={link.y2}
+                                                        stroke="url(#folder-graph-gradient)"
+                                                        strokeWidth={0.6}
+                                                        opacity={0.18}
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: [0.12, 0.35, 0.12] }}
+                                                        transition={{ duration: 4, repeat: Infinity, delay: index * 0.1 }}
+                                                    />
+                                                ))}
 
-                                                {/* Semantic connections */}
-                                                {graphNodes.slice(0, -1).map((node: any, i: number) => {
-                                                    const nextNode = graphNodes[i + 1];
-                                                    if (!nextNode) return null;
-                                                    return (
-                                                        <motion.line
-                                                            key={`connection-${node.id}-${nextNode.id}`}
-                                                            x1={`${20 + Math.sin(node.id.charCodeAt(0)) * 60}%`}
-                                                            y1={`${30 + Math.cos(node.id.charCodeAt(1)) * 40}%`}
-                                                            x2={`${20 + Math.sin(nextNode.id.charCodeAt(0)) * 60}%`}
-                                                            y2={`${30 + Math.cos(nextNode.id.charCodeAt(1)) * 40}%`}
-                                                            stroke="#10B981"
-                                                            strokeWidth="0.5"
-                                                            opacity={0.2}
-                                                            animate={{
-                                                                opacity: [0.1, 0.3, 0.1],
-                                                                strokeWidth: ["0.5", "1", "0.5"]
-                                                            }}
-                                                            transition={{ duration: 3, repeat: Infinity, delay: i * 0.3 }}
+                                                {graphLayout.map((node: any) => (
+                                                    <g
+                                                        key={node.id}
+                                                        onMouseEnter={() => setHoveredGraphNodeId(node.id)}
+                                                        onMouseLeave={() => setHoveredGraphNodeId(null)}
+                                                        onClick={() => {
+                                                            const actualNode = nodes.find(n => n.id === node.id);
+                                                            if (actualNode) {
+                                                                handleNodeClick(actualNode);
+                                                            }
+                                                        }}
+                                                        style={{ cursor: 'pointer' }}
+                                                    >
+                                                        <circle
+                                                            cx={node.x}
+                                                            cy={node.y}
+                                                            r={(node.size || 0.4) * 10 + 4}
+                                                            fill={node.color || '#6B7280'}
+                                                            opacity={0.9}
                                                         />
-                                                    );
-                                                })}
+                                                        <circle
+                                                            cx={node.x}
+                                                            cy={node.y}
+                                                            r={(node.size || 0.4) * 18}
+                                                            fill={node.color || '#6B7280'}
+                                                            opacity={0.15}
+                                                        />
+                                                        {hoveredGraphNodeId === node.id && (
+                                                            <text
+                                                                x={node.x}
+                                                                y={node.y - 14}
+                                                                textAnchor="middle"
+                                                                fontSize="10"
+                                                                fill="#E5E7EB"
+                                                            >
+                                                                {node.title}
+                                                            </text>
+                                                        )}
+                                                    </g>
+                                                ))}
                                             </svg>
-                                            {!isGraphLoading && graphNodes.length === 0 && (
+                                            {!isGraphLoading && graphLayout.length === 0 && (
                                                 <div className="absolute inset-0 flex items-center justify-center text-emerald-200/60 text-sm">
                                                     No nodes yet. Create one to see the semantic network.
                                                 </div>
@@ -470,7 +447,7 @@ export const FolderLayer: React.FC = () => {
                                     {/* Grid View */}
                                     {viewMode === 'grid' && !isLoadingNodes && (
                                         <div className="h-full overflow-y-auto p-6 custom-scrollbar">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                                                 {filteredNodes.map((node) => {
                                                     const Icon = TYPE_ICONS[node.type] || Box;
                                                     const color = TYPE_COLORS[node.type] || 'text-gray-400';

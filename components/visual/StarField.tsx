@@ -44,12 +44,13 @@ export const StarField: React.FC<StarFieldProps> = ({ warp = false }) => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            // Create 150 stars (more density than before)
-            stars = Array.from({ length: 150 }, () => ({
+            // Create a denser starfield for visibility behind overlays
+            const STAR_COUNT = 900;
+            stars = Array.from({ length: STAR_COUNT }, () => ({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 1.5 + 0.1,
-                brightness: Math.random(),
+                size: Math.random() * 1.8 + 0.2,
+                brightness: Math.random() * 0.95 + 0.15,
                 twinkleSpeed: Math.random() * 0.05 + 0.01,
                 twinklePhase: Math.random() * Math.PI * 2
             }));
@@ -71,7 +72,7 @@ export const StarField: React.FC<StarFieldProps> = ({ warp = false }) => {
             stars.forEach(star => {
                 // Twinkle logic
                 star.twinklePhase += star.twinkleSpeed;
-                const opacity = 0.3 + Math.abs(Math.sin(star.twinklePhase)) * 0.7 * star.brightness;
+                const opacity = 0.3 + Math.abs(Math.sin(star.twinklePhase)) * 0.8 * star.brightness;
 
                 ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
                 ctx.beginPath();
@@ -132,7 +133,7 @@ export const StarField: React.FC<StarFieldProps> = ({ warp = false }) => {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-0 opacity-60 mix-blend-screen"
+            className="fixed inset-0 pointer-events-none z-0 opacity-90 mix-blend-screen"
         />
     );
 };
