@@ -1232,13 +1232,29 @@ export const UniverseView: React.FC = () => {
         activeCompanyId ? (nodesByCompany[activeCompanyId] || []) : []
     ), [activeCompanyId, nodesByCompany]);
 
+    // Build folder→space lookup from foldersBySpace
+    const folderToSpaceMap = useMemo(() => {
+        const map = new Map<string, string>();
+        Object.entries(foldersBySpace).forEach(([spaceId, folders]) => {
+            folders.forEach(folder => {
+                map.set(folder.id, spaceId);
+            });
+        });
+        return map;
+    }, [foldersBySpace]);
+
     const { nodesBySpace, nodesByFolder } = useMemo(() => {
         const bySpace = new Map<string, CoreNode[]>();
         const byFolder = new Map<string, CoreNode[]>();
 
         activeNodes.forEach(node => {
-            if (!bySpace.has(node.space_id)) bySpace.set(node.space_id, []);
-            bySpace.get(node.space_id)!.push(node);
+            // Nodes don't have space_id directly - derive it from folder_id
+            const spaceId = node.space_id || (node.folder_id ? folderToSpaceMap.get(node.folder_id) : undefined);
+
+            if (spaceId) {
+                if (!bySpace.has(spaceId)) bySpace.set(spaceId, []);
+                bySpace.get(spaceId)!.push(node);
+            }
 
             if (node.folder_id) {
                 if (!byFolder.has(node.folder_id)) byFolder.set(node.folder_id, []);
@@ -1247,7 +1263,7 @@ export const UniverseView: React.FC = () => {
         });
 
         return { nodesBySpace: bySpace, nodesByFolder: byFolder };
-    }, [activeNodes]);
+    }, [activeNodes, folderToSpaceMap]);
 
     const folderMetaById = useMemo(() => {
         const map = new Map<string, { name?: string; description?: string }>();
