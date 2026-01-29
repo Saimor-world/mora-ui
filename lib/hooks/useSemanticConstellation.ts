@@ -49,8 +49,11 @@ export const useSemanticConstellation = () => {
             const validLines: SemanticLine[] = [];
 
             relations.forEach((rel) => {
-                const sourceId = rel.source_id;
-                const targetId = rel.target_id;
+                // Backend returns "source"/"target", not "source_id"/"target_id"
+                const sourceId = rel.source_id || rel.source;
+                const targetId = rel.target_id || rel.target;
+
+                if (!sourceId || !targetId) return;
 
                 // Only keep relations that actually touch the hovered node
                 if (sourceId !== nodeId && targetId !== nodeId) return;
@@ -64,7 +67,7 @@ export const useSemanticConstellation = () => {
                         id: rel.id || `${sourceId}-${targetId}`,
                         from: sourcePos,
                         to: targetPos,
-                        score: rel.weight || 0.5
+                        score: rel.weight || rel.strength || 0.5
                     });
                 }
             });

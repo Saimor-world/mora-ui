@@ -11,27 +11,44 @@ interface UserAvatarProps {
 }
 
 /**
- * USER AVATAR - LICHTWESEN (Light Being) with Aura Colors
+ * USER AVATAR - LICHTWESEN (Light Being) with Organic Fire Effect
  *
  * MASTERBIBEL: Each user is a unique Lichtwesen (light fairy/being)
- * with personalized aura colors. Not a traditional avatar, but a
- * floating, glowing entity that represents the user's presence.
+ * with personalized aura colors. The inner particles move chaotically
+ * like flames trapped inside a glass sphere - organic, alive, not geometric.
  */
 export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = true }) => {
     const { user, role, isLoading } = useUser();
     const [isHovered, setIsHovered] = useState(false);
     const viewMode = useMoraStore((s) => s.viewMode);
 
-    // Generate floating particles for the Lichtwesen
+    // Generate FIRE PARTICLES - chaotic, organic movement inside the orb
     // MUST be called before any early return!
-    const floatingParticles = useMemo(() => {
-        return Array.from({ length: 6 }, (_, i) => ({
+    const fireParticles = useMemo(() => {
+        return Array.from({ length: 12 }, (_, i) => ({
             id: i,
-            angle: (i * 60) * (Math.PI / 180),
-            radius: 28 + (i % 2) * 8,
-            size: 3 + (i % 3),
-            duration: 6 + (i % 3) * 2,
-            delay: i * 0.4
+            // Random starting position inside the orb (constrained to inner area)
+            startX: (Math.random() - 0.5) * 20,
+            startY: (Math.random() - 0.5) * 20,
+            // Particle properties
+            size: 2 + Math.random() * 4,
+            duration: 1.5 + Math.random() * 2,
+            delay: Math.random() * 2,
+            // Fire rises - particles drift upward with random horizontal wobble
+            riseHeight: 8 + Math.random() * 16,
+            wobble: (Math.random() - 0.5) * 12,
+        }));
+    }, []);
+
+    // Outer floating sparks that escape occasionally
+    const escapingSparks = useMemo(() => {
+        return Array.from({ length: 4 }, (_, i) => ({
+            id: i,
+            angle: (i * 90 + Math.random() * 30) * (Math.PI / 180),
+            distance: 32 + Math.random() * 12,
+            size: 2 + Math.random() * 2,
+            duration: 3 + Math.random() * 2,
+            delay: i * 0.8 + Math.random(),
         }));
     }, []);
 
@@ -47,20 +64,21 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
 
         // Role-based color selection for the aura
         const roleHues = {
-            owner: 42 + (Math.abs(hash) % 15),
-            admin: 340 + (Math.abs(hash) % 20),
-            member: 150 + (Math.abs(hash) % 30),
+            owner: 42 + (Math.abs(hash) % 15),    // Gold/Amber
+            admin: 340 + (Math.abs(hash) % 20),   // Rose
+            member: 150 + (Math.abs(hash) % 30),  // Emerald
         };
 
         const hue = roleHues[role as keyof typeof roleHues] || roleHues.member;
-        const saturation = 65 + (Math.abs(hash) % 15);
+        const saturation = 70 + (Math.abs(hash) % 15);
         const lightness = 55 + (Math.abs(hash) % 10);
 
         return {
             primary: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+            bright: `hsl(${hue}, ${saturation + 10}%, ${lightness + 15}%)`,
             glow: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.6)`,
             ring: `hsla(${hue}, ${saturation}%, ${lightness}%, 0.3)`,
-            secondary: `hsl(${(hue + 30) % 360}, ${saturation - 10}%, ${lightness + 10}%)`,
+            core: `hsl(${hue}, ${saturation - 20}%, ${lightness + 25}%)`, // Bright core
             halo: role === 'owner'
                 ? 'rgba(212, 175, 55, 0.7)'
                 : 'rgba(16, 185, 129, 0.5)',
@@ -93,179 +111,196 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ onClick, showLabel = tru
             {/* LICHTWESEN Container */}
             <motion.div
                 className="relative cursor-pointer group"
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
             >
-                {/* ORBITING LIGHT PARTICLES */}
-                {floatingParticles.map(particle => (
+                {/* OUTER AURA - Soft breathing glow */}
+                <motion.div
+                    className="absolute inset-[-20px] rounded-full"
+                    style={{
+                        background: `radial-gradient(circle, ${userColor.glow} 0%, transparent 70%)`,
+                        filter: 'blur(16px)',
+                    }}
+                    animate={{
+                        scale: isHovered ? [1, 1.3, 1.15, 1.35, 1] : [1, 1.15, 1.08, 1.2, 1],
+                        opacity: isHovered ? [0.5, 0.8, 0.6, 0.85, 0.5] : [0.3, 0.5, 0.4, 0.55, 0.3],
+                    }}
+                    transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        ease: 'easeInOut'
+                    }}
+                />
+
+                {/* ESCAPING SPARKS - Occasional particles that drift outward */}
+                {escapingSparks.map(spark => (
                     <motion.div
-                        key={`particle-${particle.id}`}
+                        key={`spark-${spark.id}`}
                         className="absolute pointer-events-none"
                         style={{
                             left: '50%',
                             top: '50%',
-                            width: particle.size,
-                            height: particle.size,
-                            marginLeft: -particle.size / 2,
-                            marginTop: -particle.size / 2,
+                            width: spark.size,
+                            height: spark.size,
+                            marginLeft: -spark.size / 2,
+                            marginTop: -spark.size / 2,
+                            borderRadius: '50%',
+                            background: userColor.bright,
+                            boxShadow: `0 0 ${spark.size * 3}px ${userColor.glow}`,
                         }}
                         animate={{
-                            x: [
-                                Math.cos(particle.angle) * particle.radius,
-                                Math.cos(particle.angle + Math.PI * 0.5) * particle.radius,
-                                Math.cos(particle.angle + Math.PI) * particle.radius,
-                                Math.cos(particle.angle + Math.PI * 1.5) * particle.radius,
-                                Math.cos(particle.angle + Math.PI * 2) * particle.radius
-                            ],
-                            y: [
-                                Math.sin(particle.angle) * particle.radius,
-                                Math.sin(particle.angle + Math.PI * 0.5) * particle.radius,
-                                Math.sin(particle.angle + Math.PI) * particle.radius,
-                                Math.sin(particle.angle + Math.PI * 1.5) * particle.radius,
-                                Math.sin(particle.angle + Math.PI * 2) * particle.radius
-                            ],
-                            opacity: [0.4, 0.9, 0.4],
-                            scale: [0.8, 1.3, 0.8]
+                            x: [0, Math.cos(spark.angle) * spark.distance * 0.5, Math.cos(spark.angle) * spark.distance],
+                            y: [0, Math.sin(spark.angle) * spark.distance * 0.5 - 8, Math.sin(spark.angle) * spark.distance - 12],
+                            opacity: [0, 0.9, 0],
+                            scale: [0.5, 1, 0.3],
                         }}
                         transition={{
-                            duration: particle.duration,
+                            duration: spark.duration,
                             repeat: Infinity,
-                            ease: "linear",
-                            delay: particle.delay
+                            ease: 'easeOut',
+                            delay: spark.delay,
                         }}
-                    >
-                        <div
-                            className="w-full h-full rounded-full"
-                            style={{
-                                background: `radial-gradient(circle, ${userColor.secondary} 0%, ${userColor.primary}00 70%)`,
-                                boxShadow: `0 0 ${particle.size * 4}px ${userColor.glow}`
-                            }}
-                        />
-                    </motion.div>
+                    />
                 ))}
 
-                {/* MULTI-LAYER AURA */}
+                {/* MAIN ORB - Organic blob shape containing fire */}
                 <motion.div
-                    className="absolute inset-[-16px] rounded-full"
+                    className="relative w-14 h-16 flex items-center justify-center overflow-hidden"
                     style={{
                         background: `
-                            radial-gradient(circle at 30% 30%, ${userColor.glow} 0%, transparent 50%),
-                            radial-gradient(circle at 70% 70%, ${userColor.secondary}40 0%, transparent 50%)
+                            radial-gradient(circle at 30% 25%, rgba(255,255,255,0.15) 0%, transparent 40%),
+                            radial-gradient(circle at 50% 50%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%)
                         `,
-                        filter: 'blur(14px)',
+                        boxShadow: `
+                            inset 0 0 20px rgba(0,0,0,0.5),
+                            inset 2px 2px 8px rgba(255,255,255,0.1),
+                            0 0 30px ${userColor.glow},
+                            0 0 50px ${userColor.glow}30,
+                            0 4px 16px rgba(0,0,0,0.4)
+                        `,
+                        border: `1px solid ${userColor.ring}`,
                     }}
                     animate={{
-                        scale: [1, 1.15, 1.05, 1.2, 1],
-                        opacity: [0.4, 0.65, 0.5, 0.7, 0.4],
-                        rotate: [0, 45, 90, 135, 180]
+                        // Organic breathing shape - asymmetric border-radius morphing
+                        borderRadius: [
+                            '60% 40% 55% 45% / 55% 45% 50% 50%',
+                            '45% 55% 40% 60% / 50% 55% 45% 50%',
+                            '55% 45% 60% 40% / 45% 50% 55% 50%',
+                            '40% 60% 45% 55% / 50% 45% 50% 55%',
+                            '60% 40% 55% 45% / 55% 45% 50% 50%',
+                        ],
                     }}
                     transition={{
                         duration: 8,
                         repeat: Infinity,
-                        ease: 'easeInOut'
-                    }}
-                />
-
-                {/* SECONDARY AURA LAYER */}
-                <motion.div
-                    className="absolute inset-[-10px] rounded-full"
-                    style={{
-                        background: `radial-gradient(ellipse at 60% 40%, ${userColor.halo} 0%, transparent 60%)`,
-                        filter: 'blur(8px)',
-                    }}
-                    animate={{
-                        scale: isHovered ? [1, 1.2, 1] : [1, 1.08, 1],
-                        opacity: isHovered ? [0.5, 0.8, 0.5] : [0.3, 0.5, 0.3],
-                    }}
-                    transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: 'easeInOut'
-                    }}
-                />
-
-                {/* LICHTWESEN CORE */}
-                <div
-                    className="relative w-14 h-14 rounded-full flex items-center justify-center overflow-visible"
-                    style={{
-                        background: `
-                            radial-gradient(circle at 30% 30%, ${userColor.primary} 0%, ${userColor.primary}99 35%, rgba(3,8,6,0.6) 100%)
-                        `,
-                        boxShadow: `
-                            inset -4px -4px 16px rgba(0,0,0,0.4),
-                            inset 4px 4px 12px rgba(255,255,255,0.25),
-                            0 0 35px ${userColor.glow},
-                            0 0 60px ${userColor.glow}40,
-                            0 8px 24px rgba(0,0,0,0.4)
-                        `,
+                        ease: 'easeInOut',
                     }}
                 >
-                    {/* GOLDEN HALO RING */}
-                    <motion.div
-                        className="absolute inset-[-12px] rounded-full"
-                        style={{
-                            border: `2px solid ${userColor.halo}`,
-                            boxShadow: `0 0 20px ${userColor.halo}, inset 0 0 10px ${userColor.halo}40`,
-                        }}
-                        animate={{
-                            opacity: [0.6, 0.9, 0.6],
-                            scale: [1, 1.02, 1]
-                        }}
-                        transition={{
-                            duration: 4,
-                            repeat: Infinity,
-                            ease: 'easeInOut'
-                        }}
-                    />
+                    {/* FIRE PARTICLES - Chaotic flames inside the orb */}
+                    {fireParticles.map(particle => (
+                        <motion.div
+                            key={`fire-${particle.id}`}
+                            className="absolute pointer-events-none"
+                            style={{
+                                width: particle.size,
+                                height: particle.size * 1.5, // Flames are taller than wide
+                                borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%', // Teardrop shape
+                                background: `linear-gradient(to top, ${userColor.primary}, ${userColor.bright}, ${userColor.core})`,
+                                filter: 'blur(0.5px)',
+                                boxShadow: `0 0 ${particle.size * 2}px ${userColor.glow}`,
+                            }}
+                            animate={{
+                                // Fire rises and wobbles chaotically
+                                x: [
+                                    particle.startX,
+                                    particle.startX + particle.wobble * 0.5,
+                                    particle.startX - particle.wobble * 0.3,
+                                    particle.startX + particle.wobble,
+                                    particle.startX
+                                ],
+                                y: [
+                                    particle.startY + 5,
+                                    particle.startY - particle.riseHeight * 0.3,
+                                    particle.startY - particle.riseHeight * 0.6,
+                                    particle.startY - particle.riseHeight,
+                                    particle.startY + 5
+                                ],
+                                opacity: [0, 0.9, 0.95, 0.7, 0],
+                                scale: [0.3, 1, 1.1, 0.8, 0.2],
+                                rotate: [0, -15, 10, -20, 0],
+                            }}
+                            transition={{
+                                duration: particle.duration,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: particle.delay,
+                            }}
+                        />
+                    ))}
 
-                    {/* INNER LIGHT */}
-                    <div
-                        className="absolute rounded-full"
-                        style={{
-                            width: '55%',
-                            height: '55%',
-                            top: '8%',
-                            left: '8%',
-                            background: 'radial-gradient(circle at 40% 40%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.15) 40%, transparent 70%)',
-                            filter: 'blur(2px)',
-                        }}
-                    />
-
-                    {/* CORE SPARK */}
+                    {/* CENTRAL FLAME CORE - The brightest point */}
                     <motion.div
-                        className="absolute w-3 h-3 rounded-full"
+                        className="absolute"
                         style={{
-                            background: `radial-gradient(circle, rgba(255,255,255,1) 0%, ${userColor.primary} 40%, transparent 100%)`,
-                            boxShadow: `0 0 16px ${userColor.halo}, 0 0 30px ${userColor.primary}`,
-                            top: '50%',
+                            width: 10,
+                            height: 14,
+                            bottom: '30%',
                             left: '50%',
-                            transform: 'translate(-50%, -50%)'
+                            marginLeft: -5,
+                            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                            background: `linear-gradient(to top, ${userColor.primary}, ${userColor.core}, white)`,
+                            boxShadow: `0 0 20px ${userColor.bright}, 0 0 40px ${userColor.glow}`,
+                            filter: 'blur(1px)',
                         }}
                         animate={{
-                            scale: [1, 1.3, 1],
-                            opacity: [0.8, 1, 0.8]
+                            scaleX: [1, 1.2, 0.9, 1.15, 1],
+                            scaleY: [1, 1.3, 1.1, 1.25, 1],
+                            x: [-1, 2, -2, 1, -1],
+                            opacity: [0.9, 1, 0.85, 1, 0.9],
                         }}
                         transition={{
-                            duration: 2,
+                            duration: 0.8,
                             repeat: Infinity,
-                            ease: 'easeInOut'
+                            ease: 'easeInOut',
                         }}
                     />
-                </div>
 
-                {/* OUTER BREATHING RING */}
+                    {/* GLASS HIGHLIGHT - Top reflection */}
+                    <div
+                        className="absolute rounded-full pointer-events-none"
+                        style={{
+                            width: '45%',
+                            height: '25%',
+                            top: '8%',
+                            left: '15%',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%)',
+                            borderRadius: '50%',
+                            filter: 'blur(1px)',
+                        }}
+                    />
+                </motion.div>
+
+                {/* HALO RING - Organic ring that morphs with the shape */}
                 <motion.div
-                    className="absolute inset-[-6px] rounded-full"
+                    className="absolute inset-[-8px] pointer-events-none"
                     style={{
-                        border: `1px solid ${userColor.ring}`,
-                        boxShadow: `0 0 8px ${userColor.ring}`
+                        border: `1.5px solid ${userColor.halo}`,
+                        boxShadow: `0 0 12px ${userColor.halo}`,
                     }}
                     animate={{
-                        scale: [1, 1.08, 1],
-                        opacity: [0.3, 0.15, 0.3],
+                        opacity: [0.5, 0.8, 0.5],
+                        scale: [1, 1.03, 1],
+                        // Organic shape that follows the main orb
+                        borderRadius: [
+                            '65% 35% 60% 40% / 60% 40% 55% 45%',
+                            '40% 60% 35% 65% / 45% 60% 40% 55%',
+                            '60% 40% 65% 35% / 40% 55% 60% 45%',
+                            '35% 65% 40% 60% / 55% 40% 45% 60%',
+                            '65% 35% 60% 40% / 60% 40% 55% 45%',
+                        ],
                     }}
                     transition={{
-                        duration: 6,
+                        duration: 8,
                         repeat: Infinity,
                         ease: 'easeInOut'
                     }}
