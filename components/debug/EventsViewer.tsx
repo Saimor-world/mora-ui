@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { coreGet } from "@/lib/api/coreClient";
+import { useMoraStore } from "@/lib/store/moraState";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, X, Clock, Zap, Mail, RefreshCw } from "lucide-react";
+
+const DEV_TOGGLE_KEY = "mora_dev_events_enabled";
 
 interface EventItem {
     id: number;
@@ -33,12 +36,24 @@ export const EventsViewer: React.FC = () => {
     const [lastCheck, setLastCheck] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [devEnabled, setDevEnabled] = useState(false);
+    const user = useMoraStore((state) => state.user);
+    const tenantId = user?.tenant_id || null;
 
     const fetchEvents = useCallback(async () => {
+        if (!devEnabled) {
+            return;
+        }
+        if (!tenantId) {
+            setError("Missing tenant_id. Login required.");
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
-            const res: EventsResponse = await coreGet("/v1/operator/events?limit=25");
+            const res: EventsResponse = await coreGet(
+                `/v1/operator/events?limit=25&tenant_id=${encodeURIComponent(tenantId)}&dev=true`
+            );
             if (res?.events) {
                 setEvents(res.events);
                 setLastCheck(res.timestamp);
@@ -49,7 +64,7 @@ export const EventsViewer: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [devEnabled, tenantId]);
 
     // Keyboard shortcut: Shift+E
     useEffect(() => {
@@ -64,19 +79,37 @@ export const EventsViewer: React.FC = () => {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const stored = window.localStorage.getItem(DEV_TOGGLE_KEY);
+        if (stored === "true") {
+            setDevEnabled(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        window.localStorage.setItem(DEV_TOGGLE_KEY, devEnabled ? "true" : "false");
+        if (!devEnabled) {
+            setEvents([]);
+            setLastCheck(null);
+            setError(null);
+        }
+    }, [devEnabled]);
+
     // Fetch on open
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && devEnabled) {
             fetchEvents();
         }
-    }, [isOpen, fetchEvents]);
+    }, [isOpen, devEnabled, fetchEvents]);
 
     // Auto-refresh every 10s when open
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !devEnabled) return;
         const interval = setInterval(fetchEvents, 10000);
         return () => clearInterval(interval);
-    }, [isOpen, fetchEvents]);
+    }, [isOpen, devEnabled, fetchEvents]);
 
     const formatTime = (iso: string) => {
         try {
@@ -131,11 +164,32 @@ export const EventsViewer: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <Activity className="w-4 h-4 text-emerald-400" />
                         <span className="text-sm font-medium text-emerald-50">System Events</span>
+                        <span className="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">
+                            Dev
+                        </span>
+                        <span className="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-white/5 text-gray-300">
+                            Read-only
+                        </span>
                         <span className="text-[10px] text-emerald-500/60 px-2 py-0.5 bg-emerald-500/10 rounded-full">
                             {events.length}
                         </span>
+                        {tenantId && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
+                                Tenant: {tenantId.slice(0, 8)}
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setDevEnabled((prev) => !prev)}
+                            className={`text-[9px] px-2 py-1 rounded-full transition-colors ${devEnabled
+                                ? "bg-emerald-500/20 text-emerald-300"
+                                : "bg-white/5 text-gray-400 hover:bg-white/10"
+                                }`}
+                            title="Explicit dev toggle for operator events"
+                        >
+                            {devEnabled ? "Dev On" : "Dev Off"}
+                        </button>
                         <button
                             onClick={fetchEvents}
                             disabled={loading}
@@ -162,6 +216,18 @@ export const EventsViewer: React.FC = () => {
                             <span>Last check: {formatTime(lastCheck)}</span>
                             {loading && <span className="animate-pulse">•</span>}
                         </div>
+                    </div>
+                )}
+
+                {!devEnabled && (
+                    <div className="px-4 py-3 bg-yellow-500/10 text-yellow-300 text-xs">
+                        Dev toggle is off. Enable "Dev On" to load operator events.
+                    </div>
+                )}
+
+                {devEnabled && !tenantId && (
+                    <div className="px-4 py-3 bg-red-500/10 text-red-400 text-xs">
+                        Missing tenant_id. Login required to scope events.
                     </div>
                 )}
 
@@ -225,7 +291,7 @@ export const EventsViewer: React.FC = () => {
 
                 {/* Footer */}
                 <div className="px-4 py-2 border-t border-white/10 text-[9px] text-gray-500">
-                    Press <kbd className="px-1 py-0.5 bg-white/5 rounded mx-1">Shift+E</kbd> to toggle
+                    Press <kbd className="px-1 py-0.5 bg-white/5 rounded mx-1">Shift+E</kbd> to toggle. Dev only.
                 </div>
             </motion.div>
         </AnimatePresence>

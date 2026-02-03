@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { coreGet } from "@/lib/api/coreClient";
+import { useMoraStore } from "@/lib/store/moraState";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Activity,
@@ -44,11 +45,18 @@ type MindLoopEventType =
     | "data_change"
     | "file_upload"
     | "node_created"
-    | "confirmation";
+    | "confirmation"
+    | "semantic"
+    | "awareness"
+    | "system"
+    | "context_shift"
+    | "potential_risk"
+    | "related_objects_cluster";
 
 interface TimelineEvent {
     id: number | string;
-    created_at: string;
+    created_at?: string;
+    timestamp?: string; // Backend uses timestamp
     event_type: MindLoopEventType | string;
     source: string;
     intent: string | null;
@@ -61,9 +69,11 @@ interface TimelineEvent {
 
 interface TimelineResponse {
     events: TimelineEvent[];
-    count: number;
-    limit: number;
+    count?: number;
+    limit?: number;
+    total?: number;
     timestamp: string;
+    filters?: Record<string, string | null | undefined>;
 }
 
 interface Props {
@@ -81,11 +91,27 @@ export const MindLoopTimeline: React.FC<Props> = ({
     refreshInterval = 10000,
     compact = false,
 }) => {
+    const {
+        activeCompanyId,
+        activeDepartmentId,
+        activeSpaceId,
+        activeFolderId,
+        activeNode,
+    } = useMoraStore();
     const [events, setEvents] = useState<TimelineEvent[]>([]);
     const [lastCheck, setLastCheck] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterType, setFilterType] = useState<string | null>(null);
+    const activeNodeId = activeNode?.id || null;
+    const effectiveCompanyId = companyId || activeCompanyId || null;
+    const contextSnapshot = {
+        company_id: effectiveCompanyId,
+        department_id: activeDepartmentId,
+        space_id: activeSpaceId,
+        folder_id: activeFolderId,
+        node_id: activeNodeId,
+    };
 
     // P2: Optimistic Events (Ephemeral)
     interface OptimisticEvent extends TimelineEvent {
@@ -133,19 +159,16 @@ export const MindLoopTimeline: React.FC<Props> = ({
         setLoading(true);
         setError(null);
         try {
-            // Try mindloop events first, fallback to operator events
-            let url = `/v1/mindloop/events?limit=${maxEvents}`;
-            if (companyId) {
-                url += `&company_id=${companyId}`;
-            }
+            const params = new URLSearchParams();
+            params.set("limit", String(maxEvents));
+            if (contextSnapshot.company_id) params.set("company_id", contextSnapshot.company_id);
+            if (contextSnapshot.department_id) params.set("department_id", contextSnapshot.department_id);
+            if (contextSnapshot.space_id) params.set("space_id", contextSnapshot.space_id);
+            if (contextSnapshot.folder_id) params.set("folder_id", contextSnapshot.folder_id);
+            if (contextSnapshot.node_id) params.set("node_id", contextSnapshot.node_id);
+            const url = `/v1/mindloop/events?${params.toString()}`;
 
-            let res: TimelineResponse;
-            try {
-                res = await coreGet(url);
-            } catch {
-                // Fallback to operator events
-                res = await coreGet(`/v1/operator/events?limit=${maxEvents}`);
-            }
+            const res: TimelineResponse = await coreGet(url);
 
             if (res?.events) {
                 setEvents(res.events);
@@ -157,7 +180,14 @@ export const MindLoopTimeline: React.FC<Props> = ({
         } finally {
             setLoading(false);
         }
-    }, [maxEvents, companyId]);
+    }, [
+        maxEvents,
+        contextSnapshot.company_id,
+        contextSnapshot.department_id,
+        contextSnapshot.space_id,
+        contextSnapshot.folder_id,
+        contextSnapshot.node_id
+    ]);
 
     // Initial fetch
     useEffect(() => {
@@ -198,6 +228,18 @@ export const MindLoopTimeline: React.FC<Props> = ({
 
     const getEventIcon = (eventType: string) => {
         switch (eventType) {
+            case "semantic":
+                return <Brain className="w-3.5 h-3.5 text-emerald-400" />;
+            case "awareness":
+                return <Activity className="w-3.5 h-3.5 text-sky-400" />;
+            case "system":
+                return <Zap className="w-3.5 h-3.5 text-slate-400" />;
+            case "context_shift":
+                return <RefreshCw className="w-3.5 h-3.5 text-purple-400" />;
+            case "potential_risk":
+                return <AlertCircle className="w-3.5 h-3.5 text-red-400" />;
+            case "related_objects_cluster":
+                return <Search className="w-3.5 h-3.5 text-indigo-400" />;
             case "thought":
                 return <Brain className="w-3.5 h-3.5 text-purple-400" />;
             case "proposal":
@@ -227,6 +269,18 @@ export const MindLoopTimeline: React.FC<Props> = ({
 
     const getEventColor = (eventType: string) => {
         switch (eventType) {
+            case "semantic":
+                return "border-l-emerald-500";
+            case "awareness":
+                return "border-l-sky-500";
+            case "system":
+                return "border-l-slate-500";
+            case "context_shift":
+                return "border-l-purple-500";
+            case "potential_risk":
+                return "border-l-red-500";
+            case "related_objects_cluster":
+                return "border-l-indigo-500";
             case "thought":
                 return "border-l-purple-500";
             case "proposal":
@@ -250,6 +304,14 @@ export const MindLoopTimeline: React.FC<Props> = ({
     const getEventLabel = (eventType: string) => {
         // P1-A: Semantic Mapping (Technical -> Business)
         const labels: Record<string, string> = {
+            // MindLoop types
+            semantic: "Semantic Insight",
+            awareness: "Awareness Signal",
+            system: "System Signal",
+            context_shift: "Context Shift",
+            potential_risk: "Potential Risk",
+            related_objects_cluster: "Related Cluster",
+
             // Core States
             thought: "Analyzing Request",
             proposal: "Strategy Proposed",
@@ -275,10 +337,37 @@ export const MindLoopTimeline: React.FC<Props> = ({
             // Fallbacks
             navigate_department: "Focusing Department",
             navigate_space: "Entering Space",
-            open_pane: "Opening Workspace"
+            open_pane: "Opening Workspace",
+
+            // New V1.5 types
+            learning: "Learning Signal",
+            memory: "Memory Stored"
         };
         return labels[eventType] || eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     };
+
+    const contextTokens = [
+        { label: "Company", value: contextSnapshot.company_id },
+        { label: "Department", value: contextSnapshot.department_id },
+        { label: "Space", value: contextSnapshot.space_id },
+        { label: "Folder", value: contextSnapshot.folder_id },
+        { label: "Node", value: contextSnapshot.node_id },
+    ].filter((item) => item.value);
+
+    const filterOptions = [
+        "semantic",
+        "awareness",
+        "system",
+        "context_shift",
+        "potential_risk",
+        "related_objects_cluster",
+        "thought",
+        "proposal",
+        "pending",
+        "approved",
+        "executed",
+        "result",
+    ];
 
     // P2: Merge Optimistic + Real
     const allEvents = [...optimisticEvents, ...events];
@@ -325,7 +414,7 @@ export const MindLoopTimeline: React.FC<Props> = ({
                 >
                     All
                 </button>
-                {["thought", "proposal", "pending", "approved", "executed", "result"].map((type) => (
+                {filterOptions.map((type) => (
                     <button
                         key={type}
                         onClick={() => setFilterType(type)}
@@ -338,6 +427,23 @@ export const MindLoopTimeline: React.FC<Props> = ({
                     </button>
                 ))}
             </div>
+
+            {/* Context scope */}
+            {contextTokens.length > 0 && (
+                <div className="px-4 py-2 border-b border-white/5 bg-emerald-500/5">
+                    <div className="flex flex-wrap items-center gap-2 text-[9px] text-emerald-500/70">
+                        <span className="uppercase tracking-wide">Scoped</span>
+                        {contextTokens.map((token) => (
+                            <span
+                                key={token.label}
+                                className="px-1.5 py-0.5 rounded bg-white/5 text-emerald-200/80"
+                            >
+                                {token.label}: {String(token.value).slice(0, 8)}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Last check timestamp */}
             {lastCheck && (
@@ -382,8 +488,8 @@ export const MindLoopTimeline: React.FC<Props> = ({
                             {/* Event card */}
                             <div
                                 className={`ml-2 p-3 rounded-xl border transition-colors group ${(event as OptimisticEvent).pkg_status === 'executing'
-                                        ? 'bg-white/[0.04] border-white/10 animate-pulse' // P2 Polish: Subtle, neutral "thinking" state
-                                        : 'bg-white/[0.02] hover:bg-white/[0.04] border-white/5'
+                                    ? 'bg-white/[0.04] border-white/10 animate-pulse' // P2 Polish: Subtle, neutral "thinking" state
+                                    : 'bg-white/[0.02] hover:bg-white/[0.04] border-white/5'
                                     } ${compact ? "py-2" : ""}`}
                             >
                                 <div className="flex items-start justify-between gap-2">
@@ -400,8 +506,8 @@ export const MindLoopTimeline: React.FC<Props> = ({
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-1 text-[9px] text-gray-500 tabular-nums">
-                                        <span>{formatDate(event.created_at)}</span>
-                                        <span>{formatTime(event.created_at)}</span>
+                                        <span>{formatDate(event.created_at || event.timestamp || "")}</span>
+                                        <span>{formatTime(event.created_at || event.timestamp || "")}</span>
                                     </div>
                                 </div>
 
