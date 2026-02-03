@@ -38,6 +38,19 @@ import { toast } from "@/lib/toast";
 import { mindLoop } from "@/lib/intelligence/mindLoop"; // Phase 8.1 Integration
 import type { OrbState } from "@/lib/api/awarenessClient";
 
+// Helper: Merge lists and deduplicate by ID
+const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null)[]): T[] => {
+    const map = new Map<string, T>();
+    lists.forEach(list => {
+        if (list) {
+            list.forEach(item => {
+                if (item?.id) map.set(item.id, item);
+            });
+        }
+    });
+    return Array.from(map.values());
+};
+
 export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
@@ -103,6 +116,7 @@ interface MoraState {
     // Tree Data
     treeData: CoreTreeNode[] | null;
     expandedTreeNodes: Set<string>;
+    loadedNodes: Set<string>; // Phase 2: Lazy Loading Tracking
 
     // Loading / Error States
     isLoadingCompanies: boolean;
@@ -122,10 +136,15 @@ interface MoraState {
     };
     hasBooted: boolean;
     isLoggingOut: boolean;
+    hilEnabled: boolean;
 
     // P1-B: Speculative Orb Awareness (Zero Latency)
     speculativeState?: OrbState;
     speculativeUntil?: number;
+
+    // Visual State
+    isStandardMode: boolean;
+    setIsStandardMode: (active: boolean) => void;
 
     // Actions
     setViewLevel: (level: ViewLevel) => void;
@@ -143,6 +162,7 @@ interface MoraState {
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
     setHasBooted: (hasBooted: boolean) => void;
     setIsLoggingOut: (isLoggingOut: boolean) => void;
+    setHilEnabled: (enabled: boolean) => void;
     minimizeNode: (node: CoreNode) => void;
     restoreNode: (nodeId: string) => void;
     closeNode: (nodeId: string) => void;
@@ -162,6 +182,7 @@ interface MoraState {
 
     // Tree Actions
     toggleTreeNode: (id: string) => void;
+    loadChildren: (nodeId: string, type: 'department' | 'space' | 'folder') => Promise<void>;
 
     // Data Actions - Create/Update/Delete
     addSpace: (payload: CreateSpacePayload) => Promise<void>;
@@ -184,6 +205,9 @@ interface MoraState {
     navigateToDepartment: (deptId: string) => void;
     navigateToSpace: (spaceId: string) => void;
     navigateToFolder: (folderId: string) => void;
+
+    // Phase 8: Intelligence
+    initializeMindLoop: () => void;
 }
 
 export const useMoraStore = create<MoraState>((set, get) => ({
@@ -205,6 +229,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
     treeData: null,
     expandedTreeNodes: new Set<string>(),
+    loadedNodes: new Set<string>(),
 
     isLoadingCompanies: false,
     isLoadingDepartments: false,
@@ -225,15 +250,21 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
     hasBooted: false,
     isLoggingOut: false,
+    hilEnabled: true,
 
     // User & Permissions (Phase 6.3) - Default to demo role
     user: null,
     permissions: ROLE_PERMISSIONS.demo,
+    isStandardMode: false,
 
     // Basic Setters
+    setIsStandardMode: (active) => set({ isStandardMode: active }),
     setViewLevel: (level) => set({ viewLevel: level }),
     setViewMode: (mode) => {
         set({ viewMode: mode });
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('saimor_view_mode', mode);
+        }
 
         // Auto-adjust viewLevel based on mode
         if (mode === 'owner') {
@@ -254,21 +285,33 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         const hqCompanyId = companies.find((c) => c.tenant_id === TENANT_HQ)?.id || null;
 
         let nextActive = activeCompanyId;
+        const currentCompany = companies.find(c => c.id === nextActive);
 
         if (mode === 'demo') {
-            nextActive = demoCompanyId || nextActive;
+            // Demo mode REQUIRES a demo company.
+            if (!currentCompany?.is_demo) {
+                nextActive = demoCompanyId || nextActive;
+            }
         } else if (mode === 'workspace') {
-            if (isDemoTenant) {
-                nextActive = hqCompanyId || nextActive;
+            if (user?.role === ROLE_SYSTEM_OWNER) {
+                // System Owner Workspace: HQ or non-demo client. 
+                // We do NOT want demo companies in the "Workspace/Client" tab.
+                if (currentCompany?.is_demo || !nextActive) {
+                    nextActive = hqCompanyId || companies.find(c => !c.is_demo)?.id || nextActive;
+                }
+            } else if (isDemoTenant) {
+                // Demo users are locked to their demo company for workspace view
+                nextActive = demoCompanyId || nextActive;
             } else if (tenantId) {
-                nextActive = companies.find((c) => c.tenant_id === tenantId)?.id || nextActive;
+                // Regular users are locked to their tenant's company
+                if (currentCompany?.tenant_id !== tenantId) {
+                    nextActive = companies.find((c) => c.tenant_id === tenantId)?.id || hqCompanyId || nextActive;
+                }
             }
         } else if (mode === 'owner') {
-            if (nextActive && !companies.some((c) => c.id === nextActive)) {
-                nextActive = null;
-            }
-            if (!nextActive) {
-                nextActive = companies.find((c) => !c.is_demo)?.id || companies[0]?.id || null;
+            // In Dashboard Mode, we usually want to ensure HQ or a valid client is selected for any metadata lookups
+            if (currentCompany?.is_demo || !nextActive) {
+                nextActive = hqCompanyId || companies.find(c => !c.is_demo)?.id || companies[0]?.id || null;
             }
         }
 
@@ -298,17 +341,25 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         // P1-B: Instant Speculative Update
         // Forces the Orb to this state immediately, blocking polling updates for ttlMs
         const now = Date.now();
-
-        // Debounce: If already in this state and valid, extend TTL but don't re-render
-        if (get().orbState === state && get().speculativeState === state) {
-            set({ speculativeUntil: now + ttlMs });
-            return;
-        }
-
         set({
-            orbState: state, // Immediate visual update
             speculativeState: state,
-            speculativeUntil: now + ttlMs
+            speculativeUntil: now + ttlMs,
+            orbState: state
+        });
+    },
+
+    initializeMindLoop: () => {
+        // Prevent double subscription
+        const current = get();
+        if ((current as any)._hasGenericMindLoopSub) return;
+        (current as any)._hasGenericMindLoopSub = true;
+
+        console.log('[MoraState] Linking to Mind Loop Consciousness...');
+
+        mindLoop.subscribe((level) => {
+            // Map MindLoop levels to OrbState
+            const mappedState = level as OrbState;
+            get().setOrbState(mappedState);
         });
     },
     clearSpeculativeState: () => {
@@ -328,6 +379,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     })),
     setHasBooted: (hasBooted) => set({ hasBooted }),
     setIsLoggingOut: (isLoggingOut) => set({ isLoggingOut }),
+    setHilEnabled: (enabled) => set({ hilEnabled: enabled }),
 
     // Phase 6.3: Set user and auto-compute permissions from role
     setUser: (user) => {
@@ -343,8 +395,21 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             });
 
             // Auto-set viewMode from backend truth (no hardcoded email allow-lists)
+            // IMPORTANT: Only SYSTEM_OWNER sees Client Health Dashboard (owner view)
+            // Regular 'owner' users see their own company (workspace view)
             const isDemoTenant = checkDemoTenant(user.tenant_id);
-            if (user.role === ROLE_SYSTEM_OWNER) {
+            let savedViewMode: ViewMode | null = null;
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('saimor_view_mode');
+                if (stored === 'owner' || stored === 'workspace' || stored === 'demo') {
+                    savedViewMode = stored;
+                }
+            }
+
+            const canUseSaved = savedViewMode && (user.role === ROLE_SYSTEM_OWNER || savedViewMode !== 'owner');
+            if (canUseSaved) {
+                set({ viewMode: savedViewMode as ViewMode });
+            } else if (user.role === ROLE_SYSTEM_OWNER) {
                 get().setViewMode('owner');
             } else if (isDemoTenant) {
                 get().setViewMode('demo');
@@ -399,6 +464,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             activeNode: null,
             treeData: null,
             expandedTreeNodes: new Set<string>(),
+            loadedNodes: new Set<string>(),
             minimizedNodes: [],
             viewMode: 'workspace',
             viewLevel: 'core',
@@ -429,26 +495,31 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const hqCompanyId = data.find((c: any) => c.tenant_id === TENANT_HQ)?.id || null;
 
             let nextActive: string | null = null;
+            const hqCompany = data.find((c: any) => c.tenant_id === TENANT_HQ);
+            const demoCompany = data.find((c: any) => c.is_demo);
+            const userCompany = data.find((c: any) => c.tenant_id === userTenant);
 
             if (viewMode === 'demo') {
-                nextActive = currentActive === demoCompanyId ? currentActive : demoCompanyId;
+                // DEMO MODE: Everyone (including System Owner) sees the Sandbox
+                nextActive = demoCompany?.id || currentActive;
+            } else if (userRole === ROLE_SYSTEM_OWNER) {
+                // SYSTEM OWNER: Respect current selection (sub-account stepping), fallback to HQ
+                nextActive = currentActive ? (data.some((c: any) => c.id === currentActive) ? currentActive : (hqCompany?.id ?? null)) : (hqCompany?.id ?? null);
             } else if (viewMode === 'workspace' && isDemoTenant) {
-                nextActive = currentActive === hqCompanyId ? currentActive : hqCompanyId;
+                nextActive = hqCompany?.id ?? currentActive;
             } else {
+                // Regular users: Try to keep current, fallback to their tenant company
                 const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
-                nextActive = stillValid ? currentActive : null;
-            }
-
-            if (!nextActive && userTenant) {
-                nextActive = data.find((c: any) => c.tenant_id === userTenant)?.id || null;
-            }
-            if (!nextActive) {
-                nextActive = data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null;
+                nextActive = stillValid ? currentActive : (userCompany?.id || data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null);
             }
 
             set({ companies: data, activeCompanyId: nextActive, isLoadingCompanies: false });
 
-            // Phase 8.1: Success event
+            // SPEED UP: Fire-and-forget pre-fetch for the full hierarchical tree
+            if (nextActive) {
+                get().loadTree(userTenant || undefined, nextActive).catch(console.error);
+            }
+
             mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'idle', severity: 0.1, payload: { status: 'success' } });
             set({ orbState: mindLoop.getCurrentState() });
         } catch (error: any) {
@@ -465,7 +536,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadDepartments: async (companyId?: string) => {
-        set({ isLoadingDepartments: true, coreError: null });
+        // DEBOUNCE: Prevent multiple simultaneous calls
+        const state = get();
+        if (state.isLoadingDepartments) {
+            return; // Already loading, skip
+        }
+
+        set({ isLoadingDepartments: true, coreError: null, departments: [] });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadDepartments' } });
         set({ orbState: mindLoop.getCurrentState() });
 
@@ -475,16 +552,22 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         try {
             // Use active company if not provided
             const targetCompanyId = companyId || get().activeCompanyId || undefined;
-            console.log('[MoraState] Loading Departments for:', targetCompanyId);
-
-            let data = await fetchDepartments(targetCompanyId);
-            console.log('[MoraState] Departments Fetched:', data?.length || 0, data);
-
-            if (!data || data.length === 0) {
-                console.warn('[MoraState] WARNING: No departments returned! Possible seed issue.');
+            // Reduce console spam - only log once per load cycle
+            if (process.env.NODE_ENV !== 'production') {
+                console.debug('[MoraState] Loading Departments for:', targetCompanyId);
             }
 
-            set({ departments: data, isLoadingDepartments: false });
+            // Parallelize fetching to eliminate sequential lag
+            const [deptData, nodeData] = await Promise.all([
+                fetchDepartments(targetCompanyId),
+                fetchNodesByCompany(targetCompanyId!)
+            ]);
+
+            set({
+                departments: deptData || [],
+                nodesByCompany: { ...get().nodesByCompany, [targetCompanyId!]: nodeData || [] },
+                isLoadingDepartments: false
+            });
             mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'idle', severity: 0.1, payload: { status: 'success' } });
             set({ orbState: mindLoop.getCurrentState() });
         } catch (error: any) {
@@ -578,7 +661,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadNodesForCompany: async (companyId: string) => {
-        set({ isLoadingNodes: true, coreError: null });
+        set({ isLoadingNodes: true, coreError: null, nodesByCompany: { ...get().nodesByCompany, [companyId]: [] } });
 
         // PRODUCTION MODE: Demo now uses real DB nodes for authenticity
 
@@ -623,24 +706,67 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadTree: async (tenantId?: string, companyId?: string) => {
-        set({ isLoadingTree: true, coreError: null });
+        set({ isLoadingTree: true, coreError: null, treeData: null });
         try {
             const resolvedTenant = tenantId || useAccountStore.getState().currentAccount?.tenantId;
             const targetCompany = companyId || get().activeCompanyId || undefined;
 
             const tree = await fetchTree(resolvedTenant || undefined, targetCompany);
-            if ((tree?.length || 0) === 0) {
-                // Retry once to avoid empty renders during demo refresh
+            if (!tree || (tree?.length || 0) === 0) {
+                // Retry once
                 const retryTree = await fetchTree(resolvedTenant || undefined, targetCompany);
-                const hasData = (retryTree?.length || 0) > 0;
-                set({
-                    treeData: retryTree,
-                    isLoadingTree: false,
-                    coreError: hasData ? null : "Tree is empty after refresh. Try resetting the demo.",
-                });
+                if (!retryTree || (retryTree?.length || 0) === 0) {
+                    set({
+                        treeData: [],
+                        isLoadingTree: false,
+                        coreError: "Tree is empty. Try resetting the demo."
+                    });
+                    return;
+                }
+                set({ treeData: retryTree, isLoadingTree: false });
                 return;
             }
-            set({ treeData: tree, isLoadingTree: false });
+
+            // HYDRATION: Sync flat store from tree structure to guarantee consistency
+            const newDepartments: any[] = [];
+            const newSpacesByDept: Record<string, any[]> = {};
+            const newFoldersBySpace: Record<string, any[]> = {};
+            const newNodesByFolder: Record<string, any[]> = {};
+            const newNodesByCompany: any[] = [];
+
+            const processNode = (node: any, parentId?: string, parentType?: string) => {
+                if (node.type === 'department') {
+                    newDepartments.push({ id: node.id, name: node.name, color: node.color, slug: node.slug });
+                    if (node.children) node.children.forEach((c: any) => processNode(c, node.id, 'department'));
+                } else if (node.type === 'space') {
+                    if (parentId) {
+                        newSpacesByDept[parentId] = [...(newSpacesByDept[parentId] || []), { id: node.id, name: node.name, department_id: parentId }];
+                    }
+                    if (node.children) node.children.forEach((c: any) => processNode(c, node.id, 'space'));
+                } else if (node.type === 'folder') {
+                    if (parentId) {
+                        newFoldersBySpace[parentId] = [...(newFoldersBySpace[parentId] || []), { id: node.id, name: node.name, space_id: parentId }];
+                    }
+                    if (node.children) node.children.forEach((c: any) => processNode(c, node.id, 'folder'));
+                } else if (node.type === 'node') {
+                    if (parentId) {
+                        newNodesByFolder[parentId] = [...(newNodesByFolder[parentId] || []), { id: node.id, title: node.name, folder_id: parentId, type: node.nodeType || 'document' }];
+                    }
+                    newNodesByCompany.push({ id: node.id, title: node.name, type: node.nodeType || 'document' });
+                }
+            };
+
+            tree.forEach(root => processNode(root));
+
+            set({
+                treeData: tree,
+                isLoadingTree: false,
+                departments: mergeUnique(get().departments, newDepartments),
+                spacesByDepartment: { ...get().spacesByDepartment, ...newSpacesByDept }, // Keys are deptIds, overwriting is generally correct here if tree is source of truth, but we could merge inner arrays if needed. Current logic: Tree replaces flat for specific departments.
+                foldersBySpace: { ...get().foldersBySpace, ...newFoldersBySpace },
+                nodesByFolder: { ...get().nodesByFolder, ...newNodesByFolder },
+                nodesByCompany: targetCompany ? { ...get().nodesByCompany, [targetCompany]: mergeUnique(get().nodesByCompany[targetCompany], newNodesByCompany) } : get().nodesByCompany
+            });
         } catch (error: any) {
             const msg = error instanceof CoreError
                 ? (error.status === 401 || error.status === 403 ? "Not authorized to access tree." : error.message)
@@ -656,8 +782,47 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             newExpanded.delete(id);
         } else {
             newExpanded.add(id);
+            // Trigger lazy load if treeData is present but children might be missing?
+            // Actually, best to let the UI trigger loadChildren to keep this pure toggle.
         }
         set({ expandedTreeNodes: newExpanded });
+    },
+
+    loadChildren: async (nodeId, type) => {
+        const state = get();
+        if (state.loadedNodes.has(nodeId)) return; // Already loaded
+
+        // Optimistic / Loading state handled by UI or we could add a `loadingNodes` set
+        try {
+            const { fetchNodeChildren } = await import('@/lib/api/coreClient');
+            const children = await fetchNodeChildren(nodeId, type);
+
+            // Inject into treeData
+            const inject = (nodes: CoreTreeNode[]): CoreTreeNode[] => {
+                return nodes.map(node => {
+                    if (node.id === nodeId) {
+                        return { ...node, children: children };
+                    }
+                    if (node.children && node.children.length > 0) {
+                        return { ...node, children: inject(node.children) };
+                    }
+                    return node;
+                });
+            };
+
+            const newTree = state.treeData ? inject(state.treeData) : null;
+
+            // Also update flat maps if needed (optional but good for consistency)
+            // But main purpose is Tree View.
+
+            set(prev => ({
+                treeData: newTree,
+                loadedNodes: new Set(prev.loadedNodes).add(nodeId)
+            }));
+
+        } catch (e) {
+            console.error("Failed to load children lazily", e);
+        }
     },
 
     // Create Actions
