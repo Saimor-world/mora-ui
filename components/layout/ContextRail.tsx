@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2 } from 'lucide-react';
+import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2, Users, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { useDemoFlow } from '@/lib/hooks/useDemoFlow';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -304,9 +305,16 @@ export const ContextRail: React.FC = () => {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/80">
+                            <button
+                                onClick={() => {
+                                    const { openPane } = usePaneStore.getState();
+                                    openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
+                                    setShowUserMenu(false);
+                                }}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/80"
+                            >
                                 <User size={16} />
-                                Profile
+                                Profile & Settings
                             </button>
                             <button
                                 onClick={handleLogout}
@@ -329,24 +337,42 @@ export const ContextRail: React.FC = () => {
                         exit={{ opacity: 0, x: -10 }}
                         className="fixed left-[88px] bottom-20 z-[70] w-80 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-2xl"
                     >
-                        <h3 className="text-lg text-white/90 font-medium mb-4">Settings</h3>
+                        <h3 className="text-sm text-white/90 font-medium mb-3">Quick Settings</h3>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs text-white/60 uppercase tracking-wider mb-2 block">Theme</label>
-                                <select className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white/90 text-sm">
-                                    <option>Dark (Default)</option>
-                                    <option>Darker</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-xs text-white/60 uppercase tracking-wider mb-2 block">Language</label>
-                                <select className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white/90 text-sm">
-                                    <option>English</option>
-                                    <option>Deutsch</option>
-                                </select>
-                            </div>
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => {
+                                    const { openPane } = usePaneStore.getState();
+                                    openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
+                                    setShowSettings(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/70 hover:text-white/90"
+                            >
+                                <Settings size={15} />
+                                Alle Einstellungen
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const { openPane } = usePaneStore.getState();
+                                    openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } });
+                                    setShowSettings(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/70 hover:text-white/90"
+                            >
+                                <Users size={15} />
+                                Team verwalten
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const { openPane } = usePaneStore.getState();
+                                    openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } });
+                                    setShowSettings(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/70 hover:text-white/90"
+                            >
+                                <Sparkles size={15} />
+                                Mora Nexus
+                            </button>
                         </div>
                     </motion.div>
                 )}

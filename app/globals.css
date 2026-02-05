@@ -101,36 +101,87 @@
 
   /* === STANDARD MODE (CORPORATE THEME) === */
   .standard-mode {
-    /* Boring Slate/Blue Corporate Palette */
+    /* Corporate Slate/Blue Palette */
     --mora-emerald-core: #3B82F6;
-    /* Corporate Blue */
     --mora-deep-forest: #1E293B;
-    /* Slate 800 */
     --mora-frost-white: #F8FAFC;
-    /* Slate 50 */
     --mora-shadow-black: #0F172A;
-    /* Slate 900 */
+    --mora-gold: #F59E0B;
+
+    /* Override awareness states to blue tones */
+    --mora-state-idle: #3B82F6;
+    --mora-state-active: #F59E0B;
+    --mora-state-learning: #6366F1;
+    --mora-state-warning: #EF4444;
 
     --background: 222 47% 11%;
-    /* Slate 900 ish */
     --foreground: 210 40% 98%;
-
-    --card: 222 47% 11%;
+    --card: 222 47% 13%;
     --card-foreground: 210 40% 98%;
+
+    /* Glass overrides for flat corporate look */
+    --mora-glass-blur: 12px;
+    --mora-glass-opacity: 0.95;
+    --mora-glass-bg: rgba(15, 23, 42, 0.92);
+    --mora-glass-border: rgba(148, 163, 184, 0.15);
+
+    /* Reduced radius for corporate feel */
+    --mora-radius-sm: 6px;
+    --mora-radius-md: 8px;
+    --mora-radius-lg: 12px;
+    --mora-radius-xl: 16px;
 
     font-family: 'Inter', system-ui, sans-serif !important;
   }
 
+  /* Glass card - corporate flat */
   .standard-mode .glass-card {
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
   }
 
+  /* Glass panels - less blur, more opaque */
   .standard-mode .glass-panel {
-    background: rgba(15, 23, 42, 0.7);
-    border-color: rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(148, 163, 184, 0.18);
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
   }
+
+  /* Replace emerald accents with blue */
+  .standard-mode .text-emerald-300 { color: #93C5FD !important; }
+  .standard-mode .text-emerald-400 { color: #60A5FA !important; }
+  .standard-mode .text-emerald-500 { color: #3B82F6 !important; }
+  .standard-mode .text-emerald-50 { color: #EFF6FF !important; }
+  .standard-mode .bg-emerald-500\/10 { background-color: rgba(59, 130, 246, 0.1) !important; }
+  .standard-mode .bg-emerald-500\/15 { background-color: rgba(59, 130, 246, 0.15) !important; }
+  .standard-mode .bg-emerald-500\/20 { background-color: rgba(59, 130, 246, 0.2) !important; }
+  .standard-mode .border-emerald-500 { border-color: #3B82F6 !important; }
+  .standard-mode .border-emerald-500\/20 { border-color: rgba(59, 130, 246, 0.2) !important; }
+  .standard-mode .border-emerald-500\/30 { border-color: rgba(59, 130, 246, 0.3) !important; }
+
+  /* Ring focus states */
+  .standard-mode .ring-emerald-400\/60 { --tw-ring-color: rgba(96, 165, 250, 0.6) !important; }
+  .standard-mode .focus\:ring-emerald-400\/60:focus { --tw-ring-color: rgba(96, 165, 250, 0.6) !important; }
+
+  /* Toned-down backgrounds */
+  .standard-mode .bg-black\/40 { background-color: rgba(15, 23, 42, 0.7) !important; }
+  .standard-mode .bg-black\/30 { background-color: rgba(15, 23, 42, 0.5) !important; }
+
+  /* Universe canvas - muted in standard mode */
+  .standard-mode canvas { opacity: 0.3; }
+
+  /* Animations - subtler in standard mode */
+  .standard-mode .animate-pulse { animation-duration: 3s; }
+  .standard-mode .animate-spin { animation-duration: 60s; }
+
+  /* Reduced border radius on common elements */
+  .standard-mode .rounded-2xl { border-radius: 12px; }
+  .standard-mode .rounded-xl { border-radius: 8px; }
+  .standard-mode .rounded-full { border-radius: 9999px; /* keep pills round */ }
 
 
   /* Glass Effect Utilities */

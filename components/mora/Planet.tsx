@@ -245,16 +245,32 @@ export const Planet: React.FC<PlanetProps> = ({
                             initial={{ opacity: 0, x: -5 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -5 }}
-                            className="flex items-center gap-3 text-[8px] text-cyan-400 font-medium tracking-[0.25em]"
+                            className="flex flex-col gap-1"
                         >
-                            <div className="flex items-center gap-1 opacity-80">
-                                <Database size={9} />
-                                <span>{activity} Docs</span>
+                            <div className="flex items-center gap-3 text-[8px] text-cyan-400 font-medium tracking-[0.15em]">
+                                <div className="flex items-center gap-1 opacity-80">
+                                    <Database size={9} />
+                                    <span>{activity} Docs</span>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-80">
+                                    <Activity size={9} />
+                                    <span>{health}% Health</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-1 opacity-80">
-                                <Activity size={9} />
-                                <span>{health}%</span>
-                            </div>
+                            {capacity > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <div className="h-[3px] w-16 rounded-full bg-white/10 overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${Math.min(100, capacity)}%`,
+                                                background: capacity > 70 ? '#10B981' : capacity > 30 ? '#F59E0B' : '#6B7280'
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-[7px] text-white/30 font-mono">{capacity}%</span>
+                                </div>
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

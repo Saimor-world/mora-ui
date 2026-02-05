@@ -31,6 +31,61 @@ interface ChatPaneProps {
     id?: string;
 }
 
+// ─── Context-Aware Chat Suggestions ───
+const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
+    const viewLevel = useMoraStore((s) => s.viewLevel);
+    const departments = useMoraStore((s) => s.departments);
+    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
+    const orbState = useMoraStore((s) => s.orbState);
+
+    const suggestions = React.useMemo(() => {
+        const dept = departments.find(d => d.id === activeDepartmentId);
+
+        if (viewLevel === 'folder' || viewLevel === 'space') {
+            return [
+                'Fasse diesen Bereich zusammen',
+                'Was fehlt hier noch?',
+                dept ? `Zurück zu ${dept.name}` : 'Übersicht zeigen',
+            ];
+        }
+        if (viewLevel === 'department' && dept) {
+            return [
+                `Was gibt es Neues in ${dept.name}?`,
+                'Welche Dokumente sind wichtig?',
+                'Zeig mir alle Spaces',
+            ];
+        }
+        if (orbState === 'alert') {
+            return [
+                'Was braucht Aufmerksamkeit?',
+                'Zeig mir die Alerts',
+                'Status Report',
+            ];
+        }
+        // Default / Core level
+        const firstDept = departments[0]?.name;
+        return [
+            firstDept ? `Zeig mir ${firstDept}` : 'Zeig mir die Abteilungen',
+            'Was gibt es Neues?',
+            'Hilf mir beim Organisieren',
+        ];
+    }, [viewLevel, departments, activeDepartmentId, orbState]);
+
+    return (
+        <div className="flex gap-2 mt-2 flex-wrap">
+            {suggestions.map((suggestion) => (
+                <button
+                    key={suggestion}
+                    onClick={() => onSelect(suggestion)}
+                    className="text-xs px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-full text-emerald-100/60 hover:text-emerald-300 transition-all"
+                >
+                    {suggestion}
+                </button>
+            ))}
+        </div>
+    );
+};
+
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const { departments } = useMoraStore();
@@ -330,17 +385,7 @@ Versuche:
                             <Send size={18} />
                         </button>
                     </div>
-                    <div className="flex gap-2 mt-2">
-                        {['Zeig mir Operations', 'Was gibt es Neues?', 'Finde Projektplan'].map((suggestion) => (
-                            <button
-                                key={suggestion}
-                                onClick={() => setInput(suggestion)}
-                                className="text-xs px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-full text-emerald-100/60 hover:text-emerald-300 transition-all"
-                            >
-                                {suggestion}
-                            </button>
-                        ))}
-                    </div>
+                    <ChatSuggestions onSelect={setInput} />
                 </div>
             </div>
         </GlassPanel>

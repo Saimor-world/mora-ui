@@ -50,23 +50,27 @@ export const Dock = () => {
             case 'mail': openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: defaultSize }); break;
             case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Calendar', size: defaultSize }); break;
             case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
-            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 700, height: 500 } }); break;
+            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } }); break;
+            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } }); break;
+            case 'notes': openPane({ id: 'notes-main', type: 'notes', title: 'Notes', size: { width: 720, height: 560 } }); break;
             default: break;
         }
     };
 
     const dockItems = [
         { icon: Home, label: 'Core', action: 'home' },
-        { icon: LayoutGrid, label: 'Apps', action: 'apps' },
+        { icon: Sparkles, label: 'Mora', action: 'mora-hub' },
         { icon: Folder, label: 'Finder', action: 'finder' },
+        { icon: LayoutGrid, label: 'Apps', action: 'apps' },
         { icon: Users, label: 'Team', action: 'team' },
+        { icon: FileText, label: 'Notes', action: 'notes' },
         { icon: Mail, label: 'Mail', action: 'mail' },
-        { icon: Calendar, label: 'Calendar', action: 'calendar' },
+        { icon: Calendar, label: 'Kalender', action: 'calendar' },
         { icon: Terminal, label: 'Terminal', action: 'terminal' },
-        { icon: Settings, label: 'Config', action: 'settings' }
+        { icon: Settings, label: 'Settings', action: 'settings' }
     ];
 
-    const minimizedIconMap: Record<string, React.ComponentType<{ size?: number }>> = {
+    const minimizedIconMap: Record<string, React.ComponentType<any>> = {
         finder: Folder,
         chat: MessageCircle,
         team: Users,
@@ -111,7 +115,26 @@ export const Dock = () => {
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onFocus={() => setSearchPopupOpen(true)}
-                        placeholder="Search..."
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && chatInput.trim()) {
+                                setSearchPopupOpen(false);
+                                openPane({
+                                    id: 'search-main',
+                                    type: 'search',
+                                    title: 'Search',
+                                    size: { width: 720, height: 520 },
+                                    data: { query: chatInput.trim() }
+                                });
+                                setChatInput('');
+                                inputRef.current?.blur();
+                            }
+                            if (e.key === 'Escape') {
+                                setSearchPopupOpen(false);
+                                setChatInput('');
+                                inputRef.current?.blur();
+                            }
+                        }}
+                        placeholder="Search... ⏎"
                         className="w-44 bg-white/5 border border-white/5 rounded-xl pl-9 pr-4 py-1.5 text-[13px] text-white/90 placeholder:text-white/20 focus:outline-none focus:border-cyan-500/30 transition-all"
                     />
                 </div>

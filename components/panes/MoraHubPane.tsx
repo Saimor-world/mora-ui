@@ -41,7 +41,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose }) => {
             draggable
             resizable
             dimBackground={false}
-            title={<span className="text-xs uppercase tracking-[0.3em] text-emerald-300">Mora Hub</span>}
+            title={<span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Nexus</span>}
             isActive={isActive}
             onFocus={() => focusPane(id)}
             onClose={handleClose}
@@ -53,7 +53,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose }) => {
             <div className="h-full">
                 <MoraPlayground
                     scope={viewLevel === "department" ? "department" : "company"}
-                    title="Mora Spielwiese"
+                    title="Mora Nexus"
                     className="h-full"
                 />
             </div>

@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { useMoraStore } from '@/lib/store/moraState';
 import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
-import { updateCompany } from '@/lib/api/coreClient';
+import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
@@ -368,16 +368,55 @@ useEffect(() => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="text-sm text-white/80">Desktop Notifications</div>
-                                            <div className="text-xs text-white/40">Coming soon</div>
+                                            <div className="text-xs text-white/40">Browser-Benachrichtigungen aktivieren</div>
                                         </div>
-                                        <button disabled className="w-10 h-6 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" />
+                                        <button
+                                            onClick={async () => {
+                                                const current = user?.settings?.desktopNotifications ?? false;
+                                                if (!current) {
+                                                    // Request permission
+                                                    if (typeof Notification !== 'undefined') {
+                                                        const perm = await Notification.requestPermission();
+                                                        if (perm === 'granted') {
+                                                            saveSetting({ desktopNotifications: true });
+                                                            toast.success('Desktop-Benachrichtigungen aktiviert');
+                                                        } else {
+                                                            toast.error('Berechtigung verweigert');
+                                                        }
+                                                    }
+                                                } else {
+                                                    saveSetting({ desktopNotifications: false });
+                                                    toast.info('Desktop-Benachrichtigungen deaktiviert');
+                                                }
+                                            }}
+                                            className={`w-10 h-6 rounded-full border relative transition-all ${(user?.settings?.desktopNotifications)
+                                                ? 'bg-emerald-500/30 border-emerald-500/50'
+                                                : 'bg-white/10 border-white/10'}`}
+                                        >
+                                            <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${(user?.settings?.desktopNotifications)
+                                                ? 'left-5 bg-emerald-400'
+                                                : 'left-0.5 bg-white/40'}`} />
+                                        </button>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="text-sm text-white/80">Sound Effects</div>
-                                            <div className="text-xs text-white/40">Coming soon</div>
+                                            <div className="text-xs text-white/40">UI-Sounds für Aktionen</div>
                                         </div>
-                                        <button disabled className="w-10 h-6 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" />
+                                        <button
+                                            onClick={() => {
+                                                const current = user?.settings?.soundEffects ?? false;
+                                                saveSetting({ soundEffects: !current });
+                                                toast.info(!current ? 'Sounds aktiviert' : 'Sounds deaktiviert');
+                                            }}
+                                            className={`w-10 h-6 rounded-full border relative transition-all ${(user?.settings?.soundEffects)
+                                                ? 'bg-emerald-500/30 border-emerald-500/50'
+                                                : 'bg-white/10 border-white/10'}`}
+                                        >
+                                            <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${(user?.settings?.soundEffects)
+                                                ? 'left-5 bg-emerald-400'
+                                                : 'left-0.5 bg-white/40'}`} />
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -419,14 +458,29 @@ useEffect(() => {
                                                                 type="text"
                                                                 value={editName}
                                                                 onChange={(e) => setEditName(e.target.value)}
-                                                                onBlur={() => {
-                                                                    // TODO: Save to backend
-                                                                    toast.info('Änderungen werden in Phase 8 gespeichert');
+                                                                onBlur={async () => {
+                                                                    if (editName.trim() && editName !== editingItem?.name) {
+                                                                        try {
+                                                                            await updateDepartment(editingItem!.id, { name: editName.trim() });
+                                                                            await loadDepartments(activeCompanyId || undefined);
+                                                                            if (activeCompanyId) loadTree();
+                                                                            toast.success('Department umbenannt');
+                                                                        } catch (err) {
+                                                                            toast.error('Umbenennen fehlgeschlagen');
+                                                                        }
+                                                                    }
                                                                     setEditingItem(null);
                                                                 }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') {
-                                                                        toast.info('Änderungen werden in Phase 8 gespeichert');
+                                                                onKeyDown={async (e) => {
+                                                                    if (e.key === 'Enter' && editName.trim() && editName !== editingItem?.name) {
+                                                                        try {
+                                                                            await updateDepartment(editingItem!.id, { name: editName.trim() });
+                                                                            await loadDepartments(activeCompanyId || undefined);
+                                                                            if (activeCompanyId) loadTree();
+                                                                            toast.success('Department umbenannt');
+                                                                        } catch (err) {
+                                                                            toast.error('Umbenennen fehlgeschlagen');
+                                                                        }
                                                                         setEditingItem(null);
                                                                     }
                                                                     if (e.key === 'Escape') setEditingItem(null);
@@ -452,14 +506,26 @@ useEffect(() => {
                                                             <Pencil size={14} />
                                                         </button>
                                                         <button
-                                                            onClick={(e) => {
+                                                            onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                toast.info('Löschen wird in Phase 8 aktiviert');
+                                                                if (!confirm(`"${dept.name}" wirklich löschen? Alle enthaltenen Spaces und Dokumente werden gelöscht.`)) return;
+                                                                setIsDeleting(dept.id);
+                                                                try {
+                                                                    await deleteDepartment(dept.id);
+                                                                    await loadDepartments(activeCompanyId || undefined);
+                                                                    if (activeCompanyId) loadTree();
+                                                                    toast.success('Department gelöscht');
+                                                                } catch (err) {
+                                                                    toast.error('Löschen fehlgeschlagen');
+                                                                } finally {
+                                                                    setIsDeleting(null);
+                                                                }
                                                             }}
-                                                            className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
+                                                            disabled={isDeleting === dept.id}
+                                                            className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors disabled:opacity-30"
                                                             title="Löschen"
                                                         >
-                                                            <Trash2 size={14} />
+                                                            {isDeleting === dept.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -479,13 +545,35 @@ useEffect(() => {
                                                                             type="text"
                                                                             value={editName}
                                                                             onChange={(e) => setEditName(e.target.value)}
-                                                                            onBlur={() => {
-                                                                                toast.info('Änderungen werden in Phase 8 gespeichert');
+                                                                            onBlur={async () => {
+                                                                                if (editName.trim() && editName !== editingItem?.name) {
+                                                                                    try {
+                                                                                        if (editingItem?.type === 'space') {
+                                                                                            await updateSpace(editingItem.id, { name: editName.trim() });
+                                                                                        } else {
+                                                                                            await updateDepartment(editingItem!.id, { name: editName.trim() });
+                                                                                        }
+                                                                                        if (activeCompanyId) loadTree();
+                                                                                        toast.success('Umbenannt');
+                                                                                    } catch (err) {
+                                                                                        toast.error('Umbenennen fehlgeschlagen');
+                                                                                    }
+                                                                                }
                                                                                 setEditingItem(null);
                                                                             }}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === 'Enter') {
-                                                                                    toast.info('Änderungen werden in Phase 8 gespeichert');
+                                                                            onKeyDown={async (e) => {
+                                                                                if (e.key === 'Enter' && editName.trim() && editName !== editingItem?.name) {
+                                                                                    try {
+                                                                                        if (editingItem?.type === 'space') {
+                                                                                            await updateSpace(editingItem.id, { name: editName.trim() });
+                                                                                        } else {
+                                                                                            await updateDepartment(editingItem!.id, { name: editName.trim() });
+                                                                                        }
+                                                                                        if (activeCompanyId) loadTree();
+                                                                                        toast.success('Umbenannt');
+                                                                                    } catch (err) {
+                                                                                        toast.error('Umbenennen fehlgeschlagen');
+                                                                                    }
                                                                                     setEditingItem(null);
                                                                                 }
                                                                                 if (e.key === 'Escape') setEditingItem(null);
@@ -509,10 +597,27 @@ useEffect(() => {
                                                                         <Pencil size={12} />
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => toast.info('Löschen wird in Phase 8 aktiviert')}
-                                                                        className="p-1 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors"
+                                                                        onClick={async () => {
+                                                                            if (!confirm(`"${child.name}" wirklich löschen?`)) return;
+                                                                            setIsDeleting(child.id);
+                                                                            try {
+                                                                                if (child.type === 'space') {
+                                                                                    await deleteSpace(child.id);
+                                                                                } else {
+                                                                                    await deleteDepartment(child.id);
+                                                                                }
+                                                                                if (activeCompanyId) loadTree();
+                                                                                toast.success('Gelöscht');
+                                                                            } catch (err) {
+                                                                                toast.error('Löschen fehlgeschlagen');
+                                                                            } finally {
+                                                                                setIsDeleting(null);
+                                                                            }
+                                                                        }}
+                                                                        disabled={isDeleting === child.id}
+                                                                        className="p-1 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors disabled:opacity-30"
                                                                     >
-                                                                        <Trash2 size={12} />
+                                                                        {isDeleting === child.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                                                                     </button>
                                                                 </div>
                                                             </div>
@@ -552,14 +657,29 @@ useEffect(() => {
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Team Management</h3>
                             <div className="p-8 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center">
-                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                                    <Users className="text-white/40" size={24} />
+                                <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                                    <Users className="text-emerald-300" size={24} />
                                 </div>
-                                <h4 className="text-white/60 font-medium">User Management</h4>
-                                <p className="text-white/30 text-xs mt-2 max-w-xs">
-                                    Invite team members, assign roles, and manage permissions.
-                                    <br />(Coming in Phase 8)
+                                <h4 className="text-white/80 font-medium">Team & Benutzer</h4>
+                                <p className="text-white/40 text-xs mt-2 max-w-xs">
+                                    Verwalte dein Team, weise Rollen zu und steuere Berechtigungen.
                                 </p>
+                                <button
+                                    onClick={() => {
+                                        const { openPane } = usePaneStore.getState();
+                                        openPane({
+                                            id: "team-main",
+                                            type: "team",
+                                            title: "Team",
+                                            size: { width: 840, height: 640 },
+                                        });
+                                    }}
+                                    className="mt-4 px-5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm hover:bg-emerald-500/25 transition-colors flex items-center gap-2"
+                                >
+                                    <Users size={14} />
+                                    Team Manager öffnen
+                                    <ChevronRight size={14} />
+                                </button>
                             </div>
                         </div>
                     )}
@@ -575,7 +695,15 @@ useEffect(() => {
                                 </div>
                                 <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                                     <div className="text-xs text-blue-400 uppercase tracking-wider mb-1">Version</div>
-                                    <div className="text-white font-mono text-sm">v1.5.0 (R1)</div>
+                                    <div className="text-white font-mono text-sm">v2.0.0-beta</div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                                    <div className="text-xs text-violet-400 uppercase tracking-wider mb-1">Departments</div>
+                                    <div className="text-white font-mono text-sm">{departments.length}</div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Companies</div>
+                                    <div className="text-white font-mono text-sm">{companies.length}</div>
                                 </div>
                             </div>
 
@@ -642,8 +770,8 @@ useEffect(() => {
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-white/60">API Latency</span>
-                                    <span className="text-sm text-white font-mono">24ms</span>
+                                    <span className="text-sm text-white/60">Core API</span>
+                                    <span className="text-xs text-white/50 font-mono">{process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '/api/core'}</span>
                                 </div>
                             </div>
                         </div>
@@ -657,9 +785,11 @@ useEffect(() => {
                                     SAIMÔR is an advanced Semantic Artificial Intelligence for Memory and Organizational Recall.
                                 </p>
                                 <div className="flex items-center gap-2 text-xs text-white/30 mt-8">
-                                    <span>Build ID: {Math.random().toString(36).substring(7)}</span>
+                                    <span>v2.0.0-beta</span>
                                     <span>•</span>
-                                    <span>Môra Core V1</span>
+                                    <span>Môra Core + Gateway</span>
+                                    <span>•</span>
+                                    <span>{process.env.NODE_ENV}</span>
                                 </div>
                             </div>
                         </div>

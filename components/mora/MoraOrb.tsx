@@ -118,7 +118,6 @@ export function MoraOrb({
                         color={color}
                         state={state as any}
                         size={92}
-                        onClick={() => { }}
                     />
                 </div>
 
@@ -144,8 +143,9 @@ export function MoraOrb({
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 6, opacity: 0 }}
                         >
-                            <div className="px-4 py-1.5 rounded-full bg-black/70 backdrop-blur-xl border border-white/10 text-[9px] tracking-[0.4em] uppercase font-bold text-white shadow-2xl">
-                                Mora: {state}
+                            <div className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 text-[9px] tracking-[0.3em] uppercase font-bold text-white shadow-2xl flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
+                                Mora: {{ idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm', insight: 'Erkenntnis', demo: 'Demo' }[state] || state}
                             </div>
                         </motion.div>
                     )}
