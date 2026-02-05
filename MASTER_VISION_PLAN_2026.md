@@ -255,12 +255,12 @@ SAIMOR ist zu **60% produktionsbereit**. Architektur steht, aber viele UI-Featur
 - **AGENTIC_EXECUTION**: `True` lokal, `False` auf Server (uncommitted)
 
 ### DNS Status (Verifiziert 2026-02-05)
-| Domain | Zeigt auf | Korrekt? |
-|--------|-----------|----------|
-| api.saimor.world | 49.12.195.166 (Hetzner) | ✅ |
-| saimor.world | 76.76.21.21 (Vercel) | ❌ |
-| www.saimor.world | Vercel CNAME | ❌ |
-| dashboard.saimor.world | Nicht aufgelöst | ❌ |
+| Domain | Zeigt auf | Zweck | Status |
+|--------|-----------|-------|--------|
+| saimor.world | Vercel | Marketing Website | ✅ Korrekt |
+| www.saimor.world | Vercel CNAME | Marketing Website | ✅ Korrekt |
+| hq.saimor.world | 49.12.195.166 (Hetzner) | **SAIMOR OS App** | ✅ Korrekt |
+| api.saimor.world | 49.12.195.166 (Hetzner) | Backend API | ✅ Korrekt |
 
 ---
 
