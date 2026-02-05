@@ -24,11 +24,50 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         orbState,
         viewMode,
         navigateToCore,
-        navigateToDepartment
+        navigateToDepartment,
+        treeData,
+        spacesByDepartment
     } = useMoraStore();
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
+
+    // ─── REAL DEPARTMENT METRICS (Computed from Tree Data) ───
+    const departmentMetrics = useMemo(() => {
+        const metrics: Record<string, { nodes: number; spaces: number; folders: number; depth: number }> = {};
+        if (!treeData?.length) return metrics;
+
+        // Count nodes recursively per department
+        const countChildren = (children: any[]): { nodes: number; folders: number; depth: number } => {
+            let nodes = 0, folders = 0, maxDepth = 0;
+            for (const child of children) {
+                if (child.type === 'folder' || child.type === 'space') {
+                    folders++;
+                } else if (child.type !== 'department') {
+                    nodes++;
+                }
+                if (child.children?.length) {
+                    const sub = countChildren(child.children);
+                    nodes += sub.nodes;
+                    folders += sub.folders;
+                    maxDepth = Math.max(maxDepth, sub.depth + 1);
+                }
+            }
+            return { nodes, folders, depth: maxDepth };
+        };
+
+        for (const dept of treeData) {
+            if (dept.type === 'department') {
+                const counts = countChildren(dept.children || []);
+                const spaces = spacesByDepartment[dept.id]?.length || (dept.children?.filter((c: any) => c.type === 'space')?.length || 0);
+                metrics[dept.id] = { nodes: counts.nodes, spaces, folders: counts.folders, depth: counts.depth };
+            }
+        }
+        return metrics;
+    }, [treeData, spacesByDepartment]);
+
+    // Normalize metrics to percentages
+    const maxNodes = useMemo(() => Math.max(1, ...Object.values(departmentMetrics).map(m => m.nodes)), [departmentMetrics]);
 
     // Dynamic Context Resolver
     const currentCompany = useMemo(() =>
@@ -137,10 +176,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             if (isDemo || tenantId === TENANT_DEMO) return 'Simple Coffee Group';
             if (tenantId === TENANT_HQ) return 'Saimor HQ';
             return 'Workspace';
-        }
-        const normalized = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        if (normalized.includes('foerderlogiken') || normalized.includes('forderlogiken')) {
-            return isDemo || tenantId === TENANT_DEMO ? 'Simple Coffee Group' : 'Saimor HQ';
         }
         return raw;
     }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo]);
@@ -314,12 +349,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* 3. PLANET LAYER (Managed by Store Data) */}
             <div className="absolute inset-0 z-30 pointer-events-none">
                 {planetPositions.map((p, idx) => {
-                    // DEMO PLACEHOLDER DATA - Not connected to real metrics yet
-                    // These values are deterministic mock data for UI demonstration
-                    const seed = (idx + 1) * 123.45;
-                    const mockHealth = 85 + (Math.floor(seed % 15));
-                    const mockActivity = 10 + (Math.floor(seed % 350));
-                    const mockCapacity = 40 + (Math.floor(seed % 55));
+                    // REAL METRICS from tree data
+                    const deptStats = departmentMetrics[p.id];
+                    const nodeCount = deptStats?.nodes || 0;
+                    const spaceCount = deptStats?.spaces || 0;
+                    const folderCount = deptStats?.folders || 0;
+
+                    // Capacity: % of nodes relative to largest department
+                    const mockCapacity = maxNodes > 0 ? Math.round((nodeCount / maxNodes) * 100) : 0;
+                    // Activity: Node count as a "signal strength" metaphor
+                    const mockActivity = nodeCount;
+                    // Health: Structure completeness (has spaces + folders + nodes?)
+                    const mockHealth = Math.min(100, (spaceCount > 0 ? 40 : 0) + (folderCount > 0 ? 30 : 0) + (nodeCount > 0 ? 30 : 0));
 
                     return (
                         <Planet

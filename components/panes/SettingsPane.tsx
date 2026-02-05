@@ -224,10 +224,6 @@ useEffect(() => {
                                                         if (!activeCompanyId) return;
                                                         const nextName = brandingName?.trim() || activeCompany.name;
                                                         const normalized = nextName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                                                        if (normalized.includes('foerderlogiken') || normalized.includes('forderlogiken')) {
-                                                            toast.error('Der Name "Förderlogiken" ist reserviert. Bitte einen anderen Namen wählen.');
-                                                            return;
-                                                        }
                                                         setBrandingSaving(true);
                                                         try {
                                                             const payload: any = {

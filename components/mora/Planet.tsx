@@ -249,11 +249,11 @@ export const Planet: React.FC<PlanetProps> = ({
                         >
                             <div className="flex items-center gap-1 opacity-80">
                                 <Database size={9} />
-                                <span>{capacity}%</span>
+                                <span>{activity} Docs</span>
                             </div>
                             <div className="flex items-center gap-1 opacity-80">
                                 <Activity size={9} />
-                                <span>{activity}V</span>
+                                <span>{health}%</span>
                             </div>
                         </motion.div>
                     )}

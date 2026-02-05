@@ -25,7 +25,6 @@ export function useAuthBootstrapper() {
 
         const bootstrap = async () => {
             // Purge legacy branding artifacts (e.g. "Förderlogiken") from localStorage
-            const legacyPattern = /(foerderlogiken|forderlogiken)/i;
             const keys = [];
             for (let i = 0; i < localStorage.length; i += 1) {
                 const key = localStorage.key(i);
@@ -33,9 +32,7 @@ export function useAuthBootstrapper() {
             }
             keys.forEach((key) => {
                 const value = localStorage.getItem(key);
-                if (value && legacyPattern.test(value)) {
-                    localStorage.removeItem(key);
-                }
+                if (value === null) return;
             });
             const hasNextAuth = status === 'authenticated';
             const hasLegacyToken = localStorage.getItem('saimor_dev_token');
@@ -105,14 +102,7 @@ export function useAuthBootstrapper() {
                         const role = result.role || freshState.user?.role || 'member';
 
                         const storedCompanyId = localStorage.getItem('last_company_id');
-                        let storedWorkspaceName = localStorage.getItem('last_workspace');
-                        if (storedWorkspaceName) {
-                            const normalized = storedWorkspaceName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                            if (normalized.includes('foerderlogiken') || normalized.includes('forderlogiken')) {
-                                localStorage.removeItem('last_workspace');
-                                storedWorkspaceName = null;
-                            }
-                        }
+                        const storedWorkspaceName = localStorage.getItem('last_workspace');
 
                         const isDemoTenant = tenantId === 'tenant-demo';
                         const demoCompanies = companies.filter(c => c.is_demo);

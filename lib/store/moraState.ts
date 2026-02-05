@@ -519,11 +519,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     name = 'Simple Coffee Group';
                 }
 
-                // Safety: strip accidental legacy brand names (e.g. foerderlogiken deutschland)
-                if (/(foerderlogiken|forderlogiken)/i.test(normalized)) {
-                    name = company?.tenant_id === TENANT_DEMO ? 'Simple Coffee Group' : 'Saimor HQ';
-                }
-
                 return { ...company, name };
             });
 
