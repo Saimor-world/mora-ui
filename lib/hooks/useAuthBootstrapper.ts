@@ -102,7 +102,16 @@ export function useAuthBootstrapper() {
                         const role = result.role || freshState.user?.role || 'member';
 
                         const storedCompanyId = localStorage.getItem('last_company_id');
-                        const storedWorkspaceName = localStorage.getItem('last_workspace');
+                        let storedWorkspaceName = localStorage.getItem('last_workspace');
+
+                        // Purge legacy brand names (e.g. foerderlogiken) from cached workspace
+                        if (storedWorkspaceName) {
+                            const normalized = storedWorkspaceName.toLowerCase();
+                            if (normalized.includes('foerderlogiken')) {
+                                localStorage.removeItem('last_workspace');
+                                storedWorkspaceName = null;
+                            }
+                        }
 
                         const isDemoTenant = tenantId === 'tenant-demo';
                         const demoCompanies = companies.filter(c => c.is_demo);
