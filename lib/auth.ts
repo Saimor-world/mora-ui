@@ -22,12 +22,18 @@ export const authOptions: NextAuthOptions = {
                 const isDemoAlias = normalizedUsername === 'demo' || normalizedUsername === 'demo@saimor.io';
                 const primaryPassword = credentials.password;
 
+                const coreBaseUrl =
+                    process.env.SAIMOR_CORE_URL ||
+                    process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ||
+                    "http://127.0.0.1:8081";
+                const loginUrl = new URL("/v1/auth/login", coreBaseUrl).toString();
+
                 const attemptLogin = async (passwordToTry: string) => {
                     // Timeout signal to prevent hanging
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
                     try {
-                        const res = await fetch("http://127.0.0.1:8081/v1/auth/login", {
+                        const res = await fetch(loginUrl, {
                             method: 'POST',
                             body: JSON.stringify({
                                 email,
