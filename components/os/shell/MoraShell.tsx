@@ -7,9 +7,9 @@
  * This is the heart of SAIMÔR OS. All other components orbit around it.
  *
  * STRUCTURE:
- * 1. Background Layers (StarField, Mycelium)
+ * 1. Background Layers (StarField, Mycelium, LivingBackground)
  * 2. Main Content (ViewPort - handles view routing)
- * 3. UI Overlays (Dock, Orb, Resonance, Spotlight)
+ * 3. UI Overlays (Dock, Orb, Resonance, Spotlight, Intelligence)
  * 4. Interaction Layers (Cursors, Ghost)
  *
  * HOOKS (extracted for clarity):
@@ -25,7 +25,7 @@ import { useRouter } from 'next/navigation';
 
 // Store
 import { useMoraStore } from '@/lib/store/moraState';
-import { usePaneStore } from '@/lib/store/paneStore'; // Added PaneStore
+import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { resetUserState } from '@/lib/hooks/useUser';
@@ -44,6 +44,7 @@ import { ViewPort } from '@/components/layout/ViewPort';
 
 // Background Layers
 import { StarField } from '@/components/visual/StarField';
+import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
 import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
 import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 
@@ -52,9 +53,15 @@ import { Dock } from '@/components/mora/Dock';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
+import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOverlay';
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { LockScreen } from '@/components/auth/LockScreen';
-// MemberFocusPane removed from shell; Mora Hub opens via Orb only
+
+// Premium Intelligence Layer
+import { CognitionBadge } from '@/components/mora/CognitionBadge';
+import { MoraThoughtStream } from '@/components/mora/MoraThoughtStream';
+import { MoraIntelligenceBar } from '@/components/mora/MoraIntelligenceBar';
+import { IntelligenceDashboard } from '@/components/mora/IntelligenceDashboard';
 
 // Interaction Layers
 import { CursorAgent } from '@/components/mora/CursorAgent';
@@ -68,27 +75,114 @@ import { UniverseControls } from '@/components/home/UniverseControls';
 // =============================================================================
 
 const LoadingScreen: React.FC = () => (
-    <div className="w-full h-screen bg-[#030806] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
-            <span className="text-emerald-500/50 text-sm font-light tracking-wider uppercase">
-                INITIALISIERUNG...
-            </span>
+    <div className="w-full h-screen bg-gradient-to-b from-[#0a1a14] to-[#030806] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+            {/* Pulsing Orb */}
+            <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 animate-pulse" />
+                <div className="absolute inset-2 rounded-full bg-emerald-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute inset-4 rounded-full bg-emerald-400/30 animate-pulse" style={{ animationDuration: '1.5s' }} />
+            </div>
+            <div className="flex flex-col items-center gap-2">
+                <span className="text-emerald-400/60 text-xs font-medium tracking-[0.4em] uppercase">
+                    SAIMOR
+                </span>
+                <span className="text-white/20 text-[10px] tracking-[0.2em]">
+                    Mora erwacht...
+                </span>
+            </div>
+            {/* Loading bar */}
+            <div className="w-32 h-[2px] rounded-full bg-white/5 overflow-hidden">
+                <div className="h-full bg-emerald-500/40 rounded-full animate-[loading_1.5s_ease-in-out_infinite]"
+                    style={{
+                        animation: 'loading 1.5s ease-in-out infinite',
+                    }}
+                />
+            </div>
         </div>
+        <style jsx>{`
+            @keyframes loading {
+                0% { width: 0%; margin-left: 0; }
+                50% { width: 60%; margin-left: 20%; }
+                100% { width: 0%; margin-left: 100%; }
+            }
+        `}</style>
     </div>
 );
 
-const ErrorScreen: React.FC<{ message: string }> = ({ message }) => (
-    <div className="w-full h-screen bg-[#030806] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-center px-6">
-            <div className="text-red-400 text-xs tracking-[0.3em] uppercase">Core offline</div>
-            <div className="text-white/70 text-sm max-w-md">{message}</div>
-            <div className="text-white/40 text-xs">
-                Start core: <span className="font-mono">python run.py</span>
+// =============================================================================
+// ERROR SCREEN
+// =============================================================================
+
+const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
+    const [retrying, setRetrying] = React.useState(false);
+
+    const handleRetry = () => {
+        setRetrying(true);
+        setTimeout(() => window.location.reload(), 1500);
+    };
+
+    return (
+        <div className="w-full h-screen bg-gradient-to-b from-[#0a0f0d] to-[#030806] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-6 text-center px-6 max-w-lg">
+                {/* Error Orb */}
+                <div className="relative">
+                    <div className="w-20 h-20 rounded-full bg-red-500/5 border border-red-500/20 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+                            <div className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
+                        </div>
+                    </div>
+                    <div className="absolute -inset-4 rounded-full bg-red-500/5 blur-xl animate-pulse" style={{ animationDuration: '3s' }} />
+                </div>
+
+                <div className="space-y-2">
+                    <div className="text-red-400/80 text-xs tracking-[0.4em] uppercase font-medium">
+                        Verbindung unterbrochen
+                    </div>
+                    <div className="text-white/60 text-sm leading-relaxed">
+                        {message}
+                    </div>
+                </div>
+
+                {/* Help Section */}
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 w-full space-y-3">
+                    <div className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">Diagnose</div>
+                    <div className="space-y-2 text-left">
+                        <div className="flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
+                            <div className="text-xs text-white/40">
+                                Core API starten: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">cd saimor-core/core && python run.py</code>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
+                            <div className="text-xs text-white/40">
+                                Port prüfen: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">localhost:8081</code>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
+                            <div className="text-xs text-white/40">
+                                Logs prüfen: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">saimor-core/core/logs/</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Retry Button */}
+                <button
+                    onClick={handleRetry}
+                    disabled={retrying}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/80 text-xs tracking-[0.15em] uppercase hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all disabled:opacity-40 disabled:cursor-wait"
+                >
+                    {retrying ? 'Verbinde...' : 'Erneut verbinden'}
+                </button>
+
+                <div className="text-[9px] text-white/15 tracking-[0.3em] uppercase">SAIMOR OS • Mora Core</div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 // =============================================================================
 // MAIN SHELL COMPONENT
@@ -115,46 +209,46 @@ export const MoraShell: React.FC = () => {
         isLoggingOut
     } = useMoraStore();
     const { logout } = useAccountStore();
-    const { reset: resetPanes, openPane, getPane, removePane } = usePaneStore(); // Pane Controls
+    const { reset: resetPanes, openPane, getPane, removePane } = usePaneStore();
 
-      const activeCompany = companies.find(c => c.id === activeCompanyId);
-      const role = user?.role || 'demo';
-      const tenantId = user?.tenant_id;
+    const activeCompany = companies.find(c => c.id === activeCompanyId);
+    const role = user?.role || 'demo';
+    const tenantId = user?.tenant_id;
 
-      const filteredCompanies = React.useMemo(() => {
-          if (!companies.length) return [];
-          if (viewMode === 'demo') {
-              return companies.filter((c) => c.is_demo);
-          }
-          if (viewMode === 'workspace') {
-              if (tenantId === 'tenant-demo') {
-                  return companies.filter((c) => c.tenant_id === 'tenant-saimor-hq');
-              }
-              if (role === 'system_owner') {
-                  return companies.filter((c) => !c.is_demo);
-              }
-              return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
-          }
-          // owner mode (system owner sees all, others see their tenant)
-          if (role === 'system_owner') return companies;
-          return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
-      }, [companies, viewMode, role, tenantId]);
+    const filteredCompanies = React.useMemo(() => {
+        if (!companies.length) return [];
+        if (viewMode === 'demo') {
+            return companies.filter((c) => c.is_demo);
+        }
+        if (viewMode === 'workspace') {
+            if (tenantId === 'tenant-demo') {
+                return companies.filter((c) => c.tenant_id === 'tenant-saimor-hq');
+            }
+            if (role === 'system_owner') {
+                return companies.filter((c) => !c.is_demo);
+            }
+            return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
+        }
+        if (role === 'system_owner') return companies;
+        return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
+    }, [companies, viewMode, role, tenantId]);
 
-      const activeCompanyForView = React.useMemo(() => {
-          if (filteredCompanies.length === 0) return activeCompany;
-          return filteredCompanies.find((c) => c.id === activeCompanyId) || filteredCompanies[0];
-      }, [filteredCompanies, activeCompanyId, activeCompany]);
+    const activeCompanyForView = React.useMemo(() => {
+        if (filteredCompanies.length === 0) return activeCompany;
+        return filteredCompanies.find((c) => c.id === activeCompanyId) || filteredCompanies[0];
+    }, [filteredCompanies, activeCompanyId, activeCompany]);
 
-      const displayCompany = activeCompanyForView || activeCompany;
+    const displayCompany = activeCompanyForView || activeCompany;
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
     const [isResonanceOpen, setIsResonanceOpen] = useState(false);
     const [isResonanceExpanded, setIsResonanceExpanded] = useState(false);
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+    const [isIntelDashOpen, setIsIntelDashOpen] = useState(false);
 
-    // EFFECT: Clear panes when ViewMode changes (e.g. Workspace <-> Owner Dashboard)
-    // This prevents "pollution" of sessions as requested by user.
+    // EFFECT: Clear panes when ViewMode changes
     useEffect(() => {
         resetPanes();
     }, [viewMode, resetPanes]);
@@ -169,10 +263,37 @@ export const MoraShell: React.FC = () => {
     useRealtime(isBootstrapped);
 
     useKeyboardShortcuts({
-        onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), [])
+        onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), []),
+        onOpenChat: useCallback(() => {
+            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 520, height: 700 } });
+        }, [openPane]),
+        onOpenFinder: useCallback(() => {
+            openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1200, height: 780 } });
+        }, [openPane]),
+        onOpenNotes: useCallback(() => {
+            openPane({ id: 'notes-main', type: 'notes', title: 'Notes', size: { width: 720, height: 560 } });
+        }, [openPane]),
+        onOpenSettings: useCallback(() => {
+            openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
+        }, [openPane]),
+        onOpenTerminal: useCallback(() => {
+            openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: { width: 850, height: 600 } });
+        }, [openPane]),
+        onGoHome: useCallback(() => {
+            useMoraStore.getState().navigateToCore();
+        }, []),
+        onOpenMoraHub: useCallback(() => {
+            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } });
+        }, [openPane]),
+        onCloseTopPane: useCallback(() => {
+            const { panes, removePane: rp } = usePaneStore.getState();
+            const visiblePanes = panes.filter(p => !p.minimized);
+            if (visiblePanes.length > 0) {
+                rp(visiblePanes[visiblePanes.length - 1].id);
+            }
+        }, []),
+        onShowShortcuts: useCallback(() => setIsShortcutsOpen(prev => !prev), []),
     });
-
-    // ... (cursor agent effect)
 
     // Handlers
     const handleUnlock = () => setIsSleeping(false);
@@ -188,7 +309,7 @@ export const MoraShell: React.FC = () => {
         router.push('/');
     };
 
-    // Orb Click Handler - Mora Hub only (no auto chat)
+    // Orb Click Handler - Mora Hub only
     const handleOrbClick = () => {
         const existing = getPane('mora-hub');
         if (existing) {
@@ -196,7 +317,6 @@ export const MoraShell: React.FC = () => {
             return;
         }
 
-        // Ensure only the hub opens (no auto chat pane)
         const chatPane = getPane('chat-main');
         if (chatPane) {
             removePane('chat-main');
@@ -217,8 +337,6 @@ export const MoraShell: React.FC = () => {
             position: { x, y }
         });
     };
-
-
 
     // EFFECT: External AI Actions (from CursorBridge)
     useEffect(() => {
@@ -277,11 +395,11 @@ export const MoraShell: React.FC = () => {
                 LAYER 1: BACKGROUND
             ================================================================= */}
 
-            {/* 1. Deep Void Foundation */}
+            {/* Deep Void Foundation + Living Background */}
             <div className="fixed inset-0 bg-black z-[-10]" />
+            <MoraLivingBackground />
 
-            {/* 1. BACKGROUND LAYERS */}
-            {/* V10.7: ForestLightCanopy now handles stars and constellations. StarField disabled for calmness. */}
+            {/* Background Layers */}
             <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
             <StarField {...({ density: 'medium' } as any)} />
             <MyceliumOverlay />
@@ -293,17 +411,15 @@ export const MoraShell: React.FC = () => {
             <div className="relative z-10 w-full h-full flex items-stretch">
 
                 {/* Universe ViewMode / Context Switches */}
-                  <UniverseControls
-                      viewMode={viewMode}
-                      setViewMode={(mode) => {
-                          useMoraStore.getState().setViewMode(mode);
-                      }}
-                      activeCompany={displayCompany}
-                      companies={filteredCompanies}
-                      onSwitchCompany={(id) => useMoraStore.getState().setActiveCompany(id)}
-                  />
-
-                {/* Company Indicator (Simplified fallback or removed if Controls are active) */}
+                <UniverseControls
+                    viewMode={viewMode}
+                    setViewMode={(mode) => {
+                        useMoraStore.getState().setViewMode(mode);
+                    }}
+                    activeCompany={displayCompany}
+                    companies={filteredCompanies}
+                    onSwitchCompany={(id) => useMoraStore.getState().setActiveCompany(id)}
+                />
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
                 <div className="flex-1 relative h-full w-full">
@@ -318,7 +434,7 @@ export const MoraShell: React.FC = () => {
                 LAYER 3: UI OVERLAYS
             ================================================================= */}
 
-            {/* Resonance Room (Visible ONLY if manually triggered via other means, effectively replaced by Chat Pane for Orb click) */}
+            {/* Resonance Room */}
             <ResonanceRoom
                 isOpen={isResonanceOpen}
                 onClose={() => setIsResonanceOpen(false)}
@@ -326,15 +442,40 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
-            {/* Dock (Bottom Navigation) - Primary navigation */}
+            {/* Dock (Bottom Navigation) */}
             <Dock />
-
-            {/* ... */}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight
                 isOpen={isSpotlightOpen}
                 onClose={() => setIsSpotlightOpen(false)}
+            />
+
+            {/* Keyboard Shortcuts Overlay (?) */}
+            <KeyboardShortcutsOverlay
+                isOpen={isShortcutsOpen}
+                onClose={() => setIsShortcutsOpen(false)}
+            />
+
+            {/* ═══ PREMIUM INTELLIGENCE LAYER ═══ */}
+
+            {/* Cognition Badge - Bottom right, shows AI connection mode */}
+            <CognitionBadge />
+
+            {/* Thought Stream - Bottom left, Mora's consciousness */}
+            <MoraThoughtStream />
+
+            {/* Intelligence Bar - Bottom left status bar */}
+            <MoraIntelligenceBar
+                isOpen={isIntelDashOpen}
+                onOpenIntelligence={() => setIsIntelDashOpen(prev => !prev)}
+            />
+
+            {/* Intelligence Dashboard - Opens from the bar */}
+            <IntelligenceDashboard
+                isOpen={isIntelDashOpen}
+                onClose={() => setIsIntelDashOpen(false)}
+                orbState={finalOrbState}
             />
 
             {/* Mora Orb */}
@@ -383,9 +524,8 @@ export const MoraShell: React.FC = () => {
                     </div>
                 )
             }
-        </div >
+        </div>
     );
 };
 
 export default MoraShell;
-

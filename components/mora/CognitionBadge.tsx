@@ -94,7 +94,7 @@ export const CognitionBadge: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className={`
-        fixed bottom-24 right-6 z-40
+        fixed bottom-4 right-6 z-40
         px-3 py-1.5 rounded-full
         border backdrop-blur-xl
         flex items-center gap-2

@@ -97,7 +97,7 @@ export const MoraThoughtStream: React.FC = () => {
     if (!activeThought || coreError) return null;
 
     return (
-        <div className="fixed bottom-36 left-12 z-40 pointer-events-none max-w-sm">
+        <div className="fixed bottom-28 left-6 z-40 pointer-events-none max-w-xs">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeThought.ts}
