@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Mycelium25D } from './Mycelium25D';
+import { MyceliumField3D } from './MyceliumField3D';
 import { mapNodesToMycelium, type MyceliumNode } from '@/lib/utils/myceliumDataMapper';
 import { getRelationsForSpace } from '@/lib/api/relationsClient';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -124,11 +124,10 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
     }
 
     return (
-        <Mycelium25D
+        <MyceliumField3D
             nodes={myceliumNodes}
             onNodeClick={onNodeClick}
             activeNodeId={activeNodeId}
-            variant={variant}
         />
     );
 };

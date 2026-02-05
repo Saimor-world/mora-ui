@@ -97,7 +97,67 @@
     --card-foreground: 150 15% 92%;
     --popover: 155 40% 9%;
     --popover-foreground: 150 15% 92%;
+  }
 
+  /* === STANDARD MODE (CORPORATE THEME) === */
+  .standard-mode {
+    /* Boring Slate/Blue Corporate Palette */
+    --mora-emerald-core: #3B82F6;
+    /* Corporate Blue */
+    --mora-deep-forest: #1E293B;
+    /* Slate 800 */
+    --mora-frost-white: #F8FAFC;
+    /* Slate 50 */
+    --mora-shadow-black: #0F172A;
+    /* Slate 900 */
+
+    --background: 222 47% 11%;
+    /* Slate 900 ish */
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  .standard-mode .glass-card {
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  .standard-mode .glass-panel {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+
+  /* Glass Effect Utilities */
+
+  /* UTILITIES */
+  .glass-card {
+    background: linear-gradient(135deg,
+        rgba(10, 30, 20, 0.4) 0%,
+        rgba(4, 13, 10, 0.85) 50%,
+        rgba(10, 20, 15, 0.6) 100%);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    box-shadow:
+      0 12px 48px rgba(0, 0, 0, 0.7),
+      inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+  }
+
+  .glass-panel {
+    background: rgba(4, 13, 10, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+  }
+
+  :root {
     /* Goldenes Sonnenlicht - warm, sanft */
     --primary: 42 88% 52%;
     --primary-foreground: 155 45% 6%;
@@ -203,11 +263,11 @@
 
   body {
     @apply bg-background text-foreground;
-    /* Rich Universe Background: Deep space with subtle nebula glow */
+    /* MASTERBIBEL: Deep Forest Universe - darker, more green, less blue */
     background:
-      radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.22) 0%, transparent 32%),
-      radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.22) 0%, transparent 32%),
-      radial-gradient(circle at 50% 45%, #0a1a14 0%, #020705 100%);
+      radial-gradient(circle at 15% 50%, rgba(6, 95, 70, 0.15) 0%, transparent 35%),
+      radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 35%),
+      radial-gradient(circle at 50% 45%, #040d0a 0%, #010302 100%);
     background-attachment: fixed;
     font-family: system-ui, -apple-system, sans-serif;
     /* Sanfte, organische Übergänge überall */
@@ -544,23 +604,36 @@
     animation: glow-pulse 4s ease-in-out infinite;
   }
 
-  /* GLASS CARD - Premium glassmorphism with gradient border */
+  /* GLASS CARD - Nano Banana Enhanced with deeper emerald tones */
   .glass-card {
     background: linear-gradient(135deg,
-        rgba(16, 185, 129, 0.08) 0%,
-        rgba(6, 20, 15, 0.9) 50%,
-        rgba(16, 185, 129, 0.04) 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+        rgba(16, 185, 129, 0.12) 0%,
+        rgba(4, 13, 10, 0.94) 50%,
+        rgba(16, 185, 129, 0.08) 100%);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
     border: 1px solid;
     border-image: linear-gradient(135deg,
-        rgba(16, 185, 129, 0.3) 0%,
+        rgba(16, 185, 129, 0.35) 0%,
         rgba(255, 255, 255, 0.08) 50%,
-        rgba(16, 185, 129, 0.15) 100%) 1;
-    border-radius: 20px;
+        rgba(16, 185, 129, 0.20) 100%) 1;
+    border-radius: 24px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
+      0 12px 48px rgba(0, 0, 0, 0.6),
+      0 0 40px rgba(16, 185, 129, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* GLASS PANEL - Enhanced for deep view */
+  .glass-panel {
+    background: rgba(3, 12, 8, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    border-radius: 16px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(16, 185, 129, 0.05);
   }
 
   /* AURORA BORDER - Animated gradient border */

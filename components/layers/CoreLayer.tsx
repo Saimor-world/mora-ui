@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createFolder, fetchFoldersByCompany, fetchNodes, fetchSpacesByCompany } from '@/lib/api/coreClient';
@@ -16,7 +16,6 @@ export const CoreLayer: React.FC = () => {
     const {
         isLoadingDepartments,
         coreError,
-        loadDepartments,
         activeCompanyId,
         companies
     } = useMoraStore();
@@ -30,10 +29,7 @@ export const CoreLayer: React.FC = () => {
         [companies, activeCompanyId]
     );
 
-    useEffect(() => {
-        // Load departments for sidebar
-        loadDepartments();
-    }, [loadDepartments]);
+    // NOTE: loadDepartments is called by UniverseView/MoraShell on mount.\n    // We don't call it here to prevent double-loading.\n    // The debounce in moraState.ts also prevents redundant calls."
 
     const loadInbox = useCallback(async () => {
         if (!activeCompanyId) {

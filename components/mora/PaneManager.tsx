@@ -6,7 +6,8 @@ import { SettingsPane } from '@/components/panes/SettingsPane';
 import { AppLibraryPane } from '@/components/panes/AppLibraryPane';
 
 import { GridPane } from '@/components/panes/GridPane';
-import { SpacePane } from '@/components/panes/SpacePane';
+// SpacePane replaced by FinderPane (Unified Finder)
+// import { SpacePane } from '@/components/panes/SpacePane';
 import { DocumentPane } from '@/components/panes/DocumentPane';
 import { SearchPane } from '@/components/panes/SearchPane';
 import { TeamPane } from '@/components/panes/TeamPane';
@@ -21,6 +22,7 @@ import { UsersPane } from '@/components/panes/UsersPane';
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
 import { ChatPane } from '@/components/panes/ChatPane';
 import { TimelinePane } from '@/components/panes/TimelinePane';
+import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
@@ -33,7 +35,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'grid':
             return <GridPane id={pane.id} />;
         case 'space':
-            return <SpacePane id={pane.id} />;
+            // UNIFIED FINDER: Space pane now uses FinderPane with spaceId context
+            return <FinderPane id={pane.id} />;
         case 'document':
             return <DocumentPane id={pane.id} />;
         case 'search':
@@ -68,6 +71,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <ChatPane id={pane.id} />;
         case 'timeline':
             return <TimelinePane id={pane.id} />;
+        case 'mora-hub':
+            return <MoraHubPane id={pane.id} />;
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;

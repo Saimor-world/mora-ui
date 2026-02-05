@@ -1,328 +1,162 @@
-﻿"use client";
+"use client";
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { signOut } from 'next-auth/react';
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Home,
-    Search,
-    Settings,
-    FileText,
-    Folder,
-    LayoutGrid,
-    LogOut,
-    Minus,
-    Users,
-    Mail,
-    Calendar,
-    Terminal
+    Home, Search, Settings, Folder, LayoutGrid, LogOut, Minus, Users, Mail, Calendar, Terminal, MessageCircle, FileText, Sparkles
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useAccountStore } from '@/lib/auth/useAccount';
-import { writeCookie } from '@/lib/auth/cookies';
+import { SearchPopup } from './SearchPopup';
 
 /**
- * OS-STYLE DOCK (Demo-safe)
- * Only exposes actions that are real and stable in the current demo.
+ * V10 RESONATING DOCK
+ * 
+ * Master interaction point updated for the "Breathing Forest" aesthetic.
+ * - Steam Deck glassmorphism
+ * - Resonance pulse (matches background)
+ * - Restored full app ecosystem
  */
 export const Dock = () => {
-    const router = useRouter();
     const {
-        activeSpaceId,
-        activeFolderId,
-        setViewLevel,
-        setActiveDepartment,
-        setActiveSpace,
-        setActiveFolder,
-        resetStore,
-        setHasBooted,
-        setIsLoggingOut,
-        setOrbState,
-        minimizedNodes,
-        restoreNode
+        setViewLevel, setActiveDepartment, orbState
     } = useMoraStore();
-    const { logout } = useAccountStore();
 
-    const {
-        panes,
-        restorePane,
-        getPane,
-        minimizePane,
-        openPane
-    } = usePaneStore();
-
+    const { panes, restorePane, openPane } = usePaneStore();
     const minimizedPanes = panes.filter(p => p.minimized);
 
+    const [chatInput, setChatInput] = useState('');
+    const [searchPopupOpen, setSearchPopupOpen] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const getAccentColor = () => {
+        switch (orbState) {
+            case 'alert': return '#EF4444';
+            case 'thinking': return '#3B82F6';
+            case 'insight': return '#F59E0B';
+            default: return '#06B6D4';
+        }
+    };
+
+    const accent = getAccentColor();
+
+    const handleDockClick = (action: string) => {
+        const defaultSize = { width: 850, height: 600 };
+        switch (action) {
+            case 'home': setViewLevel('core'); setActiveDepartment(null); break;
+            case 'finder': openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1200, height: 780 } }); break;
+            case 'apps': openPane({ id: 'apps-main', type: 'apps', title: 'App Library', size: defaultSize }); break;
+            case 'team': openPane({ id: 'team-main', type: 'team', title: 'Team', size: defaultSize }); break;
+            case 'mail': openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: defaultSize }); break;
+            case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Calendar', size: defaultSize }); break;
+            case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
+            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 700, height: 500 } }); break;
+            default: break;
+        }
+    };
+
     const dockItems = [
-        { icon: Home, label: 'Home', action: 'home' },
+        { icon: Home, label: 'Core', action: 'home' },
         { icon: LayoutGrid, label: 'Apps', action: 'apps' },
         { icon: Folder, label: 'Finder', action: 'finder' },
         { icon: Users, label: 'Team', action: 'team' },
         { icon: Mail, label: 'Mail', action: 'mail' },
         { icon: Calendar, label: 'Calendar', action: 'calendar' },
         { icon: Terminal, label: 'Terminal', action: 'terminal' },
-        { icon: Search, label: 'Search', action: 'search' },
-        { icon: Settings, label: 'Settings', action: 'settings' },
-        { icon: LogOut, label: 'Logout', action: 'logout' }
+        { icon: Settings, label: 'Config', action: 'settings' }
     ];
 
-    const handleLogout = async () => {
-        // Enter logout transition (hide cursors / show overlay)
-        setIsLoggingOut(true);
-        setOrbState('idle');
-
-        // Clear all local storage
-        localStorage.removeItem('saimor_dev_token');
-        localStorage.removeItem('saimor_mode');
-        localStorage.removeItem('saimor_role');
-        localStorage.removeItem('saimor_tenant');
-        localStorage.removeItem('last_workspace');
-        localStorage.removeItem('last_activity');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('mora_session');
-        localStorage.removeItem('last_user_name');
-        writeCookie('saimor_auth', '', -1);
-
-        // Reset UI state (keep activeCompany to avoid flicker)
-        setViewLevel('core');
-        setActiveDepartment(null);
-        setActiveSpace(null);
-        setActiveFolder(null);
-
-        // Clear stores
-        logout();
-        resetStore();
-        // Prevent boot flash during logout transition
-        setHasBooted(true);
-        setIsLoggingOut(true);
-
-        // Sign out from NextAuth (this handles the redirect)
-        await signOut({ callbackUrl: '/' });
-    };
-
-    const handleDockClick = (action: string) => {
-        console.log('Dock action:', action);
-
-        switch (action) {
-            case 'home':
-                panes.forEach(p => !p.minimized && minimizePane(p.id));
-                setViewLevel('core');
-                setActiveDepartment(null);
-                setActiveSpace(null);
-                setActiveFolder(null);
-                break;
-            case 'settings': {
-                const size = { width: 700, height: 500 };
-                openPane({
-                    id: 'settings-main',
-                    type: 'settings',
-                    title: 'Settings',
-                    size
-                });
-                break;
-            }
-            case 'apps': {
-                const size = { width: 800, height: 600 };
-                openPane({
-                    id: 'apps-main',
-                    type: 'apps',
-                    title: 'App Library',
-                    size
-                });
-                break;
-            }
-            case 'search': {
-                const size = { width: 600, height: 400 };
-                openPane({
-                    id: 'search-main',
-                    type: 'search',
-                    title: 'Search',
-                    size
-                });
-                break;
-            }
-            case 'finder': {
-                const size = { width: 900, height: 600 };
-                openPane({
-                    id: 'finder-main',
-                    type: 'finder',
-                    title: 'Finder',
-                    size
-                });
-                break;
-            }
-            case 'team': {
-                const size = { width: 780, height: 620 };
-                openPane({
-                    id: 'team-main',
-                    type: 'team',
-                    title: 'Team',
-                    size
-                });
-                break;
-            }
-            case 'mail': {
-                const size = { width: 860, height: 640 };
-                openPane({
-                    id: 'mail-main',
-                    type: 'mail',
-                    title: 'Secure Mail',
-                    size
-                });
-                break;
-            }
-            case 'calendar': {
-                const size = { width: 840, height: 620 };
-                openPane({
-                    id: 'calendar-main',
-                    type: 'calendar',
-                    title: 'Calendar',
-                    size
-                });
-                break;
-            }
-            case 'terminal': {
-                const size = { width: 860, height: 560 };
-                openPane({
-                    id: 'terminal-main',
-                    type: 'terminal',
-                    title: 'Terminal',
-                    size
-                });
-                break;
-            }
-            case 'logout':
-                handleLogout();
-                break;
-            default:
-                break;
-        }
-    };
-
-    const isActionActive = (action: string) => {
-        if (action === 'settings' && getPane('settings-main') && !getPane('settings-main')?.minimized) return true;
-        if (action === 'apps' && getPane('apps-main') && !getPane('apps-main')?.minimized) return true;
-        if (action === 'search' && getPane('search-main') && !getPane('search-main')?.minimized) return true;
-        if (action === 'finder' && getPane('finder-main') && !getPane('finder-main')?.minimized) return true;
-        if (action === 'team' && getPane('team-main') && !getPane('team-main')?.minimized) return true;
-        if (action === 'mail' && getPane('mail-main') && !getPane('mail-main')?.minimized) return true;
-        if (action === 'calendar' && getPane('calendar-main') && !getPane('calendar-main')?.minimized) return true;
-        if (action === 'terminal' && getPane('terminal-main') && !getPane('terminal-main')?.minimized) return true;
-        if (action === 'home' && !activeSpaceId && !activeFolderId) return true;
-        return false;
+    const minimizedIconMap: Record<string, React.ComponentType<{ size?: number }>> = {
+        finder: Folder,
+        chat: MessageCircle,
+        team: Users,
+        mail: Mail,
+        calendar: Calendar,
+        terminal: Terminal,
+        search: Search,
+        notes: FileText,
+        settings: Settings,
+        apps: LayoutGrid,
+        'mora-hub': Sparkles
     };
 
     return (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100]">
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-4">
             <motion.div
-                className="glass-card px-6 py-3 rounded-2xl flex items-center gap-1 relative overflow-hidden"
+                className="px-8 py-4 rounded-[40px] flex items-center gap-2 relative overflow-hidden backdrop-blur-[50px] shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
                 style={{
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 10, 8, 0.85) 50%, rgba(16, 185, 129, 0.06) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.25)',
-                    boxShadow: `
-                        0 12px 40px rgba(0, 0, 0, 0.6),
-                        0 0 60px rgba(16, 185, 129, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                        inset 0 -1px 0 rgba(0, 0, 0, 0.3)
-                    `
+                    background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(2, 6, 8, 0.98) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    boxShadow: `0 30px 80px rgba(0, 0, 0, 1.0), 0 0 60px ${accent}20, inset 0 0 20px rgba(255,255,255,0.02)`,
                 }}
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
+                layout
+                transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
-                {/* Animated gradient overlay */}
+                {/* RESONANCE FILAMENT */}
                 <motion.div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                        background: 'linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent)',
-                        backgroundSize: '200% 100%'
-                    }}
-                    animate={{
-                        backgroundPosition: ['200% 0', '-200% 0']
-                    }}
-                    transition={{
-                        duration: 8,
-                        repeat: Infinity,
-                        ease: 'linear'
-                    }}
+                    className="absolute inset-x-0 top-0 h-[1.5px] opacity-40"
+                    style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
+                    animate={{ opacity: [0.2, 0.6, 0.2] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 />
-                <div className="w-px h-6 bg-white/20 mx-1" />
 
-                {dockItems.map((item, i) => {
-                    const active = isActionActive(item.action);
+                {/* SEARCH UNIT */}
+                <div className="relative flex items-center mr-3 ml-1">
+                    <Search size={13} className="absolute left-3.5 text-white/30" />
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onFocus={() => setSearchPopupOpen(true)}
+                        placeholder="Search..."
+                        className="w-44 bg-white/5 border border-white/5 rounded-xl pl-9 pr-4 py-1.5 text-[13px] text-white/90 placeholder:text-white/20 focus:outline-none focus:border-cyan-500/30 transition-all"
+                    />
+                </div>
 
-                    return (
-                        <motion.button
-                            layout
-                            key={i}
-                            className={`dock-item-${item.action} p-3 rounded-xl hover:bg-white/10 text-white/70 hover:text-white transition-colors relative group ${active ? 'bg-white/10 text-white' : ''}`}
-                            whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDockClick(item.action)}
-                        >
-                            <item.icon size={20} strokeWidth={1.5} className={active ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]' : ''} />
+                <div className="w-[1px] h-6 bg-white/10 mx-2" />
 
-                            {active && (
-                                <motion.div
-                                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-400 rounded-full"
-                                    layoutId={`dock-indicator-${item.action}`}
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.8)' }}
-                                />
-                            )}
-
-                            <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md">
-                                {item.label}
-                            </div>
-                        </motion.button>
-                    );
-                })}
-
-                {(minimizedNodes.length > 0 || minimizedPanes.length > 0) && (
-                    <div className="w-px h-6 bg-white/20 mx-1" />
-                )}
-
-                {minimizedNodes.map((node) => (
+                {/* DOCK APP SYSTEM */}
+                {dockItems.map((item, i) => (
                     <motion.button
-                        layout
-                        key={`min-${node.id}`}
-                        className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-emerald-400/70 hover:text-emerald-400 transition-colors relative group"
-                        whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
+                        key={i}
+                        className="p-3 rounded-2xl hover:bg-white/10 text-white/50 hover:text-white transition-all relative group"
+                        whileHover={{ y: -5, scale: 1.15 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => restoreNode(node.id)}
+                        onClick={() => handleDockClick(item.action)}
                     >
-                        <FileText size={20} strokeWidth={1.5} />
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white/50 rounded-full" />
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md max-w-[150px] truncate">
-                            {node.title || node.name}
-                        </div>
-                    </motion.button>
-                ))}
-
-                {minimizedPanes.map((pane) => (
-                    <motion.button
-                        layout
-                        key={`pane-min-${pane.id}`}
-                        className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-blue-400/70 hover:text-blue-400 transition-colors relative group"
-                        whileHover={{ scale: 1.15, y: -4, transition: { type: "spring", stiffness: 400, damping: 10 } }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => restorePane(pane.id)}
-                    >
-                        {pane.type === 'settings' ? <Settings size={20} strokeWidth={1.5} /> :
-                            pane.type === 'document' ? <LayoutGrid size={20} strokeWidth={1.5} /> :
-                                <Minus size={20} strokeWidth={1.5} />}
-
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white/50 rounded-full" />
-
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap border border-white/10 backdrop-blur-md max-w-[150px] truncate">
-                            {pane.title}
+                        <item.icon size={19} strokeWidth={1.5} />
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/95 text-[9px] tracking-[0.2em] font-light uppercase px-3 py-2 rounded-lg border border-white/10 backdrop-blur-2xl">
+                            {item.label}
                         </div>
                     </motion.button>
                 ))}
             </motion.div>
+
+            {/* MINIMIZED GRID */}
+            <AnimatePresence>
+                {(minimizedPanes.length > 0) && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-2">
+                        {minimizedPanes.map(pane => {
+                            const Icon = minimizedIconMap[pane.type] || Minus;
+                            return (
+                                <button
+                                    key={pane.id}
+                                    onClick={() => restorePane(pane.id)}
+                                    title={pane.title}
+                                    className="w-11 h-11 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-cyan-300/80 hover:text-cyan-300 backdrop-blur-lg"
+                                >
+                                    <Icon size={16} />
+                                </button>
+                            );
+                        })}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <SearchPopup isOpen={searchPopupOpen} onClose={() => setSearchPopupOpen(false)} searchQuery={chatInput} onQueryChange={setChatInput} onMoraChat={() => { }} />
         </div>
     );
 };

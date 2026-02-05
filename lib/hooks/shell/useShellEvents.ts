@@ -104,21 +104,39 @@ export function useShellEvents({ onOpenResonance }: UseShellEventsOptions) {
     // AI Action handler (highlight)
     useEffect(() => {
         const handleAIAction = (e: CustomEvent) => {
-            const { type, targetId, duration } = e.detail;
-            if (type === 'highlight' && targetId) {
-                const el = document.getElementById(targetId) || document.querySelector(`[data-agency-id="${targetId}"]`);
+            const { type, targetId, targetSelector, position, duration } = e.detail || {};
+            if (type !== 'highlight' && type !== 'point') return;
+
+            let targetPos = position as { x: number; y: number } | undefined;
+            if (!targetPos) {
+                let el: Element | null = null;
+                if (typeof targetSelector === 'string' && targetSelector.length > 0) {
+                    el = document.querySelector(targetSelector);
+                    if (!el && !targetSelector.startsWith('#') && !targetSelector.startsWith('.')) {
+                        el = document.getElementById(targetSelector);
+                    }
+                }
+                if (!el && typeof targetId === 'string' && targetId.length > 0) {
+                    el = document.getElementById(targetId) || document.querySelector(`[data-agency-id="${targetId}"]`);
+                }
                 if (el) {
                     const rect = el.getBoundingClientRect();
-                    setCursorAgent({
-                        active: true,
-                        action: 'highlight',
-                        target: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-                    });
-                    setTimeout(() => {
-                        setCursorAgent({ action: 'roam', target: undefined });
-                    }, duration || 3000);
+                    targetPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
                 }
             }
+
+            if (!targetPos) return;
+
+            setCursorAgent({
+                active: true,
+                action: type === 'point' ? 'point' : 'highlight',
+                target: targetPos
+            });
+
+            const timeoutMs = typeof duration === 'number' ? duration : 2500;
+            window.setTimeout(() => {
+                setCursorAgent({ active: false, action: 'idle', target: undefined });
+            }, timeoutMs);
         };
         window.addEventListener('mora-ai-action' as any, handleAIAction as any);
         return () => window.removeEventListener('mora-ai-action' as any, handleAIAction as any);

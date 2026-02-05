@@ -29,12 +29,16 @@ interface TeamMember {
     lastActive?: string;
 }
 
-const ROLE_CONFIG = {
+const ROLE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+    system_owner: { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'System Owner' },
     owner: { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Owner' },
     admin: { icon: Shield, color: 'text-purple-400', bg: 'bg-purple-500/20', label: 'Admin' },
     manager: { icon: Shield, color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Manager' },
-    member: { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Member' }
+    member: { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Member' },
+    demo: { icon: User, color: 'text-cyan-400', bg: 'bg-cyan-500/20', label: 'Demo' }
 };
+
+const DEFAULT_ROLE_CONFIG = { icon: User, color: 'text-white/60', bg: 'bg-white/10', label: 'User' };
 
 export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -227,7 +231,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                         <div className="space-y-2">
                             <AnimatePresence>
                                 {filteredMembers.map((member, index) => {
-                                    const roleConfig = ROLE_CONFIG[member.role];
+                                    const roleConfig = ROLE_CONFIG[member.role] || DEFAULT_ROLE_CONFIG;
                                     const RoleIcon = roleConfig.icon;
 
                                     return (

@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
 import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
-import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 
@@ -198,7 +197,17 @@ export const DepartmentLayer: React.FC = () => {
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Background Atmosphere removed to use universal MoraShell background */}
+            {/* Subtle Galaxy Overlay */}
+            <div
+                className="absolute inset-0 z-[-1] pointer-events-none"
+                style={{
+                    background: `
+                        radial-gradient(900px 420px at 60% 62%, rgba(30, 120, 180, 0.28) 0%, transparent 65%),
+                        radial-gradient(700px 320px at 20% 30%, rgba(34, 197, 94, 0.18) 0%, transparent 60%),
+                        radial-gradient(600px 280px at 78% 38%, rgba(99, 102, 241, 0.18) 0%, transparent 55%)
+                    `
+                }}
+            />
 
             {/* Back Button */}
             <motion.button
@@ -214,44 +223,7 @@ export const DepartmentLayer: React.FC = () => {
                 <span className="text-sm tracking-widest font-light">BACK TO ORBIT</span>
             </motion.button>
 
-            {/* MORA UPDATES FEED (Department Scope) */}
-            <div className="absolute right-6 top-24 w-[320px] h-[420px] z-40 pointer-events-auto">
-                <MoraUpdatesFeed scope="department" title="Department Updates" maxEvents={10} />
-            </div>
-
-            {/* Department Title (Center) */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
-                <motion.h1
-                    className="font-thin text-white/[0.12] whitespace-nowrap select-none font-sans text-center"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    style={deptTitleStyle}
-                >
-                    {deptTitle.toUpperCase()}
-                </motion.h1>
-            </div>
-
-            {/* SEMANTIC LAYER ANCHOR (Phase 5.2) */}
-            {/* Phase 6.1: Active Constellation Renderer */}
-            <div
-                id="semantic-layer-anchor"
-                className="absolute inset-0 z-5 pointer-events-none overflow-visible"
-                aria-hidden="true"
-            >
-                <div className="absolute top-1/2 left-1/2 w-0 h-0 overflow-visible">
-                    <SemanticConstellation
-                        center={{ x: 0, y: 0 }}
-                        satellites={(hoveredSpacePosition ? [hoveredSpacePosition] : []).map(m => ({
-                            id: m.space.id,
-                            x: m.x,
-                            y: m.y,
-                            weight: 0.8
-                        }))}
-                        isActive={Boolean(hoveredSpaceId)}
-                    />
-                </div>
-            </div>
+            {/* Mora Hub is opened via the Orb, not rendered here */}
 
             {/* Content Area */}
             <div className="absolute inset-0 flex items-center justify-center z-10">

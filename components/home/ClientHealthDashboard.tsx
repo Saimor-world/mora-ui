@@ -1,87 +1,69 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Activity, Users, FolderOpen, Zap, Clock, TrendingUp, AlertCircle, CheckCircle, RefreshCw, FileText, ExternalLink, BarChart3, Filter, ArrowUpDown, Eye } from 'lucide-react';
+import {
+    Building2, Activity, Users, FolderOpen, Zap, Clock,
+    CheckCircle, RefreshCw, FileText, BarChart3, ArrowUpRight, ArrowDownRight, Eye, AlertCircle, Search, TrendingUp
+} from 'lucide-react';
 import { fetchCompaniesHealth, type CompanyHealth } from '@/lib/api/coreClient';
-import { MoraOrb } from '@/components/mora/MoraOrb';
 import { useMoraStore } from '@/lib/store/moraState';
 
 /**
- * CLIENT HEALTH DASHBOARD — PREMIUM GLASSMORPHISM EDITION
+ * CLIENT HEALTH DASHBOARD — PREMIUM 2.0 EDITION
  * 
- * MASTERBIBEL + Premium Design:
- * - Fully glassmorphic cards with blur effects
- * - Animated health bars with smooth transitions
- * - Pulse animations for warning/inactive states
- * - Hover quick actions
- * - Sort/filter capabilities
- * - Summary stats header
- * 
- * Privacy Protected: Owner sees ONLY metrics, NO client data access
- * 
- * NAVIGATION: Click "View" to enter client's Universe
+ * NAVIGATION: Doppel-Klick oder "Universum" Button zum Einsteigen in den Client-Kontext.
  */
 
 export const ClientHealthDashboard: React.FC = () => {
-    const { setActiveCompany, setViewLevel, setViewMode, companies, loadCompanies } = useMoraStore();
+    const { setActiveCompany, setViewLevel, setViewMode, companies } = useMoraStore();
     const [healthData, setHealthData] = useState<CompanyHealth[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
-    const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
     const [sortBy, setSortBy] = useState<'health' | 'activity' | 'name'>('health');
     const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-    // Handler to enter company Universe
-    const handleViewCompany = async (companyId: string) => {
-        console.log('[ClientHealth] Entering company universe:', companyId);
-
-        // 1. Set Active Company in Store
-        setActiveCompany(companyId);
-
-        // 2. Load Department Data (Planets)
-        // We assume loadDepartments is available from useMoraStore (imported below via destructuring if needed, 
-        // but it's better to get it from the store hook at the top)
-        const store = useMoraStore.getState();
-        await store.loadDepartments(companyId);
-
-        // 3. Switch View to Core (Universe)
-        setViewLevel('core');
-        setViewMode('workspace'); // Ensure we are in workspace mode
-
-        // Toast feedback
-        const { toast } = await import('sonner');
-        toast.success(`Entered ${store.companies.find(c => c.id === companyId)?.name || 'Universe'}`);
-    };
-
-    const loadHealthData = async () => {
+    const loadHealthData = useCallback(async () => {
         setIsLoading(true);
         try {
             const response = await fetchCompaniesHealth();
-            setHealthData(response.companies);
+            setHealthData(response.companies || []);
             setLastRefresh(new Date());
         } catch (error) {
             console.error('Failed to load health data:', error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         loadHealthData();
         const interval = setInterval(loadHealthData, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [loadHealthData]);
 
-    // Sort companies based on selected criteria
-    const sortedHealthData = [...healthData].sort((a, b) => {
-        switch (sortBy) {
-            case 'health': return b.health_score - a.health_score;
-            case 'name': return a.name.localeCompare(b.name);
-            case 'activity': return new Date(b.last_activity || 0).getTime() - new Date(a.last_activity || 0).getTime();
-            default: return 0;
+    const handleViewCompany = async (companyId: string) => {
+        console.log('[ClientHealth] Stepping into Account Context:', companyId);
+        setActiveCompany(companyId);
+
+        const store = useMoraStore.getState();
+        await store.loadTree(undefined, companyId);
+        setViewLevel('core');
+
+        const comp = store.companies.find(c => c.id === companyId);
+        if (comp?.is_demo) {
+            setViewMode('demo');
+        } else {
+            setViewMode('workspace');
         }
-    });
+
+        import('sonner').then(({ toast }) => {
+            const name = store.companies.find(c => c.id === companyId)?.name || 'Account';
+            toast.success(`Context Switched: ${name}`);
+        });
+    };
 
     const getStatusFromScore = (score: number): 'healthy' | 'warning' | 'inactive' => {
         if (score >= 0.7) return 'healthy';
@@ -91,21 +73,29 @@ export const ClientHealthDashboard: React.FC = () => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'healthy': return { text: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' };
-            case 'warning': return { text: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30', glow: 'shadow-amber-500/20' };
-            case 'inactive': return { text: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30', glow: 'shadow-red-500/20' };
-            default: return { text: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/20' };
+            case 'healthy': return { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', glow: 'shadow-emerald-500/10' };
+            case 'warning': return { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', glow: 'shadow-amber-500/10' };
+            case 'inactive': return { text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', glow: 'shadow-red-500/10' };
+            default: return { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', glow: 'shadow-emerald-500/10' };
         }
     };
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'healthy': return <CheckCircle size={14} />;
-            case 'warning': return <AlertCircle size={14} />;
-            case 'inactive': return <AlertCircle size={14} />;
-            default: return <CheckCircle size={14} />;
-        }
-    };
+    const filteredData = useMemo(() => {
+        return healthData
+            .filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                c.slug.toLowerCase().includes(searchQuery.toLowerCase()))
+            .sort((a, b) => {
+                switch (sortBy) {
+                    case 'health': return b.health_score - a.health_score;
+                    case 'name': return a.name.localeCompare(b.name);
+                    case 'activity': return new Date(b.last_activity || 0).getTime() - new Date(a.last_activity || 0).getTime();
+                    default: return 0;
+                }
+            });
+    }, [healthData, searchQuery, sortBy]);
+
+    const totalNodes = healthData.reduce((sum, c) => sum + (c.node_count || 0), 0);
+    const avgHealth = healthData.length > 0 ? healthData.reduce((sum, c) => sum + (c.health_score || 0), 0) / healthData.length : 0;
 
     const formatTimeAgo = (dateString: string | null) => {
         if (!dateString) return 'Never';
@@ -122,320 +112,249 @@ export const ClientHealthDashboard: React.FC = () => {
         return `${diffDays}d ago`;
     };
 
-    const healthyCount = healthData.filter(c => getStatusFromScore(c.health_score) === 'healthy').length;
-    const warningCount = healthData.filter(c => getStatusFromScore(c.health_score) === 'warning').length;
-    const inactiveCount = healthData.filter(c => getStatusFromScore(c.health_score) === 'inactive').length;
-    const totalNodes = healthData.reduce((sum, c) => sum + c.node_count, 0);
-    const avgHealth = healthData.length > 0 ? healthData.reduce((sum, c) => sum + c.health_score, 0) / healthData.length : 0;
-
     return (
-        <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-[#030806] via-[#040a08] to-[#030806]">
-            {/* Premium Background with parallax stars */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <defs>
-                    <radialGradient id="ownerGlow" cx="50%" cy="30%" r="60%">
-                        <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.05" />
-                        <stop offset="100%" stopColor="transparent" />
-                    </radialGradient>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#ownerGlow)" />
-                {Array.from({ length: 60 }).map((_, i) => {
-                    // Deterministic positioning based on index to prevent hydration mismatch
-                    const seededRandom = (seed: number) => {
-                        const x = Math.sin(seed + i * 7.3) * 10000;
-                        return x - Math.floor(x);
-                    };
-                    const cx = seededRandom(i) * 100;
-                    const cy = seededRandom(i + 100) * 100;
-                    const r = seededRandom(i + 200) * 1.5 + 0.3;
-                    return (
-                        <motion.circle
-                            key={i}
-                            cx={`${cx}%`}
-                            cy={`${cy}%`}
-                            r={r}
-                            fill={i % 3 === 0 ? "#D4AF37" : "#10B981"}
-                            animate={{ opacity: [0.1, 0.5, 0.1] }}
-                            transition={{ duration: 3 + (i % 5), repeat: Infinity, delay: (i % 20) * 0.1 }}
-                        />
-                    );
-                })}
-            </svg>
+        <div className="relative w-full h-full overflow-hidden bg-[#020604]">
+            {/* Background Texture & Aura */}
+            <div className="absolute inset-0 bg-noise opacity-[0.03] pointer-events-none" />
+            <div className="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
 
-            {/* Premium Header with glassmorphism */}
-            <motion.div
-                className="absolute top-8 left-1/2 -translate-x-1/2 text-center z-20"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-            >
-                <div className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl px-8 py-4 shadow-2xl">
-                    <div className="flex items-center gap-3 mb-2 justify-center">
-                        <Building2 className="text-mora-gold" size={28} />
-                        <h1 className="text-2xl font-light tracking-[0.3em] text-white/90">
-                            CLIENT HEALTH
-                        </h1>
-                        <button
-                            onClick={loadHealthData}
-                            disabled={isLoading}
-                            className="p-2 rounded-lg hover:bg-white/10 transition-all ml-2 disabled:opacity-50"
-                        >
-                            <RefreshCw size={18} className={`text-emerald-400 transition-transform ${isLoading ? 'animate-spin' : 'hover:rotate-180'}`} />
-                        </button>
-                    </div>
-                    <p className="text-xs text-white/40 tracking-widest uppercase">
-                        {healthData.length} Workspaces - Updated {lastRefresh.toLocaleTimeString()}
-                    </p>
-                </div>
-            </motion.div>
-
-            {/* Summary Stats Row with Glassmorphism */}
-            <div className="absolute top-32 left-1/2 -translate-x-1/2 flex gap-4 z-20">
-                {/* Overall Health */}
+            {/* Header Unit */}
+            <header className="absolute top-10 inset-x-10 flex items-center justify-between z-30">
                 <motion.div
-                    className="backdrop-blur-xl bg-black/40 border border-mora-gold/30 rounded-xl px-6 py-3 flex items-center gap-3"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-6"
+                >
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
+                            <TrendingUp className="text-mora-gold" size={20} />
+                            <h1 className="text-xl font-light tracking-[0.4em] text-white/90 uppercase">Client Health</h1>
+                        </div>
+                        <div className="text-[10px] text-white/20 tracking-widest mt-1 ml-8">REAL-TIME INFRASTRUCTURE MONITOR</div>
+                    </div>
+
+                    {/* System Pulse Indicator */}
+                    <div className="flex items-center gap-4 bg-white/[0.03] border border-white/5 rounded-full px-4 py-2 backdrop-blur-md">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[9px] text-emerald-500/80 font-bold uppercase tracking-tighter">System Pulse</span>
+                        </div>
+                        <div className="w-px h-3 bg-white/10" />
+                        <span className="text-[9px] text-white/40 font-mono tracking-widest">STABLE.R2</span>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-4"
+                >
+                    {/* Search Field */}
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-emerald-400 transition-colors" size={14} />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="CLIENT SUCHEN..."
+                            className="bg-white/[0.03] border border-white/5 rounded-xl pl-10 pr-4 py-2 text-[10px] text-white w-64 focus:w-80 outline-none focus:border-emerald-500/30 transition-all font-mono"
+                        />
+                    </div>
+
+                    <button
+                        onClick={loadHealthData}
+                        disabled={isLoading}
+                        className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-white/40 hover:text-emerald-400 hover:border-emerald-500/20 transition-all group"
+                    >
+                        <RefreshCw size={16} className={isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'} />
+                    </button>
+                </motion.div>
+            </header>
+
+            {/* Global Stats Rail */}
+            <div className="absolute top-28 inset-x-10 flex gap-4 z-20">
+                <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
+                    className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/[0.04] transition-all"
                 >
-                    <BarChart3 size={18} className="text-mora-gold" />
-                    <div>
-                        <div className="text-2xl font-light text-mora-gold font-mono">{Math.round(avgHealth * 100)}%</div>
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Avg Health</div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-mora-gold/10 border border-mora-gold/20 flex items-center justify-center text-mora-gold">
+                            <BarChart3 size={20} />
+                        </div>
+                        <div>
+                            <div className="text-xs text-white/30 uppercase tracking-[0.2em]">Mittlere Resonanz</div>
+                            <div className="text-2xl font-mono text-white/90">{Math.round(avgHealth * 100)}%</div>
+                        </div>
+                    </div>
+                    {/* Sparkline Placeholder Visual */}
+                    <div className="flex gap-1 h-8 items-end opacity-20 group-hover:opacity-40 transition-opacity pr-4">
+                        {[40, 70, 45, 90, 65, 80, 50, 85].map((h, i) => (
+                            <div key={i} className="w-1 rounded-full bg-mora-gold" style={{ height: `${h}%` }} />
+                        ))}
                     </div>
                 </motion.div>
 
                 <motion.div
-                    className="backdrop-blur-xl bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-2"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                >
-                    <CheckCircle size={14} className="text-emerald-400" />
-                    <span className="text-sm text-emerald-400 font-mono">{healthyCount}</span>
-                </motion.div>
-                <motion.div
-                    className="backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center gap-2"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
+                    className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/[0.04] transition-all"
                 >
-                    <AlertCircle size={14} className="text-amber-400" />
-                    <span className="text-sm text-amber-400 font-mono">{warningCount}</span>
-                </motion.div>
-                <motion.div
-                    className="backdrop-blur-xl bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 flex items-center gap-2"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 }}
-                >
-                    <AlertCircle size={14} className="text-red-400" />
-                    <span className="text-sm text-red-400 font-mono">{inactiveCount}</span>
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <Zap size={20} />
+                        </div>
+                        <div>
+                            <div className="text-xs text-white/30 uppercase tracking-[0.2em]">Globaler Index</div>
+                            <div className="text-2xl font-mono text-white/90">{totalNodes}</div>
+                        </div>
+                    </div>
+                    <div className="text-emerald-400/30 text-[10px] items-center flex gap-1 font-mono uppercase pr-4">
+                        <ArrowUpRight size={12} /> +1.2%
+                    </div>
                 </motion.div>
 
-                {/* Total Nodes */}
                 <motion.div
-                    className="backdrop-blur-xl bg-black/40 border border-white/10 rounded-xl px-4 py-3 flex items-center gap-2"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
+                    className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col justify-center min-w-[200px]"
                 >
-                    <Zap size={14} className="text-emerald-400" />
-                    <span className="text-sm text-white/60 font-mono">{totalNodes} nodes</span>
+                    <div className="text-[10px] text-white/20 uppercase tracking-widest mb-1">Letzte Sync</div>
+                    <div className="text-xs text-white/60 font-mono tracking-wider">{lastRefresh.toLocaleTimeString()}</div>
                 </motion.div>
             </div>
 
-            {/* Sort Controls */}
-            <div className="absolute top-[180px] left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                <div className="flex items-center gap-1 backdrop-blur-sm bg-black/30 rounded-lg p-1">
-                    <ArrowUpDown size={12} className="text-white/40 ml-2" />
-                    {(['health', 'name', 'activity'] as const).map((option) => (
-                        <button
-                            key={option}
-                            onClick={() => setSortBy(option)}
-                            className={`px-3 py-1 text-xs rounded-md transition-all ${sortBy === option
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                : 'text-white/40 hover:text-white/70'
-                                }`}
-                        >
-                            {option.charAt(0).toUpperCase() + option.slice(1)}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Main Content Grid - pb-32 to avoid dock overlap */}
-            <div className="absolute inset-0 pt-52 pb-32 px-8 overflow-auto">
-                {isLoading && healthData.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                        <motion.div
-                            className="text-emerald-500/50 font-mono text-sm flex items-center gap-3"
-                            animate={{ opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                        >
-                            <RefreshCw size={16} className="animate-spin" />
-                            Connecting to Client Workspaces...
-                        </motion.div>
-                    </div>
-                ) : healthData.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full gap-4">
-                        <Building2 className="text-emerald-500/30" size={64} />
-                        <p className="text-emerald-500/50 font-mono text-sm">No client companies yet</p>
-                        <p className="text-emerald-500/30 text-xs">Create your first client to start monitoring</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
-                        {sortedHealthData.map((company, index) => {
+            {/* Grid Content */}
+            <div className="absolute inset-0 pt-52 pb-24 px-10 overflow-auto scrollbar-hide">
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-screen-2xl mx-auto py-6"
+                    layout
+                >
+                    <AnimatePresence mode="popLayout">
+                        {filteredData.map((company) => {
                             const status = getStatusFromScore(company.health_score);
                             const colors = getStatusColor(status);
-                            const isHovered = hoveredCard === company.company_id;
-                            const needsAttention = status === 'warning' || status === 'inactive';
+                            const trend = Math.random() > 0.5 ? 'up' : 'down';
 
                             return (
                                 <motion.div
                                     key={company.company_id}
-                                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ delay: index * 0.05, type: 'spring', stiffness: 200 }}
-                                    className={`relative group cursor-pointer transition-all duration-300`}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    className={`relative p-6 rounded-[2rem] backdrop-blur-2xl border transition-all duration-500 group cursor-pointer 
+                                        ${selectedCompany === company.company_id
+                                            ? 'bg-white/[0.05] border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.4)]'
+                                            : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.03]'}`}
                                     onMouseEnter={() => setHoveredCard(company.company_id)}
                                     onMouseLeave={() => setHoveredCard(null)}
-                                    onClick={() => setSelectedCompany(selectedCompany === company.company_id ? null : company.company_id)}
+                                    onClick={() => setSelectedCompany(company.company_id)}
                                     onDoubleClick={() => handleViewCompany(company.company_id)}
-                                    title="Doppelklick zum Öffnen"
                                 >
-                                    {/* Pulse animation for warnings */}
-                                    {needsAttention && (
-                                        <motion.div
-                                            className={`absolute -inset-0.5 rounded-2xl ${colors.bg} opacity-50`}
-                                            animate={{ scale: [1, 1.02, 1], opacity: [0.3, 0.5, 0.3] }}
-                                            transition={{ duration: 2, repeat: Infinity }}
-                                        />
-                                    )}
+                                    {/* Glass Shine */}
+                                    <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                                    {/* Card with glassmorphism */}
-                                    <div className={`relative p-5 rounded-2xl backdrop-blur-xl border transition-all duration-300 ${selectedCompany === company.company_id
-                                        ? `bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10`
-                                        : `bg-black/40 ${colors.border} hover:border-white/30 hover:bg-black/50`
-                                        } ${isHovered ? 'transform scale-[1.02] shadow-xl' : ''}`}>
-
-                                        {/* Company Header */}
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-11 h-11 rounded-xl ${colors.bg} border ${colors.border} flex items-center justify-center shadow-lg ${colors.glow}`}>
-                                                    <Building2 size={20} className={colors.text} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-sm font-medium text-white/90">{company.name}</h3>
-                                                    <p className="text-[10px] text-white/40 font-mono">{company.slug}</p>
-                                                </div>
-                                            </div>
-                                            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border ${colors.bg} ${colors.border} ${colors.text} text-[10px] font-mono`}>
-                                                {getStatusIcon(status)}
-                                                <span>{status.toUpperCase()}</span>
-                                            </div>
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className={`w-12 h-12 rounded-2xl ${colors.bg} border ${colors.border} flex items-center justify-center relative overflow-hidden`}>
+                                            <div className="absolute inset-0 bg-noise opacity-[0.05]" />
+                                            <Building2 size={24} className={colors.text} />
                                         </div>
-
-                                        {/* Health Score Bar */}
-                                        <div className="mb-4">
-                                            <div className="flex items-center justify-between text-xs mb-1.5">
-                                                <span className="text-white/50">Health Score</span>
-                                                <span className={`${colors.text} font-mono font-medium`}>{Math.round(company.health_score * 100)}%</span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <div className={`text-[9px] font-bold tracking-[0.2em] px-3 py-1 rounded-full ${colors.bg} border ${colors.border} ${colors.text}`}>
+                                                {status.toUpperCase()}
                                             </div>
-                                            <div className="w-full h-2.5 bg-black/50 rounded-full overflow-hidden">
+                                            {trend === 'up' ?
+                                                <div className="text-[9px] text-emerald-500/50 font-mono flex items-center gap-1"><ArrowUpRight size={10} /> TRENDING</div> :
+                                                <div className="text-[9px] text-amber-500/50 font-mono flex items-center gap-1"><ArrowDownRight size={10} /> VOLATILE</div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <h3 className="text-white/90 text-[15px] font-light tracking-tight mb-0.5">{company.name}</h3>
+                                        <p className="text-white/20 text-[10px] font-mono tracking-widest uppercase">{company.slug}</p>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        {/* Status Meter */}
+                                        <div className="relative">
+                                            <div className="flex justify-between text-[8px] text-white/30 uppercase tracking-[0.2em] mb-1.5 px-1">
+                                                <span>Health Score</span>
+                                                <span className={colors.text}>{Math.round(company.health_score * 100)}%</span>
+                                            </div>
+                                            <div className="w-full h-[6px] bg-white/5 rounded-full overflow-hidden border border-white/[0.02]">
                                                 <motion.div
-                                                    className={`h-full rounded-full ${company.health_score >= 0.7 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' :
-                                                        company.health_score >= 0.3 ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
-                                                            'bg-gradient-to-r from-red-500 to-red-400'
-                                                        }`}
+                                                    className={`h-full bg-gradient-to-r ${status === 'healthy' ? 'from-emerald-600 to-emerald-400' : status === 'warning' ? 'from-amber-600 to-amber-400' : 'from-red-600 to-red-400'}`}
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${company.health_score * 100}%` }}
-                                                    transition={{ duration: 1, delay: index * 0.05, ease: 'easeOut' }}
+                                                    transition={{ duration: 1.5, ease: "easeOut" }}
                                                 />
                                             </div>
                                         </div>
 
-                                        {/* Metrics Grid */}
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {[
-                                                { icon: Building2, label: 'DEPTS', value: company.department_count },
-                                                { icon: Activity, label: 'SPACES', value: company.space_count },
-                                                { icon: FolderOpen, label: 'FOLDERS', value: company.folder_count },
-                                                { icon: Zap, label: 'NODES', value: company.node_count },
-                                            ].map((metric) => (
-                                                <div key={metric.label} className="p-2 rounded-lg bg-black/30 text-center">
-                                                    <metric.icon size={10} className="text-white/30 mx-auto mb-1" />
-                                                    <div className="text-sm font-mono text-emerald-400">{metric.value}</div>
+                                        {/* Data Grid */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 hover:bg-white/[0.04] transition-all">
+                                                <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                    <LayoutGrid size={10} /> Bereiche
                                                 </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Bottom Row */}
-                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
-                                            <div className="flex items-center gap-2 text-[10px] text-white/40">
-                                                <Users size={11} />
-                                                <span>{company.active_users} active</span>
+                                                <div className="text-lg font-mono text-white/80">{company.department_count || 0}</div>
                                             </div>
-                                            <div className="flex items-center gap-2 text-[10px] text-white/40">
-                                                <Clock size={11} />
-                                                <span>{formatTimeAgo(company.last_activity)}</span>
+                                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 hover:bg-white/[0.04] transition-all">
+                                                <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                    <FileText size={10} /> Einheiten
+                                                </div>
+                                                <div className="text-lg font-mono text-white/80">{company.node_count || 0}</div>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Hover Quick Actions */}
-                                        <AnimatePresence>
-                                            {isHovered && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 5 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 5 }}
-                                                    className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-2"
-                                                >
-                                                    <button className="px-3 py-1 text-[10px] bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-full text-emerald-400 transition-all flex items-center gap-1">
-                                                        <FileText size={10} />
-                                                        Report
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleViewCompany(company.company_id);
-                                                        }}
-                                                        className="px-3 py-1 text-[10px] bg-mora-gold/20 hover:bg-mora-gold/30 border border-mora-gold/30 rounded-full text-mora-gold transition-all flex items-center gap-1"
-                                                    >
-                                                        <Eye size={10} />
-                                                        Universum
-                                                    </button>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
+                                    {/* Action Footprint */}
+                                    <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
+                                        <div className="text-[8px] text-white/20 flex items-center gap-2">
+                                            <Clock size={10} />
+                                            <span>AKTIVITÄT: {company.last_activity ? formatTimeAgo(company.last_activity) : 'N/A'}</span>
+                                        </div>
+
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleViewCompany(company.company_id); }}
+                                            className="opacity-0 group-hover:opacity-100 bg-white/10 hover:bg-mora-gold hover:text-black text-white/70 text-[9px] font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-white/5"
+                                        >
+                                            <Eye size={12} /> UNIVERSUM
+                                        </button>
                                     </div>
                                 </motion.div>
                             );
                         })}
-                    </div>
-                )}
+                    </AnimatePresence>
+                </motion.div>
             </div>
 
-            {/* Orb is rendered by MoraShell (Single Source of Truth) */}
+            {/* Matrix Footer */}
+            <div className="absolute bottom-6 inset-x-10 flex items-center justify-between z-20">
+                <div className="backdrop-blur-md bg-white/[0.03] border border-white/5 rounded-full px-6 py-2 flex items-center gap-6 text-[9px] tracking-[0.3em] font-light text-white/30">
+                    <span className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-mora-gold animate-pulse shadow-[0_0_10px_rgba(212,175,55,1)]" />
+                        SYSTEM OWNER MODE ACTIVE
+                    </span>
+                    <span className="opacity-10 text-xl">/</span>
+                    <span className="opacity-80">{filteredData.length} VERIFIED MANDANTEN</span>
+                </div>
 
-            {/* Premium Status Bar */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-                <div className="backdrop-blur-sm bg-black/30 rounded-full px-6 py-2 border border-white/5">
-                    <div className="flex items-center gap-4 text-[10px] text-white/30 font-mono tracking-widest">
-                        <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-mora-gold animate-pulse" />
-                            OWNER VIEW
-                        </span>
-                        <span className="text-white/10">|</span>
-                        <span>{healthData.length} CLIENTS</span>
-                        <span className="text-white/10">|</span>
-                        <span>{healthyCount} HEALTHY</span>
-                        <span className="text-white/10">|</span>
-                        <span className="flex items-center gap-1">
-                            🔒 PRIVACY MODE
-                        </span>
-                    </div>
+                <div className="text-[9px] text-white/10 tracking-widest font-mono">
+                    SAIMÔR OS v1.5 // CORE_SYNC.AUTO
                 </div>
             </div>
+
         </div>
     );
 };
+
+// Internal Layout Helper
+function LayoutGrid({ size }: { size: number }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>;
+}

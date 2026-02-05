@@ -8,9 +8,11 @@
  * - Jupiter's swirling atmosphere
  * - Solar plasma surface
  * - Lava lamp viscosity
+ * 
+ * POLISHED: Enhanced glow effects, smoother animations, breathing effect
  */
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 
 interface PlasmaOrbProps {
     color: string;
@@ -103,17 +105,17 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
         };
     }, [color]);
 
-    // State-based parameters
+    // State-based parameters - POLISHED for smoother animations
     const params = useMemo(() => {
         switch (state) {
             case 'thinking':
-                return { speed: 0.8, turbulence: 1.5, glow: 2.0 };
+                return { speed: 0.6, turbulence: 1.8, glow: 2.5, breathe: 0.03 };
             case 'alert':
-                return { speed: 1.5, turbulence: 2.0, glow: 3.0 };
+                return { speed: 1.2, turbulence: 2.2, glow: 3.5, breathe: 0.05 };
             case 'focus':
-                return { speed: 0.3, turbulence: 0.8, glow: 1.2 };
+                return { speed: 0.25, turbulence: 0.9, glow: 1.8, breathe: 0.02 };
             default:
-                return { speed: 0.5, turbulence: 1.0, glow: 1.5 };
+                return { speed: 0.4, turbulence: 1.2, glow: 2.0, breathe: 0.015 };
         }
     }, [state]);
 
@@ -142,7 +144,10 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
         const noise = noiseRef.current;
 
         const render = () => {
-            timeRef.current += 0.01 * params.speed;
+            timeRef.current += 0.008 * params.speed;  // Smoother time step
+
+            // Breathing effect - smooth sinusoidal scale
+            const breathe = 1 + Math.sin(timeRef.current * 2) * params.breathe;
 
             // Clear canvas
             ctx.clearRect(0, 0, size, size);
@@ -201,8 +206,9 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                     data[idx] = Math.min(255, baseColor.r * brightness * colorVariation + milk + grain);
                     data[idx + 1] = Math.min(255, baseColor.g * brightness * colorVariation + milk + grain);
                     data[idx + 2] = Math.min(255, baseColor.b * brightness * colorVariation + milk + grain);
-                    // HIGHER OPACITY: Make it look solid
-                    data[idx + 3] = Math.min(255, 255 * Math.pow(falloff, 0.15) * 2.2);
+                    // HIGHER OPACITY with soft edge falloff
+                    const edgeSoftness = Math.pow(falloff, 0.12);  // Softer edge
+                    data[idx + 3] = Math.min(255, 255 * edgeSoftness * 2.4 * breathe);
                 }
             }
 
@@ -221,16 +227,17 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 ctx.stroke();
             }
 
-            // Add glow layer (Bloom)
-            ctx.shadowBlur = 40 * params.glow;
+            // Add glow layer (Bloom) - ENHANCED
+            ctx.shadowBlur = 50 * params.glow;
             ctx.shadowColor = color;
             ctx.globalCompositeOperation = 'screen';
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.6;
 
-            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 1.1);
             gradient.addColorStop(0, color + 'FF');
-            gradient.addColorStop(0.4, color + 'CC');
-            gradient.addColorStop(0.8, color + '44');
+            gradient.addColorStop(0.3, color + 'DD');
+            gradient.addColorStop(0.6, color + '88');
+            gradient.addColorStop(0.85, color + '33');
             gradient.addColorStop(1, color + '00');
 
             ctx.fillStyle = gradient;
@@ -253,7 +260,10 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [size, baseColor, params, color]);
+    }, [size, baseColor, params, color, state]);
+
+    // Determine animation durations based on state
+    const pulseDuration = state === 'thinking' ? '1.5s' : state === 'alert' ? '0.8s' : '3s';
 
     return (
         <div
@@ -282,13 +292,24 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 }}
             />
 
-            {/* Outer glow ring - Corona */}
+            {/* Outer glow ring - Corona - ENHANCED */}
             <div
-                className="absolute inset-[-30%] rounded-full animate-pulse pointer-events-none"
+                className="absolute inset-[-35%] rounded-full pointer-events-none"
                 style={{
-                    background: `radial-gradient(circle at center, ${color}40 0%, ${color}20 30%, transparent 70%)`,
-                    filter: 'blur(30px)',
-                    animationDuration: state === 'thinking' ? '2s' : state === 'alert' ? '1s' : '4s'
+                    background: `radial-gradient(circle at center, ${color}50 0%, ${color}25 40%, transparent 70%)`,
+                    filter: 'blur(35px)',
+                    animation: `pulse ${pulseDuration} ease-in-out infinite`
+                }}
+            />
+
+            {/* Inner hot core glow - NEW */}
+            <div
+                className="absolute inset-[15%] rounded-full pointer-events-none"
+                style={{
+                    background: `radial-gradient(circle at 40% 40%, white 0%, ${color}AA 30%, transparent 60%)`,
+                    filter: 'blur(8px)',
+                    opacity: 0.4,
+                    mixBlendMode: 'screen'
                 }}
             />
         </div>

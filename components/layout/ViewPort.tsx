@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { UniverseView } from '@/components/home/UniverseView';
+import UniverseView from '@/components/home/UniverseView';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
 import { FolderLayer } from '@/components/layers/FolderLayer';

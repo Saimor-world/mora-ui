@@ -11,11 +11,15 @@
  */
 
 export interface CursorCommand {
-    type: 'highlight' | 'point' | 'navigate' | 'pulse' | 'idle';
+    type: 'highlight' | 'point' | 'navigate' | 'pulse' | 'idle' | 'pane';
     target?: string; // CSS selector or element ID
     position?: { x: number; y: number };
     duration?: number;
     message?: string;
+    // Pane-specific fields
+    action?: 'open' | 'close' | 'minimize';
+    paneType?: 'finder' | 'document' | 'terminal' | 'settings' | 'mail' | 'calendar';
+    data?: any;
 }
 
 /**
@@ -54,40 +58,40 @@ export function executeCursorCommands(commands: CursorCommand[]): void {
     if (typeof window === 'undefined') return;
 
     const moraAI = (window as any).moraAI;
-    if (!moraAI) {
-        console.warn('[CursorBridge] moraAI not available - cursor commands skipped');
-        return;
-    }
+    const dispatchCursorAction = (type: 'highlight' | 'point', cmd: CursorCommand) => {
+        const detail: Record<string, any> = { type };
+        if (cmd.target) detail.targetSelector = cmd.target;
+        if (cmd.position) detail.position = cmd.position;
+        if (cmd.duration) detail.duration = cmd.duration;
+        if (cmd.message) detail.message = cmd.message;
+        window.dispatchEvent(new CustomEvent('mora-ai-action', { detail }));
+    };
 
     commands.forEach((cmd, index) => {
         // Stagger commands with delay
         setTimeout(() => {
             switch (cmd.type) {
                 case 'highlight':
-                    if (cmd.target) {
-                        moraAI.highlight(
-                            { selector: cmd.target },
-                            cmd.duration || 2000
-                        );
-                    } else if (cmd.position) {
-                        moraAI.highlight(
-                            { position: cmd.position },
-                            cmd.duration || 2000
-                        );
+                    dispatchCursorAction('highlight', cmd);
+                    if (moraAI?.highlight) {
+                        if (cmd.target) {
+                            moraAI.highlight(
+                                { selector: cmd.target },
+                                cmd.duration || 2000
+                            );
+                        } else if (cmd.position) {
+                            moraAI.highlight(
+                                { position: cmd.position },
+                                cmd.duration || 2000
+                            );
+                        }
                     }
                     break;
 
                 case 'point':
                     // Point action - cursor flies to element
-                    if (cmd.target) {
-                        const event = new CustomEvent('mora-ai-action', {
-                            detail: {
-                                type: 'point',
-                                target: { selector: cmd.target },
-                                duration: cmd.duration || 2000
-                            }
-                        });
-                        window.dispatchEvent(event);
+                    if (cmd.target || cmd.position) {
+                        dispatchCursorAction('point', cmd);
                     }
                     break;
 
@@ -100,18 +104,29 @@ export function executeCursorCommands(commands: CursorCommand[]): void {
                     break;
 
                 case 'navigate':
-                    // --- UPGRADE G2: AUTONOMOUS NAVIGATION ---
                     if (cmd.target) {
                         const navEvent = new CustomEvent('mora-navigate', {
                             detail: { targetId: cmd.target }
                         });
                         window.dispatchEvent(navEvent);
 
-                        // Also show a pulse to confirm arrival
                         const pulseEvent = new CustomEvent('mora-orb-pulse', {
                             detail: { intensity: 'low', color: 'emerald' }
                         });
                         window.dispatchEvent(pulseEvent);
+                    }
+                    break;
+
+                case 'pane':
+                    if (cmd.action === 'open' || !cmd.action) {
+                        const paneEvent = new CustomEvent('mora-pane-action', {
+                            detail: {
+                                action: 'open',
+                                type: cmd.paneType || 'finder',
+                                data: cmd.data || {}
+                            }
+                        });
+                        window.dispatchEvent(paneEvent);
                     }
                     break;
 
@@ -174,9 +189,11 @@ Beispiele:
 - Element hervorheben: [[MORA_ACTION:{"type":"highlight","target":"#settings-button","duration":2000}]]
 - Auf etwas zeigen: [[MORA_ACTION:{"type":"point","target":".planet-item","duration":3000}]]
 - Orb pulsieren: [[MORA_ACTION:{"type":"pulse"}]]
+- Pane/Fenster öffnen: [[MORA_ACTION:{"type":"pane","action":"open","paneType":"finder","data":{"query":"Rechnung"}}}]]
 
 WICHTIG: Nutze dies SPARSAM und nur wenn es dem User wirklich hilft!
 Der Cursor fliegt tatsächlich im UI umher - nutze das für WOW-Momente.
+Wenn der User Dokumente sehen will, öffne den "finder".
 `;
 }
 

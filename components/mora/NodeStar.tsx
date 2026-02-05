@@ -39,8 +39,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
     const [showTooltip, setShowTooltip] = useState(false);
 
     const sizeMap = {
-        xs: { diameter: 6, glowSize: 18 }, // Stable, visible
-        sm: { diameter: 10, glowSize: 26 }
+        xs: { diameter: 6, glowSize: 20 }, // Stable, visible
+        sm: { diameter: 10, glowSize: 32 }
     };
 
     const baseSize = sizeMap[size];
@@ -107,8 +107,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
     };
 
     const seed = (node.id?.charCodeAt(0) || 0) + (node.id?.charCodeAt(node.id.length - 1) || 0);
-    const pulseDuration = isImportant ? 2.6 : 3.4 + (seed % 3);
-    const baseOpacity = isImportant ? 0.95 : isPromoted ? 0.85 : 0.75;
+    const pulseDuration = isImportant ? 2.2 : 3.0 + (seed % 4);
+    const baseOpacity = isImportant ? 1.0 : isPromoted ? 0.9 : 0.8;
 
     return (
         <motion.div
@@ -237,12 +237,36 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                     opacity: isImportant ? [0.3, 0.6, 0.3] : [0.2, 0.4, 0.2]
                 }}
                 transition={{
-                    duration: 4 + Math.random() * 2,
+                    duration: 4 + (seed % 10) / 5,
                     repeat: Infinity,
                     ease: 'easeInOut',
-                    delay: Math.random() * 2
+                    delay: (seed % 20) / 10
                 }}
             />
+
+            {/* Magical Sparkles (Animated particles) */}
+            {showTooltip && (
+                <div className="absolute inset-0 pointer-events-none">
+                    {[0, 1, 2, 3].map((i) => (
+                        <motion.div
+                            key={i}
+                            className="absolute w-1 h-1 rounded-full bg-white"
+                            initial={{ x: 0, y: 0, opacity: 0 }}
+                            animate={{
+                                x: ((seed * (i + 1)) % 40) - 20,
+                                y: ((seed * (i + 2)) % 40) - 20,
+                                opacity: [0, 0.8, 0],
+                                scale: [0, 1.2, 0]
+                            }}
+                            transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                delay: i * 0.3
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
 
             {/* Node Star Core */}
             <div
@@ -250,14 +274,15 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                 style={{
                     width: isImportant ? starSize.diameter * 1.5 : starSize.diameter,
                     height: isImportant ? starSize.diameter * 1.5 : starSize.diameter,
-                    background: isImportant || isPromoted ? '#FFFFFF' : color,
-                    boxShadow: isImportant
-                        ? `0 0 10px #FFFFFF60, 0 0 5px ${color}`
-                        : `0 0 ${starSize.diameter * 2}px ${color}60`,
+                    background: isImportant || isPromoted || showTooltip ? '#FFFFFF' : color,
+                    boxShadow: (isImportant || showTooltip)
+                        ? `0 0 15px #FFFFFF, 0 0 10px ${color}`
+                        : `0 0 ${starSize.diameter * 2}px ${color}80`,
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
-                    transform: 'translate(-50%, -50%)'
+                    transform: 'translate(-50%, -50%)',
+                    transition: 'all 0.3s ease'
                 }}
             />
         </motion.div>

@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { writeCookie } from '@/lib/auth/cookies';
 import { useRouter } from 'next/navigation';
 import { isDemoTenant } from '@/lib/constants/tenants';
+import { UserAvatar } from '@/components/mora/UserAvatar';
+import { resetUserState } from '@/lib/hooks/useUser';
 
 /**
  * ContextRail - Left Navigation Sidebar
@@ -21,18 +23,18 @@ import { isDemoTenant } from '@/lib/constants/tenants';
  * - Logout redirects to WelcomeScreen (/)
  */
 export const ContextRail: React.FC = () => {
-    const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree } = useMoraStore();
+    const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree, resetStore } = useMoraStore();
     const { currentAccount, logout } = useAccountStore();
     const { runDemoFlow, isRunning: demoRunning } = useDemoFlow();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const router = useRouter();
 
-    // Get current role from localStorage or account
+    const user = useMoraStore(state => state.user);
+
     const getCurrentRole = useCallback(() => {
-        const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
-        return savedRole || currentAccount?.role || 'member';
-    }, [currentAccount?.role]);
+        return user?.role || currentAccount?.role || 'member';
+    }, [user?.role, currentAccount?.role]);
 
     const closeOverlays = () => {
         setShowSettings(false);
@@ -129,6 +131,8 @@ export const ContextRail: React.FC = () => {
 
         // Logout from account store
         logout();
+        resetUserState();
+        resetStore();
 
         // Reset view mode
         setViewMode('workspace');
@@ -268,11 +272,14 @@ export const ContextRail: React.FC = () => {
                     {/* User Avatar */}
                     <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="relative w-10 h-10 rounded-full bg-gradient-to-br from-mora-gold/20 to-amber-900/20 border border-mora-gold/30 flex items-center justify-center text-xs font-medium text-mora-gold cursor-pointer hover:scale-105 transition-transform"
+                        className="relative flex items-center justify-center cursor-pointer hover:scale-110 transition-transform active:scale-95"
                     >
-                        {currentAccount?.email?.slice(0, 2).toUpperCase() ||
-                            (typeof window !== 'undefined' ? localStorage.getItem('user_name')?.slice(0, 2).toUpperCase() : 'US') ||
-                            'US'}
+                        <UserAvatar
+                            role={getCurrentRole()}
+                            size={44}
+                            name={currentAccount?.email || 'User'}
+                            showAura={true}
+                        />
                     </button>
                 </div>
             </div>

@@ -278,8 +278,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     height: panelSize.height,
                     // Use CSS classes for base shadows, augment for active state
                     boxShadow: isActive
-                        ? '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-                        : '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                        ? '0 24px 80px rgba(0, 0, 0, 0.7), -15px 0 50px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                        : '0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
                 }}
                 exit={disableAnimations ? undefined : {
                     opacity: 0,
@@ -303,7 +303,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     height: panelHeight,
                     maxWidth: 'calc(100vw - 32px)',
                     maxHeight: 'calc(100vh - 64px)',
-                    backgroundColor: `rgba(10, 20, 15, ${opacity})`, // Slightly greenish tint for SAIMÔR vibe
+                    backgroundColor: `rgba(4, 13, 10, ${opacity - 0.05})`, // Slightly more transparent for 'glassy' feel
                     backdropFilter: `blur(${blurIntensity}px)`,
                     WebkitBackdropFilter: `blur(${blurIntensity}px)`, // Safari support
                     overflow: 'hidden',

@@ -1,4 +1,5 @@
 import { corePost, coreGet } from './coreClient';
+import { useMoraStore } from '@/lib/store/moraState';
 
 // Types matching Backend Schema
 export interface AgentMessage {
@@ -6,11 +7,22 @@ export interface AgentMessage {
     content: string | any;
 }
 
+export interface ChatContext {
+    company_id?: string;
+    department_id?: string;
+    space_id?: string;
+    folder_id?: string;
+    node_id?: string;
+    user_id?: string;
+    session_id?: string;
+}
+
 export interface AgentChatRequest {
     message: string;
     session_id?: string;
     history?: AgentMessage[];
-    tenant_id?: string;
+    context?: ChatContext;
+    tenant_id?: string; // Deprecated: tenant comes from JWT on backend
     max_iterations?: number;
 }
 
@@ -28,18 +40,76 @@ export interface AgentChatResponse {
     metadata: any;
 }
 
-// Client Class
+// Backend Chat API Response (matches chat.py ChatResponse)
+export interface ChatApiResponse {
+    reply: string;
+    context_used: any;
+    provider: string;
+    metadata: any;
+    timestamp: string;
+}
+
+function mergeChatContext(...parts: Array<ChatContext | undefined>): ChatContext | undefined {
+    const merged: ChatContext = {};
+    for (const part of parts) {
+        if (!part) continue;
+        for (const [key, value] of Object.entries(part)) {
+            if (value) merged[key as keyof ChatContext] = value;
+        }
+    }
+    return Object.keys(merged).length ? merged : undefined;
+}
+
+export function buildChatContext(overrides?: ChatContext): ChatContext | undefined {
+    const state = useMoraStore.getState();
+    return mergeChatContext(
+        {
+            company_id: state.activeCompanyId || undefined,
+            department_id: state.activeDepartmentId || undefined,
+            space_id: state.activeSpaceId || undefined,
+            folder_id: state.activeFolderId || undefined,
+            node_id: state.activeNode?.id || undefined
+        },
+        overrides
+    );
+}
+
+// Client Class - Uses actual backend /v1/chat endpoint
 export const m = {
     chat: async (request: AgentChatRequest): Promise<AgentChatResponse> => {
-        return corePost<AgentChatResponse>('/v1/mora/agent/chat', request);
+        // Transform to match backend ChatRequest schema
+        const context = mergeChatContext(
+            buildChatContext(),
+            request.context,
+            request.session_id ? { session_id: request.session_id } : undefined
+        );
+
+        const backendRequest = {
+            message: request.message,
+            context,
+            include_synthesis: true,
+            provider_preference: 'auto',
+            temperature: 0.7
+        };
+
+        const response = await corePost('/v1/chat', backendRequest) as ChatApiResponse;
+
+        // Transform response to match AgentChatResponse schema
+        return {
+            response: response.reply,
+            session_id: request.session_id || 'default',
+            tool_uses: [], // Backend chat.py doesn't expose tool_uses yet
+            iterations: 1,
+            metadata: response.metadata
+        };
     },
 
     getTaskStatus: async (taskId: string) => {
-        return coreGet(`/v1/mora/agent/task/${taskId}`);
+        return coreGet(`/v1/mora/tools/task/${taskId}`);
     },
 
     listTools: async () => {
-        return coreGet('/v1/mora/agent/tools');
+        return coreGet('/v1/mora/tools');
     }
 };
 

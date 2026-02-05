@@ -16,6 +16,7 @@ import {
     X
 } from "lucide-react";
 import { coreGet, corePost } from "@/lib/api/coreClient";
+import { buildChatContext } from "@/lib/api/moraAgentClient";
 import { realtime } from "@/lib/api/realtimeClient";
 import { toast } from "sonner";
 import { usePaneStore } from "@/lib/store/paneStore";
@@ -232,7 +233,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
             try {
                 const response = await corePost("/v1/chat", {
                     message: sentMessage,
-                    context: { source: "team-pane" }
+                    context: buildChatContext({ session_id: "team_pane" })
                 });
                 if (response?.reply) {
                     const aiMessage: ChatMessage = {

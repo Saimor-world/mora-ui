@@ -3,13 +3,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Compass, Folder, ArrowRight } from 'lucide-react';
+import { Building2, Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Compass, Folder, ArrowRight, Activity, Database } from 'lucide-react';
 
 interface PlanetProps {
     department: {
         id: string;
         name: string;
-        color?: string;
+        color?: string | null;
         description?: string;
     };
     iconOverride?: LucideIcon;
@@ -20,22 +20,11 @@ interface PlanetProps {
     orbitActive?: boolean;
     onClick?: () => void;
     onHover?: (hovered: boolean) => void;
-    onQuickFilesAccess?: (clickPos: { x: number; y: number }) => void;  // Quick access to department files
+    health?: number;
+    activity?: number;
+    capacity?: number; // V10: Knowledge Capacity / Storage Use
 }
 
-/**
- * PLANET COMPONENT (Represents a DEPARTMENT)
- * 
- * In the SAIMÔR Universe metaphor:
- * - PLANET = Department (Abteilung)
- * - Orbiting the Company Center (Sun)
- * 
- * Visuals:
- * - Tesla-style monochrome with subtle color accents
- * - Glassmorphic bubble
- * - Minimal UI, maximum clarity
- * - Context menu for quick file access
- */
 export const Planet: React.FC<PlanetProps> = ({
     department,
     position,
@@ -45,362 +34,231 @@ export const Planet: React.FC<PlanetProps> = ({
     orbitActive = false,
     onClick,
     onHover,
-    onQuickFilesAccess,
+    health = 98,
+    activity = 42,
+    capacity = 65, // Default capacity
     iconOverride
 }) => {
     const [showContextMenu, setShowContextMenu] = useState(false);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
-    const [isMoraHighlighted, setIsMoraHighlighted] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const contextRef = useRef<HTMLDivElement>(null);
-    // MASTERBIBEL: Smaller, more ethereal planets - floating bubbles
+
     const sizeMap = {
         sm: { diameter: 60, iconSize: 20 },
-        md: { diameter: 75, iconSize: 24 },
+        md: { diameter: 74, iconSize: 24 },
         lg: { diameter: 90, iconSize: 28 }
     };
 
     const planetSize = sizeMap[size];
 
-    // Close context menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (contextRef.current && !contextRef.current.contains(e.target as Node)) {
-                setShowContextMenu(false);
-            }
-        };
-        if (showContextMenu) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
-    }, [showContextMenu]);
+    const getDeptStyle = (name: string, customColor?: string | null) => {
+        const lowerName = name.toLowerCase();
 
-    // Mora HIGHLIGHT LISTENER - When Mora points at this department
-    useEffect(() => {
-        const handleMoraHighlight = (e: CustomEvent) => {
-            const { targetType, targetId, duration, color } = e.detail;
-            if (targetType === 'department' && targetId === department.id) {
-                console.log(`🔆 Mora is highlighting: ${department.name}`);
-                setIsMoraHighlighted(true);
+        // 1. Establish Semantic Defaults (Icon + Color)
+        let style = { glow: '#64748B', border: '#94A3B8', core: '#475569', icon: Compass }; // Fallback Slate
 
-                // Auto-remove highlight after duration
-                setTimeout(() => setIsMoraHighlighted(false), duration || 2000);
-            }
-        };
+        if (lowerName.includes('finance') || lowerName.includes('finanz') || lowerName.includes('growth'))
+            style = { glow: '#F59E0B', border: '#FBBF24', core: '#D97706', icon: DollarSign }; // Gold
 
-        window.addEventListener('mora:highlight' as any, handleMoraHighlight as any);
-        return () => window.removeEventListener('mora:highlight' as any, handleMoraHighlight as any);
-    }, [department.id, department.name]);
+        else if (lowerName.includes('hr') || lowerName.includes('human') || lowerName.includes('culture') || lowerName.includes('people'))
+            style = { glow: '#EC4899', border: '#F472B6', core: '#DB2777', icon: Users }; // Pink
 
-    // Handle right-click
-    const handleContextMenu = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setContextMenuPos({ x: e.clientX, y: e.clientY });
-        setShowContextMenu(true);
-    };
+        else if (lowerName.includes('tech') || lowerName.includes('it ') || lowerName.includes('dev') || lowerName.includes('ai') || lowerName.includes('code'))
+            style = { glow: '#06B6D4', border: '#22D3EE', core: '#0891B2', icon: Code }; // Cyan
 
-    // Handle quick files action - pass click position for window placement
-    const handleQuickFiles = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setShowContextMenu(false);
-        onQuickFilesAccess?.(contextMenuPos);
-    };
+        else if (lowerName.includes('sales') || lowerName.includes('store') || lowerName.includes('shop') || lowerName.includes('retail') || lowerName.includes('commerce'))
+            style = { glow: '#F97316', border: '#FB923C', core: '#EA580C', icon: ArrowRight }; // Orange
 
-    // Handle open space action
-    const handleOpenSpace = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setShowContextMenu(false);
-        onClick?.();
-    };
+        else if (lowerName.includes('marketing') || lowerName.includes('brand') || lowerName.includes('pr') || lowerName.includes('media'))
+            style = { glow: '#8B5CF6', border: '#A78BFA', core: '#7C3AED', icon: TrendingUp }; // Violet
 
-    const getDeptIcon = (name: string): LucideIcon => {
-        const key = name.toLowerCase();
-        if (key.includes('operation')) return Briefcase;
-        if (key.includes('engineering') || key.includes('product')) return Code;
-        if (key.includes('finance') || key.includes('buchhaltung')) return DollarSign;
-        if (key.includes('marketing') || key.includes('brand')) return TrendingUp;
-        if (key.includes('hr') || key.includes('people')) return Users;
-        return Compass;
-    };
+        else if (lowerName.includes('management') || lowerName.includes('legal') || lowerName.includes('admin') || lowerName.includes('strategy') || lowerName.includes('hq'))
+            style = { glow: '#10B981', border: '#34D399', core: '#059669', icon: Briefcase }; // Emerald
 
-    const getDeptStyle = (name: string, customColor?: string) => {
-        // If department has a custom color, use it
+        else if (lowerName.includes('ops') || lowerName.includes('logis') || lowerName.includes('supply') || lowerName.includes('infrastructure'))
+            style = { glow: '#6366F1', border: '#818CF8', core: '#4F46E5', icon: Activity }; // Indigo
+
+        // 2. Apply Custom Color Override (from DB) if present
         if (customColor) {
             return {
-                gradient: `linear-gradient(135deg, ${customColor}33, ${customColor}0D)`,
+                ...style, // Preserve Semantic Icon
+                glow: customColor,
                 border: `${customColor}80`,
-                glow: `${customColor}66`,
-                iconColor: 'text-white',
-                activeGradient: `linear-gradient(135deg, ${customColor}4D, ${customColor}1A)`,
+                core: customColor
             };
         }
 
-        const key = name.toLowerCase();
-
-        // Engineering / Tech / Development - Sky Blue
-        if (key.includes('engineering') || key.includes('product') || key.includes('tech') || key.includes('dev')) {
-            return {
-                gradient: 'linear-gradient(135deg, rgba(14,165,233,0.2), rgba(34,211,238,0.05))',
-                border: 'rgba(56,189,248,0.5)',
-                glow: 'rgba(14,165,233,0.4)',
-                iconColor: 'text-sky-400',
-                activeGradient: 'linear-gradient(135deg, rgba(14,165,233,0.3), rgba(34,211,238,0.1))',
-            };
-        }
-
-        // Finance / Accounting - Amber
-        if (key.includes('finance') || key.includes('accounting') || key.includes('buchhaltung')) {
-            return {
-                gradient: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.05))',
-                border: 'rgba(251,191,36,0.5)',
-                glow: 'rgba(245,158,11,0.4)',
-                iconColor: 'text-amber-400',
-                activeGradient: 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(251,191,36,0.1))',
-            };
-        }
-
-        // Marketing / Sales / Brand / Retail - Fuchsia
-        if (key.includes('marketing') || key.includes('sales') || key.includes('brand') || key.includes('vertrieb') || key.includes('retail') || key.includes('growth')) {
-            return {
-                gradient: 'linear-gradient(135deg, rgba(217,70,239,0.2), rgba(139,92,246,0.05))',
-                border: 'rgba(217,70,239,0.5)',
-                glow: 'rgba(217,70,239,0.4)',
-                iconColor: 'text-fuchsia-400',
-                activeGradient: 'linear-gradient(135deg, rgba(217,70,239,0.3), rgba(139,92,246,0.1))',
-            };
-        }
-
-        // HR / People - Rose
-        if (key.includes('hr') || key.includes('people') || key.includes('personal')) {
-            return {
-                gradient: 'linear-gradient(135deg, rgba(244,63,94,0.2), rgba(225,29,72,0.05))',
-                border: 'rgba(244,63,94,0.5)',
-                glow: 'rgba(244,63,94,0.4)',
-                iconColor: 'text-rose-400',
-                activeGradient: 'linear-gradient(135deg, rgba(244,63,94,0.3), rgba(225,29,72,0.1))',
-            };
-        }
-
-        // Design / Creative - Violet
-        if (key.includes('design') || key.includes('creative')) {
-            return {
-                gradient: 'linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.05))',
-                border: 'rgba(139,92,246,0.5)',
-                glow: 'rgba(139,92,246,0.4)',
-                iconColor: 'text-violet-400',
-                activeGradient: 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.1))',
-            };
-        }
-
-        // Café / Coffee / Food - Warm Orange
-        if (key.includes('café') || key.includes('cafe') || key.includes('coffee') || key.includes('roast') || key.includes('kitchen')) {
-            return {
-                gradient: 'linear-gradient(135deg, rgba(251,146,60,0.2), rgba(234,88,12,0.05))',
-                border: 'rgba(251,146,60,0.5)',
-                glow: 'rgba(251,146,60,0.4)',
-                iconColor: 'text-orange-400',
-                activeGradient: 'linear-gradient(135deg, rgba(251,146,60,0.3), rgba(234,88,12,0.1))',
-            };
-        }
-
-        // Default (Operations/Admin/Other) - Emerald
-        return {
-            gradient: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))',
-            border: 'rgba(16,185,129,0.5)',
-            glow: 'rgba(16,185,129,0.4)',
-            iconColor: 'text-emerald-400',
-            activeGradient: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(16,185,129,0.1))',
-        };
+        return style;
     };
 
     const style = getDeptStyle(department.name, department.color);
-    const Icon = iconOverride || getDeptIcon(department.name);
-
-    // Generate a consistent float duration based on department id
-    const floatDuration = 5 + (department.id.charCodeAt(0) % 4);
-    const floatDelay = (department.id.charCodeAt(1) || 0) % 3;
+    const Icon = iconOverride || style.icon;
 
     return (
         <motion.div
-            className="absolute cursor-pointer group"
-            data-agency-id={department.id}
+            className="absolute cursor-pointer group pointer-events-auto"
             style={{
-                // Position is now handled by parent via CSS (no motion wrapper overhead)
-                ...(position.x !== 0 || position.y !== 0 ? {
-                    position: 'absolute' as const,
-                    left: position.x,
-                    top: position.y,
-                    transform: 'translate(-50%, -50%)'
-                } : {})
+                left: position.x,
+                top: position.y,
+                transform: 'translate(-50%, -50%)',
             }}
-            // Subtle floating animation
-            animate={{
-                y: [0, -4, 0, 3, 0],
+            onMouseEnter={() => {
+                setIsHovered(true);
+                onHover?.(true);
             }}
-            transition={{
-                duration: floatDuration,
-                repeat: Infinity,
-                delay: floatDelay,
-                ease: "easeInOut"
+            onMouseLeave={() => {
+                setIsHovered(false);
+                onHover?.(false);
             }}
             onClick={onClick}
-            onContextMenu={handleContextMenu}
-            onMouseEnter={() => onHover?.(true)}
-            onMouseLeave={() => onHover?.(false)}
         >
-            {/* Outer Glow Ring */}
-            {isActive && (
-                <motion.div
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                        background: `radial-gradient(circle, ${style.glow}, transparent 70%)`,
-                        filter: 'blur(20px)',
-                    }}
-                    animate={{ scale: [1, 1.4, 1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                />
-            )}
+            {/* ═ V10 FUNCTIONAL RINGS (Health & Capacity) ═ */}
+            <div className="absolute inset-[-40px] pointer-events-none flex items-center justify-center">
+                <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+                    {/* 1. CAPACITY RING (Equator-Tight V10.6) */}
+                    <motion.circle
+                        cx="50"
+                        cy="50"
+                        r="34"
+                        fill="none"
+                        stroke={style.glow}
+                        strokeWidth="2.5"
+                        strokeDasharray="213"
+                        strokeDashoffset={213 - (213 * (capacity / 100))}
+                        strokeLinecap="round"
+                        transform="rotate(-90 50 50)"
+                        initial={{ opacity: 0.1 }}
+                        animate={{
+                            opacity: (isActive || isHovered) ? 1 : 0.6,
+                            strokeWidth: isHovered ? 4 : 2.5
+                        }}
+                    />
 
-            {/* Planet Core - Unique Style */}
-            <div
-                className="relative rounded-full backdrop-blur-2xl border flex items-center justify-center overflow-hidden"
+                    {/* 2. ACTIVITY PULSE (Neural Ripple) */}
+                    <motion.circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke={style.glow}
+                        strokeWidth="0.8"
+                        strokeDasharray="2 8"
+                        opacity="0.4"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                    />
+
+                    {/* 3. CINEMATIC LABEL CONNECTOR */}
+                    <AnimatePresence>
+                        {(isHovered || isActive) && (
+                            <motion.path
+                                initial={{ pathLength: 0, opacity: 0 }}
+                                animate={{ pathLength: 1, opacity: 1 }}
+                                exit={{ pathLength: 0, opacity: 0 }}
+                                d="M 84 50 L 92 50"
+                                stroke="white"
+                                strokeWidth="0.5"
+                                opacity="0.6"
+                            />
+                        )}
+                    </AnimatePresence>
+                </svg>
+            </div>
+
+            {/* 0. ATMOSPHERIC HALO (Contrast Booster) */}
+            <motion.div
+                className="absolute inset-[-20%] rounded-full blur-[25px] z-[-1]"
+                style={{
+                    background: `radial-gradient(circle, ${style.glow} 0%, transparent 70%)`,
+                }}
+                animate={{
+                    opacity: isActive ? 0.3 : isHovered ? 0.2 : 0.08,
+                    scale: isHovered ? 1.1 : 1
+                }}
+            />
+
+            {/* ═ THE PLANET SPHERE (V11 Ultra-Clean Glass) ═ */}
+            <motion.div
+                className="relative rounded-full flex items-center justify-center overflow-hidden backdrop-blur-[6px]"
                 style={{
                     width: planetSize.diameter,
                     height: planetSize.diameter,
-                    background: isActive ? style.activeGradient : style.gradient,
-                    borderColor: isActive ? style.border : 'rgba(255,255,255,0.1)',
-                    boxShadow: isActive
-                        ? `0 0 50px ${style.glow}, inset 0 0 40px ${style.glow}`
-                        : `0 0 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05)`
+                    background: `radial-gradient(150% 150% at 30% 30%, rgba(255,255,255,0.05) 0%, ${style.glow}08 50%, rgba(0,0,0,0.3) 100%)`,
+
+                    // Subtle Rim + Glass Edge
+                    boxShadow: isActive || isHovered
+                        ? `0 0 60px ${style.glow}40, inset 0 0 30px ${style.glow}20, inset 2px 2px 8px rgba(255,255,255,0.3)`
+                        : `0 15px 40px rgba(0,0,0,0.4), inset 0 0 15px ${style.glow}10, inset 1px 1px 2px rgba(255,255,255,0.15)`,
+
+                    border: `1.5px solid ${style.border}30` // More defined border
                 }}
+                whileHover={{ scale: 1.2, rotate: 5 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
             >
-                {/* Atmospheric Noise Texture */}
+                {/* Specular Point (Tiny crisp reflection) */}
                 <div
-                    className="absolute inset-0 opacity-20 mix-blend-overlay bg-noise"
-                    style={{ backgroundSize: '200px 200px' }}
+                    className="absolute top-[18%] left-[18%] w-[15%] h-[8%] rounded-[100%] bg-white blur-[1px] opacity-70"
+                    style={{ transform: 'rotate(-45deg)' }}
                 />
 
-                {/* Atmospheric Glow - Galaxy Core Aesthetic */}
+                {/* Internal Luminous Heart (Breathing Core) */}
                 <motion.div
-                    className="absolute inset-0 rounded-full opacity-20"
-                    style={{
-                        background: `radial-gradient(circle, ${style.glow}, transparent 70%)`,
-                        filter: 'blur(8px)',
-                    }}
+                    className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md"
+                    style={{ background: `radial-gradient(circle, ${style.border} 0%, transparent 70%)` }}
                     animate={{
-                        scale: [0.8, 1.2, 0.8],
-                        opacity: [0.1, 0.3, 0.1]
+                        opacity: [0.6, 1, 0.6],
+                        scale: [0.9, 1.1, 0.9]
                     }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 />
 
-                {/* Glass Highlight - Top Left (3D Effect) */}
-                <div
-                    className="absolute top-0 left-0 w-full h-full rounded-full pointer-events-none"
-                    style={{
-                        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 20%, transparent 100%)'
-                    }}
-                />
-
-                {/* Rim Light - Bottom Right */}
-                <div
-                    className="absolute bottom-0 right-0 w-full h-full rounded-full pointer-events-none"
-                    style={{
-                        background: 'radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 30%, transparent 100%)'
-                    }}
-                />
+                {/* Glass Caustics */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2)_0%,transparent_50%)] pointer-events-none" />
 
                 {/* Icon */}
                 <div className="relative z-10">
                     <Icon
                         size={planetSize.iconSize}
-                        className={isActive ? style.iconColor : 'text-white/70'}
-                        strokeWidth={1.5}
+                        className="text-white/90"
+                        strokeWidth={1.2}
                     />
-                </div>
-
-                {/* Active Ring */}
-                {isActive && (
-                    <motion.div
-                        className="absolute inset-0 rounded-full border-2"
-                        style={{ borderColor: style.border }}
-                        animate={{
-                            scale: [1, 1.15, 1],
-                            opacity: [0.6, 0.3, 0.6]
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                    />
-                )}
-            </div>
-
-            {/* Label - TESLA Style */}
-            <motion.div
-                className="absolute -bottom-14 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                initial={{ y: 5 }}
-                animate={{ y: 0 }}
-            >
-                <div className="glass-panel px-4 py-2 whitespace-nowrap">
-                    <div className="text-sm text-white/90 font-light tracking-wider">
-                        {department.name}
-                    </div>
-                    {department.description && (
-                        <div className="text-xs text-white/40 mt-1">
-                            {department.description}
-                        </div>
-                    )}
                 </div>
             </motion.div>
 
-            {/* Context Menu - via Portal for correct positioning */}
-            {typeof document !== 'undefined' && createPortal(
-                <AnimatePresence>
-                    {showContextMenu && (
-                        <motion.div
-                            ref={contextRef}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="fixed z-[9999] pointer-events-auto"
-                            style={{
-                                left: contextMenuPos.x,
-                                top: contextMenuPos.y
-                            }}
-                        >
-                            <div className="bg-[#0a0f0d]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[180px]">
-                                {/* Header */}
-                                <div className="px-3 py-2 border-b border-white/5 text-xs text-white/40 truncate">
-                                    {department.name}
-                                </div>
+            {/* ═ DATA LABELS (V10 Cinematic HUD) ═ */}
+            <div className="absolute top-1/2 left-[calc(100%+32px)] -translate-y-1/2 flex flex-col pointer-events-none min-w-[120px]">
+                <motion.span
+                    className="text-[10px] font-medium text-white/90 tracking-[0.2em] mb-1"
+                    animate={{
+                        opacity: isHovered ? 1 : 0.6,
+                        x: isHovered ? 4 : 0
+                    }}
+                >
+                    {department.name.toUpperCase()}
+                </motion.span>
 
-                                {/* Actions */}
-                                <div className="py-1">
-                                    {onQuickFilesAccess && (
-                                        <button
-                                            onClick={handleQuickFiles}
-                                            className="w-full px-3 py-2 flex items-center gap-3 hover:bg-emerald-500/10 transition-colors text-left"
-                                        >
-                                            <Folder size={16} className="text-emerald-400" />
-                                            <span className="text-sm text-white/90">Dateien anzeigen</span>
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={handleOpenSpace}
-                                        className="w-full px-3 py-2 flex items-center gap-3 hover:bg-blue-500/10 transition-colors text-left"
-                                    >
-                                        <ArrowRight size={16} className="text-blue-400" />
-                                        <span className="text-sm text-white/90">In Space öffnen</span>
-                                    </button>
-                                </div>
+                {/* Functional Stats (Steam Deck Vibes) */}
+                <AnimatePresence>
+                    {(isHovered || isActive) && (
+                        <motion.div
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -5 }}
+                            className="flex items-center gap-3 text-[8px] text-cyan-400 font-medium tracking-[0.25em]"
+                        >
+                            <div className="flex items-center gap-1 opacity-80">
+                                <Database size={9} />
+                                <span>{capacity}%</span>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-80">
+                                <Activity size={9} />
+                                <span>{activity}V</span>
                             </div>
                         </motion.div>
                     )}
-                </AnimatePresence>,
-                document.body
-            )}
+                </AnimatePresence>
+            </div>
         </motion.div>
     );
 };
-
-export default Planet;

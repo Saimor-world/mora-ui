@@ -1,11 +1,11 @@
 /**
  * Next.js API Proxy Route for SAIMÔR Core
- * Proxies all /api/core/* requests to backend at http://127.0.0.1:8083/v1/*
+ * Proxies all /api/core/* requests to backend at http://127.0.0.1:8081/v1/*
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const LOCAL_BACKEND_URL = 'http://127.0.0.1:8081';
+const LOCAL_BACKEND_URL = process.env.NEXT_PUBLIC_CORE_URL || 'http://127.0.0.1:8081';
 const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.saimor.world/api';
 
 /**
@@ -77,8 +77,8 @@ export async function GET(
   } catch (error) {
     console.error('[API Proxy] Error:', error);
     return NextResponse.json(
-      { 
-        error: 'Backend unreachable', 
+      {
+        error: 'Backend unreachable',
         details: error instanceof Error ? error.message : 'Unknown error',
         path: `/api/core/${params.slug.join('/')}`
       },
@@ -150,8 +150,8 @@ export async function POST(
   } catch (error) {
     console.error('[API Proxy] Error:', error);
     return NextResponse.json(
-      { 
-        error: 'Backend unreachable', 
+      {
+        error: 'Backend unreachable',
         details: error instanceof Error ? error.message : 'Unknown error',
         path: `/api/core/${params.slug.join('/')}`
       },
@@ -217,8 +217,8 @@ export async function PUT(
   } catch (error) {
     console.error('[API Proxy] Error:', error);
     return NextResponse.json(
-      { 
-        error: 'Backend unreachable', 
+      {
+        error: 'Backend unreachable',
         details: error instanceof Error ? error.message : 'Unknown error',
         path: `/api/core/${params.slug.join('/')}`
       },
@@ -290,8 +290,8 @@ export async function PATCH(
   } catch (error) {
     console.error('[API Proxy] Error:', error);
     return NextResponse.json(
-      { 
-        error: 'Backend unreachable', 
+      {
+        error: 'Backend unreachable',
         details: error instanceof Error ? error.message : 'Unknown error',
         path: `/api/core/${params.slug.join('/')}`
       },

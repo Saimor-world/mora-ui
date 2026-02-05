@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
-import { ROLE_SYSTEM_OWNER, TENANT_HQ, isDemoTenant as checkDemoTenant } from '@/lib/constants/tenants';
+import { ROLE_SYSTEM_OWNER, TENANT_DEMO, TENANT_HQ, isDemoTenant as checkDemoTenant } from '@/lib/constants/tenants';
 import {
     fetchDepartments,
     fetchCompanies,
@@ -49,6 +49,16 @@ const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null
         }
     });
     return Array.from(map.values());
+};
+
+const getStandardModeKey = (companyId?: string | null) =>
+    companyId ? `saimor_standard_mode_${companyId}` : 'saimor_standard_mode_default';
+
+const readStandardMode = (companyId?: string | null) => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem(getStandardModeKey(companyId));
+    if (stored === null) return false;
+    return stored === '1' || stored === 'true';
 };
 
 export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
@@ -258,7 +268,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     isStandardMode: false,
 
     // Basic Setters
-    setIsStandardMode: (active) => set({ isStandardMode: active }),
+    setIsStandardMode: (active) => {
+        const companyId = get().activeCompanyId;
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(getStandardModeKey(companyId), active ? '1' : '0');
+        }
+        set({ isStandardMode: active });
+    },
     setViewLevel: (level) => set({ viewLevel: level }),
     setViewMode: (mode) => {
         set({ viewMode: mode });
@@ -300,8 +316,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     nextActive = hqCompanyId || companies.find(c => !c.is_demo)?.id || nextActive;
                 }
             } else if (isDemoTenant) {
-                // Demo users are locked to their demo company for workspace view
-                nextActive = demoCompanyId || nextActive;
+                // Demo users: workspace should showcase HQ (demo view stays demo)
+                nextActive = hqCompanyId || demoCompanyId || nextActive;
             } else if (tenantId) {
                 // Regular users are locked to their tenant's company
                 if (currentCompany?.tenant_id !== tenantId) {
@@ -316,10 +332,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
 
         if (nextActive && companies.some((c) => c.id === nextActive) && nextActive !== activeCompanyId) {
-            set({ activeCompanyId: nextActive });
+            set({ activeCompanyId: nextActive, isStandardMode: readStandardMode(nextActive) });
         }
     },
-    setActiveCompany: (id) => set({ activeCompanyId: id }),
+    setActiveCompany: (id) => {
+        const nextStandard = readStandardMode(id);
+        set({ activeCompanyId: id, isStandardMode: nextStandard });
+    },
     setActiveDepartment: (id) => set({ activeDepartmentId: id }),
     setActiveSpace: (id) => set({ activeSpaceId: id }),
     setActiveFolder: (id) => set({ activeFolderId: id }),
@@ -487,6 +506,27 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const includeDemo = viewMode === 'demo' || userRole === ROLE_SYSTEM_OWNER;
             let data = await fetchCompanies(includeDemo);
 
+            // Normalize known demo/HQ labels to avoid stale or incorrect branding
+            data = data.map((company: any) => {
+                let name = company?.name;
+                const lower = (name || '').toLowerCase();
+                const normalized = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+                if (company?.tenant_id === TENANT_HQ) {
+                    name = 'Saimor HQ';
+                }
+                if (company?.is_demo || company?.tenant_id === TENANT_DEMO || checkDemoTenant(company?.tenant_id)) {
+                    name = 'Simple Coffee Group';
+                }
+
+                // Safety: strip accidental legacy brand names (e.g. foerderlogiken deutschland)
+                if (/(foerderlogiken|forderlogiken)/i.test(normalized)) {
+                    name = company?.tenant_id === TENANT_DEMO ? 'Simple Coffee Group' : 'Saimor HQ';
+                }
+
+                return { ...company, name };
+            });
+
             // Keep active company if it still exists; otherwise pick a sensible default.
             const currentActive = get().activeCompanyId;
             const userTenant = get().user?.tenant_id;
@@ -506,14 +546,20 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 // SYSTEM OWNER: Respect current selection (sub-account stepping), fallback to HQ
                 nextActive = currentActive ? (data.some((c: any) => c.id === currentActive) ? currentActive : (hqCompany?.id ?? null)) : (hqCompany?.id ?? null);
             } else if (viewMode === 'workspace' && isDemoTenant) {
-                nextActive = hqCompany?.id ?? currentActive;
+                // Demo tenant workspace showcases HQ for comparison
+                nextActive = hqCompany?.id || demoCompany?.id || currentActive;
             } else {
                 // Regular users: Try to keep current, fallback to their tenant company
                 const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
                 nextActive = stillValid ? currentActive : (userCompany?.id || data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null);
             }
 
-            set({ companies: data, activeCompanyId: nextActive, isLoadingCompanies: false });
+            set({
+                companies: data,
+                activeCompanyId: nextActive,
+                isStandardMode: readStandardMode(nextActive),
+                isLoadingCompanies: false
+            });
 
             // SPEED UP: Fire-and-forget pre-fetch for the full hierarchical tree
             if (nextActive) {

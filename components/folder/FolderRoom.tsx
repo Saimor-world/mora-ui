@@ -39,7 +39,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 /**
  * Folder Quick View - Modal for quick folder overview
- * Close → back to space, Open Folder → enter folder view
+ * Close â†’ back to space, Open Folder â†’ enter folder view
  */
 export default function FolderRoom() {
     const {

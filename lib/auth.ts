@@ -12,31 +12,53 @@ export const authOptions: NextAuthOptions = {
             async authorize(credentials) {
                 if (!credentials?.username || !credentials?.password) return null;
 
-                // Map "demo" to backend authorized email for convenience
-                let email = credentials.username;
-                if (email === 'demo') email = 'demo@saimor.io';
+                const rawUsername = credentials.username.trim();
+                const normalizedUsername = rawUsername.toLowerCase();
 
-                try {
+                // Map "demo" to backend authorized email for convenience
+                let email = rawUsername;
+                if (normalizedUsername === 'demo') email = 'demo@saimor.io';
+
+                const isDemoAlias = normalizedUsername === 'demo' || normalizedUsername === 'demo@saimor.io';
+                const primaryPassword = credentials.password;
+
+                const attemptLogin = async (passwordToTry: string) => {
                     // Timeout signal to prevent hanging
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+                    try {
+                        const res = await fetch("http://127.0.0.1:8081/v1/auth/login", {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                email,
+                                password: passwordToTry
+                            }),
+                            headers: { "Content-Type": "application/json" },
+                            signal: controller.signal
+                        });
 
-                    // Call Backend API for Real Token
-                    const res = await fetch("http://127.0.0.1:8081/v1/auth/login", {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            email: email,
-                            password: credentials.password
-                        }),
-                        headers: { "Content-Type": "application/json" },
-                        signal: controller.signal
-                    });
+                        let data: any = null;
+                        try {
+                            data = await res.json();
+                        } catch {
+                            data = null;
+                        }
 
-                    clearTimeout(timeoutId);
+                        return { res, data };
+                    } finally {
+                        clearTimeout(timeoutId);
+                    }
+                };
 
-                    const data = await res.json();
+                try {
+                    let { res, data } = await attemptLogin(primaryPassword);
 
-                    if (res.ok && data.token) {
+                    // Friendly demo fallback: allow "demo" to map to demo123
+                    if ((!res.ok || !data?.token) && isDemoAlias && primaryPassword === 'demo') {
+                        ({ res, data } = await attemptLogin('demo123'));
+                    }
+
+                    if (res.ok && data?.token) {
                         return {
                             id: data.user_id,
                             name: data.email.split('@')[0],

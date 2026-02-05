@@ -1,5 +1,0 @@
-components/folder/FolderRoom.tsx(368,72): error TS2552: Cannot find name 'handleDeleteNode'. Did you mean 'handleCreateNode'?
-components/mora/MoraIntelligenceBar.tsx(24,13): error TS2367: This comparison appears to be unintentional because the types 'OrbState' and '"learning"' have no overlap.
-components/mora/MoraIntelligenceBar.tsx(25,13): error TS2367: This comparison appears to be unintentional because the types 'OrbState' and '"active"' have no overlap.
-components/organic/OrganicStatePanel.tsx(56,18): error TS2322: Type 'OrbState' is not assignable to type '"insight" | "demo" | "idle" | "watch" | "focus" | "thinking" | "alert" | undefined'.
-  Type '"warning"' is not assignable to type '"insight" | "demo" | "idle" | "watch" | "focus" | "thinking" | "alert" | undefined'.

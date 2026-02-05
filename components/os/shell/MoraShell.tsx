@@ -25,8 +25,10 @@ import { useRouter } from 'next/navigation';
 
 // Store
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore'; // Added PaneStore
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
+import { resetUserState } from '@/lib/hooks/useUser';
 import type { OrbState } from '@/lib/api/awarenessClient';
 
 // Shell Hooks
@@ -52,12 +54,14 @@ import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { LockScreen } from '@/components/auth/LockScreen';
+// MemberFocusPane removed from shell; Mora Hub opens via Orb only
 
 // Interaction Layers
 import { CursorAgent } from '@/components/mora/CursorAgent';
 import { AgencyCursor } from '@/components/agency/AgencyCursor';
 import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { UserCursor } from '@/components/layout/UserCursor';
+import { UniverseControls } from '@/components/home/UniverseControls';
 
 // =============================================================================
 // LOADING SCREEN
@@ -102,6 +106,7 @@ export const MoraShell: React.FC = () => {
         setCursorAgent,
         cursorAgent,
         viewMode,
+        viewLevel,
         orbState: storeOrbState,
         orbNotifications,
         activeCompanyId,
@@ -110,15 +115,49 @@ export const MoraShell: React.FC = () => {
         isLoggingOut
     } = useMoraStore();
     const { logout } = useAccountStore();
+    const { reset: resetPanes, openPane, getPane, removePane } = usePaneStore(); // Pane Controls
 
-    const activeCompany = companies.find(c => c.id === activeCompanyId);
-    const role = user?.role || 'demo';
+      const activeCompany = companies.find(c => c.id === activeCompanyId);
+      const role = user?.role || 'demo';
+      const tenantId = user?.tenant_id;
+
+      const filteredCompanies = React.useMemo(() => {
+          if (!companies.length) return [];
+          if (viewMode === 'demo') {
+              return companies.filter((c) => c.is_demo);
+          }
+          if (viewMode === 'workspace') {
+              if (tenantId === 'tenant-demo') {
+                  return companies.filter((c) => c.tenant_id === 'tenant-saimor-hq');
+              }
+              if (role === 'system_owner') {
+                  return companies.filter((c) => !c.is_demo);
+              }
+              return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
+          }
+          // owner mode (system owner sees all, others see their tenant)
+          if (role === 'system_owner') return companies;
+          return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
+      }, [companies, viewMode, role, tenantId]);
+
+      const activeCompanyForView = React.useMemo(() => {
+          if (filteredCompanies.length === 0) return activeCompany;
+          return filteredCompanies.find((c) => c.id === activeCompanyId) || filteredCompanies[0];
+      }, [filteredCompanies, activeCompanyId, activeCompany]);
+
+      const displayCompany = activeCompanyForView || activeCompany;
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
     const [isResonanceOpen, setIsResonanceOpen] = useState(false);
     const [isResonanceExpanded, setIsResonanceExpanded] = useState(false);
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+
+    // EFFECT: Clear panes when ViewMode changes (e.g. Workspace <-> Owner Dashboard)
+    // This prevents "pollution" of sessions as requested by user.
+    useEffect(() => {
+        resetPanes();
+    }, [viewMode, resetPanes]);
 
     // Hooks
     const apiOrbState = useAwareness();
@@ -133,15 +172,7 @@ export const MoraShell: React.FC = () => {
         onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), [])
     });
 
-    // Cursor Agent Roaming
-    useEffect(() => {
-        if (isBootstrapped) {
-            const timer = setTimeout(() => {
-                setCursorAgent({ active: true, action: 'roam' });
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [isBootstrapped, setCursorAgent]);
+    // ... (cursor agent effect)
 
     // Handlers
     const handleUnlock = () => setIsSleeping(false);
@@ -151,9 +182,62 @@ export const MoraShell: React.FC = () => {
         localStorage.removeItem('saimor_dev_token');
         localStorage.removeItem('mora_session');
         logout();
+        resetUserState();
         resetStore();
+        resetPanes();
         router.push('/');
     };
+
+    // Orb Click Handler - Mora Hub only (no auto chat)
+    const handleOrbClick = () => {
+        const existing = getPane('mora-hub');
+        if (existing) {
+            removePane('mora-hub');
+            return;
+        }
+
+        // Ensure only the hub opens (no auto chat pane)
+        const chatPane = getPane('chat-main');
+        if (chatPane) {
+            removePane('chat-main');
+        }
+
+        const hubSize = { width: 520, height: 760 };
+        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+        const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+        const margin = 24;
+        const x = Math.max(margin, windowWidth - hubSize.width - 64);
+        const y = Math.max(margin, windowHeight - hubSize.height - 140);
+
+        openPane({
+            id: 'mora-hub',
+            type: 'mora-hub',
+            title: 'Mora',
+            size: hubSize,
+            position: { x, y }
+        });
+    };
+
+
+
+    // EFFECT: External AI Actions (from CursorBridge)
+    useEffect(() => {
+        const handlePaneAction = (event: any) => {
+            const { action, type, data } = event.detail;
+            if (action === 'open') {
+                openPane({
+                    id: `${type}-main`,
+                    type: type as any,
+                    title: type.charAt(0).toUpperCase() + type.slice(1),
+                    size: { width: 900, height: 600 },
+                    data: data || {}
+                });
+            }
+        };
+
+        window.addEventListener('mora-pane-action', handlePaneAction);
+        return () => window.removeEventListener('mora-pane-action', handlePaneAction);
+    }, [openPane]);
 
     // Computed
     const finalOrbState: OrbState = viewMode === 'demo'
@@ -180,29 +264,27 @@ export const MoraShell: React.FC = () => {
                 onUnlock={handleUnlock}
                 onLogout={handleLogout}
                 userName={user?.name || localStorage.getItem('last_user_name') || 'Benutzer'}
-                companyName={activeCompany?.name || 'Workspace'}
+                companyName={displayCompany?.name || 'Workspace'}
             />
         );
     }
 
     // Main Shell
     return (
-        <div className="relative w-full h-full overflow-hidden bg-black text-white select-none">
+        <div className="relative w-full h-full overflow-hidden text-white select-none">
 
             {/* ================================================================
                 LAYER 1: BACKGROUND
             ================================================================= */}
 
-            {/* Stars */}
-            <StarField warp={isSpotlightOpen} />
+            {/* 1. Deep Void Foundation */}
+            <div className="fixed inset-0 bg-black z-[-10]" />
 
-            {/* Forest Light Canopy (Sunlight + Aura) */}
+            {/* 1. BACKGROUND LAYERS */}
+            {/* V10.7: ForestLightCanopy now handles stars and constellations. StarField disabled for calmness. */}
             <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
-
-            {/* Mycelium Neural Network */}
-            <div className="fixed inset-0 z-0 opacity-40">
-                <MyceliumOverlay />
-            </div>
+            <StarField {...({ density: 'medium' } as any)} />
+            <MyceliumOverlay />
 
             {/* ================================================================
                 LAYER 2: MAIN CONTENT
@@ -210,15 +292,18 @@ export const MoraShell: React.FC = () => {
 
             <div className="relative z-10 w-full h-full flex items-stretch">
 
-                {/* Company Indicator */}
-                {activeCompany && (
-                    <div className="fixed top-6 left-8 z-[100] flex items-center gap-3 px-4 py-2 rounded-full bg-black/40 backdrop-blur-md border border-emerald-500/20 shadow-lg">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10B981]" />
-                        <span className="text-[10px] text-emerald-100 uppercase tracking-[0.2em] font-medium">
-                            {activeCompany.name}
-                        </span>
-                    </div>
-                )}
+                {/* Universe ViewMode / Context Switches */}
+                  <UniverseControls
+                      viewMode={viewMode}
+                      setViewMode={(mode) => {
+                          useMoraStore.getState().setViewMode(mode);
+                      }}
+                      activeCompany={displayCompany}
+                      companies={filteredCompanies}
+                      onSwitchCompany={(id) => useMoraStore.getState().setActiveCompany(id)}
+                  />
+
+                {/* Company Indicator (Simplified fallback or removed if Controls are active) */}
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
                 <div className="flex-1 relative h-full w-full">
@@ -233,7 +318,7 @@ export const MoraShell: React.FC = () => {
                 LAYER 3: UI OVERLAYS
             ================================================================= */}
 
-            {/* Resonance Room (Mora Chat) */}
+            {/* Resonance Room (Visible ONLY if manually triggered via other means, effectively replaced by Chat Pane for Orb click) */}
             <ResonanceRoom
                 isOpen={isResonanceOpen}
                 onClose={() => setIsResonanceOpen(false)}
@@ -241,11 +326,10 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
-            {/* Dock (Bottom Navigation) */}
+            {/* Dock (Bottom Navigation) - Primary navigation */}
             <Dock />
 
-            {/* Node Detail Panel */}
-            <NodeDetailPanel />
+            {/* ... */}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight
@@ -254,13 +338,13 @@ export const MoraShell: React.FC = () => {
             />
 
             {/* Mora Orb */}
-            <div id="mora-orb-anchor" className="fixed bottom-8 right-8 z-[500] pointer-events-auto">
+            <div id="mora-system-hub" className="fixed bottom-16 right-16 z-[500] pointer-events-auto flex flex-col items-end gap-4 overflow-visible">
                 <MoraOrb
                     state={finalOrbState}
                     role={role === 'owner' || role === 'admin' ? 'admin' : 'member'}
                     demoMode={viewMode === 'demo'}
                     notifications={orbNotifications}
-                    onClick={() => setIsResonanceOpen(prev => !prev)}
+                    onClick={handleOrbClick}
                 />
             </div>
 
@@ -268,35 +352,40 @@ export const MoraShell: React.FC = () => {
                 LAYER 4: INTERACTION
             ================================================================= */}
 
-            {!isLoggingOut && (
-                <>
-                    <CursorAgent
-                        active={cursorAgent.active}
-                        action={cursorAgent.action}
-                        target={cursorAgent.target}
-                        awareness={finalOrbState}
-                        onActionComplete={() => setCursorAgent({ active: false, action: 'idle' })}
-                    />
+            {
+                !isLoggingOut && (
+                    <>
+                        <CursorAgent
+                            active={cursorAgent.active}
+                            action={cursorAgent.action}
+                            target={cursorAgent.target}
+                            awareness={finalOrbState}
+                            onActionComplete={() => setCursorAgent({ active: false, action: 'idle' })}
+                        />
 
-                    <AgencyCursor />
-                    <GhostOverlay />
-                    <UserCursor enabled={true} />
-                </>
-            )}
+                        <AgencyCursor />
+                        <GhostOverlay />
+                        <UserCursor enabled={true} />
+                    </>
+                )
+            }
 
             {/* Logout Transition Overlay */}
-            {isLoggingOut && (
-                <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-md flex items-center justify-center">
-                    <div className="text-center">
-                        <div className="text-xs uppercase tracking-[0.4em] text-emerald-400/80 mb-3">
-                            Logging Out
+            {
+                isLoggingOut && (
+                    <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-md flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="text-xs uppercase tracking-[0.4em] text-emerald-400/80 mb-3">
+                                Logging Out
+                            </div>
+                            <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent animate-pulse mx-auto" />
                         </div>
-                        <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent animate-pulse mx-auto" />
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
 export default MoraShell;
+

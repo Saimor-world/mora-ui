@@ -36,7 +36,7 @@ interface ScannedFile {
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
-    const { activeCompanyId } = useMoraStore();
+    const { activeCompanyId, user } = useMoraStore();  // Added user for autoExecuteActions
     const pane = getPane(id);
 
     const [files, setFiles] = useState<ScannedFile[]>([]);
@@ -87,7 +87,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             nativeFile: f
         }));
 
-        setFiles(prev => [...prev, ...newFiles]);
+        setFiles(prev => {
+            const combined = [...prev, ...newFiles];
+            const unique = new Map();
+            combined.forEach(f => unique.set(f.name + f.size, f)); // Simple dedup by name+size for scanner
+            return Array.from(unique.values());
+        });
     };
 
     const processFile = async (fileId: string, fileObject?: File) => {
@@ -111,7 +116,9 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             const uploaded = await uploadCompanyFile(fileObject, activeCompanyId);
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, fileRecordId: uploaded.id } : f));
 
-            const response = await requestCreateNodeFromFile(uploaded.id);
+            // P6: Data Sovereignty - respect user's auto-execute preference
+            const autoExecute = user?.settings?.autoExecuteActions ?? true;
+            const response = await requestCreateNodeFromFile(uploaded.id, { autoExecute });
             if (response?.status === 'pending_confirmation') {
                 setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Awaiting confirmation' } : f));
                 setPendingAction({

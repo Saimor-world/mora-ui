@@ -112,7 +112,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     id: node.id,
                     type: 'node',
                     title: node.title || 'Untitled',
-                    subtitle: node.content?.substring(0, 50) || 'Node',
+                    subtitle: node.content?.substring(0, 50) || 'Element',
                     icon: FileText
                 });
             }
@@ -202,7 +202,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Search nodes, spaces, departments..."
+                            placeholder="Suche nach Elementen, Bereichen..."
                             className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                         />
                         {query && (

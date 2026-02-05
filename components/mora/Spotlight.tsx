@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import { useMoraStore } from "@/lib/store/moraState";
 import { usePaneStore } from "@/lib/store/paneStore";
+import { moraAgentClient } from "@/lib/api/moraAgentClient";
+import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
+import { Loader2, Sparkles, Bot, User } from "lucide-react";
 
 /**
  * SPOTLIGHT - Global Command Palette (Cmd+K)
@@ -33,6 +36,8 @@ import { usePaneStore } from "@/lib/store/paneStore";
  * - Keyboard navigation
  * - Context-aware suggestions
  */
+
+
 
 interface SpotlightAction {
     id: string;
@@ -52,6 +57,9 @@ interface Props {
 export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     const [query, setQuery] = useState("");
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [moraResponse, setMoraResponse] = useState<string | null>(null);
+    const [isMoraThinking, setIsMoraThinking] = useState(false);
+
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +81,14 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
     const { openPane, panes, minimizePane } = usePaneStore();
 
+    // Reset Mora state on open/close or query change (if query clears @mora)
+    useEffect(() => {
+        if (!isOpen) {
+            setMoraResponse(null);
+            setIsMoraThinking(false);
+        }
+    }, [isOpen]);
+
     // Focus input when opened
     useEffect(() => {
         if (isOpen && inputRef.current) {
@@ -84,6 +100,38 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         }
     }, [isOpen]);
 
+    // Handle Mora Chat
+    const handleMoraChat = async (message: string) => {
+        setIsMoraThinking(true);
+        setMoraResponse(null);
+
+        try {
+            // 1. Send to Agent
+            const response = await moraAgentClient.chat({
+                message,
+                session_id: 'spotlight-session'
+            });
+
+            if (response && response.response) {
+                // 2. Parse & Execute
+                const { cleanContent, commands } = parseAIResponse(response.response);
+
+                if (commands.length > 0) {
+                    executeCursorCommands(commands);
+                }
+
+                setMoraResponse(cleanContent);
+            } else {
+                setMoraResponse("Ich bin gerade nicht erreichbar. Versuche es später erneut.");
+            }
+        } catch (error) {
+            console.error("Mora Spotlight Error:", error);
+            setMoraResponse("Verbindungsfehler im Neuralen Netz.");
+        } finally {
+            setIsMoraThinking(false);
+        }
+    };
+
     // Helper to open/focus pane
     const openFromSpotlight = useCallback((type: string, id: string, title: string, size = { width: 700, height: 500 }) => {
         openPane({
@@ -94,6 +142,8 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         });
         onClose();
     }, [openPane, onClose]);
+
+
 
     // Build actions list
     const actions = useMemo<SpotlightAction[]>(() => {
@@ -332,6 +382,17 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 break;
             case "Enter":
                 e.preventDefault();
+                // Check if user is chatting with Mora
+                if (query.trim().toLowerCase().startsWith("@mora")) {
+                    const message = query.replace(/^@mora\s*/i, "").trim();
+                    if (message) {
+                        if (message) {
+                            handleMoraChat(message);
+                            return;
+                        }
+                    }
+                }
+
                 if (filteredActions[selectedIndex]) {
                     filteredActions[selectedIndex].onSelect();
                 }
@@ -382,137 +443,233 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 className="fixed inset-0 z-[300] flex items-start justify-center pt-[15vh]"
                 onClick={onClose}
             >
-                {/* Backdrop */}
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                {/* Backdrop - Organic Blur */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-[#030806]/80 backdrop-blur-md"
+                />
 
-                {/* Spotlight Container */}
+                {/* Resonance Field Container */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: -20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="relative w-full max-w-[560px] mx-4"
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative w-full max-w-[640px] mx-4"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="relative group/spotlight bg-[#0a0f0d]/95 backdrop-blur-2xl border border-emerald-500/10 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+                    <div className="relative group/spotlight bg-[#0a0f0d]/90 backdrop-blur-2xl border border-emerald-500/20 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden">
+
+                        {/* ORGANIC FIELD: Breathing Background */}
+                        <motion.div
+                            className="absolute inset-0 opacity-10 pointer-events-none bg-gradient-to-br from-emerald-500/20 via-transparent to-mora-gold/20"
+                            animate={{ opacity: [0.05, 0.15, 0.05] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        />
 
                         {/* Animated Border Gradient */}
-                        <div className="absolute inset-0 pointer-events-none opacity-20 bg-gradient-to-r from-emerald-500/0 via-emerald-500/30 to-emerald-500/0 -translate-x-full group-hover/spotlight:translate-x-full transition-transform duration-[2000ms] ease-in-out" />
+                        <div className="absolute inset-0 pointer-events-none opacity-30 bg-gradient-to-r from-emerald-500/0 via-emerald-500/40 to-emerald-500/0 -translate-x-full group-hover/spotlight:translate-x-full transition-transform duration-[2000ms] ease-in-out" />
 
-                        {/* Search Input Area */}
-                        <div className="relative flex items-center gap-3 p-5 border-b border-white/5 bg-white/[0.02]">
-                            <div className="relative">
-                                <Search size={20} className="text-emerald-500/40" />
+                        {/* HEADER: Search Input Area */}
+                        <div className="relative flex items-center gap-4 p-6 border-b border-white/5 bg-white/[0.01]">
+                            <div className="relative w-6 h-6 flex items-center justify-center">
+                                <Search size={22} className="text-emerald-400 relative z-10" />
                                 <motion.div
-                                    className="absolute inset-0 bg-emerald-500/20 blur-md rounded-full"
-                                    animate={{ opacity: [0.2, 0.4, 0.2] }}
+                                    className="absolute inset-0 bg-emerald-500/30 blur-md rounded-full"
+                                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
                                     transition={{ duration: 2, repeat: Infinity }}
                                 />
                             </div>
+
                             <input
                                 ref={inputRef}
                                 type="text"
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Aktion suchen oder Befehl eingeben..."
-                                className="flex-1 bg-transparent text-emerald-50 text-lg placeholder:text-emerald-500/20 focus:outline-none font-light"
+                                placeholder="Resonanz erzeugen..."
+                                className="flex-1 bg-transparent text-emerald-50 text-xl font-light placeholder:text-emerald-500/20 focus:outline-none tracking-wide"
                                 autoComplete="off"
                                 spellCheck={false}
                             />
+
                             <div className="flex items-center gap-2">
-                                <kbd className="hidden sm:flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-emerald-500/40 font-mono">
-                                    <span className="text-xs">Ctrl</span>
-                                    <span>K</span>
-                                </kbd>
+                                {/* Interaction Mode Indicator */}
+                                {query.trim().toLowerCase().startsWith("@mora") && (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30"
+                                    >
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        <span className="text-xs text-emerald-300 font-medium tracking-wide">Direkter Draht</span>
+                                    </motion.div>
+                                )}
+
+                                <div className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] text-emerald-500/40 font-mono tracking-widest uppercase">
+                                    Môra Core
+                                </div>
                             </div>
                         </div>
 
-                        {/* Results List */}
-                        <div ref={listRef} className="max-h-[450px] overflow-y-auto custom-scrollbar overflow-x-hidden">
-                            {filteredActions.length === 0 ? (
-                                <div className="p-12 text-center text-emerald-500/30 flex flex-col items-center gap-3">
-                                    <Search size={32} className="opacity-20 translate-y-2" />
-                                    <span className="text-sm italic">Keine Treffer fuer "{query}"</span>
-                                </div>
-                            ) : (
-                                <div className="py-2">
-                                    {/* Grouping Logic (Simplified UI grouping) */}
-                                    {['navigation', 'action', 'entity'].map(cat => {
-                                        const catActions = filteredActions.filter(a => a.category === cat);
-                                        if (catActions.length === 0) return null;
+                        {/* RESULTS: The Field or Chat Interface */}
+                        {(isMoraThinking || moraResponse) ? (
+                            <div className="max-h-[500px] h-[400px] overflow-y-auto custom-scrollbar p-6">
+                                <div className="space-y-6">
+                                    {/* User Query Mirror (Opt) */}
+                                    <div className="flex justify-end">
+                                        <div className="max-w-[80%] bg-emerald-500/10 border border-emerald-500/20 rounded-2xl rounded-tr-sm p-3 text-sm text-emerald-100/80">
+                                            {query.replace(/^@mora\s*/i, "").trim()}
+                                        </div>
+                                    </div>
 
-                                        return (
-                                            <div key={cat} className="mb-2 last:mb-0">
-                                                <div className="px-5 py-2 text-[10px] font-bold tracking-[0.2em] text-emerald-500/30 uppercase flex items-center gap-2">
-                                                    <div className="w-1 h-1 rounded-full bg-emerald-500/30" />
-                                                    {cat === 'navigation' ? 'Navigation' : cat === 'action' ? 'Aktionen' : 'Eintraege'}
+                                    {/* Mora Response */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-mora-gold/20 to-mora-gold/5 flex items-center justify-center border border-mora-gold/30 shadow-[0_0_15px_-3px_rgba(234,179,8,0.3)]">
+                                            {isMoraThinking ? (
+                                                <Loader2 size={16} className="text-mora-gold animate-spin" />
+                                            ) : (
+                                                <Bot size={16} className="text-mora-gold" />
+                                            )}
+                                        </div>
+
+                                        <div className="flex-1 space-y-2">
+                                            {isMoraThinking ? (
+                                                <div className="flex items-center gap-2 h-8">
+                                                    <span className="text-sm text-mora-gold/60 animate-pulse font-light tracking-wide">Analysiere Resonanz...</span>
                                                 </div>
+                                            ) : (
+                                                <div className="prose prose-invert prose-sm max-w-none">
+                                                    <p className="text-sm text-emerald-100/90 leading-relaxed font-light whitespace-pre-wrap">
+                                                        {moraResponse}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                                {catActions.map((action) => {
-                                                    const isSelected = filteredActions[selectedIndex]?.id === action.id;
-
-                                                    return (
-                                                        <button
-                                                            key={action.id}
-                                                            onClick={action.onSelect}
-                                                            onMouseEnter={() => setSelectedIndex(filteredActions.findIndex(a => a.id === action.id))}
-                                                            className={`w-full group/item relative flex items-center gap-4 px-5 py-3 text-left transition-all duration-200 ${isSelected
-                                                                ? "bg-emerald-500/10"
-                                                                : "hover:bg-white/[0.03]"
-                                                                }`}
-                                                        >
-                                                            {/* Selection Marker */}
-                                                            {isSelected && (
-                                                                <motion.div
-                                                                    layoutId="selectionBar"
-                                                                    className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-emerald-500 rounded-r-full"
-                                                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                                                />
-                                                            )}
-
-                                                            <div className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${isSelected
-                                                                ? "bg-emerald-500/20 text-emerald-300"
-                                                                : "bg-white/5 text-emerald-500/40"
-                                                                }`}>
-                                                                {action.icon}
-                                                            </div>
-
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className={`text-sm font-medium transition-colors ${isSelected ? "text-emerald-50" : "text-emerald-50/60"}`}>
-                                                                    {action.label}
-                                                                </div>
-                                                                {action.description && (
-                                                                    <div className={`text-xs truncate transition-colors ${isSelected ? "text-emerald-400/60" : "text-emerald-500/20"}`}>
-                                                                        {action.description}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            {isSelected && (
-                                                                <div className="flex items-center gap-2 pr-2">
-                                                                    <span className="text-[10px] text-emerald-500/40 opacity-0 group-hover/item:opacity-100 transition-opacity uppercase font-mono tracking-tighter">Enter</span>
-                                                                    <ArrowRight size={14} className="text-emerald-500/50" />
-                                                                </div>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        );
-                                    })}
+                                    {!isMoraThinking && (
+                                        <div className="pl-12 flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setQuery("@mora ");
+                                                    setMoraResponse(null);
+                                                    inputRef.current?.focus();
+                                                }}
+                                                className="text-[10px] px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-emerald-500/30 text-emerald-500/60 hover:text-emerald-400 transition-all uppercase tracking-wider"
+                                            >
+                                                Antworten
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setQuery("");
+                                                    setMoraResponse(null);
+                                                    inputRef.current?.focus();
+                                                }}
+                                                className="text-[10px] px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-red-500/30 text-emerald-500/60 hover:text-red-400 transition-all uppercase tracking-wider"
+                                            >
+                                                Schließen
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* High-End Footer */}
-                        <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex items-center justify-between text-[10px] text-emerald-500/30 uppercase tracking-[0.15em] font-medium">
-                            <div className="flex items-center gap-6">
-                                <span className="flex items-center gap-1.5"><span className="text-emerald-500/60">Up/Down</span> Navigieren</span>
-                                <span className="flex items-center gap-1.5"><span className="text-emerald-500/60">Enter</span> Auswaehlen</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-emerald-500/60">ESC</span> Schliessen
+                        ) : (
+                            <div ref={listRef} className="max-h-[500px] overflow-y-auto custom-scrollbar overflow-x-hidden p-2">
+                                {filteredActions.length === 0 ? (
+                                    <div className="h-64 flex flex-col items-center justify-center gap-4 text-emerald-500/30">
+                                        <div className="relative w-16 h-16 flex items-center justify-center">
+                                            <div className="absolute inset-0 border border-emerald-500/20 rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }} />
+                                            <div className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping opacity-20" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+                                            <Search size={24} className="opacity-40" />
+                                        </div>
+                                        <span className="text-sm font-light tracking-widest uppercase opacity-60">Warte auf Signal...</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        {/* Grouping Logic */}
+                                        {['navigation', 'action', 'entity'].map(cat => {
+                                            const catActions = filteredActions.filter(a => a.category === cat);
+                                            if (catActions.length === 0) return null;
+
+                                            return (
+                                                <div key={cat} className="mb-4 first:mt-2">
+                                                    <div className="px-4 py-2 text-[9px] font-bold tracking-[0.2em] text-emerald-500/30 uppercase flex items-center gap-2">
+                                                        <div className="w-1 h-1 rounded-full bg-emerald-500/30" />
+                                                        {cat === 'navigation' ? 'Navigation Layers' : cat === 'action' ? 'System Actions' : 'Workspace Entities'}
+                                                    </div>
+
+                                                    {catActions.map((action) => {
+                                                        const isSelected = filteredActions[selectedIndex]?.id === action.id;
+
+                                                        return (
+                                                            <button
+                                                                key={action.id}
+                                                                onClick={action.onSelect}
+                                                                onMouseEnter={() => setSelectedIndex(filteredActions.findIndex(a => a.id === action.id))}
+                                                                className={`w-full group/item relative flex items-center gap-4 px-4 py-3 mx-1 rounded-xl text-left transition-all duration-200 ${isSelected
+                                                                    ? "bg-white/[0.04] translate-x-1"
+                                                                    : "hover:bg-white/[0.02]"
+                                                                    }`}
+                                                                style={{ width: 'calc(100% - 8px)' }}
+                                                            >
+                                                                {/* Active Glow */}
+                                                                {isSelected && (
+                                                                    <motion.div
+                                                                        layoutId="activeGlow"
+                                                                        className="absolute inset-0 bg-emerald-500/5 rounded-xl border border-emerald-500/10 pointer-events-none"
+                                                                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                                                    />
+                                                                )}
+
+                                                                <div className={`relative flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-300 ${isSelected
+                                                                    ? "bg-emerald-500/20 text-emerald-300 shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]"
+                                                                    : "bg-white/5 text-emerald-500/40"
+                                                                    }`}>
+                                                                    {action.icon}
+                                                                </div>
+
+                                                                <div className="flex-1 min-w-0 z-10">
+                                                                    <div className={`text-sm font-medium transition-colors ${isSelected ? "text-emerald-50" : "text-emerald-50/60"}`}>
+                                                                        {action.label}
+                                                                    </div>
+                                                                    {action.description && (
+                                                                        <div className={`text-xs truncate transition-colors ${isSelected ? "text-emerald-400/60" : "text-emerald-500/20"}`}>
+                                                                            {action.description}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {isSelected && (
+                                                                    <motion.div
+                                                                        layoutId="enterKey"
+                                                                        className="flex items-center gap-2 pr-2"
+                                                                        initial={{ opacity: 0 }}
+                                                                        animate={{ opacity: 1 }}
+                                                                    >
+                                                                        <ArrowRight size={14} className="text-emerald-400" />
+                                                                    </motion.div>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* FOOTER: Minimalist Status */}
+                        <div className="px-6 py-3 border-t border-white/5 bg-black/40 flex items-center justify-between text-[9px] text-emerald-500/30 uppercase tracking-[0.15em] font-medium">
+                            <div className="flex items-center gap-4">
+                                <span>Resonance Field v2.0</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 opacity-60">
+                                <span className="text-emerald-500/60">ESC</span> to Close
                             </div>
                         </div>
                     </div>

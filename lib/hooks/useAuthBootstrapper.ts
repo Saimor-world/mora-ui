@@ -24,6 +24,19 @@ export function useAuthBootstrapper() {
         if (status === 'loading') return;
 
         const bootstrap = async () => {
+            // Purge legacy branding artifacts (e.g. "Förderlogiken") from localStorage
+            const legacyPattern = /(foerderlogiken|forderlogiken)/i;
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i += 1) {
+                const key = localStorage.key(i);
+                if (key) keys.push(key);
+            }
+            keys.forEach((key) => {
+                const value = localStorage.getItem(key);
+                if (value && legacyPattern.test(value)) {
+                    localStorage.removeItem(key);
+                }
+            });
             const hasNextAuth = status === 'authenticated';
             const hasLegacyToken = localStorage.getItem('saimor_dev_token');
 
@@ -61,6 +74,18 @@ export function useAuthBootstrapper() {
                             tenant_id: tenantId
                         });
 
+                        // Normalize view mode for demo tenants to avoid cross-browser drift
+                        const storedViewMode = typeof window !== 'undefined'
+                            ? localStorage.getItem('saimor_view_mode')
+                            : null;
+                        if (tenantId === 'tenant-demo') {
+                            if (storedViewMode !== 'demo' && storedViewMode !== 'workspace') {
+                                store.setViewMode('demo');
+                            }
+                        } else if (storedViewMode === 'demo') {
+                            store.setViewMode('workspace');
+                        }
+
                         // Update role and tenant from backend to ensure consistency
                         if (result.role) {
                             localStorage.setItem('saimor_role', result.role);
@@ -80,7 +105,14 @@ export function useAuthBootstrapper() {
                         const role = result.role || freshState.user?.role || 'member';
 
                         const storedCompanyId = localStorage.getItem('last_company_id');
-                        const storedWorkspaceName = localStorage.getItem('last_workspace');
+                        let storedWorkspaceName = localStorage.getItem('last_workspace');
+                        if (storedWorkspaceName) {
+                            const normalized = storedWorkspaceName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                            if (normalized.includes('foerderlogiken') || normalized.includes('forderlogiken')) {
+                                localStorage.removeItem('last_workspace');
+                                storedWorkspaceName = null;
+                            }
+                        }
 
                         const isDemoTenant = tenantId === 'tenant-demo';
                         const demoCompanies = companies.filter(c => c.is_demo);

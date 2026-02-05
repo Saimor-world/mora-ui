@@ -69,6 +69,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     onClick={() => setViewMode('demo')}
                     icon={Activity}
                     label="Demo"
+                    showLabelAlways={true}
                 />
             )}
 
@@ -79,12 +80,17 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     className={`ml-4 pl-4 border-l border-white/10 hidden md:flex items-center gap-2 
                         ${companies.length > 1 ? 'cursor-pointer hover:text-emerald-400 opacity-80 hover:opacity-100 transition-colors' : 'opacity-60 cursor-default'}`}
                     role={companies.length > 1 ? "button" : "status"}
-                    title={companies.length > 1 ? "Click to switch context (HQ vs Local)" : "Current Context"}
+                    title={companies.length > 1 ? "Click to switch context" : "Current Context"}
                 >
                     <Globe className="w-3 h-3" />
-                    <span className="text-[10px] uppercase tracking-wider font-mono select-none">
-                        {activeCompany.name}
-                    </span>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase tracking-wider font-mono select-none">
+                            {activeCompany.name}
+                        </span>
+                        {viewMode === 'demo' && (
+                            <span className="text-[8px] text-blue-400 font-bold tracking-[0.2em] leading-tight text-left">DEMO</span>
+                        )}
+                    </div>
                     {companies.length > 1 && (
                         <span className="text-[9px] text-emerald-500/50 bg-emerald-500/10 px-1 rounded ml-1">TAB</span>
                     )}
@@ -94,8 +100,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     );
 };
 
-const ControlButton: React.FC<{ isActive: boolean; onClick: () => void; icon: any; label: string }> = ({
-    isActive, onClick, icon: Icon, label
+const ControlButton: React.FC<{ isActive: boolean; onClick: () => void; icon: any; label: string; showLabelAlways?: boolean }> = ({
+    isActive, onClick, icon: Icon, label, showLabelAlways = false
 }) => (
     <button
         onClick={onClick}
@@ -103,7 +109,7 @@ const ControlButton: React.FC<{ isActive: boolean; onClick: () => void; icon: an
             }`}
     >
         <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-        <span className={`text-[10px] font-medium ml-2 overflow-hidden transition-all duration-300 ${isActive ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 group-hover:max-w-[40px] group-hover:opacity-100'}`}>
+        <span className={`text-[10px] font-medium ml-2 overflow-hidden transition-all duration-300 ${(isActive || showLabelAlways) ? 'max-w-[40px] opacity-100' : 'max-w-0 opacity-0 group-hover:max-w-[40px] group-hover:opacity-100'}`}>
             {label}
         </span>
 

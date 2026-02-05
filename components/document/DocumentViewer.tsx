@@ -211,23 +211,47 @@ export default function DocumentViewer() {
                                         <span className="text-sm font-mono tracking-widest text-emerald-500/70 uppercase">Loading Content...</span>
                                     </div>
                                 ) : (
-                                    <div className="prose prose-invert prose-emerald max-w-none prose-headings:font-light prose-headings:tracking-tight prose-headings:text-emerald-50 prose-p:text-emerald-100/90 prose-p:leading-relaxed prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:text-emerald-300 prose-code:text-mora-gold prose-code:bg-black/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
-                                        {filePreview?.previewAvailable ? (
-                                            filePreview.contentType === 'text/markdown' || filePreview.contentType === 'text/plain' ? (
-                                                <ReactMarkdown>{filePreview.content || ''}</ReactMarkdown>
-                                            ) : (
-                                                <pre className="whitespace-pre-wrap font-mono text-xs">{filePreview.content}</pre>
-                                            )
-                                        ) : activeNode?.content ? (
-                                            <ReactMarkdown>{activeNode.content}</ReactMarkdown>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-64 text-white/20 border-2 border-dashed border-emerald-500/10 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent">
-                                                <FileText className="w-12 h-12 text-emerald-500/20 mb-3" />
-                                                <span className="text-sm font-mono uppercase tracking-wider">
-                                                    {filePreview?.reason === 'binary_file' ? 'Binary File - Please Download' : 'No Content Available'}
-                                                </span>
-                                            </div>
-                                        )}
+                                    <div className="w-full h-full flex flex-col">
+                                        {/* REAL CONTENT RENDERING */}
+                                        {/* CASE 1: PDF */}
+                                        {(filePreview?.contentType === 'application/pdf' || activeNode?.name?.toLowerCase().endsWith('.pdf')) ? (
+                                            <iframe
+                                                src={getDownloadUrl(activeNode!.id)}
+                                                className="w-full h-full rounded-xl bg-white/5"
+                                                title="PDF Viewer"
+                                            />
+                                        ) :
+                                            /* CASE 2: IMAGE */
+                                            (filePreview?.contentType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(activeNode?.name || '')) ? (
+                                                <div className="flex items-center justify-center h-full">
+                                                    <img
+                                                        src={getDownloadUrl(activeNode!.id)}
+                                                        alt={activeNode!.name}
+                                                        className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                                                    />
+                                                </div>
+                                            ) :
+                                                /* CASE 3: TEXT / MARKDOWN / SIMULATED */
+                                                (
+                                                    <div className="prose prose-invert prose-emerald max-w-none prose-headings:font-light prose-headings:tracking-tight prose-headings:text-emerald-50 prose-p:text-emerald-100/90 prose-p:leading-relaxed prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:text-emerald-300 prose-code:text-mora-gold prose-code:bg-black/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
+                                                        {filePreview?.content ? (
+                                                            filePreview.contentType === 'text/markdown' || filePreview.contentType === 'text/plain' ? (
+                                                                <ReactMarkdown>{filePreview.content}</ReactMarkdown>
+                                                            ) : (
+                                                                <pre className="whitespace-pre-wrap font-mono text-xs">{filePreview.content}</pre>
+                                                            )
+                                                        ) : activeNode?.content ? (
+                                                            <ReactMarkdown>{activeNode.content}</ReactMarkdown>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center justify-center h-64 text-white/20 border-2 border-dashed border-emerald-500/10 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent">
+                                                                <FileText className="w-12 h-12 text-emerald-500/20 mb-3" />
+                                                                <span className="text-sm font-mono uppercase tracking-wider">
+                                                                    {filePreview?.reason === 'binary_file' ? 'Binary File - Please Download' : 'No Content Available'}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                     </div>
                                 )}
                             </div>

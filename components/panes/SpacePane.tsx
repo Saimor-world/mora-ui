@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { LayoutGrid, List, Folder, Plus, Network, Search, Trash2, RefreshCw, ChevronRight, FileText, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box } from 'lucide-react';
+import { LayoutGrid, List, Folder, Plus, Network, Search, Trash2, RefreshCw, ChevronRight, FileText, Image as ImageIcon, Link as LinkIcon, CheckSquare, Box, Upload } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -106,7 +106,16 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
 
 
 
-    const items = activeFolder ? folderNodes : (targetSpaceId ? (foldersBySpace[targetSpaceId] || []) : []);
+    const rawItems = activeFolder ? folderNodes : (targetSpaceId ? (foldersBySpace[targetSpaceId] || []) : []);
+
+    // STRICT DEDUPLICATION for Grid View
+    const items = useMemo(() => {
+        const unique = new Map();
+        rawItems.forEach(item => {
+            if (item?.id) unique.set(item.id, item);
+        });
+        return Array.from(unique.values());
+    }, [rawItems]);
 
     const filteredItems = useMemo(() => {
         if (!searchQuery.trim()) return items;
@@ -328,9 +337,26 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                             </>
                         )}
                         {activeFolder && (
-                            <div className="text-xs text-white/40 uppercase tracking-widest px-4">
-                                Viewing Folder
-                            </div>
+                            <>
+                                <button
+                                    onClick={() => {
+                                        // Open Finder with upload mode
+                                        openPane({
+                                            id: `finder-upload-${activeFolder}`,
+                                            type: 'finder',
+                                            title: 'Upload Files',
+                                            data: { folderId: activeFolder, showUpload: true }
+                                        });
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all text-sm tracking-wide"
+                                >
+                                    <Upload size={16} />
+                                    UPLOAD
+                                </button>
+                                <div className="text-xs text-white/40 uppercase tracking-widest px-4">
+                                    Viewing Folder
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>

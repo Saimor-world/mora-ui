@@ -216,8 +216,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 // Pre-set some store values to avoid flicker, though session will take over
                 toast.success(`Willkommen, ${email.split('@')[0]}!`);
 
-                // Special handling for Demo User
-                if (email === 'demo') {
+                // Special handling for Demo User (supports demo@saimor.io + demo aliases)
+                const isDemoLogin = email.toLowerCase().startsWith('demo') || email.toLowerCase().includes('demo');
+                if (isDemoLogin) {
                     setViewMode('demo');
                 } else {
                     setViewMode('workspace');
@@ -271,6 +272,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     password,
                     role: usingInvite ? undefined : selectedRole,
                     company_name: !usingInvite && selectedRole === 'owner' ? companyName.trim() : undefined,
+                    logo_url: !usingInvite && selectedRole === 'owner' ? logoUrl : undefined,
                     invite_code: usingInvite ? inviteCode.trim() : undefined
                 })
             });

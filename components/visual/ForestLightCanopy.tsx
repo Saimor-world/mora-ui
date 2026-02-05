@@ -9,67 +9,127 @@ interface ForestLightCanopyProps {
     demoMode?: boolean;
 }
 
-const stateColors: Record<OrbState, { core: string; glow: string; beam: string }> = {
-    idle: { core: '#10B981', glow: 'rgba(16,185,129,0.35)', beam: 'rgba(16,185,129,0.18)' },
-    watch: { core: '#06B6D4', glow: 'rgba(6,182,212,0.35)', beam: 'rgba(6,182,212,0.18)' },
-    focus: { core: '#10B981', glow: 'rgba(16,185,129,0.45)', beam: 'rgba(16,185,129,0.22)' },
-    thinking: { core: '#3B82F6', glow: 'rgba(59,130,246,0.45)', beam: 'rgba(59,130,246,0.22)' },
-    alert: { core: '#EF4444', glow: 'rgba(239,68,68,0.4)', beam: 'rgba(239,68,68,0.18)' },
-    insight: { core: '#F59E0B', glow: 'rgba(245,158,11,0.45)', beam: 'rgba(245,158,11,0.22)' },
-    demo: { core: '#3B82F6', glow: 'rgba(59,130,246,0.35)', beam: 'rgba(59,130,246,0.16)' }
+const stateColors: Record<OrbState, { core: string; glow: string; secondary: string; accent: string }> = {
+    idle: { core: '#10B981', glow: 'rgba(16,185,129,0.35)', secondary: 'rgba(6,182,212,0.25)', accent: 'rgba(139,92,246,0.15)' },
+    watch: { core: '#06B6D4', glow: 'rgba(6,182,212,0.4)', secondary: 'rgba(16,185,129,0.3)', accent: 'rgba(236,72,153,0.15)' },
+    focus: { core: '#10B981', glow: 'rgba(16,185,129,0.5)', secondary: 'rgba(13,148,136,0.4)', accent: 'rgba(16,185,129,0.2)' },
+    thinking: { core: '#3B82F6', glow: 'rgba(59,130,246,0.4)', secondary: 'rgba(168,85,247,0.35)', accent: 'rgba(6,182,212,0.2)' },
+    alert: { core: '#EF4444', glow: 'rgba(239,68,68,0.4)', secondary: 'rgba(245,158,11,0.2)', accent: 'rgba(127,29,29,0.3)' },
+    insight: { core: '#F59E0B', glow: 'rgba(245,158,11,0.4)', secondary: 'rgba(251,191,36,0.3)', accent: 'rgba(255,255,255,0.2)' },
+    demo: { core: '#0D9488', glow: 'rgba(13,148,136,0.3)', secondary: 'rgba(20,184,166,0.2)', accent: 'rgba(16,185,129,0.15)' }
 };
 
 export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, demoMode }) => {
-    const palette = stateColors[orbState] || stateColors.idle;
-
-    const rays = useMemo(() => {
-        const count = demoMode ? 5 : 7;
-        return Array.from({ length: count }, (_, idx) => ({
-            id: `ray-${idx}`,
-            rotation: (360 / count) * idx + (idx % 2 === 0 ? 8 : -6),
-            delay: idx * 0.3
-        }));
-    }, [demoMode]);
+    const palette = useMemo(() => stateColors[orbState] || stateColors.idle, [orbState]);
 
     return (
-        <div className="fixed inset-0 z-[1] pointer-events-none">
-            {/* Ambient forest glow */}
-            <motion.div
-                className="absolute inset-0"
-                style={{
-                    background: `radial-gradient(circle at 30% 10%, rgba(16,185,129,0.22) 0%, transparent 45%),
-                                 radial-gradient(circle at 70% 25%, rgba(234,179,8,0.18) 0%, transparent 40%),
-                                 radial-gradient(circle at 50% 80%, ${palette.glow} 0%, transparent 55%)`
-                }}
-                animate={{ opacity: [0.6, 0.9, 0.6] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-            />
+        <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden bg-[#000102]">
+            {/* 1. DEEP STARFIELD (The "Universe" Layer) */}
+            {/* V10.7: Mixed density to match user request: "Bisschen Sterne und Universum" */}
+            <div className="absolute inset-0 opacity-50">
+                {/* Distant Micro-Stars */}
+                <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:60px_60px] opacity-[0.1]" />
+                {/* Mid-Range Stars */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.4)_1.5px,transparent_1px)] bg-[length:250px_250px]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.3)_1.5px,transparent_1px)] bg-[length:350px_350px]" />
+                {/* Bright Pilot Stars */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,230,200,0.8)_2px,rgba(255,255,255,0)_4px)] bg-[length:600px_600px] animate-pulse" style={{ animationDuration: '8s' }} />
+            </div>
 
-            {/* Orb sunlight bloom (bottom-right) */}
-            <motion.div
-                className="absolute -right-40 -bottom-40 w-[800px] h-[800px] rounded-full"
-                style={{
-                    background: `radial-gradient(circle at 40% 40%, ${palette.glow} 0%, transparent 60%)`,
-                    filter: 'blur(12px)'
-                }}
-                animate={{ scale: [0.9, 1.05, 0.9], opacity: [0.6, 0.85, 0.6] }}
-                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            />
+            {/* 1.5 CONSTELLATIONS (Sternbilder - Enhanced with Green Glow) */}
+            <div className="absolute inset-0 opacity-60">
+                {/* Green Glow Filter */}
+                <svg className="w-0 h-0 absolute">
+                    <filter id="greenGlow">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#10b981" floodOpacity="0.5" />
+                    </filter>
+                </svg>
+                <svg className="w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                    {/* Slow floating constellation lines */}
+                    <motion.path
+                        d="M 100 100 L 300 250 L 500 150"
+                        stroke="rgba(255,255,255,0.8)"
+                        strokeWidth="1"
+                        fill="none"
+                        filter="url(#greenGlow)"
+                        initial={{ pathLength: 0, opacity: 0 }}
+                        animate={{ pathLength: 1, opacity: 1, x: [0, 50, 0], y: [0, 30, 0] }}
+                        transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+                    />
+                    <motion.path
+                        d="M 800 200 L 700 400 L 850 600 L 900 300 Z"
+                        stroke="rgba(255,255,255,0.8)"
+                        strokeWidth="1"
+                        fill="none"
+                        filter="url(#greenGlow)"
+                        initial={{ pathLength: 0, opacity: 0 }}
+                        animate={{ pathLength: 1, opacity: 0.8, rotate: [0, 10, 0] }}
+                        transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
+                    />
+                </svg>
+            </div>
 
-            {/* Sunbeams */}
-            {rays.map((ray) => (
+            {/* 2. NEBULA PILLARS (The "Deep Galaxy" Layer) */}
+            {/* Reduced Green, More Deep Space/Void Blue/Indigo */}
+            <div className="absolute inset-0 opacity-20 mix-blend-screen">
+                {/* Pillar 1: Golden/Red Cosmic Dust (Warmer contrast) */}
                 <motion.div
-                    key={ray.id}
-                    className="absolute inset-0"
-                    style={{
-                        background: `linear-gradient(120deg, transparent 20%, ${palette.beam} 50%, transparent 80%)`,
-                        mixBlendMode: 'screen',
-                        transform: `rotate(${ray.rotation}deg)`
-                    }}
-                    animate={{ opacity: [0.08, 0.22, 0.08] }}
-                    transition={{ duration: 6, delay: ray.delay, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-[-20%] left-[10%] w-[60vw] h-[80vh] rounded-full blur-[100px]"
+                    style={{ background: 'conic-gradient(from 180deg, #7c2d12, #ea580c, transparent)' }}
+                    animate={{ rotate: [0, 10, 0], scale: [1, 1.1, 1], opacity: [0.1, 0.3, 0.1] }}
+                    transition={{ duration: 60, repeat: Infinity, ease: "easeInOut" }}
                 />
-            ))}
+                {/* Pillar 2: Deep Indigo/Cyan (Less Green) */}
+                <motion.div
+                    className="absolute top-[-10%] right-[10%] w-[70vw] h-[70vh] rounded-full blur-[120px]"
+                    style={{ background: 'radial-gradient(circle, #1e3a8a, #4338ca, transparent)' }}
+                    animate={{ x: [-20, 20, -20], opacity: [0.1, 0.3, 0.1] }}
+                    transition={{ duration: 50, repeat: Infinity, ease: "easeInOut" }}
+                />
+            </div>
+
+            {/* 3. MORA FLOW (Silk Currents - Calmed & Bluer) */}
+            <motion.div
+                className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[60vh] opacity-15 mix-blend-screen"
+                style={{
+                    background: 'linear-gradient(90deg, transparent 0%, #1e40af 20%, #7c3aed 50%, #0891b2 80%, transparent 100%)',
+                    filter: 'blur(120px)',
+                }}
+                animate={{
+                    opacity: [0.15, 0.25, 0.15],
+                    scaleY: [0.98, 1.02, 0.98],
+                    rotate: [0, 0.5, 0]
+                }}
+                transition={{ duration: 45, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* 4. CHROMATIC CLOUDS (Weightlessness - Deep) */}
+            <motion.div
+                className="absolute -left-[10%] top-[10%] w-[80vw] h-[80vw] rounded-full opacity-10 mix-blend-color-dodge"
+                style={{
+                    background: 'radial-gradient(circle, #1e3a8a 0%, transparent 70%)',
+                    filter: 'blur(180px)',
+                }}
+                animate={{
+                    x: [-20, 20, -20],
+                    y: [-20, 20, -20],
+                }}
+                transition={{ duration: 90, repeat: Infinity, ease: "easeInOut" }}
+            />
+
+            {/* 5. GHOST GALAXY CLUSTERS (Very faint) */}
+            <div className="absolute inset-0 pointer-events-none opacity-20">
+                <motion.div
+                    className="absolute top-[20%] left-[30%] w-64 h-32 rounded-full border border-white/5 blur-xl rotate-[15deg]"
+                    style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 80%)' }}
+                    animate={{ opacity: [0.2, 0.4, 0.2] }}
+                    transition={{ duration: 40, repeat: Infinity }}
+                />
+            </div>
+
+            {/* 6. GRAIN & VIGNETTE */}
+            <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay pointer-events-none bg-noise" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_40%,rgba(0,0,0,0.7)_100%)]" />
         </div>
     );
 };

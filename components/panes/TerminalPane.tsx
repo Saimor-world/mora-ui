@@ -12,6 +12,7 @@ import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { Terminal as TerminalIcon, ChevronRight, Sparkles } from "lucide-react";
 import { corePost, coreGet } from "@/lib/api/coreClient";
+import { buildChatContext } from "@/lib/api/moraAgentClient";
 import { useMoraStore } from "@/lib/store/moraState";
 
 interface TerminalLine {
@@ -193,7 +194,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                     try {
                         const response = await corePost("/v1/chat", {
                             message: question,
-                            context: { source: "terminal" },
+                            context: buildChatContext({ session_id: "terminal" }),
                             include_synthesis: true
                         });
                         if (response?.reply) {
@@ -217,7 +218,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         const response = await corePost("/v1/chat", {
                             message: prompt,
                             provider_preference: "ollama",
-                            context: { source: "terminal-ollama" }
+                            context: buildChatContext({ session_id: "terminal_ollama" })
                         });
                         if (response?.reply) {
                             addLine("mora", `Ollama: ${response.reply}`);

@@ -4,7 +4,7 @@ export interface PaneConfig {
     id: string;
     type: 'document' | 'settings' | 'apps' | 'grid' | 'space' | 'search'
     | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
-    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline';
+    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline' | 'mora-hub';
 
     title: string;
     position: { x: number; y: number };
@@ -87,12 +87,15 @@ interface PaneState {
     getVisiblePanes: () => PaneConfig[];
     updatePanePosition: (id: string, x: number, y: number) => void;
     updatePaneSize: (id: string, width: number, height: number) => void;
+    reset: () => void;
 }
 
 export const usePaneStore = create<PaneState>((set, get) => ({
     panes: [],
     nextZIndex: 100,
     activePaneId: null,
+
+    reset: () => set({ panes: [], activePaneId: null }),
 
     openPane: (request) => {
         const existing = get().getPane(request.id);
@@ -123,9 +126,9 @@ export const usePaneStore = create<PaneState>((set, get) => ({
     },
 
     addPane: (pane) => set((state) => {
-        const nextPanes = pane.type === 'apps'
-            ? state.panes
-            : state.panes.filter(p => p.type !== 'apps');
+        // Updated: Allow 'apps' (App Library) to coexist with other windows (Multitasking)
+        const nextPanes = state.panes;
+
         // Prevent duplicate panes with same ID
         const existingPane = nextPanes.find(p => p.id === pane.id);
         if (existingPane) {
@@ -181,9 +184,8 @@ export const usePaneStore = create<PaneState>((set, get) => ({
         const pane = state.panes.find(p => p.id === id);
         if (!pane) return state;
 
-        const nextPanes = pane.type === 'apps'
-            ? state.panes
-            : state.panes.filter(p => p.type !== 'apps');
+        // Updated: Allow multitasking, do not close 'apps' pane
+        const nextPanes = state.panes;
 
         const panes = nextPanes.map(p =>
             p.id === id
@@ -212,9 +214,10 @@ export const usePaneStore = create<PaneState>((set, get) => ({
     restorePane: (id) => set((state) => {
         const target = state.panes.find(p => p.id === id);
         if (!target) return state;
-        const nextPanes = target.type === 'apps'
-            ? state.panes
-            : state.panes.filter(p => p.type !== 'apps');
+
+        // Updated: Allow multitasking
+        const nextPanes = state.panes;
+
         const panes = nextPanes.map(p =>
             p.id === id ? { ...p, minimized: false, zIndex: state.nextZIndex } : p
         );

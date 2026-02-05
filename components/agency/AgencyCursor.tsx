@@ -103,7 +103,7 @@ export function AgencyCursor() {
                             stiffness: 200,
                             damping: 20
                         }}
-                        className="fixed z-[9999] pointer-events-none"
+                        className={`fixed z-[9999] pointer-events-none ${!isExecuting ? 'opacity-0' : 'opacity-100'}`}  // Hide unless executing
                         style={{ left: 0, top: 0 }}
                     >
                         {/* Cursor ring */}

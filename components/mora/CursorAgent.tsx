@@ -199,102 +199,79 @@ export function CursorAgent({
                     }}
                 />
 
-                {/* LICHTFEE: Wing-like light extensions */}
+                {/* LICHTFEE: Wing-like light extensions - HIGH FIDELITY */}
                 <motion.div
-                    className="absolute -inset-2"
+                    className="absolute -inset-4"
                     animate={{
-                        scale: [1, 1.1, 1],
-                        opacity: [0.4, 0.7, 0.4]
+                        scale: [1, 1.15, 1],
+                        opacity: [0.6, 0.9, 0.6]
                     }}
                     transition={{
-                        duration: 2,
+                        duration: 1.5,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
                 >
-                    {/* Left Wing */}
+                    {/* Left Wing (Upper) */}
                     <motion.div
-                        className="absolute left-0 top-1/2 w-4 h-6 -translate-y-1/2 -translate-x-3"
+                        className="absolute left-0 top-1/2 w-6 h-8 -translate-y-[80%] -translate-x-4 blur-[2px]"
                         style={{
-                            background: `linear-gradient(135deg, ${visuals.color}60 0%, transparent 80%)`,
-                            borderRadius: '50% 0 50% 50%',
-                            filter: 'blur(2px)'
+                            background: `radial-gradient(ellipse at center, ${visuals.color}80 0%, transparent 80%)`,
+                            borderRadius: '100% 10% 80% 80%',
                         }}
                         animate={{
-                            rotate: isMoving ? [-15, 15, -15] : [-5, 5, -5],
-                            scaleX: isMoving ? [1, 1.3, 1] : [1, 1.1, 1]
+                            rotate: isMoving ? [-30, 30, -30] : [-10, 10, -10],
+                            scaleY: isMoving ? [1, 1.4, 1] : [1, 1.1, 1]
                         }}
-                        transition={{
-                            duration: isMoving ? 0.3 : 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
+                        transition={{ duration: isMoving ? 0.2 : 1.5, repeat: Infinity, ease: "easeInOut" }}
                     />
-                    {/* Right Wing */}
+                    {/* Right Wing (Upper) */}
                     <motion.div
-                        className="absolute right-0 top-1/2 w-4 h-6 -translate-y-1/2 translate-x-3"
+                        className="absolute right-0 top-1/2 w-6 h-8 -translate-y-[80%] translate-x-4 blur-[2px]"
                         style={{
-                            background: `linear-gradient(-135deg, ${visuals.color}60 0%, transparent 80%)`,
-                            borderRadius: '0 50% 50% 50%',
-                            filter: 'blur(2px)'
+                            background: `radial-gradient(ellipse at center, ${visuals.color}80 0%, transparent 80%)`,
+                            borderRadius: '10% 100% 80% 80%',
                         }}
                         animate={{
-                            rotate: isMoving ? [15, -15, 15] : [5, -5, 5],
-                            scaleX: isMoving ? [1, 1.3, 1] : [1, 1.1, 1]
+                            rotate: isMoving ? [30, -30, 30] : [10, -10, 10],
+                            scaleY: isMoving ? [1, 1.4, 1] : [1, 1.1, 1]
                         }}
-                        transition={{
-                            duration: isMoving ? 0.3 : 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }}
+                        transition={{ duration: isMoving ? 0.2 : 1.5, repeat: Infinity, ease: "easeInOut" }}
                     />
                 </motion.div>
 
-                {/* LICHTFEE: Core Body - Organic glowing center */}
+                {/* LICHTFEE: Core Body - High Intensity Soul */}
                 <motion.div
-                    className="relative w-7 h-7 rounded-full flex items-center justify-center overflow-visible"
+                    className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-visible"
                     style={{
-                        background: `radial-gradient(circle at 35% 35%, ${visuals.color} 0%, ${visuals.color}90 40%, rgba(0,0,0,0.3) 100%)`,
+                        background: `radial-gradient(circle at 35% 35%, white 0%, ${visuals.color} 40%, rgba(0,0,0,0.4) 100%)`,
                         boxShadow: `
-                            0 0 25px ${visuals.glow},
-                            0 0 50px ${visuals.glow}40,
-                            inset 2px 2px 6px rgba(255,255,255,0.3),
-                            inset -2px -2px 6px rgba(0,0,0,0.2)
+                            0 0 35px ${visuals.glow},
+                            0 0 70px ${visuals.glow}60,
+                            inset 0 0 10px white
                         `
                     }}
                     animate={{
-                        scale: action === 'highlight' ? [1, 1.3, 1] : [1, 1.05, 1],
+                        scale: action === 'highlight' ? [1, 1.4, 1] : [1, 1.1, 1],
                     }}
                     transition={{
-                        scale: { duration: action === 'highlight' ? 0.4 : 3, repeat: Infinity, ease: "easeInOut" }
+                        scale: { duration: action === 'highlight' ? 0.3 : 2, repeat: Infinity, ease: "easeInOut" }
                     }}
                 >
-                    {/* Glass highlight */}
-                    <div
-                        className="absolute rounded-full"
-                        style={{
-                            width: '50%',
-                            height: '50%',
-                            top: '12%',
-                            left: '12%',
-                            background: 'radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 60%, transparent 100%)',
-                            filter: 'blur(1px)'
-                        }}
-                    />
-
-                    {/* Core Soul Spark */}
+                    {/* Core Soul Spark - CRYSTAL */}
                     <motion.div
-                        className="w-2.5 h-2.5 rounded-full"
+                        className="w-3 h-3 rounded-full"
                         style={{
-                            background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.3) 60%, transparent 100%)',
-                            boxShadow: `0 0 12px white, 0 0 20px ${visuals.color}`
+                            background: 'white',
+                            boxShadow: `0 0 15px white, 0 0 25px ${visuals.color}`
                         }}
                         animate={{
-                            scale: [0.9, 1.2, 0.9],
-                            opacity: [0.8, 1, 0.8]
+                            scale: [0.8, 1.5, 0.8],
+                            opacity: [0.9, 1, 0.9],
+                            filter: ['brightness(1)', 'brightness(2)', 'brightness(1)']
                         }}
                         transition={{
-                            duration: 1.2,
+                            duration: 0.8,
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}

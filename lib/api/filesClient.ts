@@ -61,13 +61,17 @@ export const uploadCompanyFile = async (file: File, companyId: string): Promise<
     if (!token) throw new CoreError('Unauthorized', 401);
 
     const formData = new FormData();
+    // V10.6: Ensure field names match backend EXACTLY (file, company_id)
     formData.append('file', file);
     formData.append('company_id', companyId);
 
+    // CRITICAL: We do NOT set Content-Type header. 
+    // Browser must set it with the correct boundary for multipart/form-data.
     const response = await fetch(`${CORE_BASE_URL}/v1/files/upload`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
         },
         body: formData
     });
@@ -76,8 +80,17 @@ export const uploadCompanyFile = async (file: File, companyId: string): Promise<
         let message = `Upload Failed: ${response.status} ${response.statusText}`;
         try {
             const errorBody = await response.json();
-            if (errorBody.detail) message = errorBody.detail;
-        } catch { }
+            console.error('[Upload Error Body]', errorBody);
+            if (errorBody.detail) {
+                if (Array.isArray(errorBody.detail)) {
+                    message = errorBody.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+                } else {
+                    message = typeof errorBody.detail === 'string' ? errorBody.detail : JSON.stringify(errorBody.detail);
+                }
+            }
+        } catch (e) {
+            console.error('[Upload Parse Error]', e);
+        }
         throw new CoreError(message, response.status);
     }
 
@@ -115,8 +128,14 @@ export const downloadCompanyFile = async (fileId: string, filename: string): Pro
     window.URL.revokeObjectURL(url);
 };
 
-export const requestCreateNodeFromFile = async (fileId: string): Promise<any> => {
-    return corePost(`/v1/files/${fileId}/create-node`, {});
+export const requestCreateNodeFromFile = async (
+    fileId: string,
+    options?: { autoExecute?: boolean; folderId?: string }
+): Promise<any> => {
+    return corePost(`/v1/files/${fileId}/create-node`, {
+        auto_execute: options?.autoExecute ?? true,
+        folder_id: options?.folderId
+    });
 };
 
 export const confirmCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {

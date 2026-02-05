@@ -84,7 +84,7 @@ export const Folder: React.FC<FolderProps> = ({
 
     return (
         <motion.div
-            className="absolute cursor-pointer group"
+            className="absolute cursor-pointer group pointer-events-auto"
             style={{
                 left: position.x,
                 top: position.y,
@@ -121,6 +121,8 @@ export const Folder: React.FC<FolderProps> = ({
             onMouseEnter={() => onHover?.(true)}
             onMouseLeave={() => onHover?.(false)}
         >
+            {/* Invisible Hit Area expansion for easier hovering */}
+            <div className="absolute inset-0 -m-3 rounded-full" />
             {/* Promoted Halo */}
             {isPromoted && (
                 <motion.div
@@ -180,26 +182,16 @@ export const Folder: React.FC<FolderProps> = ({
                 )}
             </motion.div>
 
-            {/* Folder Label (appears on hover) */}
+            {/* Folder Label (appears on hover, subtle by default) */}
             <motion.div
-                className="absolute -bottom-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-20 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 pointer-events-none"
                 initial={{ y: 5 }}
                 animate={{ y: 0 }}
             >
-                <div className="bg-black/80 backdrop-blur-sm px-3 py-1 rounded-lg border border-indigo-500/30 max-w-32">
-                    <div className="text-xs text-white font-medium whitespace-nowrap truncate">
+                <div className="bg-black/40 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 max-w-[140px] shadow-lg">
+                    <div className="text-[10px] text-white font-medium whitespace-nowrap truncate group-hover:text-indigo-300">
                         {folder.name}
                     </div>
-                    {folder.description && (
-                        <div className="text-[10px] text-indigo-200/70 mt-0.5 truncate">
-                            {folder.description}
-                        </div>
-                    )}
-                    {folder.node_count && folder.node_count > 0 && (
-                        <div className="text-[9px] text-indigo-300/60 mt-0.5">
-                            {folder.node_count} Dateien
-                        </div>
-                    )}
                 </div>
             </motion.div>
 

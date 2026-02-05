@@ -54,9 +54,9 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
 
     if (!options.skipAuth) {
         const token = readCookie(AUTH_COOKIE);
-        const devToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
-        const fallbackToken = process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT || process.env.NEXT_PUBLIC_API_TOKEN;
-        const finalToken = token || devToken || fallbackToken;
+        // Only use devToken if NO cookie is present - gives priority to fresh sessions
+        const devToken = !token && typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
+        const finalToken = token || devToken;
 
         if (finalToken) {
             // Check if token is expired BEFORE making request
@@ -113,9 +113,11 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         try {
             const errorBody = await response.json();
             if (errorBody.detail) {
-                message = typeof errorBody.detail === 'string'
-                    ? errorBody.detail
-                    : JSON.stringify(errorBody.detail);
+                if (Array.isArray(errorBody.detail)) {
+                    message = errorBody.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+                } else {
+                    message = typeof errorBody.detail === 'string' ? errorBody.detail : JSON.stringify(errorBody.detail);
+                }
             }
         } catch {
             // ignore parse errors
@@ -152,6 +154,18 @@ export async function corePut(path: string, body: any): Promise<any> {
 export async function coreDelete(path: string): Promise<void> {
     await coreRequest(path, { method: 'DELETE' });
 }
+
+export interface CompanyUpdatePayload {
+    name?: string;
+    description?: string | null;
+    logo_url?: string | null;
+    is_demo?: boolean;
+}
+
+export async function updateCompany(companyId: string, payload: CompanyUpdatePayload): Promise<CoreCompany> {
+    return corePatch(`/v1/companies/${companyId}`, payload);
+}
+
 
 // ========== AUTH FUNCTIONS ==========
 
@@ -431,6 +445,42 @@ export async function fetchTreeData(tenantId?: string, companyId?: string): Prom
     return coreGet(`/v1/tree${query}`);
 }
 
+export async function fetchNodeChildren(nodeId: string, type: 'department' | 'space' | 'folder'): Promise<CoreTreeNode[]> {
+    const children = await coreGet(`/v1/tree/${nodeId}/children?type=${type}`);
+    // Map raw response to CoreTreeNode if necessary, but the backend returns Tree* models which usually match.
+    // However, we should ensure the type mapping is correct for the UI.
+
+    // Helper to map backend shape to frontend CoreTreeNode
+    return (children || []).map((c: any) => {
+        // Backend returns mixed types. We need to normalize.
+        // If it looks like a folder (has 'space_id' or 'parent_folder_id' or 'folder-type')
+        // For now, let's assume the backend TreeFolder model matches CoreTreeNode loosely.
+
+        let nodeType = 'file';
+        if (c.folders !== undefined && c.subfolders !== undefined) {
+            // It's a Space (has folders) or Department (has spaces)?
+            // Actually, TreeDepartment has 'spaces', TreeSpace has 'folders'
+            if (c.spaces !== undefined) return { ...c, type: 'department', children: [] };
+            if (c.folders !== undefined) return { ...c, type: 'space', children: [] };
+            if (c.nodes !== undefined) return { ...c, type: 'folder', children: [] };
+        }
+
+        // If we are lazy loading, we receive:
+        // Dept -> Spaces
+        // Space -> Folders
+        // Folder -> Subfolders + Nodes
+
+        if (type === 'department') return { ...c, type: 'space', children: [] };
+        if (type === 'space') return { ...c, type: 'folder', children: [] };
+
+        // Folder returns mixed content
+        if (c.type) return { ...c, nodeType: c.type }; // Node already has type field like 'document'
+
+        // Fallback for subfolders which might not have explicit type field in all serializations
+        return { ...c, type: 'folder', children: [] };
+    });
+}
+
 
 // ========== CREATE FUNCTIONS ==========
 // Backend now auto-generates IDs and slugs
@@ -459,11 +509,13 @@ export async function createFolder(payload: CreateFolderPayload): Promise<CoreFo
 }
 
 export interface CreateNodePayload {
-    folder_id: string;
+    folder_id?: string;
+    company_id?: string; // NEW: support direct company creation
     title: string;
     type: 'document' | 'task' | 'note' | 'link' | 'other';
     content?: string;
     url?: string;
+    metadata?: any;
 }
 
 export async function createNode(payload: CreateNodePayload): Promise<CoreNode> {
@@ -475,6 +527,8 @@ export interface UpdateNodePayload {
     type?: 'document' | 'task' | 'note' | 'link' | 'other';
     content?: string;
     url?: string;
+    folder_id?: string; // NEW: support move
+    metadata?: any;
 }
 
 export async function updateNode(id: string, payload: UpdateNodePayload): Promise<CoreNode> {
@@ -665,4 +719,19 @@ export async function getNodeActions(nodeId: string): Promise<AIAction[]> {
         console.error("AI Actions fetch failed", e);
         return [];
     }
+}
+
+// ========== SEARCH ==========
+
+export interface SearchResult {
+    query: string;
+    results: any[];
+    total: number;
+    search_type: string;
+}
+
+export async function searchGlobal(query: string, companyId?: string): Promise<SearchResult> {
+    const q = encodeURIComponent(query);
+    const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
+    return coreGet(`/v1/search?q=${q}${c}`);
 }

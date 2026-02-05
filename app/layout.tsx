@@ -12,6 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { usePathname } from "next/navigation";
 import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
+import { StandardModeHandler } from "@/components/ui/StandardModeHandler";
 
 export default function RootLayout({
   children,
@@ -89,16 +90,11 @@ export default function RootLayout({
     setMounted(true);
   }, []);
 
-  // REMOVED BLANK SCREEN BLOCKER - render immediately
-  // if (!mounted) {
-  //   return blank body...
-  // }
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>SAIMÔR | Môra OS</title>
-        <meta name="description" content="Intelligentes Wissenssystem" />
+        <title>SAIMOR | Mora OS</title>
+        <meta name="description" content="Intelligent System" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
           rel="stylesheet"
@@ -107,6 +103,7 @@ export default function RootLayout({
       <body className="antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
         <ErrorBoundary>
           <MoraSessionProvider>
+            <StandardModeHandler />
             {children}
             {mounted && (
               <>

@@ -41,6 +41,9 @@ interface MoraUpdatesFeedProps {
     title?: string;
     maxEvents?: number;
     compact?: boolean;
+    showHeader?: boolean;
+    showHilToggle?: boolean;
+    className?: string;
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -50,6 +53,10 @@ const EVENT_LABELS: Record<string, string> = {
     context_shift: "Context Shift",
     potential_risk: "Potential Risk",
     related_objects_cluster: "Related Cluster",
+    data_change: "Data Change",
+    system_alert: "System Alert",
+    insight: "Insight",
+    signal: "Signal",
 };
 
 const getEventLabel = (eventType: string) => {
@@ -90,6 +97,9 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
     title = "Was gibt es Neues?",
     maxEvents = 12,
     compact = false,
+    showHeader = true,
+    showHilToggle = true,
+    className,
 }) => {
     const {
         activeCompanyId,
@@ -157,6 +167,69 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
             return dept === contextDepartmentId;
         });
     }, [events, scope, contextDepartmentId]);
+
+    const getEventSummary = (event: MindLoopEvent) => {
+        const payload = typeof event.payload === "object" ? event.payload : undefined;
+        return (
+            pickPayloadValue(payload, "title", "summary") ||
+            pickPayloadValue(payload, "intent", "message") ||
+            pickPayloadValue(payload, "description") ||
+            pickPayloadValue(payload, "action", "trigger", "reason") ||
+            getEventLabel(event.event_type)
+        );
+    };
+
+    const getEventActionLabel = (event: MindLoopEvent) => {
+        const payload = typeof event.payload === "object" ? event.payload : undefined;
+        return pickPayloadValue(payload, "action", "intent", "trigger", "reason", "event");
+    };
+
+    const filteredEvents = useMemo(() => {
+        const noiseActions = new Set([
+            "loadCompanies",
+            "loadDepartments",
+            "loadSpaces",
+            "loadFolders",
+            "loadNodes",
+            "loadTree"
+        ]);
+        const cleaned = visibleEvents.filter((event) => {
+            const payload = typeof event.payload === "object" ? event.payload : undefined;
+            const action = pickPayloadValue(payload, "action", "intent", "trigger");
+            if (action && noiseActions.has(String(action))) return false;
+            return true;
+        });
+        const seen = new Set<string>();
+        const deduped: MindLoopEvent[] = [];
+        cleaned.forEach((event) => {
+            const payload = typeof event.payload === "object" ? event.payload : undefined;
+            const action = pickPayloadValue(payload, "action", "intent", "trigger");
+            const nodeId = extractNodeId(payload);
+            const key = [event.event_type, action || "", nodeId || ""].join("|");
+            if (seen.has(key)) return;
+            seen.add(key);
+            deduped.push(event);
+        });
+        return deduped;
+    }, [visibleEvents]);
+
+    const dedupedEvents = useMemo(() => {
+        const seen = new Set<string>();
+        return filteredEvents.filter((event) => {
+            const summary = getEventSummary(event);
+            const timestamp = event.created_at || event.timestamp;
+            const bucket = timestamp ? Math.floor(new Date(timestamp).getTime() / 60000) : 0;
+            const key = `${event.event_type}|${event.source}|${summary}|${bucket}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, [filteredEvents]);
+
+    const prioritizedEvents = useMemo(() => {
+        const nonAwareness = dedupedEvents.filter((event) => event.event_type !== "awareness");
+        return nonAwareness.length > 0 ? nonAwareness : dedupedEvents;
+    }, [dedupedEvents]);
 
     const buildAction = (event: MindLoopEvent): FeedAction | null => {
         const payload = typeof event.payload === "object" ? event.payload : undefined;
@@ -268,36 +341,40 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
     };
 
     return (
-        <div className={`h-full flex flex-col ${compact ? "rounded-xl" : "rounded-2xl"} border border-white/10 bg-black/40 backdrop-blur-xl`}>
-            <div className={`flex items-center justify-between ${compact ? "px-3 py-2" : "px-4 py-3"} border-b border-white/10`}>
-                <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-50">{title}</span>
-                    <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 bg-emerald-500/10 rounded-full">
-                        {visibleEvents.length}
-                    </span>
+        <div className={`h-full flex flex-col ${compact ? "rounded-xl" : "rounded-2xl"} border border-white/10 bg-black/40 backdrop-blur-xl ${className ?? ""}`}>
+            {showHeader && (
+                <div className={`flex items-center justify-between ${compact ? "px-3 py-2" : "px-4 py-3"} border-b border-white/10`}>
+                    <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-emerald-400" />
+                        <span className="text-sm font-medium text-emerald-50">{title}</span>
+                        <span className="text-[10px] text-emerald-400/70 px-2 py-0.5 bg-emerald-500/10 rounded-full">
+                            {prioritizedEvents.length}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {showHilToggle && (
+                            <button
+                                onClick={() => setHilEnabled(!hilEnabled)}
+                                className={`text-[9px] px-2 py-1 rounded-full transition-colors ${hilEnabled
+                                    ? "bg-emerald-500/20 text-emerald-300"
+                                    : "bg-white/5 text-gray-400 hover:bg-white/10"
+                                    }`}
+                                title="Human-in-the-loop toggle"
+                            >
+                                {hilEnabled ? "Apply w/ Confirm" : "Auto Apply"}
+                            </button>
+                        )}
+                        <button
+                            onClick={fetchEvents}
+                            disabled={loading}
+                            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
+                            title="Refresh"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${loading ? "animate-spin" : ""}`} />
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setHilEnabled(!hilEnabled)}
-                        className={`text-[9px] px-2 py-1 rounded-full transition-colors ${hilEnabled
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-white/5 text-gray-400 hover:bg-white/10"
-                            }`}
-                        title="Human-in-the-loop toggle"
-                    >
-                        {hilEnabled ? "Apply w/ Confirm" : "Auto Apply"}
-                    </button>
-                    <button
-                        onClick={fetchEvents}
-                        disabled={loading}
-                        className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
-                        title="Refresh"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${loading ? "animate-spin" : ""}`} />
-                    </button>
-                </div>
-            </div>
+            )}
 
             {error && (
                 <div className="px-4 py-2 text-xs text-red-400 bg-red-500/10 border-b border-white/10">
@@ -306,19 +383,16 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
             )}
 
             <div className={`flex-1 overflow-y-auto ${compact ? "p-3" : "p-4"} space-y-3`}>
-                {visibleEvents.length === 0 && !loading && (
+                {prioritizedEvents.length === 0 && !loading && (
                     <div className="text-center text-xs text-gray-500 py-8">
                         No updates yet
                     </div>
                 )}
-                {visibleEvents.map((event) => {
+                {prioritizedEvents.map((event) => {
                     const payload = typeof event.payload === "object" ? event.payload : undefined;
                     const action = buildAction(event);
-                    const summary =
-                        pickPayloadValue(payload, "title", "summary") ||
-                        pickPayloadValue(payload, "intent", "message") ||
-                        pickPayloadValue(payload, "description") ||
-                        getEventLabel(event.event_type);
+                    const summary = getEventSummary(event);
+                    const actionLabel = getEventActionLabel(event);
                     const timestamp = event.created_at || event.timestamp;
                     const scopedCompany = pickPayloadValue(payload, "company_id", "companyId");
                     const scopedDept = pickPayloadValue(payload, "department_id", "departmentId");
@@ -332,7 +406,7 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-emerald-300/80">
                                         <span>{getEventLabel(event.event_type)}</span>
-                                        <span className="text-white/30">???</span>
+                                        {actionLabel && <span className="text-white/40">{actionLabel}</span>}
                                         <span className="text-white/40">{event.source}</span>
                                     </div>
                                     <div className="text-sm text-white/90 leading-snug">

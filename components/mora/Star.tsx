@@ -51,11 +51,12 @@ export const Star: React.FC<StarProps> = ({
     isHoveredByPlanet = false,
     isPromoted = false
 }) => {
+    // MASTERBIBEL: Smaller, more ethereal planets - floating bubbles
     const sizeMap = {
-        sm: { diameter: 12, iconSize: 8 },
-        md: { diameter: 16, iconSize: 10 },
-        lg: { diameter: 22, iconSize: 12 },
-        xl: { diameter: 32, iconSize: 14 }
+        sm: { diameter: 14, iconSize: 8 },
+        md: { diameter: 20, iconSize: 10 },
+        lg: { diameter: 26, iconSize: 14 },
+        xl: { diameter: 40, iconSize: 20 }
     };
 
     const starSize = sizeMap[size];
@@ -66,7 +67,7 @@ export const Star: React.FC<StarProps> = ({
 
     return (
         <motion.div
-            className="absolute cursor-pointer group"
+            className="absolute cursor-pointer group pointer-events-auto"
             data-agency-id={space.id}
             style={{
                 left: position.x,
@@ -95,8 +96,8 @@ export const Star: React.FC<StarProps> = ({
             onMouseEnter={() => onHover?.(true)}
             onMouseLeave={() => onHover?.(false)}
         >
-            {/* Larger hit area for easier clicking */}
-            <div className="absolute inset-0 -m-3 rounded-full" />
+            {/* Hit area extension - MUST have auto to capture hover */}
+            <div className="absolute inset-0 -m-4 rounded-full pointer-events-auto" />
 
             {/* Promoted Halo */}
             {isPromoted && (
@@ -138,17 +139,14 @@ export const Star: React.FC<StarProps> = ({
                 <div
                     className="absolute rounded-full"
                     style={{
-                        width: starSize.diameter * 0.35,
-                        height: starSize.diameter * 0.35,
-                        top: '18%',
-                        left: '18%',
-                        background: 'rgba(255,255,255,0.18)',
-                        filter: 'blur(1px)'
+                        width: '40%',
+                        height: '40%',
+                        top: '15%',
+                        left: '15%',
+                        background: 'radial-gradient(circle at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%)',
+                        filter: 'blur(0.5px)'
                     }}
                 />
-                {hasContent && (
-                    <Icon size={starSize.iconSize} className="text-white/70" strokeWidth={1.5} />
-                )}
             </div>
 
             {/* Orbit ring for active/hovered moons */}
@@ -168,22 +166,29 @@ export const Star: React.FC<StarProps> = ({
                 />
             )}
 
-            {/* Label on Hover - TESLA Style */}
+            {/* Label - Always visible (dimmed), bright on hover */}
+            {/* Label - Visible on hover, subtle by default */}
+            <motion.div
+                className="absolute -bottom-6 left-1/2 -translate-x-1/2 pointer-events-none whitespace-nowrap opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300"
+                initial={{ y: 5 }}
+                animate={{ y: 0 }}
+            >
+                <div className="text-[10px] text-cyan-300/90 font-medium tracking-wide group-hover:text-white">
+                    {space.name}
+                </div>
+            </motion.div>
+
+            {/* Extended info on hover */}
             <motion.div
                 className="absolute -bottom-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                 initial={{ y: 5 }}
                 animate={{ y: 0 }}
             >
-                <div className="glass-panel px-3 py-1.5 whitespace-nowrap">
-                    <div className="text-xs text-white/80 font-light">
-                        {space.name}
+                {(space.folder_count || 0) > 0 && (
+                    <div className="text-[9px] text-emerald-400/70 bg-black/40 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        {space.folder_count} folders
                     </div>
-                    {(space.folder_count || 0) > 0 && (
-                        <div className="text-[10px] text-amber-400/60 mt-0.5">
-                            {space.folder_count} folders
-                        </div>
-                    )}
-                </div>
+                )}
             </motion.div>
         </motion.div>
     );
