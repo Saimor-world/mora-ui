@@ -3,8 +3,8 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
+import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
-import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
 import { StarField } from '@/components/visual/StarField';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
@@ -129,7 +129,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         return planetPositions.map((p) => `M 50 50 L ${p.x} ${p.y}`).join(' ');
     }, [planetPositions]);
 
-    const displayCompanyName = currentCompany?.name || 'Workspace';
+    const displayCompanyName = useMemo(() => {
+        const raw = currentCompany?.name?.trim();
+        const tenantId = currentCompany?.tenant_id;
+        const isDemo = currentCompany?.is_demo;
+        if (!raw) {
+            if (isDemo || tenantId === TENANT_DEMO) return 'Simple Coffee Group';
+            if (tenantId === TENANT_HQ) return 'Saimor HQ';
+            return 'Workspace';
+        }
+        const normalized = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (normalized.includes('foerderlogiken') || normalized.includes('forderlogiken')) {
+            return isDemo || tenantId === TENANT_DEMO ? 'Simple Coffee Group' : 'Saimor HQ';
+        }
+        return raw;
+    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo]);
     const titleStyle = useMemo(() => {
         const length = displayCompanyName.length;
         const max = length > 22 ? 44 : length > 18 ? 50 : 56;
@@ -146,7 +160,26 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         <div className="relative w-full h-full overflow-hidden text-white bg-transparent">
             {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
             <StarField warp={false} />
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#033b2f] via-[#051025] to-[#0a6b52] opacity-70 z-[-8] pointer-events-none" />
+            {/* Galaxy wash */}
+            <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
+                background: `
+                    radial-gradient(1200px 600px at 60% 60%, rgba(30, 120, 180, 0.35) 0%, transparent 65%),
+                    radial-gradient(900px 420px at 20% 25%, rgba(34, 197, 94, 0.22) 0%, transparent 60%),
+                    radial-gradient(820px 420px at 80% 35%, rgba(99, 102, 241, 0.25) 0%, transparent 55%),
+                    radial-gradient(1000px 520px at 40% 80%, rgba(9, 60, 90, 0.25) 0%, transparent 60%)
+                `
+            }} />
+            {/* Deep space gradient */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#041c1a] via-[#071422] to-[#0a2b2a] opacity-85 z-[-8] pointer-events-none" />
+            {/* Galaxy band */}
+            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
+                background: "linear-gradient(120deg, rgba(16,185,129,0.06) 0%, rgba(6,182,212,0.12) 45%, rgba(99,102,241,0.1) 70%, transparent 100%)",
+                mixBlendMode: "screen"
+            }} />
+            {/* Subtle vignette */}
+            <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
+                background: "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.8) 100%)"
+            }} />
 
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
             <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30">
@@ -248,11 +281,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         d={coreConnectionsPath}
                         fill="none"
                         stroke="url(#coreBeam)"
-                        strokeWidth="0.35"
-                        strokeDasharray="2 7"
+                        strokeWidth="0.25"
+                        strokeDasharray="2 8"
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: hoverPlanetId ? 0.5 : 0.18 }}
+                        animate={{ opacity: hoverPlanetId ? 0.35 : 0.12 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 )}
@@ -262,12 +295,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     d={connectionPath}
                     fill="none"
                     stroke="url(#orbitGrad)"
-                    strokeWidth="0.45"
+                    strokeWidth="0.35"
                     strokeDasharray="4 4"
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={{
                         pathLength: 1,
-                        opacity: hoverPlanetId ? 0.75 : 0.25,
+                        opacity: hoverPlanetId ? 0.45 : 0.18,
                         strokeDashoffset: [0, -50]
                     }}
                     transition={{
@@ -281,12 +314,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* 3. PLANET LAYER (Managed by Store Data) */}
             <div className="absolute inset-0 z-30 pointer-events-none">
                 {planetPositions.map((p, idx) => {
-                    // Simulate "Live" Data until connected to realtime websocket
-                    // Deterministic pseudo-random based on index to keep it stable during render
+                    // DEMO PLACEHOLDER DATA - Not connected to real metrics yet
+                    // These values are deterministic mock data for UI demonstration
                     const seed = (idx + 1) * 123.45;
-                    const mockHealth = 85 + (Math.floor(seed % 15)); // 85-99%
-                    const mockActivity = 10 + (Math.floor(seed % 350)); // 10-360V
-                    const mockCapacity = 40 + (Math.floor(seed % 55)); // 40-95%
+                    const mockHealth = 85 + (Math.floor(seed % 15));
+                    const mockActivity = 10 + (Math.floor(seed % 350));
+                    const mockCapacity = 40 + (Math.floor(seed % 55));
 
                     return (
                         <Planet
@@ -354,29 +387,29 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
                                 <InsightCard
                                     icon={<Cpu className="w-4 h-4" />}
-                                    label="Cognitive Load"
-                                    value="24.8 ops/s"
+                                    label="Departments"
+                                    value={`${departments.length}`}
                                     status="optimal"
-                                    progress={78}
+                                    progress={Math.min(departments.length * 10, 100)}
                                 />
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}
-                                    label="Data Integrity"
-                                    value="Verified"
-                                    status="secure"
+                                    label="Tenant"
+                                    value={currentCompany?.tenant_id?.replace('tenant-', '') || 'unknown'}
+                                    status={currentCompany?.is_demo ? 'neutral' : 'secure'}
                                 />
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
-                                    label="Neural Memory"
-                                    value="1.2 TB"
+                                    label="Companies"
+                                    value={`${companies.length}`}
                                     status="stable"
-                                    progress={42}
+                                    progress={Math.min(companies.length * 20, 100)}
                                 />
                                 <InsightCard
                                     icon={<Zap className="w-4 h-4" />}
-                                    label="Core Resonance"
-                                    value="99.9%"
-                                    status="synced"
+                                    label="Status"
+                                    value={orbState || 'idle'}
+                                    status={orbState === 'alert' ? 'warning' : 'synced'}
                                 />
                             </div>
 
@@ -394,35 +427,39 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* MORA UPDATES FEED (Owner Home) */}
-            {viewMode === 'owner' && (
-                <div className="absolute right-6 top-28 bottom-8 w-[360px] z-40 pointer-events-auto">
-                    <MoraUpdatesFeed scope="company" />
-                </div>
-            )}
         </div>
     );
 }
 
-function InsightCard({ label, value, status, icon, progress }: { label: string, value: string, status: string, icon: React.ReactNode, progress?: number }) {
+type InsightCardProps = {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    status: 'optimal' | 'secure' | 'stable' | 'synced' | 'warning' | 'neutral';
+    progress?: number;
+};
+
+function InsightCard({ icon, label, value, status, progress }: InsightCardProps) {
+    const statusTone = status === 'optimal' || status === 'secure'
+        ? 'text-emerald-400'
+        : status === 'synced'
+            ? 'text-cyan-400'
+            : status === 'stable'
+                ? 'text-sky-300'
+                : status === 'warning'
+                    ? 'text-amber-400'
+                    : 'text-white/50';
+
     return (
-        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 flex flex-col gap-4 relative overflow-hidden group hover:bg-white/10 hover:border-white/20 transition-all duration-500">
-            <div className="flex justify-between items-start">
-                <div className="p-2 bg-white/5 rounded-xl text-cyan-400 group-hover:scale-110 transition-transform duration-500">
-                    {icon}
-                </div>
-                <div className="flex flex-col items-end">
-                    <span className="text-[9px] text-emerald-400/60 uppercase tracking-widest font-bold">{status}</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1 shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
-                </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-white/40">
+                <span className={statusTone}>{icon}</span>
+                <span>{label}</span>
             </div>
-
             <div className="space-y-1">
-                <div className="text-[10px] text-white/40 uppercase tracking-widest">{label}</div>
                 <div className="text-2xl font-light tracking-wider text-white/90">{value}</div>
+                <div className={`text-[10px] uppercase tracking-[0.3em] ${statusTone}`}>{status}</div>
             </div>
-
             {progress !== undefined && (
                 <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                     <motion.div

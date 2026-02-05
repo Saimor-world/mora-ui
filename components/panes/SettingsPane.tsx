@@ -1,17 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSession } from "next-auth/react";
 import { useMoraStore } from '@/lib/store/moraState';
 import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle } from 'lucide-react';
+import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
+import { updateCompany } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const { data: session } = useSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
-    const { user, updateUserSettings, departments, treeData, loadTree, loadDepartments, activeCompanyId } = useMoraStore();
+    const { user, updateUserSettings, departments, treeData, loadTree, loadDepartments, activeCompanyId, isStandardMode, setIsStandardMode, companies, loadCompanies } = useMoraStore();
     const pane = getPane(id);
 
     // Workspace Edit Mode State
@@ -26,12 +28,19 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const [reducedMotion, setReducedMotion] = useState(false);
     const [interfaceScale, setInterfaceScale] = useState(1);
 
-    // Phase 6.3: Role-based Tab Visibility
+    const [brandingName, setBrandingName] = useState('');
+    const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
+    const [brandingSaving, setBrandingSaving] = useState(false);
+
+        const activeCompany = useMemo(() => companies.find(c => c.id === activeCompanyId) || null, [companies, activeCompanyId]);
+
+// Phase 6.3: Role-based Tab Visibility
     // Owner & Admin & Demo get full access
     const canManageTeam = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
     const canViewSystem = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
     // Workspace editing only for Owner/Admin (not demo for safety)
     const canEditWorkspace = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
+    const canEditBranding = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'system_owner';
 
     const tabs = [
         { id: 'profile', label: 'Profil', icon: User },
@@ -51,6 +60,12 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     }, [user?.role, activeTab]);
 
     useEffect(() => {
+        if (!activeCompany) return;
+        setBrandingName(activeCompany.name || '');
+        setBrandingLogo(activeCompany.logo_url || null);
+    }, [activeCompany?.id]);
+
+useEffect(() => {
         if (user?.settings) {
             setTheme(user.settings.theme || 'deep-space');
             setLanguage(user.settings.language || 'en');
@@ -147,22 +162,107 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
                                 <label className="text-xs uppercase tracking-wider text-white/40">Theme</label>
                                 <div className="flex gap-4">
                                     <button
-                                        onClick={() => { setTheme('deep-space'); saveSetting({ theme: 'deep-space' }); }}
-                                        className={`h-24 w-32 rounded-lg bg-black border relative overflow-hidden transition-all ${theme === 'deep-space' ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-white/10'}`}
+                                        onClick={() => {
+                                            setTheme('deep-space');
+                                            setIsStandardMode(false);
+                                            saveSetting({ theme: 'deep-space' });
+                                        }}
+                                        className={`h-24 w-32 rounded-lg bg-black border relative overflow-hidden transition-all ${!isStandardMode
+                                            ? 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                                            : 'border-white/10 opacity-70 hover:opacity-100'
+                                            }`}
                                     >
                                         <div className="absolute inset-0 bg-emerald-900/10" />
-                                        {theme === 'deep-space' && <Check className="absolute top-2 right-2 text-emerald-400" size={14} />}
-                                        <div className="absolute bottom-2 left-2 text-xs text-emerald-400 font-medium">Deep Space</div>
+                                        {!isStandardMode && <Check className="absolute top-2 right-2 text-emerald-400" size={14} />}
+                                        <div className="absolute bottom-2 left-2 text-xs text-emerald-400 font-medium">Immersive</div>
                                     </button>
+
                                     <button
-                                        onClick={() => { setTheme('midnight'); saveSetting({ theme: 'midnight' }); }}
-                                        className={`h-24 w-32 rounded-lg bg-[#0a0a0a] border relative overflow-hidden transition-all ${theme === 'midnight' ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : 'border-white/10'}`}
+                                        onClick={() => {
+                                            setTheme('standard');
+                                            setIsStandardMode(true);
+                                            saveSetting({ theme: 'standard' });
+                                        }}
+                                        className={`h-24 w-32 rounded-lg bg-slate-900 border relative overflow-hidden transition-all ${isStandardMode
+                                            ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                            : 'border-white/10 opacity-70 hover:opacity-100'
+                                            }`}
                                     >
-                                        {theme === 'midnight' && <Check className="absolute top-2 right-2 text-blue-400" size={14} />}
-                                        <div className="absolute bottom-2 left-2 text-xs text-white/60">Midnight</div>
+                                        {isStandardMode && <Check className="absolute top-2 right-2 text-blue-400" size={14} />}
+                                        <div className="absolute flex items-center justify-center inset-0 opacity-20">
+                                            <div className="w-16 h-12 bg-white rounded flex flex-col gap-1 p-1">
+                                                <div className="h-1 bg-black/50 w-full rounded-sm" />
+                                                <div className="h-full bg-black/20 w-full rounded-sm" />
+                                            </div>
+                                        </div>
+                                        <div className="absolute bottom-2 left-2 text-xs text-blue-300 font-medium">Standard</div>
                                     </button>
                                 </div>
                             </div>
+
+                            {canEditBranding && activeCompany && (
+                                <div className="pt-4 border-t border-white/5 space-y-4">
+                                    <div className="text-xs uppercase tracking-wider text-white/40">Branding</div>
+                                    <div className="flex flex-col gap-4">
+                                        <CompanyLogoUpload
+                                            value={brandingLogo || undefined}
+                                            onChange={(url) => setBrandingLogo(url)}
+                                            companyName={brandingName || activeCompany.name}
+                                            companyId={activeCompanyId}
+                                        />
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase tracking-wider text-white/40">Company Name</label>
+                                            <input
+                                                value={brandingName}
+                                                onChange={(e) => setBrandingName(e.target.value)}
+                                                placeholder={activeCompany.name}
+                                                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+                                            />
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!activeCompanyId) return;
+                                                        const nextName = brandingName?.trim() || activeCompany.name;
+                                                        const normalized = nextName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                                                        if (normalized.includes('foerderlogiken') || normalized.includes('forderlogiken')) {
+                                                            toast.error('Der Name "Förderlogiken" ist reserviert. Bitte einen anderen Namen wählen.');
+                                                            return;
+                                                        }
+                                                        setBrandingSaving(true);
+                                                        try {
+                                                            const payload: any = {
+                                                                name: nextName,
+                                                                logo_url: brandingLogo
+                                                            };
+                                                            await updateCompany(activeCompanyId, payload);
+                                                            await loadCompanies();
+                                                            toast.success('Branding aktualisiert');
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                            toast.error('Branding-Update fehlgeschlagen');
+                                                        } finally {
+                                                            setBrandingSaving(false);
+                                                        }
+                                                    }}
+                                                    disabled={brandingSaving}
+                                                    className="px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
+                                                >
+                                                    {brandingSaving ? <Loader2 className="animate-spin" size={14} /> : 'Save Branding'}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setBrandingName(activeCompany.name || '');
+                                                        setBrandingLogo(activeCompany.logo_url || null);
+                                                    }}
+                                                    className="px-3 py-2 text-xs text-white/40 hover:text-white/70 transition-colors"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <div className="flex items-center justify-between">
@@ -204,6 +304,85 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
                                             ? 'left-5 bg-emerald-400'
                                             : 'left-0.5 bg-white/40'}`} />
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'notifications' && (
+                        <div className="space-y-6">
+                            <h3 className="text-lg text-white font-light">Mitteilungen & MÔRA</h3>
+
+                            {/* MÔRA Intelligence Section */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs uppercase tracking-wider text-white/40">MÔRA Intelligence</h4>
+
+                                {/* Auto-Execute Toggle */}
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <div className="text-sm text-white/80 font-medium">Auto-Execute Actions</div>
+                                            <div className="text-xs text-white/40 mt-1">
+                                                When disabled, MÔRA will ask for your confirmation before executing tool actions
+                                                (file creation, data modifications, etc.)
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const current = user?.settings?.autoExecuteActions ?? true;
+                                                const next = !current;
+                                                saveSetting({ autoExecuteActions: next });
+                                                toast.info(next
+                                                    ? 'MÔRA wird Aktionen automatisch ausführen'
+                                                    : 'MÔRA wird vor Aktionen fragen');
+                                            }}
+                                            className={`w-12 h-7 rounded-full border relative transition-all flex-shrink-0 ml-4 ${(user?.settings?.autoExecuteActions ?? true)
+                                                ? 'bg-emerald-500/30 border-emerald-500/50'
+                                                : 'bg-white/10 border-white/20'
+                                                }`}
+                                        >
+                                            <div className={`absolute top-1 w-5 h-5 rounded-full transition-all ${(user?.settings?.autoExecuteActions ?? true)
+                                                ? 'left-6 bg-emerald-400'
+                                                : 'left-1 bg-white/40'
+                                                }`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Status Indicator */}
+                                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${(user?.settings?.autoExecuteActions ?? true)
+                                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                        }`}>
+                                        {(user?.settings?.autoExecuteActions ?? true) ? (
+                                            <>
+                                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                                <span>MÔRA führt Aktionen automatisch aus</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                                <span>Datenhoheit aktiv: Bestätigung vor jeder Aktion</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Additional Notification Settings */}
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm text-white/80">Desktop Notifications</div>
+                                            <div className="text-xs text-white/40">Coming soon</div>
+                                        </div>
+                                        <button disabled className="w-10 h-6 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm text-white/80">Sound Effects</div>
+                                            <div className="text-xs text-white/40">Coming soon</div>
+                                        </div>
+                                        <button disabled className="w-10 h-6 rounded-full bg-white/5 border border-white/10 opacity-50 cursor-not-allowed" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

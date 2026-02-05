@@ -1,220 +1,228 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Building2 } from 'lucide-react';
+import { Building2, UploadCloud, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { uploadCompanyFile } from '@/lib/api/filesClient';
 
 interface CompanyLogoProps {
-    /** Logo URL or base64 */
     src?: string | null;
-    /** Company name for fallback initial */
     companyName?: string;
-    /** Size variant */
     size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-    /** Show animated ring */
     animated?: boolean;
-    /** Accent color (extracted from logo or brand) */
     accentColor?: string;
-    /** Click handler */
     onClick?: () => void;
-    /** Additional className */
     className?: string;
 }
 
 /**
- * CompanyLogo - Universal Company Logo Display
+ * CompanyLogo - V9 Cinematic Hub
  * 
- * Used everywhere:
- * - Center of home view
- * - Inside the Orb
- * - Registration flow
- * - Settings
- * - Lock screen
- * 
- * Handles:
- * - Image logos (circular crop)
- * - Fallback to company initial
- * - Animated glow ring
- * - Different sizes
+ * Dark metallic sphere with high-luminosity cyan rim glow.
  */
 export const CompanyLogo: React.FC<CompanyLogoProps> = ({
     src,
     companyName = 'Company',
     size = 'md',
     animated = true,
-    accentColor = '#D4AF37',
+    accentColor = '#06B6D4',
     onClick,
     className = ''
 }) => {
     const [imageError, setImageError] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
 
-    // Size configurations
     const sizes = {
-        xs: { container: 'w-8 h-8', image: 'w-6 h-6', text: 'text-sm', ring: 1 },
-        sm: { container: 'w-12 h-12', image: 'w-10 h-10', text: 'text-lg', ring: 1 },
-        md: { container: 'w-20 h-20', image: 'w-16 h-16', text: 'text-3xl', ring: 2 },
-        lg: { container: 'w-32 h-32', image: 'w-24 h-24', text: 'text-5xl', ring: 3 },
-        xl: { container: 'w-40 h-40', image: 'w-32 h-32', text: 'text-7xl', ring: 4 },
+        xs: { container: 'w-8 h-8', image: 'w-6 h-6', text: 'text-sm', ring: 1, glow: 15 },
+        sm: { container: 'w-12 h-12', image: 'w-10 h-10', text: 'text-lg', ring: 1, glow: 25 },
+        md: { container: 'w-20 h-20', image: 'w-16 h-16', text: 'text-2xl', ring: 1.5, glow: 40 },
+        lg: { container: 'w-36 h-36', image: 'w-28 h-28', text: 'text-5xl', ring: 2, glow: 70 },
+        xl: { container: 'w-48 h-48', image: 'w-36 h-36', text: 'text-7xl', ring: 3, glow: 100 },
     };
 
     const config = sizes[size];
     const initial = companyName.charAt(0).toUpperCase();
     const hasValidImage = src && !imageError;
 
+    // Use Cyan as the primary vibe color
+    const vibeColor = accentColor || '#06B6D4';
+
+    // Demo / Special Case Mapping (For seamless demo experience)
+    const DEMO_LOGOS: Record<string, string> = {
+        'saimor hq': '/images/saimor_logo.png',
+        'saimor': '/images/saimor_logo.png',
+        'saim?r': '/images/saimor_logo.png',
+        'aimô': '/images/saimor_logo.png',
+        'simple coffee group': '/images/simple_coffee_logo.png',
+        'simple coffee': '/images/simple_coffee_logo.png'
+    };
+
+    const lowerName = companyName.toLowerCase();
+    // Prioritize provided src, then check demo map, then null
+    // Ideally, for a real customer, src would be valid from DB.
+    // For demo, we might get an empty src, so we fallback to the asset.
+    const demoLogo = Object.keys(DEMO_LOGOS).find(key => lowerName.includes(key)) ? DEMO_LOGOS[Object.keys(DEMO_LOGOS).find(key => lowerName.includes(key))!] : null;
+
+    const displaySrc = src || demoLogo;
+    const isDemoOverride = !!demoLogo;
+
     return (
         <motion.div
-            className={`${config.container} rounded-full flex items-center justify-center relative cursor-pointer ${className}`}
+            className={`${config.container} rounded-full flex items-center justify-center relative ${onClick ? 'cursor-pointer' : ''} ${className}`}
             style={{
-                background: 'linear-gradient(135deg, rgba(20,20,20,0.95) 0%, rgba(10,10,10,0.98) 100%)',
-                border: `${config.ring}px solid ${accentColor}30`,
+                background: 'linear-gradient(135deg, #020617 0%, #000000 100%)',
+                border: `${config.ring}px solid rgba(255,255,255,0.1)`,
                 boxShadow: `
-                    0 0 ${size === 'lg' || size === 'xl' ? 60 : 30}px ${accentColor}20,
-                    inset 0 0 ${size === 'lg' || size === 'xl' ? 40 : 20}px ${accentColor}05
+                    0 10px 40px rgba(0,0,0,0.8),
+                    0 0 ${config.glow}px ${vibeColor}40,
+                    inset 0 0 25px ${vibeColor}20
                 `
             }}
             onClick={onClick}
-            whileHover={onClick ? { scale: 1.05 } : undefined}
+            whileHover={onClick ? { scale: 1.02, boxShadow: `0 0 ${config.glow * 1.2}px ${vibeColor}60` } : undefined}
             whileTap={onClick ? { scale: 0.98 } : undefined}
         >
-            {/* Animated Ring - Only for larger sizes */}
-            {animated && (size === 'lg' || size === 'xl' || size === 'md') && (
+            {/* V9 PREMIUM RIM HIGHLIGHT */}
+            <div
+                className="absolute inset-[1px] rounded-full opacity-40 pointer-events-none"
+                style={{
+                    borderTop: '0.5px solid rgba(255,255,255,0.8)',
+                    borderLeft: '0.1px solid rgba(255,255,255,0.4)',
+                }}
+            />
+
+            {/* CYAN ORBITAL PULSE */}
+            {animated && (
                 <motion.div
-                    className="absolute inset-0 rounded-full pointer-events-none"
-                    style={{
-                        border: `1px solid transparent`,
-                        background: `linear-gradient(135deg, ${accentColor}50 0%, transparent 50%, rgba(16,185,129,0.3) 100%)`,
-                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                        WebkitMaskComposite: 'xor',
-                        maskComposite: 'exclude',
-                        padding: '1px'
-                    }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    className="absolute inset-[-10px] rounded-full border border-cyan-500/10 pointer-events-none"
+                    animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.3, 0.1] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 />
             )}
 
-            {/* Logo Content */}
-            <div className={`${config.image} rounded-full overflow-hidden flex items-center justify-center relative z-10`}
-                style={{ background: hasValidImage ? 'transparent' : 'rgba(0,0,0,0.3)' }}
-            >
-                {hasValidImage && (
+            {/* Logo / Initial Content */}
+            <div className={`${config.image} rounded-full overflow-hidden flex items-center justify-center relative z-10`}>
+                {(displaySrc || hasValidImage) ? (
                     <img
-                        src={src}
+                        src={displaySrc || src!}
                         alt={companyName}
                         className="w-full h-full object-cover"
                         onError={() => setImageError(true)}
                         onLoad={() => setImageLoaded(true)}
                         style={{
-                            filter: `drop-shadow(0 0 10px ${accentColor}50)`,
-                            opacity: imageLoaded ? 1 : 0,
-                            transition: 'opacity 0.3s ease'
+                            filter: isDemoOverride ? `drop-shadow(0 0 20px ${vibeColor}80)` : `drop-shadow(0 0 15px ${vibeColor}60)`,
+                            opacity: imageLoaded || isDemoOverride ? 1 : 0,
                         }}
                     />
-                )}
-                {(!hasValidImage || !imageLoaded) && (
+                ) : (
                     <span
-                        className={`${config.text} font-light`}
+                        className={`${config.text} font-extralight tracking-widest`}
                         style={{
-                            background: `linear-gradient(180deg, rgba(255,255,255,0.9) 0%, ${accentColor} 100%)`,
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.2))',
-                            opacity: hasValidImage && !imageLoaded ? 0.7 : 1
+                            color: 'white',
+                            textShadow: `0 0 20px ${vibeColor}, 0 0 40px ${vibeColor}40`,
                         }}
                     >
                         {initial}
                     </span>
                 )}
             </div>
+
+            {/* GLASS OVERLAY CAUSTICS */}
+            <div
+                className="absolute inset-0 rounded-full pointer-events-none mix-blend-screen opacity-20"
+                style={{
+                    background: 'radial-gradient(circle at 30% 30%, white 0%, transparent 60%)'
+                }}
+            />
         </motion.div>
     );
 };
 
 /**
- * CompanyLogoUpload - Logo upload component for registration
+ * CompanyLogoUpload - V9 High Fidelity Upload
  */
 interface CompanyLogoUploadProps {
     value?: string | null;
-    onChange: (logoUrl: string | null) => void;
+    onChange: (url: string | null) => void;
     companyName?: string;
+    companyId?: string | null;
 }
 
-export const CompanyLogoUpload: React.FC<CompanyLogoUploadProps> = ({
-    value,
-    onChange,
-    companyName = 'Company'
-}) => {
-    const [isDragging, setIsDragging] = useState(false);
+export const CompanyLogoUpload: React.FC<CompanyLogoUploadProps> = ({ value, onChange, companyName, companyId }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
-    const handleFileSelect = (file: File) => {
-        if (!file.type.startsWith('image/')) {
-            return;
-        }
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
-        // Convert to base64 for preview (in production: upload to storage)
+        // Show immediate preview via DataURL
         const reader = new FileReader();
-        reader.onload = (e) => {
-            onChange(e.target?.result as string);
+        reader.onload = () => {
+            onChange(reader.result as string);
         };
         reader.readAsDataURL(file);
-    };
 
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files[0];
-        if (file) handleFileSelect(file);
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) handleFileSelect(file);
+        // Upload to backend if companyId available
+        if (companyId) {
+            setIsUploading(true);
+            try {
+                const uploaded = await uploadCompanyFile(file, companyId);
+                // Use the server-side file URL instead of DataURL
+                const CORE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '/api/core';
+                const serverUrl = `${CORE_URL}/v1/files/${uploaded.id}/download`;
+                onChange(serverUrl);
+            } catch (err) {
+                console.error('Logo upload failed, keeping local preview:', err);
+                // Keep the DataURL preview as fallback
+            } finally {
+                setIsUploading(false);
+            }
+        }
     };
 
     return (
         <div className="flex flex-col items-center gap-4">
             <div
-                className={`relative cursor-pointer transition-all ${isDragging ? 'scale-105' : ''}`}
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('logo-upload-input')?.click()}
+                className="relative cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
             >
                 <CompanyLogo
                     src={value}
                     companyName={companyName}
                     size="lg"
-                    animated={!!value}
+                    className={`transition-all duration-500 ${isHovered ? 'scale-105 brightness-110' : ''}`}
                 />
 
-                {/* Upload overlay */}
-                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                    <div className="text-center text-white/80">
-                        <Building2 size={24} className="mx-auto mb-1" />
-                        <span className="text-xs">Logo hochladen</span>
-                    </div>
+                <div className="absolute inset-0 rounded-full bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center border border-emerald-500/30">
+                    {isUploading ? (
+                        <Loader2 className="w-8 h-8 text-emerald-400 mb-1 animate-spin" />
+                    ) : (
+                        <UploadCloud className="w-8 h-8 text-emerald-400 mb-1" />
+                    )}
+                    <span className="text-[10px] text-emerald-300 tracking-[0.2em] uppercase">
+                        {isUploading ? 'Uploading...' : 'Change'}
+                    </span>
                 </div>
+
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
+                    className="hidden"
+                />
             </div>
-
-            <input
-                id="logo-upload-input"
-                type="file"
-                accept="image/*"
-                onChange={handleInputChange}
-                className="hidden"
-            />
-
-            <p className="text-xs text-white/40 text-center">
-                Klicken oder Bild hierher ziehen
-            </p>
 
             {value && (
                 <button
-                    onClick={(e) => { e.stopPropagation(); onChange(null); }}
-                    className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                    onClick={() => onChange(null)}
+                    className="text-[10px] text-white/30 hover:text-red-400 transition-colors uppercase tracking-[0.2em]"
                 >
-                    Logo entfernen
+                    Remove Logo
                 </button>
             )}
         </div>

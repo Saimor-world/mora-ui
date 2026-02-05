@@ -12,7 +12,6 @@ import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
 import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
-import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
 
 // Helper: Merge lists and deduplicate by ID
 const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null)[]): T[] => {
@@ -247,33 +246,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            setIsUploading(true);
-            try {
-                // Upload logic here - reusing specific logic if available, else generic upload
-                // Assuming we have an uploadNode or similar action, or just use the drop logic's handler
-                // For now, let's call the existing drop handler if we can find it, 
-                // OR duplicate the upload logic to be safe.
-
-                // Converting FileList to Array for processing
-                const files = Array.from(e.target.files);
-
-                // TODO: Import uploadFile from API. 
-                // For now, I'll assume onDrop logic exists or I'm adding this as a stub.
-                // Creating a simulated event or just passing to a handler is best.
-
-                // MOCK IMPLEMENTATION UNTIL I VERIFY THE API IMPORT
-                console.log("Uploading", files);
-
-                // NOTE: If handleFileUpload exists (which I suspect from 'setIsUploading'), we should use it.
-                // But I haven't successfully grepped it.
-                // I will add a TO-DO to wires this up to the actual API in the next step.
-
-            } catch (err) {
-                console.error("Upload failed", err);
-            } finally {
-                setIsUploading(false);
-                loadContent();
-            }
+            const selectedFiles = Array.from(e.target.files);
+            // Reset input so same file can be re-selected
+            e.target.value = '';
+            await handleUpload(selectedFiles);
         }
     };
 
@@ -709,23 +685,34 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return results;
     }, []);
 
+    // Ensure tree is loaded when search is attempted
+    const [searchTriggeredLoad, setSearchTriggeredLoad] = useState(false);
+    useEffect(() => {
+        if (searchQuery.trim() && rawTree.length === 0 && !isLoadingTree && !searchTriggeredLoad) {
+            setSearchTriggeredLoad(true);
+            loadTree().finally(() => setSearchTriggeredLoad(false));
+        }
+    }, [searchQuery, rawTree.length, isLoadingTree, searchTriggeredLoad, loadTree]);
+
     // Filter items by search query (RECURSIVE)
+    // Always search the full tree for consistent results
     const filteredContent = useMemo(() => {
         const q = searchQuery.trim();
         if (!q) return { files, folders };
 
-        // Global search mode: always search from root (Windows Explorer style)
-        if (globalSearch) {
+        // Always search full tree for search queries (not just current folder)
+        // This ensures "Handbuch" is found regardless of navigation state
+        if (rawTree.length > 0) {
             return deepSearch(rawTree, q);
         }
 
-        // Normal mode: start search from current navigation root in the tree
-        const startNode = currentFolderId ? findNodeInTree(rawTree, currentFolderId) : null;
-        // Search in children of current node if we are in a folder, otherwise search the whole tree
-        const searchPool = startNode ? (startNode.children || []) : rawTree;
-
-        return deepSearch(searchPool, q);
-    }, [files, folders, searchQuery, rawTree, currentFolderId, findNodeInTree, deepSearch, globalSearch]);
+        // Fallback: search local files/folders if tree not available
+        const localResults = { files: [] as any[], folders: [] as any[] };
+        const lq = q.toLowerCase();
+        files.forEach(f => { if ((f.name || '').toLowerCase().includes(lq)) localResults.files.push(f); });
+        folders.forEach(f => { if ((f.name || '').toLowerCase().includes(lq)) localResults.folders.push(f); });
+        return localResults;
+    }, [files, folders, searchQuery, rawTree, deepSearch]);
 
     const filteredFiles = filteredContent.files;
     const filteredFolders = filteredContent.folders;
@@ -798,6 +785,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 draggable
                 resizable
             >
+                {/* Hidden file input for upload buttons */}
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    multiple
+                    className="hidden"
+                />
+
                 <div
                     className="flex flex-col h-full relative"
                     onDragEnter={handleDragEnter}
@@ -935,18 +931,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Explorer Homepage Updates */}
-                    {!currentFolderId && (
-                        <div className="px-6 py-4 border-b border-white/5 bg-black/30">
-                            <MoraUpdatesFeed
-                                scope={departmentId ? 'department' : 'company'}
-                                title="Neu / Empfehlungen"
-                                maxEvents={6}
-                                compact
-                            />
-                        </div>
-                    )}
 
                     {/* Content Container with Animation */}
                     <div className="flex-1 overflow-y-auto p-6 bg-black/40 relative" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
