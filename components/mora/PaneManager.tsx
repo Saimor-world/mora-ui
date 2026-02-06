@@ -72,7 +72,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'timeline':
             return <TimelinePane id={pane.id} />;
         case 'mora-hub':
-            return <MoraHubPane id={pane.id} />;
+            return <MoraHubPane id={pane.id} data={pane.data} />;
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;

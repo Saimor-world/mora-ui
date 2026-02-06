@@ -30,6 +30,7 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { resetUserState } from '@/lib/hooks/useUser';
 import type { OrbState } from '@/lib/api/awarenessClient';
+import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 
 // Shell Hooks
 import {
@@ -57,11 +58,10 @@ import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOve
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { LockScreen } from '@/components/auth/LockScreen';
 
-// Premium Intelligence Layer
+// Premium Intelligence Layer (V11: consolidated to Orb area)
 import { CognitionBadge } from '@/components/mora/CognitionBadge';
-import { MoraThoughtStream } from '@/components/mora/MoraThoughtStream';
-import { MoraIntelligenceBar } from '@/components/mora/MoraIntelligenceBar';
-import { IntelligenceDashboard } from '@/components/mora/IntelligenceDashboard';
+// Removed: MoraThoughtStream, MoraIntelligenceBar, IntelligenceDashboard
+// Status is now shown next to Orb, Intelligence merged into Mora Nexus
 
 // Interaction Layers
 import { CursorAgent } from '@/components/mora/CursorAgent';
@@ -69,6 +69,12 @@ import { AgencyCursor } from '@/components/agency/AgencyCursor';
 import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { UserCursor } from '@/components/layout/UserCursor';
 import { UniverseControls } from '@/components/home/UniverseControls';
+
+// V12: Connection Status, Quick Tips, Greeting & Stats
+import { ConnectionBanner } from '@/components/ui/ConnectionBanner';
+import { QuickTips } from '@/components/ui/QuickTips';
+import { MoraGreeting } from '@/components/ui/MoraGreeting';
+import { SystemStats } from '@/components/ui/SystemStats';
 
 // =============================================================================
 // LOADING SCREEN
@@ -221,8 +227,8 @@ export const MoraShell: React.FC = () => {
             return companies.filter((c) => c.is_demo);
         }
         if (viewMode === 'workspace') {
-            if (tenantId === 'tenant-demo') {
-                return companies.filter((c) => c.tenant_id === 'tenant-saimor-hq');
+            if (tenantId === TENANT_DEMO) {
+                return companies.filter((c) => c.tenant_id === TENANT_HQ);
             }
             if (role === 'system_owner') {
                 return companies.filter((c) => !c.is_demo);
@@ -246,7 +252,7 @@ export const MoraShell: React.FC = () => {
     const [isResonanceExpanded, setIsResonanceExpanded] = useState(false);
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-    const [isIntelDashOpen, setIsIntelDashOpen] = useState(false);
+    // Removed: isIntelDashOpen - Intelligence merged into Mora Nexus
 
     // EFFECT: Clear panes when ViewMode changes
     useEffect(() => {
@@ -284,6 +290,9 @@ export const MoraShell: React.FC = () => {
         }, []),
         onOpenMoraHub: useCallback(() => {
             openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } });
+        }, [openPane]),
+        onOpenMemory: useCallback(() => {
+            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Memory', size: { width: 680, height: 560 }, data: { activeSection: 'memory' } });
         }, [openPane]),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();
@@ -391,6 +400,12 @@ export const MoraShell: React.FC = () => {
     return (
         <div className="relative w-full h-full overflow-hidden text-white select-none">
 
+            {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
+            <ConnectionBanner />
+            <QuickTips />
+            <MoraGreeting />
+            <SystemStats />
+
             {/* ================================================================
                 LAYER 1: BACKGROUND
             ================================================================= */}
@@ -458,28 +473,47 @@ export const MoraShell: React.FC = () => {
             />
 
             {/* ═══ PREMIUM INTELLIGENCE LAYER ═══ */}
+            {/*
+             * V11 CLEANUP: Removed MoraIntelligenceBar + MoraThoughtStream
+             * Status is now shown next to the Orb (see below)
+             * Intelligence Dashboard merged into Mora Nexus Pane
+             */}
 
-            {/* Cognition Badge - Bottom right, shows AI connection mode */}
-            <CognitionBadge />
+            {/* Mora Orb + Status Badge (V11 - unified right side) */}
+            <div id="mora-system-hub" className="fixed bottom-16 right-16 z-[500] pointer-events-auto flex items-end gap-4 overflow-visible">
+                {/* Status Badge - links vom Orb */}
+                <div className="flex flex-col items-end gap-2 mb-8">
+                    <div className={`
+                        px-3 py-1.5 rounded-full backdrop-blur-xl border
+                        flex items-center gap-2 cursor-default select-none text-[10px] font-medium tracking-wider uppercase
+                        ${finalOrbState === 'thinking' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
+                          finalOrbState === 'alert' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+                          finalOrbState === 'focus' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' :
+                          finalOrbState === 'demo' ? 'bg-teal-500/20 border-teal-500/30 text-teal-400' :
+                          'bg-emerald-500/10 border-emerald-500/20 text-emerald-400/70'}
+                    `}>
+                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                            finalOrbState === 'thinking' ? 'bg-blue-400' :
+                            finalOrbState === 'alert' ? 'bg-red-400' :
+                            finalOrbState === 'focus' ? 'bg-emerald-400' :
+                            'bg-emerald-400/60'
+                        }`} />
+                        <span>Mora: {{
+                            idle: 'Bereit',
+                            thinking: 'Denkt',
+                            watch: 'Beobachtet',
+                            focus: 'Fokus',
+                            alert: 'Alarm',
+                            insight: 'Erkenntnis',
+                            demo: 'Demo'
+                        }[finalOrbState] || 'Bereit'}</span>
+                    </div>
 
-            {/* Thought Stream - Bottom left, Mora's consciousness */}
-            <MoraThoughtStream />
+                    {/* CognitionBadge inline */}
+                    <CognitionBadge />
+                </div>
 
-            {/* Intelligence Bar - Bottom left status bar */}
-            <MoraIntelligenceBar
-                isOpen={isIntelDashOpen}
-                onOpenIntelligence={() => setIsIntelDashOpen(prev => !prev)}
-            />
-
-            {/* Intelligence Dashboard - Opens from the bar */}
-            <IntelligenceDashboard
-                isOpen={isIntelDashOpen}
-                onClose={() => setIsIntelDashOpen(false)}
-                orbState={finalOrbState}
-            />
-
-            {/* Mora Orb */}
-            <div id="mora-system-hub" className="fixed bottom-16 right-16 z-[500] pointer-events-auto flex flex-col items-end gap-4 overflow-visible">
+                {/* Mora Orb */}
                 <MoraOrb
                     state={finalOrbState}
                     role={role === 'owner' || role === 'admin' ? 'admin' : 'member'}

@@ -3,6 +3,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { coreGet } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { useSession, signOut } from 'next-auth/react';
+import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 
 /**
  * useAuthBootstrapper
@@ -75,7 +76,7 @@ export function useAuthBootstrapper() {
                         const storedViewMode = typeof window !== 'undefined'
                             ? localStorage.getItem('saimor_view_mode')
                             : null;
-                        if (tenantId === 'tenant-demo') {
+                        if (tenantId === TENANT_DEMO) {
                             if (storedViewMode !== 'demo' && storedViewMode !== 'workspace') {
                                 store.setViewMode('demo');
                             }
@@ -113,9 +114,9 @@ export function useAuthBootstrapper() {
                             }
                         }
 
-                        const isDemoTenant = tenantId === 'tenant-demo';
+                        const isDemoTenant = tenantId === TENANT_DEMO;
                         const demoCompanies = companies.filter(c => c.is_demo);
-                        const hqCompanies = companies.filter(c => c.tenant_id === 'tenant-saimor-hq');
+                        const hqCompanies = companies.filter(c => c.tenant_id === TENANT_HQ);
                         const tenantCompanies = tenantId
                             ? companies.filter(c => c.tenant_id === tenantId)
                             : companies;

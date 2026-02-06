@@ -2,22 +2,28 @@
 
 /**
  * ChatPane - Mora AI Conversation Interface
- * 
+ *
  * MASTERBIBEL: Môra is your Disney fairy AI companion.
  * This pane allows direct conversation with Môra (via Ollama/Gemini/etc).
- * 
+ *
  * Commands like "show me department XY" trigger cursor navigation.
+ *
+ * Memory Integration (2026-02):
+ * - Save insights from Mora responses
+ * - Detect memory keywords in user input
+ * - Show relevant memories for context
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { corePost } from '@/lib/api/coreClient';
+import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { moraAgentClient } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
-import { Send, Sparkles, Loader2, Bot, User, Wand2 } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check } from 'lucide-react';
+import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 
 interface Message {
     id: string;
@@ -25,11 +31,189 @@ interface Message {
     content: string;
     timestamp: Date;
     isTyping?: boolean;
+    savedAsInsight?: boolean; // Track if message was saved as insight
+}
+
+// Memory keywords that trigger save hint (German)
+const MEMORY_KEYWORDS = [
+    'merke dir', 'merk dir', 'speicher das', 'speichere das',
+    'wichtig:', 'wichtig ist', 'vergiss nicht', 'erinnere dich',
+    'remember', 'save this', 'note that', 'keep in mind'
+];
+
+// Detect memory intent in user message
+function detectMemoryIntent(text: string): boolean {
+    const lower = text.toLowerCase();
+    return MEMORY_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+// Extract the insight content from a memory request
+function extractInsightFromRequest(text: string): string {
+    let content = text;
+    // Remove common prefixes
+    const prefixes = [
+        'merke dir,?', 'merk dir,?', 'speicher das,?', 'speichere das,?',
+        'wichtig:', 'vergiss nicht,?', 'erinnere dich,?',
+        'remember,?', 'save this,?', 'note that,?', 'keep in mind,?'
+    ];
+    for (const prefix of prefixes) {
+        content = content.replace(new RegExp(`^${prefix}\\s*`, 'i'), '');
+    }
+    return content.trim();
 }
 
 interface ChatPaneProps {
     id?: string;
 }
+
+// ─── Memory: Save Insight Button ───
+const SaveInsightButton: React.FC<{
+    content: string;
+    onSaved: () => void;
+    isSaved: boolean;
+}> = ({ content, onSaved, isSaved }) => {
+    const [saving, setSaving] = useState(false);
+    const [showCategorySelect, setShowCategorySelect] = useState(false);
+
+    const handleSave = async (category: MemoryCategory = 'context') => {
+        setSaving(true);
+        try {
+            await learnInsight({
+                insight: content,
+                category,
+                auto_commit: true
+            });
+            onSaved();
+            setShowCategorySelect(false);
+        } catch (err) {
+            console.error('[ChatPane] Failed to save insight:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (isSaved) {
+        return (
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400/60 ml-2">
+                <Check size={10} />
+                Gespeichert
+            </span>
+        );
+    }
+
+    return (
+        <div className="relative inline-block ml-2">
+            <button
+                onClick={() => setShowCategorySelect(!showCategorySelect)}
+                disabled={saving}
+                className="inline-flex items-center gap-1 text-[10px] text-white/30 hover:text-emerald-400 transition-colors"
+                title="Als Insight speichern"
+            >
+                {saving ? (
+                    <Loader2 size={10} className="animate-spin" />
+                ) : (
+                    <BookmarkPlus size={10} />
+                )}
+                <span className="hidden sm:inline">Merken</span>
+            </button>
+
+            <AnimatePresence>
+                {showCategorySelect && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                        className="absolute bottom-full left-0 mb-1 bg-black/90 border border-white/10 rounded-lg p-2 z-50 min-w-[140px]"
+                    >
+                        <p className="text-[10px] text-white/50 mb-1.5 px-1">Kategorie:</p>
+                        {(['context', 'fact', 'preference', 'summary'] as MemoryCategory[]).map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => handleSave(cat)}
+                                className="block w-full text-left text-xs px-2 py-1 text-white/70 hover:bg-emerald-500/20 hover:text-emerald-300 rounded transition-colors capitalize"
+                            >
+                                {cat === 'context' ? 'Kontext' :
+                                 cat === 'fact' ? 'Fakt' :
+                                 cat === 'preference' ? 'Praeferenz' :
+                                 cat === 'summary' ? 'Zusammenfassung' : cat}
+                            </button>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// ─── Memory: Hint for detected memory intent ───
+const MemoryHint: React.FC<{
+    onConfirm: () => void;
+    onDismiss: () => void;
+}> = ({ onConfirm, onDismiss }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs"
+    >
+        <Lightbulb size={14} className="text-emerald-400 shrink-0" />
+        <span className="text-white/70">Soll ich das speichern?</span>
+        <button
+            onClick={onConfirm}
+            className="px-2 py-0.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded transition-colors"
+        >
+            Ja
+        </button>
+        <button
+            onClick={onDismiss}
+            className="px-2 py-0.5 text-white/40 hover:text-white/60 transition-colors"
+        >
+            Nein
+        </button>
+    </motion.div>
+);
+
+// ─── Memory: Relevant Memories Display ───
+const RelevantMemories: React.FC<{
+    memories: MemorySearchResult[];
+    onDismiss: () => void;
+}> = ({ memories, onDismiss }) => {
+    if (memories.length === 0) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-b border-white/5 bg-gradient-to-r from-purple-500/5 to-transparent"
+        >
+            <div className="px-4 py-2">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                        <Brain size={12} />
+                        <span>Relevante Erinnerungen</span>
+                    </div>
+                    <button
+                        onClick={onDismiss}
+                        className="text-white/30 hover:text-white/50 text-xs"
+                    >
+                        Ausblenden
+                    </button>
+                </div>
+                <div className="space-y-1.5">
+                    {memories.slice(0, 3).map((mem) => (
+                        <div
+                            key={mem.id}
+                            className="text-xs text-white/60 bg-white/5 px-2 py-1.5 rounded border-l-2 border-purple-500/30"
+                        >
+                            {mem.summary}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </motion.div>
+    );
+};
 
 // ─── Context-Aware Chat Suggestions ───
 const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
@@ -95,14 +279,15 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         {
             id: 'welcome',
             role: 'assistant',
-            content: `Hallo! Ich bin Môra, deine KI-Begleiterin. 🧚‍♀️
+            content: `Hallo! Ich bin Mora, deine KI-Begleiterin.
 
 Ich kann dir helfen:
-• **"Zeig mir Abteilung XY"** - Ich navigiere dorthin
-• **"Was gibt es Neues?"** - Aktuelle Updates
-• **"Finde Dokumente über..."** - Suche im Wissen
+- **"Zeig mir Abteilung XY"** - Ich navigiere dorthin
+- **"Was gibt es Neues?"** - Aktuelle Updates
+- **"Finde Dokumente ueber..."** - Suche im Wissen
+- **"Merke dir..."** - Ich speichere wichtige Infos
 
-Was kann ich für dich tun?`,
+Was kann ich fuer dich tun?`,
             timestamp: new Date()
         }
     ]);
@@ -110,6 +295,55 @@ Was kann ich für dich tun?`,
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialMessageProcessed = useRef(false);
+
+    // Memory Integration State
+    const [memoryHint, setMemoryHint] = useState<{ show: boolean; content: string }>({ show: false, content: '' });
+    const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
+    const [showMemories, setShowMemories] = useState(false);
+
+    // Search for relevant memories based on user query
+    const fetchRelevantMemories = useCallback(async (query: string) => {
+        if (query.length < 5) {
+            setRelevantMemories([]);
+            setShowMemories(false);
+            return;
+        }
+        try {
+            const results = await searchMemory(query, 3);
+            if (results && results.length > 0) {
+                setRelevantMemories(results);
+                setShowMemories(true);
+            } else {
+                setRelevantMemories([]);
+                setShowMemories(false);
+            }
+        } catch (err) {
+            console.warn('[ChatPane] Memory search failed:', err);
+            setRelevantMemories([]);
+        }
+    }, []);
+
+    // Mark message as saved
+    const markMessageAsSaved = useCallback((messageId: string) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === messageId ? { ...msg, savedAsInsight: true } : msg
+        ));
+    }, []);
+
+    // Handle memory hint confirmation
+    const handleMemoryConfirm = useCallback(async () => {
+        if (!memoryHint.content) return;
+        try {
+            await learnInsight({
+                insight: memoryHint.content,
+                category: 'context',
+                auto_commit: true
+            });
+        } catch (err) {
+            console.error('[ChatPane] Failed to save memory:', err);
+        }
+        setMemoryHint({ show: false, content: '' });
+    }, [memoryHint.content]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -203,6 +437,17 @@ Was kann ich für dich tun?`,
     const processMessage = async (content: string) => {
         setIsLoading(true);
         const intent = parseIntent(content);
+
+        // Check for memory intent (e.g., "merke dir...", "wichtig...")
+        if (detectMemoryIntent(content)) {
+            const insightContent = extractInsightFromRequest(content);
+            if (insightContent.length > 5) {
+                setMemoryHint({ show: true, content: insightContent });
+            }
+        }
+
+        // Fetch relevant memories for context
+        await fetchRelevantMemories(content);
 
         let responseContent = '';
 
@@ -311,6 +556,16 @@ Versuche:
                     </div>
                 </div>
 
+                {/* Relevant Memories Context */}
+                <AnimatePresence>
+                    {showMemories && relevantMemories.length > 0 && (
+                        <RelevantMemories
+                            memories={relevantMemories}
+                            onDismiss={() => setShowMemories(false)}
+                        />
+                    )}
+                </AnimatePresence>
+
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <AnimatePresence>
@@ -342,8 +597,16 @@ Versuche:
                                             <User size={16} className="text-emerald-400 mt-0.5 shrink-0" />
                                         )}
                                     </div>
-                                    <div className="text-[10px] text-white/30 mt-2">
-                                        {msg.timestamp.toLocaleTimeString()}
+                                    <div className="flex items-center text-[10px] text-white/30 mt-2">
+                                        <span>{msg.timestamp.toLocaleTimeString()}</span>
+                                        {/* Save as Insight Button - only for assistant messages (not welcome) */}
+                                        {msg.role === 'assistant' && msg.id !== 'welcome' && (
+                                            <SaveInsightButton
+                                                content={msg.content}
+                                                onSaved={() => markMessageAsSaved(msg.id)}
+                                                isSaved={msg.savedAsInsight || false}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </motion.div>
@@ -367,14 +630,24 @@ Versuche:
                 </div>
 
                 {/* Input */}
-                <div className="p-4 border-t border-white/10">
+                <div className="p-4 border-t border-white/10 space-y-2">
+                    {/* Memory Hint - shown when user types "merke dir..." etc. */}
+                    <AnimatePresence>
+                        {memoryHint.show && (
+                            <MemoryHint
+                                onConfirm={handleMemoryConfirm}
+                                onDismiss={() => setMemoryHint({ show: false, content: '' })}
+                            />
+                        )}
+                    </AnimatePresence>
+
                     <div className="flex gap-2">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                            placeholder="Schreib Môra..."
+                            placeholder="Schreib Mora... (z.B. 'Merke dir...')"
                             className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all"
                         />
                         <button

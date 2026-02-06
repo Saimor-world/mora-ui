@@ -10,6 +10,7 @@
  * - Cmd+T = Open Terminal
  * - Cmd+H = Go Home (Core view)
  * - Cmd+. = Open Mora Nexus
+ * - Cmd+Shift+M = Open Memory
  * - Escape = Close top pane
  * - ? = Show shortcuts overlay
  */
@@ -26,6 +27,7 @@ export const KEYBOARD_SHORTCUTS = [
     { keys: ['⌘', 'T'], label: 'Terminal', description: 'Terminal öffnen' },
     { keys: ['⌘', 'H'], label: 'Home', description: 'Zur Übersicht' },
     { keys: ['⌘', '.'], label: 'Mora Nexus', description: 'AI Hub öffnen' },
+    { keys: ['⌘', '⇧', 'M'], label: 'Memory', description: 'Memory Panel öffnen' },
     { keys: ['Esc'], label: 'Schließen', description: 'Oberstes Panel schließen' },
     { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
 ] as const;
@@ -39,6 +41,7 @@ interface UseKeyboardShortcutsOptions {
     onOpenTerminal?: () => void;
     onGoHome?: () => void;
     onOpenMoraHub?: () => void;
+    onOpenMemory?: () => void;
     onCloseTopPane?: () => void;
     onShowShortcuts?: () => void;
 }
@@ -52,6 +55,7 @@ export function useKeyboardShortcuts({
     onOpenTerminal,
     onGoHome,
     onOpenMoraHub,
+    onOpenMemory,
     onCloseTopPane,
     onShowShortcuts,
 }: UseKeyboardShortcutsOptions) {
@@ -124,6 +128,13 @@ export function useKeyboardShortcuts({
                 return;
             }
 
+            // Cmd+Shift+M = Memory
+            if (meta && e.shiftKey && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                onOpenMemory?.();
+                return;
+            }
+
             // Escape = Close top pane
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -150,6 +161,7 @@ export function useKeyboardShortcuts({
         onOpenTerminal,
         onGoHome,
         onOpenMoraHub,
+        onOpenMemory,
         onCloseTopPane,
         onShowShortcuts,
     ]);

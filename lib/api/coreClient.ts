@@ -775,3 +775,39 @@ export async function searchGlobal(query: string, companyId?: string): Promise<S
     const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
     return coreGet(`/v1/search?q=${q}${c}`);
 }
+
+// ========== MEMORY / LEARNING BRAIN API ==========
+
+// POST /v1/memory/learn - Neues Insight lernen
+export async function learnInsight(payload: {
+    insight: string;
+    category: string;
+    auto_commit?: boolean;
+}): Promise<{ status: string; message: string; committed?: boolean; risk?: string }> {
+    return corePost('/v1/memory/learn', payload);
+}
+
+// GET /v1/memory/search - Gedächtnis durchsuchen
+export async function searchMemory(query: string, limit: number = 10): Promise<any[]> {
+    return coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=${limit}`, { isOptional: true }) || [];
+}
+
+// GET /v1/memory/pending - Review Queue laden
+export async function getMemoryPending(): Promise<any[]> {
+    return coreGet('/v1/memory/pending', { isOptional: true }) || [];
+}
+
+// POST /v1/memory/approve/{id} - Review Item bestätigen
+export async function approveMemoryItem(id: string | number): Promise<{ success: boolean }> {
+    return corePost(`/v1/memory/approve/${id}`, {});
+}
+
+// POST /v1/memory/reject/{id} - Review Item ablehnen
+export async function rejectMemoryItem(id: string | number): Promise<{ success: boolean }> {
+    return corePost(`/v1/memory/reject/${id}`, {});
+}
+
+// GET /v1/memory/metrics - Statistiken
+export async function getMemoryMetrics(): Promise<any> {
+    return coreGet('/v1/memory/metrics', { isOptional: true });
+}

@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMoraStore } from "@/lib/store/moraState";
 import { useUser } from "@/lib/hooks/useUser";
-import { coreGet } from "@/lib/api/coreClient";
+import { coreGet, learnInsight } from "@/lib/api/coreClient";
 import { executeAgenticLoop } from "@/lib/api/cognitionClient";
+import { hasMemoryTrigger, extractInsight, guessCategory } from "@/lib/memory";
 import { MoraOrb } from "./MoraOrb";
 import { ConfirmationCard } from "./ConfirmationCard";
 import {
@@ -154,16 +155,33 @@ export const ResonanceRoom: React.FC<Props> = ({
     const handleSend = async () => {
         if (!inputValue.trim() || moraIsThinking) return;
 
+        const messageContent = inputValue.trim();
+
+        // Check for memory trigger keywords
+        const shouldLearn = hasMemoryTrigger(messageContent);
+
         const userMessage: ResonanceMessage = {
             id: `user-${Date.now()}`,
             type: "user",
-            content: inputValue.trim(),
+            content: messageContent,
             timestamp: new Date()
         };
 
         setMessages(prev => [...prev, userMessage]);
         setInputValue("");
         setMoraIsThinking(true);
+
+        // If user wants Mora to remember something, learn it
+        if (shouldLearn) {
+            const insight = extractInsight(messageContent);
+            const category = guessCategory(insight);
+            try {
+                await learnInsight({ insight, category, auto_commit: category !== 'fact' });
+                console.log("[ResonanceRoom] Learning insight:", { insight, category });
+            } catch (e) {
+                console.warn("[ResonanceRoom] Memory learning failed (backend not ready?):", e);
+            }
+        }
 
         try {
             // Send to MORA's Agentic Loop - full multi-turn intelligence

@@ -1,25 +1,54 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useMoraStore } from "@/lib/store/moraState";
 import MoraPlayground from "@/components/mora/MoraPlayground";
+import { MoraMemory, MemoryStats } from "@/components/mora/MoraMemory";
+import { Sparkles, Brain, BarChart3 } from "lucide-react";
+
+type HubSection = "overview" | "memory" | "stats";
 
 interface Props {
     id?: string;
     onClose?: () => void;
+    data?: {
+        activeSection?: HubSection;
+    };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════
+const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
+    { id: "overview", label: "Overview", icon: Sparkles },
+    { id: "memory", label: "Memory", icon: Brain },
+    { id: "stats", label: "Stats", icon: BarChart3 },
+];
 
 /**
  * MORA HUB PANE
  * Dedicated brain space for Mora: thoughts, actions, and context tools.
+ * Supports tab navigation: Overview, Memory, Stats
  */
-export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose }) => {
+export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const viewLevel = useMoraStore((s) => s.viewLevel);
+
+    // Tab state - respects data.activeSection if provided
+    const [activeSection, setActiveSection] = useState<HubSection>(
+        data?.activeSection || "overview"
+    );
+
+    // Update section when pane data changes (e.g., opened with specific section)
+    useEffect(() => {
+        if (data?.activeSection && data.activeSection !== activeSection) {
+            setActiveSection(data.activeSection);
+        }
+    }, [data?.activeSection]);
 
     const handleClose = () => {
         removePane(id);
@@ -28,6 +57,67 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose }) => {
 
     const width = pane?.size?.width ?? 520;
     const height = pane?.size?.height ?? 760;
+
+    // ─── Render Section Content ───
+    const renderContent = () => {
+        switch (activeSection) {
+            case "memory":
+                return (
+                    <div className="h-full p-4 overflow-y-auto">
+                        <MoraMemory
+                            compact={false}
+                            showSearch={true}
+                            showQueue={true}
+                            showStats={true}
+                        />
+                    </div>
+                );
+            case "stats":
+                return (
+                    <div className="h-full p-4 overflow-y-auto">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <BarChart3 className="h-4 w-4 text-emerald-400" />
+                                <span className="text-xs font-medium text-white/80">Mora Statistics</span>
+                            </div>
+                            <MemoryStats compact={false} />
+                            <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                                <div className="text-[9px] uppercase tracking-[0.3em] text-white/30 mb-3">
+                                    Cognitive Metrics
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                                        <div className="text-lg font-light text-emerald-400">98%</div>
+                                        <div className="text-[9px] text-white/40">Response Accuracy</div>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
+                                        <div className="text-lg font-light text-blue-400">1.2s</div>
+                                        <div className="text-[9px] text-white/40">Avg. Response Time</div>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-violet-500/5 border border-violet-500/10">
+                                        <div className="text-lg font-light text-violet-400">847</div>
+                                        <div className="text-[9px] text-white/40">Interactions (7d)</div>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                                        <div className="text-lg font-light text-amber-400">24</div>
+                                        <div className="text-[9px] text-white/40">Tools Executed</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case "overview":
+            default:
+                return (
+                    <MoraPlayground
+                        scope={viewLevel === "department" ? "department" : "company"}
+                        title="Mora Nexus"
+                        className="h-full"
+                    />
+                );
+        }
+    };
 
     return (
         <GlassPanel
@@ -41,7 +131,32 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose }) => {
             draggable
             resizable
             dimBackground={false}
-            title={<span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Nexus</span>}
+            title={
+                <div className="flex items-center gap-3">
+                    <span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Nexus</span>
+                    {/* Tab Navigation */}
+                    <div className="flex items-center gap-0.5 bg-black/30 rounded-lg p-0.5 ml-2">
+                        {TABS.map((tab) => {
+                            const Icon = tab.icon;
+                            const isActive = activeSection === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveSection(tab.id)}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] transition-all duration-200 ${
+                                        isActive
+                                            ? "bg-emerald-500/20 text-emerald-300"
+                                            : "text-white/40 hover:text-white/60 hover:bg-white/[0.05]"
+                                    }`}
+                                >
+                                    <Icon className="h-3 w-3" />
+                                    <span>{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            }
             isActive={isActive}
             onFocus={() => focusPane(id)}
             onClose={handleClose}
@@ -51,11 +166,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose }) => {
             className="overflow-hidden"
         >
             <div className="h-full">
-                <MoraPlayground
-                    scope={viewLevel === "department" ? "department" : "company"}
-                    title="Mora Nexus"
-                    className="h-full"
-                />
+                {renderContent()}
             </div>
         </GlassPanel>
     );

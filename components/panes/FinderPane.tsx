@@ -833,20 +833,30 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 <span className="font-medium tracking-tight">Home</span>
                             </button>
 
-                            {breadcrumbs.map((bc, idx) => (
-                                <React.Fragment key={bc.id}>
-                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
-                                    <button
-                                        onClick={() => setCurrentFolderId(bc.id)}
-                                        className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group whitespace-nowrap shrink-0 ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
-                                    >
-                                        {bc.type === 'department' ? <Globe size={13} className="text-emerald-500/60" /> :
-                                            bc.type === 'space' ? <Circle size={12} className="text-cyan-500/60" /> :
-                                                <FolderIcon size={13} className="text-blue-500/60" />}
-                                        <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{bc.name}</span>
-                                    </button>
-                                </React.Fragment>
-                            ))}
+                            {breadcrumbs.map((bc, idx) => {
+                                // NAMING FIX: Avoid duplicate names in breadcrumbs
+                                // If Space has same name as parent Department, show "Allgemein" instead
+                                const prevBc = idx > 0 ? breadcrumbs[idx - 1] : null;
+                                const isDuplicateName = prevBc && bc.name?.toLowerCase() === prevBc.name?.toLowerCase();
+                                const displayName = isDuplicateName && bc.type === 'space'
+                                    ? 'Allgemein'
+                                    : bc.name;
+
+                                return (
+                                    <React.Fragment key={bc.id}>
+                                        <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                        <button
+                                            onClick={() => setCurrentFolderId(bc.id)}
+                                            className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group whitespace-nowrap shrink-0 ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                        >
+                                            {bc.type === 'department' ? <Globe size={13} className="text-emerald-500/60" /> :
+                                                bc.type === 'space' ? <Circle size={12} className="text-cyan-500/60" /> :
+                                                    <FolderIcon size={13} className="text-blue-500/60" />}
+                                            <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{displayName}</span>
+                                        </button>
+                                    </React.Fragment>
+                                );
+                            })}
                         </div>
 
                         {/* Actions Row */}

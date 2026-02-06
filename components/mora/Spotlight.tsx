@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 import {
     Search,
-
     Settings,
     Grid,
     Home,
@@ -19,7 +18,8 @@ import {
     StickyNote,
     Folder,
     ScanLine,
-    Wrench
+    Wrench,
+    Brain,
 } from "lucide-react";
 import { useMoraStore } from "@/lib/store/moraState";
 import { usePaneStore } from "@/lib/store/paneStore";
@@ -170,6 +170,26 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             category: "action",
             keywords: ["search", "find", "query", "suche"],
             onSelect: () => openFromSpotlight("search", "search-main", "Search", { width: 600, height: 400 })
+        });
+
+        result.push({
+            id: "action-memory",
+            label: "Mora's Gedächtnis",
+            description: "Erinnerungen durchsuchen & verwalten",
+            icon: <Brain size={16} className="text-violet-400" />,
+            category: "action",
+            keywords: ["memory", "gedächtnis", "erinnerung", "lernen", "brain", "wissen"],
+            onSelect: () => {
+                // Open MoraHub with memory tab focused
+                openPane({
+                    id: "mora-hub",
+                    type: "mora-hub" as any,
+                    title: "Mora Nexus",
+                    size: { width: 720, height: 640 },
+                    data: { activeSection: "memory" }
+                });
+                onClose();
+            }
         });
 
         result.push({

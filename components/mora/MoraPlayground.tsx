@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
     Sparkles,
     MessageCircle,
@@ -16,12 +16,15 @@ import {
     Zap,
     Shield,
     Activity,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 import { useMoraStore } from "@/lib/store/moraState";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
 import MoraUpdatesFeed from "./MoraUpdatesFeed";
 import { PlasmaOrb } from "./PlasmaOrb";
+import { MoraMemory } from "./MoraMemory";
 
 type FeedScope = "company" | "department";
 
@@ -105,6 +108,53 @@ interface ActionDef {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// UNIVERSE STATS GRID (merged from IntelligenceDashboard)
+// ═══════════════════════════════════════════════════════════════════════════
+const UniverseStatsGrid: React.FC = () => {
+    const departments = useMoraStore((s) => s.departments);
+    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
+    const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
+    const nodesByFolder = useMoraStore((s) => s.nodesByFolder);
+
+    const planetCount = departments.length;
+    const spaceCount = Object.values(spacesByDepartment).flat().length;
+    const nebulaCount = Object.values(foldersBySpace).flat().length;
+    const starCount = Object.values(nodesByFolder).flat().length;
+
+    const stats = [
+        { label: "Planeten", count: planetCount, color: "emerald" },
+        { label: "Monde", count: spaceCount, color: "blue" },
+        { label: "Nebel", count: nebulaCount, color: "violet" },
+        { label: "Sterne", count: starCount, color: "amber" },
+    ];
+
+    const colorClasses: Record<string, string> = {
+        emerald: "text-emerald-400",
+        blue: "text-blue-400",
+        violet: "text-violet-400",
+        amber: "text-amber-400",
+    };
+
+    return (
+        <div className="grid grid-cols-4 gap-1.5">
+            {stats.map((stat) => (
+                <div
+                    key={stat.label}
+                    className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.04] hover:bg-white/[0.06] transition-colors"
+                >
+                    <div className={`text-lg font-light ${colorClasses[stat.color]}`}>
+                        {stat.count}
+                    </div>
+                    <div className="text-[8px] text-white/30 uppercase tracking-wider mt-0.5">
+                        {stat.label}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
@@ -121,6 +171,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
     const { hilEnabled, setHilEnabled } = useHilToggle();
     const { openPane, getPane, minimizePane } = usePaneStore();
+    const [showMemory, setShowMemory] = useState(false);
 
     const orbConfig = getOrbConfig(orbState, viewMode);
     const StatusIcon = orbConfig.icon;
@@ -278,6 +329,16 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                         </div>
                     </div>
 
+                    {/* ─── Universe Stats (from IntelligenceDashboard) ─── */}
+                    {!compact && (
+                        <div className="px-4 pb-3">
+                            <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 mb-2">
+                                Universe Übersicht
+                            </div>
+                            <UniverseStatsGrid />
+                        </div>
+                    )}
+
                     {/* ─── Quick Actions ─── */}
                     <div className={`flex-1 ${compact ? "px-3 pb-3" : "px-4 pb-4"}`}>
                         <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 mb-2">
@@ -326,12 +387,39 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                         <MoraUpdatesFeed
                             scope={scope}
                             title="Activity"
-                            maxEvents={compact ? 4 : 6}
+                            maxEvents={compact ? 4 : (showMemory ? 3 : 6)}
                             compact
                             showHeader={false}
                             showHilToggle={false}
                         />
                     </div>
+
+                    {/* ─── Memory Section (Collapsible) ─── */}
+                    {!compact && (
+                        <div className="border-t border-white/[0.06]">
+                            <button
+                                onClick={() => setShowMemory(!showMemory)}
+                                className="w-full flex items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors"
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <Brain className="h-3 w-3 text-violet-400/60" />
+                                    <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
+                                        Gedächtnis
+                                    </span>
+                                </div>
+                                {showMemory ? (
+                                    <ChevronUp className="h-3 w-3 text-white/20" />
+                                ) : (
+                                    <ChevronDown className="h-3 w-3 text-white/20" />
+                                )}
+                            </button>
+                            {showMemory && (
+                                <div className="px-4 pb-3">
+                                    <MoraMemory compact showStats={false} />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 

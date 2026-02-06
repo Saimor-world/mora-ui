@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { fetchCompaniesHealth, type CompanyHealth } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
+import { MemoryWidget } from './MemoryWidget';
 
 /**
  * CLIENT HEALTH DASHBOARD — PREMIUM 2.0 EDITION
@@ -224,6 +225,16 @@ export const ClientHealthDashboard: React.FC = () => {
                 >
                     <div className="text-[10px] text-white/20 uppercase tracking-widest mb-1">Letzte Sync</div>
                     <div className="text-xs text-white/60 font-mono tracking-wider">{lastRefresh.toLocaleTimeString()}</div>
+                </motion.div>
+
+                {/* Memory Widget - Compact Version for Owner Dashboard */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="min-w-[280px]"
+                >
+                    <MemoryWidget className="h-full" />
                 </motion.div>
             </div>
 

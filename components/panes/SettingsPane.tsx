@@ -5,9 +5,9 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSession } from "next-auth/react";
 import { useMoraStore } from '@/lib/store/moraState';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2 } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
-import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace } from '@/lib/api/coreClient';
+import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
@@ -21,6 +21,12 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const [editName, setEditName] = useState('');
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [workspaceExpandedDept, setWorkspaceExpandedDept] = useState<string | null>(null);
+
+    // Create Mode State
+    const [isCreating, setIsCreating] = useState<'department' | 'space' | null>(null);
+    const [createName, setCreateName] = useState('');
+    const [createParentId, setCreateParentId] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [activeTab, setActiveTab] = useState('profile');
     const [theme, setTheme] = useState('deep-space');
@@ -427,13 +433,104 @@ useEffect(() => {
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg text-white font-light">Workspace verwalten</h3>
-                                <span className="text-xs text-white/30 px-2 py-1 bg-white/5 rounded">
-                                    {user?.role === 'owner' ? 'Owner' : user?.role === 'admin' ? 'Admin' : 'Demo'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setIsCreating('department');
+                                            setCreateName('');
+                                            setCreateParentId(null);
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs transition-colors"
+                                    >
+                                        <Plus size={14} />
+                                        Department
+                                    </button>
+                                    <span className="text-xs text-white/30 px-2 py-1 bg-white/5 rounded">
+                                        {user?.role === 'owner' ? 'Owner' : user?.role === 'admin' ? 'Admin' : 'Demo'}
+                                    </span>
+                                </div>
                             </div>
                             <p className="text-sm text-white/40">
                                 Bearbeite Departments, Spaces und Ordner. Ändere Namen, Farben und Icons.
                             </p>
+
+                            {/* Create Department Form */}
+                            {isCreating === 'department' && (
+                                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-3">
+                                    <div className="flex items-center gap-2 text-emerald-300 text-sm font-medium">
+                                        <Plus size={16} />
+                                        Neues Department erstellen
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={createName}
+                                        onChange={(e) => setCreateName(e.target.value)}
+                                        placeholder="Department Name..."
+                                        className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
+                                        autoFocus
+                                        onKeyDown={async (e) => {
+                                            if (e.key === 'Escape') {
+                                                setIsCreating(null);
+                                                setCreateName('');
+                                            }
+                                            if (e.key === 'Enter' && createName.trim() && activeCompanyId) {
+                                                setIsSubmitting(true);
+                                                try {
+                                                    await createDepartment({
+                                                        name: createName.trim(),
+                                                        company_id: activeCompanyId
+                                                    });
+                                                    await loadDepartments(activeCompanyId);
+                                                    await loadTree();
+                                                    toast.success('Department erstellt');
+                                                    setIsCreating(null);
+                                                    setCreateName('');
+                                                } catch (err) {
+                                                    toast.error('Erstellen fehlgeschlagen');
+                                                } finally {
+                                                    setIsSubmitting(false);
+                                                }
+                                            }
+                                        }}
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (!createName.trim() || !activeCompanyId) return;
+                                                setIsSubmitting(true);
+                                                try {
+                                                    await createDepartment({
+                                                        name: createName.trim(),
+                                                        company_id: activeCompanyId
+                                                    });
+                                                    await loadDepartments(activeCompanyId);
+                                                    await loadTree();
+                                                    toast.success('Department erstellt');
+                                                    setIsCreating(null);
+                                                    setCreateName('');
+                                                } catch (err) {
+                                                    toast.error('Erstellen fehlgeschlagen');
+                                                } finally {
+                                                    setIsSubmitting(false);
+                                                }
+                                            }}
+                                            disabled={!createName.trim() || isSubmitting}
+                                            className="px-4 py-2 rounded-lg bg-emerald-500/30 hover:bg-emerald-500/40 text-emerald-200 text-sm disabled:opacity-50 transition-colors"
+                                        >
+                                            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : 'Erstellen'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsCreating(null);
+                                                setCreateName('');
+                                            }}
+                                            className="px-3 py-2 text-xs text-white/40 hover:text-white/70"
+                                        >
+                                            Abbrechen
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Department List from Tree Data */}
                             <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -531,9 +628,86 @@ useEffect(() => {
                                                 </div>
 
                                                 {/* Expanded: Show Spaces/Folders */}
-                                                {workspaceExpandedDept === dept.id && dept.children && (
+                                                {workspaceExpandedDept === dept.id && (
                                                     <div className="border-t border-white/5 bg-black/20">
-                                                        {dept.children.map((child: any) => (
+                                                        {/* Add Space Button */}
+                                                        <div className="px-4 py-2 pl-10 border-b border-white/5">
+                                                            {isCreating === 'space' && createParentId === dept.id ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={createName}
+                                                                        onChange={(e) => setCreateName(e.target.value)}
+                                                                        placeholder="Space Name..."
+                                                                        className="flex-1 px-2 py-1 rounded bg-black/30 border border-blue-500/30 text-xs text-white placeholder-white/30 focus:outline-none"
+                                                                        autoFocus
+                                                                        onKeyDown={async (e) => {
+                                                                            if (e.key === 'Escape') {
+                                                                                setIsCreating(null);
+                                                                                setCreateName('');
+                                                                                setCreateParentId(null);
+                                                                            }
+                                                                            if (e.key === 'Enter' && createName.trim()) {
+                                                                                setIsSubmitting(true);
+                                                                                try {
+                                                                                    await createSpace({
+                                                                                        name: createName.trim(),
+                                                                                        department_id: dept.id
+                                                                                    });
+                                                                                    if (activeCompanyId) await loadTree();
+                                                                                    toast.success('Space erstellt');
+                                                                                    setIsCreating(null);
+                                                                                    setCreateName('');
+                                                                                    setCreateParentId(null);
+                                                                                } catch (err) {
+                                                                                    toast.error('Erstellen fehlgeschlagen');
+                                                                                } finally {
+                                                                                    setIsSubmitting(false);
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            if (!createName.trim()) return;
+                                                                            setIsSubmitting(true);
+                                                                            try {
+                                                                                await createSpace({
+                                                                                    name: createName.trim(),
+                                                                                    department_id: dept.id
+                                                                                });
+                                                                                if (activeCompanyId) await loadTree();
+                                                                                toast.success('Space erstellt');
+                                                                                setIsCreating(null);
+                                                                                setCreateName('');
+                                                                                setCreateParentId(null);
+                                                                            } catch (err) {
+                                                                                toast.error('Erstellen fehlgeschlagen');
+                                                                            } finally {
+                                                                                setIsSubmitting(false);
+                                                                            }
+                                                                        }}
+                                                                        disabled={isSubmitting}
+                                                                        className="p-1 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 disabled:opacity-50"
+                                                                    >
+                                                                        {isSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setIsCreating('space');
+                                                                        setCreateParentId(dept.id);
+                                                                        setCreateName('');
+                                                                    }}
+                                                                    className="flex items-center gap-1.5 text-[10px] text-blue-400/60 hover:text-blue-300 transition-colors"
+                                                                >
+                                                                    <Plus size={10} />
+                                                                    Space hinzufügen
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {dept.children?.map((child: any) => (
                                                             <div
                                                                 key={child.id}
                                                                 className="flex items-center justify-between px-4 py-2 pl-10 hover:bg-white/5 transition-colors duration-200"
