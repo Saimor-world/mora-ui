@@ -260,6 +260,46 @@ export async function fetchSystemStats(): Promise<SystemStats | null> {
     return coreGet('/v1/system/stats', { isOptional: true });
 }
 
+// ========== DEPARTMENT STATS (for Planet Hover) ==========
+
+export interface DepartmentStats {
+    department_id: string;
+    department_name: string;
+    spaces: number;
+    folders: number;
+    nodes: number;
+    docs: number;
+    by_type: Record<string, number>;
+    health: number;
+}
+
+/**
+ * Fetch stats for all departments in a company (batch)
+ * Used by UniverseView for Planet hover data
+ */
+export async function fetchDepartmentStats(companyId?: string): Promise<DepartmentStats[]> {
+    try {
+        const query = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+        const result = await coreGet(`/v1/stats/departments${query}`, { isOptional: true });
+        return result?.departments || [];
+    } catch (error) {
+        console.warn('[coreClient] fetchDepartmentStats failed:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch stats for a single department (for lazy loading)
+ */
+export async function fetchSingleDepartmentStats(departmentId: string): Promise<DepartmentStats | null> {
+    try {
+        return await coreGet(`/v1/stats/department/${departmentId}`, { isOptional: true });
+    } catch (error) {
+        console.warn('[coreClient] fetchSingleDepartmentStats failed:', error);
+        return null;
+    }
+}
+
 // ========== COMPANY FUNCTIONS ==========
 
 export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]> {

@@ -8,10 +8,12 @@ import { Planet } from '@/components/mora/Planet';
 import { StarField } from '@/components/visual/StarField';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
+import { fetchDepartmentStats, type DepartmentStats } from '@/lib/api/coreClient';
 
 /**
- * UNIVERSE VIEW - V10.6 STELLAR ORCHESTRATION "HIGH FIDELITY"
+ * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
  * VISION: A living, breathing autonomous business workspace.
+ * Now with REAL department stats from backend!
  */
 
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
@@ -31,15 +33,50 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
+    const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
 
-    // ─── REAL DEPARTMENT METRICS (Computed from Tree Data) ───
+    // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
+    useEffect(() => {
+        if (!activeCompanyId) return;
+
+        const loadStats = async () => {
+            try {
+                const stats = await fetchDepartmentStats(activeCompanyId);
+                const map: Record<string, DepartmentStats> = {};
+                for (const s of stats) {
+                    map[s.department_id] = s;
+                }
+                setStatsMap(map);
+            } catch (error) {
+                console.warn('[UniverseView] Failed to load department stats:', error);
+            }
+        };
+
+        loadStats();
+    }, [activeCompanyId]);
+
+    // ─── DEPARTMENT METRICS (from API or fallback to tree) ───
     const departmentMetrics = useMemo(() => {
-        const metrics: Record<string, { nodes: number; spaces: number; folders: number; depth: number }> = {};
+        const metrics: Record<string, { nodes: number; spaces: number; folders: number; health: number }> = {};
+
+        // Use API stats if available
+        if (Object.keys(statsMap).length > 0) {
+            for (const [deptId, stats] of Object.entries(statsMap)) {
+                metrics[deptId] = {
+                    nodes: stats.docs || stats.nodes || 0,
+                    spaces: stats.spaces || 0,
+                    folders: stats.folders || 0,
+                    health: stats.health || 0
+                };
+            }
+            return metrics;
+        }
+
+        // Fallback: compute from treeData (less accurate)
         if (!treeData?.length) return metrics;
 
-        // Count nodes recursively per department
-        const countChildren = (children: any[]): { nodes: number; folders: number; depth: number } => {
-            let nodes = 0, folders = 0, maxDepth = 0;
+        const countChildren = (children: any[]): { nodes: number; folders: number } => {
+            let nodes = 0, folders = 0;
             for (const child of children) {
                 if (child.type === 'folder' || child.type === 'space') {
                     folders++;
@@ -50,21 +87,22 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const sub = countChildren(child.children);
                     nodes += sub.nodes;
                     folders += sub.folders;
-                    maxDepth = Math.max(maxDepth, sub.depth + 1);
                 }
             }
-            return { nodes, folders, depth: maxDepth };
+            return { nodes, folders };
         };
 
         for (const dept of treeData) {
             if (dept.type === 'department') {
                 const counts = countChildren(dept.children || []);
                 const spaces = spacesByDepartment[dept.id]?.length || (dept.children?.filter((c: any) => c.type === 'space')?.length || 0);
-                metrics[dept.id] = { nodes: counts.nodes, spaces, folders: counts.folders, depth: counts.depth };
+                // Calculate health based on content
+                const health = Math.min(100, (spaces > 0 ? 30 : 0) + (counts.folders > 0 ? 30 : 0) + (counts.nodes > 0 ? 40 : 0));
+                metrics[dept.id] = { nodes: counts.nodes, spaces, folders: counts.folders, health };
             }
         }
         return metrics;
-    }, [treeData, spacesByDepartment]);
+    }, [statsMap, treeData, spacesByDepartment]);
 
     // Normalize metrics to percentages
     const maxNodes = useMemo(() => Math.max(1, ...Object.values(departmentMetrics).map(m => m.nodes)), [departmentMetrics]);
@@ -349,18 +387,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* 3. PLANET LAYER (Managed by Store Data) */}
             <div className="absolute inset-0 z-30 pointer-events-none">
                 {planetPositions.map((p, idx) => {
-                    // REAL METRICS from tree data
+                    // REAL METRICS from API or tree data
                     const deptStats = departmentMetrics[p.id];
                     const nodeCount = deptStats?.nodes || 0;
                     const spaceCount = deptStats?.spaces || 0;
                     const folderCount = deptStats?.folders || 0;
+                    const healthFromAPI = deptStats?.health;
 
                     // Capacity: % of nodes relative to largest department
-                    const mockCapacity = maxNodes > 0 ? Math.round((nodeCount / maxNodes) * 100) : 0;
-                    // Activity: Node count as a "signal strength" metaphor
-                    const mockActivity = nodeCount;
-                    // Health: Structure completeness (has spaces + folders + nodes?)
-                    const mockHealth = Math.min(100, (spaceCount > 0 ? 40 : 0) + (folderCount > 0 ? 30 : 0) + (nodeCount > 0 ? 30 : 0));
+                    const capacity = maxNodes > 0 ? Math.round((nodeCount / maxNodes) * 100) : 0;
+                    // Activity: Document count (shown as "X Docs" in hover)
+                    const activity = nodeCount;
+                    // Health: From API if available, otherwise calculate
+                    const health = healthFromAPI ?? Math.min(100, (spaceCount > 0 ? 40 : 0) + (folderCount > 0 ? 30 : 0) + (nodeCount > 0 ? 30 : 0));
 
                     return (
                         <Planet
@@ -372,9 +411,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             onClick={() => {
                                 navigateToDepartment(p.id);
                             }}
-                            health={mockHealth}
-                            activity={mockActivity}
-                            capacity={mockCapacity}
+                            health={health}
+                            activity={activity}
+                            capacity={capacity}
                         />
                     );
                 })}
