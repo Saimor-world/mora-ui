@@ -25,6 +25,7 @@ const PUBLIC_PREFIXES = [
     "/_next/image",
     "/api/auth",        // NextAuth endpoints
     "/api/v2/auth",     // Custom auth endpoints
+    "/api/core",        // Core API proxy (auth handled by backend)
 ];
 
 // Statische Dateien die OHNE Auth zugänglich sein müssen
