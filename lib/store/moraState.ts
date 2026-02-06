@@ -506,17 +506,19 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const includeDemo = viewMode === 'demo' || userRole === ROLE_SYSTEM_OWNER;
             let data = await fetchCompanies(includeDemo);
 
-            // Normalize known demo/HQ labels to avoid stale or incorrect branding
+            // Use DB name if available, only fallback to defaults if empty/null
             data = data.map((company: any) => {
-                let name = company?.name;
-                const lower = (name || '').toLowerCase();
-                const normalized = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                let name = company?.name?.trim();
 
-                if (company?.tenant_id === TENANT_HQ) {
-                    name = 'Saimor HQ';
-                }
-                if (company?.is_demo || company?.tenant_id === TENANT_DEMO || checkDemoTenant(company?.tenant_id)) {
-                    name = 'Simple Coffee Group';
+                // Only use fallback names if DB name is empty/null
+                if (!name) {
+                    if (company?.tenant_id === TENANT_HQ) {
+                        name = 'Saimor HQ';
+                    } else if (company?.is_demo || company?.tenant_id === TENANT_DEMO || checkDemoTenant(company?.tenant_id)) {
+                        name = 'Simple Coffee Group';
+                    } else {
+                        name = 'Workspace';
+                    }
                 }
 
                 return { ...company, name };
