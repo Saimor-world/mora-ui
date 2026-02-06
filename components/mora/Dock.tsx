@@ -87,9 +87,9 @@ export const Dock = () => {
     return (
         <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-4">
             <motion.div
-                className="px-8 py-4 rounded-[40px] flex items-center gap-2 relative overflow-hidden backdrop-blur-[50px] shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+                className="px-8 py-4 rounded-2xl flex items-center gap-2 relative overflow-hidden backdrop-blur-xl shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
                 style={{
-                    background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(2, 6, 8, 0.98) 100%)',
+                    background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.5) 0%, rgba(0, 0, 0, 0.6) 100%)',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
                     boxShadow: `0 30px 80px rgba(0, 0, 0, 1.0), 0 0 60px ${accent}20, inset 0 0 20px rgba(255,255,255,0.02)`,
                 }}
@@ -107,7 +107,7 @@ export const Dock = () => {
                 />
 
                 {/* SEARCH UNIT */}
-                <div className="relative flex items-center mr-3 ml-1">
+                <div className="relative flex items-center mx-3">
                     <Search size={13} className="absolute left-3.5 text-white/30" />
                     <input
                         ref={inputRef}
@@ -135,7 +135,7 @@ export const Dock = () => {
                             }
                         }}
                         placeholder="Search... ⏎"
-                        className="w-44 bg-white/5 border border-white/5 rounded-xl pl-9 pr-4 py-1.5 text-[13px] text-white/90 placeholder:text-white/20 focus:outline-none focus:border-cyan-500/30 transition-all"
+                        className="w-44 bg-white/5 border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-[13px] text-white/90 placeholder:text-white/20 focus:outline-none focus:border-cyan-500/30 transition-all"
                     />
                 </div>
 
@@ -145,13 +145,13 @@ export const Dock = () => {
                 {dockItems.map((item, i) => (
                     <motion.button
                         key={i}
-                        className="p-3 rounded-2xl hover:bg-white/10 text-white/50 hover:text-white transition-all relative group"
+                        className="p-3 rounded-xl hover:bg-white/10 text-white/50 hover:text-white transition-all duration-200 relative group"
                         whileHover={{ y: -5, scale: 1.15 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleDockClick(item.action)}
                     >
                         <item.icon size={19} strokeWidth={1.5} />
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/95 text-[9px] tracking-[0.2em] font-light uppercase px-3 py-2 rounded-lg border border-white/10 backdrop-blur-2xl">
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/95 text-[9px] tracking-[0.2em] font-light uppercase px-3 py-2 rounded-lg border border-white/10 backdrop-blur-2xl">
                             {item.label}
                         </div>
                     </motion.button>
@@ -169,7 +169,7 @@ export const Dock = () => {
                                     key={pane.id}
                                     onClick={() => restorePane(pane.id)}
                                     title={pane.title}
-                                    className="w-11 h-11 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-cyan-300/80 hover:text-cyan-300 backdrop-blur-lg"
+                                    className="w-11 h-11 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-cyan-300/80 hover:text-cyan-300 transition-colors duration-200 backdrop-blur-lg"
                                 >
                                     <Icon size={16} />
                                 </button>

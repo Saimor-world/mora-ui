@@ -42,7 +42,14 @@ export const Planet: React.FC<PlanetProps> = ({
     const [showContextMenu, setShowContextMenu] = useState(false);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
     const [isHovered, setIsHovered] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
     const contextRef = useRef<HTMLDivElement>(null);
+    const planetRef = useRef<HTMLDivElement>(null);
+
+    // Portal mount check (SSR safety)
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const sizeMap = {
         sm: { diameter: 60, iconSize: 20 },
@@ -97,19 +104,29 @@ export const Planet: React.FC<PlanetProps> = ({
 
     return (
         <motion.div
+            ref={planetRef}
             className="absolute cursor-pointer group pointer-events-auto"
             style={{
                 left: position.x,
                 top: position.y,
                 transform: 'translate(-50%, -50%)',
             }}
-            onMouseEnter={() => {
+            onMouseEnter={(e) => {
                 setIsHovered(true);
                 onHover?.(true);
+
+                // Calculate tooltip position (right of planet)
+                const rect = e.currentTarget.getBoundingClientRect();
+                setContextMenuPos({
+                    x: rect.right + 16,
+                    y: rect.top + rect.height / 2
+                });
+                setShowContextMenu(true);
             }}
             onMouseLeave={() => {
                 setIsHovered(false);
                 onHover?.(false);
+                setShowContextMenu(false);
             }}
             onClick={onClick}
         >
@@ -275,6 +292,138 @@ export const Planet: React.FC<PlanetProps> = ({
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* ═ PREMIUM HOVER TOOLTIP (Portal) ═ */}
+            {isMounted && showContextMenu && createPortal(
+                <AnimatePresence>
+                    <motion.div
+                        ref={contextRef}
+                        initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                        transition={{
+                            type: 'spring',
+                            stiffness: 400,
+                            damping: 25,
+                            duration: 0.2
+                        }}
+                        className="fixed z-[9999] pointer-events-none"
+                        style={{
+                            left: contextMenuPos.x,
+                            top: contextMenuPos.y,
+                            transform: 'translateY(-50%)'
+                        }}
+                    >
+                        {/* Glassmorphic Card */}
+                        <div
+                            className="relative px-4 py-3 rounded-xl backdrop-blur-xl border border-white/20 shadow-2xl min-w-[180px]"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(20,20,30,0.8) 100%)',
+                                boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 60px ${style.glow}15, inset 0 1px 0 rgba(255,255,255,0.1)`
+                            }}
+                        >
+                            {/* Accent Line */}
+                            <div
+                                className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full"
+                                style={{ background: `linear-gradient(180deg, ${style.glow}, ${style.glow}40)` }}
+                            />
+
+                            {/* Content */}
+                            <div className="ml-2">
+                                {/* Name */}
+                                <h4
+                                    className="text-sm font-semibold tracking-wide mb-2"
+                                    style={{ color: style.border }}
+                                >
+                                    {department.name}
+                                </h4>
+
+                                {/* Stats Grid */}
+                                <div className="space-y-2">
+                                    {/* Activity / Docs */}
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-1.5 text-white/60">
+                                            <Database size={11} className="opacity-70" />
+                                            <span>Documents</span>
+                                        </div>
+                                        <span className="font-mono text-cyan-400">{activity}</span>
+                                    </div>
+
+                                    {/* Health */}
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-1.5 text-white/60">
+                                            <Activity size={11} className="opacity-70" />
+                                            <span>Health</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-12 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                                <motion.div
+                                                    className="h-full rounded-full"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${health}%` }}
+                                                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                                                    style={{
+                                                        background: health > 80 ? '#10B981' : health > 50 ? '#F59E0B' : '#EF4444'
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="font-mono text-emerald-400 w-8 text-right">{health}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Capacity */}
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-1.5 text-white/60">
+                                            <Folder size={11} className="opacity-70" />
+                                            <span>Capacity</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-12 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                                                <motion.div
+                                                    className="h-full rounded-full"
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${capacity}%` }}
+                                                    transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+                                                    style={{
+                                                        background: capacity < 70 ? '#10B981' : capacity < 90 ? '#F59E0B' : '#EF4444'
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="font-mono text-amber-400 w-8 text-right">{capacity}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Description (if available) */}
+                                {department.description && (
+                                    <p className="mt-2 pt-2 border-t border-white/10 text-[10px] text-white/40 leading-relaxed line-clamp-2">
+                                        {department.description}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Corner Glow */}
+                            <div
+                                className="absolute -top-1 -right-1 w-8 h-8 rounded-full blur-xl opacity-30"
+                                style={{ background: style.glow }}
+                            />
+                        </div>
+
+                        {/* Connector Arrow */}
+                        <div
+                            className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2"
+                            style={{
+                                width: 0,
+                                height: 0,
+                                borderTop: '6px solid transparent',
+                                borderBottom: '6px solid transparent',
+                                borderRight: '6px solid rgba(255,255,255,0.15)'
+                            }}
+                        />
+                    </motion.div>
+                </AnimatePresence>,
+                document.body
+            )}
         </motion.div>
     );
 };

@@ -514,7 +514,7 @@ export const MoraShell: React.FC = () => {
             {/* Logout Transition Overlay */}
             {
                 isLoggingOut && (
-                    <div className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-md flex items-center justify-center">
+                    <div className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-xl flex items-center justify-center">
                         <div className="text-center">
                             <div className="text-xs uppercase tracking-[0.4em] text-emerald-400/80 mb-3">
                                 Logging Out

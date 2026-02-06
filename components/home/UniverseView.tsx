@@ -399,7 +399,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         />
 
                         <motion.div
-                            className="bg-black/60 border border-white/10 rounded-[2.5rem] p-10 max-w-3xl w-full shadow-2xl relative overflow-hidden backdrop-blur-xl"
+                            className="bg-black/60 border border-white/10 rounded-2xl p-10 max-w-3xl w-full shadow-2xl relative overflow-hidden backdrop-blur-xl"
                             initial={{ scale: 0.9, y: 30, opacity: 0 }}
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.9, y: 30, opacity: 0 }}

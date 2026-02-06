@@ -292,7 +292,7 @@ export const ContextRail: React.FC = () => {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
-                        className="fixed left-[88px] bottom-6 z-[70] w-64 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl"
+                        className="fixed left-[88px] bottom-6 z-[70] w-64 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl"
                     >
                         <div className="text-sm text-white/90 font-medium mb-1">
                             {currentAccount?.email || localStorage.getItem('user_name') || 'User'}
@@ -311,14 +311,14 @@ export const ContextRail: React.FC = () => {
                                     openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
                                     setShowUserMenu(false);
                                 }}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/80"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/80"
                             >
                                 <User size={16} />
                                 Profile & Settings
                             </button>
                             <button
                                 onClick={handleLogout}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors text-left text-sm text-red-400"
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors duration-200 text-left text-sm text-red-400"
                             >
                                 <LogOut size={16} />
                                 Logout
@@ -335,7 +335,7 @@ export const ContextRail: React.FC = () => {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
-                        className="fixed left-[88px] bottom-20 z-[70] w-80 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-2xl"
+                        className="fixed left-[88px] bottom-20 z-[70] w-80 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-2xl"
                     >
                         <h3 className="text-sm text-white/90 font-medium mb-3">Quick Settings</h3>
 
@@ -346,7 +346,7 @@ export const ContextRail: React.FC = () => {
                                     openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
                                     setShowSettings(false);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/70 hover:text-white/90"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Settings size={15} />
                                 Alle Einstellungen
@@ -357,7 +357,7 @@ export const ContextRail: React.FC = () => {
                                     openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } });
                                     setShowSettings(false);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/70 hover:text-white/90"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Users size={15} />
                                 Team verwalten
@@ -368,7 +368,7 @@ export const ContextRail: React.FC = () => {
                                     openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } });
                                     setShowSettings(false);
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors text-left text-sm text-white/70 hover:text-white/90"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Sparkles size={15} />
                                 Mora Nexus

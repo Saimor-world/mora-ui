@@ -120,12 +120,12 @@ useEffect(() => {
         >
             <div className="flex h-full">
                 {/* Sidebar */}
-                <div className="w-1/3 border-r border-white/10 p-2 space-y-1">
+                <div className="w-1/3 border-r border-white/10 p-4 space-y-1">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${activeTab === tab.id
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${activeTab === tab.id
                                 ? 'bg-emerald-500/20 text-emerald-400 font-medium'
                                 : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
                         >
@@ -250,7 +250,7 @@ useEffect(() => {
                                                         setBrandingName(activeCompany.name || '');
                                                         setBrandingLogo(activeCompany.logo_url || null);
                                                     }}
-                                                    className="px-3 py-2 text-xs text-white/40 hover:text-white/70 transition-colors"
+                                                    className="px-3 py-2 text-xs text-white/40 hover:text-white/70 transition-colors duration-200"
                                                 >
                                                     Reset
                                                 </button>
@@ -444,7 +444,7 @@ useEffect(() => {
                                             <div key={dept.id} className="border border-white/10 rounded-lg overflow-hidden">
                                                 {/* Department Header */}
                                                 <div
-                                                    className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                                                    className="flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors duration-200 cursor-pointer"
                                                     onClick={() => setWorkspaceExpandedDept(workspaceExpandedDept === dept.id ? null : dept.id)}
                                                 >
                                                     <div className="flex items-center gap-3">
@@ -500,7 +500,7 @@ useEffect(() => {
                                                                 setEditingItem({ id: dept.id, type: 'department', name: dept.name });
                                                                 setEditName(dept.name);
                                                             }}
-                                                            className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                                            className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white transition-colors duration-200"
                                                             title="Umbenennen"
                                                         >
                                                             <Pencil size={14} />
@@ -522,7 +522,7 @@ useEffect(() => {
                                                                 }
                                                             }}
                                                             disabled={isDeleting === dept.id}
-                                                            className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors disabled:opacity-30"
+                                                            className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors duration-200 disabled:opacity-30"
                                                             title="Löschen"
                                                         >
                                                             {isDeleting === dept.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
@@ -536,7 +536,7 @@ useEffect(() => {
                                                         {dept.children.map((child: any) => (
                                                             <div
                                                                 key={child.id}
-                                                                className="flex items-center justify-between px-4 py-2 pl-10 hover:bg-white/5 transition-colors"
+                                                                className="flex items-center justify-between px-4 py-2 pl-10 hover:bg-white/5 transition-colors duration-200"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <Circle size={8} className="text-blue-400" fill="currentColor" />
@@ -592,7 +592,7 @@ useEffect(() => {
                                                                             setEditingItem({ id: child.id, type: child.type, name: child.name });
                                                                             setEditName(child.name);
                                                                         }}
-                                                                        className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white transition-colors"
+                                                                        className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white transition-colors duration-200"
                                                                     >
                                                                         <Pencil size={12} />
                                                                     </button>
@@ -615,7 +615,7 @@ useEffect(() => {
                                                                             }
                                                                         }}
                                                                         disabled={isDeleting === child.id}
-                                                                        className="p-1 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors disabled:opacity-30"
+                                                                        className="p-1 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors duration-200 disabled:opacity-30"
                                                                     >
                                                                         {isDeleting === child.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                                                                     </button>
@@ -632,7 +632,7 @@ useEffect(() => {
                                         <p className="text-white/40 text-sm">Lade Workspace-Struktur...</p>
                                         <button
                                             onClick={() => activeCompanyId && loadTree()}
-                                            className="mt-4 px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg text-white/60 transition-colors"
+                                            className="mt-4 px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg text-white/60 transition-colors duration-200"
                                         >
                                             Neu laden
                                         </button>
@@ -674,7 +674,7 @@ useEffect(() => {
                                             size: { width: 840, height: 640 },
                                         });
                                     }}
-                                    className="mt-4 px-5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm hover:bg-emerald-500/25 transition-colors flex items-center gap-2"
+                                    className="mt-4 px-5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm hover:bg-emerald-500/25 transition-colors duration-200 flex items-center gap-2"
                                 >
                                     <Users size={14} />
                                     Team Manager öffnen

@@ -77,7 +77,7 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
                 <button
                     key={suggestion}
                     onClick={() => onSelect(suggestion)}
-                    className="text-xs px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-full text-emerald-100/60 hover:text-emerald-300 transition-all"
+                    className="text-xs px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-full text-emerald-100/60 hover:text-emerald-300 transition-all duration-200"
                 >
                     {suggestion}
                 </button>
@@ -375,7 +375,7 @@ Versuche:
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                             placeholder="Schreib Môra..."
-                            className="flex-1 bg-black/40 border border-emerald-500/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all"
+                            className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all"
                         />
                         <button
                             onClick={sendMessage}
