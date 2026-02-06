@@ -13,7 +13,9 @@ import {
     Clock,
     Sparkles,
     ChevronRight,
-    X
+    X,
+    Search,
+    Filter
 } from "lucide-react";
 import { coreGet, corePost } from "@/lib/api/coreClient";
 import { buildChatContext } from "@/lib/api/moraAgentClient";
@@ -81,6 +83,8 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [showChat, setShowChat] = useState<string | null>(null);
     const [message, setMessage] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
 
     // Invitations
     const [inviteEmail, setInviteEmail] = useState("");
@@ -475,8 +479,56 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 10 }}
-                            className="space-y-2"
+                            className="space-y-3"
                         >
+                            {/* Search & Filter Bar */}
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Teammitglied suchen..."
+                                        className="w-full pl-9 pr-4 py-2 rounded-xl bg-black/20 border border-white/5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/30 transition-all"
+                                    />
+                                </div>
+                                <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+                                    <button
+                                        onClick={() => setStatusFilter("all")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === "all" ? "bg-emerald-500 text-black" : "text-white/50 hover:text-white"}`}
+                                    >
+                                        Alle
+                                    </button>
+                                    <button
+                                        onClick={() => setStatusFilter("online")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === "online" ? "bg-emerald-500 text-black" : "text-white/50 hover:text-white"}`}
+                                    >
+                                        Online
+                                    </button>
+                                    <button
+                                        onClick={() => setStatusFilter("offline")}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${statusFilter === "offline" ? "bg-emerald-500 text-black" : "text-white/50 hover:text-white"}`}
+                                    >
+                                        Offline
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Stats Bar */}
+                            <div className="flex items-center gap-4 mb-4 text-xs text-white/40">
+                                <span className="flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    {members.filter(m => m.status === "online").length} Online
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-gray-500" />
+                                    {members.filter(m => m.status === "offline").length} Offline
+                                </span>
+                                <span className="text-white/20">|</span>
+                                <span>{members.length} Mitglieder gesamt</span>
+                            </div>
+
                             {isLoading ? (
                                 <div className="text-center text-emerald-500/50 py-8">
                                     <Sparkles className="w-6 h-6 mx-auto mb-2 animate-pulse" />
@@ -494,7 +546,19 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                                     </button>
                                 </div>
                             ) : (
-                                members.map(member => (
+                                members
+                                    .filter(m => {
+                                        // Search filter
+                                        const matchesSearch = searchQuery === "" ||
+                                            m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                            m.email.toLowerCase().includes(searchQuery.toLowerCase());
+                                        // Status filter
+                                        const matchesStatus = statusFilter === "all" ||
+                                            (statusFilter === "online" && m.status === "online") ||
+                                            (statusFilter === "offline" && m.status === "offline");
+                                        return matchesSearch && matchesStatus;
+                                    })
+                                    .map(member => (
                                     <motion.div
                                         key={member.id}
                                         whileHover={{ x: 4 }}
