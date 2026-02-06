@@ -1,11 +1,15 @@
 import { CoreNode } from "@/lib/types/core";
-import { recordAwarenessSignal } from "@/lib/api/coreClient";
+// PERFORMANCE: Disabled backend sync - was causing 10-20+ requests/minute
+// import { recordAwarenessSignal } from "@/lib/api/coreClient";
 
 /**
  * MINDLOOP EVENT MODEL (Phase 8 Active)
- * 
+ *
  * Defines the structure for intelligence events within the system.
  * These events drive the "Awareness Engine" and trigger UI reactions.
+ *
+ * PERFORMANCE NOTE: Backend awareness sync disabled to reduce network load.
+ * The MindLoop now runs client-side only. Re-enable when backend is optimized.
  */
 
 export type MindLoopEventType =
@@ -67,10 +71,12 @@ class MindLoopController {
         this.eventLog.push(fullEvent);
         // console.log(`[MindLoop] Event: ${fullEvent.type}`, fullEvent);
 
-        // BRIDGE: Send to Backend Conscious Stream (Phase 8.1 Integration)
-        if (['NAV_EVENT', 'SYSTEM_ALERT', 'DATA_CHANGE'].includes(fullEvent.type)) {
-            recordAwarenessSignal(fullEvent.type.toLowerCase(), fullEvent.payload);
-        }
+        // BRIDGE: Backend sync DISABLED for performance
+        // Was sending POST requests on every nav/data event (10-20+/min)
+        // Re-enable when backend has batching/throttling:
+        // if (['NAV_EVENT', 'SYSTEM_ALERT', 'DATA_CHANGE'].includes(fullEvent.type)) {
+        //     recordAwarenessSignal(fullEvent.type.toLowerCase(), fullEvent.payload);
+        // }
 
         // Prune old events
         this.pruneEvents();

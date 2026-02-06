@@ -3,13 +3,16 @@
  *
  * Polls the awareness API with exponential backoff on errors.
  * Returns the current orb state.
+ *
+ * PERFORMANCE: Reduced polling frequency to minimize network load.
+ * Was 15s, now 60s - the orb state doesn't need real-time updates.
  */
 
 import { useState, useEffect } from 'react';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
 
-const INITIAL_INTERVAL = 15000; // 15 seconds
-const MAX_INTERVAL = 120000; // 2 minutes
+const INITIAL_INTERVAL = 60000; // 60 seconds (was 15s - reduced for performance)
+const MAX_INTERVAL = 180000; // 3 minutes
 
 export function useAwareness(): OrbState {
     const [orbState, setOrbState] = useState<OrbState>('idle');

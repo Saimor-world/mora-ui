@@ -18,8 +18,9 @@ const MOCK_PULSE_LOW: PulseData = {
 };
 
 // Polling configuration with backoff
-const MIN_INTERVAL = 15000;  // 15 seconds minimum
-const MAX_INTERVAL = 120000; // 2 minutes maximum when backend is down
+// PERFORMANCE: Increased intervals to reduce network load
+const MIN_INTERVAL = 45000;  // 45 seconds minimum (was 15s)
+const MAX_INTERVAL = 180000; // 3 minutes maximum when backend is down
 const BACKOFF_MULTIPLIER = 1.5;
 
 export const useIntelligencePulse = () => {

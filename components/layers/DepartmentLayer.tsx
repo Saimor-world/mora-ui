@@ -280,7 +280,14 @@ export const DepartmentLayer: React.FC = () => {
                         </motion.div>
 
                         {/* Moons (Spaces) orbiting Department */}
-                        {moonPositions.map(({ space, x, y, delay }) => (
+                        {moonPositions.map(({ space, x, y, delay }) => {
+                            // NAMING FIX: If space name matches department name, show "General" to avoid confusion
+                            const normalize = (s: string) => s?.toLowerCase().trim();
+                            const displayName = normalize(space.name) === normalize(currentDepartment?.name || '')
+                                ? "General"
+                                : space.name;
+
+                            return (
                             <motion.div
                                 key={space.id}
                                 className="absolute cursor-pointer group"
@@ -299,7 +306,7 @@ export const DepartmentLayer: React.FC = () => {
                                     openPane({
                                         id: `space-${space.id}`,
                                         type: 'space',
-                                        title: space.name,
+                                        title: displayName,
                                         data: {
                                             spaceId: space.id,
                                             departmentId: activeDepartmentId  // Pass parent for context
@@ -313,7 +320,7 @@ export const DepartmentLayer: React.FC = () => {
                                 <Star
                                     space={{
                                         id: space.id,
-                                        name: space.name,
+                                        name: displayName,
                                         department_id: activeDepartmentId, // Explicitly pass activeDepartmentId
                                         description: space.description || undefined,
                                         folder_count: 0 // Keep as 0 for now as 'space' type might not have it yet, avoiding redundant find()
@@ -329,7 +336,7 @@ export const DepartmentLayer: React.FC = () => {
                                 {/* Label for Space - ALWAYS VISIBLE */}
                                 <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
                                     <span className="text-[11px] text-white/60 group-hover:text-emerald-300 font-medium tracking-wide transition-colors duration-200">
-                                        {space.name}
+                                        {displayName}
                                     </span>
                                 </div>
                                 {/* Enhanced Hover Info */}
@@ -339,7 +346,8 @@ export const DepartmentLayer: React.FC = () => {
                                     </div>
                                 </div>
                             </motion.div>
-                        ))}
+                        );
+                        })}
 
                         {/* Folder Stars for hovered Space (semantic mini-universe) */}
                         {hoveredSpacePosition && hoveredFolderPositions.length > 0 && (
