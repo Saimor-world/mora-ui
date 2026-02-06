@@ -92,6 +92,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [showUpload, setShowUpload] = useState(autoShowUpload || false);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; filename: string } | null>(null);
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
     // Context Menu & Clipboard
@@ -510,6 +511,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
         setShowUpload(false);
         setIsUploading(true);
+        setUploadProgress({ current: 0, total: fileList.length, filename: fileList[0]?.name || 'file' });
 
         // P6: Orb reacts - thinking (lila) während Upload/Analyse
         setThinking();
@@ -526,7 +528,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
         let successCount = 0;
         try {
-            for (const file of fileList) {
+            for (let i = 0; i < fileList.length; i++) {
+                const file = fileList[i];
+                setUploadProgress({ current: i + 1, total: fileList.length, filename: file.name });
                 try {
                     const uploaded = await uploadCompanyFile(file, activeCompanyId);
                     successCount++;
@@ -603,6 +607,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setIdle();
         } finally {
             setIsUploading(false);
+            setUploadProgress(null);
         }
     };
 
@@ -816,12 +821,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
 
-                    {/* UNIFIED TOOLBAR */}
-                    <div className="flex items-center gap-4 px-6 py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
-                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+                    {/* UNIFIED TOOLBAR - RESPONSIVE */}
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 md:px-6 py-2 md:py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
+                        {/* Breadcrumbs Row */}
+                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth min-w-0 flex-1">
                             <button
                                 onClick={() => setCurrentFolderId(null)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm group ${!currentFolderId ? 'text-emerald-400 bg-emerald-500/10' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${!currentFolderId ? 'text-emerald-400 bg-emerald-500/10' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
                             >
                                 <Home size={14} className={!currentFolderId ? 'text-emerald-400' : 'text-white/40'} />
                                 <span className="font-medium tracking-tight">Home</span>
@@ -832,44 +838,42 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
                                     <button
                                         onClick={() => setCurrentFolderId(bc.id)}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-sm group whitespace-nowrap ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                        className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group whitespace-nowrap shrink-0 ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
                                     >
                                         {bc.type === 'department' ? <Globe size={13} className="text-emerald-500/60" /> :
                                             bc.type === 'space' ? <Circle size={12} className="text-cyan-500/60" /> :
                                                 <FolderIcon size={13} className="text-blue-500/60" />}
-                                        <span className="font-medium tracking-tight">{bc.name}</span>
+                                        <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{bc.name}</span>
                                     </button>
                                 </React.Fragment>
                             ))}
                         </div>
 
-                        <div className="flex-1" />
-
-                        <div className="flex items-center gap-3">
-                            {/* Search */}
-                            <div className="relative">
+                        {/* Actions Row */}
+                        <div className="flex items-center gap-2 md:gap-3 flex-wrap lg:flex-nowrap">
+                            {/* Search - Hidden on mobile, shown on md+ */}
+                            <div className="relative hidden md:block">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search..."
-                                    className="pl-9 pr-4 py-1.5 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-32 focus:w-48 transition-all"
+                                    className="pl-9 pr-4 py-1.5 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-28 lg:w-32 focus:w-40 lg:focus:w-48 transition-all"
                                 />
                             </div>
 
-                            {/* View Mode Toggles */}
-                            <div className="flex items-center gap-2 mr-2">
-                                <button
-                                    onClick={() => setIsDeepView(!isDeepView)}
-                                    className={`p-1.5 px-3 rounded-lg flex items-center gap-2 transition-all border ${isDeepView ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-black/40 border-white/5 text-white/40 hover:text-white'}`}
-                                    title={isDeepView ? "Exit Deep View" : "Show All Documents"}
-                                >
-                                    <Sparkles size={14} />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">{isDeepView ? 'Deep View' : 'Deep View'}</span>
-                                </button>
-                            </div>
+                            {/* Deep View Toggle - Hidden on mobile */}
+                            <button
+                                onClick={() => setIsDeepView(!isDeepView)}
+                                className={`hidden md:flex p-1.5 px-2 lg:px-3 rounded-lg items-center gap-1.5 lg:gap-2 transition-all border text-xs ${isDeepView ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-black/40 border-white/5 text-white/40 hover:text-white'}`}
+                                title={isDeepView ? "Exit Deep View" : "Show All Documents"}
+                            >
+                                <Sparkles size={14} />
+                                <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-wider">Deep</span>
+                            </button>
 
+                            {/* View Mode Toggles */}
                             <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
                                 <button
                                     onClick={() => setViewMode('grid')}
@@ -887,7 +891,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 </button>
                                 <button
                                     onClick={() => setViewMode('graph')}
-                                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'graph' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white/70'}`}
+                                    className={`hidden md:block p-1.5 rounded-lg transition-all ${viewMode === 'graph' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white/70'}`}
                                     title="Semantic Graph"
                                 >
                                     <Share2 size={16} />
@@ -895,14 +899,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1.5 border-l border-white/10 pl-3">
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-colors"
-                                    title="Upload Files"
-                                >
-                                    <UploadCloud size={16} />
-                                </button>
+                            <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-3">
                                 <button
                                     onClick={loadContent}
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
@@ -923,10 +920,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black transition-all text-sm font-bold shadow-lg shadow-emerald-500/20"
+                                    className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black transition-all text-xs md:text-sm font-bold shadow-lg shadow-emerald-500/20"
                                 >
                                     <Upload size={14} />
-                                    Upload
+                                    <span className="hidden sm:inline">Upload</span>
                                 </button>
                             </div>
                         </div>
@@ -972,8 +969,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     className="h-full"
                                 >
                                     {viewMode === 'grid' ? (
-                                        /* GRID VIEW */
-                                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        /* GRID VIEW - RESPONSIVE */
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
                                             {/* Folders */}
                                             {filteredFolders.map(folder => {
                                                 const isSelected = selectedNodeId === folder.id;
@@ -1374,11 +1371,31 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             />
                         )}
 
-                        {/* Status Footer */}
+                        {/* Upload Progress Footer */}
                         {isUploading && (
-                            <div className="px-4 py-2 border-t border-white/5 bg-emerald-900/10 text-xs text-emerald-400 flex items-center gap-2">
-                                <Loader2 size={12} className="animate-spin" />
-                                Uploading files to secure storage...
+                            <div className="px-4 py-3 border-t border-white/5 bg-emerald-900/10">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                                        <Loader2 size={12} className="animate-spin" />
+                                        <span className="font-medium">Uploading...</span>
+                                    </div>
+                                    {uploadProgress && (
+                                        <span className="text-[10px] text-emerald-400/60">
+                                            {uploadProgress.current} / {uploadProgress.total}
+                                        </span>
+                                    )}
+                                </div>
+                                {uploadProgress && (
+                                    <>
+                                        <div className="h-1 bg-black/30 rounded-full overflow-hidden mb-1.5">
+                                            <div
+                                                className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+                                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-white/40 truncate">{uploadProgress.filename}</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
