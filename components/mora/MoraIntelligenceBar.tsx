@@ -20,14 +20,15 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
     const { hint } = useIntelFeed();
 
     const statusText = useMemo(() => {
-        if (coreError) return "SYSTEM CONNECTION LOST";
-        if (orbState === "thinking") return "ABSORBING KNOWLEDGE...";
-        if (orbState === "focus") return "ACTIVE NAVIGATION";
-        if (viewMode === "demo") return "DEMO MODE ACTIVE";
-        return "AWAITING INPUT";
+        if (coreError) return "OFFLINE";
+        if (orbState === "thinking") return "PROCESSING";
+        if (orbState === "focus") return "ACTIVE";
+        if (viewMode === "demo") return "DEMO";
+        return "READY";
     }, [orbState, coreError, viewMode]);
 
-    const intelText = hint?.summary || hint?.title || "Môra is observing the workspace...";
+    // Only show real context, no fake placeholder text
+    const intelText = hint?.summary || hint?.title || null;
 
     return (
         <div className="fixed bottom-4 left-6 z-40 w-full max-w-sm pointer-events-none">
@@ -56,16 +57,17 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
 
                     {/* Context & Status Area */}
                     <div className="flex-1 flex flex-col justify-center min-w-0 cursor-pointer" onClick={onOpenIntelligence}>
-                        <div className="flex items-center gap-2 mb-0.5">
-                            <span className={`text-[9px] font-bold tracking-[0.2em] uppercase ${coreError ? 'text-red-400' : 'text-emerald-500'}`}>
-                                {statusText}
+                        <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-semibold tracking-[0.15em] uppercase ${coreError ? 'text-red-400' : 'text-emerald-400'}`}>
+                                Mora • {statusText}
                             </span>
                             {coreError && <AlertTriangle size={10} className="text-red-400 animate-pulse" />}
                         </div>
-                        <div className="text-sm text-emerald-50/90 font-light truncate flex items-center gap-2">
-                            <span className="opacity-50 hidden sm:inline-block">Context:</span>
-                            <span className="truncate">{intelText}</span>
-                        </div>
+                        {intelText && (
+                            <div className="text-xs text-white/60 font-light truncate mt-0.5">
+                                {intelText}
+                            </div>
+                        )}
                     </div>
 
                     {/* Actions / Indicators */}

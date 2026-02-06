@@ -14,15 +14,16 @@ interface Thought {
 }
 
 /**
- * MoraThoughtStream - Surprise Feature
- * 
- * Displays MOÔRA's internal "Stream of Consciousness" from the backend cognition log.
- * Fades in thoughts near the bottom left, giving the system a living AI feel.
+ * MoraThoughtStream - Real-time AI Activity Feed
+ *
+ * Shows ACTUAL backend activity only. No mock data.
+ * Hidden when no real thoughts are available.
  */
 export const MoraThoughtStream: React.FC = () => {
     const [thoughts, setThoughts] = useState<Thought[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [activeThought, setActiveThought] = useState<Thought | null>(null);
+    const [hasRealData, setHasRealData] = useState(false);
     const lastFetchedRef = useRef<string | null>(null);
     const { coreError } = useMoraStore();
 
@@ -32,8 +33,8 @@ export const MoraThoughtStream: React.FC = () => {
 
         let isMounted = true;
         let timeoutId: NodeJS.Timeout;
-        let interval = 15000; // Start at 15s
-        const maxInterval = 120000; // Max 2 minutes
+        let interval = 30000; // Start at 30s (less aggressive)
+        const maxInterval = 180000; // Max 3 minutes
 
         const fetchThoughts = async () => {
             try {
@@ -46,20 +47,25 @@ export const MoraThoughtStream: React.FC = () => {
                         const newThoughts = [...res.thoughts].reverse();
                         setThoughts(newThoughts);
                         setCurrentIndex(0);
+                        setHasRealData(true);
                     }
                     // Success - reset backoff
-                    interval = 15000;
+                    interval = 30000;
+                } else {
+                    // No data - hide the component
+                    setHasRealData(false);
                 }
             } catch (error) {
-                // Apply backoff on error
+                // Apply backoff on error, hide component
                 interval = Math.min(interval * 1.5, maxInterval);
+                setHasRealData(false);
             }
             if (isMounted) {
                 timeoutId = setTimeout(fetchThoughts, interval);
             }
         };
 
-        timeoutId = setTimeout(fetchThoughts, 3000);
+        timeoutId = setTimeout(fetchThoughts, 5000);
 
         return () => {
             isMounted = false;
@@ -94,7 +100,8 @@ export const MoraThoughtStream: React.FC = () => {
         }
     }, [currentIndex, thoughts]);
 
-    if (!activeThought || coreError) return null;
+    // Only show if we have REAL data from backend
+    if (!activeThought || coreError || !hasRealData) return null;
 
     return (
         <div className="fixed bottom-28 left-6 z-40 pointer-events-none max-w-xs">

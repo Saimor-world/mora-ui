@@ -3,19 +3,20 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Home, Search, Settings, Folder, LayoutGrid, LogOut, Minus, Users, Mail, Calendar, Terminal, MessageCircle, FileText, Sparkles
+    Home, Search, Settings, Folder, LayoutGrid, Minus, Users, Mail, Calendar, Terminal, MessageCircle, FileText, Sparkles, Command
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SearchPopup } from './SearchPopup';
 
 /**
- * V10 RESONATING DOCK
- * 
- * Master interaction point updated for the "Breathing Forest" aesthetic.
- * - Steam Deck glassmorphism
- * - Resonance pulse (matches background)
- * - Restored full app ecosystem
+ * V11 PREMIUM DOCK
+ *
+ * Upgraded dock with:
+ * - Larger icons (24px)
+ * - Better hover tooltips with keyboard shortcuts
+ * - Cleaner app list (removed unused apps)
+ * - macOS-style magnification effect
  */
 export const Dock = () => {
     const {
@@ -57,17 +58,17 @@ export const Dock = () => {
         }
     };
 
+    // Core apps with keyboard shortcuts
     const dockItems = [
-        { icon: Home, label: 'Core', action: 'home' },
-        { icon: Sparkles, label: 'Mora', action: 'mora-hub' },
-        { icon: Folder, label: 'Finder', action: 'finder' },
-        { icon: LayoutGrid, label: 'Apps', action: 'apps' },
-        { icon: Users, label: 'Team', action: 'team' },
-        { icon: FileText, label: 'Notes', action: 'notes' },
-        { icon: Mail, label: 'Mail', action: 'mail' },
-        { icon: Calendar, label: 'Kalender', action: 'calendar' },
-        { icon: Terminal, label: 'Terminal', action: 'terminal' },
-        { icon: Settings, label: 'Settings', action: 'settings' }
+        { icon: Home, label: 'Home', shortcut: '⌘H', action: 'home', description: 'Zur Übersicht' },
+        { icon: Sparkles, label: 'Mora Nexus', shortcut: '⌘.', action: 'mora-hub', description: 'AI Hub' },
+        { icon: Folder, label: 'Finder', shortcut: '⌘F', action: 'finder', description: 'Dateien & Dokumente' },
+        { icon: Users, label: 'Team', shortcut: '⌘T', action: 'team', description: 'Teammitglieder' },
+        { icon: FileText, label: 'Notizen', shortcut: '⌘N', action: 'notes', description: 'Notizen & Docs' },
+        { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'E-Mails (Coming Soon)' },
+        { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Termine (Coming Soon)' },
+        { icon: Terminal, label: 'Terminal', shortcut: null, action: 'terminal', description: 'Kommandozeile' },
+        { icon: Settings, label: 'Einstellungen', shortcut: '⌘,', action: 'settings', description: 'Systemeinstellungen' }
     ];
 
     const minimizedIconMap: Record<string, React.ComponentType<any>> = {
@@ -85,30 +86,30 @@ export const Dock = () => {
     };
 
     return (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-4">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-4">
             <motion.div
-                className="px-8 py-4 rounded-2xl flex items-center gap-2 relative overflow-hidden backdrop-blur-xl shadow-[0_40px_100px_rgba(0,0,0,0.8)]"
+                className="px-6 py-3 rounded-2xl flex items-center gap-1 relative overflow-hidden backdrop-blur-2xl"
                 style={{
-                    background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.5) 0%, rgba(0, 0, 0, 0.6) 100%)',
-                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                    boxShadow: `0 30px 80px rgba(0, 0, 0, 1.0), 0 0 60px ${accent}20, inset 0 0 20px rgba(255,255,255,0.02)`,
+                    background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.7) 0%, rgba(0, 0, 0, 0.8) 100%)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: `0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px ${accent}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
                 }}
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 layout
                 transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
-                {/* RESONANCE FILAMENT */}
+                {/* TOP GLOW LINE */}
                 <motion.div
-                    className="absolute inset-x-0 top-0 h-[1.5px] opacity-40"
-                    style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }}
-                    animate={{ opacity: [0.2, 0.6, 0.2] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute inset-x-0 top-0 h-[1px] opacity-60"
+                    style={{ background: `linear-gradient(90deg, transparent, ${accent}80, transparent)` }}
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 />
 
-                {/* SEARCH UNIT */}
-                <div className="relative flex items-center mx-3">
-                    <Search size={13} className="absolute left-3.5 text-white/30" />
+                {/* SEARCH INPUT */}
+                <div className="relative flex items-center mr-2">
+                    <Search size={14} className="absolute left-3 text-white/40" />
                     <input
                         ref={inputRef}
                         type="text"
@@ -134,26 +135,47 @@ export const Dock = () => {
                                 inputRef.current?.blur();
                             }
                         }}
-                        placeholder="Search... ⏎"
-                        className="w-44 bg-white/5 border border-white/5 rounded-lg pl-9 pr-4 py-1.5 text-[13px] text-white/90 placeholder:text-white/20 focus:outline-none focus:border-cyan-500/30 transition-all"
+                        placeholder="Search... ⌘K"
+                        className="w-36 bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white/90 placeholder:text-white/30 focus:outline-none focus:border-cyan-500/40 focus:bg-white/10 transition-all duration-200"
                     />
                 </div>
 
-                <div className="w-[1px] h-6 bg-white/10 mx-2" />
+                {/* DIVIDER */}
+                <div className="w-[1px] h-8 bg-white/10 mx-2" />
 
-                {/* DOCK APP SYSTEM */}
+                {/* DOCK APPS */}
                 {dockItems.map((item, i) => (
                     <motion.button
                         key={i}
-                        className="p-3 rounded-xl hover:bg-white/10 text-white/50 hover:text-white transition-all duration-200 relative group"
-                        whileHover={{ y: -5, scale: 1.15 }}
-                        whileTap={{ scale: 0.95 }}
+                        className="p-3 rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-all duration-200 relative group"
+                        whileHover={{ y: -6, scale: 1.2 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleDockClick(item.action)}
                     >
-                        <item.icon size={19} strokeWidth={1.5} />
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/95 text-[9px] tracking-[0.2em] font-light uppercase px-3 py-2 rounded-lg border border-white/10 backdrop-blur-2xl">
-                            {item.label}
+                        <item.icon size={22} strokeWidth={1.5} />
+
+                        {/* PREMIUM TOOLTIP */}
+                        <div className="absolute -top-20 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none">
+                            <div className="bg-black/95 backdrop-blur-xl rounded-xl border border-white/10 px-4 py-2.5 min-w-[120px] text-center shadow-2xl">
+                                <div className="text-white text-xs font-medium mb-0.5">{item.label}</div>
+                                <div className="text-white/40 text-[10px]">{item.description}</div>
+                                {item.shortcut && (
+                                    <div className="flex items-center justify-center gap-1 mt-1.5">
+                                        <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-[10px] text-cyan-400 font-mono">
+                                            {item.shortcut}
+                                        </kbd>
+                                    </div>
+                                )}
+                            </div>
+                            {/* TOOLTIP ARROW */}
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-r border-b border-white/10 rotate-45" />
                         </div>
+
+                        {/* ACTIVE DOT */}
+                        <motion.div
+                            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-cyan-400 opacity-0 group-hover:opacity-100"
+                            layoutId={`dot-${i}`}
+                        />
                     </motion.button>
                 ))}
             </motion.div>
