@@ -4,7 +4,6 @@ import React, { useState, useCallback } from 'react';
 import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2, Users, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useDemoFlow } from '@/lib/hooks/useDemoFlow';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -26,7 +25,6 @@ import { resetUserState } from '@/lib/hooks/useUser';
 export const ContextRail: React.FC = () => {
     const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree, resetStore } = useMoraStore();
     const { currentAccount, logout } = useAccountStore();
-    const { runDemoFlow, isRunning: demoRunning } = useDemoFlow();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const router = useRouter();
@@ -242,8 +240,7 @@ export const ContextRail: React.FC = () => {
                     {/* Workspace/CEO View Button (Blitz = wie CEO die Firma sieht) */}
                     <button
                         onClick={handleWorkspaceView}
-                        disabled={demoRunning}
-                        className={`group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed ${viewMode === 'demo' ? 'bg-blue-500/20' : 'hover:bg-blue-500/10'
+                        className={`group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all ${viewMode === 'demo' ? 'bg-blue-500/20' : 'hover:bg-blue-500/10'
                             }`}
                     >
                         <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
