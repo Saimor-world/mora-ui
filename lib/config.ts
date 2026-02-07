@@ -47,8 +47,9 @@ class ConfigManager {
     const n8nEmailDigest = process.env.NEXT_PUBLIC_N8N_EMAIL_DIGEST;
     const n8nBroadcastDoc = process.env.NEXT_PUBLIC_N8N_BROADCAST_DOC;
     const n8nDuplicateHunter = process.env.NEXT_PUBLIC_N8N_DUPLICATE_HUNTER;
-    const n8nKnowledgeSync = process.env.NEXT_PUBLIC_N8N_KNOWLEDGE_SYNC || 'https://n8n.voice.saimor.world/webhook/knowledge-sync';
-    const n8nLearningBrain = process.env.NEXT_PUBLIC_N8N_LEARNING_BRAIN || 'https://n8n.voice.saimor.world/webhook/learning-brain-update';
+    // Keep voice/automation webhooks explicitly opt-in. No default remote endpoints.
+    const n8nKnowledgeSync = process.env.NEXT_PUBLIC_N8N_KNOWLEDGE_SYNC;
+    const n8nLearningBrain = process.env.NEXT_PUBLIC_N8N_LEARNING_BRAIN;
     const enableDiagnostics = process.env.NEXT_PUBLIC_ENABLE_DIAGNOSTICS === 'true';
 
     // DEV LOGGING

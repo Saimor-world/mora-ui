@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, Sparkles, Mic, RefreshCw } from 'lucide-react';
+import { X, Activity, Sparkles, RefreshCw } from 'lucide-react';
 import { MoraCommand } from './MoraCommand';
 import { useMoraStore } from '@/lib/store/moraState';
 import { toast } from '@/lib/toast';
@@ -143,13 +143,6 @@ export const IntelligenceDashboard: React.FC<IntelligenceDashboardProps> = ({
                                 >
                                     <Sparkles size={14} className="text-emerald-400 group-hover:scale-110 transition-transform" />
                                     <span className="text-xs text-white/70">Deep Analysis</span>
-                                </button>
-                                <button
-                                    onClick={() => toast.info('Activating Voice Interface...')}
-                                    className="flex items-center gap-2 p-2.5 bg-white/5 rounded-lg border border-white/5 hover:border-blue-500/30 hover:bg-blue-500/10 transition-all text-left group"
-                                >
-                                    <Mic size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
-                                    <span className="text-xs text-white/70">Voice Control</span>
                                 </button>
                                 <button
                                     onClick={handleReload}
