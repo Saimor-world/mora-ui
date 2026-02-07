@@ -3,12 +3,14 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Home, Search, Settings, Folder, LayoutGrid, Minus, Users, Mail, Calendar, Terminal, MessageCircle, FileText, Sparkles, Command, User, Building2, ChevronUp, Brain
+    Home, Search, Settings, Folder, LayoutGrid, Minus, Users, Mail, Calendar, Terminal, MessageCircle, FileText, Sparkles, Command, User, Building2, ChevronUp, Brain, Bell
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SearchPopup } from './SearchPopup';
 import { useMemory } from '@/lib/hooks/useMemory';
+import { NotificationCenter, useNotificationStore } from '@/components/os/NotificationCenter';
+import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -40,6 +42,10 @@ export const Dock = () => {
     const { panes, restorePane, openPane } = usePaneStore();
     const minimizedPanes = panes.filter(p => p.minimized);
     const { pendingCount } = useMemory();
+    const unreadNotifications = useNotificationStore((s) => s.notifications.filter(n => !n.read).length);
+
+    // Register keyboard shortcut for Focus Mode
+    useFocusModeShortcut();
 
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
@@ -70,9 +76,10 @@ export const Dock = () => {
             case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: defaultSize }); break;
             case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } }); break;
-            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 520, height: 760 } }); break;
-            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 520, height: 760 }, data: { activeSection: 'memory' } }); break;
+            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 560, height: 720 } }); break;
+            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 560, height: 720 }, data: { activeSection: 'memory' } }); break;
             case 'notes': openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } }); break;
+            case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 480, height: 640 } }); break;
             default: break;
         }
     };
@@ -81,6 +88,7 @@ export const Dock = () => {
     const dockItems: DockItem[] = [
         { icon: Home, label: 'Start', shortcut: '⌘H', action: 'home', description: 'Zurück zur Übersicht' },
         { icon: Sparkles, label: 'Mora', shortcut: '⌘.', action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
+        { icon: MessageCircle, label: 'Chat', shortcut: '⌘⏎', action: 'chat', description: 'Mit Mora sprechen' },
         { icon: Brain, label: 'Gedächtnis', shortcut: '⌘M', action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
         { icon: Folder, label: 'Dateien', shortcut: '⌘F', action: 'finder', description: 'Dokumente & Ordner' },
         { icon: Users, label: 'Team', shortcut: '⌘T', action: 'team', description: 'Teammitglieder' },
@@ -272,6 +280,18 @@ export const Dock = () => {
                                 )}
                             </motion.button>
                         ))}
+                    </div>
+
+                    {/* DIVIDER */}
+                    <div className="w-[1px] h-8 bg-white/10 mx-1" />
+
+                    {/* RIGHT SECTION: Focus Mode + Notifications + Company */}
+                    <div className="flex items-center gap-2">
+                        {/* Focus Mode Widget */}
+                        <FocusModeWidget />
+
+                        {/* Notification Center */}
+                        <NotificationCenter />
                     </div>
 
                     {/* DIVIDER */}

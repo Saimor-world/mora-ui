@@ -765,6 +765,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 height={pane.size.height}
                 initialX={pane.position.x}
                 initialY={pane.position.y}
+                paneId={id}
                 onPositionChange={(x, y) => {
                     updatePanePosition(id, x, y);
                 }}

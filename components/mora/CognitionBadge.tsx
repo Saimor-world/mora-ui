@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
 import { motion } from "framer-motion";
+import { usePaneStore } from "@/lib/store/paneStore";
 
 interface CognitionStatus {
     embedding: {
@@ -16,13 +17,20 @@ interface CognitionStatus {
     };
 }
 
+interface CognitionBadgeProps {
+    onClick?: () => void;
+}
+
 /**
  * CognitionBadge - Shows current cognition/intelligence mode
- * 
+ *
  * Displays: NULL | ACTIVE | EXTERNAL | LOCAL
  * Based on /v1/operator/status endpoint
+ *
+ * Click opens the Mora Hub with Stats section
  */
-export const CognitionBadge: React.FC = () => {
+export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
+    const { openPane } = usePaneStore();
     const [status, setStatus] = useState<CognitionStatus | null>(null);
     const [mode, setMode] = useState<string>("unknown");
     const [error, setError] = useState<boolean>(false);
@@ -89,18 +97,37 @@ export const CognitionBadge: React.FC = () => {
         }
     };
 
+    const handleClick = () => {
+        if (onClick) {
+            onClick();
+        } else {
+            // Default: Open Mora Hub with Stats section
+            openPane({
+                id: 'mora-hub',
+                type: 'mora-hub',
+                title: 'Mora Nexus',
+                size: { width: 560, height: 720 },
+                data: { activeSection: 'stats' }
+            });
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
+            onClick={handleClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             className={`
         px-2.5 py-1 rounded-full
         border backdrop-blur-xl
         flex items-center gap-1.5
-        cursor-help select-none
+        cursor-pointer select-none
+        hover:brightness-110 transition-all
         ${getBadgeColor()}
       `}
-            title={getTooltip()}
+            title={`${getTooltip()} Klicken für Details.`}
         >
             {/* Pulse indicator */}
             <motion.div

@@ -55,8 +55,10 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
         onClose?.();
     };
 
-    const width = pane?.size?.width ?? 520;
-    const height = pane?.size?.height ?? 760;
+    // Responsive sizing - portrait optimized
+    const width = pane?.size?.width ?? 560;
+    const height = pane?.size?.height ?? 720;
+    const isCompact = width < 500;
 
     // ─── Render Section Content ───
     const renderContent = () => {
@@ -65,10 +67,10 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                 return (
                     <div className="h-full p-4 overflow-y-auto">
                         <MoraMemory
-                            compact={false}
+                            compact={isCompact}
                             showSearch={true}
                             showQueue={true}
-                            showStats={true}
+                            showStats={!isCompact}
                         />
                     </div>
                 );
@@ -80,12 +82,12 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
                                 <span className="text-xs font-medium text-white/80">Mora Statistics</span>
                             </div>
-                            <MemoryStats compact={false} />
+                            <MemoryStats compact={isCompact} />
                             <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                                 <div className="text-[9px] uppercase tracking-[0.3em] text-white/30 mb-3">
                                     Cognitive Metrics
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className={`grid ${isCompact ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                                     <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                                         <div className="text-lg font-light text-emerald-400">98%</div>
                                         <div className="text-[9px] text-white/40">Response Accuracy</div>
@@ -112,8 +114,9 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                 return (
                     <MoraPlayground
                         scope={viewLevel === "department" ? "department" : "company"}
-                        title="Mora Nexus"
+                        title=""
                         className="h-full"
+                        compact={isCompact}
                     />
                 );
         }
@@ -123,6 +126,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
         <GlassPanel
             width={width}
             height={height}
+            paneId={id}
             blurIntensity={24}
             opacity={0.9}
             borderRadius="xl"

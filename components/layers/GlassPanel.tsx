@@ -66,6 +66,8 @@ interface GlassPanelProps {
     initialY?: number;
     /** NEW: Position change callback */
     onPositionChange?: (x: number, y: number) => void;
+    /** NEW: Pane ID for window snapping */
+    paneId?: string;
 }
 
 /**
@@ -105,7 +107,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     disableAnimations = false,
     initialX,
     initialY,
-    onPositionChange
+    onPositionChange,
+    paneId
 }) => {
     // UPGRADE C1: Drag and resize state
     const dragControls = useDragControls();
@@ -136,20 +139,29 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         }
     }, [initialX, initialY]);
 
-    // UPGRADE C1: Drag handlers
+    // UPGRADE C1: Drag handlers with Window Snapping support
     const handleDragStart = useCallback((e: any) => {
         setIsDragging(true);
         onFocus?.();
-    }, [onFocus]);
+        // Dispatch event for global snap detection
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('mora-pane-drag-start', { detail: { paneId } }));
+        }
+    }, [onFocus, paneId]);
 
     const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         setIsDragging(false);
         const newX = panelPosition.x + info.offset.x;
         const newY = panelPosition.y + info.offset.y;
 
+        // Dispatch event for snap application
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('mora-pane-drag-end', { detail: { paneId, x: newX, y: newY } }));
+        }
+
         setPanelPosition({ x: newX, y: newY });
         onPositionChange?.(newX, newY);
-    }, [panelPosition, onPositionChange]);
+    }, [panelPosition, onPositionChange, paneId]);
 
     // UPGRADE C1: Resize handlers
     const handleResizeStart = useCallback((e: React.MouseEvent) => {

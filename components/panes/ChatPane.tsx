@@ -528,6 +528,7 @@ Versuche:
             height={pane.size.height}
             initialX={pane.position.x}
             initialY={pane.position.y}
+            paneId={id}
             onPositionChange={(x, y) => updatePanePosition(id, x, y)}
             onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}

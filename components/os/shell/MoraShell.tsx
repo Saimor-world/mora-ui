@@ -76,6 +76,12 @@ import { QuickTips } from '@/components/ui/QuickTips';
 import { MoraGreeting } from '@/components/ui/MoraGreeting';
 import { SystemStats } from '@/components/ui/SystemStats';
 
+// V13: OS Features - Notification Center, Focus Mode, Quick Preview, Window Snapping, Memory Sidebar
+import { QuickPreview } from '@/components/os/QuickPreview';
+import { SnapPreview } from '@/components/os/SnapPreview';
+import { MemorySidebar } from '@/components/os/MemorySidebar';
+import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
+
 // =============================================================================
 // LOADING SCREEN
 // =============================================================================
@@ -252,7 +258,47 @@ export const MoraShell: React.FC = () => {
     const [isResonanceExpanded, setIsResonanceExpanded] = useState(false);
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-    // Removed: isIntelDashOpen - Intelligence merged into Mora Nexus
+    const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
+
+    // Window Snapping
+    const windowSnapping = useWindowSnapping();
+
+    // Global snap detection during pane dragging
+    useEffect(() => {
+        let mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
+
+        const handlePaneDragStart = () => {
+            mouseMoveHandler = (e: MouseEvent) => {
+                const zone = windowSnapping.detectSnapZone(e.clientX, e.clientY);
+                setActiveSnapZone(zone);
+            };
+            window.addEventListener('mousemove', mouseMoveHandler);
+        };
+
+        const handlePaneDragEnd = (e: Event) => {
+            if (mouseMoveHandler) {
+                window.removeEventListener('mousemove', mouseMoveHandler);
+                mouseMoveHandler = null;
+            }
+            const customEvent = e as CustomEvent;
+            const { paneId } = customEvent.detail || {};
+            if (paneId && activeSnapZone) {
+                windowSnapping.applySnap(paneId, activeSnapZone);
+            }
+            setActiveSnapZone(null);
+        };
+
+        window.addEventListener('mora-pane-drag-start', handlePaneDragStart);
+        window.addEventListener('mora-pane-drag-end', handlePaneDragEnd);
+
+        return () => {
+            window.removeEventListener('mora-pane-drag-start', handlePaneDragStart);
+            window.removeEventListener('mora-pane-drag-end', handlePaneDragEnd);
+            if (mouseMoveHandler) {
+                window.removeEventListener('mousemove', mouseMoveHandler);
+            }
+        };
+    }, [windowSnapping, activeSnapZone]);
 
     // EFFECT: Clear panes when ViewMode changes
     useEffect(() => {
@@ -471,6 +517,15 @@ export const MoraShell: React.FC = () => {
                 isOpen={isShortcutsOpen}
                 onClose={() => setIsShortcutsOpen(false)}
             />
+
+            {/* Quick Preview (Space bar on selected items) */}
+            <QuickPreview />
+
+            {/* Window Snap Preview (when dragging near edges) */}
+            <SnapPreview zone={activeSnapZone} visible={activeSnapZone !== null} />
+
+            {/* Memory Sidebar (Cmd+Shift+M) */}
+            <MemorySidebar />
 
             {/* ═══ PREMIUM INTELLIGENCE LAYER ═══ */}
             {/*
