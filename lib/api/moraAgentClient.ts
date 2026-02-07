@@ -87,6 +87,7 @@ export const m = {
         const backendRequest = {
             message: request.message,
             context,
+            history: request.history || [], // IMPORTANT: Include conversation history for memory
             include_synthesis: true,
             provider_preference: 'auto',
             temperature: 0.7

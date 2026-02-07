@@ -68,6 +68,8 @@ interface GlassPanelProps {
     onPositionChange?: (x: number, y: number) => void;
     /** NEW: Pane ID for window snapping */
     paneId?: string;
+    /** Standard mode: boring solid dark design without glass effects */
+    isStandardMode?: boolean;
 }
 
 /**
@@ -108,7 +110,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     initialX,
     initialY,
     onPositionChange,
-    paneId
+    paneId,
+    isStandardMode = false
 }) => {
     // UPGRADE C1: Drag and resize state
     const dragControls = useDragControls();
@@ -315,19 +318,24 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     height: panelHeight,
                     maxWidth: 'calc(100vw - 32px)',
                     maxHeight: 'calc(100vh - 64px)',
-                    backgroundColor: `rgba(4, 13, 10, ${opacity - 0.05})`, // Slightly more transparent for 'glassy' feel
-                    backdropFilter: `blur(${blurIntensity}px)`,
-                    WebkitBackdropFilter: `blur(${blurIntensity}px)`, // Safari support
+                    // Standard mode: solid dark, no blur. Transparent: glass effect
+                    backgroundColor: isStandardMode
+                        ? 'rgb(10, 15, 13)'
+                        : `rgba(4, 13, 10, ${opacity - 0.05})`,
+                    backdropFilter: isStandardMode ? 'none' : `blur(${blurIntensity}px)`,
+                    WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${blurIntensity}px)`,
                     overflow: 'hidden',
                     borderRadius: '24px' // Hardcoded premium radius
                 }}
             >
-                {/* UPGRADE A1: Noise Texture Overlay */}
-                <div className="absolute inset-0 bg-noise pointer-events-none opacity-30 mix-blend-overlay" />
+                {/* UPGRADE A1: Noise Texture Overlay - only in transparent mode */}
+                {!isStandardMode && (
+                    <div className="absolute inset-0 bg-noise pointer-events-none opacity-30 mix-blend-overlay" />
+                )}
 
-                {/* UPGRADE A1: Elegant Borders */}
-                <div className="absolute inset-0 rounded-[24px] pointer-events-none border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]" />
-                <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
+                {/* UPGRADE A1: Elegant Borders - reduced in standard mode */}
+                <div className={`absolute inset-0 rounded-[24px] pointer-events-none border ${isStandardMode ? 'border-white/5' : 'border-white/10'} ${isStandardMode ? '' : 'shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
+                <div className={`absolute inset-0 rounded-[24px] pointer-events-none border-t ${isStandardMode ? 'border-white/10 opacity-30' : 'border-white/20 opacity-50'}`} />
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
                 {(title || showBackButton || showCloseButton || showMinimizeButton || tabs.length > 0) && (
                     <div className="shrink-0 border-b" style={{ borderColor: 'var(--mora-glass-border)' }}>

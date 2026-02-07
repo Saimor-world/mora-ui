@@ -459,11 +459,21 @@ Was kann ich fuer dich tun?`,
             } else if (intent.type === 'search' && intent.target) {
                 responseContent = executeSearch(intent.target);
             } else {
-                // Call Mora Agent API
+                // Call Mora Agent API with conversation history for memory
                 try {
+                    // Build history from previous messages (exclude welcome message)
+                    const historyForApi = messages
+                        .filter(m => m.id !== 'welcome')
+                        .slice(-10) // Last 10 messages for context
+                        .map(m => ({
+                            role: m.role,
+                            content: m.content
+                        }));
+
                     const agentResponse = await moraAgentClient.chat({
                         message: content,
-                        session_id: 'chat_pane'
+                        session_id: `chat_pane_${id}`,
+                        history: historyForApi
                     });
 
                     if (agentResponse?.response) {
