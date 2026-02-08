@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const coreApiUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
 const shouldRewriteCore = typeof coreApiUrl === 'string' && /^https?:\/\//.test(coreApiUrl);
 const coreRewriteTarget = shouldRewriteCore ? coreApiUrl.replace(/\/$/, '') : null;
@@ -19,6 +21,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   webpack: (config, { dev }) => {
+    // Ensure TS path alias "@/*" works reliably in production builds (Linux case-sensitivity).
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@': path.resolve(__dirname),
+    };
     if (dev) {
       // Avoid eval-based devtool output that can trigger parse issues in the browser.
       config.devtool = 'source-map';
