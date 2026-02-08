@@ -345,6 +345,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                             id: `finder-upload-${activeFolder}`,
                                             type: 'finder',
                                             title: 'Upload Files',
+                                            size: { width: 800, height: 600 },
                                             data: { folderId: activeFolder, showUpload: true }
                                         });
                                     }}

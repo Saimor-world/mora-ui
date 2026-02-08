@@ -924,12 +924,15 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const newNode = await createNode(payload);
             const folderId = payload.folder_id;
 
-            set(state => ({
-                nodesByFolder: {
-                    ...state.nodesByFolder,
-                    [folderId]: [...(state.nodesByFolder[folderId] || []), newNode]
-                }
-            }));
+            // Only update nodesByFolder if folderId is defined
+            if (folderId) {
+                set(state => ({
+                    nodesByFolder: {
+                        ...state.nodesByFolder,
+                        [folderId]: [...(state.nodesByFolder[folderId] || []), newNode]
+                    }
+                }));
+            }
 
             // Show success toast
             toast.success(`Item "${newNode.title}" added!`);

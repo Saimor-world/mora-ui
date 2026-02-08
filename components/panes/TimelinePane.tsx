@@ -26,13 +26,11 @@ export const TimelinePane: React.FC<{ id: string }> = ({ id }) => {
             initialX={pane.position.x}
             initialY={pane.position.y}
             onPositionChange={(x, y) => updatePanePosition(id, x, y)}
-            onSizeChange={(w, h) => updatePaneSize(id, w, h)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
             zIndex={pane.zIndex}
-            minWidth={350}
-            minHeight={400}
             paneId={id}
         >
             <MindLoopTimeline
