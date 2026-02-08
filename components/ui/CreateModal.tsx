@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useMoraStore } from '@/lib/store/moraState';
 
 interface CreateModalProps {
     isOpen: boolean;
@@ -12,13 +13,19 @@ interface CreateModalProps {
 }
 
 export const CreateModal: React.FC<CreateModalProps> = ({ isOpen, onClose, title, children }) => {
+    const isStandardMode = useMoraStore(state => state.isStandardMode);
+
     return (
         <AnimatePresence>
             {isOpen && (
                 <>
                     {/* Backdrop */}
                     <motion.div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+                        className={`fixed inset-0 z-50 ${
+                            isStandardMode
+                                ? 'bg-black/30'
+                                : 'bg-black/60 backdrop-blur-sm'
+                        }`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -33,17 +40,35 @@ export const CreateModal: React.FC<CreateModalProps> = ({ isOpen, onClose, title
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                     >
-                        <div className="glass-panel border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+                        <div
+                            className={`flex flex-col overflow-hidden ${
+                                isStandardMode
+                                    ? 'bg-white border border-[#E1E1E1] rounded shadow-lg'
+                                    : 'glass-panel border border-white/10 rounded-3xl shadow-2xl'
+                            }`}
+                        >
                             {/* Header */}
-                            <div className="flex items-center justify-between p-6 pb-4 shrink-0">
-                                <h3 className="text-xl font-light text-emerald-50 tracking-widest uppercase">
+                            <div className={`flex items-center justify-between p-6 pb-4 shrink-0 ${
+                                isStandardMode ? 'border-b border-[#E1E1E1]' : ''
+                            }`}>
+                                <h3 className={`text-xl font-light tracking-widest uppercase ${
+                                    isStandardMode
+                                        ? 'text-[#1F1F1F] font-semibold tracking-normal normal-case'
+                                        : 'text-emerald-50'
+                                }`}>
                                     {title}
                                 </h3>
                                 <button
                                     onClick={onClose}
-                                    className="p-2 rounded-full hover:bg-white/5 transition-colors"
+                                    className={`p-2 rounded-full transition-colors ${
+                                        isStandardMode
+                                            ? 'hover:bg-gray-100'
+                                            : 'hover:bg-white/5'
+                                    }`}
                                 >
-                                    <X className="w-5 h-5 text-emerald-400" />
+                                    <X className={`w-5 h-5 ${
+                                        isStandardMode ? 'text-gray-600' : 'text-emerald-400'
+                                    }`} />
                                 </button>
                             </div>
 

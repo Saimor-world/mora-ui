@@ -61,7 +61,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     onQueryChange,
     onMoraChat
 }) => {
-    const { departments, navigateToDepartment, navigateToSpace, setOrbState } = useMoraStore();
+    const { departments, navigateToDepartment, navigateToSpace, setOrbState, isStandardMode } = useMoraStore();
     const { openPane } = usePaneStore();
 
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -238,8 +238,12 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
                 {/* Search Panel */}
                 <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
+                    className={`overflow-hidden ${
+                        isStandardMode
+                            ? 'rounded-lg bg-white border border-[#E1E1E1] shadow-xl'
+                            : 'rounded-2xl'
+                    }`}
+                    style={isStandardMode ? {} : {
                         background: 'linear-gradient(180deg, rgba(10, 15, 13, 0.98) 0%, rgba(6, 10, 8, 0.99) 100%)',
                         border: '1px solid rgba(16, 185, 129, 0.15)',
                         boxShadow: `
@@ -250,12 +254,18 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                     }}
                 >
                     {/* Search Input (mirrors dock input) */}
-                    <div className="p-4 border-b border-white/5">
+                    <div className={`p-4 border-b ${
+                        isStandardMode ? 'border-[#E1E1E1]' : 'border-white/5'
+                    }`}>
                         <div className="relative">
                             {isMoraMode ? (
-                                <Sparkles size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400" />
+                                <Sparkles size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                                    isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                }`} />
                             ) : (
-                                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+                                <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                                    isStandardMode ? 'text-gray-400' : 'text-white/40'
+                                }`} />
                             )}
                             <input
                                 autoFocus
@@ -264,15 +274,28 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 onChange={(e) => onQueryChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder="Search or @mora to chat..."
-                                className={`w-full bg-black/30 border rounded-xl pl-12 pr-4 py-3 text-base text-white placeholder:text-white/30 focus:outline-none transition-all ${isMoraMode
-                                        ? 'border-emerald-500/40 focus:border-emerald-500/60'
-                                        : 'border-white/10 focus:border-white/20'
-                                    }`}
+                                className={`w-full border pl-12 pr-4 py-3 text-base focus:outline-none transition-all ${
+                                    isStandardMode
+                                        ? `bg-gray-50 text-[#1F1F1F] placeholder:text-gray-400 rounded-md ${
+                                            isMoraMode
+                                                ? 'border-[#0078D4] focus:border-[#0078D4]'
+                                                : 'border-gray-200 focus:border-[#0078D4]'
+                                        }`
+                                        : `bg-black/30 text-white placeholder:text-white/30 rounded-xl ${
+                                            isMoraMode
+                                                ? 'border-emerald-500/40 focus:border-emerald-500/60'
+                                                : 'border-white/10 focus:border-white/20'
+                                        }`
+                                }`}
                             />
                             {searchQuery && (
                                 <button
                                     onClick={() => onQueryChange('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                                    className={`absolute right-4 top-1/2 -translate-y-1/2 ${
+                                        isStandardMode
+                                            ? 'text-gray-400 hover:text-gray-600'
+                                            : 'text-white/30 hover:text-white/60'
+                                    }`}
                                 >
                                     <X size={16} />
                                 </button>
@@ -284,7 +307,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-3 flex items-center gap-2 text-emerald-400 text-sm"
+                                className={`mt-3 flex items-center gap-2 text-sm ${
+                                    isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                }`}
                             >
                                 <Sparkles size={14} />
                                 <span>Direkter Draht zu Môra - Enter zum Senden</span>
@@ -294,7 +319,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
                     {/* Mora Chat Area - shown when in Mora mode with messages */}
                     {isMoraMode && moraMessages.length > 0 && (
-                        <div className="border-b border-white/5 max-h-[200px] overflow-y-auto p-4 space-y-3">
+                        <div className={`border-b max-h-[200px] overflow-y-auto p-4 space-y-3 ${
+                            isStandardMode ? 'border-[#E1E1E1]' : 'border-white/5'
+                        }`}>
                             {moraMessages.map((msg, idx) => (
                                 <motion.div
                                     key={idx}
@@ -303,13 +330,20 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div
-                                        className={`max-w-[85%] rounded-xl px-4 py-2 text-sm ${msg.role === 'user'
-                                                ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30'
-                                                : 'bg-white/5 text-white/90 border border-white/10'
-                                            }`}
+                                        className={`max-w-[85%] px-4 py-2 text-sm ${
+                                            isStandardMode
+                                                ? msg.role === 'user'
+                                                    ? 'bg-[#E5F3FF] text-[#1F1F1F] border border-[#0078D4]/30 rounded-lg'
+                                                    : 'bg-gray-50 text-[#1F1F1F] border border-gray-200 rounded-lg'
+                                                : msg.role === 'user'
+                                                    ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 rounded-xl'
+                                                    : 'bg-white/5 text-white/90 border border-white/10 rounded-xl'
+                                        }`}
                                     >
                                         {msg.role === 'assistant' && (
-                                            <div className="flex items-center gap-1.5 text-emerald-400 text-xs mb-1">
+                                            <div className={`flex items-center gap-1.5 text-xs mb-1 ${
+                                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                            }`}>
                                                 <Sparkles size={10} />
                                                 <span>Môra</span>
                                             </div>
@@ -324,8 +358,14 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     animate={{ opacity: 1 }}
                                     className="flex justify-start"
                                 >
-                                    <div className="bg-white/5 rounded-xl px-4 py-2 border border-white/10">
-                                        <div className="flex items-center gap-2 text-emerald-400">
+                                    <div className={`px-4 py-2 ${
+                                        isStandardMode
+                                            ? 'bg-gray-50 rounded-lg border border-gray-200'
+                                            : 'bg-white/5 rounded-xl border border-white/10'
+                                    }`}>
+                                        <div className={`flex items-center gap-2 ${
+                                            isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                        }`}>
                                             <Loader2 size={14} className="animate-spin" />
                                             <span className="text-sm">Môra denkt nach...</span>
                                         </div>
@@ -341,7 +381,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                         {/* Search Results */}
                         {searchQuery && !isMoraMode && searchResults.length > 0 && (
                             <div className="mb-6">
-                                <h3 className="text-xs text-white/40 uppercase tracking-wider mb-3">Ergebnisse</h3>
+                                <h3 className={`text-xs uppercase tracking-wider mb-3 ${
+                                    isStandardMode ? 'text-gray-500' : 'text-white/40'
+                                }`}>Ergebnisse</h3>
                                 <div className="space-y-1">
                                     {searchResults.map((result) => {
                                         const Icon = getTypeIcon(result.type);
@@ -349,16 +391,34 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             <button
                                                 key={result.id}
                                                 onClick={() => handleResultClick(result)}
-                                                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors text-left group"
+                                                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
+                                                    isStandardMode
+                                                        ? 'hover:bg-gray-100'
+                                                        : 'hover:bg-white/5'
+                                                }`}
                                             >
-                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                                                    <Icon size={16} className="text-white/60" />
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                                    isStandardMode
+                                                        ? 'bg-gray-100'
+                                                        : 'bg-white/5'
+                                                }`}>
+                                                    <Icon size={16} className={
+                                                        isStandardMode ? 'text-gray-600' : 'text-white/60'
+                                                    } />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="text-sm text-white/90 truncate">{result.title}</div>
-                                                    <div className="text-xs text-white/40 capitalize">{result.type}</div>
+                                                    <div className={`text-sm truncate ${
+                                                        isStandardMode ? 'text-[#1F1F1F]' : 'text-white/90'
+                                                    }`}>{result.title}</div>
+                                                    <div className={`text-xs capitalize ${
+                                                        isStandardMode ? 'text-gray-400' : 'text-white/40'
+                                                    }`}>{result.type}</div>
                                                 </div>
-                                                <ArrowRight size={14} className="text-white/20 group-hover:text-white/50 transition-colors" />
+                                                <ArrowRight size={14} className={`transition-colors ${
+                                                    isStandardMode
+                                                        ? 'text-gray-300 group-hover:text-gray-500'
+                                                        : 'text-white/20 group-hover:text-white/50'
+                                                }`} />
                                             </button>
                                         );
                                     })}
@@ -370,10 +430,14 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                         {isSearching && (
                             <div className="flex items-center justify-center py-8">
                                 <motion.div
-                                    animate={{ rotate: 360 }}
+                                    animate={isStandardMode ? {} : { rotate: 360 }}
                                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                                 >
-                                    <Search size={20} className="text-emerald-400" />
+                                    {isStandardMode ? (
+                                        <Loader2 size={20} className="text-[#0078D4] animate-spin" />
+                                    ) : (
+                                        <Search size={20} className="text-emerald-400" />
+                                    )}
                                 </motion.div>
                             </div>
                         )}
@@ -383,13 +447,19 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                             <div className="grid grid-cols-2 gap-6">
                                 {/* Left Column - Quick Searches */}
                                 <div>
-                                    <h3 className="text-xs text-white/40 uppercase tracking-wider mb-3">Quick Searches</h3>
+                                    <h3 className={`text-xs uppercase tracking-wider mb-3 ${
+                                        isStandardMode ? 'text-gray-500' : 'text-white/40'
+                                    }`}>Quick Searches</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {quickSearches.map((qs, i) => (
                                             <button
                                                 key={i}
                                                 onClick={() => onQueryChange(qs.query)}
-                                                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-white/70 hover:text-white transition-colors"
+                                                className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                                                    isStandardMode
+                                                        ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800'
+                                                        : 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white'
+                                                }`}
                                             >
                                                 {qs.label}
                                             </button>
@@ -399,7 +469,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     {/* Recent Items */}
                                     {recentItems.length > 0 && (
                                         <div className="mt-6">
-                                            <h3 className="text-xs text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <h3 className={`text-xs uppercase tracking-wider mb-3 flex items-center gap-2 ${
+                                                isStandardMode ? 'text-gray-500' : 'text-white/40'
+                                            }`}>
                                                 <Clock size={12} />
                                                 Zuletzt verwendet
                                             </h3>
@@ -408,7 +480,11 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                     <button
                                                         key={item.id}
                                                         onClick={() => handleResultClick(item)}
-                                                        className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 text-sm text-white/70 text-left"
+                                                        className={`w-full flex items-center gap-2 p-2 rounded-lg text-sm text-left ${
+                                                            isStandardMode
+                                                                ? 'hover:bg-gray-100 text-gray-600'
+                                                                : 'hover:bg-white/5 text-white/70'
+                                                        }`}
                                                     >
                                                         <FileText size={14} />
                                                         {item.title}
@@ -421,7 +497,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
                                 {/* Right Column - Departments (Top Apps) */}
                                 <div>
-                                    <h3 className="text-xs text-white/40 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <h3 className={`text-xs uppercase tracking-wider mb-3 flex items-center gap-2 ${
+                                        isStandardMode ? 'text-gray-500' : 'text-white/40'
+                                    }`}>
                                         <Zap size={12} />
                                         Abteilungen
                                     </h3>
@@ -430,17 +508,28 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             <button
                                                 key={dept.id}
                                                 onClick={() => handleDepartmentClick(dept.id)}
-                                                className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/5 transition-colors group"
+                                                className={`flex flex-col items-center gap-2 p-3 transition-colors group ${
+                                                    isStandardMode
+                                                        ? 'rounded-lg hover:bg-gray-100'
+                                                        : 'rounded-xl hover:bg-white/5'
+                                                }`}
                                             >
                                                 <div
-                                                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                                                    style={{
-                                                        background: `linear-gradient(135deg, ${dept.color || '#10B981'}33, ${dept.color || '#10B981'}11)`
-                                                    }}
+                                                    className={`w-10 h-10 flex items-center justify-center ${
+                                                        isStandardMode ? 'rounded-lg' : 'rounded-xl'
+                                                    }`}
+                                                    style={isStandardMode
+                                                        ? { background: dept.color || '#0078D4', opacity: 0.15 }
+                                                        : { background: `linear-gradient(135deg, ${dept.color || '#10B981'}33, ${dept.color || '#10B981'}11)` }
+                                                    }
                                                 >
-                                                    <Building2 size={18} style={{ color: dept.color || '#10B981' }} />
+                                                    <Building2 size={18} style={{ color: dept.color || (isStandardMode ? '#0078D4' : '#10B981') }} />
                                                 </div>
-                                                <span className="text-xs text-white/60 group-hover:text-white/90 text-center truncate w-full">
+                                                <span className={`text-xs text-center truncate w-full ${
+                                                    isStandardMode
+                                                        ? 'text-gray-500 group-hover:text-gray-700'
+                                                        : 'text-white/60 group-hover:text-white/90'
+                                                }`}>
                                                     {dept.name}
                                                 </span>
                                             </button>
@@ -452,14 +541,20 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
                         {/* No Results */}
                         {searchQuery && !isMoraMode && searchResults.length === 0 && !isSearching && (
-                            <div className="text-center py-8 text-white/40">
+                            <div className={`text-center py-8 ${
+                                isStandardMode ? 'text-gray-400' : 'text-white/40'
+                            }`}>
                                 <Search size={32} className="mx-auto mb-3 opacity-50" />
                                 <p>Keine Ergebnisse für "{searchQuery}"</p>
                                 <button
                                     onClick={() => {
                                         onQueryChange(`@mora ${searchQuery}`);
                                     }}
-                                    className="mt-3 text-emerald-400 hover:text-emerald-300 text-sm flex items-center gap-2 mx-auto"
+                                    className={`mt-3 text-sm flex items-center gap-2 mx-auto ${
+                                        isStandardMode
+                                            ? 'text-[#0078D4] hover:text-[#005A9E]'
+                                            : 'text-emerald-400 hover:text-emerald-300'
+                                    }`}
                                 >
                                     <Sparkles size={14} />
                                     Frag Môra danach
