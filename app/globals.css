@@ -99,86 +99,122 @@
     --popover-foreground: 150 15% 92%;
   }
 
-  /* === STANDARD MODE (CORPORATE THEME) === */
+  /* === STANDARD MODE (LIGHT CORPORATE THEME - Like Excel/Word) === */
   .standard-mode {
-    /* Corporate Slate/Blue Palette */
-    --mora-emerald-core: #3B82F6;
-    --mora-deep-forest: #1E293B;
-    --mora-frost-white: #F8FAFC;
-    --mora-shadow-black: #0F172A;
-    --mora-gold: #F59E0B;
+    /* Microsoft Office-like Light Palette */
+    --mora-emerald-core: #217346; /* Excel Green */
+    --mora-deep-forest: #F3F3F3;
+    --mora-frost-white: #FFFFFF;
+    --mora-shadow-black: #1F1F1F;
+    --mora-gold: #D83B01; /* Office Orange */
 
-    /* Override awareness states to blue tones */
-    --mora-state-idle: #3B82F6;
-    --mora-state-active: #F59E0B;
-    --mora-state-learning: #6366F1;
-    --mora-state-warning: #EF4444;
+    /* Corporate blue accent (like Office ribbon) */
+    --mora-accent: #0078D4;
+    --mora-accent-light: #DEECF9;
+    --mora-accent-dark: #004578;
 
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 13%;
-    --card-foreground: 210 40% 98%;
+    /* Light mode backgrounds */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
 
-    /* Glass overrides for flat corporate look */
-    --mora-glass-blur: 12px;
-    --mora-glass-opacity: 0.95;
-    --mora-glass-bg: rgba(15, 23, 42, 0.92);
-    --mora-glass-border: rgba(148, 163, 184, 0.15);
+    /* No glass effect - solid backgrounds */
+    --mora-glass-blur: 0px;
+    --mora-glass-opacity: 1;
+    --mora-glass-bg: #FFFFFF;
+    --mora-glass-border: #E1E1E1;
 
-    /* Reduced radius for corporate feel */
-    --mora-radius-sm: 6px;
-    --mora-radius-md: 8px;
-    --mora-radius-lg: 12px;
-    --mora-radius-xl: 16px;
+    /* Sharp corners like Office */
+    --mora-radius-sm: 2px;
+    --mora-radius-md: 4px;
+    --mora-radius-lg: 4px;
+    --mora-radius-xl: 6px;
 
-    font-family: 'Inter', system-ui, sans-serif !important;
+    font-family: 'Segoe UI', 'Inter', system-ui, sans-serif !important;
+    color-scheme: light;
   }
 
-  /* Glass card - corporate flat */
+  /* LIGHT background for entire app */
+  .standard-mode,
+  .standard-mode body {
+    background: #F3F3F3 !important;
+    color: #1F1F1F !important;
+  }
+
+  /* Glass card - solid white like Office panels */
   .standard-mode .glass-card {
-    background: rgba(15, 23, 42, 0.88);
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
-    backdrop-filter: blur(12px);
+    background: #FFFFFF !important;
+    border: 1px solid #E1E1E1 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 4px !important;
+    backdrop-filter: none !important;
   }
 
-  /* Glass panels - less blur, more opaque */
+  /* Glass panels - solid white */
   .standard-mode .glass-panel {
-    background: rgba(15, 23, 42, 0.85);
-    border-color: rgba(148, 163, 184, 0.18);
-    backdrop-filter: blur(12px);
-    border-radius: 12px;
+    background: #FFFFFF !important;
+    border-color: #E1E1E1 !important;
+    backdrop-filter: none !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
   }
 
-  /* Replace emerald accents with blue */
-  .standard-mode .text-emerald-300 { color: #93C5FD !important; }
-  .standard-mode .text-emerald-400 { color: #60A5FA !important; }
-  .standard-mode .text-emerald-500 { color: #3B82F6 !important; }
-  .standard-mode .text-emerald-50 { color: #EFF6FF !important; }
-  .standard-mode .bg-emerald-500\/10 { background-color: rgba(59, 130, 246, 0.1) !important; }
-  .standard-mode .bg-emerald-500\/15 { background-color: rgba(59, 130, 246, 0.15) !important; }
-  .standard-mode .bg-emerald-500\/20 { background-color: rgba(59, 130, 246, 0.2) !important; }
-  .standard-mode .border-emerald-500 { border-color: #3B82F6 !important; }
-  .standard-mode .border-emerald-500\/20 { border-color: rgba(59, 130, 246, 0.2) !important; }
-  .standard-mode .border-emerald-500\/30 { border-color: rgba(59, 130, 246, 0.3) !important; }
+  /* Text colors - dark on light */
+  .standard-mode .text-white { color: #1F1F1F !important; }
+  .standard-mode .text-white\/90 { color: rgba(31, 31, 31, 0.9) !important; }
+  .standard-mode .text-white\/80 { color: rgba(31, 31, 31, 0.8) !important; }
+  .standard-mode .text-white\/70 { color: rgba(31, 31, 31, 0.7) !important; }
+  .standard-mode .text-white\/60 { color: rgba(31, 31, 31, 0.6) !important; }
+  .standard-mode .text-white\/50 { color: rgba(31, 31, 31, 0.5) !important; }
+  .standard-mode .text-white\/40 { color: rgba(31, 31, 31, 0.4) !important; }
+  .standard-mode .text-white\/30 { color: rgba(31, 31, 31, 0.3) !important; }
+
+  /* Replace emerald with Office blue */
+  .standard-mode .text-emerald-300 { color: #0078D4 !important; }
+  .standard-mode .text-emerald-400 { color: #0078D4 !important; }
+  .standard-mode .text-emerald-500 { color: #004578 !important; }
+  .standard-mode .text-emerald-50 { color: #DEECF9 !important; }
+  .standard-mode .bg-emerald-500\/10 { background-color: rgba(0, 120, 212, 0.1) !important; }
+  .standard-mode .bg-emerald-500\/15 { background-color: rgba(0, 120, 212, 0.15) !important; }
+  .standard-mode .bg-emerald-500\/20 { background-color: rgba(0, 120, 212, 0.2) !important; }
+  .standard-mode .border-emerald-500 { border-color: #0078D4 !important; }
+  .standard-mode .border-emerald-500\/20 { border-color: rgba(0, 120, 212, 0.2) !important; }
+  .standard-mode .border-emerald-500\/30 { border-color: rgba(0, 120, 212, 0.3) !important; }
+
+  /* Dark backgrounds → Light backgrounds */
+  .standard-mode .bg-black { background-color: #FFFFFF !important; }
+  .standard-mode .bg-black\/95 { background-color: #FAFAFA !important; }
+  .standard-mode .bg-black\/90 { background-color: #F5F5F5 !important; }
+  .standard-mode .bg-black\/80 { background-color: #F0F0F0 !important; }
+  .standard-mode .bg-black\/60 { background-color: #E8E8E8 !important; }
+  .standard-mode .bg-black\/40 { background-color: #E1E1E1 !important; }
+  .standard-mode .bg-black\/30 { background-color: #EBEBEB !important; }
+  .standard-mode .bg-black\/20 { background-color: #F0F0F0 !important; }
+
+  /* White borders → Gray borders */
+  .standard-mode .border-white\/10 { border-color: #E1E1E1 !important; }
+  .standard-mode .border-white\/20 { border-color: #D1D1D1 !important; }
+  .standard-mode .border-white\/5 { border-color: #EBEBEB !important; }
+
+  /* Left sidebar - Office ribbon style */
+  .standard-mode .bg-black\/40.backdrop-blur-xl {
+    background: #F3F3F3 !important;
+    border-right-color: #E1E1E1 !important;
+  }
 
   /* Ring focus states */
-  .standard-mode .ring-emerald-400\/60 { --tw-ring-color: rgba(96, 165, 250, 0.6) !important; }
-  .standard-mode .focus\:ring-emerald-400\/60:focus { --tw-ring-color: rgba(96, 165, 250, 0.6) !important; }
+  .standard-mode .ring-emerald-400\/60 { --tw-ring-color: rgba(0, 120, 212, 0.6) !important; }
+  .standard-mode .focus\:ring-emerald-400\/60:focus { --tw-ring-color: rgba(0, 120, 212, 0.6) !important; }
 
-  /* Toned-down backgrounds */
-  .standard-mode .bg-black\/40 { background-color: rgba(15, 23, 42, 0.7) !important; }
-  .standard-mode .bg-black\/30 { background-color: rgba(15, 23, 42, 0.5) !important; }
-
-  /* Universe canvas - HIDDEN in standard mode (no stars, no animations) */
+  /* Universe canvas - HIDDEN completely */
   .standard-mode canvas {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
   }
 
-  /* Hide decorative elements */
+  /* Hide all decorative/animated elements */
   .standard-mode [data-starfield],
   .standard-mode [data-particles],
   .standard-mode .starfield,
@@ -186,16 +222,42 @@
     display: none !important;
   }
 
-  /* Solid dark background instead of transparency */
-  .standard-mode body {
-    background: #0F172A !important;
-  }
-
-  /* Animations - DISABLED in standard mode for "boring" look */
+  /* Animations - DISABLED */
   .standard-mode .animate-pulse { animation: none !important; }
   .standard-mode .animate-spin { animation: none !important; }
   .standard-mode .animate-bounce { animation: none !important; }
   .standard-mode [class*="animate-"] { animation: none !important; }
+
+  /* Hover states - subtle like Office */
+  .standard-mode .hover\:bg-white\/5:hover { background-color: #E8E8E8 !important; }
+  .standard-mode .hover\:bg-white\/10:hover { background-color: #E1E1E1 !important; }
+  .standard-mode .hover\:text-white:hover { color: #1F1F1F !important; }
+
+  /* Shadows - subtle corporate */
+  .standard-mode .shadow-lg { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important; }
+  .standard-mode .shadow-xl { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important; }
+  .standard-mode .shadow-2xl { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important; }
+
+  /* Buttons - Office style */
+  .standard-mode button {
+    transition: background-color 0.1s ease !important;
+  }
+
+  /* Scrollbars - Windows style */
+  .standard-mode ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  .standard-mode ::-webkit-scrollbar-track {
+    background: #F3F3F3;
+  }
+  .standard-mode ::-webkit-scrollbar-thumb {
+    background: #C1C1C1;
+    border-radius: 0;
+  }
+  .standard-mode ::-webkit-scrollbar-thumb:hover {
+    background: #A1A1A1;
+  }
 
   /* Reduced border radius on common elements */
   .standard-mode .rounded-2xl { border-radius: 12px; }
