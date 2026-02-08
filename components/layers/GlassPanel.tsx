@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion';
 import { X, ChevronLeft, Minus } from 'lucide-react';
+import { useMoraStore } from '@/lib/store/moraState';
 
 interface GlassPanelProps {
     /** Child content to render inside the panel */
@@ -111,8 +112,12 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     initialY,
     onPositionChange,
     paneId,
-    isStandardMode = false
+    isStandardMode: isStandardModeProp = false
 }) => {
+    // Use global standard mode from store, fallback to prop
+    const globalStandardMode = useMoraStore(state => state.isStandardMode);
+    const isStandardMode = isStandardModeProp || globalStandardMode;
+
     // UPGRADE C1: Drag and resize state
     const dragControls = useDragControls();
     const [isDragging, setIsDragging] = useState(false);
@@ -318,14 +323,16 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     height: panelHeight,
                     maxWidth: 'calc(100vw - 32px)',
                     maxHeight: 'calc(100vh - 64px)',
-                    // Standard mode: solid dark, no blur. Transparent: glass effect
+                    // Standard mode: solid (CSS handles light/dark), Transparent: glass effect
+                    // Note: .standard-mode CSS class overrides to white/light colors
                     backgroundColor: isStandardMode
-                        ? 'rgb(10, 15, 13)'
+                        ? 'var(--mora-glass-bg, #FFFFFF)'
                         : `rgba(4, 13, 10, ${opacity - 0.05})`,
                     backdropFilter: isStandardMode ? 'none' : `blur(${blurIntensity}px)`,
                     WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${blurIntensity}px)`,
-                    overflow: 'hidden',
-                    borderRadius: '24px' // Hardcoded premium radius
+                    borderRadius: isStandardMode ? '4px' : '24px',
+                    overflow: 'hidden'
+                    // borderRadius is now set conditionally above based on isStandardMode
                 }}
             >
                 {/* UPGRADE A1: Noise Texture Overlay - only in transparent mode */}
@@ -334,8 +341,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 )}
 
                 {/* UPGRADE A1: Elegant Borders - reduced in standard mode */}
-                <div className={`absolute inset-0 rounded-[24px] pointer-events-none border ${isStandardMode ? 'border-white/5' : 'border-white/10'} ${isStandardMode ? '' : 'shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
-                <div className={`absolute inset-0 rounded-[24px] pointer-events-none border-t ${isStandardMode ? 'border-white/10 opacity-30' : 'border-white/20 opacity-50'}`} />
+                <div className={`absolute inset-0 pointer-events-none border ${isStandardMode ? 'rounded-[4px] border-[#E1E1E1]' : 'rounded-[24px] border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
+                {!isStandardMode && (
+                    <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
+                )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
                 {(title || showBackButton || showCloseButton || showMinimizeButton || tabs.length > 0) && (
                     <div className="shrink-0 border-b" style={{ borderColor: 'var(--mora-glass-border)' }}>
