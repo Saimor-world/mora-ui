@@ -171,12 +171,31 @@
   .standard-mode .bg-black\/40 { background-color: rgba(15, 23, 42, 0.7) !important; }
   .standard-mode .bg-black\/30 { background-color: rgba(15, 23, 42, 0.5) !important; }
 
-  /* Universe canvas - muted in standard mode */
-  .standard-mode canvas { opacity: 0.3; }
+  /* Universe canvas - HIDDEN in standard mode (no stars, no animations) */
+  .standard-mode canvas {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 
-  /* Animations - subtler in standard mode */
-  .standard-mode .animate-pulse { animation-duration: 3s; }
-  .standard-mode .animate-spin { animation-duration: 60s; }
+  /* Hide decorative elements */
+  .standard-mode [data-starfield],
+  .standard-mode [data-particles],
+  .standard-mode .starfield,
+  .standard-mode .particles-bg {
+    display: none !important;
+  }
+
+  /* Solid dark background instead of transparency */
+  .standard-mode body {
+    background: #0F172A !important;
+  }
+
+  /* Animations - DISABLED in standard mode for "boring" look */
+  .standard-mode .animate-pulse { animation: none !important; }
+  .standard-mode .animate-spin { animation: none !important; }
+  .standard-mode .animate-bounce { animation: none !important; }
+  .standard-mode [class*="animate-"] { animation: none !important; }
 
   /* Reduced border radius on common elements */
   .standard-mode .rounded-2xl { border-radius: 12px; }
