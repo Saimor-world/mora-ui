@@ -385,7 +385,7 @@ export const DepartmentLayer: React.FC = () => {
                                     id: folder.id,
                                     name: folder.name,
                                     space_id: folder.space_id,
-                                    color: folder.color,
+                                    color: folder.color ?? undefined,
                                     node_count: folder.node_count
                                 }}
                                 position={{

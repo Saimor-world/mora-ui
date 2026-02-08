@@ -50,6 +50,7 @@ export interface CoreFolder {
     color?: string | null;
     order: number;
     parent_id?: string | null;
+    node_count?: number;
     created_at?: string | null;
     updated_at?: string | null;
 }
