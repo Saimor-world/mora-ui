@@ -126,10 +126,13 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
         <GlassPanel
             width={width}
             height={height}
+            initialX={pane?.position?.x}
+            initialY={pane?.position?.y}
             paneId={id}
             blurIntensity={24}
             opacity={0.9}
             borderRadius="xl"
+            zIndex={pane?.zIndex}
             showCloseButton
             showMinimizeButton
             draggable

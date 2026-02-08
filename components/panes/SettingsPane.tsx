@@ -88,18 +88,37 @@ useEffect(() => {
     }, [user?.settings]);
 
     const saveSetting = (updates: Record<string, any>) => {
-        updateUserSettings(updates);
-        if (typeof window === 'undefined') return;
-        if (updates.theme) localStorage.setItem('saimor_theme', updates.theme);
-        if (updates.language) localStorage.setItem('saimor_language', updates.language);
-        if (typeof updates.reduced_motion === 'boolean') {
-            localStorage.setItem('saimor_reduced_motion', String(updates.reduced_motion));
-        }
-        if (typeof updates.scale === 'number') {
-            localStorage.setItem('saimor_scale', String(updates.scale));
-            const clampedScale = Math.max(0.8, Math.min(1.2, updates.scale));
-            (document.body.style as any).zoom = clampedScale.toString();
-            document.documentElement.style.setProperty('--mora-interface-scale', clampedScale.toString());
+        try {
+            updateUserSettings(updates);
+            if (typeof window === 'undefined') return;
+
+            // Safe localStorage writes
+            try {
+                if (updates.theme) localStorage.setItem('saimor_theme', updates.theme);
+                if (updates.language) localStorage.setItem('saimor_language', updates.language);
+                if (typeof updates.reduced_motion === 'boolean') {
+                    localStorage.setItem('saimor_reduced_motion', String(updates.reduced_motion));
+                }
+                if (typeof updates.scale === 'number') {
+                    localStorage.setItem('saimor_scale', String(updates.scale));
+                }
+            } catch (storageError) {
+                console.warn('[Settings] localStorage unavailable:', storageError);
+            }
+
+            // Safe DOM manipulation
+            if (typeof updates.scale === 'number') {
+                try {
+                    const clampedScale = Math.max(0.8, Math.min(1.2, updates.scale));
+                    (document.body.style as any).zoom = clampedScale.toString();
+                    document.documentElement.style.setProperty('--mora-interface-scale', clampedScale.toString());
+                } catch (domError) {
+                    console.warn('[Settings] DOM manipulation failed:', domError);
+                }
+            }
+        } catch (error) {
+            console.error('[Settings] Failed to save settings:', error);
+            toast.error('Einstellungen konnten nicht gespeichert werden');
         }
     };
 
@@ -119,6 +138,7 @@ useEffect(() => {
             onFocus={() => focusPane(id)}
             isActive={true}
             zIndex={pane.zIndex}
+            paneId={id}
             showCloseButton
             showMinimizeButton
             draggable
