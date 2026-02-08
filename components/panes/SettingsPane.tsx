@@ -209,19 +209,24 @@ useEffect(() => {
                                             setIsStandardMode(true);
                                             saveSetting({ theme: 'standard' });
                                         }}
-                                        className={`h-24 w-32 rounded-lg bg-slate-900 border relative overflow-hidden transition-all ${isStandardMode
+                                        className={`h-24 w-32 rounded border relative overflow-hidden transition-all ${isStandardMode
                                             ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
                                             : 'border-white/10 opacity-70 hover:opacity-100'
                                             }`}
+                                        style={{ background: '#F3F3F3' }}
                                     >
-                                        {isStandardMode && <Check className="absolute top-2 right-2 text-blue-400" size={14} />}
-                                        <div className="absolute flex items-center justify-center inset-0 opacity-20">
-                                            <div className="w-16 h-12 bg-white rounded flex flex-col gap-1 p-1">
-                                                <div className="h-1 bg-black/50 w-full rounded-sm" />
-                                                <div className="h-full bg-black/20 w-full rounded-sm" />
+                                        {isStandardMode && <Check className="absolute top-2 right-2 text-blue-600" size={14} />}
+                                        {/* Office-like preview: white panel with gray sidebar */}
+                                        <div className="absolute inset-1 flex gap-0.5">
+                                            <div className="w-3 bg-[#E1E1E1] rounded-sm" />
+                                            <div className="flex-1 bg-white rounded-sm flex flex-col p-1 gap-0.5">
+                                                <div className="h-1.5 bg-[#0078D4] rounded-sm w-1/2" />
+                                                <div className="h-1 bg-gray-200 rounded-sm w-full" />
+                                                <div className="h-1 bg-gray-200 rounded-sm w-3/4" />
+                                                <div className="h-1 bg-gray-200 rounded-sm w-5/6" />
                                             </div>
                                         </div>
-                                        <div className="absolute bottom-2 left-2 text-xs text-blue-300 font-medium">Standard</div>
+                                        <div className="absolute bottom-2 left-2 text-xs text-[#0078D4] font-medium">Standard</div>
                                     </button>
                                 </div>
                             </div>
