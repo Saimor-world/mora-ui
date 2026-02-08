@@ -272,7 +272,7 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const { departments } = useMoraStore();
+    const { departments, isStandardMode } = useMoraStore();
     const pane = getPane(id);
 
     const [messages, setMessages] = useState<Message[]>([
@@ -553,17 +553,29 @@ Versuche:
         >
             <div className="flex flex-col h-full">
                 {/* Header */}
-                <div className="flex items-center gap-3 p-4 border-b border-white/10">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center">
+                <div className={`flex items-center gap-3 p-4 border-b ${
+                    isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
+                }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isStandardMode
+                            ? 'bg-[#0078D4]'
+                            : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
+                    }`}>
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-white font-medium">Môra</h3>
-                        <p className="text-xs text-emerald-400">Deine KI-Begleiterin</p>
+                        <h3 className={`font-medium ${
+                            isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
+                        }`}>Môra</h3>
+                        <p className={`text-xs ${
+                            isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                        }`}>Deine KI-Begleiterin</p>
                     </div>
-                    <div className="ml-auto flex items-center gap-1 text-xs text-white/40">
+                    <div className={`ml-auto flex items-center gap-1 text-xs ${
+                        isStandardMode ? 'text-gray-400' : 'text-white/40'
+                    }`}>
                         <Wand2 size={12} />
-                        <span>Disney Fairy Mode</span>
+                        <span>{isStandardMode ? 'Assistant Mode' : 'Disney Fairy Mode'}</span>
                     </div>
                 </div>
 
@@ -588,16 +600,25 @@ Versuche:
                                 exit={{ opacity: 0, y: -10 }}
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
-                                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user'
-                                    ? 'bg-emerald-500/20 border border-emerald-500/30 text-white'
-                                    : 'bg-white/5 border border-white/10 text-white/90'
+                                <div className={`max-w-[80%] px-4 py-3 ${
+                                    isStandardMode
+                                        ? msg.role === 'user'
+                                            ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
+                                            : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
+                                        : msg.role === 'user'
+                                            ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
+                                            : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
                                     }`}>
                                     <div className="flex items-start gap-2">
                                         {msg.role === 'assistant' && (
-                                            <Bot size={16} className="text-emerald-400 mt-0.5 shrink-0" />
+                                            <Bot size={16} className={`mt-0.5 shrink-0 ${
+                                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                            }`} />
                                         )}
                                         <div
-                                            className="text-sm leading-relaxed prose prose-invert prose-sm max-w-none"
+                                            className={`text-sm leading-relaxed prose prose-sm max-w-none ${
+                                                isStandardMode ? '' : 'prose-invert'
+                                            }`}
                                             dangerouslySetInnerHTML={{
                                                 __html: msg.content
                                                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -605,10 +626,14 @@ Versuche:
                                             }}
                                         />
                                         {msg.role === 'user' && (
-                                            <User size={16} className="text-emerald-400 mt-0.5 shrink-0" />
+                                            <User size={16} className={`mt-0.5 shrink-0 ${
+                                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                            }`} />
                                         )}
                                     </div>
-                                    <div className="flex items-center text-[10px] text-white/30 mt-2">
+                                    <div className={`flex items-center text-[10px] mt-2 ${
+                                        isStandardMode ? 'text-gray-400' : 'text-white/30'
+                                    }`}>
                                         <span>{msg.timestamp.toLocaleTimeString()}</span>
                                         {/* Save as Insight Button - only for assistant messages (not welcome) */}
                                         {msg.role === 'assistant' && msg.id !== 'welcome' && (
