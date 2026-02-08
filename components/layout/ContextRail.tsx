@@ -23,7 +23,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
  * - Logout redirects to WelcomeScreen (/)
  */
 export const ContextRail: React.FC = () => {
-    const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree, resetStore } = useMoraStore();
+    const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree, resetStore, isStandardMode } = useMoraStore();
     const { currentAccount, logout } = useAccountStore();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
@@ -150,11 +150,19 @@ export const ContextRail: React.FC = () => {
 
     return (
         <>
-            <div className="fixed left-0 top-0 bottom-0 w-[72px] z-fixed pointer-events-auto flex flex-col items-center py-6 bg-black/40 backdrop-blur-xl border-r border-white/5">
+            <div className={`fixed left-0 top-0 bottom-0 w-[72px] z-fixed pointer-events-auto flex flex-col items-center py-6 border-r ${
+                isStandardMode
+                    ? 'bg-[#F3F3F3] border-[#E1E1E1]'
+                    : 'bg-black/40 backdrop-blur-xl border-white/5'
+            }`}>
                 {/* Logo Area */}
                 <div className="mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                        <Hexagon size={20} className="text-emerald-400" />
+                    <div className={`w-10 h-10 flex items-center justify-center ${
+                        isStandardMode
+                            ? 'rounded bg-[#0078D4] border border-[#0078D4]'
+                            : 'rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-900/20 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                    }`}>
+                        <Hexagon size={20} className={isStandardMode ? 'text-white' : 'text-emerald-400'} />
                     </div>
                 </div>
 
@@ -170,25 +178,39 @@ export const ContextRail: React.FC = () => {
                             <button
                                 key={item.id}
                                 onClick={item.action}
-                                className="group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all duration-300"
+                                className={`group relative flex items-center justify-center w-full aspect-square transition-all duration-300 ${
+                                    isStandardMode ? 'rounded' : 'rounded-xl'
+                                }`}
                             >
                                 {/* Active/Hover Background */}
-                                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${isActive
-                                    ? 'bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
-                                    : 'bg-transparent group-hover:bg-white/5'
+                                <div className={`absolute inset-0 transition-all duration-300 ${
+                                    isStandardMode ? 'rounded' : 'rounded-xl'
+                                } ${isActive
+                                    ? isStandardMode
+                                        ? 'bg-[#DEECF9]'
+                                        : 'bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                                    : isStandardMode
+                                        ? 'bg-transparent group-hover:bg-gray-200'
+                                        : 'bg-transparent group-hover:bg-white/5'
                                     }`} />
 
                                 {/* Icon */}
                                 <Icon
                                     size={22}
                                     className={`relative z-10 transition-colors duration-300 ${isActive
-                                        ? 'text-emerald-400'
-                                        : 'text-white/40 group-hover:text-white/80'
+                                        ? isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                        : isStandardMode
+                                            ? 'text-gray-500 group-hover:text-gray-700'
+                                            : 'text-white/40 group-hover:text-white/80'
                                         }`}
                                 />
 
                                 {/* Tooltip */}
-                                <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-200 pointer-events-none whitespace-nowrap backdrop-blur-md">
+                                <div className={`absolute left-full ml-4 px-3 py-1.5 text-xs opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-200 pointer-events-none whitespace-nowrap ${
+                                    isStandardMode
+                                        ? 'rounded bg-gray-800 text-white'
+                                        : 'rounded-lg bg-black/80 border border-white/10 text-white backdrop-blur-md'
+                                }`}>
                                     {item.label}
                                 </div>
 
@@ -196,7 +218,11 @@ export const ContextRail: React.FC = () => {
                                 {isActive && (
                                     <motion.div
                                         layoutId="activeRail"
-                                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-500 rounded-r-full shadow-[0_0_8px_#10b981]"
+                                        className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full ${
+                                            isStandardMode
+                                                ? 'bg-[#0078D4]'
+                                                : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'
+                                        }`}
                                     />
                                 )}
                             </button>
