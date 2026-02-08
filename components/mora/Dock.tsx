@@ -36,7 +36,7 @@ interface DockItem {
 
 export const Dock = () => {
     const {
-        setViewLevel, setActiveDepartment, orbState, user, companies, activeCompanyId, setActiveCompany, viewMode
+        setViewLevel, setActiveDepartment, orbState, user, companies, activeCompanyId, setActiveCompany, viewMode, isStandardMode
     } = useMoraStore();
 
     const { panes, restorePane, openPane } = usePaneStore();
@@ -136,7 +136,11 @@ export const Dock = () => {
                                     key={pane.id}
                                     onClick={() => restorePane(pane.id)}
                                     title={pane.title}
-                                    className="w-12 h-12 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 transition-all duration-200 backdrop-blur-xl shadow-lg"
+                                    className={`w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg ${
+                                        isStandardMode
+                                            ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
+                                            : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
+                                    }`}
                                     whileHover={{ y: -4, scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -156,40 +160,62 @@ export const Dock = () => {
                 transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
                 <div
-                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-2xl backdrop-blur-2xl overflow-hidden"
-                    style={{
+                    className={`relative flex items-center gap-2 px-4 py-2.5 overflow-hidden ${
+                        isStandardMode
+                            ? 'rounded bg-white border-gray-200'
+                            : 'rounded-2xl backdrop-blur-2xl'
+                    }`}
+                    style={isStandardMode ? {
+                        background: '#FFFFFF',
+                        border: '1px solid #E1E1E1',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    } : {
                         background: 'linear-gradient(180deg, rgba(10, 20, 15, 0.85) 0%, rgba(5, 10, 8, 0.95) 100%)',
                         border: '1px solid rgba(16, 185, 129, 0.15)',
                         boxShadow: `0 25px 60px rgba(0, 0, 0, 0.8), 0 0 60px ${accent}10, inset 0 1px 0 rgba(255,255,255,0.03)`,
                     }}
                 >
-                    {/* TOP GLOW LINE */}
-                    <motion.div
-                        className="absolute inset-x-0 top-0 h-[1px]"
-                        style={{ background: `linear-gradient(90deg, transparent, ${accent}60, transparent)` }}
-                        animate={{ opacity: [0.3, 0.6, 0.3] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    />
+                    {/* TOP GLOW LINE - only in transparent mode */}
+                    {!isStandardMode && (
+                        <motion.div
+                            className="absolute inset-x-0 top-0 h-[1px]"
+                            style={{ background: `linear-gradient(90deg, transparent, ${accent}60, transparent)` }}
+                            animate={{ opacity: [0.3, 0.6, 0.3] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                    )}
 
                     {/* LEFT: AVATAR */}
-                    <div className="flex items-center gap-3 pr-3 border-r border-white/10">
+                    <div className={`flex items-center gap-3 pr-3 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
                         <motion.div
-                            className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30 flex items-center justify-center cursor-pointer overflow-hidden group"
+                            className={`relative w-10 h-10 flex items-center justify-center cursor-pointer overflow-hidden group ${
+                                isStandardMode
+                                    ? 'rounded bg-[#0078D4] border border-[#0078D4]'
+                                    : 'rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30'
+                            }`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             title={user?.name || user?.email || 'Benutzer'}
                         >
-                            <span className="text-sm font-semibold text-emerald-300 group-hover:text-emerald-200 transition-colors">
+                            <span className={`text-sm font-semibold transition-colors ${
+                                isStandardMode ? 'text-white' : 'text-emerald-300 group-hover:text-emerald-200'
+                            }`}>
                                 {userInitials}
                             </span>
                             {/* Online indicator */}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-black/80" />
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${
+                                isStandardMode ? 'bg-green-500 border-white' : 'bg-emerald-500 border-black/80'
+                            }`} />
                         </motion.div>
                         <div className="hidden sm:flex flex-col">
-                            <span className="text-xs text-white/80 font-medium truncate max-w-[100px]">
+                            <span className={`text-xs font-medium truncate max-w-[100px] ${
+                                isStandardMode ? 'text-gray-800' : 'text-white/80'
+                            }`}>
                                 {user?.name || 'Benutzer'}
                             </span>
-                            <span className="text-[10px] text-emerald-400/60 uppercase tracking-wider">
+                            <span className={`text-[10px] uppercase tracking-wider ${
+                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/60'
+                            }`}>
                                 {viewMode === 'demo' ? 'Demo' : user?.role === 'system_owner' ? 'Owner' : user?.role || 'Mitglied'}
                             </span>
                         </div>
@@ -197,7 +223,7 @@ export const Dock = () => {
 
                     {/* CENTER: SEARCH */}
                     <div className="relative flex items-center flex-1 max-w-xs mx-2">
-                        <Search size={14} className="absolute left-3 text-white/30" />
+                        <Search size={14} className={`absolute left-3 ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`} />
                         <input
                             ref={inputRef}
                             type="text"
@@ -224,7 +250,11 @@ export const Dock = () => {
                                 }
                             }}
                             placeholder="Suchen... ⌘K"
-                            className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl pl-9 pr-3 py-2 text-sm text-white/90 placeholder:text-white/25 focus:outline-none focus:border-emerald-500/40 focus:bg-white/[0.06] transition-all duration-200"
+                            className={`w-full pl-9 pr-3 py-2 text-sm transition-all duration-200 focus:outline-none ${
+                                isStandardMode
+                                    ? 'bg-gray-100 border border-gray-300 rounded text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
+                                    : 'bg-white/[0.03] border border-white/[0.08] rounded-xl text-white/90 placeholder:text-white/25 focus:border-emerald-500/40 focus:bg-white/[0.06]'
+                            }`}
                         />
                     </div>
 
