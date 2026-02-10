@@ -8,6 +8,7 @@ import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
+import { getCoreBaseUrl } from '@/lib/api/coreClient';
 
 import { signIn } from "next-auth/react";
 import { OnboardingWizard } from './OnboardingWizard';
@@ -24,8 +25,7 @@ interface SessionInfo {
     role?: string;
 }
 
-// Use the Next.js rewrites proxy to avoid CORS issues
-const CORE_URL = '/api/core';
+const getCoreUrl = () => getCoreBaseUrl();
 
 /**
  * WelcomeScreen - Unified Authentication Entry Point
@@ -270,7 +270,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         const toastId = toast.loading("Account wird erstellt...");
 
         try {
-            const response = await fetch(`${CORE_URL}/v1/auth/register`, {
+            const response = await fetch(`${getCoreUrl()}/v1/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

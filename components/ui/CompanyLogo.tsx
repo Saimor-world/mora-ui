@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, UploadCloud, Link as LinkIcon, Loader2 } from 'lucide-react';
-import { uploadCompanyFile } from '@/lib/api/filesClient';
+import { uploadCompanyFile, getCompanyFileUrl } from '@/lib/api/filesClient';
 
 interface CompanyLogoProps {
     src?: string | null;
@@ -170,9 +170,7 @@ export const CompanyLogoUpload: React.FC<CompanyLogoUploadProps> = ({ value, onC
             try {
                 const uploaded = await uploadCompanyFile(file, companyId);
                 // Use the server-side file URL instead of DataURL
-                const CORE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '/api/core';
-                const serverUrl = `${CORE_URL}/v1/files/${uploaded.id}/download`;
-                onChange(serverUrl);
+                onChange(getCompanyFileUrl(uploaded.id));
             } catch (err) {
                 console.error('Logo upload failed, keeping local preview:', err);
                 // Keep the DataURL preview as fallback

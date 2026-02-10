@@ -2,7 +2,21 @@ import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, Core
 
 type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
 
-const CORE_BASE_URL = "/api/core";
+/**
+ * Core API base URL resolution.
+ *
+ * - Production usually sets NEXT_PUBLIC_SAIMOR_CORE_URL=https://api.saimor.world
+ * - Dev usually proxies through Next.js rewrites at /api/core
+ * - Some envs mistakenly include /v1; normalize that away to avoid /v1/v1.
+ */
+export function getCoreBaseUrl(): string {
+    const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '').trim();
+    let base = raw.length > 0 ? raw : '/api/core';
+    base = base.replace(/\/+$/, '');
+    if (base.toLowerCase().endsWith('/v1')) base = base.slice(0, -3);
+    return base.length > 0 ? base : '/api/core';
+}
+
 const AUTH_COOKIE = "mora_auth_token";
 
 function isLocalhost(): boolean {
@@ -87,7 +101,7 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
 
     let response: Response;
     try {
-        const url = `${CORE_BASE_URL}${path}`;
+        const url = `${getCoreBaseUrl()}${path}`;
         response = await fetch(url, {
             method: options.method ?? 'GET',
             headers,
@@ -667,7 +681,7 @@ export async function uploadFile(file: File, folderId: string, title?: string): 
 
     if (!token) throw new CoreError('Unauthorized', 401);
 
-    const response = await fetch(`${CORE_BASE_URL}/upload`, {
+    const response = await fetch(`${getCoreBaseUrl()}/upload`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`
@@ -698,7 +712,7 @@ export async function importCompanyStructure(file: File): Promise<any> {
 
     if (!token) throw new CoreError('Unauthorized', 401);
 
-    const response = await fetch(`${CORE_BASE_URL}/v1/companies/import`, {
+    const response = await fetch(`${getCoreBaseUrl()}/v1/companies/import`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`

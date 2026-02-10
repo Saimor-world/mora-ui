@@ -4,6 +4,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
+import { getDownloadUrl } from '@/lib/api/filesClient';
 
 interface DocumentPaneProps {
     id: string;
@@ -83,7 +84,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
     // Generate image URL from file_path if available
     const imageUrl = url || (metadata?.file_path && nodeId
-        ? `/api/core/files/${nodeId}/download`
+        ? getDownloadUrl(nodeId)
         : null);
 
     // Simple markdown renderer

@@ -1,4 +1,4 @@
-import { coreGet, corePost, CoreError } from './coreClient';
+import { coreGet, corePost, CoreError, getCoreBaseUrl } from './coreClient';
 
 export interface FilePreview {
     previewAvailable: boolean;
@@ -18,7 +18,6 @@ export interface CompanyFileRecord {
     created_at: string;
 }
 
-const CORE_BASE_URL = "/api/core";
 const AUTH_COOKIE = "mora_auth_token";
 
 function isLocalhost(): boolean {
@@ -53,8 +52,11 @@ export const getFilePreview = async (nodeId: string): Promise<FilePreview> => {
 };
 
 export const getDownloadUrl = (nodeId: string): string => {
-    // Use same-origin proxy in all environments to avoid leaking localhost URLs in production.
-    return `${CORE_BASE_URL}/v1/files/${nodeId}/download`;
+    return `${getCoreBaseUrl()}/v1/files/${nodeId}/download`;
+};
+
+export const getCompanyFileUrl = (fileId: string): string => {
+    return `${getCoreBaseUrl()}/v1/files/${fileId}`;
 };
 
 export const listCompanyFiles = async (companyId: string): Promise<CompanyFileRecord[]> => {
@@ -73,7 +75,7 @@ export const uploadCompanyFile = async (file: File, companyId: string): Promise<
 
     // CRITICAL: We do NOT set Content-Type header. 
     // Browser must set it with the correct boundary for multipart/form-data.
-    const response = await fetch(`${CORE_BASE_URL}/v1/files/upload`, {
+    const response = await fetch(`${getCoreBaseUrl()}/v1/files/upload`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -107,7 +109,7 @@ export const downloadCompanyFile = async (fileId: string, filename: string): Pro
     const token = getAuthToken();
     if (!token) throw new CoreError('Unauthorized', 401);
 
-    const response = await fetch(`${CORE_BASE_URL}/v1/files/${fileId}`, {
+    const response = await fetch(`${getCoreBaseUrl()}/v1/files/${fileId}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`

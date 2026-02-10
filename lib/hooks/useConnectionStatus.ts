@@ -32,7 +32,8 @@ export function useConnectionStatus() {
 
     const checkHealth = useCallback(async () => {
         try {
-            const response = await coreGet('/v1/health', { isOptional: true });
+            // Health should be reachable without auth; otherwise an unauthenticated UI would falsely show "offline".
+            const response = await coreGet('/v1/health', { isOptional: true, skipAuth: true });
 
             if (response && response.status === 'healthy') {
                 setState({
