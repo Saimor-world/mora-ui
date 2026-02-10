@@ -10,16 +10,19 @@ let _hasLoaded = false;
 // Helper to get token from any source
 function getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
-    // Try all possible token locations
-    const devToken = localStorage.getItem('saimor_dev_token');
-    if (devToken) return devToken;
-    // Try cookies
+    const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+
+    // Prefer cookies (production). Use dev token only for localhost/dev flows.
     const cookies = document.cookie.split('; ');
     for (const cookie of cookies) {
         const [name, value] = cookie.split('=');
         if (name === 'mora_auth_token' || name === 'saimor_auth') {
             try { return decodeURIComponent(value); } catch { return value; }
         }
+    }
+    if (isLocalhost) {
+        const devToken = localStorage.getItem('saimor_dev_token');
+        if (devToken) return devToken;
     }
     return null;
 }

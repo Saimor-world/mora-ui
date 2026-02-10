@@ -36,14 +36,16 @@ export function useAuthBootstrapper() {
                 if (value === null) return;
             });
             const hasNextAuth = status === 'authenticated';
-            const hasLegacyToken = localStorage.getItem('saimor_dev_token');
+            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
 
             if (hasNextAuth || hasLegacyToken) {
                 try {
                     // SYNC: If NextAuth is authenticated, ensure the token is in localStorage for coreClient
                     const currentToken = hasNextAuth ? (session?.user as any)?.accessToken : hasLegacyToken;
                     if (hasNextAuth && currentToken) {
-                        localStorage.setItem('saimor_dev_token', currentToken);
+                        // Only use localStorage token as a dev fallback. Production should rely on cookies/session.
+                        if (isLocalhost) localStorage.setItem('saimor_dev_token', currentToken);
                         localStorage.setItem('last_user_name', session.user?.email?.split('@')[0] || 'User');
                     }
 

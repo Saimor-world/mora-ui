@@ -21,6 +21,12 @@ export interface CompanyFileRecord {
 const CORE_BASE_URL = "/api/core";
 const AUTH_COOKIE = "mora_auth_token";
 
+function isLocalhost(): boolean {
+    if (typeof window === 'undefined') return false;
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+}
+
 function readCookie(name: string): string | null {
     if (typeof document === 'undefined') return null;
     const value = document.cookie.split('; ').find(row => row.startsWith(`${name}=`));
@@ -36,7 +42,7 @@ function readCookie(name: string): string | null {
 function getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
     return readCookie(AUTH_COOKIE)
-        || localStorage.getItem('saimor_dev_token')
+        || (isLocalhost() ? localStorage.getItem('saimor_dev_token') : null)
         || process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT
         || process.env.NEXT_PUBLIC_API_TOKEN
         || null;
@@ -47,8 +53,8 @@ export const getFilePreview = async (nodeId: string): Promise<FilePreview> => {
 };
 
 export const getDownloadUrl = (nodeId: string): string => {
-    const NEXT_PUBLIC_SAIMOR_CORE_URL = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
-    return `${NEXT_PUBLIC_SAIMOR_CORE_URL}/v1/files/${nodeId}/download`;
+    // Use same-origin proxy in all environments to avoid leaking localhost URLs in production.
+    return `${CORE_BASE_URL}/v1/files/${nodeId}/download`;
 };
 
 export const listCompanyFiles = async (companyId: string): Promise<CompanyFileRecord[]> => {

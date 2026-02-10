@@ -25,8 +25,12 @@ class RealtimeClient {
         };
 
         // Try auth sources in priority order
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+
         let token = readCookie(AUTH_COOKIE) ||
-            (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null) ||
+            (isLocalhost ? localStorage.getItem('saimor_dev_token') : null) ||
             process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
             process.env.NEXT_PUBLIC_API_TOKEN ||
             null;
@@ -45,10 +49,9 @@ class RealtimeClient {
 
         this.isConnecting = true;
 
-        // Using localhost:8081 (Main Core API) - Unified System
-        // In production this would use an env variable
-        // P1.5: Reliable WebSocket URL resolution
-        const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8081';
+        // P1.5: Reliable WebSocket URL resolution (prod-safe)
+        // Prefer explicit NEXT_PUBLIC_CORE_WS_URL. Otherwise derive a sensible default.
+        const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || '/api/core';
         const CORE_WS_URL = process.env.NEXT_PUBLIC_CORE_WS_URL;
 
         // If we have an explicit WS URL, use it
@@ -60,11 +63,14 @@ class RealtimeClient {
             if (CORE_API_URL.startsWith('/')) {
                 // In production, we assume relative path works via the same host
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                wsUrl = `${protocol}//${window.location.host}${CORE_API_URL}/v1/realtime/subscribe?token=${token}&event_types=all`;
+                // WebSockets are not reliably proxied through Next.js in all deployments.
+                // Use direct API host in production.
+                const host = window.location.host;
+                const apiHost = host.startsWith('hq.') ? host.replace(/^hq\./, 'api.') : 'api.saimor.world';
+                wsUrl = `${protocol}//${apiHost}/v1/realtime/subscribe?token=${token}&event_types=all`;
 
-                // LOCAL DEV FALLBACK: If we are on localhost:3000 and using /api/core proxy, 
-                // Next.js doesn't proxy WebSockets by default. Connect to 8081 directly.
-                if (window.location.host.includes('localhost:3000')) {
+                // LOCAL DEV FALLBACK: Next.js doesn't proxy WebSockets by default. Connect to 8081 directly.
+                if (host.includes('localhost:3000')) {
                     wsUrl = `ws://localhost:8081/v1/realtime/subscribe?token=${token}&event_types=all`;
                 }
             } else {

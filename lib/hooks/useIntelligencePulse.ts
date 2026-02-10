@@ -35,9 +35,12 @@ export const useIntelligencePulse = () => {
 
         const fetchData = async () => {
             // Check for auth token before making request
+            const isLocalhost =
+                typeof window !== 'undefined' &&
+                ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasToken = typeof window !== 'undefined' && (
                 document.cookie.includes('saimor_auth') ||
-                localStorage.getItem('saimor_dev_token') ||
+                (isLocalhost ? localStorage.getItem('saimor_dev_token') : null) ||
                 process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT
             );
 

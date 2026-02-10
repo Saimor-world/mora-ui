@@ -57,7 +57,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     useEffect(() => {
         const checkSession = () => {
             const authToken = readCookie('saimor_auth');
-            const devToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
+            const isLocalhost =
+                typeof window !== 'undefined' &&
+                ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            const devToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
             const savedMode = typeof window !== 'undefined' ? localStorage.getItem('saimor_mode') : null;
             const lastWorkspace = typeof window !== 'undefined' ? localStorage.getItem('last_workspace') : null;
             const lastActivity = typeof window !== 'undefined' ? localStorage.getItem('last_activity') : null;
@@ -181,7 +184,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
         // Now save clean state
         writeCookie('saimor_auth', token, 7); // 7 days
-        localStorage.setItem('saimor_dev_token', token);
+        // Dev convenience only; production should not persist bearer tokens in localStorage.
+        if (typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+            localStorage.setItem('saimor_dev_token', token);
+        }
         localStorage.setItem('saimor_mode', role === 'owner' ? 'owner' : role === 'demo' ? 'demo' : 'user');
         localStorage.setItem('saimor_role', role);
         localStorage.setItem('saimor_tenant', tenantId);

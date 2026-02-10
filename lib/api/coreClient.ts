@@ -5,6 +5,12 @@ type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | '
 const CORE_BASE_URL = "/api/core";
 const AUTH_COOKIE = "mora_auth_token";
 
+function isLocalhost(): boolean {
+    if (typeof window === 'undefined') return false;
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+}
+
 export class CoreError extends Error {
     status: number;
     constructor(message: string, status: number) {
@@ -55,7 +61,7 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
     if (!options.skipAuth) {
         const token = readCookie(AUTH_COOKIE);
         // Only use devToken if NO cookie is present - gives priority to fresh sessions
-        const devToken = !token && typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null;
+        const devToken = !token && isLocalhost() ? localStorage.getItem('saimor_dev_token') : null;
         const finalToken = token || devToken;
 
         if (finalToken) {
@@ -655,7 +661,7 @@ export async function uploadFile(file: File, folderId: string, title?: string): 
     if (title) formData.append('title', title);
 
     const token = readCookie(AUTH_COOKIE) ||
-        (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null) ||
+        (isLocalhost() ? localStorage.getItem('saimor_dev_token') : null) ||
         process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
         process.env.NEXT_PUBLIC_API_TOKEN;
 
@@ -686,7 +692,7 @@ export async function importCompanyStructure(file: File): Promise<any> {
     formData.append('file', file);
 
     const token = readCookie(AUTH_COOKIE) ||
-        (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null) ||
+        (isLocalhost() ? localStorage.getItem('saimor_dev_token') : null) ||
         process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
         process.env.NEXT_PUBLIC_API_TOKEN;
 

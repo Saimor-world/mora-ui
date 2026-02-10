@@ -62,7 +62,12 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
     whoami: {
         description: "Benutzerinfo anzeigen",
         handler: async () => {
-            const token = localStorage.getItem('saimor_dev_token');
+            const isLocalhost = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            const readCookie = (name: string) => {
+                const match = document.cookie.split('; ').find(r => r.startsWith(`${name}=`));
+                return match ? match.split('=')[1] : null;
+            };
+            const token = readCookie('mora_auth_token') || readCookie('saimor_auth') || (isLocalhost ? localStorage.getItem('saimor_dev_token') : null);
             if (token) {
                 try {
                     const payload = JSON.parse(atob(token.split('.')[1]));
