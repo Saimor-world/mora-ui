@@ -5,7 +5,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const LOCAL_BACKEND_URL = process.env.NEXT_PUBLIC_CORE_URL || 'http://127.0.0.1:8081';
+// IMPORTANT:
+// - In Docker, the Core API is reachable via service DNS (e.g. http://core:8081), NOT 127.0.0.1.
+// - In local dev (non-docker), 127.0.0.1:8081 is fine.
+const LOCAL_BACKEND_URL =
+  process.env.SAIMOR_CORE_URL ||
+  process.env.NEXT_PUBLIC_CORE_URL ||
+  (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8081' : 'http://core:8081');
 const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.saimor.world/api';
 
 /**
