@@ -42,6 +42,11 @@ ENV NEXT_PUBLIC_SAIMOR_CORE_URL=${NEXT_PUBLIC_SAIMOR_CORE_URL}
 ENV NEXT_PUBLIC_ALLOW_TOOL_EXECUTION=${NEXT_PUBLIC_ALLOW_TOOL_EXECUTION}
 ENV NEXT_PUBLIC_DISABLE_WEBGL=${NEXT_PUBLIC_DISABLE_WEBGL}
 
+# NextAuth runtime config - MUST be set at runtime via docker run -e or docker-compose
+# NEXTAUTH_URL=https://hq.saimor.world
+# NEXTAUTH_SECRET=<secure-random-string>
+# SAIMOR_CORE_URL=http://core:8081
+
 ENV NODE_ENV=production
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 COPY --from=build /app/package.json ./package.json
