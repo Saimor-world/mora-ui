@@ -160,9 +160,9 @@ export const Dock = () => {
                 transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
                 <div
-                    className={`relative flex items-center gap-2 px-4 py-2.5 overflow-hidden ${
+                    className={`relative flex items-center gap-3 px-4 py-3 ${
                         isStandardMode
-                            ? 'rounded bg-white border-gray-200'
+                            ? 'rounded-lg bg-white border-gray-200'
                             : 'rounded-2xl backdrop-blur-2xl'
                     }`}
                     style={isStandardMode ? {
@@ -262,51 +262,71 @@ export const Dock = () => {
                     <div className="w-[1px] h-8 bg-white/10 mx-1" />
 
                     {/* CENTER: DOCK APPS */}
-                    <div className="flex items-center gap-0.5">
+                    <div className="flex items-center gap-1">
                         {dockItems.filter(item => !item.hidden).map((item, i) => (
                             <motion.button
                                 key={i}
-                                className={`p-2.5 rounded-xl transition-all duration-200 relative group ${
+                                className={`p-3 rounded-xl transition-all duration-200 relative group ${
                                     item.disabled
-                                        ? 'text-white/20 cursor-not-allowed'
+                                        ? isStandardMode
+                                            ? 'text-gray-300 cursor-not-allowed'
+                                            : 'text-white/20 cursor-not-allowed'
                                         : item.action === 'memory'
                                         ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/10'
-                                        : 'text-white/50 hover:text-white hover:bg-white/[0.08]'
+                                        : isStandardMode
+                                            ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
+                                            : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
                                 }`}
-                                whileHover={item.disabled ? {} : { y: -4, scale: 1.1 }}
+                                whileHover={item.disabled ? {} : { y: -6, scale: 1.15 }}
                                 whileTap={item.disabled ? {} : { scale: 0.9 }}
                                 onClick={() => !item.disabled && handleDockClick(item.action)}
                                 disabled={item.disabled}
                             >
-                                <item.icon size={20} strokeWidth={1.5} />
+                                <item.icon size={24} strokeWidth={1.5} />
 
                                 {/* BADGE for pending items */}
                                 {item.badge && item.badge > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center">
+                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-violet-500 text-[9px] text-white font-bold items-center justify-center">
+                                        <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
                                             {item.badge > 9 ? '!' : item.badge}
                                         </span>
                                     </span>
                                 )}
 
-                                {/* TOOLTIP */}
-                                <div className="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
-                                    <div className="bg-black/95 backdrop-blur-xl rounded-lg border border-white/10 px-3 py-2 min-w-[100px] text-center shadow-2xl">
-                                        <div className="text-white text-[11px] font-medium">{item.label}</div>
-                                        <div className="text-white/40 text-[9px] mt-0.5">{item.description}</div>
+                                {/* TOOLTIP - positioned higher to ensure visibility */}
+                                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[200]">
+                                    <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${
+                                        isStandardMode
+                                            ? 'bg-gray-800 border border-gray-700'
+                                            : 'bg-black/95 backdrop-blur-xl border border-white/10'
+                                    }`}>
+                                        <div className="text-white text-xs font-medium">{item.label}</div>
+                                        <div className="text-white/50 text-[10px] mt-0.5">{item.description}</div>
                                         {item.shortcut && (
-                                            <kbd className="inline-block mt-1 px-1.5 py-0.5 bg-white/10 rounded text-[9px] text-emerald-400 font-mono">
+                                            <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${
+                                                isStandardMode
+                                                    ? 'bg-gray-700 text-blue-300'
+                                                    : 'bg-white/10 text-emerald-400'
+                                            }`}>
                                                 {item.shortcut}
                                             </kbd>
                                         )}
                                     </div>
-                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-r border-b border-white/10 rotate-45" />
+                                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${
+                                        isStandardMode
+                                            ? 'bg-gray-800 border-r border-b border-gray-700'
+                                            : 'bg-black/95 border-r border-b border-white/10'
+                                    }`} />
                                 </div>
 
                                 {/* ACTIVE DOT */}
                                 {!item.disabled && (
-                                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400/0 group-hover:bg-emerald-400 transition-colors" />
+                                    <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${
+                                        isStandardMode
+                                            ? 'bg-transparent group-hover:bg-[#0078D4]'
+                                            : 'bg-emerald-400/0 group-hover:bg-emerald-400'
+                                    }`} />
                                 )}
                             </motion.button>
                         ))}
