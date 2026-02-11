@@ -471,8 +471,8 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
-            {/* Dock (Bottom Navigation) - Hidden in Owner/System view when viewing Client Health */}
-            {viewLevel !== 'owner' && <Dock />}
+            {/* Dock (Bottom Navigation) - Hidden when viewing Client Health Dashboard (Owner view of clients) */}
+            {!(viewLevel === 'company' && viewMode === 'owner') && <Dock />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight

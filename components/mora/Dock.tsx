@@ -155,76 +155,88 @@ export const Dock = () => {
 
             {/* MAIN DOCK BAR */}
             <motion.div
-                className="w-[calc(100vw-24px)] max-w-none mx-auto mb-3 px-2 pointer-events-auto"
+                className="w-[calc(100vw-32px)] max-w-none mx-auto mb-4 px-3 pointer-events-auto"
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
                 <div
-                    className={`relative flex items-center gap-3 px-4 py-3 ${
+                    className={`relative flex items-center gap-4 px-5 py-4 ${
                         isStandardMode
-                            ? 'rounded-lg bg-white border-gray-200'
-                            : 'rounded-2xl backdrop-blur-2xl'
+                            ? 'rounded-xl bg-white border-gray-200'
+                            : 'rounded-3xl backdrop-blur-2xl'
                     }`}
                     style={isStandardMode ? {
                         background: '#FFFFFF',
                         border: '1px solid #E1E1E1',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                     } : {
-                        background: 'linear-gradient(180deg, rgba(10, 20, 15, 0.85) 0%, rgba(5, 10, 8, 0.95) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.15)',
-                        boxShadow: `0 25px 60px rgba(0, 0, 0, 0.8), 0 0 60px ${accent}10, inset 0 1px 0 rgba(255,255,255,0.03)`,
+                        background: 'linear-gradient(180deg, rgba(10, 25, 18, 0.92) 0%, rgba(5, 12, 10, 0.98) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        boxShadow: `0 -10px 60px rgba(16, 185, 129, 0.15), 0 25px 80px rgba(0, 0, 0, 0.9), 0 0 100px ${accent}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
                     }}
                 >
-                    {/* TOP GLOW LINE - only in transparent mode */}
+                    {/* TOP GLOW LINE - Premium animated */}
                     {!isStandardMode && (
-                        <motion.div
-                            className="absolute inset-x-0 top-0 h-[1px]"
-                            style={{ background: `linear-gradient(90deg, transparent, ${accent}60, transparent)` }}
-                            animate={{ opacity: [0.3, 0.6, 0.3] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                        />
+                        <>
+                            <motion.div
+                                className="absolute inset-x-0 top-0 h-[2px] rounded-full"
+                                style={{ background: `linear-gradient(90deg, transparent 10%, ${accent}70, transparent 90%)` }}
+                                animate={{ opacity: [0.4, 0.8, 0.4] }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            {/* Corner accents */}
+                            <div className="absolute top-0 left-6 w-12 h-[2px] bg-gradient-to-r from-emerald-400/60 to-transparent rounded-full" />
+                            <div className="absolute top-0 right-6 w-12 h-[2px] bg-gradient-to-l from-emerald-400/60 to-transparent rounded-full" />
+                        </>
                     )}
 
-                    {/* LEFT: AVATAR */}
-                    <div className={`flex items-center gap-3 pr-3 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
+                    {/* LEFT: AVATAR - Premium Design */}
+                    <div className={`flex items-center gap-4 pr-4 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
                         <motion.div
-                            className={`relative w-10 h-10 flex items-center justify-center cursor-pointer overflow-hidden group ${
+                            className={`relative w-14 h-14 flex items-center justify-center cursor-pointer overflow-hidden group ${
                                 isStandardMode
-                                    ? 'rounded bg-[#0078D4] border border-[#0078D4]'
-                                    : 'rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border border-emerald-500/30'
+                                    ? 'rounded-lg bg-[#0078D4] border-2 border-[#0078D4]'
+                                    : 'rounded-2xl bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border-2 border-emerald-500/40'
                             }`}
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.08, rotate: 2 }}
                             whileTap={{ scale: 0.95 }}
                             title={user?.name || user?.email || 'Benutzer'}
+                            style={!isStandardMode ? {
+                                boxShadow: '0 0 25px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)'
+                            } : {}}
                         >
-                            <span className={`text-sm font-semibold transition-colors ${
-                                isStandardMode ? 'text-white' : 'text-emerald-300 group-hover:text-emerald-200'
+                            <span className={`text-lg font-bold transition-colors ${
+                                isStandardMode ? 'text-white' : 'text-emerald-200 group-hover:text-white'
                             }`}>
                                 {userInitials}
                             </span>
-                            {/* Online indicator */}
-                            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${
-                                isStandardMode ? 'bg-green-500 border-white' : 'bg-emerald-500 border-black/80'
-                            }`} />
+                            {/* Online indicator - pulsing */}
+                            <motion.div
+                                className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 ${
+                                    isStandardMode ? 'bg-green-500 border-white' : 'bg-emerald-400 border-black/80'
+                                }`}
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            />
                         </motion.div>
                         <div className="hidden sm:flex flex-col">
-                            <span className={`text-xs font-medium truncate max-w-[100px] ${
-                                isStandardMode ? 'text-gray-800' : 'text-white/80'
+                            <span className={`text-sm font-semibold truncate max-w-[120px] ${
+                                isStandardMode ? 'text-gray-800' : 'text-white/90'
                             }`}>
                                 {user?.name || 'Benutzer'}
                             </span>
-                            <span className={`text-[10px] uppercase tracking-wider ${
-                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/60'
+                            <span className={`text-xs uppercase tracking-wider font-medium ${
+                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'
                             }`}>
-                                {viewMode === 'demo' ? 'Demo' : user?.role === 'system_owner' ? 'Owner' : user?.role || 'Mitglied'}
+                                {viewMode === 'demo' ? 'Demo Mode' : user?.role === 'system_owner' ? 'System Owner' : user?.role || 'Mitglied'}
                             </span>
                         </div>
                     </div>
 
-                    {/* CENTER: SEARCH */}
-                    <div className="relative flex items-center flex-1 max-w-sm mx-2">
-                        <Search size={14} className={`absolute left-3 ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`} />
+                    {/* CENTER: SEARCH - Enhanced */}
+                    <div className="relative flex items-center flex-1 max-w-md mx-3">
+                        <Search size={16} className={`absolute left-4 ${isStandardMode ? 'text-gray-400' : 'text-emerald-400/50'}`} />
                         <input
                             ref={inputRef}
                             type="text"
@@ -250,40 +262,47 @@ export const Dock = () => {
                                     inputRef.current?.blur();
                                 }
                             }}
-                            placeholder="Suchen... Strg+K"
-                            className={`w-full pl-9 pr-3 py-2 text-sm transition-all duration-200 focus:outline-none ${
+                            placeholder="Suche im System... Strg+K"
+                            className={`w-full pl-11 pr-4 py-3 text-sm transition-all duration-200 focus:outline-none ${
                                 isStandardMode
-                                    ? 'bg-gray-100 border border-gray-300 rounded text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
-                                    : 'bg-white/[0.03] border border-white/[0.08] rounded-xl text-white/90 placeholder:text-white/25 focus:border-emerald-500/40 focus:bg-white/[0.06]'
+                                    ? 'bg-gray-100 border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
+                                    : 'bg-white/[0.04] border border-white/[0.1] rounded-2xl text-white/90 placeholder:text-white/30 focus:border-emerald-500/50 focus:bg-white/[0.08] focus:shadow-[0_0_20px_rgba(16,185,129,0.15)]'
                             }`}
                         />
+                        <kbd className={`absolute right-3 px-2 py-1 rounded-lg text-[10px] font-mono ${
+                            isStandardMode ? 'bg-gray-200 text-gray-500' : 'bg-white/10 text-white/40'
+                        }`}>
+                            Strg+K
+                        </kbd>
                     </div>
 
-                    {/* DIVIDER */}
-                    <div className="w-[1px] h-8 bg-white/10 mx-1" />
+                    {/* DIVIDER - Glowing */}
+                    <div className={`w-[1px] h-10 mx-2 ${
+                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    }`} />
 
-                    {/* CENTER: DOCK APPS */}
-                    <div className="flex items-center gap-1">
+                    {/* CENTER: DOCK APPS - Larger Icons */}
+                    <div className="flex items-center gap-1.5">
                         {dockItems.filter(item => !item.hidden).map((item, i) => (
                             <motion.button
                                 key={i}
-                                className={`p-3 rounded-xl transition-all duration-200 relative group ${
+                                className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${
                                     item.disabled
                                         ? isStandardMode
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : 'text-white/20 cursor-not-allowed'
                                         : item.action === 'memory'
-                                        ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/10'
+                                        ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
                                         : isStandardMode
                                             ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
-                                            : 'text-white/60 hover:text-white hover:bg-white/[0.08]'
+                                            : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
                                 }`}
-                                whileHover={item.disabled ? {} : { y: -6, scale: 1.15 }}
+                                whileHover={item.disabled ? {} : { y: -8, scale: 1.2 }}
                                 whileTap={item.disabled ? {} : { scale: 0.9 }}
                                 onClick={() => !item.disabled && handleDockClick(item.action)}
                                 disabled={item.disabled}
                             >
-                                <item.icon size={24} strokeWidth={1.5} />
+                                <item.icon size={26} strokeWidth={1.5} />
 
                                 {/* BADGE for pending items */}
                                 {item.badge && item.badge > 0 && (
@@ -333,8 +352,10 @@ export const Dock = () => {
                         ))}
                     </div>
 
-                    {/* DIVIDER */}
-                    <div className="w-[1px] h-8 bg-white/10 mx-1" />
+                    {/* DIVIDER - Glowing */}
+                    <div className={`w-[1px] h-10 mx-2 ${
+                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    }`} />
 
                     {/* RIGHT SECTION: Focus Mode + Notifications + Company */}
                     <div className="flex items-center gap-2">
@@ -345,24 +366,43 @@ export const Dock = () => {
                         <NotificationCenter />
                     </div>
 
-                    {/* DIVIDER */}
-                    <div className="w-[1px] h-8 bg-white/10 mx-1" />
+                    {/* DIVIDER - Glowing */}
+                    <div className={`w-[1px] h-10 mx-2 ${
+                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    }`} />
 
-                    {/* RIGHT: COMPANY BADGE */}
+                    {/* RIGHT: COMPANY BADGE - Enhanced */}
                     <div className="relative">
                         <motion.button
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-emerald-500/30 hover:bg-white/[0.06] transition-all group"
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all group ${
+                                isStandardMode
+                                    ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
+                                    : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
+                            }`}
                             onClick={() => setShowCompanySwitcher(!showCompanySwitcher)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
                         >
-                            <Building2 size={14} className="text-emerald-400/60" />
-                            <span className="text-xs text-white/70 max-w-[90px] truncate hidden sm:block">
-                                {activeCompany?.name || 'Workspace'}
-                            </span>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                isStandardMode ? 'bg-[#0078D4]/10' : 'bg-emerald-500/20'
+                            }`}>
+                                <Building2 size={16} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
+                            </div>
+                            <div className="hidden sm:flex flex-col items-start">
+                                <span className={`text-xs font-medium max-w-[100px] truncate ${
+                                    isStandardMode ? 'text-gray-800' : 'text-white/80'
+                                }`}>
+                                    {activeCompany?.name || 'Workspace'}
+                                </span>
+                                <span className={`text-[10px] ${
+                                    isStandardMode ? 'text-gray-500' : 'text-white/40'
+                                }`}>
+                                    {companies.length > 1 ? `${companies.length} Workspaces` : 'Workspace'}
+                                </span>
+                            </div>
                             <ChevronUp
-                                size={12}
-                                className={`text-white/30 transition-transform ${showCompanySwitcher ? '' : 'rotate-180'}`}
+                                size={14}
+                                className={`text-white/40 transition-transform ${showCompanySwitcher ? '' : 'rotate-180'}`}
                             />
                         </motion.button>
 
@@ -412,41 +452,83 @@ export const Dock = () => {
                         </AnimatePresence>
                     </div>
 
-                    {/* DIVIDER */}
-                    <div className="w-[1px] h-8 bg-white/10 mx-1" />
+                    {/* DIVIDER - Glowing */}
+                    <div className={`w-[1px] h-10 mx-2 ${
+                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    }`} />
 
-                    {/* RIGHT: MORA ORB INTEGRATED */}
-                    <div className="flex items-center gap-2">
+                    {/* RIGHT: MORA ORB - HERO ELEMENT */}
+                    <motion.div
+                        className="flex items-center gap-4 pl-2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
                         <motion.button
                             onClick={() => handleDockClick('mora-hub')}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            className={`relative w-12 h-12 rounded-full overflow-hidden border transition-all ${
+                            whileHover={{ scale: 1.08 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`relative w-16 h-16 rounded-full overflow-visible transition-all group ${
                                 isStandardMode
-                                    ? 'border-[#0078D4]/40 bg-white'
-                                    : 'border-emerald-400/40 bg-black/40 hover:border-emerald-300/60'
+                                    ? 'bg-white'
+                                    : 'bg-transparent'
                             }`}
                             title="Mora Nexus oeffnen"
+                            style={!isStandardMode ? {
+                                filter: 'drop-shadow(0 0 30px rgba(16, 185, 129, 0.4))'
+                            } : {}}
                         >
+                            {/* Outer glow ring */}
+                            {!isStandardMode && (
+                                <motion.div
+                                    className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/30"
+                                    animate={{
+                                        scale: [1, 1.1, 1],
+                                        opacity: [0.3, 0.6, 0.3]
+                                    }}
+                                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                />
+                            )}
+                            {/* Inner border */}
+                            <div className={`absolute inset-0 rounded-full border-2 ${
+                                isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/50'
+                            }`} />
                             <PlasmaOrb
                                 color={viewMode === 'demo' ? '#0D9488' : '#10B981'}
                                 state={orbState as any}
-                                size={46}
+                                size={60}
                             />
                         </motion.button>
-                        <div className="hidden md:flex flex-col items-start leading-tight">
-                            <span className={`text-[10px] uppercase tracking-wider ${
-                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300/80'
+                        <div className="hidden lg:flex flex-col items-start leading-tight">
+                            <span className={`text-sm font-bold tracking-wide ${
+                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
                             }`}>
-                                Mora
+                                MORA
                             </span>
-                            <span className={`text-[10px] ${
-                                isStandardMode ? 'text-gray-500' : 'text-white/50'
+                            <span className={`text-xs ${
+                                isStandardMode ? 'text-gray-500' : 'text-white/60'
                             }`}>
-                                {viewMode === 'demo' ? 'Demo aktiv' : 'System aktiv'}
+                                {viewMode === 'demo' ? 'Demo aktiv' : 'Bereit'}
                             </span>
+                            {/* Status indicator */}
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <motion.div
+                                    className={`w-2 h-2 rounded-full ${
+                                        orbState === 'thinking' ? 'bg-blue-400' :
+                                        orbState === 'alert' ? 'bg-red-400' :
+                                        'bg-emerald-400'
+                                    }`}
+                                    animate={{ scale: [1, 1.3, 1] }}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                />
+                                <span className="text-[10px] text-white/40">
+                                    {orbState === 'thinking' ? 'Denkt...' :
+                                     orbState === 'alert' ? 'Warnung' :
+                                     'Online'}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </motion.div>
 
