@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,15 +12,15 @@ interface KeyboardShortcutsOverlayProps {
 
 export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> = ({
     isOpen,
-    onClose
+    onClose,
 }) => {
-    // Close on Escape
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isOpen) {
                 onClose();
             }
         };
+
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
@@ -29,7 +29,6 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
                     <motion.div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[600]"
                         initial={{ opacity: 0 }}
@@ -38,7 +37,6 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                         onClick={onClose}
                     />
 
-                    {/* Modal */}
                     <motion.div
                         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[601] w-[420px] max-w-[90vw]"
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -47,12 +45,11 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     >
                         <div className="bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                            {/* Header */}
                             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
                                 <div className="flex items-center gap-3">
                                     <Keyboard size={18} className="text-emerald-400/70" />
                                     <span className="text-sm font-medium text-white/90 tracking-wide">
-                                        Tastenkürzel
+                                        Tastenkurzeln
                                     </span>
                                 </div>
                                 <button
@@ -63,7 +60,6 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                                 </button>
                             </div>
 
-                            {/* Shortcuts List */}
                             <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
                                 {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
                                     <div
@@ -92,10 +88,11 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                                 ))}
                             </div>
 
-                            {/* Footer */}
                             <div className="px-5 py-3 border-t border-white/5 bg-white/[0.02]">
                                 <div className="flex items-center justify-between text-[10px] text-white/30">
-                                    <span>Drücke <kbd className="px-1.5 py-0.5 rounded bg-white/10 mx-1">?</kbd> um dieses Menü zu öffnen</span>
+                                    <span>
+                                        Drucke <kbd className="px-1.5 py-0.5 rounded bg-white/10 mx-1">?</kbd> um dieses Menu zu oeffnen
+                                    </span>
                                     <span className="text-emerald-400/50">SAIMOR OS</span>
                                 </div>
                             </div>

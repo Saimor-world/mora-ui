@@ -11,6 +11,7 @@ import { SearchPopup } from './SearchPopup';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { NotificationCenter, useNotificationStore } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
+import { PlasmaOrb } from './PlasmaOrb';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -76,27 +77,27 @@ export const Dock = () => {
             case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: defaultSize }); break;
             case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } }); break;
-            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 560, height: 720 } }); break;
-            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 560, height: 720 }, data: { activeSection: 'memory' } }); break;
+            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 620, height: 780 } }); break;
+            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 620, height: 780 }, data: { activeSection: 'memory' } }); break;
             case 'notes': openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } }); break;
-            case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 480, height: 640 } }); break;
+            case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 620, height: 780 } }); break;
             default: break;
         }
     };
 
     // Core apps - German labels
     const dockItems: DockItem[] = [
-        { icon: Home, label: 'Start', shortcut: '⌘H', action: 'home', description: 'Zurück zur Übersicht' },
-        { icon: Sparkles, label: 'Mora', shortcut: '⌘.', action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
-        { icon: MessageCircle, label: 'Chat', shortcut: '⌘⏎', action: 'chat', description: 'Mit Mora sprechen' },
-        { icon: Brain, label: 'Gedächtnis', shortcut: '⌘M', action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
-        { icon: Folder, label: 'Dateien', shortcut: '⌘F', action: 'finder', description: 'Dokumente & Ordner' },
-        { icon: Users, label: 'Team', shortcut: '⌘T', action: 'team', description: 'Teammitglieder' },
-        { icon: FileText, label: 'Notizen', shortcut: '⌘N', action: 'notes', description: 'Schnelle Notizen' },
+        { icon: Home, label: 'Start', shortcut: 'Strg+H', action: 'home', description: 'Zurueck zur Uebersicht' },
+        { icon: Sparkles, label: 'Mora', shortcut: 'Strg+.', action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
+        { icon: MessageCircle, label: 'Chat', shortcut: 'Strg+J', action: 'chat', description: 'Mit Mora sprechen' },
+        { icon: Brain, label: 'Gedaechtnis', shortcut: 'Strg+Shift+M', action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
+        { icon: Folder, label: 'Dateien', shortcut: 'Strg+F', action: 'finder', description: 'Dokumente & Ordner' },
+        { icon: Users, label: 'Team', shortcut: 'Strg+U', action: 'team', description: 'Teammitglieder' },
+        { icon: FileText, label: 'Notizen', shortcut: 'Strg+N', action: 'notes', description: 'Schnelle Notizen' },
         { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Bald verfügbar', disabled: true },
         { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfügbar', disabled: true },
-        { icon: Terminal, label: 'Terminal', shortcut: '⌘`', action: 'terminal', description: 'Entwickler-Konsole' },
-        { icon: Settings, label: 'System', shortcut: '⌘,', action: 'settings', description: 'Einstellungen' }
+        { icon: Terminal, label: 'Terminal', shortcut: 'Strg+T', action: 'terminal', description: 'Entwickler-Konsole' },
+        { icon: Settings, label: 'System', shortcut: 'Strg+,', action: 'settings', description: 'Einstellungen' }
     ];
 
     const minimizedIconMap: Record<string, React.ComponentType<any>> = {
@@ -154,7 +155,7 @@ export const Dock = () => {
 
             {/* MAIN DOCK BAR */}
             <motion.div
-                className="w-full max-w-5xl mx-auto mb-4 px-4 pointer-events-auto"
+                className="w-[calc(100vw-24px)] max-w-none mx-auto mb-3 px-2 pointer-events-auto"
                 initial={{ y: 100, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 100 }}
@@ -222,7 +223,7 @@ export const Dock = () => {
                     </div>
 
                     {/* CENTER: SEARCH */}
-                    <div className="relative flex items-center flex-1 max-w-xs mx-2">
+                    <div className="relative flex items-center flex-1 max-w-sm mx-2">
                         <Search size={14} className={`absolute left-3 ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`} />
                         <input
                             ref={inputRef}
@@ -249,7 +250,7 @@ export const Dock = () => {
                                     inputRef.current?.blur();
                                 }
                             }}
-                            placeholder="Suchen... ⌘K"
+                            placeholder="Suchen... Strg+K"
                             className={`w-full pl-9 pr-3 py-2 text-sm transition-all duration-200 focus:outline-none ${
                                 isStandardMode
                                     ? 'bg-gray-100 border border-gray-300 rounded text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
@@ -356,7 +357,7 @@ export const Dock = () => {
                             whileTap={{ scale: 0.98 }}
                         >
                             <Building2 size={14} className="text-emerald-400/60" />
-                            <span className="text-xs text-white/70 max-w-[120px] truncate hidden sm:block">
+                            <span className="text-xs text-white/70 max-w-[90px] truncate hidden sm:block">
                                 {activeCompany?.name || 'Workspace'}
                             </span>
                             <ChevronUp
@@ -409,6 +410,42 @@ export const Dock = () => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+                    </div>
+
+                    {/* DIVIDER */}
+                    <div className="w-[1px] h-8 bg-white/10 mx-1" />
+
+                    {/* RIGHT: MORA ORB INTEGRATED */}
+                    <div className="flex items-center gap-2">
+                        <motion.button
+                            onClick={() => handleDockClick('mora-hub')}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            className={`relative w-12 h-12 rounded-full overflow-hidden border transition-all ${
+                                isStandardMode
+                                    ? 'border-[#0078D4]/40 bg-white'
+                                    : 'border-emerald-400/40 bg-black/40 hover:border-emerald-300/60'
+                            }`}
+                            title="Mora Nexus oeffnen"
+                        >
+                            <PlasmaOrb
+                                color={viewMode === 'demo' ? '#0D9488' : '#10B981'}
+                                state={orbState as any}
+                                size={46}
+                            />
+                        </motion.button>
+                        <div className="hidden md:flex flex-col items-start leading-tight">
+                            <span className={`text-[10px] uppercase tracking-wider ${
+                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300/80'
+                            }`}>
+                                Mora
+                            </span>
+                            <span className={`text-[10px] ${
+                                isStandardMode ? 'text-gray-500' : 'text-white/50'
+                            }`}>
+                                {viewMode === 'demo' ? 'Demo aktiv' : 'System aktiv'}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </motion.div>

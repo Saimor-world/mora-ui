@@ -803,31 +803,37 @@ export async function learnInsight(payload: {
     insight: string;
     category: string;
     auto_commit?: boolean;
+    company_id?: string;
 }): Promise<{ status: string; message: string; committed?: boolean; risk?: string }> {
     return corePost('/v1/memory/learn', payload);
 }
 
 // GET /v1/memory/search - Gedächtnis durchsuchen
-export async function searchMemory(query: string, limit: number = 10): Promise<any[]> {
-    return coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=${limit}`, { isOptional: true }) || [];
+export async function searchMemory(query: string, limit: number = 10, companyId?: string): Promise<any[]> {
+    const companyQuery = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
+    return coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true }) || [];
 }
 
 // GET /v1/memory/pending - Review Queue laden
-export async function getMemoryPending(): Promise<any[]> {
-    return coreGet('/v1/memory/pending', { isOptional: true }) || [];
+export async function getMemoryPending(companyId?: string): Promise<any[]> {
+    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+    return coreGet(`/v1/memory/pending${companyQuery}`, { isOptional: true }) || [];
 }
 
 // POST /v1/memory/approve/{id} - Review Item bestätigen
-export async function approveMemoryItem(id: string | number): Promise<{ success: boolean }> {
-    return corePost(`/v1/memory/approve/${id}`, {});
+export async function approveMemoryItem(id: string | number, companyId?: string): Promise<{ success: boolean }> {
+    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+    return corePost(`/v1/memory/approve/${id}${companyQuery}`, {});
 }
 
 // POST /v1/memory/reject/{id} - Review Item ablehnen
-export async function rejectMemoryItem(id: string | number): Promise<{ success: boolean }> {
-    return corePost(`/v1/memory/reject/${id}`, {});
+export async function rejectMemoryItem(id: string | number, companyId?: string): Promise<{ success: boolean }> {
+    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+    return corePost(`/v1/memory/reject/${id}${companyQuery}`, {});
 }
 
 // GET /v1/memory/metrics - Statistiken
-export async function getMemoryMetrics(): Promise<any> {
-    return coreGet('/v1/memory/metrics', { isOptional: true });
+export async function getMemoryMetrics(companyId?: string): Promise<any> {
+    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+    return coreGet(`/v1/memory/metrics${companyQuery}`, { isOptional: true });
 }

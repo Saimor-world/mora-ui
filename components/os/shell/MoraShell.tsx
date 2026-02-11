@@ -51,17 +51,14 @@ import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
-import { MoraOrb } from '@/components/mora/MoraOrb';
 import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOverlay';
 import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { LockScreen } from '@/components/auth/LockScreen';
 
-// Premium Intelligence Layer (V11: consolidated to Orb area)
-import { CognitionBadge } from '@/components/mora/CognitionBadge';
-// Removed: MoraThoughtStream, MoraIntelligenceBar, IntelligenceDashboard
-// Status is now shown next to Orb, Intelligence merged into Mora Nexus
+// Premium Intelligence Layer
+// Intelligence is shown through Mora Nexus and Dock command center.
 
 // Interaction Layers
 import { CursorAgent } from '@/components/mora/CursorAgent';
@@ -221,7 +218,7 @@ export const MoraShell: React.FC = () => {
         isLoggingOut
     } = useMoraStore();
     const { logout } = useAccountStore();
-    const { reset: resetPanes, openPane, getPane, removePane } = usePaneStore();
+    const { reset: resetPanes, openPane } = usePaneStore();
 
     const activeCompany = companies.find(c => c.id === activeCompanyId);
     const role = user?.role || 'demo';
@@ -362,35 +359,6 @@ export const MoraShell: React.FC = () => {
         resetStore();
         resetPanes();
         router.push('/');
-    };
-
-    // Orb Click Handler - Mora Hub only
-    const handleOrbClick = () => {
-        const existing = getPane('mora-hub');
-        if (existing) {
-            removePane('mora-hub');
-            return;
-        }
-
-        const chatPane = getPane('chat-main');
-        if (chatPane) {
-            removePane('chat-main');
-        }
-
-        const hubSize = { width: 520, height: 760 };
-        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-        const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-        const margin = 24;
-        const x = Math.max(margin, windowWidth - hubSize.width - 64);
-        const y = Math.max(margin, windowHeight - hubSize.height - 140);
-
-        openPane({
-            id: 'mora-hub',
-            type: 'mora-hub',
-            title: 'Mora',
-            size: hubSize,
-            position: { x, y }
-        });
     };
 
     // EFFECT: External AI Actions (from CursorBridge)
@@ -534,51 +502,7 @@ export const MoraShell: React.FC = () => {
              * Intelligence Dashboard merged into Mora Nexus Pane
              */}
 
-            {/* Mora Orb + Status Badge (V11 - unified right side) - Hidden in Owner view */}
-            {viewLevel !== 'owner' && (
-            <div id="mora-system-hub" className="fixed bottom-16 right-16 z-[500] pointer-events-auto flex items-end gap-4 overflow-visible">
-                {/* Status Badge - links vom Orb */}
-                <div className="flex flex-col items-end gap-2 mb-8">
-                    <div className={`
-                        px-3 py-1.5 rounded-full backdrop-blur-xl border
-                        flex items-center gap-2 cursor-default select-none text-[10px] font-medium tracking-wider uppercase
-                        ${finalOrbState === 'thinking' ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' :
-                          finalOrbState === 'alert' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
-                          finalOrbState === 'focus' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' :
-                          finalOrbState === 'demo' ? 'bg-teal-500/20 border-teal-500/30 text-teal-400' :
-                          'bg-emerald-500/10 border-emerald-500/20 text-emerald-400/70'}
-                    `}>
-                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                            finalOrbState === 'thinking' ? 'bg-blue-400' :
-                            finalOrbState === 'alert' ? 'bg-red-400' :
-                            finalOrbState === 'focus' ? 'bg-emerald-400' :
-                            'bg-emerald-400/60'
-                        }`} />
-                        <span>Mora: {{
-                            idle: 'Bereit',
-                            thinking: 'Denkt',
-                            watch: 'Beobachtet',
-                            focus: 'Fokus',
-                            alert: 'Alarm',
-                            insight: 'Erkenntnis',
-                            demo: 'Demo'
-                        }[finalOrbState] || 'Bereit'}</span>
-                    </div>
-
-                    {/* CognitionBadge inline */}
-                    <CognitionBadge />
-                </div>
-
-                {/* Mora Orb */}
-                <MoraOrb
-                    state={finalOrbState}
-                    role={role === 'owner' || role === 'admin' ? 'admin' : 'member'}
-                    demoMode={viewMode === 'demo'}
-                    notifications={orbNotifications}
-                    onClick={handleOrbClick}
-                />
-            </div>
-            )}
+            {/* Mora controls are integrated in Dock command center. */}
 
             {/* ================================================================
                 LAYER 4: INTERACTION

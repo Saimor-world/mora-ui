@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { coreGet, corePost } from '@/lib/api/coreClient';
+import {
+    approveMemoryItem,
+    getMemoryMetrics,
+    getMemoryPending,
+    rejectMemoryItem,
+} from '@/lib/api/coreClient';
+import { useMoraStore } from '@/lib/store/moraState';
 import { toast } from 'sonner';
 
 interface ReviewItem {
@@ -22,6 +28,7 @@ interface MemoryMetrics {
 }
 
 export function useMemory() {
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const [pendingItems, setPendingItems] = useState<ReviewItem[]>([]);
     const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,26 +37,26 @@ export function useMemory() {
     // Load pending review items
     const loadPending = useCallback(async () => {
         try {
-            const data = await coreGet('/v1/memory/pending', { isOptional: true });
+            const data = await getMemoryPending(activeCompanyId || undefined);
             if (Array.isArray(data)) {
                 setPendingItems(data);
             }
         } catch (err) {
             console.error('[useMemory] Load pending error:', err);
         }
-    }, []);
+    }, [activeCompanyId]);
 
     // Load metrics
     const loadMetrics = useCallback(async () => {
         try {
-            const data = await coreGet('/v1/memory/metrics', { isOptional: true });
+            const data = await getMemoryMetrics(activeCompanyId || undefined);
             if (data && !data.error) {
                 setMetrics(data);
             }
         } catch (err) {
             console.error('[useMemory] Load metrics error:', err);
         }
-    }, []);
+    }, [activeCompanyId]);
 
     // Refresh all
     const refresh = useCallback(async () => {
@@ -67,7 +74,7 @@ export function useMemory() {
     // Approve item
     const approve = useCallback(async (id: number) => {
         try {
-            await corePost(`/v1/memory/approve/${id}`, {});
+            await approveMemoryItem(id, activeCompanyId || undefined);
             setPendingItems(prev => prev.filter(item => item.id !== id));
             toast.success('Insight gelernt');
             loadMetrics(); // Refresh metrics
@@ -76,12 +83,12 @@ export function useMemory() {
             toast.error('Fehler beim Speichern');
             return false;
         }
-    }, [loadMetrics]);
+    }, [activeCompanyId, loadMetrics]);
 
     // Reject item
     const reject = useCallback(async (id: number) => {
         try {
-            await corePost(`/v1/memory/reject/${id}`, {});
+            await rejectMemoryItem(id, activeCompanyId || undefined);
             setPendingItems(prev => prev.filter(item => item.id !== id));
             toast.info('Insight abgelehnt');
             return true;
@@ -89,7 +96,7 @@ export function useMemory() {
             toast.error('Fehler beim Ablehnen');
             return false;
         }
-    }, []);
+    }, [activeCompanyId]);
 
     // Initial load
     useEffect(() => {

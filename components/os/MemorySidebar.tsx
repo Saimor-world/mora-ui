@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, ChevronLeft, ChevronRight, Search, Check, Clock, AlertCircle, Lightbulb, X } from 'lucide-react';
 import { create } from 'zustand';
 import { useMemory } from '@/lib/hooks/useMemory';
+import { useMoraStore } from '@/lib/store/moraState';
 import { searchMemory, learnInsight } from '@/lib/api/coreClient';
 import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
 
@@ -19,7 +20,7 @@ import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
  * - Quick memory input
  * - Pending review count
  * - Recent memories list
- * - Keyboard shortcut: Cmd+Shift+M
+ * - Keyboard shortcut: Strg+Shift+M
  */
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -67,7 +68,10 @@ export function useMemorySidebarShortcut() {
 // QUICK INPUT COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-const QuickMemoryInputInline: React.FC<{ onSuccess?: () => Promise<void> | void }> = ({ onSuccess }) => {
+const QuickMemoryInputInline: React.FC<{
+    onSuccess?: () => Promise<void> | void;
+    companyId?: string | null;
+}> = ({ onSuccess, companyId }) => {
     const [input, setInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -81,6 +85,7 @@ const QuickMemoryInputInline: React.FC<{ onSuccess?: () => Promise<void> | void 
                 insight: input.trim(),
                 category: 'context',
                 auto_commit: true,
+                company_id: companyId || undefined,
             });
             setSuccess(true);
             setInput('');
@@ -182,6 +187,7 @@ const MemoryItem: React.FC<{ memory: MemorySearchResult }> = ({ memory }) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const MemorySidebar: React.FC = () => {
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const { isOpen, isCollapsed, setOpen, setCollapsed } = useMemorySidebarStore();
     const { pendingCount, pendingItems, refresh, approve, reject } = useMemory();
 
@@ -194,7 +200,7 @@ export const MemorySidebar: React.FC = () => {
     useEffect(() => {
         const loadRecent = async () => {
             try {
-                const results = await searchMemory('', 10);
+                const results = await searchMemory('', 10, activeCompanyId || undefined);
                 if (results) {
                     setRecentMemories(results);
                 }
@@ -205,7 +211,7 @@ export const MemorySidebar: React.FC = () => {
         if (isOpen) {
             loadRecent();
         }
-    }, [isOpen]);
+    }, [activeCompanyId, isOpen]);
 
     // Search memories
     useEffect(() => {
@@ -217,7 +223,7 @@ export const MemorySidebar: React.FC = () => {
         const timer = setTimeout(async () => {
             setIsSearching(true);
             try {
-                const results = await searchMemory(searchQuery, 5);
+                const results = await searchMemory(searchQuery, 5, activeCompanyId || undefined);
                 setSearchResults(results || []);
             } catch (err) {
                 console.error('[MemorySidebar] Search failed:', err);
@@ -227,7 +233,7 @@ export const MemorySidebar: React.FC = () => {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [activeCompanyId, searchQuery]);
 
     // Register shortcut
     useMemorySidebarShortcut();
@@ -318,7 +324,7 @@ export const MemorySidebar: React.FC = () => {
                                     </div>
 
                                     {/* Quick Input */}
-                                    <QuickMemoryInputInline onSuccess={refresh} />
+                                    <QuickMemoryInputInline onSuccess={refresh} companyId={activeCompanyId} />
 
                                     {/* Search */}
                                     <div className="p-3 border-b border-white/5">
@@ -410,7 +416,7 @@ export const MemorySidebar: React.FC = () => {
 
                                     {/* Footer */}
                                     <div className="p-3 border-t border-white/5 text-[9px] text-white/20 text-center">
-                                        Cmd+Shift+M zum Öffnen
+                                        Strg+Shift+M zum Oeffnen
                                     </div>
                                 </div>
                             )}

@@ -5,12 +5,12 @@
  *
  * macOS-style unified notification system for SAIMOR OS.
  * Features:
- * - Slide-in panel from top-right
+ * - Dock-anchored panel above the notification icon
  * - Categorized notifications (alerts, info, success, insights)
  * - Action buttons on notifications
  * - Notification history with clear-all
  * - Auto-dismiss with configurable duration
- * - Keyboard shortcut: Cmd+Shift+N
+ * - Keyboard shortcut: Strg+Shift+N
  *
  * @since 2026-02-07
  */
@@ -345,7 +345,7 @@ export const NotificationCenter: React.FC = () => {
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 
-    // Keyboard shortcut: Cmd+Shift+N
+    // Keyboard shortcut: Strg+Shift+N
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
@@ -384,7 +384,7 @@ export const NotificationCenter: React.FC = () => {
     }, {} as Record<string, Notification[]>);
 
     return (
-        <>
+        <div className="relative">
             {/* Trigger Button (used by Dock or TopBar) */}
             <button
                 onClick={() => setOpen(!isOpen)}
@@ -392,7 +392,7 @@ export const NotificationCenter: React.FC = () => {
                     relative p-2 rounded-lg transition-all
                     ${isOpen ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}
                 `}
-                title="Notifications (Cmd+Shift+N)"
+                title="Notifications (Strg+Shift+N)"
             >
                 {focusModeEnabled ? <BellOff size={18} /> : <Bell size={18} />}
 
@@ -408,22 +408,13 @@ export const NotificationCenter: React.FC = () => {
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setOpen(false)}
-                            className="fixed inset-0 z-[500] bg-black/20 backdrop-blur-sm"
-                        />
-
                         {/* Panel */}
                         <motion.div
                             initial={{ opacity: 0, x: 50, scale: 0.95 }}
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: 50, scale: 0.95 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="fixed top-4 right-4 z-[501] w-[380px] max-h-[calc(100vh-32px)] bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                            className="absolute bottom-full mb-3 right-0 z-[501] w-[380px] max-h-[70vh] bg-black/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                         >
                             {/* Header */}
                             <div className="flex items-center justify-between p-4 border-b border-white/5">
@@ -533,14 +524,14 @@ export const NotificationCenter: React.FC = () => {
 
                             {/* Footer */}
                             <div className="p-3 border-t border-white/5 flex items-center justify-between text-[10px] text-white/30">
-                                <span>Cmd+Shift+N zum Oeffnen</span>
+                                <span>Strg+Shift+N zum Oeffnen</span>
                                 <span>{notifications.length} Benachrichtigungen</span>
                             </div>
                         </motion.div>
                     </>
                 )}
             </AnimatePresence>
-        </>
+        </div>
     );
 };
 
