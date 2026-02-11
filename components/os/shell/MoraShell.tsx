@@ -503,8 +503,8 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
-            {/* Dock (Bottom Navigation) */}
-            <Dock />
+            {/* Dock (Bottom Navigation) - Hidden in Owner/System view when viewing Client Health */}
+            {viewLevel !== 'owner' && <Dock />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight
@@ -534,7 +534,8 @@ export const MoraShell: React.FC = () => {
              * Intelligence Dashboard merged into Mora Nexus Pane
              */}
 
-            {/* Mora Orb + Status Badge (V11 - unified right side) */}
+            {/* Mora Orb + Status Badge (V11 - unified right side) - Hidden in Owner view */}
+            {viewLevel !== 'owner' && (
             <div id="mora-system-hub" className="fixed bottom-16 right-16 z-[500] pointer-events-auto flex items-end gap-4 overflow-visible">
                 {/* Status Badge - links vom Orb */}
                 <div className="flex flex-col items-end gap-2 mb-8">
@@ -577,6 +578,7 @@ export const MoraShell: React.FC = () => {
                     onClick={handleOrbClick}
                 />
             </div>
+            )}
 
             {/* ================================================================
                 LAYER 4: INTERACTION
