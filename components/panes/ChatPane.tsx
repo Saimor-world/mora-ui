@@ -66,12 +66,27 @@ interface ChatPaneProps {
     id?: string;
 }
 
+function normalizeAgentResponse(input: unknown): string {
+    if (typeof input !== 'string') return 'Ich konnte die Antwort nicht verarbeiten.';
+    const trimmed = input.trim();
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return input;
+    try {
+        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+        if (typeof parsed.message === 'string' && parsed.message.trim().length > 0) return parsed.message;
+        if (typeof parsed.thought === 'string' && parsed.thought.trim().length > 0) return parsed.thought;
+    } catch {
+        // keep original text
+    }
+    return input;
+}
+
 // ─── Memory: Save Insight Button ───
 const SaveInsightButton: React.FC<{
     content: string;
+    companyId?: string;
     onSaved: () => void;
     isSaved: boolean;
-}> = ({ content, onSaved, isSaved }) => {
+}> = ({ content, companyId, onSaved, isSaved }) => {
     const [saving, setSaving] = useState(false);
     const [showCategorySelect, setShowCategorySelect] = useState(false);
 
@@ -81,7 +96,8 @@ const SaveInsightButton: React.FC<{
             await learnInsight({
                 insight: content,
                 category,
-                auto_commit: true
+                auto_commit: true,
+                company_id: companyId || undefined
             });
             onSaved();
             setShowCategorySelect(false);
@@ -272,7 +288,7 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const { departments, isStandardMode } = useMoraStore();
+    const { departments, isStandardMode, activeCompanyId } = useMoraStore();
     const pane = getPane(id);
 
     const [messages, setMessages] = useState<Message[]>([
@@ -309,7 +325,7 @@ Was kann ich fuer dich tun?`,
             return;
         }
         try {
-            const results = await searchMemory(query, 3);
+            const results = await searchMemory(query, 3, activeCompanyId || undefined);
             if (results && results.length > 0) {
                 setRelevantMemories(results);
                 setShowMemories(true);
@@ -321,7 +337,7 @@ Was kann ich fuer dich tun?`,
             console.warn('[ChatPane] Memory search failed:', err);
             setRelevantMemories([]);
         }
-    }, []);
+    }, [activeCompanyId]);
 
     // Mark message as saved
     const markMessageAsSaved = useCallback((messageId: string) => {
@@ -337,13 +353,14 @@ Was kann ich fuer dich tun?`,
             await learnInsight({
                 insight: memoryHint.content,
                 category: 'context',
-                auto_commit: true
+                auto_commit: true,
+                company_id: activeCompanyId || undefined
             });
         } catch (err) {
             console.error('[ChatPane] Failed to save memory:', err);
         }
         setMemoryHint({ show: false, content: '' });
-    }, [memoryHint.content]);
+    }, [memoryHint.content, activeCompanyId]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -478,7 +495,7 @@ Was kann ich fuer dich tun?`,
 
                     if (agentResponse?.response) {
                         const { cleanContent, commands } = parseAIResponse(agentResponse.response);
-                        responseContent = cleanContent;
+                        responseContent = normalizeAgentResponse(cleanContent);
 
                         if (commands.length > 0) {
                             console.log('[ChatPane] Executing cursor commands:', commands);
@@ -639,6 +656,7 @@ Versuche:
                                         {msg.role === 'assistant' && msg.id !== 'welcome' && (
                                             <SaveInsightButton
                                                 content={msg.content}
+                                                companyId={activeCompanyId || undefined}
                                                 onSaved={() => markMessageAsSaved(msg.id)}
                                                 isSaved={msg.savedAsInsight || false}
                                             />

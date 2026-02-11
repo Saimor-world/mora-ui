@@ -38,6 +38,8 @@ function copyRequestHeaders(req: NextRequest): Headers {
   headers.delete('host');
   headers.delete('connection');
   headers.delete('content-length');
+  // Undici rejects this header and throws `UND_ERR_NOT_SUPPORTED`.
+  headers.delete('expect');
   return headers;
 }
 
