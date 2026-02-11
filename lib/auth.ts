@@ -112,5 +112,5 @@ export const authOptions: NextAuthOptions = {
     session: {
         strategy: "jwt",
     },
-    secret: "dev_secret_key_change_me_in_prod", // Constant fallback to avoid env sync issues across runtimes
+    secret: process.env.NEXTAUTH_SECRET || "dev_secret_key_change_me_in_prod",
 };
