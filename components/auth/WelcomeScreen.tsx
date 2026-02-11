@@ -230,7 +230,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     setViewMode('workspace');
                 }
 
-                onAuthenticated();
+                // Force a full page navigation to ensure NextAuth session is properly loaded.
+                // router.push() doesn't trigger a full session refresh after signIn().
+                window.location.href = '/home';
+                return;
             }
 
         } catch (error: any) {
