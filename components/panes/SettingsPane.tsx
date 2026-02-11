@@ -46,7 +46,18 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const canViewSystem = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
     // Workspace editing only for Owner/Admin (not demo for safety)
     const canEditWorkspace = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
-    const canEditBranding = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'system_owner';
+
+    // Defense-in-depth: do not allow cross-tenant writes (demo user can READ HQ, but must not WRITE HQ branding).
+    const canWriteActiveCompany =
+        !!activeCompany &&
+        !!user &&
+        !!(activeCompany as any).tenant_id &&
+        !!(user as any).tenant_id &&
+        (activeCompany as any).tenant_id === (user as any).tenant_id;
+
+    const canEditBranding =
+        canWriteActiveCompany &&
+        (user?.role === 'owner' || user?.role === 'admin' || user?.role === 'system_owner');
 
     const tabs = [
         { id: 'profile', label: 'Profil', icon: User },

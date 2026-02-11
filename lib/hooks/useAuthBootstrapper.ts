@@ -4,6 +4,7 @@ import { coreGet } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { useSession, signOut } from 'next-auth/react';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
+import { writeCookie } from '@/lib/auth/cookies';
 
 /**
  * useAuthBootstrapper
@@ -25,16 +26,25 @@ export function useAuthBootstrapper() {
         if (status === 'loading') return;
 
         const bootstrap = async () => {
-            // Purge legacy branding artifacts (e.g. "Förderlogiken") from localStorage
-            const keys = [];
-            for (let i = 0; i < localStorage.length; i += 1) {
-                const key = localStorage.key(i);
-                if (key) keys.push(key);
+            // Purge legacy branding artifacts (e.g. "Foerderlogiken"/encoding artifacts) from localStorage.
+            // Older builds could persist a stale "default workspace" name which causes cross-browser drift.
+            try {
+                const suspect = ["foerderlogiken", "fÃ¶rderlogiken", "förderlogiken"];
+                const keys: string[] = [];
+                for (let i = 0; i < localStorage.length; i += 1) {
+                    const key = localStorage.key(i);
+                    if (key) keys.push(key);
+                }
+                keys.forEach((key) => {
+                    const value = localStorage.getItem(key);
+                    const hay = `${key}::${value ?? ""}`.toLowerCase();
+                    if (suspect.some((s) => hay.includes(s))) {
+                        localStorage.removeItem(key);
+                    }
+                });
+            } catch {
+                // best-effort cleanup
             }
-            keys.forEach((key) => {
-                const value = localStorage.getItem(key);
-                if (value === null) return;
-            });
             const hasNextAuth = status === 'authenticated';
             const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
@@ -47,6 +57,10 @@ export function useAuthBootstrapper() {
                         // Only use localStorage token as a dev fallback. Production should rely on cookies/session.
                         if (isLocalhost) localStorage.setItem('saimor_dev_token', currentToken);
                         localStorage.setItem('last_user_name', session.user?.email?.split('@')[0] || 'User');
+
+                        // Bridge NextAuth -> Core API cookie.
+                        // coreClient/filesClient/realtimeClient rely on mora_auth_token.
+                        writeCookie('mora_auth_token', currentToken, 7);
                     }
 
                     // Check core availability first to avoid auth redirect loops

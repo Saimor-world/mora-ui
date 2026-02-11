@@ -74,12 +74,9 @@ export async function middleware(request: NextRequest) {
         req: request,
         secret: process.env.NEXTAUTH_SECRET || "dev_secret_key_change_me_in_prod",
     });
-
-    // Alternativ: Direkter Cookie-Check für mora_session
-    const moraSession = request.cookies.get("mora_session");
-
-    // Wenn weder next-auth Token noch mora_session vorhanden -> Redirect zu Login
-    if (!token && !moraSession) {
+    // Security: require a NextAuth token for protected routes.
+    // We intentionally do NOT accept legacy "mora_session" storage here.
+    if (!token) {
         const loginUrl = new URL("/", request.url);
 
         // Original URL als Redirect-Parameter speichern

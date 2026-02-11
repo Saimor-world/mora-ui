@@ -1,350 +1,99 @@
 /**
- * Next.js API Proxy Route for SAIMÔR Core
- * Proxies all /api/core/* requests to backend at http://127.0.0.1:8081/v1/*
+ * Next.js API Proxy Route for SAIMOR Core
+ *
+ * Browser-side code may use `getCoreBaseUrl()` which can fall back to `/api/core`.
+ * This route must therefore:
+ * - Forward all HTTP methods to the Core API
+ * - Forward request bodies (incl. multipart/form-data for uploads)
+ * - Attach `Authorization: Bearer <mora_auth_token>` when the browser didn't set it
+ *
+ * Notes:
+ * - In Docker, the Core API is reachable via service DNS: `http://core:8081`
+ * - In local dev, `http://127.0.0.1:8081` is fine
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-// IMPORTANT:
-// - In Docker, the Core API is reachable via service DNS (e.g. http://core:8081), NOT 127.0.0.1.
-// - In local dev (non-docker), 127.0.0.1:8081 is fine.
-const LOCAL_BACKEND_URL =
+const CORE_BASE_URL =
   process.env.SAIMOR_CORE_URL ||
-  process.env.NEXT_PUBLIC_CORE_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8081' : 'http://core:8081');
+
 const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.saimor.world/api';
 
-/**
- * Build backend URL with /v1/ prefix if not present
- */
 function resolveBackendBase(slug: string): string {
+  // Keep an escape hatch for a remote agent endpoint.
   if (slug.startsWith('v1/mora/agent/')) return REMOTE_AGENT_URL;
-  return LOCAL_BACKEND_URL;
+  return CORE_BASE_URL;
 }
 
 function buildBackendUrl(slug: string): string {
-  // If slug already starts with v1/, don't add it again
   const path = slug.startsWith('v1/') ? slug : `v1/${slug}`;
-  const baseUrl = resolveBackendBase(slug);
-  return `${baseUrl}/${path}`;
+  const base = resolveBackendBase(slug).replace(/\/+$/, '');
+  return `${base}/${path}`;
 }
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ slug: string[] }> }
-) {
+function copyRequestHeaders(req: NextRequest): Headers {
+  const headers = new Headers(req.headers);
+  // These are either meaningless or can break upstream fetch.
+  headers.delete('host');
+  headers.delete('connection');
+  headers.delete('content-length');
+  return headers;
+}
+
+function attachAuthFromCookie(req: NextRequest, headers: Headers): void {
+  if (headers.get('authorization')) return;
+  const token = req.cookies.get('mora_auth_token')?.value;
+  if (!token) return;
+  headers.set('authorization', `Bearer ${token}`);
+}
+
+async function proxy(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
   const params = await context.params;
   const slug = params.slug.join('/');
 
-  try {
-    const backendUrl = buildBackendUrl(slug);
+  const backendUrl = buildBackendUrl(slug);
+  const url = new URL(request.url);
+  const qs = url.searchParams.toString();
+  const finalUrl = qs ? `${backendUrl}?${qs}` : backendUrl;
 
-    // Extract query parameters
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const queryString = searchParams.toString();
-    const finalUrl = queryString ? `${backendUrl}?${queryString}` : backendUrl;
+  const headers = copyRequestHeaders(request);
+  attachAuthFromCookie(request, headers);
 
-    console.log(`[API Proxy] GET ${request.url} -> ${finalUrl}`);
+  const method = request.method.toUpperCase();
+  const hasBody = method !== 'GET' && method !== 'HEAD';
+  const body = hasBody ? await request.arrayBuffer() : undefined;
 
-    // Forward the request to backend
-    const response = await fetch(finalUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward authorization if present
-        ...(request.headers.get('authorization') && {
-          'Authorization': request.headers.get('authorization')!
-        })
-      }
-    });
+  const upstream = await fetch(finalUrl, {
+    method,
+    headers,
+    body: body ? body : undefined,
+    redirect: 'manual',
+  });
 
-    // Handle non-JSON responses
-    if (!response.ok) {
-      const errorText = await response.text();
-      try {
-        const errorData = JSON.parse(errorText);
-        return NextResponse.json(errorData, { status: response.status });
-      } catch {
-        return NextResponse.json(
-          { error: 'Backend error', details: errorText },
-          { status: response.status }
-        );
-      }
-    }
+  // Stream response back to the browser.
+  const responseHeaders = new Headers(upstream.headers);
+  // Avoid caching surprises for auth'd JSON.
+  responseHeaders.set('cache-control', 'no-store');
 
-    try {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
-    } catch {
-      // If response is not JSON, return empty object
-      return NextResponse.json({}, { status: response.status });
-    }
-  } catch (error) {
-    console.error('[API Proxy] Error:', error);
-    return NextResponse.json(
-      {
-        error: 'Backend unreachable',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        path: `/api/core/${params.slug.join('/')}`
-      },
-      { status: 503 }
-    );
-  }
+  return new NextResponse(upstream.body, {
+    status: upstream.status,
+    headers: responseHeaders,
+  });
 }
 
-export async function POST(
-  request: NextRequest,
-  context: { params: Promise<{ slug: string[] }> }
-) {
-  const params = await context.params;
-  const slug = params.slug.join('/');
-
-  try {
-    const backendUrl = buildBackendUrl(slug);
-
-    // Extract query parameters
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const queryString = searchParams.toString();
-    const finalUrl = queryString ? `${backendUrl}?${queryString}` : backendUrl;
-
-    console.log(`[API Proxy] POST ${request.url} -> ${finalUrl}`);
-
-    // Get request body
-    let body = null;
-    try {
-      body = await request.json();
-    } catch {
-      // No body or invalid JSON
-    }
-
-    // Forward the request to backend
-    const response = await fetch(finalUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward authorization if present
-        ...(request.headers.get('authorization') && {
-          'Authorization': request.headers.get('authorization')!
-        })
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    // Handle non-JSON responses
-    if (!response.ok) {
-      const errorText = await response.text();
-      try {
-        const errorData = JSON.parse(errorText);
-        return NextResponse.json(errorData, { status: response.status });
-      } catch {
-        return NextResponse.json(
-          { error: 'Backend error', details: errorText },
-          { status: response.status }
-        );
-      }
-    }
-
-    try {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
-    } catch {
-      // If response is not JSON, return empty object
-      return NextResponse.json({}, { status: response.status });
-    }
-  } catch (error) {
-    console.error('[API Proxy] Error:', error);
-    return NextResponse.json(
-      {
-        error: 'Backend unreachable',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        path: `/api/core/${params.slug.join('/')}`
-      },
-      { status: 503 }
-    );
-  }
+export async function GET(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
+  return proxy(request, context);
 }
-
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ slug: string[] }> }
-) {
-  const params = await context.params;
-  const slug = params.slug.join('/');
-
-  try {
-    const backendUrl = buildBackendUrl(slug);
-
-    console.log(`[API Proxy] PUT ${request.url} -> ${backendUrl}`);
-
-    // Get request body
-    let body = null;
-    try {
-      body = await request.json();
-    } catch {
-      // No body or invalid JSON
-    }
-
-    // Forward the request to backend
-    const response = await fetch(backendUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward authorization if present
-        ...(request.headers.get('authorization') && {
-          'Authorization': request.headers.get('authorization')!
-        })
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    // Handle non-JSON responses
-    if (!response.ok) {
-      const errorText = await response.text();
-      try {
-        const errorData = JSON.parse(errorText);
-        return NextResponse.json(errorData, { status: response.status });
-      } catch {
-        return NextResponse.json(
-          { error: 'Backend error', details: errorText },
-          { status: response.status }
-        );
-      }
-    }
-
-    try {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
-    } catch {
-      // If response is not JSON, return empty object
-      return NextResponse.json({}, { status: response.status });
-    }
-  } catch (error) {
-    console.error('[API Proxy] Error:', error);
-    return NextResponse.json(
-      {
-        error: 'Backend unreachable',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        path: `/api/core/${params.slug.join('/')}`
-      },
-      { status: 503 }
-    );
-  }
+export async function POST(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
+  return proxy(request, context);
 }
-
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ slug: string[] }> }
-) {
-  const params = await context.params;
-  const slug = params.slug.join('/');
-
-  try {
-    const backendUrl = buildBackendUrl(slug);
-
-    // Extract query parameters
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const queryString = searchParams.toString();
-    const finalUrl = queryString ? `${backendUrl}?${queryString}` : backendUrl;
-
-    console.log(`[API Proxy] PATCH ${request.url} -> ${finalUrl}`);
-
-    // Get request body
-    let body = null;
-    try {
-      body = await request.json();
-    } catch {
-      // No body or invalid JSON
-    }
-
-    // Forward the request to backend
-    const response = await fetch(finalUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward authorization if present
-        ...(request.headers.get('authorization') && {
-          'Authorization': request.headers.get('authorization')!
-        })
-      },
-      body: body ? JSON.stringify(body) : undefined
-    });
-
-    // Handle non-JSON responses
-    if (!response.ok) {
-      const errorText = await response.text();
-      try {
-        const errorData = JSON.parse(errorText);
-        return NextResponse.json(errorData, { status: response.status });
-      } catch {
-        return NextResponse.json(
-          { error: 'Backend error', details: errorText },
-          { status: response.status }
-        );
-      }
-    }
-
-    try {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
-    } catch {
-      // If response is not JSON, return empty object
-      return NextResponse.json({}, { status: response.status });
-    }
-  } catch (error) {
-    console.error('[API Proxy] Error:', error);
-    return NextResponse.json(
-      {
-        error: 'Backend unreachable',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        path: `/api/core/${params.slug.join('/')}`
-      },
-      { status: 503 }
-    );
-  }
+export async function PUT(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
+  return proxy(request, context);
 }
-
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ slug: string[] }> }
-) {
-  const params = await context.params;
-  const slug = params.slug.join('/');
-
-  try {
-    const backendUrl = buildBackendUrl(slug);
-
-    console.log(`[API Proxy] DELETE ${request.url} -> ${backendUrl}`);
-
-    // Forward the request to backend
-    const response = await fetch(backendUrl, {
-      method: 'DELETE',
-      headers: {
-        // Forward authorization if present
-        ...(request.headers.get('authorization') && {
-          'Authorization': request.headers.get('authorization')!
-        })
-      }
-    });
-
-    // DELETE might not have a response body
-    if (response.status === 204) {
-      return new NextResponse(null, { status: 204 });
-    }
-
-    try {
-      const data = await response.json();
-      return NextResponse.json(data, { status: response.status });
-    } catch {
-      return NextResponse.json({ success: true }, { status: response.status });
-    }
-  } catch (error) {
-    console.error('[API Proxy] Error:', error);
-    return NextResponse.json(
-      { error: 'Backend unreachable', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 503 }
-    );
-  }
+export async function PATCH(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
+  return proxy(request, context);
+}
+export async function DELETE(request: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
+  return proxy(request, context);
 }

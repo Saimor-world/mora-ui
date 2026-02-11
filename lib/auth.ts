@@ -22,8 +22,10 @@ export const authOptions: NextAuthOptions = {
                 const isDemoAlias = normalizedUsername === 'demo' || normalizedUsername === 'demo@saimor.io';
                 const primaryPassword = credentials.password;
 
+                // Prefer the docker-internal Core URL in production to avoid relying on public routing for auth.
                 const coreBaseUrl =
                     process.env.SAIMOR_CORE_URL ||
+                    (process.env.NODE_ENV === 'production' ? 'http://core:8081' : 'http://127.0.0.1:8081') ||
                     process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ||
                     "http://127.0.0.1:8081";
                 const loginUrl = new URL("/v1/auth/login", coreBaseUrl).toString();
