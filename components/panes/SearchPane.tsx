@@ -262,7 +262,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             ) : (
                                 <div className="text-center py-8 text-white/40">
                                     <Search size={32} className="mx-auto mb-2 opacity-50" />
-                                    <p>No results for "{query}"</p>
+                                    <p>No results for &quot;{query}&quot;</p>
                                 </div>
                             )}
                         </AnimatePresence>

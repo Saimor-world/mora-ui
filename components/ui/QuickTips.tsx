@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Lightbulb, Sparkles, Command, Folder, MessageCircle, Search } from 'lucide-react';
+import { X, Lightbulb, Sparkles, Command, Folder, MessageCircle } from 'lucide-react';
 
 /**
  * V12: Quick Tips
@@ -11,38 +11,51 @@ import { X, Lightbulb, Sparkles, Command, Folder, MessageCircle, Search } from '
  * Dismissible and remembers state in localStorage.
  */
 
-const tips = [
-    {
-        icon: Command,
-        title: "Spotlight Suche",
-        description: "Drücke ⌘K um schnell zu suchen",
-        color: "emerald"
-    },
-    {
-        icon: Sparkles,
-        title: "Mora fragen",
-        description: "Klicke auf den Orb rechts unten für KI-Hilfe",
-        color: "cyan"
-    },
-    {
-        icon: Folder,
-        title: "Finder öffnen",
-        description: "⌘F öffnet den Datei-Explorer",
-        color: "blue"
-    },
-    {
-        icon: MessageCircle,
-        title: "Chat starten",
-        description: "⌘C startet einen Chat mit Mora",
-        color: "violet"
-    }
-];
+type QuickTip = {
+    icon: React.ElementType;
+    title: string;
+    description: string;
+    color: string;
+};
 
 export const QuickTips: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentTip, setCurrentTip] = useState(0);
+    const [modifier, setModifier] = useState('Strg');
+
+    const tips: QuickTip[] = [
+        {
+            icon: Command,
+            title: 'Spotlight Suche',
+            description: `Druecke ${modifier}+K um schnell zu suchen`,
+            color: 'emerald'
+        },
+        {
+            icon: Sparkles,
+            title: 'Mora fragen',
+            description: 'Klicke auf den Orb rechts unten fuer KI-Hilfe',
+            color: 'cyan'
+        },
+        {
+            icon: Folder,
+            title: 'Finder oeffnen',
+            description: `${modifier}+F oeffnet den Datei-Explorer`,
+            color: 'blue'
+        },
+        {
+            icon: MessageCircle,
+            title: 'Chat starten',
+            description: `${modifier}+J startet den Chat mit Mora`,
+            color: 'violet'
+        }
+    ];
 
     useEffect(() => {
+        if (typeof navigator !== 'undefined') {
+            const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+            setModifier(isMac ? 'Cmd' : 'Strg');
+        }
+
         // Check if user has seen tips before
         const hasSeenTips = localStorage.getItem('saimor_tips_seen');
         if (!hasSeenTips) {
@@ -73,10 +86,10 @@ export const QuickTips: React.FC = () => {
     const Icon = tip.icon;
 
     const colorClasses: Record<string, string> = {
-        emerald: "bg-emerald-500/20 border-emerald-500/30 text-emerald-400",
-        cyan: "bg-cyan-500/20 border-cyan-500/30 text-cyan-400",
-        blue: "bg-blue-500/20 border-blue-500/30 text-blue-400",
-        violet: "bg-violet-500/20 border-violet-500/30 text-violet-400"
+        emerald: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
+        cyan: 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400',
+        blue: 'bg-blue-500/20 border-blue-500/30 text-blue-400',
+        violet: 'bg-violet-500/20 border-violet-500/30 text-violet-400'
     };
 
     return (

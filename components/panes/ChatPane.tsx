@@ -68,16 +68,34 @@ interface ChatPaneProps {
 
 function normalizeAgentResponse(input: unknown): string {
     if (typeof input !== 'string') return 'Ich konnte die Antwort nicht verarbeiten.';
+
+    const decodeEscapedUnicode = (text: string) =>
+        text.replace(/\\u([0-9a-fA-F]{4})/g, (_m, hex) => String.fromCharCode(parseInt(hex, 16)));
+
     const trimmed = input.trim();
-    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return input;
-    try {
-        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-        if (typeof parsed.message === 'string' && parsed.message.trim().length > 0) return parsed.message;
-        if (typeof parsed.thought === 'string' && parsed.thought.trim().length > 0) return parsed.thought;
-    } catch {
-        // keep original text
+    const candidates = [trimmed];
+
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fencedMatch?.[1]) candidates.push(fencedMatch[1].trim());
+
+    const objectMatch = trimmed.match(/\{[\s\S]*\}/);
+    if (objectMatch?.[0]) candidates.push(objectMatch[0].trim());
+
+    for (const candidate of candidates) {
+        if (!candidate.startsWith('{') || !candidate.endsWith('}')) continue;
+        try {
+            const parsed = JSON.parse(candidate) as Record<string, unknown>;
+            if (typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+                return decodeEscapedUnicode(parsed.message);
+            }
+            if (typeof parsed.thought === 'string' && parsed.thought.trim().length > 0) {
+                return decodeEscapedUnicode(parsed.thought);
+            }
+        } catch {
+            // try next candidate
+        }
     }
-    return input;
+    return decodeEscapedUnicode(input);
 }
 
 // ─── Memory: Save Insight Button ───

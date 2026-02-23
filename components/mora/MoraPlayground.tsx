@@ -169,6 +169,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     const cursorAgent = useMoraStore((s) => s.cursorAgent);
     const departments = useMoraStore((s) => s.departments);
     const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const { hilEnabled, setHilEnabled } = useHilToggle();
     const { openPane, getPane, minimizePane } = usePaneStore();
     const [showMemory, setShowMemory] = useState(false);
@@ -415,7 +416,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                             </button>
                             {showMemory && (
                                 <div className="px-4 pb-3">
-                                    <MoraMemory compact showStats={false} />
+                                    <MoraMemory compact showStats={false} companyId={activeCompanyId} />
                                 </div>
                             )}
                         </div>

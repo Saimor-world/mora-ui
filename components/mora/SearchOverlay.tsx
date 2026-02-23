@@ -213,7 +213,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
                                 </div>
                             ) : serverResults.length === 0 ? (
                                 <div className="p-8 text-center text-white/40 text-sm">
-                                    Keine Ergebnisse für "{query}"
+                                    Keine Ergebnisse für &quot;{query}&quot;
                                 </div>
                             ) : (
                                 <div className="space-y-1">

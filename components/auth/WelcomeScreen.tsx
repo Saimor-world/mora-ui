@@ -628,7 +628,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Quick Demo</div>
-                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">"Simple Coffee Group" erkunden</div>
+                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">&quot;Simple Coffee Group&quot; erkunden</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>

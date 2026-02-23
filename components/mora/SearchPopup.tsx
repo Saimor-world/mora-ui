@@ -545,7 +545,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 isStandardMode ? 'text-gray-400' : 'text-white/40'
                             }`}>
                                 <Search size={32} className="mx-auto mb-3 opacity-50" />
-                                <p>Keine Ergebnisse für "{searchQuery}"</p>
+                                <p>Keine Ergebnisse für &quot;{searchQuery}&quot;</p>
                                 <button
                                     onClick={() => {
                                         onQueryChange(`@mora ${searchQuery}`);

@@ -37,6 +37,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const viewLevel = useMoraStore((s) => s.viewLevel);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
 
     // Tab state - respects data.activeSection if provided
     const [activeSection, setActiveSection] = useState<HubSection>(
@@ -71,6 +72,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                             showSearch={true}
                             showQueue={true}
                             showStats={!isCompact}
+                            companyId={activeCompanyId}
                         />
                     </div>
                 );
@@ -82,7 +84,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
                                 <span className="text-xs font-medium text-white/80">Mora Statistics</span>
                             </div>
-                            <MemoryStats compact={isCompact} />
+                            <MemoryStats compact={isCompact} companyId={activeCompanyId} />
                             <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                                 <div className="text-[9px] uppercase tracking-[0.3em] text-white/30 mb-3">
                                     Cognitive Metrics

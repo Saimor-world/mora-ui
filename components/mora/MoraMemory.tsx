@@ -34,7 +34,7 @@ interface MemoryEntry {
 }
 
 interface ReviewItem {
-    id: number;
+    id: string;
     insight: string;
     category: string;
     risk_level: string;
@@ -76,9 +76,10 @@ const riskColors: Record<string, string> = {
 // ═══════════════════════════════════════════════════════════════════════════
 interface MemorySearchProps {
     compact?: boolean;
+    companyId?: string | null;
 }
 
-export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false }) => {
+export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, companyId }) => {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<MemoryEntry[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -91,7 +92,8 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false }) =
 
         setIsSearching(true);
         try {
-            const data = await coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=10`, { isOptional: true });
+            const companyQuery = companyId ? `&company_id=${encodeURIComponent(companyId)}` : "";
+            const data = await coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=10${companyQuery}`, { isOptional: true });
             if (data && Array.isArray(data)) {
                 setResults(data);
             } else {
@@ -103,7 +105,7 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false }) =
         } finally {
             setIsSearching(false);
         }
-    }, [query]);
+    }, [query, companyId]);
 
     // Debounced search
     useEffect(() => {
@@ -174,17 +176,19 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false }) =
 // ═══════════════════════════════════════════════════════════════════════════
 interface ReviewQueueProps {
     compact?: boolean;
+    companyId?: string | null;
     onUpdate?: () => void;
 }
 
-export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, onUpdate }) => {
+export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, companyId, onUpdate }) => {
     const [items, setItems] = useState<ReviewItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [processingId, setProcessingId] = useState<number | null>(null);
+    const [processingId, setProcessingId] = useState<string | null>(null);
 
     const loadQueue = useCallback(async () => {
         try {
-            const data = await coreGet("/v1/memory/pending", { isOptional: true });
+            const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
+            const data = await coreGet(`/v1/memory/pending${companyQuery}`, { isOptional: true });
             if (data && Array.isArray(data)) {
                 setItems(data);
             }
@@ -193,16 +197,17 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, onUpd
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [companyId]);
 
     useEffect(() => {
         loadQueue();
     }, [loadQueue]);
 
-    const handleApprove = async (id: number) => {
+    const handleApprove = async (id: string) => {
         setProcessingId(id);
         try {
-            await corePost(`/v1/memory/approve/${id}`, {});
+            const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
+            await corePost(`/v1/memory/approve/${id}${companyQuery}`, {});
             toast.success("Insight gelernt und gespeichert");
             setItems((prev) => prev.filter((item) => item.id !== id));
             onUpdate?.();
@@ -213,10 +218,11 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, onUpd
         }
     };
 
-    const handleReject = async (id: number) => {
+    const handleReject = async (id: string) => {
         setProcessingId(id);
         try {
-            await corePost(`/v1/memory/reject/${id}`, {});
+            const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
+            await corePost(`/v1/memory/reject/${id}${companyQuery}`, {});
             toast.info("Insight abgelehnt");
             setItems((prev) => prev.filter((item) => item.id !== id));
         } catch (err) {
@@ -311,16 +317,18 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, onUpd
 // ═══════════════════════════════════════════════════════════════════════════
 interface MemoryStatsProps {
     compact?: boolean;
+    companyId?: string | null;
 }
 
-export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false }) => {
+export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, companyId }) => {
     const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const loadMetrics = async () => {
             try {
-                const data = await coreGet("/v1/memory/metrics", { isOptional: true });
+                const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
+                const data = await coreGet(`/v1/memory/metrics${companyQuery}`, { isOptional: true });
                 if (data && !data.error) {
                     setMetrics(data);
                 }
@@ -334,7 +342,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false }) => 
         loadMetrics();
         const interval = setInterval(loadMetrics, 60000); // Refresh every minute
         return () => clearInterval(interval);
-    }, []);
+    }, [companyId]);
 
     if (isLoading || !metrics) {
         return null;
@@ -384,6 +392,7 @@ interface MoraMemoryProps {
     showSearch?: boolean;
     showQueue?: boolean;
     showStats?: boolean;
+    companyId?: string | null;
 }
 
 export const MoraMemory: React.FC<MoraMemoryProps> = ({
@@ -391,6 +400,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     showSearch = true,
     showQueue = true,
     showStats = true,
+    companyId = null,
 }) => {
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
@@ -407,7 +417,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Brain className="h-4 w-4 text-violet-400" />
-                    <span className="text-xs font-medium text-white/80">Mora's Gedächtnis</span>
+                    <span className="text-xs font-medium text-white/80">Mora&#39;s Gedächtnis</span>
                 </div>
                 <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5">
                     {tabs.map((tab) => {
@@ -431,11 +441,11 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
             </div>
 
             {/* Content */}
-            {activeTab === "search" && showSearch && <MemorySearch compact={compact} />}
+            {activeTab === "search" && showSearch && <MemorySearch compact={compact} companyId={companyId} />}
             {activeTab === "queue" && showQueue && (
-                <ReviewQueue compact={compact} onUpdate={() => setRefreshKey((k) => k + 1)} />
+                <ReviewQueue compact={compact} companyId={companyId} onUpdate={() => setRefreshKey((k) => k + 1)} />
             )}
-            {activeTab === "stats" && showStats && <MemoryStats key={refreshKey} compact={compact} />}
+            {activeTab === "stats" && showStats && <MemoryStats key={refreshKey} compact={compact} companyId={companyId} />}
         </div>
     );
 };

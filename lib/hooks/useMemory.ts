@@ -11,7 +11,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { toast } from 'sonner';
 
 interface ReviewItem {
-    id: number;
+    id: string;
     insight: string;
     category: string;
     risk_level: string;
@@ -72,7 +72,7 @@ export function useMemory() {
     }, [loadPending, loadMetrics]);
 
     // Approve item
-    const approve = useCallback(async (id: number) => {
+    const approve = useCallback(async (id: string) => {
         try {
             await approveMemoryItem(id, activeCompanyId || undefined);
             setPendingItems(prev => prev.filter(item => item.id !== id));
@@ -86,7 +86,7 @@ export function useMemory() {
     }, [activeCompanyId, loadMetrics]);
 
     // Reject item
-    const reject = useCallback(async (id: number) => {
+    const reject = useCallback(async (id: string) => {
         try {
             await rejectMemoryItem(id, activeCompanyId || undefined);
             setPendingItems(prev => prev.filter(item => item.id !== id));

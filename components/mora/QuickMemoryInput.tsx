@@ -186,7 +186,7 @@ export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
                             {/* Footer Hint */}
                             {!showSuccess && (
                                 <div className="px-4 py-2 border-t border-white/5 flex items-center justify-between text-[9px] text-white/20">
-                                    <span>Beispiel: "Ich bevorzuge kurze Antworten"</span>
+                                    <span>Beispiel: &quot;Ich bevorzuge kurze Antworten&quot;</span>
                                     <span>Enter ↵ zum Speichern</span>
                                 </div>
                             )}
