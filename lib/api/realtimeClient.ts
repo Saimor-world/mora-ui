@@ -70,7 +70,7 @@ class RealtimeClient {
                 wsUrl = `${protocol}//${apiHost}/v1/realtime/subscribe?token=${token}&event_types=all`;
 
                 // LOCAL DEV FALLBACK: Next.js doesn't proxy WebSockets by default. Connect to 8081 directly.
-                if (host.includes('localhost:3000')) {
+                if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
                     wsUrl = `ws://localhost:8081/v1/realtime/subscribe?token=${token}&event_types=all`;
                 }
             } else {

@@ -8,7 +8,10 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.CORE_API_URL || "http://127.0.0.1:8081";
+const BACKEND_URL =
+    process.env.GATEWAY_URL ||
+    process.env.SAIMOR_GATEWAY_URL ||
+    (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : "http://gateway:8000");
 
 export async function GET(
     request: NextRequest,

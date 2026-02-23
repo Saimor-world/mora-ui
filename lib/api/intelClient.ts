@@ -2,6 +2,7 @@
  * Intel Client - Mora Intelligence Scan API
  * Sprint Tag 3-5: Trigger Intel-Report generation
  */
+import { getCoreBaseUrl } from '@/lib/api/coreClient';
 
 export interface IntelScanRequest {
     folder_id: string;
@@ -20,7 +21,7 @@ export interface IntelScanResponse {
  * Creates an intel_report node with Mindloop synthesis data
  */
 export async function triggerMoraScan(folderId: string): Promise<IntelScanResponse> {
-    const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || 'http://localhost:8081';
+    const CORE_API_URL = getCoreBaseUrl();
 
     // Use devToken for authentication
     const { getDevToken } = await import('@/lib/api/devToken');

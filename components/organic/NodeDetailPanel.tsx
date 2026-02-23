@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { NodeViewer } from '@/components/content/NodeViewer';
 import { useMoraStore } from '@/lib/store/moraState';
+import { getCoreBaseUrl } from '@/lib/api/coreClient';
 import { FileText, Link as LinkIcon, File, Calendar, Tag, Download } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 
@@ -47,7 +48,7 @@ export const NodeDetailPanel: React.FC = () => {
 
 
     const nodeTitle = activeNode ? ((activeNode as any).title || (activeNode as any).name || 'Untitled') : 'Untitled';
-    const coreBase = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || 'http://localhost:8081';
+    const coreBase = getCoreBaseUrl();
     const filePath = (activeNode as any)?.metadata?.file_path as string | undefined;
     const fileDownloadUrl = useMemo(() => {
         if (!filePath) return null;
