@@ -41,7 +41,12 @@ class RealtimeClient {
     public connect() {
         // Guard: already open, connecting, or in-flight
         const wsState = this.ws?.readyState;
-        if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING || this.isConnecting) return;
+        const trace = new Error().stack?.split('\n').slice(2, 5).join(' | ') || '';
+        console.log('[Realtime] connect() called', { wsState, isConnecting: this.isConnecting, trace });
+        if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING || this.isConnecting) {
+            console.log('[Realtime] connect() BLOCKED by guard');
+            return;
+        }
 
         const token = this.getToken();
         if (!token) {
@@ -140,6 +145,8 @@ class RealtimeClient {
     }
 
     public disconnect() {
+        const trace = new Error().stack?.split('\n').slice(2, 5).join(' | ') || '';
+        console.log('[Realtime] disconnect() called', { trace });
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
         if (this.ws) {
             this.ws.onclose = null; // prevent onclose from scheduling a reconnect
@@ -167,3 +174,8 @@ class RealtimeClient {
 }
 
 export const realtime = new RealtimeClient();
+
+// DEBUG: expose singleton for browser inspection
+if (typeof window !== 'undefined') {
+    (window as any).__mora_realtime = realtime;
+}
