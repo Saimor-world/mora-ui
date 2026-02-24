@@ -333,10 +333,10 @@ export const MoraShell: React.FC = () => {
             useMoraStore.getState().navigateToCore();
         }, []),
         onOpenMoraHub: useCallback(() => {
-            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } });
+            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 } });
         }, [openPane]),
         onOpenMemory: useCallback(() => {
-            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Memory', size: { width: 680, height: 560 }, data: { activeSection: 'memory' } });
+            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Memory', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } });
         }, [openPane]),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();

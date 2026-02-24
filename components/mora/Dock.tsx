@@ -77,8 +77,8 @@ export const Dock = () => {
             case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: defaultSize }); break;
             case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } }); break;
-            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 620, height: 640 } }); break;
-            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 620, height: 640 }, data: { activeSection: 'memory' } }); break;
+            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 } }); break;
+            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } }); break;
             case 'notes': openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } }); break;
             case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 520, height: 620 } }); break;
             default: break;
