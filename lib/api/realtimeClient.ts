@@ -14,7 +14,13 @@ type EventHandler = (data: any) => void;
 const globalWin = (): Window & { __mora_ws_lock?: boolean } | null =>
     typeof window !== 'undefined' ? (window as any) : null;
 const wsLocked = () => globalWin()?.__mora_ws_lock === true;
-const setWsLock = (v: boolean) => { const w = globalWin(); if (w) w.__mora_ws_lock = v; };
+const setWsLock = (v: boolean) => {
+    const w = globalWin();
+    if (w) {
+        console.log(`[Realtime] lock → ${v}`);
+        w.__mora_ws_lock = v;
+    }
+};
 
 class RealtimeClient {
     private ws: WebSocket | null = null;
@@ -51,7 +57,9 @@ class RealtimeClient {
     public connect() {
         // Cross-evaluation lock: prevents duplicate connections when Next.js App Router
         // evaluates this module multiple times (once per hydration island).
-        if (wsLocked()) return;
+        const locked = wsLocked();
+        console.log(`[Realtime] connect() locked=${locked}`);
+        if (locked) return;
         const wsState = this.ws?.readyState;
         if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING || this.isConnecting) return;
         setWsLock(true); // claim the lock before any async work
@@ -95,6 +103,7 @@ class RealtimeClient {
         }
 
         try {
+            console.log('[Realtime] new WebSocket()');
             this.ws = new WebSocket(wsUrl);
 
             this.ws.onopen = () => {
