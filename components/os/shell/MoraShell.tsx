@@ -161,19 +161,19 @@ const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Core API starten: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">cd saimor-core/core && python run.py</code>
+                                API-Endpunkt: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">{process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || 'api.saimor.world'}</code>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Port prüfen: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">localhost:8081</code>
+                                Netzwerkverbindung prüfen und Seite neu laden
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Logs prüfen: <code className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-emerald-400/70 font-mono text-[10px]">saimor-core/core/logs/</code>
+                                Hält das Problem an, bitte Support kontaktieren
                             </div>
                         </div>
                     </div>

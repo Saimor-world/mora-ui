@@ -63,10 +63,16 @@ export function useAuthBootstrapper() {
                         writeCookie('mora_auth_token', currentToken, 7);
                     }
 
-                    // Check core availability first to avoid auth redirect loops
-                    const health = await coreGet('/v1/health', { skipAuth: true, isOptional: true });
+                    // Check core availability first to avoid auth redirect loops.
+                    // Retry once to tolerate transient startup delays (e.g. cold container).
+                    let health = await coreGet('/v1/health', { skipAuth: true, isOptional: true });
                     if (!health) {
-                        setAuthError('Core unavailable. Start the core API on port 8081.');
+                        await new Promise(r => setTimeout(r, 2000));
+                        health = await coreGet('/v1/health', { skipAuth: true, isOptional: true });
+                    }
+                    if (!health) {
+                        const apiUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || 'the API server';
+                        setAuthError(`Core unavailable. Check connection to ${apiUrl}.`);
                         return;
                     }
 
