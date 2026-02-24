@@ -28,8 +28,8 @@ export const usePresence = () => {
     const [peers, setPeers] = useState<PeerUser[]>([]);
 
     useEffect(() => {
-        realtime.connect();
-
+        // Connection lifecycle is managed by useRealtime (MoraShell).
+        // This hook only subscribes to events on the shared singleton.
         const handleSnapshot = (data: PresencePayload) => {
             if (Array.isArray(data?.peers)) {
                 setPeers(data.peers);

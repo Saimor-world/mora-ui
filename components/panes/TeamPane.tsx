@@ -115,17 +115,8 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         last_seen: new Date(peer.lastHeartbeat).toISOString()
     });
 
-    // Connect Realtime
-    useEffect(() => {
-        realtime.connect();
-        // Don't disconnect on unmount to keep other panes live? 
-        // Ideally Singletons handle connection sharing.
-        // But for cleanup hygiene:
-        return () => {
-            // realTimeClient handles ref counting? No, it's global.
-            // keeping it open is fine.
-        };
-    }, []);
+    // Realtime connection is managed by useRealtime (MoraShell).
+    // TeamPane only subscribes to events below — no connect() here.
 
     // Fetch Chat History & Subscribe
     useEffect(() => {

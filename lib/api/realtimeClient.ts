@@ -39,6 +39,7 @@ class RealtimeClient {
     }
 
     public connect() {
+        console.log('[Realtime] connect() called', { wsState: this.ws?.readyState, isConnecting: this.isConnecting });
         if (this.ws?.readyState === WebSocket.OPEN || this.isConnecting) return;
 
         const token = this.getToken();
