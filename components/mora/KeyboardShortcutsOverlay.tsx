@@ -3,7 +3,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Keyboard } from 'lucide-react';
-import { KEYBOARD_SHORTCUTS } from '@/lib/hooks/shell/useKeyboardShortcuts';
+import { getKeyboardShortcuts } from '@/lib/hooks/shell/useKeyboardShortcuts';
+import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 
 interface KeyboardShortcutsOverlayProps {
     isOpen: boolean;
@@ -14,6 +15,9 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
     isOpen,
     onClose,
 }) => {
+    const mod = usePlatformModifier();
+    const shortcuts = getKeyboardShortcuts(mod);
+
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isOpen) {
@@ -61,7 +65,7 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                             </div>
 
                             <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-                                {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
+                                {shortcuts.map((shortcut, index) => (
                                     <div
                                         key={index}
                                         className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors group"

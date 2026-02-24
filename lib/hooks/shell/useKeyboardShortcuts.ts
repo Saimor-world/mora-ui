@@ -18,20 +18,31 @@
  */
 
 import { useEffect } from 'react';
+import { getPlatformModifier } from '@/lib/hooks/usePlatformModifier';
 
-export const KEYBOARD_SHORTCUTS = [
-    { keys: ['Strg', 'K'], label: 'Spotlight', description: 'Command Palette oeffnen' },
-    { keys: ['Strg', 'J'], label: 'Chat', description: 'Mora Chat oeffnen' },
-    { keys: ['Strg', 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
-    { keys: ['Strg', 'N'], label: 'Notes', description: 'Notizen oeffnen' },
-    { keys: ['Strg', ','], label: 'Settings', description: 'Einstellungen oeffnen' },
-    { keys: ['Strg', 'T'], label: 'Terminal', description: 'Terminal oeffnen' },
-    { keys: ['Strg', 'H'], label: 'Home', description: 'Zur Uebersicht' },
-    { keys: ['Strg', '.'], label: 'Mora Nexus', description: 'AI Hub oeffnen' },
-    { keys: ['Strg', 'Shift', 'M'], label: 'Memory', description: 'Memory Panel oeffnen' },
-    { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
-    { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
-] as const;
+/**
+ * Returns keyboard shortcuts with platform-aware modifier key label.
+ * @param mod - 'Strg' (Windows/Linux) or 'Cmd' (Mac). Defaults to auto-detect.
+ */
+export function getKeyboardShortcuts(mod?: string) {
+    const m = mod || getPlatformModifier();
+    return [
+        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette oeffnen' },
+        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat oeffnen' },
+        { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
+        { keys: [m, 'N'], label: 'Notes', description: 'Notizen oeffnen' },
+        { keys: [m, ','], label: 'Settings', description: 'Einstellungen oeffnen' },
+        { keys: [m, 'T'], label: 'Terminal', description: 'Terminal oeffnen' },
+        { keys: [m, 'H'], label: 'Home', description: 'Zur Uebersicht' },
+        { keys: [m, '.'], label: 'Mora Nexus', description: 'AI Hub oeffnen' },
+        { keys: [m, 'Shift', 'M'], label: 'Memory', description: 'Memory Panel oeffnen' },
+        { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
+        { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
+    ];
+}
+
+/** @deprecated Use getKeyboardShortcuts() for platform-aware labels */
+export const KEYBOARD_SHORTCUTS = getKeyboardShortcuts();
 
 interface UseKeyboardShortcutsOptions {
     onToggleSpotlight: () => void;

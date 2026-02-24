@@ -9,6 +9,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SearchPopup } from './SearchPopup';
 import { useMemory } from '@/lib/hooks/useMemory';
+import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter, useNotificationStore } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 import { PlasmaOrb } from './PlasmaOrb';
@@ -43,6 +44,7 @@ export const Dock = () => {
     const { panes, restorePane, openPane } = usePaneStore();
     const minimizedPanes = panes.filter(p => p.minimized);
     const { pendingCount } = useMemory();
+    const mod = usePlatformModifier();
     const unreadNotifications = useNotificationStore((s) => s.notifications.filter(n => !n.read).length);
 
     // Register keyboard shortcut for Focus Mode
@@ -87,17 +89,17 @@ export const Dock = () => {
 
     // Core apps - German labels
     const dockItems: DockItem[] = [
-        { icon: Home, label: 'Start', shortcut: 'Strg+H', action: 'home', description: 'Zurueck zur Uebersicht' },
-        { icon: Sparkles, label: 'Mora', shortcut: 'Strg+.', action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
-        { icon: MessageCircle, label: 'Chat', shortcut: 'Strg+J', action: 'chat', description: 'Mit Mora sprechen' },
-        { icon: Brain, label: 'Gedaechtnis', shortcut: 'Strg+Shift+M', action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
-        { icon: Folder, label: 'Dateien', shortcut: 'Strg+F', action: 'finder', description: 'Dokumente & Ordner' },
-        { icon: Users, label: 'Team', shortcut: 'Strg+U', action: 'team', description: 'Teammitglieder' },
-        { icon: FileText, label: 'Notizen', shortcut: 'Strg+N', action: 'notes', description: 'Schnelle Notizen' },
+        { icon: Home, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zurueck zur Uebersicht' },
+        { icon: Sparkles, label: 'Mora', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
+        { icon: MessageCircle, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
+        { icon: Brain, label: 'Gedaechtnis', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
+        { icon: Folder, label: 'Dateien', shortcut: `${mod}+F`, action: 'finder', description: 'Dokumente & Ordner' },
+        { icon: Users, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
+        { icon: FileText, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
         { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Bald verfügbar', disabled: true },
         { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfügbar', disabled: true },
-        { icon: Terminal, label: 'Terminal', shortcut: 'Strg+T', action: 'terminal', description: 'Entwickler-Konsole' },
-        { icon: Settings, label: 'System', shortcut: 'Strg+,', action: 'settings', description: 'Einstellungen' }
+        { icon: Terminal, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
+        { icon: Settings, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
     ];
 
     const minimizedIconMap: Record<string, React.ComponentType<any>> = {
@@ -137,11 +139,10 @@ export const Dock = () => {
                                     key={pane.id}
                                     onClick={() => restorePane(pane.id)}
                                     title={pane.title}
-                                    className={`w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg ${
-                                        isStandardMode
+                                    className={`w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg ${isStandardMode
                                             ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
                                             : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
-                                    }`}
+                                        }`}
                                     whileHover={{ y: -4, scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -161,11 +162,10 @@ export const Dock = () => {
                 transition={{ type: 'spring', damping: 25, stiffness: 100 }}
             >
                 <div
-                    className={`relative flex items-center gap-4 px-5 py-4 ${
-                        isStandardMode
+                    className={`relative flex items-center gap-4 px-5 py-4 ${isStandardMode
                             ? 'rounded-xl bg-white border-gray-200'
                             : 'rounded-3xl backdrop-blur-2xl'
-                    }`}
+                        }`}
                     style={isStandardMode ? {
                         background: '#FFFFFF',
                         border: '1px solid #E1E1E1',
@@ -194,11 +194,10 @@ export const Dock = () => {
                     {/* LEFT: AVATAR - Premium Design */}
                     <div className={`flex items-center gap-4 pr-4 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
                         <motion.div
-                            className={`relative w-14 h-14 flex items-center justify-center cursor-pointer overflow-hidden group ${
-                                isStandardMode
+                            className={`relative w-14 h-14 flex items-center justify-center cursor-pointer overflow-hidden group ${isStandardMode
                                     ? 'rounded-lg bg-[#0078D4] border-2 border-[#0078D4]'
                                     : 'rounded-2xl bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border-2 border-emerald-500/40'
-                            }`}
+                                }`}
                             whileHover={{ scale: 1.08, rotate: 2 }}
                             whileTap={{ scale: 0.95 }}
                             title={user?.name || user?.email || 'Benutzer'}
@@ -206,29 +205,25 @@ export const Dock = () => {
                                 boxShadow: '0 0 25px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)'
                             } : {}}
                         >
-                            <span className={`text-lg font-bold transition-colors ${
-                                isStandardMode ? 'text-white' : 'text-emerald-200 group-hover:text-white'
-                            }`}>
+                            <span className={`text-lg font-bold transition-colors ${isStandardMode ? 'text-white' : 'text-emerald-200 group-hover:text-white'
+                                }`}>
                                 {userInitials}
                             </span>
                             {/* Online indicator - pulsing */}
                             <motion.div
-                                className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 ${
-                                    isStandardMode ? 'bg-green-500 border-white' : 'bg-emerald-400 border-black/80'
-                                }`}
+                                className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 ${isStandardMode ? 'bg-green-500 border-white' : 'bg-emerald-400 border-black/80'
+                                    }`}
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                             />
                         </motion.div>
                         <div className="hidden sm:flex flex-col">
-                            <span className={`text-sm font-semibold truncate max-w-[120px] ${
-                                isStandardMode ? 'text-gray-800' : 'text-white/90'
-                            }`}>
+                            <span className={`text-sm font-semibold truncate max-w-[120px] ${isStandardMode ? 'text-gray-800' : 'text-white/90'
+                                }`}>
                                 {user?.name || 'Benutzer'}
                             </span>
-                            <span className={`text-xs uppercase tracking-wider font-medium ${
-                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'
-                            }`}>
+                            <span className={`text-xs uppercase tracking-wider font-medium ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'
+                                }`}>
                                 {viewMode === 'demo' ? 'Demo Mode' : user?.role === 'system_owner' ? 'System Owner' : user?.role || 'Mitglied'}
                             </span>
                         </div>
@@ -262,41 +257,37 @@ export const Dock = () => {
                                     inputRef.current?.blur();
                                 }
                             }}
-                            placeholder="Suche im System... Strg+K"
-                            className={`w-full pl-11 pr-4 py-3 text-sm transition-all duration-200 focus:outline-none ${
-                                isStandardMode
+                            placeholder={`Suche im System... ${mod}+K`}
+                            className={`w-full pl-11 pr-4 py-3 text-sm transition-all duration-200 focus:outline-none ${isStandardMode
                                     ? 'bg-gray-100 border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
                                     : 'bg-white/[0.04] border border-white/[0.1] rounded-2xl text-white/90 placeholder:text-white/30 focus:border-emerald-500/50 focus:bg-white/[0.08] focus:shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                            }`}
+                                }`}
                         />
-                        <kbd className={`absolute right-3 px-2 py-1 rounded-lg text-[10px] font-mono ${
-                            isStandardMode ? 'bg-gray-200 text-gray-500' : 'bg-white/10 text-white/40'
-                        }`}>
-                            Strg+K
+                        <kbd className={`absolute right-3 px-2 py-1 rounded-lg text-[10px] font-mono ${isStandardMode ? 'bg-gray-200 text-gray-500' : 'bg-white/10 text-white/40'
+                            }`}>
+                            {mod}+K
                         </kbd>
                     </div>
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${
-                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                    }`} />
+                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                        }`} />
 
                     {/* CENTER: DOCK APPS - Larger Icons */}
                     <div className="flex items-center gap-1.5">
                         {dockItems.filter(item => !item.hidden).map((item, i) => (
                             <motion.button
                                 key={i}
-                                className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${
-                                    item.disabled
+                                className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${item.disabled
                                         ? isStandardMode
                                             ? 'text-gray-300 cursor-not-allowed'
                                             : 'text-white/20 cursor-not-allowed'
                                         : item.action === 'memory'
-                                        ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
-                                        : isStandardMode
-                                            ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
-                                            : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
-                                }`}
+                                            ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
+                                            : isStandardMode
+                                                ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
+                                                : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
+                                    }`}
                                 whileHover={item.disabled ? {} : { y: -8, scale: 1.2 }}
                                 whileTap={item.disabled ? {} : { scale: 0.9 }}
                                 onClick={() => !item.disabled && handleDockClick(item.action)}
@@ -316,46 +307,41 @@ export const Dock = () => {
 
                                 {/* TOOLTIP - positioned higher to ensure visibility */}
                                 <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[200]">
-                                    <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${
-                                        isStandardMode
+                                    <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
                                             ? 'bg-gray-800 border border-gray-700'
                                             : 'bg-black/95 backdrop-blur-xl border border-white/10'
-                                    }`}>
+                                        }`}>
                                         <div className="text-white text-xs font-medium">{item.label}</div>
                                         <div className="text-white/50 text-[10px] mt-0.5">{item.description}</div>
                                         {item.shortcut && (
-                                            <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${
-                                                isStandardMode
+                                            <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${isStandardMode
                                                     ? 'bg-gray-700 text-blue-300'
                                                     : 'bg-white/10 text-emerald-400'
-                                            }`}>
+                                                }`}>
                                                 {item.shortcut}
                                             </kbd>
                                         )}
                                     </div>
-                                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${
-                                        isStandardMode
+                                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${isStandardMode
                                             ? 'bg-gray-800 border-r border-b border-gray-700'
                                             : 'bg-black/95 border-r border-b border-white/10'
-                                    }`} />
+                                        }`} />
                                 </div>
 
                                 {/* ACTIVE DOT */}
                                 {!item.disabled && (
-                                    <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${
-                                        isStandardMode
+                                    <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${isStandardMode
                                             ? 'bg-transparent group-hover:bg-[#0078D4]'
                                             : 'bg-emerald-400/0 group-hover:bg-emerald-400'
-                                    }`} />
+                                        }`} />
                                 )}
                             </motion.button>
                         ))}
                     </div>
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${
-                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                    }`} />
+                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                        }`} />
 
                     {/* RIGHT SECTION: Focus Mode + Notifications + Company */}
                     <div className="flex items-center gap-2">
@@ -367,36 +353,31 @@ export const Dock = () => {
                     </div>
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${
-                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                    }`} />
+                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                        }`} />
 
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
                     <div className="relative">
                         <motion.button
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all group ${
-                                isStandardMode
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all group ${isStandardMode
                                     ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
                                     : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
-                            }`}
+                                }`}
                             onClick={() => setShowCompanySwitcher(!showCompanySwitcher)}
                             whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.97 }}
                         >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                isStandardMode ? 'bg-[#0078D4]/10' : 'bg-emerald-500/20'
-                            }`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isStandardMode ? 'bg-[#0078D4]/10' : 'bg-emerald-500/20'
+                                }`}>
                                 <Building2 size={16} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
                             </div>
                             <div className="hidden sm:flex flex-col items-start">
-                                <span className={`text-xs font-medium max-w-[100px] truncate ${
-                                    isStandardMode ? 'text-gray-800' : 'text-white/80'
-                                }`}>
+                                <span className={`text-xs font-medium max-w-[100px] truncate ${isStandardMode ? 'text-gray-800' : 'text-white/80'
+                                    }`}>
                                     {activeCompany?.name || 'Workspace'}
                                 </span>
-                                <span className={`text-[10px] ${
-                                    isStandardMode ? 'text-gray-500' : 'text-white/40'
-                                }`}>
+                                <span className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'
+                                    }`}>
                                     {companies.length > 1 ? `${companies.length} Workspaces` : 'Workspace'}
                                 </span>
                             </div>
@@ -428,11 +409,10 @@ export const Dock = () => {
                                                     setActiveCompany(company.id);
                                                     setShowCompanySwitcher(false);
                                                 }}
-                                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${
-                                                    company.id === activeCompanyId
+                                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${company.id === activeCompanyId
                                                         ? 'bg-emerald-500/20 text-emerald-300'
                                                         : 'text-white/70 hover:bg-white/5 hover:text-white'
-                                                }`}
+                                                    }`}
                                             >
                                                 <Building2 size={14} className={company.id === activeCompanyId ? 'text-emerald-400' : 'text-white/40'} />
                                                 <div className="flex-1 min-w-0">
@@ -453,9 +433,8 @@ export const Dock = () => {
                     </div>
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${
-                        isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                    }`} />
+                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                        }`} />
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
                     <motion.div
@@ -468,11 +447,10 @@ export const Dock = () => {
                             onClick={() => handleDockClick('mora-hub')}
                             whileHover={{ scale: 1.08 }}
                             whileTap={{ scale: 0.95 }}
-                            className={`relative w-16 h-16 rounded-full overflow-visible transition-all group ${
-                                isStandardMode
+                            className={`relative w-16 h-16 rounded-full overflow-visible transition-all group ${isStandardMode
                                     ? 'bg-white'
                                     : 'bg-transparent'
-                            }`}
+                                }`}
                             title="Mora Nexus oeffnen"
                             style={!isStandardMode ? {
                                 filter: 'drop-shadow(0 0 30px rgba(16, 185, 129, 0.4))'
@@ -490,9 +468,8 @@ export const Dock = () => {
                                 />
                             )}
                             {/* Inner border */}
-                            <div className={`absolute inset-0 rounded-full border-2 ${
-                                isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/50'
-                            }`} />
+                            <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/50'
+                                }`} />
                             <PlasmaOrb
                                 color={viewMode === 'demo' ? '#0D9488' : '#10B981'}
                                 state={orbState as any}
@@ -500,31 +477,28 @@ export const Dock = () => {
                             />
                         </motion.button>
                         <div className="hidden lg:flex flex-col items-start leading-tight">
-                            <span className={`text-sm font-bold tracking-wide ${
-                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
-                            }`}>
+                            <span className={`text-sm font-bold tracking-wide ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
+                                }`}>
                                 MORA
                             </span>
-                            <span className={`text-xs ${
-                                isStandardMode ? 'text-gray-500' : 'text-white/60'
-                            }`}>
+                            <span className={`text-xs ${isStandardMode ? 'text-gray-500' : 'text-white/60'
+                                }`}>
                                 {viewMode === 'demo' ? 'Demo aktiv' : 'Bereit'}
                             </span>
                             {/* Status indicator */}
                             <div className="flex items-center gap-1.5 mt-1">
                                 <motion.div
-                                    className={`w-2 h-2 rounded-full ${
-                                        orbState === 'thinking' ? 'bg-blue-400' :
-                                        orbState === 'alert' ? 'bg-red-400' :
-                                        'bg-emerald-400'
-                                    }`}
+                                    className={`w-2 h-2 rounded-full ${orbState === 'thinking' ? 'bg-blue-400' :
+                                            orbState === 'alert' ? 'bg-red-400' :
+                                                'bg-emerald-400'
+                                        }`}
                                     animate={{ scale: [1, 1.3, 1] }}
                                     transition={{ duration: 1.5, repeat: Infinity }}
                                 />
                                 <span className="text-[10px] text-white/40">
                                     {orbState === 'thinking' ? 'Denkt...' :
-                                     orbState === 'alert' ? 'Warnung' :
-                                     'Online'}
+                                        orbState === 'alert' ? 'Warnung' :
+                                            'Online'}
                                 </span>
                             </div>
                         </div>
@@ -538,7 +512,7 @@ export const Dock = () => {
                 onClose={() => setSearchPopupOpen(false)}
                 searchQuery={chatInput}
                 onQueryChange={setChatInput}
-                onMoraChat={() => {}}
+                onMoraChat={() => { }}
             />
         </div>
     );

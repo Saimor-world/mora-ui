@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { useMoraStore } from "@/lib/store/moraState";
 import { useUser } from "@/lib/hooks/useUser";
 import { useIntelFeed } from "@/lib/mora/useIntelFeed";
+import { usePlatformModifier } from "@/lib/hooks/usePlatformModifier";
 import { Sparkles, Activity, AlertTriangle, Command } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -14,6 +15,7 @@ interface Props {
 
 export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpen }) => {
     const { role } = useUser();
+    const mod = usePlatformModifier();
     const orbState = useMoraStore((s) => s.orbState);
     const viewMode = useMoraStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
@@ -81,7 +83,7 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
                             <Sparkles size={18} />
                         </button>
                         <div className="h-4 w-[1px] bg-white/10" />
-                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-500/40 font-mono" title="Shortcut: Cmd/Ctrl + K">
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-500/40 font-mono" title={`Shortcut: ${mod} + K`}>
                             <Command size={10} />
                             <span>K</span>
                         </div>

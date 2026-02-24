@@ -35,6 +35,7 @@ import {
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useNotificationStore } from './NotificationCenter';
+import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -228,6 +229,7 @@ const formatTime = (seconds: number): string => {
 
 export const FocusModeWidget: React.FC<{ onExpand?: () => void }> = ({ onExpand }) => {
     const { isActive, isPaused, currentSession, timeRemaining, startSession, pauseSession, resumeSession, endSession } = useFocusModeStore();
+    const mod = usePlatformModifier();
     useTimer();
 
     if (!isActive) {
@@ -235,7 +237,7 @@ export const FocusModeWidget: React.FC<{ onExpand?: () => void }> = ({ onExpand 
             <button
                 onClick={() => startSession('focus')}
                 className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
-                title="Focus Mode starten (Cmd+Shift+F)"
+                title={`Focus Mode starten (${mod}+Shift+F)`}
             >
                 <Target size={18} />
             </button>
