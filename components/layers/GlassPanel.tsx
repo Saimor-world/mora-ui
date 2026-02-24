@@ -322,7 +322,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     width: panelWidth,
                     height: panelHeight,
                     maxWidth: 'calc(100vw - 32px)',
-                    maxHeight: 'calc(100vh - 64px)',
+                    // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
+                    maxHeight: 'calc(100vh - 160px)',
                     // Standard mode: solid (CSS handles light/dark), Transparent: glass effect
                     // Note: .standard-mode CSS class overrides to white/light colors
                     backgroundColor: isStandardMode

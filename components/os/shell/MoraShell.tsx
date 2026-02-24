@@ -315,7 +315,7 @@ export const MoraShell: React.FC = () => {
     useKeyboardShortcuts({
         onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), []),
         onOpenChat: useCallback(() => {
-            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 520, height: 700 } });
+            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 520, height: 620 } });
         }, [openPane]),
         onOpenFinder: useCallback(() => {
             openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1200, height: 780 } });
