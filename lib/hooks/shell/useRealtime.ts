@@ -4,9 +4,12 @@
  * Connects to the realtime WebSocket and dispatches
  * ghost presence events to the window for GhostOverlay.
  *
- * NOTE: Static import (not dynamic) ensures the same singleton instance
- * is used as in usePresence / TeamPane — preventing duplicate connections
- * from separate module evaluations.
+ * DESIGN: The WebSocket connection is a singleton page-level resource.
+ * connect() is idempotent — safe to call multiple times, only opens once.
+ * We do NOT disconnect on effect cleanup because:
+ *   - The effect can run/re-run during React render cycles
+ *   - Disconnecting on cleanup would tear down the connection every render
+ * Explicit disconnect happens only in the logout handler (MoraShell).
  */
 
 import { useEffect } from 'react';
@@ -21,11 +24,13 @@ export function useRealtime(enabled: boolean) {
         };
 
         realtime.on('ghost_presence', handleGhostPresence);
-        realtime.connect();
+        realtime.connect(); // idempotent — safe if already connected
 
         return () => {
+            // Only unregister the event handler.
+            // Do NOT call disconnect() here — the connection is shared and
+            // must persist across React render cycles.
             realtime.off('ghost_presence', handleGhostPresence);
-            realtime.disconnect();
         };
     }, [enabled]);
 }

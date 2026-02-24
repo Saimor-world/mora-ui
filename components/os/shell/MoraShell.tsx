@@ -39,6 +39,7 @@ import {
     useRealtime,
     useKeyboardShortcuts
 } from '@/lib/hooks/shell';
+import { realtime } from '@/lib/api/realtimeClient';
 
 // Layout Components
 import { ViewPort } from '@/components/layout/ViewPort';
@@ -354,6 +355,7 @@ export const MoraShell: React.FC = () => {
         setIsSleeping(false);
         localStorage.removeItem('saimor_dev_token');
         localStorage.removeItem('mora_session');
+        realtime.disconnect(); // close WS before clearing session
         logout();
         resetUserState();
         resetStore();
