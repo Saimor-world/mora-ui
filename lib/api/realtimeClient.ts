@@ -4,11 +4,17 @@ const AUTH_COOKIE = "mora_auth_token";
 
 type EventHandler = (data: any) => void;
 
-// Module-level counter — increments per evaluation of THIS module
-// If > 1, the module is being bundled into multiple chunks / evaluated multiple times
-let _moduleEvalCount = 0;
-_moduleEvalCount++;
-console.log(`[Realtime] Module evaluated (#${_moduleEvalCount})`);
+// ROOT CAUSE FIX: Next.js App Router evaluates this module multiple times when the
+// root layout is "use client" — each hydration island creates a fresh module scope,
+// giving each instance its own isConnecting flag and WebSocket reference.
+//
+// Solution: use window as a truly global (cross-evaluation) connection lock.
+// window is SHARED across all module evaluations on the same page, so only
+// ONE connection can ever be established at a time.
+const globalWin = (): Window & { __mora_ws_lock?: boolean } | null =>
+    typeof window !== 'undefined' ? (window as any) : null;
+const wsLocked = () => globalWin()?.__mora_ws_lock === true;
+const setWsLock = (v: boolean) => { const w = globalWin(); if (w) w.__mora_ws_lock = v; };
 
 class RealtimeClient {
     private ws: WebSocket | null = null;
@@ -16,12 +22,8 @@ class RealtimeClient {
     private reconnectTimer: NodeJS.Timeout | null = null;
     private isConnecting: boolean = false;
     private connectionId: string | null = null;
-    private _instanceId: number;
 
-    constructor() {
-        this._instanceId = _moduleEvalCount; // which eval created this instance
-        console.log(`[Realtime] Singleton created (instance from eval #${this._instanceId})`);
-    }
+    constructor() {}
 
     private getToken(): string | null {
         if (typeof document === 'undefined') return null;
@@ -47,14 +49,12 @@ class RealtimeClient {
     }
 
     public connect() {
-        // Guard: already open, connecting, or in-flight
+        // Cross-evaluation lock: prevents duplicate connections when Next.js App Router
+        // evaluates this module multiple times (once per hydration island).
+        if (wsLocked()) return;
         const wsState = this.ws?.readyState;
-        const trace = new Error().stack?.split('\n').slice(2, 5).join(' | ') || '';
-        console.log(`[Realtime] connect() inst#${this._instanceId}`, { wsState, isConnecting: this.isConnecting, trace });
-        if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING || this.isConnecting) {
-            console.log('[Realtime] connect() BLOCKED by guard');
-            return;
-        }
+        if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING || this.isConnecting) return;
+        setWsLock(true); // claim the lock before any async work
 
         const token = this.getToken();
         if (!token) {
@@ -100,6 +100,7 @@ class RealtimeClient {
             this.ws.onopen = () => {
                 console.log('[Realtime] Connected');
                 this.isConnecting = false;
+                // Lock stays set (wsLocked=true) while OPEN — prevents other instances connecting
                 if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
                 this.emit('connected', { timestamp: Date.now() });
             };
@@ -128,6 +129,7 @@ class RealtimeClient {
                 console.log('[Realtime] Disconnected');
                 this.isConnecting = false;
                 this.ws = null;
+                setWsLock(false); // release lock so reconnect can proceed
                 this.emit('disconnected', {});
                 this.scheduleReconnect();
             };
@@ -153,8 +155,6 @@ class RealtimeClient {
     }
 
     public disconnect() {
-        const trace = new Error().stack?.split('\n').slice(2, 5).join(' | ') || '';
-        console.log('[Realtime] disconnect() called', { trace });
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
         if (this.ws) {
             this.ws.onclose = null; // prevent onclose from scheduling a reconnect
@@ -163,6 +163,7 @@ class RealtimeClient {
             this.ws = null;
         }
         this.isConnecting = false;
+        setWsLock(false); // release global lock so future connect() calls can proceed
     }
 
     public on(event: string, handler: EventHandler) {
@@ -182,8 +183,3 @@ class RealtimeClient {
 }
 
 export const realtime = new RealtimeClient();
-
-// DEBUG: expose singleton for browser inspection
-if (typeof window !== 'undefined') {
-    (window as any).__mora_realtime = realtime;
-}
