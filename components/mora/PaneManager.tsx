@@ -84,9 +84,10 @@ export const PaneManager: React.FC = () => {
     const panes = usePaneStore((state) => state.panes);
 
     return (
-        <div className="absolute inset-0 pointer-events-none z-[100]">
-            {/* Panes layer needs pointer-events-none so clicks pass through to Universe 
-                 BUT individual panes must re-enable pointer-events */}
+        <div className="absolute inset-0 pointer-events-none">
+            {/* GlassPanel uses createPortal → renders directly into document.body.
+                This wrapper only holds the AnimatePresence; z-index is managed
+                per-pane via the store (starting at 500, above all UI chrome). */}
             <AnimatePresence>
                 {panes.map((pane) => (
                     !pane.minimized && (

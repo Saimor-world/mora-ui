@@ -139,8 +139,13 @@ class RealtimeClient {
 
     public disconnect() {
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-        this.ws?.close();
-        this.ws = null;
+        if (this.ws) {
+            this.ws.onclose = null; // prevent onclose from scheduling a reconnect
+            this.ws.onerror = null;
+            this.ws.close();
+            this.ws = null;
+        }
+        this.isConnecting = false;
     }
 
     public on(event: string, handler: EventHandler) {

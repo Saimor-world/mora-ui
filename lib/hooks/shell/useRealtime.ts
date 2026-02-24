@@ -11,11 +11,14 @@ export function useRealtime(enabled: boolean) {
     useEffect(() => {
         if (!enabled) return;
 
+        let isMounted = true;
         let cleanup: (() => void) | undefined;
 
         const initRealtime = async () => {
             try {
                 const { realtime } = await import('@/lib/api/realtimeClient');
+
+                if (!isMounted) return; // effect was cleaned up before import resolved
 
                 const handleGhostPresence = (data: any) => {
                     const event = new CustomEvent('mora:ghost-update', {
@@ -29,6 +32,7 @@ export function useRealtime(enabled: boolean) {
 
                 cleanup = () => {
                     realtime.off('ghost_presence', handleGhostPresence);
+                    realtime.disconnect();
                 };
             } catch (error) {
                 console.warn('[useRealtime] Failed to initialize:', error);
@@ -38,6 +42,7 @@ export function useRealtime(enabled: boolean) {
         initRealtime();
 
         return () => {
+            isMounted = false;
             cleanup?.();
         };
     }, [enabled]);

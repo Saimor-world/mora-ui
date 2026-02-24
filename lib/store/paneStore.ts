@@ -92,7 +92,7 @@ interface PaneState {
 
 export const usePaneStore = create<PaneState>((set, get) => ({
     panes: [],
-    nextZIndex: 100,
+    nextZIndex: 500, // Start above all UI chrome (Dock=100, Navbar=100, etc.)
     activePaneId: null,
 
     reset: () => set({ panes: [], activePaneId: null }),

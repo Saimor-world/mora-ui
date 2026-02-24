@@ -6,7 +6,7 @@ const shouldRewriteCore = typeof coreApiUrl === 'string' && /^https?:\/\//.test(
 const coreRewriteTarget = shouldRewriteCore ? coreApiUrl.replace(/\/$/, '') : null;
 
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   // GUARDRAIL: Only port 3000 for development. No other ports allowed.
   allowedDevOrigins: [
     "http://localhost:3000",
