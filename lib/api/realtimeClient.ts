@@ -4,15 +4,23 @@ const AUTH_COOKIE = "mora_auth_token";
 
 type EventHandler = (data: any) => void;
 
+// Module-level counter — increments per evaluation of THIS module
+// If > 1, the module is being bundled into multiple chunks / evaluated multiple times
+let _moduleEvalCount = 0;
+_moduleEvalCount++;
+console.log(`[Realtime] Module evaluated (#${_moduleEvalCount})`);
+
 class RealtimeClient {
     private ws: WebSocket | null = null;
     private listeners: Map<string, Set<EventHandler>> = new Map();
     private reconnectTimer: NodeJS.Timeout | null = null;
     private isConnecting: boolean = false;
     private connectionId: string | null = null;
+    private _instanceId: number;
 
     constructor() {
-        // Auto-connect handled by components
+        this._instanceId = _moduleEvalCount; // which eval created this instance
+        console.log(`[Realtime] Singleton created (instance from eval #${this._instanceId})`);
     }
 
     private getToken(): string | null {
@@ -42,7 +50,7 @@ class RealtimeClient {
         // Guard: already open, connecting, or in-flight
         const wsState = this.ws?.readyState;
         const trace = new Error().stack?.split('\n').slice(2, 5).join(' | ') || '';
-        console.log('[Realtime] connect() called', { wsState, isConnecting: this.isConnecting, trace });
+        console.log(`[Realtime] connect() inst#${this._instanceId}`, { wsState, isConnecting: this.isConnecting, trace });
         if (wsState === WebSocket.OPEN || wsState === WebSocket.CONNECTING || this.isConnecting) {
             console.log('[Realtime] connect() BLOCKED by guard');
             return;
