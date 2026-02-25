@@ -86,8 +86,6 @@ export const QuickTips: React.FC = () => {
         }
     };
 
-    if (!isVisible) return null;
-
     const tip = tips[currentTip];
     const Icon = tip.icon;
 
@@ -100,6 +98,7 @@ export const QuickTips: React.FC = () => {
 
     return (
         <AnimatePresence>
+            {isVisible && (
             <motion.div
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -169,6 +168,7 @@ export const QuickTips: React.FC = () => {
                     </div>
                 </div>
             </motion.div>
+            )}
         </AnimatePresence>
     );
 };
