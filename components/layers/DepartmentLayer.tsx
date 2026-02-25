@@ -63,7 +63,10 @@ export const DepartmentLayer: React.FC = () => {
         walk(root);
         return docs;
     }, [activeDepartmentId, treeData]);
-    const spaces = activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [];
+    const spaces = useMemo(() => {
+        if (!activeDepartmentId) return [];
+        return spacesByDepartment[activeDepartmentId] || [];
+    }, [activeDepartmentId, spacesByDepartment]);
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -94,7 +97,7 @@ export const DepartmentLayer: React.FC = () => {
         return () => clearHoverTimeout();
     }, [clearHoverTimeout]);
 
-    // 🌙 PHASE 6.1: ANIMATED ORBITAL STATE
+    // PHASE 6.1: Animated orbital state
     const [orbitTime, setOrbitTime] = useState(0);
     const animationRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
@@ -208,6 +211,19 @@ export const DepartmentLayer: React.FC = () => {
                     `
                 }}
             />
+
+            {/* Department name watermark, consistent with deeper layers */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
+                <motion.h1
+                    className="font-thin text-white/[0.07] whitespace-nowrap select-none font-sans"
+                    style={deptTitleStyle}
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                >
+                    {deptTitle.toUpperCase()}
+                </motion.h1>
+            </div>
 
             {/* Back Button */}
             <motion.button
