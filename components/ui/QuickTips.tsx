@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lightbulb, Sparkles, Command, Folder, MessageCircle } from 'lucide-react';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 
 /**
  * V12: Quick Tips
@@ -21,7 +23,8 @@ type QuickTip = {
 export const QuickTips: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentTip, setCurrentTip] = useState(0);
-    const [modifier, setModifier] = useState('Strg');
+    const modifier = usePlatformModifier();
+    const visiblePanes = usePaneStore((s) => s.panes.filter(p => !p.minimized));
 
     const tips: QuickTip[] = [
         {
@@ -51,11 +54,6 @@ export const QuickTips: React.FC = () => {
     ];
 
     useEffect(() => {
-        if (typeof navigator !== 'undefined') {
-            const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-            setModifier(isMac ? 'Cmd' : 'Strg');
-        }
-
         // Check if user has seen tips before
         const hasSeenTips = localStorage.getItem('saimor_tips_seen');
         if (!hasSeenTips) {
@@ -66,6 +64,14 @@ export const QuickTips: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, []);
+
+    // Auto-dismiss when any pane is opened
+    useEffect(() => {
+        if (visiblePanes.length > 0 && isVisible) {
+            setIsVisible(false);
+            localStorage.setItem('saimor_tips_seen', 'true');
+        }
+    }, [visiblePanes.length, isVisible]);
 
     const handleDismiss = () => {
         setIsVisible(false);
@@ -98,7 +104,7 @@ export const QuickTips: React.FC = () => {
                 initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                className="fixed bottom-32 left-8 z-[200]"
+                className="fixed bottom-32 left-8 z-[50]"
             >
                 <div className="relative bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-5 w-72 shadow-2xl">
                     {/* Glow */}
@@ -147,9 +153,8 @@ export const QuickTips: React.FC = () => {
                             {tips.map((_, i) => (
                                 <div
                                     key={i}
-                                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                                        i === currentTip ? 'bg-emerald-400' : 'bg-white/20'
-                                    }`}
+                                    className={`w-1.5 h-1.5 rounded-full transition-colors ${i === currentTip ? 'bg-emerald-400' : 'bg-white/20'
+                                        }`}
                                 />
                             ))}
                         </div>
