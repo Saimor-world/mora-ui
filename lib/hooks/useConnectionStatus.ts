@@ -7,7 +7,7 @@
  * - Retry mechanism
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { coreGet } from '@/lib/api/coreClient';
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'offline' | 'error';
@@ -68,6 +68,12 @@ export function useConnectionStatus() {
         checkHealth();
     }, [checkHealth]);
 
+    // Keep a ref so the focus handler can read the latest status without
+    // being listed as an effect dependency (which would restart the interval
+    // and register a new focus listener on every status transition).
+    const statusRef = useRef(state.status);
+    statusRef.current = state.status;
+
     useEffect(() => {
         // Initial check
         checkHealth();
@@ -77,7 +83,7 @@ export function useConnectionStatus() {
 
         // Also check on window focus (user returns to tab)
         const handleFocus = () => {
-            if (state.status === 'offline' || state.status === 'error') {
+            if (statusRef.current === 'offline' || statusRef.current === 'error') {
                 checkHealth();
             }
         };
@@ -87,7 +93,7 @@ export function useConnectionStatus() {
             clearInterval(interval);
             window.removeEventListener('focus', handleFocus);
         };
-    }, [checkHealth, state.status]);
+    }, [checkHealth]); // statusRef is a stable ref — no need to re-register on status change
 
     return {
         ...state,

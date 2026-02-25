@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 /**
@@ -36,7 +36,13 @@ export interface WindowSnappingResult {
 }
 
 export function useWindowSnapping(config: Partial<SnapConfig> = {}): WindowSnappingResult {
-    const cfg = { ...DEFAULT_CONFIG, ...config };
+    // Memoize cfg so detectSnapZone (and the whole return value) stays stable
+    // across renders when config values haven't actually changed.
+    const cfg = useMemo(
+        () => ({ ...DEFAULT_CONFIG, ...config }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [config.threshold, config.cornerSize],
+    );
     const { updatePanePosition, updatePaneSize } = usePaneStore();
     const [snapZone, setSnapZone] = useState<SnapZone>(null);
 

@@ -260,6 +260,10 @@ export const MoraShell: React.FC = () => {
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
+    // Destructure stable callbacks so the effect below doesn't fire on every render.
+    // (The whole windowSnapping object is a new reference each render even though the
+    //  underlying functions are stable after the cfg useMemo fix.)
+    const { detectSnapZone, applySnap } = windowSnapping;
 
     // Global snap detection during pane dragging
     useEffect(() => {
@@ -267,7 +271,7 @@ export const MoraShell: React.FC = () => {
 
         const handlePaneDragStart = () => {
             mouseMoveHandler = (e: MouseEvent) => {
-                const zone = windowSnapping.detectSnapZone(e.clientX, e.clientY);
+                const zone = detectSnapZone(e.clientX, e.clientY);
                 setActiveSnapZone(zone);
             };
             window.addEventListener('mousemove', mouseMoveHandler);
@@ -281,7 +285,7 @@ export const MoraShell: React.FC = () => {
             const customEvent = e as CustomEvent;
             const { paneId } = customEvent.detail || {};
             if (paneId && activeSnapZone) {
-                windowSnapping.applySnap(paneId, activeSnapZone);
+                applySnap(paneId, activeSnapZone);
             }
             setActiveSnapZone(null);
         };
@@ -296,7 +300,7 @@ export const MoraShell: React.FC = () => {
                 window.removeEventListener('mousemove', mouseMoveHandler);
             }
         };
-    }, [windowSnapping, activeSnapZone]);
+    }, [detectSnapZone, applySnap, activeSnapZone]);
 
     // EFFECT: Clear panes when ViewMode changes
     useEffect(() => {

@@ -24,7 +24,9 @@ export const QuickTips: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentTip, setCurrentTip] = useState(0);
     const modifier = usePlatformModifier();
-    const visiblePanes = usePaneStore((s) => s.panes.filter(p => !p.minimized));
+    // Return count (primitive) directly so Zustand doesn't trigger on every render
+    // due to Array reference inequality from .filter().
+    const visiblePanesCount = usePaneStore((s) => s.panes.filter(p => !p.minimized).length);
 
     const tips: QuickTip[] = [
         {
@@ -67,11 +69,11 @@ export const QuickTips: React.FC = () => {
 
     // Auto-dismiss when any pane is opened
     useEffect(() => {
-        if (visiblePanes.length > 0 && isVisible) {
+        if (visiblePanesCount > 0 && isVisible) {
             setIsVisible(false);
             localStorage.setItem('saimor_tips_seen', 'true');
         }
-    }, [visiblePanes.length, isVisible]);
+    }, [visiblePanesCount, isVisible]);
 
     const handleDismiss = () => {
         setIsVisible(false);
