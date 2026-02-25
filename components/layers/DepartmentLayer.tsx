@@ -132,16 +132,16 @@ export const DepartmentLayer: React.FC = () => {
         const baseRadius = 220;
 
         return spaces.map((space, i) => {
-            // Each moon has its own orbital speed (slower = farther out)
-            const orbitSpeed = 0.15 - (i * 0.015); // Outer moons move slower
+            // Slow planetary drift — inner slightly faster, outer slower
+            const orbitSpeed = 0.028 - (i * 0.003); // was 0.15; now ~10x slower
             const startAngle = (i / count) * Math.PI * 2; // Even distribution
 
             // Current angle based on time
             const currentAngle = startAngle + (orbitTime * orbitSpeed);
 
             // Slightly elliptical orbit for organic feel
-            const radiusX = baseRadius + (i * 35);
-            const radiusY = baseRadius + (i * 25);
+            const radiusX = baseRadius + (i * 38);
+            const radiusY = baseRadius + (i * 27);
 
             return {
                 space,
@@ -200,14 +200,15 @@ export const DepartmentLayer: React.FC = () => {
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Subtle Galaxy Overlay */}
+            {/* Galaxy Overlay — rich nebula matching home universe language */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
                     background: `
-                        radial-gradient(900px 420px at 60% 62%, rgba(30, 120, 180, 0.28) 0%, transparent 65%),
-                        radial-gradient(700px 320px at 20% 30%, rgba(34, 197, 94, 0.18) 0%, transparent 60%),
-                        radial-gradient(600px 280px at 78% 38%, rgba(99, 102, 241, 0.18) 0%, transparent 55%)
+                        radial-gradient(1100px 500px at 52% 55%, rgba(16,185,129,0.20) 0%, transparent 65%),
+                        radial-gradient(800px 380px at 18% 28%, rgba(6,182,212,0.14) 0%, transparent 60%),
+                        radial-gradient(700px 320px at 82% 35%, rgba(99,102,241,0.13) 0%, transparent 55%),
+                        radial-gradient(500px 240px at 65% 80%, rgba(16,185,129,0.09) 0%, transparent 55%)
                     `
                 }}
             />
@@ -236,7 +237,7 @@ export const DepartmentLayer: React.FC = () => {
                 <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
                     <ArrowLeft size={20} />
                 </div>
-                <span className="text-sm tracking-widest font-light">BACK TO ORBIT</span>
+                <span className="text-sm tracking-widest font-light">UNIVERSE</span>
             </motion.button>
 
             {/* Mora Hub is opened via the Orb, not rendered here */}
@@ -274,25 +275,37 @@ export const DepartmentLayer: React.FC = () => {
 
                         {/* Center Point (Department Core) - Enhanced Glow */}
                         <motion.div
-                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.9, ease: "easeOut" }}
                         >
-                            {/* Outer Pulse */}
+                            {/* Outer aura ring 1 */}
                             <motion.div
-                                className="absolute w-24 h-24 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                                style={{
-                                    background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)',
-                                }}
-                                animate={{
-                                    scale: [1, 1.5, 1],
-                                    opacity: [0.5, 0.2, 0.5]
-                                }}
-                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
+                                style={{ width: 140, height: 140, background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.15, 0.6] }}
+                                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                             />
-                            {/* Core Orb */}
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-400 shadow-lg shadow-emerald-500/50" />
+                            {/* Outer aura ring 2 */}
+                            <motion.div
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
+                                style={{ width: 80, height: 80, background: 'radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.1, 0.4] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                            />
+                            {/* Core Orb — large, labelled */}
+                            <div
+                                className="w-20 h-20 rounded-full border border-emerald-400/50 flex items-center justify-center"
+                                style={{
+                                    background: 'radial-gradient(circle at 35% 35%, rgba(16,185,129,0.45) 0%, rgba(6,182,212,0.18) 60%, transparent 100%)',
+                                    boxShadow: '0 0 40px rgba(16,185,129,0.4), 0 0 80px rgba(16,185,129,0.12)',
+                                }}
+                            >
+                                <span className="text-[9px] text-emerald-200/90 uppercase tracking-[0.15em] text-center px-2 leading-tight font-light">
+                                    {deptTitle.length > 14 ? deptTitle.split(' ')[0] : deptTitle}
+                                </span>
+                            </div>
                         </motion.div>
 
                         {/* Moons (Spaces) orbiting Department */}
@@ -363,8 +376,8 @@ export const DepartmentLayer: React.FC = () => {
                                 </div>
                                 {/* Enhanced Hover Info */}
                                 <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                                    <div className="px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-emerald-500/30 shadow-lg">
-                                        <span className="text-[10px] text-emerald-400/80 uppercase tracking-wider">Click: Layer 3 | Shift+Click: Pane</span>
+                                    <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-md border border-emerald-500/20 shadow-lg">
+                                        <span className="text-[10px] text-emerald-300/70 uppercase tracking-wider">WORKSPACE ÖFFNEN</span>
                                     </div>
                                 </div>
                             </motion.div>

@@ -23,7 +23,7 @@ interface FolderProps {
     /** Is this folder currently active/selected */
     isActive?: boolean;
     /** Folder size variation */
-    size?: 'sm' | 'md';
+    size?: 'sm' | 'md' | 'lg';
     /** Enable orbital animation */
     orbitActive?: boolean;
     /** Click handler */
@@ -56,7 +56,8 @@ export const Folder: React.FC<FolderProps> = ({
     // Folder size mapping
     const sizeMap = {
         sm: { diameter: 24, iconSize: 14 },
-        md: { diameter: 32, iconSize: 16 }
+        md: { diameter: 32, iconSize: 16 },
+        lg: { diameter: 48, iconSize: 22 },
     };
 
     const folderSize = sizeMap[size];

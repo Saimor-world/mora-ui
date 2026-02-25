@@ -17,10 +17,10 @@ const FOLDER_COLORS = [
     { name: 'Cyan', value: '#06b6d4' },
 ];
 
-// Orbit speeds per ring: inner faster, outer slower.
-const RING_SPEEDS = [0.18, 0.12, 0.08];
-const RING_RADII_X = [155, 245, 335];
-const RING_RADII_Y = [127, 201, 275];
+// Orbit speeds per ring: inner faster, outer slower — slow planetary drift.
+const RING_SPEEDS = [0.032, 0.020, 0.013]; // was [0.18, 0.12, 0.08] — ~6x slower
+const RING_RADII_X = [185, 295, 400];      // was [155, 245, 335] — wider orbits
+const RING_RADII_Y = [152, 242, 328];      // was [127, 201, 275]
 
 export const SpaceLayer: React.FC = () => {
     const {
@@ -172,7 +172,7 @@ export const SpaceLayer: React.FC = () => {
                 <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
                     <ArrowLeft size={20} />
                 </div>
-                <span className="text-sm tracking-widest font-light">BACK TO DEPT</span>
+                <span className="text-sm tracking-widest font-light">ABTEILUNG</span>
             </motion.button>
 
             {/* Top-right actions: minimal floating controls */}
@@ -236,18 +236,32 @@ export const SpaceLayer: React.FC = () => {
                             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.8, ease: "easeOut" }}
+                            transition={{ duration: 0.9, ease: "easeOut" }}
                         >
-                            {/* Outer pulse ring */}
+                            {/* Outer aura — large slow pulse */}
                             <motion.div
-                                className="absolute w-28 h-28 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                                style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }}
-                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
+                                style={{ width: 180, height: 180, background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.45, 1], opacity: [0.55, 0.12, 0.55] }}
+                                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                             />
-                            <div className="w-20 h-20 rounded-full border border-emerald-400/40 bg-emerald-400/10 shadow-[0_0_50px_rgba(16,185,129,0.3)] flex items-center justify-center">
-                                <span className="text-[9px] text-emerald-200/90 uppercase tracking-[0.18em] text-center px-2 leading-tight">
-                                    {spaceName}
+                            {/* Mid aura */}
+                            <motion.div
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
+                                style={{ width: 110, height: 110, background: 'radial-gradient(circle, rgba(6,182,212,0.22) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.08, 0.4] }}
+                                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
+                            />
+                            {/* Core orb — larger, with radial sheen */}
+                            <div
+                                className="w-28 h-28 rounded-full border border-emerald-400/50 flex items-center justify-center"
+                                style={{
+                                    background: 'radial-gradient(circle at 35% 35%, rgba(16,185,129,0.45) 0%, rgba(6,182,212,0.18) 60%, transparent 100%)',
+                                    boxShadow: '0 0 50px rgba(16,185,129,0.45), 0 0 100px rgba(16,185,129,0.15)',
+                                }}
+                            >
+                                <span className="text-[9px] text-emerald-100/90 uppercase tracking-[0.16em] text-center px-3 leading-tight font-light">
+                                    {spaceName.length > 20 ? spaceName.split(' ').slice(0, 2).join(' ') : spaceName}
                                 </span>
                             </div>
                         </motion.div>
@@ -273,15 +287,15 @@ export const SpaceLayer: React.FC = () => {
                                         node_count: folder.node_count
                                     }}
                                     position={{ x: '50%', y: '50%' }}
-                                    size="md"
+                                    size="lg"
                                     orbitActive
                                     isPromoted={isPromoted}
                                     delay={delay}
                                     onClick={() => navigateToFolder(folder.id)}
                                 />
                                 {/* Always-visible label */}
-                                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-                                    <span className="text-[10px] text-white/55 font-medium tracking-wide">
+                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
+                                    <span className="text-[11px] text-white/65 font-medium tracking-widest">
                                         {folder.name}
                                     </span>
                                 </div>
