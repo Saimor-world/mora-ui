@@ -59,12 +59,21 @@ export const getCompanyFileUrl = (fileId: string): string => {
     return `${getCoreBaseUrl()}/v1/files/${fileId}`;
 };
 
+/** URL for files uploaded with visibility='public'. No auth required. */
+export const getPublicFileUrl = (fileId: string): string => {
+    return `${getCoreBaseUrl()}/v1/files/public/${fileId}`;
+};
+
 export const listCompanyFiles = async (companyId: string): Promise<CompanyFileRecord[]> => {
     const response = await coreGet(`/v1/files?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
     return Array.isArray(response) ? response : [];
 };
 
-export const uploadCompanyFile = async (file: File, companyId: string): Promise<CompanyFileRecord> => {
+export const uploadCompanyFile = async (
+    file: File,
+    companyId: string,
+    visibility: 'public' | 'private' = 'private'
+): Promise<CompanyFileRecord> => {
     const token = getAuthToken();
     if (!token) throw new CoreError('Unauthorized', 401);
 
@@ -72,6 +81,7 @@ export const uploadCompanyFile = async (file: File, companyId: string): Promise<
     // V10.6: Ensure field names match backend EXACTLY (file, company_id)
     formData.append('file', file);
     formData.append('company_id', companyId);
+    formData.append('visibility', visibility);
 
     // CRITICAL: We do NOT set Content-Type header. 
     // Browser must set it with the correct boundary for multipart/form-data.

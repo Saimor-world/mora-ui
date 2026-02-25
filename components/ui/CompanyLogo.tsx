@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, UploadCloud, Link as LinkIcon, Loader2 } from 'lucide-react';
-import { uploadCompanyFile, getCompanyFileUrl } from '@/lib/api/filesClient';
+import { uploadCompanyFile, getPublicFileUrl } from '@/lib/api/filesClient';
 
 interface CompanyLogoProps {
     src?: string | null;
@@ -168,9 +168,9 @@ export const CompanyLogoUpload: React.FC<CompanyLogoUploadProps> = ({ value, onC
         if (companyId) {
             setIsUploading(true);
             try {
-                const uploaded = await uploadCompanyFile(file, companyId);
-                // Use the server-side file URL instead of DataURL
-                onChange(getCompanyFileUrl(uploaded.id));
+                // Company logos are public assets — no auth needed for display
+                const uploaded = await uploadCompanyFile(file, companyId, 'public');
+                onChange(getPublicFileUrl(uploaded.id));
             } catch (err) {
                 console.error('Logo upload failed, keeping local preview:', err);
                 // Keep the DataURL preview as fallback
