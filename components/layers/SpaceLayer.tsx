@@ -2,20 +2,17 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { LayoutGrid, List, Folder, Plus, Network, Search, X, Trash2, RefreshCw } from 'lucide-react';
+import { LayoutGrid, List, Folder as FolderIcon, Plus, Network, Search, Trash2, RefreshCw } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { IntelligenceContextBar } from '@/components/layers/IntelligenceContextBar';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { mapSpaceContentToMycelium } from '@/lib/utils/myceliumDataMapper';
-import { getRelationsForSpace, RelationEdge } from '@/lib/api/relationsClient';
-import type { CoreNode } from '@/lib/types/core';
 import { motion } from 'framer-motion';
 import { toast } from '@/lib/toast';
+import { Folder as FolderStar } from '@/components/mora/Folder';
 
 import { SemanticConstellation } from '@/components/visual/SemanticConstellation';
-import { Star } from 'lucide-react';
 
 const FOLDER_COLORS = [
     { name: 'Emerald', value: '#10b981' },
@@ -31,11 +28,9 @@ export const SpaceLayer: React.FC = () => {
     const {
         activeSpaceId,
         activeDepartmentId,
-        setActiveFolder,
         departments,
         spacesByDepartment,
         foldersBySpace,
-        nodesByFolder,
         isLoadingFolders,
         navigateToDepartment,
         loadFoldersForSpace,
@@ -43,7 +38,6 @@ export const SpaceLayer: React.FC = () => {
         addSpace,
         deleteSpace,
         viewLevel,
-        activeFolderId,
         loadSpacesForDepartment,
         navigateToFolder,
     } = useMoraStore();
@@ -54,12 +48,6 @@ export const SpaceLayer: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [graphNodes, setGraphNodes] = useState<any[]>([]);
-    const [isGraphLoading, setIsGraphLoading] = useState(false);
-    const safeGraphNodes = useMemo(
-        () => graphNodes.filter((node) => typeof node?.id === 'string' && node.id.length > 0),
-        [graphNodes]
-    );
 
     // ... (Keep handlers) ...
     const handleAddSpace = async () => {
@@ -140,29 +128,44 @@ export const SpaceLayer: React.FC = () => {
         });
     }, [folders]);
 
+    const folderWeightMap = useMemo(
+        () => new Map(folderStarPositions.map((entry) => [entry.id, entry.weight])),
+        [folderStarPositions]
+    );
+
+    const folderOrbitPositions = useMemo(() => {
+        if (filteredFolders.length === 0) return [];
+
+        const sorted = [...filteredFolders].sort((a, b) => {
+            const aw = folderWeightMap.get(a.id) || 0;
+            const bw = folderWeightMap.get(b.id) || 0;
+            return bw - aw;
+        });
+
+        const count = Math.min(sorted.length, 18);
+        return sorted.slice(0, count).map((folder, index) => {
+            const ring = Math.floor(index / 6); // 0..2
+            const inRing = index % 6;
+            const ringCount = Math.min(6, count - ring * 6);
+            const angle = (inRing / Math.max(1, ringCount)) * Math.PI * 2 - Math.PI / 2;
+            const radius = 145 + ring * 80;
+
+            return {
+                folder,
+                x: Math.cos(angle) * radius,
+                y: Math.sin(angle) * (radius * 0.82),
+                isPromoted: (folderWeightMap.get(folder.id) || 0) >= 0.8,
+                orbitRing: ring
+            };
+        });
+    }, [filteredFolders, folderWeightMap]);
+
     // ... (Keep load effects) ...
     useEffect(() => {
         if (activeSpaceId && !foldersBySpace[activeSpaceId]) {
             loadFoldersForSpace(activeSpaceId);
         }
     }, [activeSpaceId, foldersBySpace, loadFoldersForSpace]);
-
-    // ... (Keep graph load) ...
-    useEffect(() => {
-        if (activeSpaceId && viewMode === 'mycelium') {
-            const loadGraph = async () => {
-                setIsGraphLoading(true);
-                const mapped = mapSpaceContentToMycelium(
-                    folders,
-                    [], // Passing empty nodes for now to just show folders? Or keep original logic?
-                    { activeFolderId: activeFolderId, activeNodeId: null }
-                );
-                setGraphNodes(mapped);
-                setIsGraphLoading(false);
-            };
-            loadGraph();
-        }
-    }, [activeSpaceId, viewMode, folders, activeFolderId]);
 
     useEffect(() => {
         setViewMode('mycelium');
@@ -187,14 +190,6 @@ export const SpaceLayer: React.FC = () => {
             setIsSubmitting(false);
         }
     };
-
-    const stars = useMemo(() => Array.from({ length: 50 }).map((_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: Math.random() * 2 + 0.5,
-        opacity: Math.random() * 0.5 + 0.1
-    })), []);
 
     const breadcrumb = [
         { label: 'Home', onClick: () => { } },
@@ -336,55 +331,68 @@ export const SpaceLayer: React.FC = () => {
 
                                     {viewMode === 'mycelium' && (
                                         <div className="absolute inset-0">
-                                            {/* UPGRADE E1: Semantic SVG Constellations */}
-                                            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                                                {safeGraphNodes.map((node: any) => {
-                                                    // Safety check
-                                                    if (!node.id) return null;
-                                                    const seed1 = typeof node.id === 'string' ? node.id.charCodeAt(0) || 0 : 0;
-                                                    const seed2 = typeof node.id === 'string' ? node.id.charCodeAt(1) || 0 : 0;
-                                                    return (
-                                                        <motion.circle
-                                                            key={node.id}
-                                                            cx={`${20 + Math.sin(seed1) * 60}%`}
-                                                            cy={`${30 + Math.cos(seed2) * 40}%`}
-                                                            r={node.id === activeFolderId ? 3 : 2}
-                                                            fill={node.id === activeFolderId ? "#10B981" : "#6B7280"}
-                                                            opacity={0.6}
-                                                            animate={node.id === activeFolderId ? {
-                                                                scale: [1, 1.2, 1],
-                                                                opacity: [0.6, 0.9, 0.6]
-                                                            } : {}}
-                                                            transition={{ duration: 2, repeat: Infinity }}
-                                                        />
-                                                    );
-                                                })}
-                                                {/* Semantic connections */}
-                                                {safeGraphNodes.slice(0, -1).map((node: any, i: number) => {
-                                                    const nextNode = safeGraphNodes[i + 1];
-                                                    if (!nextNode) return null;
-                                                    return (
-                                                        <motion.line
-                                                            key={`connection-${node.id}-${nextNode.id}`}
-                                                            x1={`${20 + Math.sin(node.id.charCodeAt(0)) * 60}%`}
-                                                            y1={`${30 + Math.cos(node.id.charCodeAt(1)) * 40}%`}
-                                                            x2={`${20 + Math.sin(nextNode.id.charCodeAt(0)) * 60}%`}
-                                                            y2={`${30 + Math.cos(nextNode.id.charCodeAt(1)) * 40}%`}
-                                                            stroke="#10B981"
-                                                            strokeWidth="0.5"
-                                                            opacity={0.2}
-                                                            animate={{
-                                                                opacity: [0.1, 0.3, 0.1],
-                                                                strokeWidth: ["0.5", "1", "0.5"]
-                                                            }}
-                                                            transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
-                                                        />
-                                                    );
-                                                })}
+                                            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-35">
+                                                {[145, 225, 305].map((radius, i) => (
+                                                    <ellipse
+                                                        key={`orbit-${radius}`}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        rx={radius}
+                                                        ry={Math.round(radius * 0.82)}
+                                                        fill="none"
+                                                        stroke="url(#spaceOrbitGradient)"
+                                                        strokeWidth="1"
+                                                        strokeDasharray="6 10"
+                                                        opacity={0.25 - i * 0.05}
+                                                    />
+                                                ))}
+                                                <defs>
+                                                    <linearGradient id="spaceOrbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stopColor="rgba(16,185,129,0.55)" />
+                                                        <stop offset="50%" stopColor="rgba(6,182,212,0.20)" />
+                                                        <stop offset="100%" stopColor="rgba(16,185,129,0.55)" />
+                                                    </linearGradient>
+                                                </defs>
                                             </svg>
-                                            {!isGraphLoading && graphNodes.length === 0 && (
+
+                                            <motion.div
+                                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                                initial={{ scale: 0.9, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                transition={{ duration: 0.6 }}
+                                            >
+                                                <div className="w-20 h-20 rounded-full border border-emerald-400/35 bg-emerald-400/10 shadow-[0_0_40px_rgba(16,185,129,0.25)] flex items-center justify-center">
+                                                    <span className="text-[10px] text-emerald-200/90 uppercase tracking-[0.2em] text-center px-2">
+                                                        {currentSpace?.name || 'Space'}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+
+                                            {folderOrbitPositions.map(({ folder, x, y, isPromoted }, index) => (
+                                                <FolderStar
+                                                    key={`orbit-folder-${folder.id}`}
+                                                    folder={{
+                                                        id: folder.id,
+                                                        name: folder.name,
+                                                        space_id: folder.space_id,
+                                                        color: folder.color || undefined,
+                                                        node_count: folder.node_count
+                                                    }}
+                                                    position={{
+                                                        x: `calc(50% + ${x}px)`,
+                                                        y: `calc(50% + ${y}px)`
+                                                    }}
+                                                    size="md"
+                                                    orbitActive
+                                                    isPromoted={isPromoted}
+                                                    delay={index * 0.04}
+                                                    onClick={() => navigateToFolder(folder.id)}
+                                                />
+                                            ))}
+
+                                            {folderOrbitPositions.length === 0 && (
                                                 <div className="absolute inset-0 flex items-center justify-center text-emerald-200/60 text-sm">
-                                                    No folders yet. Create one to see the semantic network.
+                                                    No folders yet. Create one to open this layer.
                                                 </div>
                                             )}
                                         </div>
@@ -411,7 +419,7 @@ export const SpaceLayer: React.FC = () => {
                                                                 }`}
                                                         >
                                                             <div className="relative w-12 h-12 rounded-lg bg-black/20 flex items-center justify-center">
-                                                                <Folder size={24} style={{ color: folder.color || (isInsight ? '#F59E0B' : '#10b981') }} />
+                                                                <FolderIcon size={24} style={{ color: folder.color || (isInsight ? '#F59E0B' : '#10b981') }} />
                                                                 {isInsight && (
                                                                     <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_#F59E0B]" />
                                                                 )}
@@ -423,7 +431,7 @@ export const SpaceLayer: React.FC = () => {
                                                     );
                                                 })}
                                             </div>
-                                            {filteredFolders.length === 0 && <EmptyState icon={Folder} title="No folders found" description="Create a new folder to get started." />}
+                                            {filteredFolders.length === 0 && <EmptyState icon={FolderIcon} title="No folders found" description="Create a new folder to get started." />}
                                         </div>
                                     )}
 
@@ -436,8 +444,8 @@ export const SpaceLayer: React.FC = () => {
                                                         onClick={() => navigateToFolder(folder.id)}
                                                         className="flex items-center gap-4 p-4 rounded-lg bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all text-left group"
                                                     >
-                                                        <div className="p-2 rounded bg-black/20">
-                                                            <Folder size={18} style={{ color: folder.color || '#10b981' }} />
+                                                            <div className="p-2 rounded bg-black/20">
+                                                            <FolderIcon size={18} style={{ color: folder.color || '#10b981' }} />
                                                         </div>
                                                         <span className="text-white/70 group-hover:text-white flex-1">
                                                             {folder.name}
@@ -445,7 +453,7 @@ export const SpaceLayer: React.FC = () => {
                                                     </button>
                                                 ))}
                                             </div>
-                                            {filteredFolders.length === 0 && <EmptyState icon={Folder} title="No folders found" description="Create a new folder to get started." />}
+                                            {filteredFolders.length === 0 && <EmptyState icon={FolderIcon} title="No folders found" description="Create a new folder to get started." />}
                                         </div>
                                     )}
                                 </div>

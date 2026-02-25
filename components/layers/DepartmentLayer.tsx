@@ -302,14 +302,20 @@ export const DepartmentLayer: React.FC = () => {
                                 whileHover={{ scale: 1.15 }}
                                 onMouseEnter={() => setHoverSpace(space.id)}
                                 onMouseLeave={() => scheduleHoverClear()}
-                                onClick={() => {
+                                onClick={(event) => {
+                                    // Primary action: drill down to Layer-3 (Space view).
+                                    if (!event.shiftKey) {
+                                        navigateToSpace(space.id);
+                                        return;
+                                    }
+                                    // Secondary fallback: Shift+Click opens the pane flow.
                                     openPane({
                                         id: `space-${space.id}`,
                                         type: 'space',
                                         title: displayName,
                                         data: {
                                             spaceId: space.id,
-                                            departmentId: activeDepartmentId  // Pass parent for context
+                                            departmentId: activeDepartmentId
                                         },
                                         size: { width: 1000, height: 700 },
                                         position: { x: 100, y: 100 }
@@ -342,7 +348,7 @@ export const DepartmentLayer: React.FC = () => {
                                 {/* Enhanced Hover Info */}
                                 <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
                                     <div className="px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-emerald-500/30 shadow-lg">
-                                        <span className="text-[10px] text-emerald-400/80 uppercase tracking-wider">Click to open</span>
+                                        <span className="text-[10px] text-emerald-400/80 uppercase tracking-wider">Click: Layer 3 | Shift+Click: Pane</span>
                                     </div>
                                 </div>
                             </motion.div>
