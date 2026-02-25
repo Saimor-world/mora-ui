@@ -1,0 +1,60 @@
+name: Build and Publish UI Image (GHCR)
+
+on:
+  push:
+    branches: ["main", "stabilize/phaseAB"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  UI_IMAGE: ghcr.io/saimor-world/mora-ui
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: UI metadata
+        id: meta_ui
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.UI_IMAGE }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push UI image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta_ui.outputs.tags }}
+          labels: ${{ steps.meta_ui.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_CORE_API_URL=https://api.saimor.world
+            NEXT_PUBLIC_CORE_WS_URL=wss://api.saimor.world
+            NEXT_PUBLIC_SAIMOR_CORE_URL=https://api.saimor.world
+            NEXT_PUBLIC_ALLOW_TOOL_EXECUTION=true
+            NEXT_PUBLIC_DISABLE_WEBGL=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
