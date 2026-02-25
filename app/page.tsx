@@ -7,7 +7,6 @@ import { LockScreen } from '@/components/auth/LockScreen';
 import { useMoraStore } from '@/lib/store/moraState';
 import { Suspense } from 'react';
 import { useSession } from "next-auth/react";
-import { PhysicsDock } from '@/components/mora/PhysicsDock'; // Added PhysicsDock import
 
 function RootPageContent() {
     const router = useRouter();
@@ -72,10 +71,6 @@ function RootPageContent() {
             ) : (
                 <WelcomeScreen onAuthenticated={handleAuthenticated} />
             )}
-            {/* Assuming PhysicsDock is meant to be rendered alongside or within this page,
-                but its exact placement and conditions are not fully specified by the instruction.
-                Adding it here as a placeholder for usage. */}
-            {/* <PhysicsDock /> */}
         </div>
     );
 }
