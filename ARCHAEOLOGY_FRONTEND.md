@@ -1,4 +1,42 @@
 # MORA-UI ARCHAEOLOGY REPORT
+## Audit Update (2026-02-25)
+
+Latest frontend sweep confirmed:
+
+- Runtime-critical shell stack is active and wired (`MoraShell`, `Dock`, `MemorySidebar`, shortcuts, focus/snapping).
+- Layer-3 flow is now implemented in main path:
+  - Department moon click drills directly to Space layer.
+  - Space layer shows orbit-focused folder layout.
+- Unused/legacy artifacts still present:
+  - `components/home/layers/MoonLayer.tsx` (no imports)
+  - `components/home/layers/DeepSpaceLayer.tsx` (no imports)
+- `PhysicsDock` was previously imported but not rendered in `app/page.tsx`; unused import is removed.
+
+### Current classification refresh
+
+#### Active (keep)
+- `components/os/shell/MoraShell.tsx`
+- `components/mora/Dock.tsx`
+- `components/layers/{DepartmentLayer,SpaceLayer,FolderLayer}.tsx`
+- `components/os/{MemorySidebar,FocusMode,NotificationCenter,QuickPreview,SnapPreview}.tsx`
+
+#### Unclear (review)
+- `components/mora/{MoraIntelligenceBar,MoraThoughtStream}.tsx` (exists, but shell notes indicate cleanup/removal)
+- `components/mora/PhysicsDock.tsx` (component exists, currently not used in primary app flow)
+
+#### Legacy candidates
+- `components/home/layers/MoonLayer.tsx`
+- `components/home/layers/DeepSpaceLayer.tsx`
+
+### Immediate UX verification tasks (Claude)
+
+1. Validate live Layer-3 interaction on `hq.saimor.world`:
+   - Core -> Department -> Moon -> Space layer (direct)
+   - Folder click -> Folder layer.
+2. Confirm no regressions in pane focus/hotkeys/memory save flow.
+3. If stable, open cleanup PR to archive/remove unreferenced layer files.
+4. Record screenshots and network evidence in `saimor-ops/docs/TEST_REPORT.md`.
+
 > **Datum:** 2026-02-06
 > **Von:** Local-Claude
 > **Für:** SAIMOR Team
