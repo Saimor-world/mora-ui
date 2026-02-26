@@ -66,7 +66,7 @@ import { CursorAgent } from '@/components/mora/CursorAgent';
 import { AgencyCursor } from '@/components/agency/AgencyCursor';
 import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { UserCursor } from '@/components/layout/UserCursor';
-import { UniverseControls } from '@/components/home/UniverseControls';
+import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
 
 // V12: Connection Status, Quick Tips, Greeting & Stats
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner';
@@ -252,6 +252,28 @@ export const MoraShell: React.FC = () => {
     }, [filteredCompanies, activeCompanyId, activeCompany]);
 
     const displayCompany = activeCompanyForView || activeCompany;
+    const hasDemoCompany = companies.some((c) => c.is_demo);
+    const visibleModes = React.useMemo<UniverseViewMode[]>(() => {
+        if (role === 'system_owner') {
+            return hasDemoCompany ? ['owner', 'workspace', 'demo'] : ['owner', 'workspace'];
+        }
+        return hasDemoCompany ? ['workspace', 'demo'] : ['workspace'];
+    }, [role, hasDemoCompany]);
+    const scopeLabel = React.useMemo(() => {
+        if (viewLevel === 'company') return 'Portfolio';
+        if (viewLevel === 'core') return 'Universe';
+        if (viewLevel === 'department') return 'Department';
+        if (viewLevel === 'space') return 'Space';
+        if (viewLevel === 'folder') return 'Folder';
+        return 'Universe';
+    }, [viewLevel]);
+    const workspaceTabLabel = React.useMemo(() => {
+        if (viewLevel === 'core') return 'Universe';
+        if (viewLevel === 'department') return 'Department';
+        if (viewLevel === 'space') return 'Space';
+        if (viewLevel === 'folder') return 'Folder';
+        return 'Workspace';
+    }, [viewLevel]);
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
@@ -457,6 +479,9 @@ export const MoraShell: React.FC = () => {
                     activeCompany={displayCompany}
                     companies={filteredCompanies}
                     onSwitchCompany={(id) => useMoraStore.getState().setActiveCompany(id)}
+                    visibleModes={visibleModes}
+                    workspaceLabel={workspaceTabLabel}
+                    scopeLabel={scopeLabel}
                 />
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}

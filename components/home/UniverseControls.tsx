@@ -12,6 +12,7 @@ interface UniverseControlsProps {
     onSwitchCompany?: (companyId: string) => void;
     visibleModes?: ViewMode[];
     workspaceLabel?: string;
+    scopeLabel?: string;
 }
 
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
@@ -21,7 +22,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     companies = [],
     onSwitchCompany,
     visibleModes = ['owner', 'workspace', 'demo'],
-    workspaceLabel = 'Space'
+    workspaceLabel = 'Workspace',
+    scopeLabel = 'Universe',
 }) => {
 
     // Cycle to next company
@@ -36,7 +38,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     };
 
     return (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-2xl">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/45 backdrop-blur-xl border border-white/10 text-white shadow-2xl min-w-[540px]">
             {visibleModes.includes('owner') && (
                 <ControlButton
                     isActive={viewMode === 'owner'}
@@ -55,7 +57,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     isActive={viewMode === 'workspace'}
                     onClick={() => setViewMode('workspace')}
                     icon={LayoutGrid}
-                    label={workspaceLabel}
+                    label={workspaceLabel || 'Workspace'}
                 />
             )}
 
@@ -73,18 +75,22 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 />
             )}
 
+            <div className="ml-1 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04]">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">{scopeLabel}</span>
+            </div>
+
             {/* Current Context Indicator - Now Clickable Switcher */}
             {activeCompany && (
                 <div
                     onClick={handleContextClick}
-                    className={`ml-4 pl-4 border-l border-white/10 hidden md:flex items-center gap-2 
+                    className={`ml-2 pl-3 border-l border-white/10 hidden md:flex items-center gap-2 
                         ${companies.length > 1 ? 'cursor-pointer hover:text-emerald-400 opacity-80 hover:opacity-100 transition-colors' : 'opacity-60 cursor-default'}`}
                     role={companies.length > 1 ? "button" : "status"}
                     title={companies.length > 1 ? "Click to switch context" : "Current Context"}
                 >
                     <Globe className="w-3 h-3" />
                     <div className="flex flex-col">
-                        <span className="text-[10px] uppercase tracking-wider font-mono select-none">
+                        <span className="text-[10px] uppercase tracking-wider font-mono select-none max-w-[170px] truncate">
                             {activeCompany.name}
                         </span>
                         {viewMode === 'demo' && (
