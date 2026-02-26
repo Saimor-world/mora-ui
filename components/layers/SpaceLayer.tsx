@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { Plus, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Plus, RefreshCw, ArrowLeft, FolderOpen, FileText, Sparkles } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { motion } from 'framer-motion';
@@ -74,6 +74,13 @@ export const SpaceLayer: React.FC = () => {
         return foldersBySpace[activeSpaceId] || [];
     }, [activeSpaceId, foldersBySpace]);
 
+    const folderStats = useMemo(() => {
+        const folderCount = folders.length;
+        const totalNodes = folders.reduce((acc, folder) => acc + (folder.node_count || 0), 0);
+        const activeFolders = folders.filter((folder) => (folder.node_count || 0) > 0).length;
+        return { folderCount, totalNodes, activeFolders };
+    }, [folders]);
+
     // Recency weight used to bias folder prominence.
     const getWeight = useCallback((dateStr?: string | null) => {
         if (!dateStr) return 0.5;
@@ -141,6 +148,12 @@ export const SpaceLayer: React.FC = () => {
             {/* Depth Overlay: Darken and blur the galaxy background to create a sense of being 'inside' a Space */}
             <div className="absolute inset-0 z-[-1] bg-black/40 backdrop-blur-[60px] pointer-events-none" />
 
+            {/* Vignette for stronger depth and clearer L3 separation */}
+            <div
+                className="absolute inset-0 z-[-1] pointer-events-none"
+                style={{ background: 'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.45) 100%)' }}
+            />
+
             {/* Galaxy overlay reused from DepartmentLayer visual language, but subdued. */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
@@ -192,6 +205,32 @@ export const SpaceLayer: React.FC = () => {
                 </div>
             </motion.button>
 
+            {/* Layer-3 HUD */}
+            <motion.div
+                className="absolute top-24 left-8 z-40 rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl px-4 py-3 min-w-[240px]"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+            >
+                <div className="flex items-center gap-2 mb-3">
+                    <Sparkles size={14} className="text-emerald-300" />
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80">Layer 3 / Folder Cluster</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Folders</div>
+                        <div className="text-lg text-white/90 font-semibold">{folderStats.folderCount}</div>
+                    </div>
+                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Aktiv</div>
+                        <div className="text-lg text-emerald-300 font-semibold">{folderStats.activeFolders}</div>
+                    </div>
+                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Files</div>
+                        <div className="text-lg text-cyan-300 font-semibold">{folderStats.totalNodes}</div>
+                    </div>
+                </div>
+            </motion.div>
+
             {/* Top-right actions: minimal floating controls */}
             <motion.div
                 className="absolute top-8 right-8 z-50 flex items-center gap-3"
@@ -223,8 +262,24 @@ export const SpaceLayer: React.FC = () => {
                 ) : (
                     <div className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
 
+                        {/* Connection lines center -> folder nodes for constellation clarity */}
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+                            {folderOrbitPositions.map(({ folder, x, y }) => (
+                                <line
+                                    key={`link-${folder.id}`}
+                                    x1="50%"
+                                    y1="50%"
+                                    x2={`calc(50% + ${x}px)`}
+                                    y2={`calc(50% + ${y}px)`}
+                                    stroke="rgba(16,185,129,0.14)"
+                                    strokeWidth="1"
+                                    strokeDasharray="3 8"
+                                />
+                            ))}
+                        </svg>
+
                         {/* Orbit track rings */}
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25 z-0">
                             {RING_RADII_X.slice(0, Math.min(3, Math.ceil(folders.length / 6) + 1)).map((rx, i) => (
                                 <ellipse
                                     key={`orbit-ring-${i}`}
@@ -281,6 +336,10 @@ export const SpaceLayer: React.FC = () => {
                                     {spaceName.length > 20 ? spaceName.split(' ').slice(0, 2).join(' ') : spaceName}
                                 </span>
                             </div>
+
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] tracking-[0.16em] text-white/70 uppercase whitespace-nowrap">
+                                Workspace Core
+                            </div>
                         </motion.div>
 
                         {/* Folder stars orbit around the central space orb. */}
@@ -310,11 +369,18 @@ export const SpaceLayer: React.FC = () => {
                                     delay={delay}
                                     onClick={() => navigateToFolder(folder.id)}
                                 />
-                                {/* Always-visible label */}
-                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-                                    <span className="text-[11px] text-white/65 font-medium tracking-widest">
-                                        {folder.name}
-                                    </span>
+                                {/* Always-visible richer label */}
+                                <div className="absolute -bottom-11 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
+                                    <div className="px-2 py-1 rounded-lg border border-white/10 bg-black/35 backdrop-blur-md flex items-center gap-1.5">
+                                        <FolderOpen size={10} className="text-emerald-300/80" />
+                                        <span className="text-[11px] text-white/80 font-medium tracking-wide max-w-[180px] truncate">
+                                            {folder.name}
+                                        </span>
+                                        <span className="text-[10px] text-cyan-300/80 flex items-center gap-1">
+                                            <FileText size={9} />
+                                            {folder.node_count || 0}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         ))}
