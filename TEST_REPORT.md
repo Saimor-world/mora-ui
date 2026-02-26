@@ -9,13 +9,15 @@
 
 ## Environment
 
-| Property       | Value                                |
-|---------------|--------------------------------------|
-| Node.js       | v22.22.0                             |
-| npm           | 10.9.4                               |
-| Next.js       | 15.5.12                              |
-| Dev Port      | 3000                                 |
-| Backend       | Not available (saimor-core is private)|
+| Property       | Value                                                |
+|---------------|------------------------------------------------------|
+| Node.js       | v22.22.0                                             |
+| npm           | 10.9.4                                               |
+| Next.js       | 15.5.12                                              |
+| Dev Port      | 3000                                                 |
+| Backend       | `api.saimor.world` via Next.js rewrite proxy         |
+| Auth          | NextAuth CredentialsProvider → demo@saimor.io / demo123 |
+| Tenant        | `tenant-demo` (Simple Coffee Group)                  |
 
 ---
 
@@ -31,7 +33,59 @@
 
 ---
 
-## Browser Smoke Test
+## E2E Browser Smoke Test (with Production API)
+
+### API Proxy
+
+| Test                                          | Status | Notes                                 |
+|----------------------------------------------|--------|---------------------------------------|
+| `/api/core/v1/health` proxy                  | PASS   | Returns `{"status":"healthy"}`        |
+| NextAuth CSRF token fetch                    | PASS   | Token generated correctly             |
+| NextAuth login (demo/demo123)                | PASS   | Session created, JWT returned         |
+| Session contains accessToken + tenant_id     | PASS   | `tenant-demo`, role `owner`           |
+
+### L1 — Universe View (Corporate Overview)
+
+| Element                           | Status | Notes                                    |
+|----------------------------------|--------|------------------------------------------|
+| "SIMPLE COFFEE GROUP" title      | PASS   | Renders with correct company name        |
+| "CORPORATE OVERVIEW" subtitle    | PASS   |                                          |
+| Central coffee cup icon          | PASS   | Animated glow effect                     |
+| Department planets (7x)         | PASS   | Technology & AI, HR & Culture, Store Heilbronn, Marketing & Brand, Management, Store Stuttgart, Store San Francisco |
+| Department icons (color-coded)   | PASS   | Blue, pink, orange, purple, teal         |
+| Orbital connection lines         | PASS   | Dashed SVG lines center → planets        |
+| Top bar (Demo / Layer Universe)  | PASS   |                                          |
+| Bottom dock (search, icons, Mora)| PASS   | All dock icons rendered                  |
+| Quick Tips tooltip               | PASS   | "Spotlight Suche" tip shown              |
+
+### L2 — Department Orbit (Management)
+
+| Element                           | Status | Notes                                    |
+|----------------------------------|--------|------------------------------------------|
+| "MANAGEMENT" watermark           | PASS   | Large background text, `text-white/[0.07]` |
+| Department Core orb              | PASS   | Emerald gradient, `w-28 h-28`           |
+| "DEPARTMENT CORE" label          | PASS   |                                          |
+| HUD: "Layer 2 / Department Orbit"| PASS   | Stats: 1 Space, 0 Aktiv, 0 Docs, 0 Preview |
+| "Workspace 1" space orbiting     | PASS   | Star component with label               |
+| Breadcrumb: UNIVERSE / MANAGEMENT| PASS   |                                          |
+| Back button ("ZURUECK")          | PASS   | Navigates back to L1                     |
+| "+ NEW SPACE" button             | PASS   |                                          |
+| Orbital ellipse tracks           | PASS   | Dashed SVG orbit rings                  |
+
+### L3 — Folder Cluster (Workspace 1)
+
+| Element                           | Status | Notes                                    |
+|----------------------------------|--------|------------------------------------------|
+| "WORKSPACE 1" watermark          | PASS   | Large background text                    |
+| Workspace Core orb               | PASS   | Emerald gradient, matches L2 style       |
+| "WORKSPACE CORE" label           | PASS   |                                          |
+| HUD: "Layer 3 / Folder Cluster"  | PASS   | Stats: 3 Folders, 0 Aktiv, 0 Files      |
+| Folders orbiting (3x)           | PASS   | Inbox, Board Meetings, Company Policies  |
+| Folder labels with file count    | PASS   | FolderOpen icon + "0" file count         |
+| Breadcrumb: UNIVERSE / MANAGEMENT| PASS   |                                          |
+| Back button ("Zurück")           | PASS   | Navigates back to L2                     |
+| "+ NEW FOLDER" button            | PASS   |                                          |
+| Orbit rings + connection lines   | PASS   | Consistent with L2 visual language       |
 
 ### Routes Tested
 
@@ -40,93 +94,43 @@
 | `/`           | Welcome screen            | Welcome screen renders    | PASS   |
 | `/login`      | Login form                | Login form renders        | PASS   |
 | `/home`       | Redirect to `/` (no auth) | Redirects with `?callbackUrl=%2Fhome` | PASS |
-
-### UI Elements (Welcome Screen)
-
-| Element                          | Status |
-|---------------------------------|--------|
-| Green orb logo                  | PASS   |
-| "Mora" title                    | PASS   |
-| "INTELLIGENTES WISSENSSYSTEM"   | PASS   |
-| "BETA 1.5" badge                | PASS   |
-| "Anmelden" button               | PASS   |
-| "Account Erstellen" button      | PASS   |
-| "Quick Demo" button             | PASS   |
-| Dark theme background           | PASS   |
-
-### Login Form
-
-| Test                            | Status | Notes                              |
-|--------------------------------|--------|------------------------------------|
-| Form renders on click          | PASS   | EMAIL + PASSWORD fields            |
-| Input accepts text             | PASS   | demo / demo                        |
-| Submit triggers auth           | PASS   | POST to NextAuth credentials       |
-| Error toast on failure         | PASS   | "Ungültige Zugangsdaten"           |
-| Back link works                | PASS   | "Zurück zum Hauptbereich"          |
+| `/home` (auth)| L1 Universe View          | Simple Coffee Group loads | PASS   |
 
 ### Network Analysis
 
 | Metric                  | Value           |
 |------------------------|-----------------|
-| Total requests         | 14              |
+| Total requests (login) | 14              |
 | Failed requests        | 0               |
 | Transfer size          | 3.9 MB          |
-| Resource size          | 17.6 MB         |
 | DOMContentLoaded       | 494 ms          |
 | WebSocket (HMR)        | Active (101)    |
 
 ---
 
-## L2/L3 Layer Code Review
+## L2/L3 Visual Consistency (Code Review)
 
-> **Note:** L2/L3 views require authenticated session + backend data. Tested via code review only.
-
-### Visual Consistency (Code Review)
-
-| Property                        | L2 (DepartmentLayer)         | L3 (SpaceLayer)              | Consistent? |
-|--------------------------------|------------------------------|------------------------------|-------------|
-| Background overlay             | Gradient radials             | Gradient radials (subdued)   | YES         |
-| Title watermark                | `text-white/[0.07]`         | `text-white/[0.07]`         | YES         |
-| HUD badge                     | "Layer 2 / Department Orbit" | "Layer 3 / Folder Cluster"  | YES         |
-| HUD styling                   | `rounded-2xl border-white/10 bg-black/35 backdrop-blur-xl` | Same | YES |
-| Back button                   | ArrowLeft + breadcrumb       | ArrowLeft + breadcrumb       | YES         |
-| Back button label              | "Zurueck" (no umlaut)       | "Zurück" (with umlaut)      | INCONSISTENT |
-| Action button                 | "NEW SPACE"                  | "NEW FOLDER"                 | YES (contextual) |
-| Orbit rendering               | SVG ellipses + animated positions | SVG ellipses + animated positions | YES |
-| Orbit speeds                  | `[0.032, 0.022, 0.015]`     | `[0.032, 0.020, 0.013]`     | Slightly different (intentional) |
-| Central orb size              | `w-28 h-28`                  | `w-28 h-28`                  | YES         |
-| Central orb style             | Emerald gradient + border    | Emerald gradient + border    | YES         |
-| Central orb label             | "Department Core"            | "Workspace Core"             | YES (contextual) |
-| Empty state                   | "NO SPACES FOUND"            | "NO FOLDERS YET"             | YES         |
-| Star/Folder components        | `<Star>` component           | `<FolderStar>` component     | YES         |
-| Ring radii (X)                | `[230, 320, 405]`           | `[140, 220, 300]`           | Intentional (L3 tighter) |
-| Stats grid                    | 4 columns                    | 3 columns                    | Intentional (fewer metrics) |
+| Property                | L2 (DepartmentLayer)         | L3 (SpaceLayer)              | Consistent? |
+|------------------------|------------------------------|------------------------------|-------------|
+| Background overlay     | Gradient radials             | Gradient radials (subdued)   | YES         |
+| Title watermark        | `text-white/[0.07]`         | `text-white/[0.07]`         | YES         |
+| HUD badge              | "Layer 2 / Department Orbit" | "Layer 3 / Folder Cluster"  | YES         |
+| HUD styling            | `rounded-2xl border-white/10 bg-black/35 backdrop-blur-xl` | Same | YES |
+| Back button label      | "Zurueck" (ASCII)           | "Zurück" (UTF-8)            | MINOR INCONSISTENCY |
+| Central orb            | `w-28 h-28`, emerald gradient | Same                       | YES         |
+| Orbit animation        | SVG ellipses, animated      | SVG ellipses, animated      | YES         |
+| Ring radii             | `[230, 320, 405]`           | `[140, 220, 300]`           | Intentional |
 
 ### Findings
 
-1. **Minor inconsistency:** L2 uses "Zurueck" (ASCII) while L3 uses "Zurück" (UTF-8 umlaut). Should standardize to "Zurück".
-2. **L2/L3 visual language is well-aligned:** Same HUD pattern, same orbit animation approach, same central orb design.
-3. **FolderLayer (L4)** uses a different approach (GlassPanel with list/grid/mycelium views) which is intentionally distinct from the orbital L2/L3.
-
----
-
-## Not Testable (Blocked)
-
-| Feature                        | Blocker                              |
-|-------------------------------|--------------------------------------|
-| `/home` dashboard              | Requires NextAuth session (backend)  |
-| L1 UniverseView               | Requires company/department data     |
-| L2 DepartmentLayer             | Requires authenticated navigation    |
-| L3 SpaceLayer                  | Requires authenticated navigation    |
-| L4 FolderLayer                 | Requires authenticated navigation    |
-| Quick Demo                     | Calls backend `/v1/auth/login`       |
-| Chat/AI features               | Requires AI provider API key         |
+1. **Minor:** L2 uses "Zurueck" (ASCII), L3 uses "Zurück" (UTF-8). Standardize to "Zurück".
+2. **L2/L3 visual language is well-aligned.** Same HUD, orbit, orb design across layers.
+3. **L4 (FolderLayer)** intentionally distinct — uses GlassPanel with list/grid/mycelium views.
 
 ---
 
 ## Recommendations
 
-1. Standardize "Zurueck" → "Zurück" in `DepartmentLayer.tsx` (L2)
-2. Add `--passWithNoTests` to Jest config or create initial test files
-3. Consider adding a client-side mock mode for offline development
-4. Full E2E testing requires `saimor-core` backend at `localhost:8081`
+1. Standardize "Zurueck" → "Zurück" in `DepartmentLayer.tsx`
+2. Add initial Jest test files or `--passWithNoTests` flag
+3. Document proxy setup in README for new developers
