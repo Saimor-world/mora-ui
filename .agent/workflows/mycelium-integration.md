@@ -21,7 +21,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3005",
-        "http://localhost:3002", 
+        "http://localhost:3000", 
         "http://localhost:3000"
     ],
     allow_credentials=True,
@@ -77,3 +77,4 @@ app.add_middleware(
 4. Design connector auth flows
 
 Ready to start building? 🌿✨
+

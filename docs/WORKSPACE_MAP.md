@@ -156,7 +156,7 @@ infranaut/
 ```
 User (Browser)
     ↓
-mora-ui (Next.js @ :3002)
+mora-ui (Next.js @ :3000)
     ↓ JWT Auth (Bearer Token)
 saimor-core/core/app.py (:8081)
     ↓
@@ -196,12 +196,12 @@ python run.py           # Core API @ :8081
 ```bash
 cd c:\saimor\mora-ui
 npm install
-npm run dev             # Next.js @ :3002
+npm run dev             # Next.js @ :3000
 ```
 
 ### 3. Ports
 - **Core API:** http://localhost:8081
-- **Môra UI:** http://localhost:3002/home
+- **Môra UI:** http://localhost:3000/home
 - **PostgreSQL:** localhost:5432
 - **Redis:** localhost:6379
 - **Qdrant:** localhost:6333
@@ -262,3 +262,4 @@ npm run dev             # Next.js @ :3002
 
 **Next:** Siehe `AGENT_ORCHESTRATION.md` für geplante Agenten-Setup  
 **TODOs:** Siehe `TODO_SUPERVISOR.md` für konkrete Aufgaben
+

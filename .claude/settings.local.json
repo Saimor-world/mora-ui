@@ -28,7 +28,7 @@
       "Bash(start http://localhost:3004)",
       "Bash(powershell:*)",
       "Bash(start http://localhost:3001)",
-      "Bash(start http://localhost:3002)",
+      "Bash(start http://localhost:3000)",
       "Bash(tasklist:*)",
       "Bash(git pull:*)",
       "Bash(npm run lint)",
@@ -43,14 +43,14 @@
       "Bash(start https://officers-knights-screensavers-intro.trycloudflare.com)",
       "Bash(start https://officers-knights-screensavers-intro.trycloudflare.com/field)",
       "Bash(timeout /t 2 /nobreak)",
-      "Bash(start http://localhost:3002/organic)",
+      "Bash(start http://localhost:3000/organic)",
       "Bash(start http://localhost:3005/organic)",
       "Bash(start http://localhost:3005)",
       "Bash(dir:*)",
       "Bash(PORT=3002 npm run dev:*)",
       "Bash(nul)",
       "Bash(PORT=3005 npm run dev:*)",
-      "Bash(start http://localhost:3002/home)",
+      "Bash(start http://localhost:3000/home)",
       "mcp__ide__getDiagnostics",
       "Bash(set PORT=3004)",
       "Bash(npx next dev:*)",
@@ -60,3 +60,4 @@
     "ask": []
   }
 }
+

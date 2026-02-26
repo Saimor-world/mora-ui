@@ -59,7 +59,7 @@ npm run dev
 **Expected Output:**
 ```
 ✓ Ready in 2.3s
-○ Local:        http://localhost:3002
+○ Local:        http://localhost:3000
 ```
 
 ---
@@ -67,7 +67,7 @@ npm run dev
 ### 4. Open Browser
 
 ```
-http://localhost:3002
+http://localhost:3000
 ```
 
 **You should see:**
@@ -199,7 +199,7 @@ INFO: Awareness Clustering: 3 clusters detected
 Use this to verify everything works:
 
 ### Core Features
-- [  ] App starts on :3002
+- [  ] App starts on :3000
 - [ ] Mycelium animiert im Hintergrund
 - [ ] TreeSidebar zeigt Departments
 - [ ] Navigation: Kann Spaces/Folders öffnen
@@ -334,3 +334,4 @@ mora-ui/
 **Status:** ✅ Ready for Demo  
 **Last Test:** 2025-11-26  
 **Demo Date:** Januar 2026 @ KI Garage Heilbronn
+

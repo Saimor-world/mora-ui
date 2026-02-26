@@ -22,7 +22,7 @@ cp .env.local.example .env.local
 # Start dev server
 npm run dev
 
-# Open http://localhost:3002
+# Open http://localhost:3000
 ```
 
 ## ⚙️ Configuration
@@ -163,7 +163,7 @@ Currently uses **static JWT tokens**:
 
 1. Check Core API is running: `http://localhost:8081/v1/health`
 2. Check `.env.local` has correct `NEXT_PUBLIC_CORE_API_URL`
-3. Check CORS allows `localhost:3002`
+3. Check CORS allows `localhost:3000`
 4. Open Diagnostics panel for detailed status
 
 ### 401 Unauthorized
@@ -242,3 +242,4 @@ Part of the Saimor/Môra ecosystem.
 **Status:** ✅ MVP Complete | 🚀 Production-Ready | 🧪 Testing Phase
 
 Made with ❤️ for intelligent knowledge management.
+
