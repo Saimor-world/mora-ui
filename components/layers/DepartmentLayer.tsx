@@ -129,7 +129,7 @@ export const DepartmentLayer: React.FC = () => {
         if (spaces.length === 0) return [];
 
         const count = spaces.length;
-        const baseRadius = 220;
+        const baseRadius = 280; // WIDER ORBITS FOR L2
 
         return spaces.map((space, i) => {
             // Slow planetary drift — inner slightly faster, outer slower
@@ -140,15 +140,16 @@ export const DepartmentLayer: React.FC = () => {
             const currentAngle = startAngle + (orbitTime * orbitSpeed);
 
             // Slightly elliptical orbit for organic feel
-            const radiusX = baseRadius + (i * 38);
-            const radiusY = baseRadius + (i * 27);
+            const radiusX = baseRadius + (i * 45); // was 38
+            const radiusY = baseRadius + (i * 32); // was 27
 
             return {
                 space,
                 x: Math.cos(currentAngle) * radiusX,
                 y: Math.sin(currentAngle) * radiusY,
                 angle: currentAngle,
-                radius: radiusX,
+                radiusX,
+                radiusY,
                 delay: i * 0.08
             };
         });
@@ -226,18 +227,29 @@ export const DepartmentLayer: React.FC = () => {
                 </motion.h1>
             </div>
 
-            {/* Back Button */}
+            {/* Breadcrumb Back Button */}
             <motion.button
                 onClick={navigateToCore}
-                className="absolute top-8 left-8 z-50 flex items-center gap-2 text-white/50 hover:text-white transition-colors group"
+                className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                whileHover={{ x: -5 }}
+                whileHover={{ x: -2 }}
             >
                 <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={16} />
                 </div>
-                <span className="text-sm tracking-widest font-light">UNIVERSE</span>
+                <div className="flex flex-col items-start gap-0.5 pointer-events-none">
+                    <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
+                        Zurück
+                    </span>
+                    <span className="text-sm tracking-widest font-light flex items-center gap-2">
+                        <span className="text-emerald-100/90">UNIVERSE</span>
+                        <span className="text-white/20">/</span>
+                        <span className="text-white/40 group-hover:text-white/60 transition-colors uppercase">
+                            {deptTitle.length > 20 ? deptTitle.substring(0, 20) + '...' : deptTitle || 'DEPARTMENT'}
+                        </span>
+                    </span>
+                </div>
             </motion.button>
 
             {/* Mora Hub is opened via the Orb, not rendered here */}
@@ -251,13 +263,13 @@ export const DepartmentLayer: React.FC = () => {
 
                         {/* ORBITAL TRACKS - Visual guides for moon paths */}
                         <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20">
-                            {moonPositions.map(({ space, radius }, i) => (
+                            {moonPositions.map(({ space, radiusX, radiusY }, i) => (
                                 <ellipse
                                     key={`orbit-${space.id}`}
                                     cx="50%"
                                     cy="50%"
-                                    rx={radius}
-                                    ry={radius - (i * 10)}
+                                    rx={radiusX}
+                                    ry={radiusY}
                                     fill="none"
                                     stroke="url(#orbitGradient)"
                                     strokeWidth="1"
@@ -283,14 +295,14 @@ export const DepartmentLayer: React.FC = () => {
                             {/* Outer aura ring 1 */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 140, height: 140, background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' }}
+                                style={{ width: 180, height: 180, background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' }}
                                 animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.15, 0.6] }}
                                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                             />
                             {/* Outer aura ring 2 */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 80, height: 80, background: 'radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%)' }}
+                                style={{ width: 110, height: 110, background: 'radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%)' }}
                                 animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.1, 0.4] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                             />
@@ -317,71 +329,71 @@ export const DepartmentLayer: React.FC = () => {
                                 : space.name;
 
                             return (
-                            <motion.div
-                                key={space.id}
-                                className="absolute cursor-pointer group"
-                                style={{
-                                    left: `calc(50% + ${x}px)`,
-                                    top: `calc(50% + ${y}px)`,
-                                    transform: 'translate(-50%, -50%)'
-                                }}
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay, duration: 0.5 }}
-                                whileHover={{ scale: 1.15 }}
-                                onMouseEnter={() => setHoverSpace(space.id)}
-                                onMouseLeave={() => scheduleHoverClear()}
-                                onClick={(event) => {
-                                    // Primary action: drill down to Layer-3 (Space view).
-                                    if (!event.shiftKey) {
-                                        navigateToSpace(space.id);
-                                        return;
-                                    }
-                                    // Secondary fallback: Shift+Click opens the pane flow.
-                                    openPane({
-                                        id: `space-${space.id}`,
-                                        type: 'space',
-                                        title: displayName,
-                                        data: {
-                                            spaceId: space.id,
-                                            departmentId: activeDepartmentId
-                                        },
-                                        size: { width: 1000, height: 700 },
-                                        position: { x: 100, y: 100 }
-                                    });
-                                }}
+                                <motion.div
+                                    key={space.id}
+                                    className="absolute cursor-pointer group"
+                                    style={{
+                                        left: `calc(50% + ${x}px)`,
+                                        top: `calc(50% + ${y}px)`,
+                                        transform: 'translate(-50%, -50%)'
+                                    }}
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay, duration: 0.5 }}
+                                    whileHover={{ scale: 1.15 }}
+                                    onMouseEnter={() => setHoverSpace(space.id)}
+                                    onMouseLeave={() => scheduleHoverClear()}
+                                    onClick={(event) => {
+                                        // Primary action: drill down to Layer-3 (Space view).
+                                        if (!event.shiftKey) {
+                                            navigateToSpace(space.id);
+                                            return;
+                                        }
+                                        // Secondary fallback: Shift+Click opens the pane flow.
+                                        openPane({
+                                            id: `space-${space.id}`,
+                                            type: 'space',
+                                            title: displayName,
+                                            data: {
+                                                spaceId: space.id,
+                                                departmentId: activeDepartmentId
+                                            },
+                                            size: { width: 1000, height: 700 },
+                                            position: { x: 100, y: 100 }
+                                        });
+                                    }}
 
-                            >
-                                <Star
-                                    space={{
-                                        id: space.id,
-                                        name: displayName,
-                                        department_id: activeDepartmentId, // Explicitly pass activeDepartmentId
-                                        description: space.description || undefined,
-                                        folder_count: 0 // Keep as 0 for now as 'space' type might not have it yet, avoiding redundant find()
-                                    }}
-                                    position={{ x: 0, y: 0 }}
-                                    size="xl"
-                                    isActive={false}
-                                    onHover={(hovered) => {
-                                        if (hovered) setHoverSpace(space.id);
-                                        else scheduleHoverClear();
-                                    }}
-                                />
-                                {/* Label for Space - ALWAYS VISIBLE */}
-                                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                                    <span className="text-[11px] text-white/60 group-hover:text-emerald-300 font-medium tracking-wide transition-colors duration-200">
-                                        {displayName}
-                                    </span>
-                                </div>
-                                {/* Enhanced Hover Info */}
-                                <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                                    <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-md border border-emerald-500/20 shadow-lg">
-                                        <span className="text-[10px] text-emerald-300/70 uppercase tracking-wider">WORKSPACE ÖFFNEN</span>
+                                >
+                                    <Star
+                                        space={{
+                                            id: space.id,
+                                            name: displayName,
+                                            department_id: activeDepartmentId, // Explicitly pass activeDepartmentId
+                                            description: space.description || undefined,
+                                            folder_count: 0 // Keep as 0 for now as 'space' type might not have it yet, avoiding redundant find()
+                                        }}
+                                        position={{ x: 0, y: 0 }}
+                                        size="xl"
+                                        isActive={false}
+                                        onHover={(hovered) => {
+                                            if (hovered) setHoverSpace(space.id);
+                                            else scheduleHoverClear();
+                                        }}
+                                    />
+                                    {/* Label for Space - ALWAYS VISIBLE */}
+                                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                                        <span className="text-[11px] text-white/60 group-hover:text-emerald-300 font-medium tracking-wide transition-colors duration-200">
+                                            {displayName}
+                                        </span>
                                     </div>
-                                </div>
-                            </motion.div>
-                        );
+                                    {/* Enhanced Hover Info */}
+                                    <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                                        <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-md border border-emerald-500/20 shadow-lg">
+                                            <span className="text-[10px] text-emerald-300/70 uppercase tracking-wider">WORKSPACE ÖFFNEN</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
                         })}
 
                         {/* Folder Stars for hovered Space (semantic mini-universe) */}

@@ -27,9 +27,11 @@ function isLocalhost(): boolean {
 
 export class CoreError extends Error {
     status: number;
-    constructor(message: string, status: number) {
+    details?: any;
+    constructor(message: string, status: number, details?: any) {
         super(message);
         this.status = status;
+        this.details = details;
         this.name = 'CoreError';
     }
 }
@@ -130,19 +132,25 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         }
 
         let message = `Core API Error: ${response.status} ${response.statusText}`;
+        let details: any = null;
         try {
             const errorBody = await response.json();
+            details = errorBody?.detail ?? errorBody ?? null;
             if (errorBody.detail) {
                 if (Array.isArray(errorBody.detail)) {
                     message = errorBody.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
                 } else {
-                    message = typeof errorBody.detail === 'string' ? errorBody.detail : JSON.stringify(errorBody.detail);
+                    if (typeof errorBody.detail === 'string') {
+                        message = errorBody.detail;
+                    } else {
+                        message = errorBody.detail.message || JSON.stringify(errorBody.detail);
+                    }
                 }
             }
         } catch {
             // ignore parse errors
         }
-        throw new CoreError(message, response.status);
+        throw new CoreError(message, response.status, details);
     }
 
     if (response.status === 204) {

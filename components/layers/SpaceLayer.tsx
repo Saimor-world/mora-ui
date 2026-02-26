@@ -19,13 +19,14 @@ const FOLDER_COLORS = [
 
 // Orbit speeds per ring: inner faster, outer slower — slow planetary drift.
 const RING_SPEEDS = [0.032, 0.020, 0.013]; // was [0.18, 0.12, 0.08] — ~6x slower
-const RING_RADII_X = [185, 295, 400];      // was [155, 245, 335] — wider orbits
-const RING_RADII_Y = [152, 242, 328];      // was [127, 201, 275]
+const RING_RADII_X = [140, 220, 300];      // Tighter orbits for L3 intimacy
+const RING_RADII_Y = [115, 180, 245];
 
 export const SpaceLayer: React.FC = () => {
     const {
         activeSpaceId,
         activeDepartmentId,
+        departments,
         spacesByDepartment,
         foldersBySpace,
         isLoadingFolders,
@@ -58,6 +59,10 @@ export const SpaceLayer: React.FC = () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
     }, []);
+
+    const currentDepartment = useMemo(() => {
+        return departments.find(d => d.id === activeDepartmentId);
+    }, [departments, activeDepartmentId]);
 
     const currentSpace = useMemo(() => {
         if (!activeDepartmentId || !activeSpaceId) return null;
@@ -133,14 +138,17 @@ export const SpaceLayer: React.FC = () => {
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Galaxy overlay reused from DepartmentLayer visual language. */}
+            {/* Depth Overlay: Darken and blur the galaxy background to create a sense of being 'inside' a Space */}
+            <div className="absolute inset-0 z-[-1] bg-black/40 backdrop-blur-[60px] pointer-events-none" />
+
+            {/* Galaxy overlay reused from DepartmentLayer visual language, but subdued. */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
                     background: `
-                        radial-gradient(900px 420px at 55% 58%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
-                        radial-gradient(700px 320px at 25% 35%, rgba(6, 182, 212, 0.14) 0%, transparent 60%),
-                        radial-gradient(600px 280px at 80% 40%, rgba(99, 102, 241, 0.12) 0%, transparent 55%)
+                        radial-gradient(900px 420px at 55% 58%, rgba(16, 185, 129, 0.12) 0%, transparent 65%),
+                        radial-gradient(700px 320px at 25% 35%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+                        radial-gradient(600px 280px at 80% 40%, rgba(99, 102, 241, 0.05) 0%, transparent 55%)
                     `
                 }}
             />
@@ -161,18 +169,27 @@ export const SpaceLayer: React.FC = () => {
                 </motion.h1>
             </div>
 
-            {/* Back button style aligned with DepartmentLayer. */}
+            {/* Breadcrumb Back Button style */}
             <motion.button
                 onClick={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
-                className="absolute top-8 left-8 z-50 flex items-center gap-2 text-white/50 hover:text-white transition-colors group"
+                className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                whileHover={{ x: -5 }}
+                whileHover={{ x: -2 }}
             >
                 <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={16} />
                 </div>
-                <span className="text-sm tracking-widest font-light">ABTEILUNG</span>
+                <div className="flex flex-col items-start gap-0.5 pointer-events-none">
+                    <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
+                        Zurück
+                    </span>
+                    <span className="text-sm tracking-widest font-light flex items-center gap-2">
+                        <span>UNIVERSE</span>
+                        <span className="text-white/20">/</span>
+                        <span className="text-emerald-100/90">{currentDepartment?.name.toUpperCase() || 'DEPARTMENT'}</span>
+                    </span>
+                </div>
             </motion.button>
 
             {/* Top-right actions: minimal floating controls */}

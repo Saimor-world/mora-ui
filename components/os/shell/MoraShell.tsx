@@ -80,6 +80,9 @@ import { SnapPreview } from '@/components/os/SnapPreview';
 import { MemorySidebar } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
 
+// Naming Conflict Modal (409 UX)
+import NameConflictModal from '@/components/ui/NameConflictModal';
+
 // =============================================================================
 // LOADING SCREEN
 // =============================================================================
@@ -531,6 +534,9 @@ export const MoraShell: React.FC = () => {
                     </>
                 )
             }
+
+            {/* Name Conflict Modal (409 UX) */}
+            <NameConflictModal />
 
             {/* Logout Transition Overlay */}
             {

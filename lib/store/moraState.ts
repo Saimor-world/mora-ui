@@ -64,6 +64,13 @@ const readStandardMode = (companyId?: string | null) => {
 export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
+export interface NameConflictState {
+    type: 'department' | 'space' | 'folder';
+    message: string;
+    suggestions: string[];
+    originalPayload: any;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // ROLE-BASED ACCESS CONTROL - Phase 6.3
 // ═══════════════════════════════════════════════════════════════════════════
@@ -111,6 +118,9 @@ interface MoraState {
     activeNode: CoreNode | null;
     minimizedNodes: CoreNode[]; // Phase 3: Dock Integration
 
+    // Naming Conflict (409) State
+    nameConflict: NameConflictState | null;
+
     // User & Permissions (Phase 6.3)
     user: User | null;
     permissions: Permissions;
@@ -157,6 +167,8 @@ interface MoraState {
     setIsStandardMode: (active: boolean) => void;
 
     // Actions
+    resolveNameConflict: (newName: string) => Promise<void>;
+    cancelNameConflict: () => void;
     setViewLevel: (level: ViewLevel) => void;
     setViewMode: (mode: ViewMode) => void; // NEW: Switch between Owner/Demo/Workspace
     setActiveCompany: (id: string | null) => void;
@@ -229,6 +241,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     activeSpaceId: null,
     activeFolderId: null,
     activeNode: null,
+    nameConflict: null,
 
     companies: [],
     departments: [],
@@ -467,6 +480,33 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     // -------------------------------------------------------------------------
     // SYSTEM ACTIONS
     // -------------------------------------------------------------------------
+    
+    resolveNameConflict: async (newName: string) => {
+        const state = get();
+        const conflict = state.nameConflict;
+        if (!conflict) return;
+
+        set({ nameConflict: null });
+
+        try {
+            switch (conflict.type) {
+                case 'department':
+                    await state.createDepartment({ ...conflict.originalPayload, name: newName });
+                    break;
+                case 'space':
+                    await state.addSpace({ ...conflict.originalPayload, name: newName });
+                    break;
+                case 'folder':
+                    await state.addFolder({ ...conflict.originalPayload, name: newName });
+                    break;
+            }
+        } catch (e) {
+            console.error("Failed to resolve name conflict:", e);
+        }
+    },
+    
+    cancelNameConflict: () => set({ nameConflict: null }),
+    
     resetStore: () => {
         set({
             user: null,
@@ -487,6 +527,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             minimizedNodes: [],
             viewMode: 'workspace',
             viewLevel: 'core',
+            nameConflict: null,
             coreError: null,
             orbState: 'idle',
             hasBooted: false,
@@ -799,7 +840,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 }
             };
 
-            tree.forEach(root => processNode(root));
+            tree.forEach((root: any) => processNode(root));
 
             set({
                 treeData: tree,
@@ -887,6 +928,17 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // Refresh tree to show new space
             get().loadTree();
         } catch (error: any) {
+            if (error instanceof CoreError && error.status === 409 && error.details?.error_code === 'name_conflict') {
+                set({ 
+                    nameConflict: { 
+                        type: 'space',
+                        message: error.details?.message || 'Name already exists in this Department.',
+                        suggestions: error.details?.suggestions || [],
+                        originalPayload: payload
+                    } 
+                });
+                return;
+            }
             const msg = error instanceof CoreError ? error.message : "Failed to create space.";
             toast.error(msg);
             set({ coreError: msg });
@@ -912,6 +964,17 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // Refresh tree to show new folder
             get().loadTree();
         } catch (error: any) {
+            if (error instanceof CoreError && error.status === 409 && error.details?.error_code === 'name_conflict') {
+                set({ 
+                    nameConflict: { 
+                        type: 'folder',
+                        message: error.details?.message || 'Name already exists in this Space.',
+                        suggestions: error.details?.suggestions || [],
+                        originalPayload: payload
+                    } 
+                });
+                return;
+            }
             const msg = error instanceof CoreError ? error.message : "Failed to create folder.";
             toast.error(msg);
             set({ coreError: msg });
@@ -1023,6 +1086,17 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             toast.success(`Department "${newDept.name}" created!`);
             get().loadTree();
         } catch (error: any) {
+            if (error instanceof CoreError && error.status === 409 && error.details?.error_code === 'name_conflict') {
+                set({ 
+                    nameConflict: { 
+                        type: 'department',
+                        message: error.details?.message || 'Name already exists in this Workspace.',
+                        suggestions: error.details?.suggestions || [],
+                        originalPayload: payload
+                    } 
+                });
+                return;
+            }
             const msg = error instanceof CoreError ? error.message : "Failed to create department.";
             toast.error(msg);
             set({ coreError: msg });
