@@ -267,13 +267,7 @@ export const MoraShell: React.FC = () => {
         if (viewLevel === 'folder') return 'Folder';
         return 'Universe';
     }, [viewLevel]);
-    const workspaceTabLabel = React.useMemo(() => {
-        if (viewLevel === 'core') return 'Universe';
-        if (viewLevel === 'department') return 'Department';
-        if (viewLevel === 'space') return 'Space';
-        if (viewLevel === 'folder') return 'Folder';
-        return 'Workspace';
-    }, [viewLevel]);
+    const workspaceTabLabel = 'Workspace';
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);

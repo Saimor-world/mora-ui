@@ -76,7 +76,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             )}
 
             <div className="ml-1 px-3 py-1 rounded-full border border-white/10 bg-white/[0.04]">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">{scopeLabel}</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-white/55">Layer</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-200 ml-1">{scopeLabel}</span>
             </div>
 
             {/* Current Context Indicator - Now Clickable Switcher */}
