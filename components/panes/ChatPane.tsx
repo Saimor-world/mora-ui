@@ -109,13 +109,14 @@ const SaveInsightButton: React.FC<{
     const [showCategorySelect, setShowCategorySelect] = useState(false);
 
     const handleSave = async (category: MemoryCategory = 'context') => {
+        if (!companyId) return;
         setSaving(true);
         try {
             await learnInsight({
                 insight: content,
                 category,
                 auto_commit: true,
-                company_id: companyId || undefined
+                company_id: companyId
             });
             onSaved();
             setShowCategorySelect(false);
@@ -337,13 +338,13 @@ Was kann ich fuer dich tun?`,
 
     // Search for relevant memories based on user query
     const fetchRelevantMemories = useCallback(async (query: string) => {
-        if (query.length < 5) {
+        if (query.length < 5 || !activeCompanyId) {
             setRelevantMemories([]);
             setShowMemories(false);
             return;
         }
         try {
-            const results = await searchMemory(query, 3, activeCompanyId || undefined);
+            const results = await searchMemory(query, 3, activeCompanyId);
             if (results && results.length > 0) {
                 setRelevantMemories(results);
                 setShowMemories(true);
@@ -366,13 +367,13 @@ Was kann ich fuer dich tun?`,
 
     // Handle memory hint confirmation
     const handleMemoryConfirm = useCallback(async () => {
-        if (!memoryHint.content) return;
+        if (!memoryHint.content || !activeCompanyId) return;
         try {
             await learnInsight({
                 insight: memoryHint.content,
                 category: 'context',
                 auto_commit: true,
-                company_id: activeCompanyId || undefined
+                company_id: activeCompanyId
             });
         } catch (err) {
             console.error('[ChatPane] Failed to save memory:', err);

@@ -34,29 +34,39 @@ export function useMemory() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const scopedCompanyId = activeCompanyId || null;
+
     // Load pending review items
     const loadPending = useCallback(async () => {
+        if (!scopedCompanyId) {
+            setPendingItems([]);
+            return;
+        }
         try {
-            const data = await getMemoryPending(activeCompanyId || undefined);
+            const data = await getMemoryPending(scopedCompanyId);
             if (Array.isArray(data)) {
                 setPendingItems(data);
             }
         } catch (err) {
             console.error('[useMemory] Load pending error:', err);
         }
-    }, [activeCompanyId]);
+    }, [scopedCompanyId]);
 
     // Load metrics
     const loadMetrics = useCallback(async () => {
+        if (!scopedCompanyId) {
+            setMetrics(null);
+            return;
+        }
         try {
-            const data = await getMemoryMetrics(activeCompanyId || undefined);
+            const data = await getMemoryMetrics(scopedCompanyId);
             if (data && !data.error) {
                 setMetrics(data);
             }
         } catch (err) {
             console.error('[useMemory] Load metrics error:', err);
         }
-    }, [activeCompanyId]);
+    }, [scopedCompanyId]);
 
     // Refresh all
     const refresh = useCallback(async () => {
@@ -73,8 +83,12 @@ export function useMemory() {
 
     // Approve item
     const approve = useCallback(async (id: string) => {
+        if (!scopedCompanyId) {
+            toast.error('Keine aktive Company ausgewaehlt');
+            return false;
+        }
         try {
-            await approveMemoryItem(id, activeCompanyId || undefined);
+            await approveMemoryItem(id, scopedCompanyId);
             setPendingItems(prev => prev.filter(item => item.id !== id));
             toast.success('Insight gelernt');
             loadMetrics(); // Refresh metrics
@@ -83,12 +97,16 @@ export function useMemory() {
             toast.error('Fehler beim Speichern');
             return false;
         }
-    }, [activeCompanyId, loadMetrics]);
+    }, [loadMetrics, scopedCompanyId]);
 
     // Reject item
     const reject = useCallback(async (id: string) => {
+        if (!scopedCompanyId) {
+            toast.error('Keine aktive Company ausgewaehlt');
+            return false;
+        }
         try {
-            await rejectMemoryItem(id, activeCompanyId || undefined);
+            await rejectMemoryItem(id, scopedCompanyId);
             setPendingItems(prev => prev.filter(item => item.id !== id));
             toast.info('Insight abgelehnt');
             return true;
@@ -96,7 +114,7 @@ export function useMemory() {
             toast.error('Fehler beim Ablehnen');
             return false;
         }
-    }, [activeCompanyId]);
+    }, [scopedCompanyId]);
 
     // Initial load
     useEffect(() => {

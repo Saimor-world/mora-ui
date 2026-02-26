@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, ChevronLeft, ChevronRight, Search, Check, Clock, AlertCircle, Lightbulb, X } from 'lucide-react';
 import { create } from 'zustand';
 import { useMemory } from '@/lib/hooks/useMemory';
+import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { useMoraStore } from '@/lib/store/moraState';
 import { searchMemory, learnInsight } from '@/lib/api/coreClient';
 import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
@@ -77,7 +78,7 @@ const QuickMemoryInputInline: React.FC<{
     const [success, setSuccess] = useState(false);
 
     const handleSubmit = async () => {
-        if (!input.trim() || isSubmitting) return;
+        if (!input.trim() || isSubmitting || !companyId) return;
         setIsSubmitting(true);
 
         try {
@@ -188,6 +189,7 @@ const MemoryItem: React.FC<{ memory: MemorySearchResult }> = ({ memory }) => {
 
 export const MemorySidebar: React.FC = () => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const mod = usePlatformModifier();
     const { isOpen, isCollapsed, setOpen, setCollapsed } = useMemorySidebarStore();
     const { pendingCount, pendingItems, refresh, approve, reject } = useMemory();
 
@@ -198,9 +200,13 @@ export const MemorySidebar: React.FC = () => {
 
     // Load recent memories on mount
     useEffect(() => {
+        if (!activeCompanyId) {
+            setRecentMemories([]);
+            return;
+        }
         const loadRecent = async () => {
             try {
-                const results = await searchMemory('', 10, activeCompanyId || undefined);
+                const results = await searchMemory('', 10, activeCompanyId);
                 if (results) {
                     setRecentMemories(results);
                 }
@@ -221,9 +227,14 @@ export const MemorySidebar: React.FC = () => {
         }
 
         const timer = setTimeout(async () => {
+            if (!activeCompanyId) {
+                setIsSearching(false);
+                setSearchResults([]);
+                return;
+            }
             setIsSearching(true);
             try {
-                const results = await searchMemory(searchQuery, 5, activeCompanyId || undefined);
+                const results = await searchMemory(searchQuery, 5, activeCompanyId);
                 setSearchResults(results || []);
             } catch (err) {
                 console.error('[MemorySidebar] Search failed:', err);
@@ -326,6 +337,12 @@ export const MemorySidebar: React.FC = () => {
                                     {/* Quick Input */}
                                     <QuickMemoryInputInline onSuccess={refresh} companyId={activeCompanyId} />
 
+                                    {!activeCompanyId && (
+                                        <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
+                                            Keine aktive Company gewaehlt. Memory ist pro Company isoliert.
+                                        </div>
+                                    )}
+
                                     {/* Search */}
                                     <div className="p-3 border-b border-white/5">
                                         <div className="relative">
@@ -416,7 +433,7 @@ export const MemorySidebar: React.FC = () => {
 
                                     {/* Footer */}
                                     <div className="p-3 border-t border-white/5 text-[9px] text-white/20 text-center">
-                                        Strg+Shift+M zum Oeffnen
+                                        {mod}+Shift+M zum Oeffnen
                                     </div>
                                 </div>
                             )}

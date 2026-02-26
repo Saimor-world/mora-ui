@@ -12,6 +12,7 @@ import { useMemory } from '@/lib/hooks/useMemory';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter, useNotificationStore } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
+import { ActionTray } from '@/components/os/ActionTray';
 import { PlasmaOrb } from './PlasmaOrb';
 
 /**
@@ -343,10 +344,13 @@ export const Dock = () => {
                     <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
 
-                    {/* RIGHT SECTION: Focus Mode + Notifications + Company */}
+                    {/* RIGHT SECTION: Focus Mode + Notifications + Actions + Company */}
                     <div className="flex items-center gap-2">
                         {/* Focus Mode Widget */}
                         <FocusModeWidget />
+
+                        {/* Action Tray */}
+                        <ActionTray />
 
                         {/* Notification Center */}
                         <NotificationCenter />
