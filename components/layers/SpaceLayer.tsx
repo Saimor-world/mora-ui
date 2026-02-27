@@ -79,6 +79,16 @@ export const SpaceLayer: React.FC = () => {
         return foldersBySpace[activeSpaceId] || [];
     }, [activeSpaceId, foldersBySpace]);
 
+    const displaySpaceName = useCallback((name: string) => {
+        const deptName = currentDepartment?.name || '';
+        let value = name || 'Space';
+        if (deptName && value.toLowerCase().startsWith(deptName.toLowerCase())) {
+            value = value.slice(deptName.length).replace(/^[\s&–\-_:]+/, '').trim();
+        }
+        value = value.replace(/\b(workspace|team space|space)\b/gi, '').trim();
+        return value || 'Teamraum';
+    }, [currentDepartment?.name]);
+
     // Recency weight used to bias folder prominence.
     const getWeight = useCallback((dateStr?: string | null) => {
         if (!dateStr) return 0.5;
@@ -141,7 +151,7 @@ export const SpaceLayer: React.FC = () => {
 
     if (viewLevel !== 'space' || !activeSpaceId) return null;
 
-    const spaceName = currentSpace?.name || 'Space';
+    const spaceName = displaySpaceName(currentSpace?.name || 'Space');
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
@@ -216,6 +226,33 @@ export const SpaceLayer: React.FC = () => {
                     <Plus size={15} />
                     NEW FOLDER
                 </motion.button>
+            </motion.div>
+
+            <motion.div
+                className="absolute top-32 left-8 z-40 rounded-2xl border border-cyan-400/20 bg-black/45 backdrop-blur-xl px-4 py-3 min-w-[220px]"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+            >
+                <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-200/80 mb-2">
+                    Layer 3 / Folder Cluster
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Folders</div>
+                        <div className="text-lg leading-none text-cyan-200">{folders.length}</div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Aktiv</div>
+                        <div className="text-lg leading-none text-emerald-200">{isAnyHovered ? 1 : 0}</div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Files</div>
+                        <div className="text-lg leading-none text-violet-200">
+                            {folders.reduce((sum, folder) => sum + (folder.node_count || 0), 0)}
+                        </div>
+                    </div>
+                </div>
             </motion.div>
 
             {/* Universe content rendered full screen, no panel shell. */}

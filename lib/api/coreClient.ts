@@ -806,42 +806,54 @@ export async function searchGlobal(query: string, companyId?: string): Promise<S
 
 // ========== MEMORY / LEARNING BRAIN API ==========
 
+function requireMemoryCompanyId(companyId?: string): string {
+    if (!companyId) {
+        throw new Error('Memory API requires company_id');
+    }
+    return companyId;
+}
+
 // POST /v1/memory/learn - Neues Insight lernen
 export async function learnInsight(payload: {
     insight: string;
     category: string;
     auto_commit?: boolean;
-    company_id?: string;
+    company_id: string;
 }): Promise<{ status: string; message: string; committed?: boolean; risk?: string }> {
     return corePost('/v1/memory/learn', payload);
 }
 
-// GET /v1/memory/search - Gedächtnis durchsuchen
-export async function searchMemory(query: string, limit: number = 10, companyId?: string): Promise<any[]> {
-    const companyQuery = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
+// GET /v1/memory/search - Gedaechtnis durchsuchen
+export async function searchMemory(query: string, limit: number = 10, companyId: string): Promise<any[]> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    const companyQuery = `&company_id=${encodeURIComponent(resolvedCompanyId)}`;
     return coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true }) || [];
 }
 
 // GET /v1/memory/pending - Review Queue laden
-export async function getMemoryPending(companyId?: string): Promise<any[]> {
-    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+export async function getMemoryPending(companyId: string): Promise<any[]> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
     return coreGet(`/v1/memory/pending${companyQuery}`, { isOptional: true }) || [];
 }
 
-// POST /v1/memory/approve/{id} - Review Item bestätigen
-export async function approveMemoryItem(id: string | number, companyId?: string): Promise<{ success: boolean }> {
-    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+// POST /v1/memory/approve/{id} - Review Item bestaetigen
+export async function approveMemoryItem(id: string | number, companyId: string): Promise<{ success: boolean }> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
     return corePost(`/v1/memory/approve/${id}${companyQuery}`, {});
 }
 
 // POST /v1/memory/reject/{id} - Review Item ablehnen
-export async function rejectMemoryItem(id: string | number, companyId?: string): Promise<{ success: boolean }> {
-    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+export async function rejectMemoryItem(id: string | number, companyId: string): Promise<{ success: boolean }> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
     return corePost(`/v1/memory/reject/${id}${companyQuery}`, {});
 }
 
 // GET /v1/memory/metrics - Statistiken
-export async function getMemoryMetrics(companyId?: string): Promise<any> {
-    const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+export async function getMemoryMetrics(companyId: string): Promise<any> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
     return coreGet(`/v1/memory/metrics${companyQuery}`, { isOptional: true });
 }

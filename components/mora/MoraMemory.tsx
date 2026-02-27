@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { coreGet, corePost } from "@/lib/api/coreClient";
 import { toast } from "sonner";
+import { useMoraStore } from "@/lib/store/moraState";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -85,6 +86,10 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
     const [isSearching, setIsSearching] = useState(false);
 
     const searchMemory = useCallback(async () => {
+        if (!companyId) {
+            setResults([]);
+            return;
+        }
         if (!query.trim()) {
             setResults([]);
             return;
@@ -186,6 +191,11 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     const loadQueue = useCallback(async () => {
+        if (!companyId) {
+            setItems([]);
+            setIsLoading(false);
+            return;
+        }
         try {
             const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
             const data = await coreGet(`/v1/memory/pending${companyQuery}`, { isOptional: true });
@@ -204,6 +214,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
     }, [loadQueue]);
 
     const handleApprove = async (id: string) => {
+        if (!companyId) return;
         setProcessingId(id);
         try {
             const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
@@ -219,6 +230,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
     };
 
     const handleReject = async (id: string) => {
+        if (!companyId) return;
         setProcessingId(id);
         try {
             const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
@@ -326,6 +338,11 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
 
     useEffect(() => {
         const loadMetrics = async () => {
+            if (!companyId) {
+                setMetrics(null);
+                setIsLoading(false);
+                return;
+            }
             try {
                 const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
                 const data = await coreGet(`/v1/memory/metrics${companyQuery}`, { isOptional: true });
@@ -402,6 +419,8 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     showStats = true,
     companyId = null,
 }) => {
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const resolvedCompanyId = companyId || activeCompanyId || null;
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -441,11 +460,11 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
             </div>
 
             {/* Content */}
-            {activeTab === "search" && showSearch && <MemorySearch compact={compact} companyId={companyId} />}
+            {activeTab === "search" && showSearch && <MemorySearch compact={compact} companyId={resolvedCompanyId} />}
             {activeTab === "queue" && showQueue && (
-                <ReviewQueue compact={compact} companyId={companyId} onUpdate={() => setRefreshKey((k) => k + 1)} />
+                <ReviewQueue compact={compact} companyId={resolvedCompanyId} onUpdate={() => setRefreshKey((k) => k + 1)} />
             )}
-            {activeTab === "stats" && showStats && <MemoryStats key={refreshKey} compact={compact} companyId={companyId} />}
+            {activeTab === "stats" && showStats && <MemoryStats key={refreshKey} compact={compact} companyId={resolvedCompanyId} />}
         </div>
     );
 };

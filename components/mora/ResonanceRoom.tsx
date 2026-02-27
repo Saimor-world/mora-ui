@@ -79,6 +79,7 @@ export const ResonanceRoom: React.FC<Props> = ({
     const orbState = useMoraStore((s) => s.orbState);
     const viewMode = useMoraStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
 
 
 
@@ -172,11 +173,11 @@ export const ResonanceRoom: React.FC<Props> = ({
         setMoraIsThinking(true);
 
         // If user wants Mora to remember something, learn it
-        if (shouldLearn) {
+        if (shouldLearn && activeCompanyId) {
             const insight = extractInsight(messageContent);
             const category = guessCategory(insight);
             try {
-                await learnInsight({ insight, category, auto_commit: category !== 'fact' });
+                await learnInsight({ insight, category, auto_commit: category !== 'fact', company_id: activeCompanyId });
                 console.log("[ResonanceRoom] Learning insight:", { insight, category });
             } catch (e) {
                 console.warn("[ResonanceRoom] Memory learning failed (backend not ready?):", e);

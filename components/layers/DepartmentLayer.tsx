@@ -32,6 +32,7 @@ export const DepartmentLayer: React.FC = () => {
 
     const currentDepartment = departments.find((d) => d.id === activeDepartmentId);
     const deptTitle = currentDepartment?.name || '';
+    const deptColor = currentDepartment?.color || '#10b981';
 
     const departmentDocs = useMemo(() => {
         if (!activeDepartmentId || !treeData) return [];
@@ -110,14 +111,19 @@ export const DepartmentLayer: React.FC = () => {
         const deptName = currentDepartment?.name || '';
         const sn = normalized(spaceName);
         const dn = normalized(deptName);
-        // Exact match → generic label
-        if (sn === dn) return 'Team Space';
-        // Prefix match — e.g. "HR & Culture Workspace" → "Workspace"
+        if (sn === dn) return 'Teamraum';
+
         if (dn.length > 3 && sn.startsWith(dn)) {
-            const stripped = spaceName.slice(deptName.length).replace(/^[\s&–\-_:]+/, '').trim();
-            if (stripped.length > 0) return stripped;
+            const stripped = spaceName.slice(deptName.length).replace(/^[\s&???\-_:]+/, '').trim();
+            if (stripped.length > 0) {
+                const cleaned = stripped.replace(/(workspace|team space|space)/gi, '').trim();
+                if (cleaned.length > 0) return cleaned;
+            }
         }
-        return spaceName;
+
+        const genericCleaned = spaceName.replace(/(workspace|team space|space)/gi, '').trim();
+        if (genericCleaned.length > 0) return genericCleaned;
+        return 'Teamraum';
     }, [currentDepartment?.name, normalized]);
 
     const uniqueNames = useMemo(() => {
@@ -195,6 +201,11 @@ export const DepartmentLayer: React.FC = () => {
         });
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders]);
 
+    const totalFolders = useMemo(
+        () => spaces.reduce((sum, space) => sum + ((foldersBySpace[space.id] || []).length), 0),
+        [spaces, foldersBySpace]
+    );
+
     if (!activeDepartmentId) return null;
 
     return (
@@ -257,6 +268,31 @@ export const DepartmentLayer: React.FC = () => {
                 NEW SPACE
             </motion.button>
 
+            <motion.div
+                className="absolute top-32 left-8 z-40 rounded-2xl border border-emerald-400/20 bg-black/45 backdrop-blur-xl px-4 py-3 min-w-[220px]"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+            >
+                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80 mb-2">
+                    Layer 2 / Department Orbit
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Spaces</div>
+                        <div className="text-lg leading-none text-emerald-200">{spaces.length}</div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Folders</div>
+                        <div className="text-lg leading-none text-cyan-200">{totalFolders}</div>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Docs</div>
+                        <div className="text-lg leading-none text-violet-200">{departmentDocs.length}</div>
+                    </div>
+                </div>
+            </motion.div>
+
             <div className="absolute inset-0 flex items-center justify-center z-10">
                 {isLoadingSpaces ? (
                     <LoadingState message="Scanning Sector..." />
@@ -316,14 +352,14 @@ export const DepartmentLayer: React.FC = () => {
                             {/* Outer amber aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 360, height: 360, background: 'radial-gradient(circle, rgba(245,158,11,0.22) 0%, transparent 70%)' }}
+                                style={{ width: 360, height: 360, background: `radial-gradient(circle, ${deptColor}33 0%, transparent 70%)` }}
                                 animate={{ scale: [1, 1.35, 1], opacity: [0.55, 0.15, 0.55] }}
                                 transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
                             />
                             {/* Mid amber aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 230, height: 230, background: 'radial-gradient(circle, rgba(251,191,36,0.28) 0%, transparent 70%)' }}
+                                style={{ width: 230, height: 230, background: `radial-gradient(circle, ${deptColor}44 0%, transparent 70%)` }}
                                 animate={{ scale: [1, 1.55, 1], opacity: [0.45, 0.10, 0.45] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
                             />
@@ -331,9 +367,9 @@ export const DepartmentLayer: React.FC = () => {
                             <div
                                 className="relative w-44 h-44 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
-                                    background: 'radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.14) 0%, rgba(245,158,11,0.38) 45%, rgba(120,53,15,0.25) 100%)',
-                                    border: '1.5px solid rgba(251,191,36,0.55)',
-                                    boxShadow: '0 0 100px rgba(245,158,11,0.55), 0 0 220px rgba(245,158,11,0.22), inset 2px 2px 8px rgba(255,255,255,0.25)',
+                                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.16) 0%, ${deptColor}55 45%, rgba(0,0,0,0.28) 100%)`,
+                                    border: `1.5px solid ${deptColor}AA`,
+                                    boxShadow: `0 0 100px ${deptColor}66, 0 0 220px ${deptColor}33, inset 2px 2px 8px rgba(255,255,255,0.25)`,
                                 }}
                             >
                                 {/* Specular */}
@@ -341,16 +377,16 @@ export const DepartmentLayer: React.FC = () => {
                                 {/* Inner corona */}
                                 <motion.div
                                     className="absolute inset-[18%] rounded-full mix-blend-overlay blur-md"
-                                    style={{ background: 'radial-gradient(circle, rgba(253,224,71,1) 0%, transparent 70%)' }}
+                                    style={{ background: `radial-gradient(circle, ${deptColor} 0%, transparent 70%)` }}
                                     animate={{ opacity: [0.5, 1, 0.5], scale: [0.85, 1.15, 0.85] }}
                                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                                 />
-                                <span className="relative z-10 text-[11px] text-amber-100/95 uppercase tracking-[0.15em] text-center px-3 leading-tight font-light">
+                                <span className="relative z-10 text-[11px] text-white/95 uppercase tracking-[0.15em] text-center px-3 leading-tight font-light">
                                     {deptTitle.length > 20 ? deptTitle.substring(0, 18) + '…' : deptTitle}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border border-amber-400/30 bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] text-amber-300/70 uppercase whitespace-nowrap"
-                                style={{ boxShadow: '0 0 12px rgba(245,158,11,0.15)' }}>
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
+                                style={{ borderColor: `${deptColor}66`, color: `${deptColor}CC`, boxShadow: `0 0 12px ${deptColor}44` }}>
                                 Department Core
                             </div>
                         </motion.div>

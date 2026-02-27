@@ -86,7 +86,7 @@ const QuickMemoryInputInline: React.FC<{
                 insight: input.trim(),
                 category: 'context',
                 auto_commit: true,
-                company_id: companyId || undefined,
+                company_id: companyId,
             });
             setSuccess(true);
             setInput('');

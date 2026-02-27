@@ -6,6 +6,7 @@ import { Brain, Send, X, Lightbulb, Check } from 'lucide-react';
 import { learnInsight } from '@/lib/api/coreClient';
 import { guessCategory, shouldAutoCommit } from '@/lib/memory';
 import { showMemoryLearnedToast } from '@/lib/memory/memoryNotifications';
+import { useMoraStore } from '@/lib/store/moraState';
 
 /**
  * QUICK MEMORY INPUT
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const [input, setInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -46,7 +48,7 @@ export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     const handleSubmit = async () => {
-        if (!input.trim() || isSubmitting) return;
+        if (!input.trim() || isSubmitting || !activeCompanyId) return;
 
         setIsSubmitting(true);
 
@@ -58,7 +60,8 @@ export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
             await learnInsight({
                 insight,
                 category,
-                auto_commit: autoCommit
+                auto_commit: autoCommit,
+                company_id: activeCompanyId
             });
 
             // Show success feedback
@@ -89,6 +92,7 @@ export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
     // Determine category hint based on current input
     const categoryHint = input.length > 5 ? guessCategory(input) : null;
     const isLowRisk = categoryHint ? shouldAutoCommit(categoryHint) : true;
+    const isMissingCompany = !activeCompanyId;
 
     return (
         <AnimatePresence>
@@ -152,13 +156,13 @@ export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
                                                 value={input}
                                                 onChange={(e) => setInput(e.target.value)}
                                                 onKeyDown={handleKeyDown}
-                                                placeholder="Was soll Mora sich merken?"
+                                                placeholder={isMissingCompany ? "Bitte erst eine Company auswaehlen" : "Was soll Mora sich merken?"}
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-colors"
-                                                disabled={isSubmitting}
+                                                disabled={isSubmitting || isMissingCompany}
                                             />
                                             <button
                                                 onClick={handleSubmit}
-                                                disabled={!input.trim() || isSubmitting}
+                                                disabled={!input.trim() || isSubmitting || isMissingCompany}
                                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                                             >
                                                 <Send size={16} />
