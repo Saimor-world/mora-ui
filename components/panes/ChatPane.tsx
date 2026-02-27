@@ -22,7 +22,8 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { moraAgentClient } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
-import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check } from 'lucide-react';
+import { useMoraStream } from '@/lib/hooks/useMoraStream';
+import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff } from 'lucide-react';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 
 interface Message {
@@ -168,9 +169,9 @@ const SaveInsightButton: React.FC<{
                                 className="block w-full text-left text-xs px-2 py-1 text-white/70 hover:bg-emerald-500/20 hover:text-emerald-300 rounded transition-colors capitalize"
                             >
                                 {cat === 'context' ? 'Kontext' :
-                                 cat === 'fact' ? 'Fakt' :
-                                 cat === 'preference' ? 'Praeferenz' :
-                                 cat === 'summary' ? 'Zusammenfassung' : cat}
+                                    cat === 'fact' ? 'Fakt' :
+                                        cat === 'preference' ? 'Praeferenz' :
+                                            cat === 'summary' ? 'Zusammenfassung' : cat}
                             </button>
                         ))}
                     </motion.div>
@@ -310,6 +311,16 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { departments, isStandardMode, activeCompanyId } = useMoraStore();
     const pane = getPane(id);
 
+    // Streaming hook — real AI, token-by-token
+    const {
+        sendMessage: streamSend,
+        streamingText,
+        isStreaming,
+        error: streamError,
+        messages: streamHistory,
+        clearHistory,
+    } = useMoraStream();
+
     const [messages, setMessages] = useState<Message[]>([
         {
             id: 'welcome',
@@ -327,6 +338,7 @@ Was kann ich fuer dich tun?`,
         }
     ]);
     const [input, setInput] = useState('');
+    // isLoading is true for navigation/search intents (non-streaming)
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialMessageProcessed = useRef(false);
@@ -381,10 +393,10 @@ Was kann ich fuer dich tun?`,
         setMemoryHint({ show: false, content: '' });
     }, [memoryHint.content, activeCompanyId]);
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom when messages or streaming text changes
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, streamingText]);
 
     // Handle initial message from Dock/Spotlight chat input
     useEffect(() => {
@@ -490,62 +502,71 @@ Was kann ich fuer dich tun?`,
         try {
             if (intent.type === 'navigate' && intent.target) {
                 responseContent = executeNavigation(intent.target);
+                setMessages(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: responseContent,
+                    timestamp: new Date()
+                }]);
+                setIsLoading(false);
+                return;
             } else if (intent.type === 'global_search') {
                 responseContent = executeSearch('', true);
+                setMessages(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: responseContent,
+                    timestamp: new Date()
+                }]);
+                setIsLoading(false);
+                return;
             } else if (intent.type === 'search' && intent.target) {
                 responseContent = executeSearch(intent.target);
+                setMessages(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: responseContent,
+                    timestamp: new Date()
+                }]);
+                setIsLoading(false);
+                return;
             } else {
-                // Call Mora Agent API with conversation history for memory
-                try {
-                    // Build history from previous messages (exclude welcome message)
-                    const historyForApi = messages
-                        .filter(m => m.id !== 'welcome')
-                        .slice(-10) // Last 10 messages for context
-                        .map(m => ({
-                            role: m.role,
-                            content: m.content
-                        }));
+                // ── STREAMING AI RESPONSE ──────────────────────────────────
+                setIsLoading(false); // spinner off — streaming indicator takes over
+                const historyForStream = messages
+                    .filter(m => m.id !== 'welcome')
+                    .slice(-10)
+                    .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-                    const agentResponse = await moraAgentClient.chat({
-                        message: content,
-                        session_id: `chat_pane_${id}`,
-                        history: historyForApi
-                    });
+                const fullReply = await streamSend(content, { history: historyForStream });
 
-                    if (agentResponse?.response) {
-                        const { cleanContent, commands } = parseAIResponse(agentResponse.response);
-                        responseContent = normalizeAgentResponse(cleanContent);
-
-                        if (commands.length > 0) {
-                            console.log('[ChatPane] Executing cursor commands:', commands);
-                            executeCursorCommands(commands);
-                        }
-
-                        if (agentResponse.tool_uses && agentResponse.tool_uses.length > 0) {
-                            const toolsUsed = agentResponse.tool_uses.map(t => t.tool).join(', ');
-                            responseContent += `\n\n<div class="flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md w-fit border border-blue-500/20"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Used tools: ${toolsUsed}</div>`;
-                        }
-                    } else {
-                        responseContent = "Ich habe keine Antwort vom Agenten erhalten.";
-                    }
-                } catch (apiError) {
-                    responseContent = `Ich bin gerade offline, aber ich kann trotzdem helfen!
-
-Versuche:
-• **"Zeig mir Operations"** - Navigation
-• **"Finde Projektplan"** - Suche`;
+                // After stream done — add finalized message to local list
+                // (streamingText already shown live; now commit it)
+                if (fullReply) {
+                    setMessages(prev => [...prev, {
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: fullReply,
+                        timestamp: new Date(),
+                    }]);
+                } else if (streamError) {
+                    setMessages(prev => [...prev, {
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: `⚠️ Fehler: ${streamError}`,
+                        timestamp: new Date(),
+                    }]);
                 }
+                return;
             }
         } catch (error) {
-            responseContent = "Es gab einen Fehler. Bitte versuche es erneut.";
+            setMessages(prev => [...prev, {
+                id: crypto.randomUUID(),
+                role: 'assistant',
+                content: 'Es gab einen Fehler. Bitte versuche es erneut.',
+                timestamp: new Date()
+            }]);
         }
-
-        setMessages(prev => [...prev, {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: responseContent,
-            timestamp: new Date()
-        }]);
 
         setIsLoading(false);
     };
@@ -589,27 +610,22 @@ Versuche:
         >
             <div className="flex flex-col h-full">
                 {/* Header */}
-                <div className={`flex items-center gap-3 p-4 border-b ${
-                    isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
-                }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        isStandardMode
+                <div className={`flex items-center gap-3 p-4 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
+                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isStandardMode
                             ? 'bg-[#0078D4]'
                             : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
-                    }`}>
+                        }`}>
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h3 className={`font-medium ${
-                            isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
-                        }`}>Môra</h3>
-                        <p className={`text-xs ${
-                            isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
-                        }`}>Deine KI-Begleiterin</p>
+                        <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
+                            }`}>Môra</h3>
+                        <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                            }`}>Deine KI-Begleiterin</p>
                     </div>
-                    <div className={`ml-auto flex items-center gap-1 text-xs ${
-                        isStandardMode ? 'text-gray-400' : 'text-white/40'
-                    }`}>
+                    <div className={`ml-auto flex items-center gap-1 text-xs ${isStandardMode ? 'text-gray-400' : 'text-white/40'
+                        }`}>
                         <Wand2 size={12} />
                         <span>{isStandardMode ? 'Assistant Mode' : 'Disney Fairy Mode'}</span>
                     </div>
@@ -636,8 +652,7 @@ Versuche:
                                 exit={{ opacity: 0, y: -10 }}
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
-                                <div className={`max-w-[80%] px-4 py-3 ${
-                                    isStandardMode
+                                <div className={`max-w-[80%] px-4 py-3 ${isStandardMode
                                         ? msg.role === 'user'
                                             ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
                                             : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
@@ -647,14 +662,12 @@ Versuche:
                                     }`}>
                                     <div className="flex items-start gap-2">
                                         {msg.role === 'assistant' && (
-                                            <Bot size={16} className={`mt-0.5 shrink-0 ${
-                                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
-                                            }`} />
+                                            <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                                }`} />
                                         )}
                                         <div
-                                            className={`text-sm leading-relaxed prose prose-sm max-w-none ${
-                                                isStandardMode ? '' : 'prose-invert'
-                                            }`}
+                                            className={`text-sm leading-relaxed prose prose-sm max-w-none ${isStandardMode ? '' : 'prose-invert'
+                                                }`}
                                             dangerouslySetInnerHTML={{
                                                 __html: msg.content
                                                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -662,14 +675,12 @@ Versuche:
                                             }}
                                         />
                                         {msg.role === 'user' && (
-                                            <User size={16} className={`mt-0.5 shrink-0 ${
-                                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
-                                            }`} />
+                                            <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                                }`} />
                                         )}
                                     </div>
-                                    <div className={`flex items-center text-[10px] mt-2 ${
-                                        isStandardMode ? 'text-gray-400' : 'text-white/30'
-                                    }`}>
+                                    <div className={`flex items-center text-[10px] mt-2 ${isStandardMode ? 'text-gray-400' : 'text-white/30'
+                                        }`}>
                                         <span>{msg.timestamp.toLocaleTimeString()}</span>
                                         {/* Save as Insight Button - only for assistant messages (not welcome) */}
                                         {msg.role === 'assistant' && msg.id !== 'welcome' && (
@@ -686,6 +697,36 @@ Versuche:
                         ))}
                     </AnimatePresence>
 
+                    {/* Live streaming bubble — shown while Mora is generating */}
+                    <AnimatePresence>
+                        {isStreaming && streamingText && (
+                            <motion.div
+                                key="stream-bubble"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="flex justify-start"
+                            >
+                                <div className="max-w-[80%] px-4 py-3 bg-white/5 border border-white/10 text-white/90 rounded-2xl">
+                                    <div className="flex items-start gap-2">
+                                        <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                                        <div
+                                            className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none"
+                                            dangerouslySetInnerHTML={{
+                                                __html: streamingText
+                                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                    .replace(/\n/g, '<br/>') +
+                                                    // Blinking cursor appended inline
+                                                    '<span class="inline-block w-[2px] h-[1em] bg-emerald-400 align-middle ml-0.5 animate-pulse" />'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Spinner shown only for navigation/search intents (no stream needed) */}
                     {isLoading && (
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -719,16 +760,17 @@ Versuche:
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                            onKeyDown={(e) => e.key === 'Enter' && !isStreaming && sendMessage()}
                             placeholder="Schreib Mora... (z.B. 'Merke dir...')"
-                            className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all"
+                            disabled={isStreaming}
+                            className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50"
                         />
                         <button
                             onClick={sendMessage}
-                            disabled={!input.trim() || isLoading}
+                            disabled={!input.trim() || isLoading || isStreaming}
                             className="px-4 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2"
                         >
-                            <Send size={18} />
+                            {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                         </button>
                     </div>
                     <ChatSuggestions onSelect={setInput} />

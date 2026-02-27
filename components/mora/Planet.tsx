@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Compass, Folder, ArrowRight, Activity, Database } from 'lucide-react';
+import { Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Folder, ArrowRight, Activity, Database } from 'lucide-react';
+import { getDeptStyle as _getDeptStyle } from '@/lib/utils/deptStyle';
 
 interface PlanetProps {
     department: {
@@ -59,47 +60,8 @@ export const Planet: React.FC<PlanetProps> = ({
 
     const planetSize = sizeMap[size];
 
-    const getDeptStyle = (name: string, customColor?: string | null) => {
-        const lowerName = name.toLowerCase();
-
-        // 1. Establish Semantic Defaults (Icon + Color)
-        let style = { glow: '#64748B', border: '#94A3B8', core: '#475569', icon: Compass }; // Fallback Slate
-
-        if (lowerName.includes('finance') || lowerName.includes('finanz') || lowerName.includes('growth'))
-            style = { glow: '#F59E0B', border: '#FBBF24', core: '#D97706', icon: DollarSign }; // Gold
-
-        else if (lowerName.includes('hr') || lowerName.includes('human') || lowerName.includes('culture') || lowerName.includes('people'))
-            style = { glow: '#EC4899', border: '#F472B6', core: '#DB2777', icon: Users }; // Pink
-
-        else if (lowerName.includes('tech') || lowerName.includes('it ') || lowerName.includes('dev') || lowerName.includes('ai') || lowerName.includes('code'))
-            style = { glow: '#06B6D4', border: '#22D3EE', core: '#0891B2', icon: Code }; // Cyan
-
-        else if (lowerName.includes('sales') || lowerName.includes('store') || lowerName.includes('shop') || lowerName.includes('retail') || lowerName.includes('commerce'))
-            style = { glow: '#F97316', border: '#FB923C', core: '#EA580C', icon: ArrowRight }; // Orange
-
-        else if (lowerName.includes('marketing') || lowerName.includes('brand') || lowerName.includes('pr') || lowerName.includes('media'))
-            style = { glow: '#8B5CF6', border: '#A78BFA', core: '#7C3AED', icon: TrendingUp }; // Violet
-
-        else if (lowerName.includes('management') || lowerName.includes('legal') || lowerName.includes('admin') || lowerName.includes('strategy') || lowerName.includes('hq'))
-            style = { glow: '#10B981', border: '#34D399', core: '#059669', icon: Briefcase }; // Emerald
-
-        else if (lowerName.includes('ops') || lowerName.includes('logis') || lowerName.includes('supply') || lowerName.includes('infrastructure'))
-            style = { glow: '#6366F1', border: '#818CF8', core: '#4F46E5', icon: Activity }; // Indigo
-
-        // 2. Apply Custom Color Override (from DB) if present
-        if (customColor) {
-            return {
-                ...style, // Preserve Semantic Icon
-                glow: customColor,
-                border: `${customColor}80`,
-                core: customColor
-            };
-        }
-
-        return style;
-    };
-
-    const style = getDeptStyle(department.name, department.color);
+    // Use shared util — single source of truth across all layers.
+    const style = _getDeptStyle(department.name, department.color);
     const Icon = iconOverride || style.icon;
 
     return (

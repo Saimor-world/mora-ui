@@ -6,7 +6,6 @@ import UniverseView from '@/components/home/UniverseView';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
 import { FolderLayer } from '@/components/layers/FolderLayer';
-import { ClientHealthDashboard } from '@/components/home/ClientHealthDashboard';
 import { AnimatePresence, motion } from 'framer-motion';
 
 /**
@@ -16,9 +15,6 @@ import { AnimatePresence, motion } from 'framer-motion';
  * - viewLevel: company | core | department | space | folder
  * - viewMode: owner | demo | workspace
  * 
- * OWNER VIEW:
- * - 🏠 Home = "core" level with owner's OWN company structure
- * - 🏢 Client Companies = "company" level = ClientHealthDashboard (metrics only, no data!)
  * 
  * DEMO/WORKSPACE VIEW:
  * - 🏠 Home = "core" level = UniverseView with active company's structure
@@ -29,26 +25,11 @@ export const ViewPort: React.FC = () => {
     const viewMode = useMoraStore((state) => state.viewMode);
 
     // Compute active view to ensure only one renders at a time
-    const activeView = viewLevel === 'company' && viewMode === 'owner'
-        ? 'client-health'
-        : viewLevel;
+    const activeView = viewLevel;
 
     return (
         <div className="w-full h-full relative">
             <AnimatePresence mode="wait" initial={false}>
-                {/* OWNER: Client Health Dashboard (viewLevel: company) */}
-                {viewLevel === 'company' && viewMode === 'owner' && (
-                    <motion.div
-                        key="client-health"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.1 }}
-                        transition={{ duration: 0.5 }}
-                        className="absolute inset-0"
-                    >
-                        <ClientHealthDashboard />
-                    </motion.div>
-                )}
 
                 {/* CORE VIEW - UniverseView (Orbital Universe) */}
                 {viewLevel === 'core' && (

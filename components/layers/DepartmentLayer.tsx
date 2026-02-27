@@ -6,7 +6,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { motion } from 'framer-motion';
 import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
-import { ArrowLeft, Plus, FileText, FolderOpen, Users, Briefcase, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 
 /**
@@ -32,19 +32,6 @@ export const DepartmentLayer: React.FC = () => {
 
     const currentDepartment = departments.find((d) => d.id === activeDepartmentId);
     const deptTitle = currentDepartment?.name || '';
-
-    const deptTitleStyle = useMemo(() => {
-        const length = deptTitle.length;
-        const max = length > 22 ? 96 : length > 16 ? 120 : 140;
-        const min = length > 22 ? 26 : length > 16 ? 32 : 40;
-        const vw = length > 22 ? 6.5 : length > 16 ? 7.2 : 8.2;
-        const spacing = length > 22 ? '0.16em' : length > 16 ? '0.2em' : '0.25em';
-        return {
-            fontSize: `clamp(${min}px, ${vw}vw, ${max}px)`,
-            letterSpacing: spacing,
-            maxWidth: '90vw'
-        } as React.CSSProperties;
-    }, [deptTitle]);
 
     const departmentDocs = useMemo(() => {
         if (!activeDepartmentId || !treeData) return [];
@@ -121,7 +108,15 @@ export const DepartmentLayer: React.FC = () => {
 
     const displaySpaceName = useCallback((spaceName: string) => {
         const deptName = currentDepartment?.name || '';
-        if (normalized(spaceName) === normalized(deptName)) return 'Team Space';
+        const sn = normalized(spaceName);
+        const dn = normalized(deptName);
+        // Exact match → generic label
+        if (sn === dn) return 'Team Space';
+        // Prefix match — e.g. "HR & Culture Workspace" → "Workspace"
+        if (dn.length > 3 && sn.startsWith(dn)) {
+            const stripped = spaceName.slice(deptName.length).replace(/^[\s&–\-_:]+/, '').trim();
+            if (stripped.length > 0) return stripped;
+        }
         return spaceName;
     }, [currentDepartment?.name, normalized]);
 
@@ -200,24 +195,6 @@ export const DepartmentLayer: React.FC = () => {
         });
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders]);
 
-    const departmentStats = useMemo(() => {
-        const spaceCount = spaces.length;
-        const activeSpaceCount = spaces.filter((space) => (foldersBySpace[space.id] || []).length > 0).length;
-        return {
-            spaceCount,
-            activeSpaceCount,
-            docsCount: departmentDocs.length,
-            foldersPreview: hoveredFolders.length
-        };
-    }, [spaces, foldersBySpace, departmentDocs.length, hoveredFolders.length]);
-
-    const spaceRoleIcon = useCallback((name: string) => {
-        const label = normalized(name);
-        if (label.includes('team') || label.includes('hr') || label.includes('people')) return Users;
-        if (label.includes('ops') || label.includes('manage') || label.includes('admin')) return Briefcase;
-        return FolderOpen;
-    }, [normalized]);
-
     if (!activeDepartmentId) return null;
 
     return (
@@ -234,18 +211,6 @@ export const DepartmentLayer: React.FC = () => {
                 }}
             />
             <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.38)_84%,rgba(0,0,0,0.6)_100%)]" />
-
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
-                <motion.h1
-                    className="font-thin text-white/[0.07] whitespace-nowrap select-none font-sans"
-                    style={deptTitleStyle}
-                    initial={{ opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.5, ease: 'easeOut' }}
-                >
-                    {deptTitle.toUpperCase()}
-                </motion.h1>
-            </div>
 
             <motion.button
                 onClick={navigateToCore}
@@ -270,35 +235,6 @@ export const DepartmentLayer: React.FC = () => {
                     </span>
                 </div>
             </motion.button>
-
-            <motion.div
-                className="absolute top-24 left-8 z-40 rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl px-4 py-3 min-w-[260px]"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-            >
-                <div className="flex items-center gap-2 mb-3">
-                    <Sparkles size={14} className="text-cyan-300" />
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-cyan-300/80">Layer 2 / Department Orbit</p>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Spaces</div>
-                        <div className="text-lg text-white/90 font-semibold">{departmentStats.spaceCount}</div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Aktiv</div>
-                        <div className="text-lg text-emerald-300 font-semibold">{departmentStats.activeSpaceCount}</div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Docs</div>
-                        <div className="text-lg text-cyan-300 font-semibold">{departmentStats.docsCount}</div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Preview</div>
-                        <div className="text-lg text-purple-300 font-semibold">{departmentStats.foldersPreview}</div>
-                    </div>
-                </div>
-            </motion.div>
 
             <motion.button
                 onClick={() => {
@@ -368,47 +304,59 @@ export const DepartmentLayer: React.FC = () => {
                             </defs>
                         </svg>
 
+                        {/* L2 Center Orb — Golden Sun (not the same as L1 planet glass spheres) */}
                         <motion.div
-                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.9, ease: 'easeOut' }}
                         >
+                            {/* Outer amber aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 180, height: 180, background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0.15, 0.6] }}
-                                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                                style={{ width: 200, height: 200, background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0.12, 0.5] }}
+                                transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
                             />
+                            {/* Mid amber aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 110, height: 110, background: 'radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.1, 0.4] }}
-                                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                                style={{ width: 120, height: 120, background: 'radial-gradient(circle, rgba(251,191,36,0.22) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.65, 1], opacity: [0.35, 0.08, 0.35] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
                             />
+                            {/* Golden sun core — 112px, warm gradient */}
                             <div
-                                className="w-28 h-28 rounded-full border border-emerald-400/50 flex items-center justify-center"
+                                className="relative w-28 h-28 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
-                                    background: 'radial-gradient(circle at 35% 35%, rgba(16,185,129,0.45) 0%, rgba(6,182,212,0.18) 60%, transparent 100%)',
-                                    boxShadow: '0 0 56px rgba(16,185,129,0.4), 0 0 110px rgba(16,185,129,0.16)'
+                                    background: 'radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.10) 0%, rgba(245,158,11,0.30) 45%, rgba(120,53,15,0.20) 100%)',
+                                    border: '1.5px solid rgba(251,191,36,0.45)',
+                                    boxShadow: '0 0 60px rgba(245,158,11,0.45), 0 0 120px rgba(245,158,11,0.18), inset 2px 2px 6px rgba(255,255,255,0.20)',
                                 }}
                             >
-                                <span className="text-[9px] text-emerald-200/90 uppercase tracking-[0.15em] text-center px-2 leading-tight font-light">
+                                {/* Specular */}
+                                <div className="absolute top-[16%] left-[18%] w-[20%] h-[10%] rounded-full bg-white/80 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />
+                                {/* Inner corona */}
+                                <motion.div
+                                    className="absolute inset-[18%] rounded-full mix-blend-overlay blur-md"
+                                    style={{ background: 'radial-gradient(circle, rgba(253,224,71,1) 0%, transparent 70%)' }}
+                                    animate={{ opacity: [0.5, 1, 0.5], scale: [0.85, 1.15, 0.85] }}
+                                    transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                                <span className="relative z-10 text-[9px] text-amber-100/90 uppercase tracking-[0.15em] text-center px-2 leading-tight font-light">
                                     {deptTitle.length > 14 ? deptTitle.split(' ')[0] : deptTitle}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] tracking-[0.16em] text-white/70 uppercase whitespace-nowrap">
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-amber-400/15 bg-black/30 px-3 py-0.5 text-[9px] tracking-[0.14em] text-amber-200/50 uppercase whitespace-nowrap">
                                 Department Core
                             </div>
                         </motion.div>
 
                         {moonPositions.map(({ space, displayName, x, y, delay }) => {
-                            const SpaceIcon = spaceRoleIcon(displayName);
-
                             return (
                                 <motion.div
                                     key={space.id}
-                                    className="absolute cursor-pointer group"
+                                    className="absolute cursor-pointer"
                                     style={{
                                         left: `calc(50% + ${x}px)`,
                                         top: `calc(50% + ${y}px)`,
@@ -417,7 +365,6 @@ export const DepartmentLayer: React.FC = () => {
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay, duration: 0.5 }}
-                                    whileHover={{ scale: 1.15 }}
                                     onMouseEnter={() => setHoverSpace(space.id)}
                                     onMouseLeave={() => scheduleHoverClear()}
                                     onClick={(event) => {
@@ -444,28 +391,23 @@ export const DepartmentLayer: React.FC = () => {
                                             id: space.id,
                                             name: displayName,
                                             department_id: activeDepartmentId,
+                                            color: currentDepartment?.color || undefined,
                                             description: space.description || undefined,
-                                            folder_count: 0
+                                            folder_count: (foldersBySpace[space.id] || []).length
                                         }}
                                         position={{ x: 0, y: 0 }}
                                         size="xl"
                                         isActive={false}
+                                        delay={delay}
                                         onHover={(hovered) => {
                                             if (hovered) setHoverSpace(space.id);
                                             else scheduleHoverClear();
                                         }}
                                     />
-                                    <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                                        <div className="px-2.5 py-1 rounded-lg border border-white/10 bg-black/35 backdrop-blur-md flex items-center gap-1.5">
-                                            <SpaceIcon size={10} className="text-cyan-300/80" />
-                                            <span className="text-[11px] text-white/75 group-hover:text-emerald-300 font-medium tracking-wide transition-colors duration-200 max-w-[170px] truncate">
-                                                {displayName}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="absolute -bottom-[72px] left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                                        <span className="text-[10px] text-emerald-300/75 uppercase tracking-[0.16em]">
-                                            Layer 3: Open Space
+                                    {/* Clean minimal label below — no icon duplication, no 'Layer 3' text */}
+                                    <div className="absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
+                                        <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[140px] truncate block text-center">
+                                            {displayName}
                                         </span>
                                     </div>
                                 </motion.div>

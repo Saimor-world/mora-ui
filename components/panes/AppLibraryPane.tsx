@@ -43,8 +43,8 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
             terminal: { width: 860, height: 560 },
             scanner: { width: 840, height: 600 },
             integrations: { width: 760, height: 560 },
-            grid: { width: 900, height: 640 },
-            timeline: { width: 420, height: 600 }
+            grid: { width: 900, height: 640 }
+            // timeline: { width: 420, height: 600 }
         };
         const paneSize = sizeByType[appType] || { width: 800, height: 600 };
 
@@ -72,7 +72,7 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
         { name: 'Calendar', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'collaboration' },
         { name: 'Terminal', type: 'terminal', icon: Terminal, color: 'text-mora-gold', category: 'system' },
         { name: 'Integrations', type: 'integrations', icon: Wrench, color: 'text-blue-300', category: 'system' },
-        { name: 'Timeline', type: 'timeline', icon: Activity, color: 'text-emerald-400', category: 'system' },
+        // { name: 'Timeline', type: 'timeline', icon: Activity, color: 'text-emerald-400', category: 'system' },
         { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'system' },
     ];
 

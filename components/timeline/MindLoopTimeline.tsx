@@ -1,565 +1,328 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { coreGet } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-    Activity,
-    Clock,
-    Zap,
-    Mail,
-    RefreshCw,
-    Brain,
-    CheckCircle,
-    AlertCircle,
-    Hourglass,
-    FileCheck,
-    Search
-} from "lucide-react";
-
 /**
- * P0-4: MindLoop Timeline - Production Timeline Pane
+ * MindLoopTimeline
  *
- * Shows the chain of events for Mora's cognitive loop:
- * - Thought: LLM reasoning
- * - Proposal: Proposed actions
- * - Pending: Awaiting confirmation
- * - Approved: User confirmed
- * - Executed: Action completed
- * - Result: Final outcome
+ * A live-updating event feed that surfaces Mora's intelligence signals:
+ * awareness, semantic clusters, risk detections, context shifts, and more.
  *
- * Based on EventsViewer but enhanced for production use.
+ * Features:
+ * - Real-time polling (every 10s)
+ * - Color-coded signal types
+ * - Animated entry per event
+ * - Compact / expanded modes
  */
 
-// Event types that map to MindLoop states
-type MindLoopEventType =
-    | "thought"
-    | "proposal"
-    | "pending"
-    | "approved"
-    | "rejected"
-    | "executed"
-    | "result"
-    | "email_commit"
-    | "data_change"
-    | "file_upload"
-    | "node_created"
-    | "confirmation"
-    | "semantic"
+import React, { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    Brain,
+    AlertTriangle,
+    Layers,
+    Zap,
+    Eye,
+    Link2,
+    FilePlus,
+    Edit3,
+    Trash2,
+    GitMerge,
+    RefreshCw,
+} from "lucide-react";
+import { coreGet } from "@/lib/api/coreClient";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type SignalType =
     | "awareness"
-    | "system"
+    | "semantic"
+    | "risk"
     | "context_shift"
-    | "potential_risk"
-    | "related_objects_cluster";
+    | "cluster"
+    | "create"
+    | "edit"
+    | "view"
+    | "delete"
+    | "link";
 
 interface TimelineEvent {
-    id: number | string;
-    created_at?: string;
-    timestamp?: string; // Backend uses timestamp
-    event_type: MindLoopEventType | string;
-    source: string;
-    intent: string | null;
-    message_id: string | null;
-    trace_id?: string;
-    summary?: string;
+    id: string;
+    event_type: string;
+    source?: string;
+    signal_type?: SignalType;
+    description?: string;
     entity_type?: string;
     entity_id?: string;
+    severity?: number;
+    created_at: string;
+    payload?: Record<string, unknown>;
 }
 
-interface TimelineResponse {
-    events: TimelineEvent[];
-    count?: number;
+export interface MindLoopTimelineProps {
+    /** Max events to display (default 15) */
     limit?: number;
-    total?: number;
-    timestamp: string;
-    filters?: Record<string, string | null | undefined>;
-}
-
-interface Props {
-    companyId?: string;
-    maxEvents?: number;
-    autoRefresh?: boolean;
-    refreshInterval?: number;
+    /** Polling interval in ms (default 10000) */
+    pollInterval?: number;
+    /** Compact single-line mode */
     compact?: boolean;
+    /** Extra className for the container */
+    className?: string;
 }
 
-export const MindLoopTimeline: React.FC<Props> = ({
-    companyId,
-    maxEvents = 50,
-    autoRefresh = true,
-    refreshInterval = 10000,
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const SIGNAL_CONFIG: Record<
+    SignalType | "default",
+    { icon: React.FC<any>; color: string; label: string; bg: string }
+> = {
+    awareness: {
+        icon: Eye,
+        color: "text-cyan-400",
+        bg: "bg-cyan-500/10 border-cyan-500/20",
+        label: "Awareness",
+    },
+    semantic: {
+        icon: GitMerge,
+        color: "text-purple-400",
+        bg: "bg-purple-500/10 border-purple-500/20",
+        label: "Semantik",
+    },
+    risk: {
+        icon: AlertTriangle,
+        color: "text-red-400",
+        bg: "bg-red-500/10 border-red-500/20",
+        label: "Risiko",
+    },
+    context_shift: {
+        icon: Zap,
+        color: "text-yellow-400",
+        bg: "bg-yellow-500/10 border-yellow-500/20",
+        label: "Kontextwechsel",
+    },
+    cluster: {
+        icon: Layers,
+        color: "text-indigo-400",
+        bg: "bg-indigo-500/10 border-indigo-500/20",
+        label: "Cluster",
+    },
+    create: {
+        icon: FilePlus,
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/10 border-emerald-500/20",
+        label: "Erstellt",
+    },
+    edit: {
+        icon: Edit3,
+        color: "text-blue-400",
+        bg: "bg-blue-500/10 border-blue-500/20",
+        label: "Bearbeitet",
+    },
+    view: {
+        icon: Eye,
+        color: "text-white/40",
+        bg: "bg-white/5 border-white/10",
+        label: "Angesehen",
+    },
+    delete: {
+        icon: Trash2,
+        color: "text-rose-400",
+        bg: "bg-rose-500/10 border-rose-500/20",
+        label: "Gelöscht",
+    },
+    link: {
+        icon: Link2,
+        color: "text-teal-400",
+        bg: "bg-teal-500/10 border-teal-500/20",
+        label: "Verknüpft",
+    },
+    default: {
+        icon: Brain,
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/10 border-emerald-500/20",
+        label: "Signal",
+    },
+};
+
+function resolveConfig(event: TimelineEvent) {
+    const key =
+        (event.signal_type as SignalType) ||
+        (event.event_type as SignalType) ||
+        "default";
+    return SIGNAL_CONFIG[key] ?? SIGNAL_CONFIG.default;
+}
+
+function formatRelativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 1) return "gerade eben";
+    if (mins < 60) return `vor ${mins} Min.`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `vor ${hours} Std.`;
+    return `vor ${Math.floor(hours / 24)} Tagen`;
+}
+
+function eventLabel(event: TimelineEvent): string {
+    if (event.description) return event.description;
+    const cfg = resolveConfig(event);
+    const entity = event.entity_type ?? event.source ?? "";
+    return entity ? `${cfg.label}: ${entity}` : cfg.label;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function MindLoopTimeline({
+    limit = 15,
+    pollInterval = 10_000,
     compact = false,
-}) => {
-    const {
-        activeCompanyId,
-        activeDepartmentId,
-        activeSpaceId,
-        activeFolderId,
-        activeNode,
-    } = useMoraStore();
+    className = "",
+}: MindLoopTimelineProps) {
     const [events, setEvents] = useState<TimelineEvent[]>([]);
-    const [lastCheck, setLastCheck] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [filterType, setFilterType] = useState<string | null>(null);
-    const activeNodeId = activeNode?.id || null;
-    const effectiveCompanyId = companyId || activeCompanyId || null;
-    const contextSnapshot = {
-        company_id: effectiveCompanyId,
-        department_id: activeDepartmentId,
-        space_id: activeSpaceId,
-        folder_id: activeFolderId,
-        node_id: activeNodeId,
-    };
-
-    // P2: Optimistic Events (Ephemeral)
-    interface OptimisticEvent extends TimelineEvent {
-        pkg_status: 'executing' | 'failed' | 'complete';
-    }
-    const [optimisticEvents, setOptimisticEvents] = useState<OptimisticEvent[]>([]);
-
-    useEffect(() => {
-        const handleAgencyUpdate = (e: CustomEvent<any>) => {
-            const detail = e.detail; // Types are in ActionRegistry, simple cast here
-
-            if (detail.status === 'start') {
-                const newEvent: OptimisticEvent = {
-                    id: detail.actionId || detail.proposalId || `opt-${Date.now()}`,
-                    created_at: new Date().toISOString(),
-                    event_type: detail.type === 'proposal' ? 'thought' : 'navigate', // Map to existing types
-                    source: 'Optimistic',
-                    intent: detail.intent,
-                    message_id: detail.proposalId,
-                    trace_id: detail.proposalId,
-                    summary: detail.intent, // Use intent as summary
-                    entity_type: detail.type,
-                    pkg_status: 'executing'
-                };
-
-                setOptimisticEvents(prev => [newEvent, ...prev]);
-            } else if (detail.status === 'complete' || detail.status === 'failed') {
-                // Remove ephemeral event on completion (backend will provide persistent record)
-                // Or mark as done briefly before removal?
-                // Decision: Remove immediately to avoid duplication with real event coming via poll.
-                const targetId = detail.actionId || detail.proposalId;
-                setOptimisticEvents(prev => prev.filter(e => e.id !== targetId));
-            }
-        };
-
-        window.addEventListener('mora:agency-update', handleAgencyUpdate as EventListener);
-        return () => window.removeEventListener('mora:agency-update', handleAgencyUpdate as EventListener);
-    }, []);
+    const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
     const fetchEvents = useCallback(async () => {
-        // ... (existing fetch logic) ...
-        // ...
-
-
-        setLoading(true);
-        setError(null);
         try {
-            const params = new URLSearchParams();
-            params.set("limit", String(maxEvents));
-            if (contextSnapshot.company_id) params.set("company_id", contextSnapshot.company_id);
-            if (contextSnapshot.department_id) params.set("department_id", contextSnapshot.department_id);
-            if (contextSnapshot.space_id) params.set("space_id", contextSnapshot.space_id);
-            if (contextSnapshot.folder_id) params.set("folder_id", contextSnapshot.folder_id);
-            if (contextSnapshot.node_id) params.set("node_id", contextSnapshot.node_id);
-            const url = `/v1/mindloop/events?${params.toString()}`;
-
-            const res: TimelineResponse = await coreGet(url);
-
-            if (res?.events) {
-                setEvents(res.events);
-                setLastCheck(res.timestamp || new Date().toISOString());
+            const data = await coreGet(
+                `/v1/mindloop/events?limit=${limit}&order=desc`
+            );
+            if (data?.events) {
+                setEvents(data.events as TimelineEvent[]);
+                setLastRefresh(new Date());
+                setError(null);
             }
-        } catch (err: any) {
-            console.error("[MindLoopTimeline] Error:", err);
-            setError(err.message || "Failed to fetch events");
+        } catch (err) {
+            setError("Verbindung fehlgeschlagen");
         } finally {
             setLoading(false);
         }
-    }, [
-        maxEvents,
-        contextSnapshot.company_id,
-        contextSnapshot.department_id,
-        contextSnapshot.space_id,
-        contextSnapshot.folder_id,
-        contextSnapshot.node_id
-    ]);
+    }, [limit]);
 
-    // Initial fetch
+    // Initial load + polling
     useEffect(() => {
         fetchEvents();
-    }, [fetchEvents]);
+        const id = setInterval(fetchEvents, pollInterval);
+        return () => clearInterval(id);
+    }, [fetchEvents, pollInterval]);
 
-    // Auto-refresh
-    useEffect(() => {
-        if (!autoRefresh) return;
-        const interval = setInterval(fetchEvents, refreshInterval);
-        return () => clearInterval(interval);
-    }, [autoRefresh, refreshInterval, fetchEvents]);
-
-    const formatTime = (iso: string) => {
-        try {
-            const date = new Date(iso);
-            return date.toLocaleTimeString("de-DE", {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-            });
-        } catch {
-            return iso;
-        }
-    };
-
-    const formatDate = (iso: string) => {
-        try {
-            const date = new Date(iso);
-            return date.toLocaleDateString("de-DE", {
-                day: "2-digit",
-                month: "2-digit",
-            });
-        } catch {
-            return "";
-        }
-    };
-
-    const getEventIcon = (eventType: string) => {
-        switch (eventType) {
-            case "semantic":
-                return <Brain className="w-3.5 h-3.5 text-emerald-400" />;
-            case "awareness":
-                return <Activity className="w-3.5 h-3.5 text-sky-400" />;
-            case "system":
-                return <Zap className="w-3.5 h-3.5 text-slate-400" />;
-            case "context_shift":
-                return <RefreshCw className="w-3.5 h-3.5 text-purple-400" />;
-            case "potential_risk":
-                return <AlertCircle className="w-3.5 h-3.5 text-red-400" />;
-            case "related_objects_cluster":
-                return <Search className="w-3.5 h-3.5 text-indigo-400" />;
-            case "thought":
-                return <Brain className="w-3.5 h-3.5 text-purple-400" />;
-            case "proposal":
-                return <FileCheck className="w-3.5 h-3.5 text-blue-400" />;
-            case "pending":
-            case "confirmation":
-                return <Hourglass className="w-3.5 h-3.5 text-yellow-400" />;
-            case "approved":
-                return <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />;
-            case "rejected":
-                return <AlertCircle className="w-3.5 h-3.5 text-red-400" />;
-            case "executed":
-                return <Zap className="w-3.5 h-3.5 text-orange-400" />;
-            case "result":
-                return <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />;
-            case "email_commit":
-                return <Mail className="w-3.5 h-3.5 text-blue-400" />;
-            case "data_change":
-            case "node_created":
-                return <Zap className="w-3.5 h-3.5 text-orange-400" />;
-            case "file_upload":
-                return <FileCheck className="w-3.5 h-3.5 text-emerald-400" />;
-            default:
-                return <Activity className="w-3.5 h-3.5 text-gray-400" />;
-        }
-    };
-
-    const getEventColor = (eventType: string) => {
-        switch (eventType) {
-            case "semantic":
-                return "border-l-emerald-500";
-            case "awareness":
-                return "border-l-sky-500";
-            case "system":
-                return "border-l-slate-500";
-            case "context_shift":
-                return "border-l-purple-500";
-            case "potential_risk":
-                return "border-l-red-500";
-            case "related_objects_cluster":
-                return "border-l-indigo-500";
-            case "thought":
-                return "border-l-purple-500";
-            case "proposal":
-                return "border-l-blue-500";
-            case "pending":
-            case "confirmation":
-                return "border-l-yellow-500";
-            case "approved":
-                return "border-l-emerald-500";
-            case "rejected":
-                return "border-l-red-500";
-            case "executed":
-                return "border-l-orange-500";
-            case "result":
-                return "border-l-emerald-600";
-            default:
-                return "border-l-gray-500";
-        }
-    };
-
-    const getEventLabel = (eventType: string) => {
-        // P1-A: Semantic Mapping (Technical -> Business)
-        const labels: Record<string, string> = {
-            // MindLoop types
-            semantic: "Semantic Insight",
-            awareness: "Awareness Signal",
-            system: "System Signal",
-            context_shift: "Context Shift",
-            potential_risk: "Potential Risk",
-            related_objects_cluster: "Related Cluster",
-
-            // Core States
-            thought: "Analyzing Request",
-            proposal: "Strategy Proposed",
-            pending: "Awaiting Approval",
-            confirmation: "Safety Check",
-            approved: "Authorizing",
-            rejected: "Action Declined",
-            executed: "Completed",
-            result: "Outcome Verified",
-
-            // Data Actions
-            email_commit: "Sending Correspondence",
-            data_change: "Updating Records",
-            file_upload: "Ingesting Document",
-            node_created: "Knowledge Base Updated",
-
-            // Tool/Action Mappings (Common)
-            search_rag: "Recalling Company Memory",
-            search_web: "External Research",
-            navigate: "Refocusing View",
-            read_document: "Analyzing Content",
-
-            // Fallbacks
-            navigate_department: "Focusing Department",
-            navigate_space: "Entering Space",
-            open_pane: "Opening Workspace",
-
-            // New V1.5 types
-            learning: "Learning Signal",
-            memory: "Memory Stored"
-        };
-        return labels[eventType] || eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    };
-
-    const contextTokens = [
-        { label: "Company", value: contextSnapshot.company_id },
-        { label: "Department", value: contextSnapshot.department_id },
-        { label: "Space", value: contextSnapshot.space_id },
-        { label: "Folder", value: contextSnapshot.folder_id },
-        { label: "Node", value: contextSnapshot.node_id },
-    ].filter((item) => item.value);
-
-    const filterOptions = [
-        "semantic",
-        "awareness",
-        "system",
-        "context_shift",
-        "potential_risk",
-        "related_objects_cluster",
-        "thought",
-        "proposal",
-        "pending",
-        "approved",
-        "executed",
-        "result",
-    ];
-
-    // P2: Merge Optimistic + Real
-    const allEvents = [...optimisticEvents, ...events];
-    const filteredEvents = filterType
-        ? allEvents.filter((e) => e.event_type === filterType)
-        : allEvents;
-
-    // Group events by trace_id for visual linking
-    const traceIds = new Set(events.filter((e) => e.trace_id).map((e) => e.trace_id));
+    if (loading) {
+        return (
+            <div className={`flex items-center justify-center py-8 ${className}`}>
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                >
+                    <Brain className="w-6 h-6 text-emerald-400/60" />
+                </motion.div>
+            </div>
+        );
+    }
 
     return (
-        <div className="h-full flex flex-col bg-[#050a08]/80 backdrop-blur-xl">
+        <div className={`flex flex-col gap-1 ${className}`}>
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-50">MindLoop Timeline</span>
-                    <span className="text-[10px] text-emerald-500/60 px-2 py-0.5 bg-emerald-500/10 rounded-full">
-                        {filteredEvents.length}
-                    </span>
+            <div className="flex items-center justify-between px-1 mb-1">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/30 uppercase tracking-wider">
+                    <Brain size={10} />
+                    <span>Mind Loop</span>
+                    {error && (
+                        <span className="text-red-400/60 ml-1">· {error}</span>
+                    )}
                 </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={fetchEvents}
-                        disabled={loading}
-                        className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
-                        title="Refresh"
-                    >
-                        <RefreshCw
-                            className={`w-3.5 h-3.5 text-emerald-400 ${loading ? "animate-spin" : ""}`}
-                        />
-                    </button>
-                </div>
-            </div>
-
-            {/* Filter Pills */}
-            <div className="px-4 py-2 border-b border-white/5 flex items-center gap-2 overflow-x-auto">
                 <button
-                    onClick={() => setFilterType(null)}
-                    className={`text-[10px] px-2 py-1 rounded-full transition-colors ${filterType === null
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-white/5 text-gray-400 hover:bg-white/10"
-                        }`}
+                    onClick={() => { setLoading(true); fetchEvents(); }}
+                    className="text-white/20 hover:text-white/50 transition-colors"
+                    title="Aktualisieren"
                 >
-                    All
+                    <RefreshCw size={10} />
                 </button>
-                {filterOptions.map((type) => (
-                    <button
-                        key={type}
-                        onClick={() => setFilterType(type)}
-                        className={`text-[10px] px-2 py-1 rounded-full transition-colors whitespace-nowrap ${filterType === type
-                            ? "bg-emerald-500/20 text-emerald-300"
-                            : "bg-white/5 text-gray-400 hover:bg-white/10"
-                            }`}
+            </div>
+
+            {/* Event list */}
+            <AnimatePresence initial={false}>
+                {events.length === 0 ? (
+                    <motion.div
+                        key="empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-center py-6 text-white/20 text-xs"
                     >
-                        {getEventLabel(type)}
-                    </button>
-                ))}
-            </div>
+                        Keine Events — Mora beobachtet...
+                    </motion.div>
+                ) : (
+                    events.map((event, i) => {
+                        const cfg = resolveConfig(event);
+                        const Icon = cfg.icon;
+                        const label = eventLabel(event);
+                        const time = formatRelativeTime(event.created_at);
 
-            {/* Context scope */}
-            {contextTokens.length > 0 && (
-                <div className="px-4 py-2 border-b border-white/5 bg-emerald-500/5">
-                    <div className="flex flex-wrap items-center gap-2 text-[9px] text-emerald-500/70">
-                        <span className="uppercase tracking-wide">Scoped</span>
-                        {contextTokens.map((token) => (
-                            <span
-                                key={token.label}
-                                className="px-1.5 py-0.5 rounded bg-white/5 text-emerald-200/80"
+                        return (
+                            <motion.div
+                                key={event.id}
+                                initial={{ opacity: 0, x: -12 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 12 }}
+                                transition={{ delay: i * 0.03, duration: 0.2 }}
                             >
-                                {token.label}: {String(token.value).slice(0, 8)}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Last check timestamp */}
-            {lastCheck && (
-                <div className="px-4 py-2 border-b border-white/5 bg-emerald-500/5">
-                    <div className="flex items-center gap-2 text-[10px] text-emerald-500/60">
-                        <Clock className="w-3 h-3" />
-                        <span>Last update: {formatTime(lastCheck)}</span>
-                        {loading && <span className="animate-pulse">•</span>}
-                    </div>
-                </div>
-            )}
-
-            {/* Error state */}
-            {error && (
-                <div className="px-4 py-3 bg-red-500/10 text-red-400 text-xs">{error}</div>
-            )}
-
-            {/* Timeline Events */}
-            <div className="flex-1 overflow-y-auto p-3">
-                {filteredEvents.length === 0 && !loading && (
-                    <div className="text-center py-8 text-gray-500 text-xs flex flex-col items-center gap-2">
-                        <Search className="w-6 h-6 opacity-30" />
-                        <span>No events found</span>
-                    </div>
-                )}
-
-                <AnimatePresence mode="popLayout">
-                    {filteredEvents.map((event, i) => (
-                        <motion.div
-                            key={event.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            transition={{ delay: i * 0.02 }}
-                            className={`relative pl-4 pb-4 border-l-2 ${getEventColor(event.event_type)} ml-2`}
-                        >
-                            {/* Timeline dot */}
-                            <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#050a08] flex items-center justify-center">
-                                {getEventIcon(event.event_type)}
-                            </div>
-
-                            {/* Event card */}
-                            <div
-                                className={`ml-2 p-3 rounded-xl border transition-colors group ${(event as OptimisticEvent).pkg_status === 'executing'
-                                    ? 'bg-white/[0.04] border-white/10 animate-pulse' // P2 Polish: Subtle, neutral "thinking" state
-                                    : 'bg-white/[0.02] hover:bg-white/[0.04] border-white/5'
-                                    } ${compact ? "py-2" : ""}`}
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className={`text-[10px] font-semibold uppercase tracking-wide ${event.event_type === "approved"
-                                                ? "text-emerald-400"
-                                                : event.event_type === "rejected"
-                                                    ? "text-red-400"
-                                                    : "text-emerald-50"
-                                                }`}
+                                {compact ? (
+                                    /* ── Compact row ── */
+                                    <div
+                                        className={`flex items-center gap-2 px-2 py-1 rounded-lg border ${cfg.bg} transition-colors hover:brightness-125`}
+                                    >
+                                        <Icon size={11} className={`shrink-0 ${cfg.color}`} />
+                                        <span className="flex-1 text-[11px] text-white/70 truncate">
+                                            {label}
+                                        </span>
+                                        <span className="text-[10px] text-white/25 shrink-0">
+                                            {time}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    /* ── Full card ── */
+                                    <div
+                                        className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border ${cfg.bg} transition-all hover:brightness-125 cursor-default group`}
+                                    >
+                                        {/* Icon badge */}
+                                        <div
+                                            className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${cfg.bg} border ${cfg.bg}`}
                                         >
-                                            {getEventLabel(event.event_type)}
+                                            <Icon size={13} className={cfg.color} />
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs text-white/80 leading-snug truncate group-hover:text-white transition-colors">
+                                                {label}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span
+                                                    className={`text-[9px] font-medium uppercase tracking-wide ${cfg.color}`}
+                                                >
+                                                    {cfg.label}
+                                                </span>
+                                                {event.severity != null && (
+                                                    <>
+                                                        <span className="text-white/10">·</span>
+                                                        <span className="text-[9px] text-white/30">
+                                                            Severity {(event.severity * 100).toFixed(0)}%
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Timestamp */}
+                                        <span className="text-[10px] text-white/25 shrink-0 mt-0.5">
+                                            {time}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-1 text-[9px] text-gray-500 tabular-nums">
-                                        <span>{formatDate(event.created_at || event.timestamp || "")}</span>
-                                        <span>{formatTime(event.created_at || event.timestamp || "")}</span>
-                                    </div>
-                                </div>
-
-                                {/* Summary or intent */}
-                                {(event.summary || event.intent) && (
-                                    <p className="mt-1.5 text-xs text-gray-300 line-clamp-2">
-                                        {event.summary || event.intent}
-                                    </p>
                                 )}
-
-                                {/* P1-A: Contextual Details (Technical info hidden by default) */}
-                                <div className="mt-2 flex flex-col gap-2">
-                                    {/* Primary Context (Always Visible) */}
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
-                                            {event.source === 'system' ? 'Môra Core' : event.source}
-                                        </span>
-                                        {event.entity_type && event.entity_id && (
-                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
-                                                {event.entity_type}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Technical Details (On Hover/Focus) */}
-                                    <div className="hidden group-hover:flex items-center gap-2 flex-wrap opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        {event.trace_id && (
-                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono">
-                                                #{event.trace_id.slice(0, 8)}
-                                            </span>
-                                        )}
-                                        {event.message_id && (
-                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 truncate max-w-[80px]">
-                                                msg:{event.message_id.slice(0, 8)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
-
-            {/* Footer - Trace ID summary */}
-            {traceIds.size > 0 && (
-                <div className="px-4 py-2 border-t border-white/10 text-[9px] text-gray-500">
-                    {traceIds.size} active trace{traceIds.size > 1 ? "s" : ""} in view
-                </div>
-            )}
+                            </motion.div>
+                        );
+                    })
+                )}
+            </AnimatePresence>
         </div>
     );
-};
+}
 
 export default MindLoopTimeline;

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { Plus, RefreshCw, ArrowLeft, FolderOpen, FileText, Sparkles } from 'lucide-react';
+import { Plus, RefreshCw, ArrowLeft } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { motion } from 'framer-motion';
@@ -74,13 +74,6 @@ export const SpaceLayer: React.FC = () => {
         return foldersBySpace[activeSpaceId] || [];
     }, [activeSpaceId, foldersBySpace]);
 
-    const folderStats = useMemo(() => {
-        const folderCount = folders.length;
-        const totalNodes = folders.reduce((acc, folder) => acc + (folder.node_count || 0), 0);
-        const activeFolders = folders.filter((folder) => (folder.node_count || 0) > 0).length;
-        return { folderCount, totalNodes, activeFolders };
-    }, [folders]);
-
     // Recency weight used to bias folder prominence.
     const getWeight = useCallback((dateStr?: string | null) => {
         if (!dateStr) return 0.5;
@@ -140,7 +133,6 @@ export const SpaceLayer: React.FC = () => {
     if (viewLevel !== 'space' || !activeSpaceId) return null;
 
     const spaceName = currentSpace?.name || 'Space';
-    const spaceTitle = spaceName.toUpperCase();
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
@@ -166,22 +158,6 @@ export const SpaceLayer: React.FC = () => {
                 }}
             />
 
-            {/* Background Space Name Watermark */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
-                <motion.h1
-                    className="font-thin text-white/[0.07] whitespace-nowrap select-none font-sans tracking-[0.2em]"
-                    style={{
-                        fontSize: `clamp(28px, ${spaceTitle.length > 20 ? 5.5 : spaceTitle.length > 14 ? 7 : 9}vw, ${spaceTitle.length > 20 ? 88 : spaceTitle.length > 14 ? 110 : 140}px)`,
-                        maxWidth: '95vw',
-                    }}
-                    initial={{ opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                >
-                    {spaceTitle}
-                </motion.h1>
-            </div>
-
             {/* Breadcrumb Back Button style */}
             <motion.button
                 onClick={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
@@ -198,38 +174,14 @@ export const SpaceLayer: React.FC = () => {
                         Zurück
                     </span>
                     <span className="text-sm tracking-widest font-light flex items-center gap-2">
-                        <span>UNIVERSE</span>
+                        <span className="text-white/40">UNIVERSE</span>
                         <span className="text-white/20">/</span>
                         <span className="text-emerald-100/90">{currentDepartment?.name.toUpperCase() || 'DEPARTMENT'}</span>
+                        <span className="text-white/20">/</span>
+                        <span className="text-white/50">{spaceName.toUpperCase()}</span>
                     </span>
                 </div>
             </motion.button>
-
-            {/* Layer-3 HUD */}
-            <motion.div
-                className="absolute top-24 left-8 z-40 rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl px-4 py-3 min-w-[240px]"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-            >
-                <div className="flex items-center gap-2 mb-3">
-                    <Sparkles size={14} className="text-emerald-300" />
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80">Layer 3 / Folder Cluster</p>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Folders</div>
-                        <div className="text-lg text-white/90 font-semibold">{folderStats.folderCount}</div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Aktiv</div>
-                        <div className="text-lg text-emerald-300 font-semibold">{folderStats.activeFolders}</div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 border border-white/10 p-2">
-                        <div className="text-[10px] text-white/40 uppercase tracking-wider">Files</div>
-                        <div className="text-lg text-cyan-300 font-semibold">{folderStats.totalNodes}</div>
-                    </div>
-                </div>
-            </motion.div>
 
             {/* Top-right actions: minimal floating controls */}
             <motion.div
@@ -303,46 +255,55 @@ export const SpaceLayer: React.FC = () => {
                             </defs>
                         </svg>
 
-                        {/* Central space orb acts as system center. */}
+                        {/* Central space orb — L3 character: dept-colored intimate sphere */}
                         <motion.div
                             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.9, ease: "easeOut" }}
                         >
-                            {/* Outer aura — large slow pulse */}
+                            {/* Outer aura slow breathe */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 180, height: 180, background: 'radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.45, 1], opacity: [0.55, 0.12, 0.55] }}
+                                style={{ width: 160, height: 160, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(16,185,129,1)'}22 0%, transparent 70%)` }}
+                                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.1, 0.5] }}
                                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                             />
                             {/* Mid aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 110, height: 110, background: 'radial-gradient(circle, rgba(6,182,212,0.22) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0.08, 0.4] }}
-                                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
+                                style={{ width: 100, height: 100, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(6,182,212,1)'}30 0%, transparent 70%)` }}
+                                animate={{ scale: [1, 1.65, 1], opacity: [0.35, 0.07, 0.35] }}
+                                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                             />
-                            {/* Core orb — larger, with radial sheen */}
+                            {/* Core orb — smaller than L2 (96px vs 112px), dept-colored */}
                             <div
-                                className="w-28 h-28 rounded-full border border-emerald-400/50 flex items-center justify-center"
+                                className="relative w-24 h-24 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
-                                    background: 'radial-gradient(circle at 35% 35%, rgba(16,185,129,0.45) 0%, rgba(6,182,212,0.18) 60%, transparent 100%)',
-                                    boxShadow: '0 0 50px rgba(16,185,129,0.45), 0 0 100px rgba(16,185,129,0.15)',
+                                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.08) 0%, ${currentDepartment?.color || 'rgba(16,185,129,1)'}18 50%, rgba(0,0,0,0.35) 100%)`,
+                                    border: `1.5px solid ${currentDepartment?.color || 'rgba(16,185,129,.5)'}60`,
+                                    boxShadow: `0 0 40px ${currentDepartment?.color || 'rgba(16,185,129,1)'}40, 0 0 80px ${currentDepartment?.color || 'rgba(16,185,129,1)'}15, inset 2px 2px 6px rgba(255,255,255,0.18)`,
                                 }}
                             >
-                                <span className="text-[9px] text-emerald-100/90 uppercase tracking-[0.16em] text-center px-3 leading-tight font-light">
-                                    {spaceName.length > 20 ? spaceName.split(' ').slice(0, 2).join(' ') : spaceName}
+                                {/* Specular */}
+                                <div className="absolute top-[16%] left-[16%] w-[18%] h-[10%] rounded-full bg-white/70 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />
+                                {/* Inner glow */}
+                                <motion.div
+                                    className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md"
+                                    style={{ background: `radial-gradient(circle, ${currentDepartment?.color || '#10B981'} 0%, transparent 70%)` }}
+                                    animate={{ opacity: [0.5, 0.9, 0.5], scale: [0.9, 1.1, 0.9] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                                <span className="relative z-10 text-[9px] text-white/80 uppercase tracking-[0.14em] text-center px-3 leading-tight font-light">
+                                    {spaceName.length > 18 ? spaceName.split(' ').slice(0, 2).join(' ') : spaceName}
                                 </span>
                             </div>
-
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] tracking-[0.16em] text-white/70 uppercase whitespace-nowrap">
-                                Workspace Core
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-white/8 bg-black/30 px-3 py-0.5 text-[9px] tracking-[0.14em] text-white/50 uppercase whitespace-nowrap">
+                                Space Core
                             </div>
                         </motion.div>
 
-                        {/* Folder stars orbit around the central space orb. */}
+                        {/* Folder orbs orbit the space core — label via Folder.tsx portal on hover */}
                         {folderOrbitPositions.map(({ folder, x, y, isPromoted, delay }) => (
                             <div
                                 key={`folder-${folder.id}`}
@@ -369,18 +330,11 @@ export const SpaceLayer: React.FC = () => {
                                     delay={delay}
                                     onClick={() => navigateToFolder(folder.id)}
                                 />
-                                {/* Always-visible richer label */}
-                                <div className="absolute -bottom-11 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-                                    <div className="px-2 py-1 rounded-lg border border-white/10 bg-black/35 backdrop-blur-md flex items-center gap-1.5">
-                                        <FolderOpen size={10} className="text-emerald-300/80" />
-                                        <span className="text-[11px] text-white/80 font-medium tracking-wide max-w-[180px] truncate">
-                                            {folder.name}
-                                        </span>
-                                        <span className="text-[10px] text-cyan-300/80 flex items-center gap-1">
-                                            <FileText size={9} />
-                                            {folder.node_count || 0}
-                                        </span>
-                                    </div>
+                                {/* Minimal always-visible name tag — compact, below orb */}
+                                <div className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
+                                    <span className="text-[10px] text-white/55 font-light tracking-wide max-w-[120px] truncate block text-center">
+                                        {folder.name}
+                                    </span>
                                 </div>
                             </div>
                         ))}
