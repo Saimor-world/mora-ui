@@ -40,6 +40,8 @@ export const SpaceLayer: React.FC = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAnyHovered, setIsAnyHovered] = useState(false);
+    const isAnyHoveredRef = useRef(false);
 
     // Orbit animation pattern shared with DepartmentLayer.
     const [orbitTime, setOrbitTime] = useState(0);
@@ -51,7 +53,10 @@ export const SpaceLayer: React.FC = () => {
             if (lastTimeRef.current === 0) lastTimeRef.current = currentTime;
             const delta = (currentTime - lastTimeRef.current) / 1000;
             lastTimeRef.current = currentTime;
-            setOrbitTime(prev => prev + delta);
+            // Pause orbit when hovering — folders freeze in place
+            if (!isAnyHoveredRef.current) {
+                setOrbitTime(prev => prev + delta);
+            }
             animationRef.current = requestAnimationFrame(animate);
         };
         animationRef.current = requestAnimationFrame(animate);
@@ -81,9 +86,13 @@ export const SpaceLayer: React.FC = () => {
         return Math.max(0.3, Math.min(1.0, 1.0 - daysDiff / 30));
     }, []);
 
-    // Animated orbit positions in 3 rings.
+    // Animated orbit positions in 3 rings — larger radii for screen fill.
     const folderOrbitPositions = useMemo(() => {
         if (folders.length === 0) return [];
+
+        const RING_RADII_X = [170, 272, 358];
+        const RING_RADII_Y = [110, 178, 234];
+        const RING_SPEEDS = [0.03, 0.019, 0.013];
 
         const sorted = [...folders]
             .map(f => ({ ...f, weight: getWeight(f.updated_at || f.created_at) }))
@@ -151,9 +160,11 @@ export const SpaceLayer: React.FC = () => {
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
                     background: `
-                        radial-gradient(900px 420px at 55% 58%, rgba(16, 185, 129, 0.12) 0%, transparent 65%),
-                        radial-gradient(700px 320px at 25% 35%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
-                        radial-gradient(600px 280px at 80% 40%, rgba(99, 102, 241, 0.05) 0%, transparent 55%)
+                        radial-gradient(1100px 520px at 55% 58%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
+                        radial-gradient(850px 400px at 25% 35%, rgba(6, 182, 212, 0.16) 0%, transparent 60%),
+                        radial-gradient(700px 340px at 80% 40%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
+                        radial-gradient(580px 300px at 72% 80%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
+                        radial-gradient(500px 360px at 8% 60%, rgba(139, 92, 246, 0.10) 0%, transparent 50%)
                     `
                 }}
             />
@@ -212,7 +223,7 @@ export const SpaceLayer: React.FC = () => {
                 {isLoadingFolders ? (
                     <LoadingState message="Scanning Space..." />
                 ) : (
-                    <div className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
+                    <div className="relative w-full h-full">
 
                         {/* Connection lines center -> folder nodes for constellation clarity */}
                         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
@@ -265,24 +276,24 @@ export const SpaceLayer: React.FC = () => {
                             {/* Outer aura slow breathe */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 160, height: 160, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(16,185,129,1)'}22 0%, transparent 70%)` }}
-                                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.1, 0.5] }}
+                                style={{ width: 280, height: 280, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(16,185,129,1)'}28 0%, transparent 70%)` }}
+                                animate={{ scale: [1, 1.45, 1], opacity: [0.55, 0.12, 0.55] }}
                                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                             />
                             {/* Mid aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 100, height: 100, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(6,182,212,1)'}30 0%, transparent 70%)` }}
-                                animate={{ scale: [1, 1.65, 1], opacity: [0.35, 0.07, 0.35] }}
+                                style={{ width: 180, height: 180, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(6,182,212,1)'}38 0%, transparent 70%)` }}
+                                animate={{ scale: [1, 1.55, 1], opacity: [0.45, 0.09, 0.45] }}
                                 transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                             />
-                            {/* Core orb — smaller than L2 (96px vs 112px), dept-colored */}
+                            {/* Core orb — 144px, dept-colored */}
                             <div
-                                className="relative w-24 h-24 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
+                                className="relative w-36 h-36 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
-                                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.08) 0%, ${currentDepartment?.color || 'rgba(16,185,129,1)'}18 50%, rgba(0,0,0,0.35) 100%)`,
-                                    border: `1.5px solid ${currentDepartment?.color || 'rgba(16,185,129,.5)'}60`,
-                                    boxShadow: `0 0 40px ${currentDepartment?.color || 'rgba(16,185,129,1)'}40, 0 0 80px ${currentDepartment?.color || 'rgba(16,185,129,1)'}15, inset 2px 2px 6px rgba(255,255,255,0.18)`,
+                                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.10) 0%, ${currentDepartment?.color || 'rgba(16,185,129,1)'}25 50%, rgba(0,0,0,0.35) 100%)`,
+                                    border: `1.5px solid ${currentDepartment?.color || 'rgba(16,185,129,.5)'}75`,
+                                    boxShadow: `0 0 70px ${currentDepartment?.color || 'rgba(16,185,129,1)'}50, 0 0 140px ${currentDepartment?.color || 'rgba(16,185,129,1)'}20, inset 2px 2px 8px rgba(255,255,255,0.22)`,
                                 }}
                             >
                                 {/* Specular */}
@@ -294,20 +305,20 @@ export const SpaceLayer: React.FC = () => {
                                     animate={{ opacity: [0.5, 0.9, 0.5], scale: [0.9, 1.1, 0.9] }}
                                     transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                                 />
-                                <span className="relative z-10 text-[9px] text-white/80 uppercase tracking-[0.14em] text-center px-3 leading-tight font-light">
-                                    {spaceName.length > 18 ? spaceName.split(' ').slice(0, 2).join(' ') : spaceName}
+                                <span className="relative z-10 text-[11px] text-white/90 uppercase tracking-[0.14em] text-center px-4 leading-tight font-light">
+                                    {spaceName.length > 20 ? spaceName.substring(0, 18) + '…' : spaceName}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-white/8 bg-black/30 px-3 py-0.5 text-[9px] tracking-[0.14em] text-white/50 uppercase whitespace-nowrap">
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border border-white/15 bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] text-white/65 uppercase whitespace-nowrap">
                                 Space Core
                             </div>
                         </motion.div>
 
-                        {/* Folder orbs orbit the space core — label via Folder.tsx portal on hover */}
+                        {/* Folder orbs orbit the space core */}
                         {folderOrbitPositions.map(({ folder, x, y, isPromoted, delay }) => (
                             <div
                                 key={`folder-${folder.id}`}
-                                className="absolute pointer-events-auto"
+                                className="absolute pointer-events-auto flex flex-col items-center"
                                 style={{
                                     left: `calc(50% + ${x}px)`,
                                     top: `calc(50% + ${y}px)`,
@@ -323,16 +334,20 @@ export const SpaceLayer: React.FC = () => {
                                         color: folder.color || undefined,
                                         node_count: folder.node_count
                                     }}
-                                    position={{ x: '50%', y: '50%' }}
+                                    position={{ x: 0, y: 0 }}
                                     size="lg"
                                     orbitActive
                                     isPromoted={isPromoted}
                                     delay={delay}
+                                    onHover={(hovered) => {
+                                        isAnyHoveredRef.current = hovered;
+                                        setIsAnyHovered(hovered);
+                                    }}
                                     onClick={() => navigateToFolder(folder.id)}
                                 />
-                                {/* Minimal always-visible name tag — compact, below orb */}
-                                <div className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-                                    <span className="text-[10px] text-white/55 font-light tracking-wide max-w-[120px] truncate block text-center">
+                                {/* Persistent label below orb */}
+                                <div className="mt-1.5 whitespace-nowrap pointer-events-none">
+                                    <span className="text-[11px] text-white/60 font-light tracking-wide max-w-[110px] truncate block text-center">
                                         {folder.name}
                                     </span>
                                 </div>

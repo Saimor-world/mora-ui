@@ -6,7 +6,7 @@ import { PlasmaOrb } from './PlasmaOrb';
 
 interface MoraOrbProps {
     role?: 'admin' | 'member' | 'manager';
-    state?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo';
+    state?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' | 'curious' | 'learning' | 'watching';
     demoMode?: boolean;
     onClick?: () => void;
     interactive?: boolean;
@@ -145,7 +145,7 @@ export function MoraOrb({
                         >
                             <div className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 text-[9px] tracking-[0.3em] uppercase font-bold text-white shadow-2xl flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
-                                Mora: {{ idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm', insight: 'Erkenntnis', demo: 'Demo' }[state] || state}
+                                Mora: {{ idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm', insight: 'Erkenntnis', demo: 'Demo', curious: 'Neugierig', learning: 'Lernt', watching: 'Beobachtet' }[state ?? ''] || state}
                             </div>
                         </motion.div>
                     )}

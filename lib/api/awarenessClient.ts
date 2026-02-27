@@ -5,7 +5,7 @@
 
 import { coreGet, CoreError } from './coreClient';
 
-export type OrbState = 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo';
+export type OrbState = 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' | 'curious' | 'learning' | 'watching';
 export type RiskLevel = 'low' | 'medium' | 'high';
 
 export interface AwarenessStateResponse {

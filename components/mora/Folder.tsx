@@ -93,8 +93,8 @@ export const Folder: React.FC<FolderProps> = ({
     return (
         <motion.div
             ref={orbRef}
-            className="absolute cursor-pointer group pointer-events-auto"
-            style={{ left: position.x, top: position.y, transform: 'translate(-50%, -50%)' }}
+            className="relative cursor-pointer group pointer-events-auto inline-flex items-center justify-center"
+            style={{ width: diameter, height: diameter }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={onClick}

@@ -14,6 +14,7 @@ import { NotificationCenter, useNotificationStore } from '@/components/os/Notifi
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 import { ActionTray } from '@/components/os/ActionTray';
 import { PlasmaOrb } from './PlasmaOrb';
+import { UserAvatar } from './UserAvatar';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -194,30 +195,12 @@ export const Dock = () => {
 
                     {/* LEFT: AVATAR - Premium Design */}
                     <div className={`flex items-center gap-4 pr-4 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
-                        <motion.div
-                            className={`relative w-14 h-14 flex items-center justify-center cursor-pointer overflow-hidden group ${isStandardMode
-                                    ? 'rounded-lg bg-[#0078D4] border-2 border-[#0078D4]'
-                                    : 'rounded-2xl bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border-2 border-emerald-500/40'
-                                }`}
-                            whileHover={{ scale: 1.08, rotate: 2 }}
-                            whileTap={{ scale: 0.95 }}
-                            title={user?.name || user?.email || 'Benutzer'}
-                            style={!isStandardMode ? {
-                                boxShadow: '0 0 25px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255,255,255,0.1)'
-                            } : {}}
-                        >
-                            <span className={`text-lg font-bold transition-colors ${isStandardMode ? 'text-white' : 'text-emerald-200 group-hover:text-white'
-                                }`}>
-                                {userInitials}
-                            </span>
-                            {/* Online indicator - pulsing */}
-                            <motion.div
-                                className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 ${isStandardMode ? 'bg-green-500 border-white' : 'bg-emerald-400 border-black/80'
-                                    }`}
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            />
-                        </motion.div>
+                        <UserAvatar
+                            size={56}
+                            role={user?.role}
+                            name={user?.name}
+                            showAura={true}
+                        />
                         <div className="hidden sm:flex flex-col">
                             <span className={`text-sm font-semibold truncate max-w-[120px] ${isStandardMode ? 'text-gray-800' : 'text-white/90'
                                 }`}>

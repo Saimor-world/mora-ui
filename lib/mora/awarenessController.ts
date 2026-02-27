@@ -7,7 +7,7 @@
 
 import { useMoraStore } from '@/lib/store/moraState';
 
-export type OrbState = 'idle' | 'focus' | 'thinking' | 'alert' | 'insight';
+export type OrbState = 'idle' | 'focus' | 'thinking' | 'alert' | 'insight' | 'curious' | 'learning' | 'watching';
 
 // P1-B: Timeouts now handled by store's speculativeUntil logic
 // We keep these for legacy cleanup if needed, but primary logic moves to store.
@@ -50,6 +50,24 @@ export function setInsight() {
     const store = useMoraStore.getState();
     if (store.coreError) return;
     store.setSpeculativeState('insight', 4000);
+}
+
+/**
+ * Set Orb to curious state — Mora has noticed something interesting
+ */
+export function setCurious() {
+    const store = useMoraStore.getState();
+    if (store.coreError) return;
+    store.setSpeculativeState('curious', 3000);
+}
+
+/**
+ * Set Orb to learning state — Mora is processing/absorbing new context
+ */
+export function setLearning() {
+    const store = useMoraStore.getState();
+    if (store.coreError) return;
+    store.setSpeculativeState('learning', 3500);
 }
 
 // UPGRADE A1: Notification system for micro-sparks

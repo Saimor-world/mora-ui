@@ -16,7 +16,10 @@ const stateColors: Record<OrbState, { core: string; glow: string; secondary: str
     thinking: { core: '#3B82F6', glow: 'rgba(59,130,246,0.4)', secondary: 'rgba(168,85,247,0.35)', accent: 'rgba(6,182,212,0.2)' },
     alert: { core: '#EF4444', glow: 'rgba(239,68,68,0.4)', secondary: 'rgba(245,158,11,0.2)', accent: 'rgba(127,29,29,0.3)' },
     insight: { core: '#F59E0B', glow: 'rgba(245,158,11,0.4)', secondary: 'rgba(251,191,36,0.3)', accent: 'rgba(255,255,255,0.2)' },
-    demo: { core: '#0D9488', glow: 'rgba(13,148,136,0.3)', secondary: 'rgba(20,184,166,0.2)', accent: 'rgba(16,185,129,0.15)' }
+    demo: { core: '#0D9488', glow: 'rgba(13,148,136,0.3)', secondary: 'rgba(20,184,166,0.2)', accent: 'rgba(16,185,129,0.15)' },
+    curious: { core: '#06B6D4', glow: 'rgba(6,182,212,0.35)', secondary: 'rgba(16,185,129,0.25)', accent: 'rgba(139,92,246,0.15)' },
+    learning: { core: '#8B5CF6', glow: 'rgba(139,92,246,0.4)', secondary: 'rgba(6,182,212,0.3)', accent: 'rgba(16,185,129,0.2)' },
+    watching: { core: '#10B981', glow: 'rgba(16,185,129,0.3)', secondary: 'rgba(6,182,212,0.2)', accent: 'rgba(139,92,246,0.12)' }
 };
 
 export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, demoMode }) => {

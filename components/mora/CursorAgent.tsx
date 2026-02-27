@@ -27,7 +27,7 @@ export function CursorAgent({
     onActionComplete,
     speed = 1,
     awareness = 'idle'
-}: CursorAgentProps & { awareness?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' }) {
+}: CursorAgentProps & { awareness?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' | 'curious' | 'learning' | 'watching' }) {
     const controls = useAnimation();
     // Start in center of viewport
     const [currentPosition, setCurrentPosition] = useState(() => ({

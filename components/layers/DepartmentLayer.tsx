@@ -203,10 +203,12 @@ export const DepartmentLayer: React.FC = () => {
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
                     background: `
-                        radial-gradient(1200px 620px at 54% 56%, rgba(15,125,183,0.30) 0%, transparent 66%),
-                        radial-gradient(880px 420px at 18% 25%, rgba(16,185,129,0.22) 0%, transparent 62%),
-                        radial-gradient(760px 360px at 84% 34%, rgba(99,102,241,0.19) 0%, transparent 58%),
-                        radial-gradient(620px 280px at 62% 82%, rgba(20,184,166,0.14) 0%, transparent 58%)
+                        radial-gradient(1400px 720px at 54% 56%, rgba(15,125,183,0.42) 0%, transparent 66%),
+                        radial-gradient(1050px 540px at 18% 25%, rgba(16,185,129,0.32) 0%, transparent 62%),
+                        radial-gradient(880px 440px at 84% 34%, rgba(99,102,241,0.28) 0%, transparent 58%),
+                        radial-gradient(720px 340px at 62% 82%, rgba(20,184,166,0.24) 0%, transparent 58%),
+                        radial-gradient(620px 520px at 88% 72%, rgba(245,158,11,0.20) 0%, transparent 55%),
+                        radial-gradient(520px 420px at 8% 72%, rgba(139,92,246,0.18) 0%, transparent 52%)
                     `
                 }}
             />
@@ -314,24 +316,24 @@ export const DepartmentLayer: React.FC = () => {
                             {/* Outer amber aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 200, height: 200, background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0.12, 0.5] }}
+                                style={{ width: 360, height: 360, background: 'radial-gradient(circle, rgba(245,158,11,0.22) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.35, 1], opacity: [0.55, 0.15, 0.55] }}
                                 transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
                             />
                             {/* Mid amber aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 120, height: 120, background: 'radial-gradient(circle, rgba(251,191,36,0.22) 0%, transparent 70%)' }}
-                                animate={{ scale: [1, 1.65, 1], opacity: [0.35, 0.08, 0.35] }}
+                                style={{ width: 230, height: 230, background: 'radial-gradient(circle, rgba(251,191,36,0.28) 0%, transparent 70%)' }}
+                                animate={{ scale: [1, 1.55, 1], opacity: [0.45, 0.10, 0.45] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
                             />
-                            {/* Golden sun core — 112px, warm gradient */}
+                            {/* Golden sun core — 176px, warm gradient */}
                             <div
-                                className="relative w-28 h-28 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
+                                className="relative w-44 h-44 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
-                                    background: 'radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.10) 0%, rgba(245,158,11,0.30) 45%, rgba(120,53,15,0.20) 100%)',
-                                    border: '1.5px solid rgba(251,191,36,0.45)',
-                                    boxShadow: '0 0 60px rgba(245,158,11,0.45), 0 0 120px rgba(245,158,11,0.18), inset 2px 2px 6px rgba(255,255,255,0.20)',
+                                    background: 'radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.14) 0%, rgba(245,158,11,0.38) 45%, rgba(120,53,15,0.25) 100%)',
+                                    border: '1.5px solid rgba(251,191,36,0.55)',
+                                    boxShadow: '0 0 100px rgba(245,158,11,0.55), 0 0 220px rgba(245,158,11,0.22), inset 2px 2px 8px rgba(255,255,255,0.25)',
                                 }}
                             >
                                 {/* Specular */}
@@ -343,11 +345,12 @@ export const DepartmentLayer: React.FC = () => {
                                     animate={{ opacity: [0.5, 1, 0.5], scale: [0.85, 1.15, 0.85] }}
                                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                                 />
-                                <span className="relative z-10 text-[9px] text-amber-100/90 uppercase tracking-[0.15em] text-center px-2 leading-tight font-light">
-                                    {deptTitle.length > 14 ? deptTitle.split(' ')[0] : deptTitle}
+                                <span className="relative z-10 text-[11px] text-amber-100/95 uppercase tracking-[0.15em] text-center px-3 leading-tight font-light">
+                                    {deptTitle.length > 20 ? deptTitle.substring(0, 18) + '…' : deptTitle}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-3 rounded-full border border-amber-400/15 bg-black/30 px-3 py-0.5 text-[9px] tracking-[0.14em] text-amber-200/50 uppercase whitespace-nowrap">
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border border-amber-400/30 bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] text-amber-300/70 uppercase whitespace-nowrap"
+                                style={{ boxShadow: '0 0 12px rgba(245,158,11,0.15)' }}>
                                 Department Core
                             </div>
                         </motion.div>

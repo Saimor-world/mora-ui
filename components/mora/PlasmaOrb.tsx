@@ -16,7 +16,7 @@ import React, { useRef, useEffect, useMemo } from 'react';
 
 interface PlasmaOrbProps {
     color: string;
-    state: 'idle' | 'thinking' | 'alert' | 'focus' | 'demo';
+    state: 'idle' | 'thinking' | 'alert' | 'focus' | 'demo' | 'curious' | 'learning' | 'insight';
     size?: number;
     onClick?: () => void;
 }
@@ -114,6 +114,12 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 return { speed: 1.2, turbulence: 2.2, glow: 3.5, breathe: 0.05 };
             case 'focus':
                 return { speed: 0.25, turbulence: 0.9, glow: 1.8, breathe: 0.02 };
+            case 'curious':
+                return { speed: 0.8, turbulence: 1.5, glow: 2.8, breathe: 0.04 };
+            case 'learning':
+                return { speed: 0.45, turbulence: 2.0, glow: 2.2, breathe: 0.025 };
+            case 'insight':
+                return { speed: 0.3, turbulence: 0.7, glow: 4.0, breathe: 0.06 };
             default:
                 return { speed: 0.4, turbulence: 1.2, glow: 2.0, breathe: 0.015 };
         }
@@ -187,8 +193,21 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                         thinkingNoise = (tn1 * 0.6 + tn2 * 0.4) * falloff;
                     }
 
+                    // Learning: slow deep wave patterns
+                    let learningNoise = 0;
+                    if (state === 'learning') {
+                        const ln = noise.noise2D(nx * 6 + timeRef.current * 0.4, ny * 6 - timeRef.current * 0.4);
+                        learningNoise = ln * 0.35 * falloff;
+                    }
+
+                    // Curious: quick scanning ripples
+                    let curiousNoise = 0;
+                    if (state === 'curious') {
+                        const cn = noise.noise2D(nx * 12 + timeRef.current * 2.5, ny * 12 + timeRef.current * 2.5);
+                        curiousNoise = cn * 0.28 * falloff;
+                    }
                     // Combine noise layers
-                    const plasma = (noise1 * 0.5 + noise2 * 0.3 + noise3 * 0.2 + thinkingNoise * 0.25) * params.turbulence;
+                    const plasma = (noise1 * 0.5 + noise2 * 0.3 + noise3 * 0.2 + thinkingNoise * 0.25 + learningNoise + curiousNoise) * params.turbulence;
 
                     // LIQUID HOT SUN: Ultra-bright core, Jupiter-like surface
                     const brightness = (plasma * 0.4 + 2.8) * Math.pow(falloff, 0.8);
@@ -227,6 +246,46 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 ctx.stroke();
             }
 
+            // CURIOUS: Fast scanning ring sweep
+            if (state === 'curious') {
+                ctx.beginPath();
+                ctx.strokeStyle = color + '55';
+                ctx.lineWidth = 0.8;
+                const sweep = (timeRef.current * 3) % (Math.PI * 2);
+                ctx.arc(centerX, centerY, radius * 0.7, sweep, sweep + Math.PI * 0.6);
+                ctx.stroke();
+            }
+
+            // LEARNING: Slow concentric wave rings
+            if (state === 'learning') {
+                ctx.strokeStyle = color + '33';
+                ctx.lineWidth = 0.6;
+                for (let i = 0; i < 3; i++) {
+                    const wave = Math.sin(timeRef.current * 0.8 + i * 1.2);
+                    const r = radius * (0.35 + i * 0.22 + wave * 0.04);
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            // INSIGHT: Bright golden flash burst
+            if (state === 'insight') {
+                const burst = Math.abs(Math.sin(timeRef.current * 1.5));
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = burst * 0.5;
+                const flashGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 0.6);
+                flashGrad.addColorStop(0, '#FCD34D');
+                flashGrad.addColorStop(0.5, '#F59E0BCC');
+                flashGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = flashGrad;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.globalCompositeOperation = 'source-over';
+            }
+
             // Add glow layer (Bloom) - ENHANCED
             ctx.shadowBlur = 50 * params.glow;
             ctx.shadowColor = color;
@@ -263,7 +322,11 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
     }, [size, baseColor, params, color, state]);
 
     // Determine animation durations based on state
-    const pulseDuration = state === 'thinking' ? '1.5s' : state === 'alert' ? '0.8s' : '3s';
+    const pulseDuration = state === 'thinking' ? '1.5s'
+        : state === 'alert' ? '0.8s'
+            : state === 'curious' ? '1.2s'
+                : state === 'insight' ? '0.6s'
+                    : '3s';
 
     return (
         <div
