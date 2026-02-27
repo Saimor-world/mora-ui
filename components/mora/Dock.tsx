@@ -3,8 +3,20 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Home, Search, Settings, Folder, LayoutGrid, Minus, Users, Mail, Calendar, Terminal, MessageCircle, FileText, Sparkles, Command, User, Building2, ChevronUp, Brain, Bell
+    Search, Minus, Mail, Calendar, Command, User, Building2, ChevronUp, Bell
 } from 'lucide-react';
+import {
+    HomeOrbitIcon,
+    MoraBrainIcon,
+    ChatOrbitIcon,
+    FolderStarIcon,
+    TeamNetworkIcon,
+    NotesRuneIcon,
+    SettingsRingIcon,
+    TerminalGlyphIcon,
+    MemoryCrystalIcon,
+    GridConstellationIcon,
+} from '@/components/icons/MoraIcons';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SearchPopup } from './SearchPopup';
@@ -91,31 +103,31 @@ export const Dock = () => {
 
     // Core apps - German labels
     const dockItems: DockItem[] = [
-        { icon: Home, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zurueck zur Uebersicht' },
-        { icon: Sparkles, label: 'Mora', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
-        { icon: MessageCircle, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
-        { icon: Brain, label: 'Gedaechtnis', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
-        { icon: Folder, label: 'Dateien', shortcut: `${mod}+F`, action: 'finder', description: 'Dokumente & Ordner' },
-        { icon: Users, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
-        { icon: FileText, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
-        { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Bald verfügbar', disabled: true },
-        { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfügbar', disabled: true },
-        { icon: Terminal, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
-        { icon: Settings, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
+        { icon: HomeOrbitIcon, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zurueck zur Uebersicht' },
+        { icon: MoraBrainIcon, label: 'Mora', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
+        { icon: ChatOrbitIcon, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
+        { icon: MemoryCrystalIcon, label: 'Gedaechtnis', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
+        { icon: FolderStarIcon, label: 'Dateien', shortcut: `${mod}+F`, action: 'finder', description: 'Dokumente & Ordner' },
+        { icon: TeamNetworkIcon, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
+        { icon: NotesRuneIcon, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
+        { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Bald verfuegbar', disabled: true },
+        { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfuegbar', disabled: true },
+        { icon: TerminalGlyphIcon, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
+        { icon: SettingsRingIcon, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
     ];
 
     const minimizedIconMap: Record<string, React.ComponentType<any>> = {
-        finder: Folder,
-        chat: MessageCircle,
-        team: Users,
+        finder: FolderStarIcon,
+        chat: ChatOrbitIcon,
+        team: TeamNetworkIcon,
         mail: Mail,
         calendar: Calendar,
-        terminal: Terminal,
+        terminal: TerminalGlyphIcon,
         search: Search,
-        notes: FileText,
-        settings: Settings,
-        apps: LayoutGrid,
-        'mora-hub': Sparkles
+        notes: NotesRuneIcon,
+        settings: SettingsRingIcon,
+        apps: GridConstellationIcon,
+        'mora-hub': MoraBrainIcon
     };
 
     // Get user initials
