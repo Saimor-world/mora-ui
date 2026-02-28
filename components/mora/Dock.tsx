@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useSpring, useReducedMotion } from 'framer-motion';
 import {
     Search, Minus, Mail, Calendar, Command, User, Building2, ChevronUp, Bell
 } from 'lucide-react';
@@ -49,6 +49,119 @@ interface DockItem {
     badge?: number;
     hidden?: boolean;
 }
+
+// ─── Magnetic Dock Icon ──────────────────────────────────────────────────────
+interface MagneticDockIconProps {
+    item: DockItem;
+    isStandardMode: boolean;
+    onAction: (action: string) => void;
+}
+
+const MAGNETIC_RADIUS = 72; // px — cursor must be within this distance
+const MAX_SHIFT       = 6;  // px — max x/y displacement at center
+const MAX_TILT        = 8;  // deg — max rotateX/Y at center
+
+const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMode, onAction }) => {
+    const ref = useRef<HTMLButtonElement>(null);
+    const prefersReducedMotion = useReducedMotion();
+
+    const springCfg = { stiffness: 320, damping: 24 };
+    const x       = useSpring(0, springCfg);
+    const y       = useSpring(0, springCfg);
+    const rotateX = useSpring(0, springCfg);
+    const rotateY = useSpring(0, springCfg);
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!ref.current || item.disabled || prefersReducedMotion) return;
+        const rect = ref.current.getBoundingClientRect();
+        const cx   = rect.left + rect.width  / 2;
+        const cy   = rect.top  + rect.height / 2;
+        const dx   = e.clientX - cx;
+        const dy   = e.clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < MAGNETIC_RADIUS) {
+            const strength = 1 - dist / MAGNETIC_RADIUS;
+            x.set(dx       * strength * MAX_SHIFT / MAGNETIC_RADIUS * MAGNETIC_RADIUS);
+            y.set(dy       * strength * MAX_SHIFT / MAGNETIC_RADIUS * MAGNETIC_RADIUS);
+            rotateY.set( dx * strength * MAX_TILT  / MAGNETIC_RADIUS * MAGNETIC_RADIUS * 0.01);
+            rotateX.set(-dy * strength * MAX_TILT  / MAGNETIC_RADIUS * MAGNETIC_RADIUS * 0.01);
+        }
+    };
+
+    const resetSprings = () => {
+        x.set(0); y.set(0); rotateX.set(0); rotateY.set(0);
+    };
+
+    return (
+        <motion.button
+            ref={ref}
+            style={{ x, y, rotateX, rotateY, transformPerspective: 400 }}
+            className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${
+                item.disabled
+                    ? isStandardMode
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-white/20 cursor-not-allowed'
+                    : item.action === 'memory'
+                        ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
+                        : isStandardMode
+                            ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
+                            : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
+            }`}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={resetSprings}
+            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.18 }}
+            whileTap={item.disabled   || prefersReducedMotion ? {} : { scale: 0.92 }}
+            onClick={() => !item.disabled && onAction(item.action)}
+            disabled={item.disabled}
+        >
+            <item.icon size={26} strokeWidth={1.5} />
+
+            {/* Badge */}
+            {item.badge && item.badge > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
+                        {item.badge > 9 ? '!' : item.badge}
+                    </span>
+                </span>
+            )}
+
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[200]">
+                <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${
+                    isStandardMode
+                        ? 'bg-gray-800 border border-gray-700'
+                        : 'bg-black/95 backdrop-blur-xl border border-white/10'
+                }`}>
+                    <div className="text-white text-xs font-medium">{item.label}</div>
+                    <div className="text-white/50 text-[10px] mt-0.5">{item.description}</div>
+                    {item.shortcut && (
+                        <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${
+                            isStandardMode ? 'bg-gray-700 text-blue-300' : 'bg-white/10 text-emerald-400'
+                        }`}>
+                            {item.shortcut}
+                        </kbd>
+                    )}
+                </div>
+                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${
+                    isStandardMode
+                        ? 'bg-gray-800 border-r border-b border-gray-700'
+                        : 'bg-black/95 border-r border-b border-white/10'
+                }`} />
+            </div>
+
+            {/* Active dot */}
+            {!item.disabled && (
+                <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${
+                    isStandardMode
+                        ? 'bg-transparent group-hover:bg-[#0078D4]'
+                        : 'bg-emerald-400/0 group-hover:bg-emerald-400'
+                }`} />
+            )}
+        </motion.button>
+    );
+};
+// ─── End MagneticDockIcon ─────────────────────────────────────────────────────
 
 export const Dock = () => {
     const {
@@ -269,69 +382,15 @@ export const Dock = () => {
                     <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
 
-                    {/* CENTER: DOCK APPS - Larger Icons */}
+                    {/* CENTER: DOCK APPS — Magnetic Icons */}
                     <div className="flex items-center gap-1.5">
                         {dockItems.filter(item => !item.hidden).map((item, i) => (
-                            <motion.button
+                            <MagneticDockIcon
                                 key={i}
-                                className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${item.disabled
-                                        ? isStandardMode
-                                            ? 'text-gray-300 cursor-not-allowed'
-                                            : 'text-white/20 cursor-not-allowed'
-                                        : item.action === 'memory'
-                                            ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
-                                            : isStandardMode
-                                                ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
-                                                : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
-                                    }`}
-                                whileHover={item.disabled ? {} : { y: -8, scale: 1.2 }}
-                                whileTap={item.disabled ? {} : { scale: 0.9 }}
-                                onClick={() => !item.disabled && handleDockClick(item.action)}
-                                disabled={item.disabled}
-                            >
-                                <item.icon size={26} strokeWidth={1.5} />
-
-                                {/* BADGE for pending items */}
-                                {item.badge && item.badge > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
-                                            {item.badge > 9 ? '!' : item.badge}
-                                        </span>
-                                    </span>
-                                )}
-
-                                {/* TOOLTIP - positioned higher to ensure visibility */}
-                                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[200]">
-                                    <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
-                                            ? 'bg-gray-800 border border-gray-700'
-                                            : 'bg-black/95 backdrop-blur-xl border border-white/10'
-                                        }`}>
-                                        <div className="text-white text-xs font-medium">{item.label}</div>
-                                        <div className="text-white/50 text-[10px] mt-0.5">{item.description}</div>
-                                        {item.shortcut && (
-                                            <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${isStandardMode
-                                                    ? 'bg-gray-700 text-blue-300'
-                                                    : 'bg-white/10 text-emerald-400'
-                                                }`}>
-                                                {item.shortcut}
-                                            </kbd>
-                                        )}
-                                    </div>
-                                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${isStandardMode
-                                            ? 'bg-gray-800 border-r border-b border-gray-700'
-                                            : 'bg-black/95 border-r border-b border-white/10'
-                                        }`} />
-                                </div>
-
-                                {/* ACTIVE DOT */}
-                                {!item.disabled && (
-                                    <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${isStandardMode
-                                            ? 'bg-transparent group-hover:bg-[#0078D4]'
-                                            : 'bg-emerald-400/0 group-hover:bg-emerald-400'
-                                        }`} />
-                                )}
-                            </motion.button>
+                                item={item}
+                                isStandardMode={isStandardMode}
+                                onAction={handleDockClick}
+                            />
                         ))}
                     </div>
 
