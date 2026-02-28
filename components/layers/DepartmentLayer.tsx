@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
@@ -54,6 +54,7 @@ export const DepartmentLayer: React.FC = () => {
         return spacesByDepartment[activeDepartmentId] || [];
     }, [activeDepartmentId, spacesByDepartment]);
 
+    const prefersReducedMotion = useReducedMotion();
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -88,6 +89,8 @@ export const DepartmentLayer: React.FC = () => {
     const lastTimeRef = useRef<number>(0);
 
     useEffect(() => {
+        // Respect prefers-reduced-motion: skip the orbit animation loop entirely.
+        if (prefersReducedMotion) return;
         const animate = (currentTime: number) => {
             if (lastTimeRef.current === 0) {
                 lastTimeRef.current = currentTime;
@@ -103,7 +106,7 @@ export const DepartmentLayer: React.FC = () => {
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, []);
+    }, [prefersReducedMotion]);
 
     const normalized = useCallback((value: string) => value.toLowerCase().trim(), []);
 
@@ -515,21 +518,35 @@ export const DepartmentLayer: React.FC = () => {
                             />
                         ))}
 
-                        {spaces.length === 0 && (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
-                                <div className="text-white/30 font-light tracking-wider">NO SPACES FOUND</div>
-                                <button
+                        {spaces.length === 0 && !isLoadingSpaces && (
+                            <motion.div
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-5 mt-32 pointer-events-none"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4, duration: 0.5 }}
+                            >
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <p className="text-white/60 text-sm font-light tracking-widest uppercase">
+                                        Noch keine Bereiche
+                                    </p>
+                                    <p className="text-white/40 text-xs font-light text-center max-w-[200px] leading-relaxed">
+                                        Erstelle einen Bereich,<br />um Ordner zu gruppieren.
+                                    </p>
+                                </div>
+                                <motion.button
                                     onClick={() => addSpace({
                                         department_id: activeDepartmentId,
-                                        name: 'New Space',
-                                        description: 'Created via orbit'
+                                        name: 'Neuer Bereich',
+                                        description: 'Via Department Orbit erstellt'
                                     })}
-                                    className="px-6 py-2 rounded-full border border-white/10 hover:bg-white/5 text-emerald-400 transition-colors flex items-center gap-2 hover:border-emerald-500/50 hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)] cursor-pointer z-50 pointer-events-auto"
+                                    className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/12 bg-white/[0.03] hover:bg-white/[0.07] text-emerald-300/70 hover:text-emerald-200 hover:border-emerald-500/40 text-xs tracking-widest transition-all cursor-pointer z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+                                    whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
+                                    whileTap={{ scale: prefersReducedMotion ? 1 : 0.97 }}
                                 >
-                                    <Plus size={16} />
-                                    <span>Create Space</span>
-                                </button>
-                            </div>
+                                    <Plus size={14} />
+                                    Bereich erstellen
+                                </motion.button>
+                            </motion.div>
                         )}
 
                         {departmentDocs.length > 0 && (

@@ -2,10 +2,10 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { Plus, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Plus, RefreshCw, ArrowLeft, FolderOpen } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Folder as FolderStar } from '@/components/mora/Folder';
 
 const FOLDER_COLORS = [
@@ -40,6 +40,7 @@ export const SpaceLayer: React.FC = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const prefersReducedMotion = useReducedMotion();
     const [isAnyHovered, setIsAnyHovered] = useState(false);
     const isAnyHoveredRef = useRef(false);
 
@@ -49,6 +50,8 @@ export const SpaceLayer: React.FC = () => {
     const lastTimeRef = useRef<number>(0);
 
     useEffect(() => {
+        // Respect prefers-reduced-motion: skip the animation loop entirely.
+        if (prefersReducedMotion) return;
         const animate = (currentTime: number) => {
             if (lastTimeRef.current === 0) lastTimeRef.current = currentTime;
             const delta = (currentTime - lastTimeRef.current) / 1000;
@@ -63,7 +66,7 @@ export const SpaceLayer: React.FC = () => {
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, []);
+    }, [prefersReducedMotion]);
 
     const currentDepartment = useMemo(() => {
         return departments.find(d => d.id === activeDepartmentId);
@@ -212,8 +215,9 @@ export const SpaceLayer: React.FC = () => {
             >
                 <button
                     onClick={() => activeSpaceId && loadFoldersForSpace(activeSpaceId)}
-                    className="p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/40 hover:text-white transition-colors"
+                    className="p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/40 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
                     title="Refresh"
+                    aria-label="Ordner aktualisieren"
                 >
                     <RefreshCw size={16} />
                 </button>
@@ -346,8 +350,9 @@ export const SpaceLayer: React.FC = () => {
                                     {spaceName.length > 20 ? spaceName.substring(0, 18) + '…' : spaceName}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border border-white/15 bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] text-white/65 uppercase whitespace-nowrap">
-                                Space Core
+                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
+                                style={{ borderColor: `${currentDepartment?.color || 'rgba(6,182,212,1)'}55`, color: `${currentDepartment?.color || 'rgba(6,182,212,1)'}CC` }}>
+                                Folder Cluster
                             </div>
                         </motion.div>
 
@@ -391,23 +396,46 @@ export const SpaceLayer: React.FC = () => {
                             </div>
                         ))}
 
-                        {/* Empty State */}
+                        {/* Empty State — L3 with 0 folders */}
                         {!isLoadingFolders && folders.length === 0 && (
                             <motion.div
-                                className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.5 }}
+                                className="absolute inset-0 flex flex-col items-center justify-center gap-5 pointer-events-none"
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5, duration: 0.6 }}
                             >
-                                <p className="text-emerald-200/40 text-sm tracking-widest">
-                                    NO FOLDERS YET
-                                </p>
+                                {/* Icon */}
+                                <motion.div
+                                    className="relative"
+                                    animate={prefersReducedMotion ? {} : { scale: [1, 1.06, 1], opacity: [0.5, 0.8, 0.5] }}
+                                    transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                                >
+                                    <div className="w-16 h-16 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-center">
+                                        <FolderOpen size={28} className="text-emerald-400/50" />
+                                    </div>
+                                    {/* Subtle glow ring */}
+                                    <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: '0 0 30px rgba(16,185,129,0.12)' }} />
+                                </motion.div>
+
+                                {/* Label */}
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <p className="text-white/55 text-sm font-light tracking-widest uppercase">
+                                        Noch keine Ordner
+                                    </p>
+                                    <p className="text-white/45 text-xs font-light text-center max-w-[220px] leading-relaxed">
+                                        Erstelle deinen ersten Ordner,<br />um Dokumente zu organisieren.
+                                    </p>
+                                </div>
+
+                                {/* CTA */}
                                 <motion.button
                                     onClick={() => setIsCreateModalOpen(true)}
-                                    className="pointer-events-auto px-5 py-2 rounded-full border border-emerald-500/25 text-emerald-300/70 hover:text-emerald-200 hover:border-emerald-400/40 text-xs tracking-widest transition-all"
-                                    whileHover={{ scale: 1.04 }}
+                                    className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 rounded-full border border-emerald-500/30 bg-emerald-500/8 text-emerald-300/80 hover:text-emerald-200 hover:border-emerald-400/50 hover:bg-emerald-500/15 text-xs tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+                                    whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
+                                    whileTap={{ scale: prefersReducedMotion ? 1 : 0.97 }}
                                 >
-                                    + CREATE FIRST FOLDER
+                                    <Plus size={14} />
+                                    Ordner erstellen
                                 </motion.button>
                             </motion.div>
                         )}
