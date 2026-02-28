@@ -121,7 +121,7 @@ export const Folder: React.FC<FolderProps> = ({
                 className="absolute inset-[-40%] rounded-full blur-[18px] z-[-1]"
                 style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)` }}
                 animate={{
-                    opacity: isActive ? 0.4 : isHovered ? 0.3 : hasContent ? 0.08 : 0.04,
+                    opacity: isActive ? 0.5 : isHovered ? 0.38 : hasContent ? 0.20 : 0.12,
                     scale: isHovered ? 1.2 : 1,
                 }}
                 transition={{ duration: 0.35 }}
@@ -142,13 +142,13 @@ export const Folder: React.FC<FolderProps> = ({
                 style={{
                     width: diameter,
                     height: diameter,
-                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.06) 0%, ${coreColor}08 55%, rgba(0,0,0,0.3) 100%)`,
+                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.14) 0%, ${coreColor}38 55%, rgba(0,0,0,0.25) 100%)`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 32px ${coreColor}50, inset 0 0 16px ${coreColor}20, inset 2px 2px 5px rgba(255,255,255,0.22)`
+                        ? `0 0 40px ${coreColor}70, inset 0 0 20px ${coreColor}30, inset 2px 2px 6px rgba(255,255,255,0.30)`
                         : hasContent
-                            ? `0 0 14px ${coreColor}35, inset 0 0 8px ${coreColor}10, inset 1px 1px 2px rgba(255,255,255,0.10)`
-                            : `0 6px 18px rgba(0,0,0,0.3), inset 1px 1px 1px rgba(255,255,255,0.06)`,
-                    border: `1px solid ${coreColor}28`,
+                            ? `0 0 22px ${coreColor}55, inset 0 0 12px ${coreColor}20, inset 1px 1px 3px rgba(255,255,255,0.18)`
+                            : `0 0 16px ${coreColor}40, 0 6px 18px rgba(0,0,0,0.25), inset 1px 1px 2px rgba(255,255,255,0.14)`,
+                    border: `1px solid ${coreColor}55`,
                 }}
                 animate={isActive ? {
                     boxShadow: [

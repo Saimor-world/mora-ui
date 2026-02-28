@@ -125,7 +125,7 @@ export const Star: React.FC<StarProps> = ({
                 className="absolute inset-[-35%] rounded-full blur-[20px] z-[-1]"
                 style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)` }}
                 animate={{
-                    opacity: isActive ? 0.35 : isHovered ? 0.25 : isHoveredByPlanet ? 0.2 : 0.05,
+                    opacity: isActive ? 0.45 : isHovered ? 0.32 : isHoveredByPlanet ? 0.22 : 0.14,
                     scale: isHovered ? 1.15 : 1,
                 }}
                 transition={{ duration: 0.4 }}
@@ -160,13 +160,13 @@ export const Star: React.FC<StarProps> = ({
                 style={{
                     width: diameter,
                     height: diameter,
-                    background: `radial-gradient(140% 140% at 28% 28%, rgba(255,255,255,0.07) 0%, ${coreColor}0A 50%, rgba(0,0,0,0.35) 100%)`,
+                    background: `radial-gradient(140% 140% at 28% 28%, rgba(255,255,255,0.16) 0%, ${coreColor}40 50%, rgba(0,0,0,0.28) 100%)`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 40px ${coreColor}45, inset 0 0 20px ${coreColor}20, inset 2px 2px 6px rgba(255,255,255,0.25)`
+                        ? `0 0 50px ${coreColor}60, inset 0 0 24px ${coreColor}28, inset 2px 2px 7px rgba(255,255,255,0.32)`
                         : hasContent
-                            ? `0 0 18px ${coreColor}40, inset 0 0 10px ${coreColor}12, inset 1px 1px 2px rgba(255,255,255,0.12)`
-                            : `0 8px 24px rgba(0,0,0,0.35), inset 1px 1px 2px rgba(255,255,255,0.08)`,
-                    border: `1px solid ${coreColor}30`,
+                            ? `0 0 24px ${coreColor}55, inset 0 0 12px ${coreColor}18, inset 1px 1px 3px rgba(255,255,255,0.16)`
+                            : `0 0 18px ${coreColor}45, 0 8px 24px rgba(0,0,0,0.28), inset 1px 1px 3px rgba(255,255,255,0.14)`,
+                    border: `1px solid ${coreColor}55`,
                 }}
                 whileHover={{ scale: 1.1, rotate: 8 }}
                 transition={{ type: 'spring', stiffness: 250, damping: 20 }}

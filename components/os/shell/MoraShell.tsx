@@ -499,6 +499,9 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
+            {/* Node Detail Panel — renders whenever activeNode is set (click node in FolderLayer) */}
+            <NodeDetailPanel />
+
             {/* Dock (Bottom Navigation) */}
             <Dock />
 

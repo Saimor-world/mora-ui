@@ -99,12 +99,15 @@ export const SpaceLayer: React.FC = () => {
         return Math.max(0.3, Math.min(1.0, 1.0 - daysDiff / 30));
     }, []);
 
-    // Animated orbit positions in 3 rings — larger radii for screen fill.
+    // Fallback color palette — assigned by folder index so each orb has a distinct colour
+    const FALLBACK_COLORS = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#f43f5e', '#3b82f6'];
+
+    // Animated orbit positions in 3 rings — radii sized to fill the viewport.
     const folderOrbitPositions = useMemo(() => {
         if (folders.length === 0) return [];
 
-        const RING_RADII_X = [170, 272, 358];
-        const RING_RADII_Y = [110, 178, 234];
+        const RING_RADII_X = [230, 360, 470];
+        const RING_RADII_Y = [155, 240, 310];
         const RING_SPEEDS = [0.03, 0.019, 0.013];
 
         const sorted = [...folders]
@@ -121,8 +124,10 @@ export const SpaceLayer: React.FC = () => {
             const animAngle = baseAngle + orbitTime * RING_SPEEDS[ring];
             const rx = RING_RADII_X[ring];
             const ry = RING_RADII_Y[ring];
+            // Assign a distinct fallback color when the folder has no color set
+            const resolvedColor = folder.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
             return {
-                folder,
+                folder: { ...folder, color: resolvedColor },
                 x: Math.cos(animAngle) * rx,
                 y: Math.sin(animAngle) * ry,
                 isPromoted: folder.weight >= 0.8,
@@ -264,7 +269,8 @@ export const SpaceLayer: React.FC = () => {
                 {isLoadingFolders ? (
                     <LoadingState message="Scanning Space..." />
                 ) : (
-                    <div className="relative w-full h-full">
+                    /* pb-16 offsets the fixed dock (~64px) so top-1/2 centres within the visible area */
+                    <div className="relative w-full h-full pb-16">
 
                         {/* Connection lines center -> folder nodes for constellation clarity */}
                         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
