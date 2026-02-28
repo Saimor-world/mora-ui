@@ -25,8 +25,15 @@ export const ViewPort: React.FC = () => {
     const viewMode = useMoraStore((state) => state.viewMode);
     const prefersReducedMotion = useReducedMotion();
 
-    // Compute active view to ensure only one renders at a time
-    const activeView = viewLevel;
+    // Shared reduced-motion fallback variants (opacity-only, short duration)
+    const rmVariants = prefersReducedMotion
+        ? {
+              initial:    { opacity: 0 as const },
+              animate:    { opacity: 1 as const },
+              exit:       { opacity: 0 as const, transition: { duration: 0.15 } },
+              transition: { duration: 0.2 },
+          }
+        : null;
 
     return (
         <div className="w-full h-full relative">
@@ -36,12 +43,10 @@ export const ViewPort: React.FC = () => {
                 {viewLevel === 'core' && (
                     <motion.div
                         key="core"
-                        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-                        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
-                        exit={prefersReducedMotion
-                            ? { opacity: 0, transition: { duration: 0.15 } }
-                            : { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
-                        transition={prefersReducedMotion ? { duration: 0.2 } : { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.95 }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1 }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
                         className="absolute inset-0"
                     >
                         <UniverseView />
@@ -52,12 +57,10 @@ export const ViewPort: React.FC = () => {
                 {viewLevel === 'department' && (
                     <motion.div
                         key="department"
-                        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
-                        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                        exit={prefersReducedMotion
-                            ? { opacity: 0, transition: { duration: 0.15 } }
-                            : { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
-                        transition={prefersReducedMotion ? { duration: 0.2 } : { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
                         className="absolute inset-0 preserve-3d"
                     >
                         <DepartmentLayer />
@@ -68,12 +71,10 @@ export const ViewPort: React.FC = () => {
                 {viewLevel === 'space' && (
                     <motion.div
                         key="space"
-                        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
-                        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                        exit={prefersReducedMotion
-                            ? { opacity: 0, transition: { duration: 0.15 } }
-                            : { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
-                        transition={prefersReducedMotion ? { duration: 0.2 } : { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
                         className="absolute inset-0 preserve-3d"
                     >
                         <SpaceLayer />
@@ -84,12 +85,10 @@ export const ViewPort: React.FC = () => {
                 {viewLevel === 'folder' && (
                     <motion.div
                         key="folder"
-                        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
-                        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                        exit={prefersReducedMotion
-                            ? { opacity: 0, transition: { duration: 0.15 } }
-                            : { opacity: 0, scale: 1.1, filter: 'blur(0px)' }}
-                        transition={prefersReducedMotion ? { duration: 0.2 } : { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.1, filter: 'blur(0px)' }}
+                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
                         className="absolute inset-0 preserve-3d"
                     >
                         <FolderLayer />
