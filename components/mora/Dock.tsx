@@ -81,10 +81,10 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
         const dist = Math.hypot(dx, dy);
         if (dist < MAGNETIC_RADIUS) {
             const strength = 1 - dist / MAGNETIC_RADIUS;
-            x.set(dx       * strength * MAX_SHIFT / MAGNETIC_RADIUS * MAGNETIC_RADIUS);
-            y.set(dy       * strength * MAX_SHIFT / MAGNETIC_RADIUS * MAGNETIC_RADIUS);
-            rotateY.set( dx * strength * MAX_TILT  / MAGNETIC_RADIUS * MAGNETIC_RADIUS * 0.01);
-            rotateX.set(-dy * strength * MAX_TILT  / MAGNETIC_RADIUS * MAGNETIC_RADIUS * 0.01);
+            x.set(dx * strength * MAX_SHIFT);
+            y.set(dy * strength * MAX_SHIFT);
+            rotateY.set( dx * strength * MAX_TILT * 0.01);
+            rotateX.set(-dy * strength * MAX_TILT * 0.01);
         }
     };
 
@@ -92,9 +92,16 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
         x.set(0); y.set(0); rotateX.set(0); rotateY.set(0);
     };
 
+    // Reset springs immediately if reduced-motion preference changes while hovering
+    React.useEffect(() => {
+        if (prefersReducedMotion) resetSprings();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [prefersReducedMotion]);
+
     return (
         <motion.button
             ref={ref}
+            aria-label={item.label}
             style={{ x, y, rotateX, rotateY, transformPerspective: 400 }}
             className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${
                 item.disabled
