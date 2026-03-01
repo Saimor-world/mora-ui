@@ -66,6 +66,7 @@ const GEO_SHAPES = [
 
 export const MoraLivingBackground: React.FC = () => {
     const orbState = useMoraStore((s) => s.orbState);
+    const viewLevel = useMoraStore((s) => s.viewLevel);
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => { setMounted(true); }, []);
@@ -103,6 +104,16 @@ export const MoraLivingBackground: React.FC = () => {
     }, [mounted]);
 
     const isThinking = orbState === 'thinking';
+    const isLayerFocusView = viewLevel === 'department' || viewLevel === 'space' || viewLevel === 'folder';
+    const auroraOpacityTrack = isLayerFocusView
+        ? [0.12, 0.30, 0.18, 0.28, 0.12]
+        : [0.45, 1, 0.65, 1, 0.45];
+    const auroraXTrack = isLayerFocusView
+        ? ['-2%', '2%', '-1%', '2%', '-2%']
+        : ['-6%', '4%', '-2%', '5%', '-6%'];
+    const auroraScaleTrack = isLayerFocusView
+        ? [0.96, 1.02, 0.99, 1.02, 0.96]
+        : [0.90, 1.08, 0.97, 1.05, 0.90];
 
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
@@ -137,9 +148,9 @@ export const MoraLivingBackground: React.FC = () => {
                     className="absolute w-full"
                     style={{ top: band.top, height: band.height, background: band.gradient }}
                     animate={{
-                        opacity: [0.45, 1, 0.65, 1, 0.45],
-                        x:       ['-6%', '4%', '-2%', '5%', '-6%'],
-                        scaleX:  [0.90, 1.08, 0.97, 1.05, 0.90],
+                        opacity: auroraOpacityTrack,
+                        x:       auroraXTrack,
+                        scaleX:  auroraScaleTrack,
                     }}
                     transition={{
                         duration: band.duration,
@@ -252,15 +263,17 @@ export const MoraLivingBackground: React.FC = () => {
             </div>
 
             {/* ── SCANLINE SWEEP ── */}
-            <motion.div
-                className="absolute left-0 w-full pointer-events-none"
-                style={{
-                    height: '2px',
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.09) 38%, rgba(6,182,212,0.07) 62%, transparent 100%)',
-                }}
-                animate={{ top: ['-2px', '100vh'], opacity: [0.5, 0.9, 0.5] }}
-                transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
-            />
+            {!isLayerFocusView && (
+                <motion.div
+                    className="absolute left-0 w-full pointer-events-none"
+                    style={{
+                        height: '2px',
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.09) 38%, rgba(6,182,212,0.07) 62%, transparent 100%)',
+                    }}
+                    animate={{ top: ['-2px', '100vh'], opacity: [0.5, 0.9, 0.5] }}
+                    transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+                />
+            )}
 
             {/* Vignette */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_45%,_rgba(0,0,0,0.20)_100%)]" />
