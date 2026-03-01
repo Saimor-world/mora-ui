@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useMoraStore } from "@/lib/store/moraState";
+import type { OrbState } from "@/lib/api/awarenessClient";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -149,10 +151,20 @@ export function useMoraStream(): UseMoraStreamReturn {
                         }
 
                         try {
-                            const json = JSON.parse(line) as { token?: string; error?: string };
+                            const json = JSON.parse(line) as {
+                                token?: string;
+                                error?: string;
+                                orbState?: OrbState;
+                            };
                             if (json.error) {
                                 setError(json.error);
                                 break;
+                            }
+                            // SSE preamble: backend sends orbState before first token
+                            // e.g. {"orbState": "curious"} — wire it to the Mora Orb
+                            if (json.orbState) {
+                                useMoraStore.getState().setOrbState(json.orbState);
+                                continue;
                             }
                             if (json.token) {
                                 fullText += json.token;
