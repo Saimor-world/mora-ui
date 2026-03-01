@@ -18,9 +18,12 @@ const FOLDER_COLORS = [
 ];
 
 // Orbit speeds per ring: inner faster, outer slower — slow planetary drift.
-const RING_SPEEDS = [0.032, 0.020, 0.013]; // was [0.18, 0.12, 0.08] — ~6x slower
-const RING_RADII_X = [140, 220, 300];      // Tighter orbits for L3 intimacy
-const RING_RADII_Y = [115, 180, 245];
+const RING_SPEEDS = [0.032, 0.020, 0.013];
+// Single source of truth — used by BOTH SVG orbit rings AND folder positions.
+// Bug fix: previously shadowed by a local const inside folderOrbitPositions useMemo,
+// causing the visual orbit rings and actual folder orbs to orbit at different radii.
+const RING_RADII_X = [200, 310, 410];
+const RING_RADII_Y = [140, 215, 285];
 
 export const SpaceLayer: React.FC = () => {
     const {
@@ -102,13 +105,10 @@ export const SpaceLayer: React.FC = () => {
     // Fallback color palette — assigned by folder index so each orb has a distinct colour
     const FALLBACK_COLORS = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#f43f5e', '#3b82f6'];
 
-    // Animated orbit positions in 3 rings — radii sized to fill the viewport.
+    // Animated orbit positions in 3 rings.
+    // Uses module-level RING_RADII_X/Y/SPEEDS — no local shadowing.
     const folderOrbitPositions = useMemo(() => {
         if (folders.length === 0) return [];
-
-        const RING_RADII_X = [230, 360, 470];
-        const RING_RADII_Y = [155, 240, 310];
-        const RING_SPEEDS = [0.03, 0.019, 0.013];
 
         const sorted = [...folders]
             .map(f => ({ ...f, weight: getWeight(f.updated_at || f.created_at) }))
