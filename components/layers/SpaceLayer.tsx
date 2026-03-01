@@ -337,15 +337,15 @@ export const SpaceLayer: React.FC = () => {
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
                                 style={{ width: 300, height: 300, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}55 0%, transparent 68%)` }}
-                                animate={{ scale: [1, 1.40, 1], opacity: [0.70, 0.20, 0.70] }}
-                                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                                animate={prefersReducedMotion ? { scale: 1, opacity: 0.45 } : { scale: [1, 1.40, 1], opacity: [0.70, 0.20, 0.70] }}
+                                transition={{ duration: 6, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
                             />
                             {/* Mid aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
                                 style={{ width: 200, height: 200, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}66 0%, transparent 68%)` }}
-                                animate={{ scale: [1, 1.50, 1], opacity: [0.55, 0.14, 0.55] }}
-                                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                                animate={prefersReducedMotion ? { scale: 1, opacity: 0.35 } : { scale: [1, 1.50, 1], opacity: [0.55, 0.14, 0.55] }}
+                                transition={{ duration: 4.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut", delay: 1 }}
                             />
                             {/* Core orb â€” 144px â€” fixed: was ${color}25 (9% alpha) â†’ now ${color}AA (67%) */}
                             <div
@@ -362,8 +362,8 @@ export const SpaceLayer: React.FC = () => {
                                 <motion.div
                                     className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md"
                                     style={{ background: `radial-gradient(circle, ${currentDepartment?.color || '#10B981'} 0%, transparent 70%)` }}
-                                    animate={{ opacity: [0.5, 0.9, 0.5], scale: [0.9, 1.1, 0.9] }}
-                                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                                    animate={prefersReducedMotion ? { opacity: 0.7, scale: 1 } : { opacity: [0.5, 0.9, 0.5], scale: [0.9, 1.1, 0.9] }}
+                                    transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
                                 />
                                 <span className="relative z-10 text-[11px] text-white/90 uppercase tracking-[0.14em] text-center px-4 leading-tight font-light">
                                     {spaceName.length > 20 ? spaceName.substring(0, 18) + 'â€¦' : spaceName}

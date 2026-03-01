@@ -13,7 +13,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Users, Briefcase, FolderOpen, Layers, Star as StarIcon, FlaskConical, BookOpen, ShoppingCart } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -68,6 +68,7 @@ export const Star: React.FC<StarProps> = ({
     isHoveredByPlanet = false,
     isPromoted = false,
 }) => {
+    const prefersReducedMotion = useReducedMotion();
     const [isHovered, setIsHovered] = useState(false);
     const [showPortal, setShowPortal] = useState(false);
     const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
@@ -148,8 +149,8 @@ export const Star: React.FC<StarProps> = ({
                     strokeWidth="0.7"
                     strokeDasharray="2 7"
                     opacity={isHovered ? 0.55 : 0.25}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+                    animate={prefersReducedMotion ? {} : { rotate: 360 }}
+                    transition={{ duration: 28, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
                     style={{ transformOrigin: `${cx}px ${cy}px` }}
                 />
             </svg>
@@ -175,8 +176,8 @@ export const Star: React.FC<StarProps> = ({
                 <motion.div
                     className="absolute rounded-full border border-amber-400/50"
                     style={{ inset: -(ring * 0.4) }}
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.75, 0.4] }}
-                    transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={prefersReducedMotion ? { scale: 1, opacity: 0.55 } : { scale: [1, 1.2, 1], opacity: [0.4, 0.75, 0.4] }}
+                    transition={{ duration: 3.2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
                 />
             )}
 
@@ -206,8 +207,8 @@ export const Star: React.FC<StarProps> = ({
                 <motion.div
                     className="absolute inset-[22%] rounded-full mix-blend-overlay"
                     style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(6px)' }}
-                    animate={{ opacity: [0.65, 1.0, 0.65], scale: [0.88, 1.12, 0.88] }}
-                    transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={prefersReducedMotion ? { opacity: 0.8, scale: 1 } : { opacity: [0.65, 1.0, 0.65], scale: [0.88, 1.12, 0.88] }}
+                    transition={{ duration: 3.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
                 />
                 {/* Glass caustic */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_26%,rgba(255,255,255,0.20)_0%,transparent_52%)] pointer-events-none" />

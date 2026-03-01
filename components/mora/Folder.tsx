@@ -13,7 +13,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Folder as FolderIcon, File, Image, Video, Music, Archive, FileText } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -65,6 +65,7 @@ export const Folder: React.FC<FolderProps> = ({
     onHover,
     isPromoted = false,
 }) => {
+    const prefersReducedMotion = useReducedMotion();
     const [isHovered, setIsHovered] = useState(false);
     const [showPortal, setShowPortal] = useState(false);
     const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
@@ -118,14 +119,14 @@ export const Folder: React.FC<FolderProps> = ({
             animate={{
                 scale: 1,
                 opacity: 1,
-                x: orbitActive ? [0, 2, 0, -2, 0] : 0,
-                y: orbitActive ? [0, -1.2, 0, 1.2, 0] : 0,
+                x: (orbitActive && !prefersReducedMotion) ? [0, 2, 0, -2, 0] : 0,
+                y: (orbitActive && !prefersReducedMotion) ? [0, -1.2, 0, 1.2, 0] : 0,
             }}
             transition={{
                 delay,
                 type: 'spring', stiffness: 380, damping: 28,
-                x: orbitActive ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut' } : undefined,
-                y: orbitActive ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut', delay: 0.4 } : undefined,
+                x: (orbitActive && !prefersReducedMotion) ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut' } : undefined,
+                y: (orbitActive && !prefersReducedMotion) ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut', delay: 0.4 } : undefined,
             }}
             whileHover={{ scale: 1.28, rotate: 5 }}
             whileTap={{ scale: 0.88 }}
@@ -153,8 +154,8 @@ export const Folder: React.FC<FolderProps> = ({
                     strokeWidth="0.6"
                     strokeDasharray="2 6"
                     opacity={isHovered ? 0.50 : 0.22}
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+                    animate={prefersReducedMotion ? {} : { rotate: -360 }}
+                    transition={{ duration: 22, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
                     style={{ transformOrigin: `${cx}px ${cy}px` }}
                 />
             </svg>
@@ -180,8 +181,8 @@ export const Folder: React.FC<FolderProps> = ({
                 <motion.div
                     className="absolute rounded-full border border-amber-400/50"
                     style={{ inset: -(ring * 0.35) }}
-                    animate={{ scale: [1, 1.18, 1], opacity: [0.35, 0.68, 0.35] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    animate={prefersReducedMotion ? { scale: 1, opacity: 0.50 } : { scale: [1, 1.18, 1], opacity: [0.35, 0.68, 0.35] }}
+                    transition={{ duration: 3, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
                 />
             )}
 
@@ -218,8 +219,8 @@ export const Folder: React.FC<FolderProps> = ({
                 <motion.div
                     className="absolute inset-[24%] rounded-full mix-blend-overlay"
                     style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(5px)' }}
-                    animate={{ opacity: [0.55, 0.90, 0.55], scale: [0.88, 1.12, 0.88] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay }}
+                    animate={prefersReducedMotion ? { opacity: 0.7, scale: 1 } : { opacity: [0.55, 0.90, 0.55], scale: [0.88, 1.12, 0.88] }}
+                    transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut', delay }}
                 />
                 {/* Glass caustic */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_26%,rgba(255,255,255,0.18)_0%,transparent_52%)] pointer-events-none" />
