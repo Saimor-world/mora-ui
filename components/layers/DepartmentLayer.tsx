@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -68,6 +68,17 @@ export const DepartmentLayer: React.FC = () => {
 
     const prefersReducedMotion = useReducedMotion();
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
+
+    // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
+    const [viewportWidth, setViewportWidth] = useState<number>(
+        typeof window !== 'undefined' ? window.innerWidth : 1920
+    );
+    useEffect(() => {
+        const handleResize = () => setViewportWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    const isMobileViewport = viewportWidth < 600;
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
@@ -232,6 +243,17 @@ export const DepartmentLayer: React.FC = () => {
     }, [spaces, foldersBySpace, departmentDocs.length]);
 
     if (!activeDepartmentId) return null;
+
+    if (isMobileViewport) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-white/60">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                </svg>
+                <p className="text-sm tracking-widest uppercase">Best viewed on desktop</p>
+            </div>
+        );
+    }
 
     // Dept-specific nebula colours â€” same semantic mapping as Planet.tsx (via getDeptStyle)
     const deptStyle = getDeptStyle(deptTitle, deptColor || undefined);

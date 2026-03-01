@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -47,6 +47,17 @@ export const SpaceLayer: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const prefersReducedMotion = useReducedMotion();
     const [isAnyHovered, setIsAnyHovered] = useState(false);
+
+    // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
+    const [viewportWidth, setViewportWidth] = useState<number>(
+        typeof window !== 'undefined' ? window.innerWidth : 1920
+    );
+    useEffect(() => {
+        const handleResize = () => setViewportWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    const isMobileViewport = viewportWidth < 600;
     const isAnyHoveredRef = useRef(false);
     const orbitVelocity = useMemo(() => {
         if (orbState === 'alert') return 0.9;
@@ -184,6 +195,17 @@ export const SpaceLayer: React.FC = () => {
     };
 
     if (viewLevel !== 'space' || !activeSpaceId) return null;
+
+    if (isMobileViewport) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-white/60">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                </svg>
+                <p className="text-sm tracking-widest uppercase">Best viewed on desktop</p>
+            </div>
+        );
+    }
 
     const spaceName = displaySpaceName(currentSpace?.name || 'Space');
 
