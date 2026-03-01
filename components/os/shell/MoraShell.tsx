@@ -36,6 +36,7 @@ import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import {
     useShellEvents,
     useAwareness,
+    useMindloopStream,
     useRealtime,
     useKeyboardShortcuts
 } from '@/lib/hooks/shell';
@@ -331,6 +332,7 @@ export const MoraShell: React.FC = () => {
 
     // Hooks
     const apiOrbState = useAwareness();
+    useMindloopStream(isBootstrapped && viewMode !== 'demo');
 
     useShellEvents({
         onOpenResonance: useCallback(() => setIsResonanceOpen(true), [])
@@ -411,7 +413,9 @@ export const MoraShell: React.FC = () => {
     // Computed
     const finalOrbState: OrbState = viewMode === 'demo'
         ? 'demo'
-        : (storeOrbState || apiOrbState);
+        : (storeOrbState === 'idle' && apiOrbState !== 'idle'
+            ? apiOrbState
+            : (storeOrbState || apiOrbState));
 
     // ==========================================================================
     // RENDER

@@ -33,6 +33,7 @@ export const SpaceLayer: React.FC = () => {
         departments,
         spacesByDepartment,
         foldersBySpace,
+        orbState,
         isLoadingFolders,
         navigateToDepartment,
         loadFoldersForSpace,
@@ -47,6 +48,19 @@ export const SpaceLayer: React.FC = () => {
     const prefersReducedMotion = useReducedMotion();
     const [isAnyHovered, setIsAnyHovered] = useState(false);
     const isAnyHoveredRef = useRef(false);
+    const orbitVelocity = useMemo(() => {
+        if (orbState === 'alert') return 0.9;
+        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 1.15;
+        if (orbState === 'thinking') return 1.22;
+        if (orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 1.08;
+        return 1;
+    }, [orbState]);
+    const atmosphereIntensity = useMemo(() => {
+        if (orbState === 'alert') return 0.95;
+        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 0.9;
+        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.85;
+        return 0.75;
+    }, [orbState]);
 
     // Orbit animation pattern shared with DepartmentLayer.
     const [orbitTime, setOrbitTime] = useState(0);
@@ -133,7 +147,7 @@ export const SpaceLayer: React.FC = () => {
             const ringCount = Math.min(6, sorted.length - ring * 6);
             const baseAngle = (inRing / Math.max(1, ringCount)) * Math.PI * 2 - Math.PI / 2;
             // Animate angle over time for this ring.
-            const animAngle = baseAngle + orbitTime * RING_SPEEDS[ring];
+            const animAngle = baseAngle + orbitTime * RING_SPEEDS[ring] * orbitVelocity;
             const rx = RING_RADII_X[ring];
             const ry = RING_RADII_Y[ring];
             // Assign a distinct fallback color when the folder has no color set
@@ -146,7 +160,7 @@ export const SpaceLayer: React.FC = () => {
                 delay: index * 0.04,
             };
         });
-    }, [folders, orbitTime, getWeight]);
+    }, [folders, orbitTime, getWeight, orbitVelocity]);
 
     useEffect(() => {
         if (activeSpaceId && !foldersBySpace[activeSpaceId]) {
@@ -189,6 +203,7 @@ export const SpaceLayer: React.FC = () => {
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
+                    opacity: atmosphereIntensity,
                     background: `
                         radial-gradient(1100px 520px at 55% 58%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
                         radial-gradient(850px 400px at 25% 35%, rgba(6, 182, 212, 0.16) 0%, transparent 60%),

@@ -3,13 +3,14 @@
 /**
  * useMindLoopInsights
  *
- * Polls GET /v1/mindloop/events for new insight-class events (semantic, context_shift)
+ * Polls GET /v1/mindloop/events for new insight-class events
+ * (semantic, context_shift, potential_risk, related_objects_cluster)
  * and surfaces the latest unseen event as a MoraInsight for the InsightPopup.
  *
  * Key design decision: tracks `lastSeenId` in a ref so the popup fires only ONCE
  * per truly new event — not every 30s poll interval.
  *
- * Backend endpoint: GET /v1/mindloop/events?limit=5&type=semantic
+ * Backend endpoint: GET /v1/mindloop/events?limit=12
  * Confirm endpoint: POST /v1/mindloop/insight/{id}/confirm
  */
 
@@ -18,7 +19,7 @@ import { coreGet, corePost } from '@/lib/api/coreClient';
 import type { MoraInsight } from '@/components/mora/MoraInsightPopup';
 
 const POLL_INTERVAL_MS = 30_000; // 30 seconds
-const INSIGHT_TYPES = ['semantic', 'context_shift'] as const;
+const INSIGHT_TYPES = ['semantic', 'context_shift', 'potential_risk', 'related_objects_cluster'] as const;
 
 interface MindLoopEvent {
     id: string;
@@ -27,8 +28,10 @@ interface MindLoopEvent {
     content?: string;
     description?: string;
     confidence?: number;
+    severity?: number;
     timestamp: string;
     source?: string;
+    payload?: Record<string, any>;
 }
 
 interface UseMindLoopInsightsReturn {
@@ -45,14 +48,39 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
     const lastSeenIdRef = useRef<string | null>(null);
     const isMountedRef = useRef(true);
 
-    const parseInsight = (event: MindLoopEvent): MoraInsight => ({
-        id: event.id,
-        content: event.summary || event.content || event.description || 'Mora hat etwas bemerkt...',
-        source: event.event_type === 'context_shift' ? 'context' : 'mindloop',
-        confidence: event.confidence,
-        timestamp: event.timestamp,
-        confirmed: false,
-    });
+    const parseInsight = (event: MindLoopEvent): MoraInsight => {
+        const payload = event.payload || {};
+        const text =
+            event.summary ||
+            event.content ||
+            event.description ||
+            payload.summary ||
+            payload.message ||
+            payload.title ||
+            'Mora hat etwas bemerkt...';
+
+        const source =
+            event.event_type === 'context_shift'
+                ? 'context'
+                : (event.event_type === 'potential_risk' || event.event_type === 'related_objects_cluster')
+                    ? 'pattern'
+                    : 'mindloop';
+
+        const rawConfidence = event.confidence ?? event.severity;
+        const confidence =
+            typeof rawConfidence === 'number'
+                ? Math.max(0, Math.min(1, rawConfidence))
+                : undefined;
+
+        return {
+            id: event.id,
+            content: text,
+            source,
+            confidence,
+            timestamp: event.timestamp,
+            confirmed: false,
+        };
+    };
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -61,7 +89,7 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
         const poll = async () => {
             try {
                 // Fetch most recent insight-class events (newest first)
-                const data = await coreGet('/v1/mindloop/events?limit=5&type=semantic', {
+                const data = await coreGet('/v1/mindloop/events?limit=12', {
                     isOptional: true,
                 }) as { events?: MindLoopEvent[] } | MindLoopEvent[] | null;
 
@@ -72,9 +100,12 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
                     ? data
                     : (data as { events?: MindLoopEvent[] }).events ?? [];
 
-                if (events.length === 0) return;
+                const insightEvents = events.filter((event) =>
+                    INSIGHT_TYPES.includes(event.event_type as (typeof INSIGHT_TYPES)[number])
+                );
+                if (insightEvents.length === 0) return;
 
-                const latest = events[0]; // newest first (reverse-chron)
+                const latest = insightEvents[0]; // newest first (reverse-chron)
 
                 // Only fire popup if this is genuinely new
                 if (latest.id !== lastSeenIdRef.current) {

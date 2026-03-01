@@ -24,6 +24,7 @@ export const DepartmentLayer: React.FC = () => {
         departments,
         spacesByDepartment,
         foldersBySpace,
+        orbState,
         isLoadingSpaces,
         loadSpacesForDepartment,
         loadFoldersForSpace,
@@ -38,6 +39,12 @@ export const DepartmentLayer: React.FC = () => {
     const currentDepartment = departments.find((d) => d.id === activeDepartmentId);
     const deptTitle = currentDepartment?.name || '';
     const deptColor = currentDepartment?.color || '#10b981';
+    const nebulaIntensity = useMemo(() => {
+        if (orbState === 'alert') return 1.1;
+        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 1.0;
+        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.92;
+        return 0.85;
+    }, [orbState]);
 
     const departmentDocs = useMemo(() => {
         if (!activeDepartmentId || !treeData) return [];
@@ -236,6 +243,7 @@ export const DepartmentLayer: React.FC = () => {
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
+                    opacity: nebulaIntensity,
                     background: `
                         radial-gradient(1400px 720px at 52% 54%, ${g}38 0%, transparent 66%),
                         radial-gradient(1050px 540px at 18% 25%, ${g}22 0%, transparent 62%),
