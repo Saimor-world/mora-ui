@@ -140,9 +140,12 @@ export const DepartmentLayer: React.FC = () => {
         });
     }, [spaces, displaySpaceName, normalized]);
 
+    const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
+
     const spaceMeta = useMemo(() => spaces.map((space, i) => ({
         space,
         displayName: uniqueNames[i] || space.name || 'Space',
+        color: space.color || MOON_COLORS[i % MOON_COLORS.length],
     })), [spaces, uniqueNames]);
 
     const moonPositions = useMemo(() => {
@@ -229,6 +232,7 @@ export const DepartmentLayer: React.FC = () => {
             <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.38)_84%,rgba(0,0,0,0.6)_100%)]" />
 
             <motion.button
+                data-testid="nav-back-to-universe"
                 onClick={navigateToCore}
                 className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
                 initial={{ opacity: 0, x: -20 }}
@@ -394,10 +398,12 @@ export const DepartmentLayer: React.FC = () => {
                             </div>
                         </motion.div>
 
-                        {moonPositions.map(({ space, displayName, x, y, delay }) => {
+                        {moonPositions.map(({ space, displayName, color, x, y, delay }) => {
                             return (
                                 <motion.div
                                     key={space.id}
+                                    data-testid={`space-${space.id}`}
+                                    data-space-name={displayName}
                                     className="absolute cursor-pointer"
                                     style={{
                                         left: `calc(50% + ${x}px)`,
@@ -433,7 +439,7 @@ export const DepartmentLayer: React.FC = () => {
                                             id: space.id,
                                             name: displayName,
                                             department_id: activeDepartmentId,
-                                            color: currentDepartment?.color || undefined,
+                                            color,
                                             description: space.description || undefined,
                                             folder_count: (foldersBySpace[space.id] || []).length
                                         }}

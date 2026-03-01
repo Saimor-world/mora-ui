@@ -37,6 +37,8 @@ export const PlanetLayer: React.FC<PlanetLayerProps> = ({
             {planets.map(({ planet, x, y, delay }) => (
                 <div
                     key={planet.id}
+                    data-testid={`planet-${planet.id}`}
+                    data-planet-name={planet.name}
                     className="absolute"
                     style={{
                         left: `${x}vw`,

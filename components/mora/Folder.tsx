@@ -68,8 +68,10 @@ export const Folder: React.FC<FolderProps> = ({
     const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
     const [isMounted, setIsMounted] = useState(false);
     const orbRef = useRef<HTMLDivElement>(null);
+    const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => { setIsMounted(true); }, []);
+    useEffect(() => () => { if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current); }, []);
 
     const { diameter, iconSize } = SIZE_MAP[size];
     const coreColor = folder.color || '#6366F1';
@@ -77,6 +79,7 @@ export const Folder: React.FC<FolderProps> = ({
     const hasContent = (folder.node_count || 0) > 0;
 
     const handleMouseEnter = (e: React.MouseEvent) => {
+        if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
         setIsHovered(true);
         onHover?.(true);
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -85,9 +88,12 @@ export const Folder: React.FC<FolderProps> = ({
     };
 
     const handleMouseLeave = () => {
-        setIsHovered(false);
-        onHover?.(false);
-        setShowPortal(false);
+        // Delay hide so mouse can travel the gap to the portal card.
+        leaveTimerRef.current = setTimeout(() => {
+            setIsHovered(false);
+            onHover?.(false);
+            setShowPortal(false);
+        }, 120);
     };
 
     return (

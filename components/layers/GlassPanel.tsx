@@ -359,6 +359,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                 {/* Back Button */}
                                 {showBackButton && onBack && (
                                     <button
+                                        data-testid="nav-back-to-space"
                                         onClick={(e) => { e.stopPropagation(); onBack(); }}
                                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-100/80 transition-all group"
                                     >

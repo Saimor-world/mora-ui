@@ -189,6 +189,7 @@ export const SpaceLayer: React.FC = () => {
 
             {/* Breadcrumb Back Button style */}
             <motion.button
+                data-testid="nav-back-to-department"
                 onClick={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
                 className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
                 initial={{ opacity: 0, x: -20 }}
@@ -366,6 +367,8 @@ export const SpaceLayer: React.FC = () => {
                         {folderOrbitPositions.map(({ folder, x, y, isPromoted, delay }) => (
                             <div
                                 key={`folder-${folder.id}`}
+                                data-testid={`folder-${folder.id}`}
+                                data-folder-name={folder.name}
                                 className="absolute pointer-events-auto flex flex-col items-center"
                                 style={{
                                     left: `calc(50% + ${x}px)`,

@@ -494,6 +494,8 @@ export const FolderLayer: React.FC = () => {
                                                     return (
                                                         <motion.button
                                                             key={node.id}
+                                                            data-testid={`node-${node.id}`}
+                                                            data-node-name={node.name}
                                                             onClick={() => handleNodeClick(node)}
                                                             whileHover={{ scale: 1.02, y: -2 }}
                                                             whileTap={{ scale: 0.98 }}
@@ -523,6 +525,8 @@ export const FolderLayer: React.FC = () => {
                                                     return (
                                                         <button
                                                             key={node.id}
+                                                            data-testid={`node-${node.id}`}
+                                                            data-node-name={node.name}
                                                             onClick={() => handleNodeClick(node)}
                                                             className="flex items-center gap-4 p-4 rounded-lg bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all text-left group"
                                                         >
