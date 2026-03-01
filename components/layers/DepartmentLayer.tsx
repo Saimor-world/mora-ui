@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -9,6 +9,8 @@ import { Folder } from '@/components/mora/Folder';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { getDeptStyle } from '@/lib/utils/deptStyle';
+
+const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
 
 /**
  * DEPARTMENT LAYER (L2)
@@ -115,22 +117,21 @@ export const DepartmentLayer: React.FC = () => {
 
     const displaySpaceName = useCallback((spaceName: string) => {
         const deptName = currentDepartment?.name || '';
-        const sn = normalized(spaceName);
+        const source = (spaceName || '').trim();
+        const sn = normalized(source);
         const dn = normalized(deptName);
+        if (!source) return 'Teamraum';
         if (sn === dn) return 'Teamraum';
 
+        let candidate = source;
         if (dn.length > 3 && sn.startsWith(dn)) {
-            const stripped = spaceName.slice(deptName.length).replace(/^[\s&???\-_:]+/, '').trim();
-            if (stripped.length > 0) {
-                const cleaned = stripped.replace(/(workspace|team space|space)/gi, '').trim();
-                if (cleaned.length > 0) return cleaned;
-            }
+            candidate = source.slice(deptName.length).replace(/^[\s&\-_:]+/, '').trim();
         }
 
-        // Guard: don't return bare numbers (e.g. "Workspace 1" → "1")
-        const genericCleaned = spaceName.replace(/(workspace|team space|space)/gi, '').trim();
-        if (genericCleaned.length > 2 && !/^\d+$/.test(genericCleaned)) return genericCleaned;
-        return spaceName; // keep original if stripping left only a number or empty
+        const cleaned = candidate.replace(/\b(workspace|team space|space)\b/gi, '').trim();
+        if (cleaned.length > 2 && !/^\d+$/.test(cleaned)) return cleaned;
+        if (/^\d+$/.test(candidate) || /\b(workspace|team space|space)\b/i.test(candidate)) return 'Teamraum';
+        return candidate || 'Teamraum';
     }, [currentDepartment?.name, normalized]);
 
     const uniqueNames = useMemo(() => {
@@ -143,8 +144,6 @@ export const DepartmentLayer: React.FC = () => {
             return next > 1 ? `${base} ${next}` : base;
         });
     }, [spaces, displaySpaceName, normalized]);
-
-    const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
 
     const spaceMeta = useMemo(() => spaces.map((space, i) => ({
         space,
@@ -212,19 +211,28 @@ export const DepartmentLayer: React.FC = () => {
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders]);
 
     const totalFolders = useMemo(
-        () => spaces.reduce((sum, space) => sum + ((foldersBySpace[space.id] || []).length), 0),
+        () => spaces.reduce((sum, space) => sum + (space.folder_count ?? (foldersBySpace[space.id] || []).length), 0),
         [spaces, foldersBySpace]
     );
 
+    const docsCount = useMemo(() => {
+        const fromLoadedFolders = spaces.reduce((sum, space) => {
+            const spaceFolders = foldersBySpace[space.id] || [];
+            return sum + spaceFolders.reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0);
+        }, 0);
+        if (fromLoadedFolders > 0) return fromLoadedFolders;
+        return departmentDocs.length;
+    }, [spaces, foldersBySpace, departmentDocs.length]);
+
     if (!activeDepartmentId) return null;
 
-    // Dept-specific nebula colours — same semantic mapping as Planet.tsx (via getDeptStyle)
+    // Dept-specific nebula colours â€” same semantic mapping as Planet.tsx (via getDeptStyle)
     const deptStyle = getDeptStyle(deptTitle, deptColor || undefined);
     const g = deptStyle.glow; // primary accent, e.g. "#EC4899" for HR
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
-            {/* Dept-coloured nebula — shifts hue per department */}
+            {/* Dept-coloured nebula â€” shifts hue per department */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
@@ -304,7 +312,7 @@ export const DepartmentLayer: React.FC = () => {
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
                         <div className="text-[9px] text-white/40 uppercase tracking-wide">Docs</div>
-                        <div className="text-lg leading-none text-violet-200">{departmentDocs.length}</div>
+                        <div className="text-lg leading-none text-violet-200">{docsCount}</div>
                     </div>
                 </div>
             </motion.div>
@@ -358,7 +366,7 @@ export const DepartmentLayer: React.FC = () => {
                             </defs>
                         </svg>
 
-                        {/* L2 Center Orb — Golden Sun (not the same as L1 planet glass spheres) */}
+                        {/* L2 Center Orb â€” Golden Sun (not the same as L1 planet glass spheres) */}
                         <motion.div
                             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
                             initial={{ scale: 0, opacity: 0 }}
@@ -379,7 +387,7 @@ export const DepartmentLayer: React.FC = () => {
                                 animate={{ scale: [1, 1.55, 1], opacity: [0.45, 0.10, 0.45] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
                             />
-                            {/* Golden sun core — 176px, warm gradient */}
+                            {/* Golden sun core â€” 176px, warm gradient */}
                             <div
                                 className="relative w-44 h-44 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
@@ -398,7 +406,7 @@ export const DepartmentLayer: React.FC = () => {
                                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                                 />
                                 <span className="relative z-10 text-[11px] text-white/95 uppercase tracking-[0.15em] text-center px-3 leading-tight font-light">
-                                    {deptTitle.length > 20 ? deptTitle.substring(0, 18) + '…' : deptTitle}
+                                    {deptTitle.length > 20 ? deptTitle.substring(0, 18) + 'â€¦' : deptTitle}
                                 </span>
                             </div>
                             <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
@@ -461,7 +469,7 @@ export const DepartmentLayer: React.FC = () => {
                                             else scheduleHoverClear();
                                         }}
                                     />
-                                    {/* Clean minimal label below — no icon duplication, no 'Layer 3' text */}
+                                    {/* Clean minimal label below â€” no icon duplication, no 'Layer 3' text */}
                                     <div className="absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
                                         <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[140px] truncate block text-center">
                                             {displayName}
@@ -500,37 +508,44 @@ export const DepartmentLayer: React.FC = () => {
                         )}
 
                         {hoveredFolderPositions.map(({ folder, x, y }, i) => (
-                            <Folder
+                            <div
                                 key={`folder-${folder.id}`}
-                                folder={{
-                                    id: folder.id,
-                                    name: folder.name,
-                                    space_id: folder.space_id,
-                                    color: folder.color ?? undefined,
-                                    node_count: folder.node_count
+                                className="absolute pointer-events-auto"
+                                style={{
+                                    left: `calc(50% + ${x}px)`,
+                                    top: `calc(50% + ${y}px)`,
+                                    transform: 'translate(-50%, -50%)',
+                                    zIndex: 35,
                                 }}
-                                position={{
-                                    x: `calc(50% + ${x}px)`,
-                                    y: `calc(50% + ${y}px)`
-                                }}
-                                size="sm"
-                                orbitActive
-                                isPromoted={false}
-                                delay={i * 0.05}
-                                onClick={() => {
-                                    openPane({
-                                        id: `finder-folder-${folder.id}`,
-                                        type: 'finder',
-                                        title: folder.name,
-                                        data: { folderId: folder.id },
-                                        size: { width: 900, height: 600 }
-                                    });
-                                }}
-                                onHover={(hovered) => {
-                                    if (hovered && hoveredSpaceId) setHoverSpace(hoveredSpaceId);
-                                    if (!hovered) scheduleHoverClear();
-                                }}
-                            />
+                            >
+                                <Folder
+                                    folder={{
+                                        id: folder.id,
+                                        name: folder.name,
+                                        space_id: folder.space_id,
+                                        color: folder.color ?? MOON_COLORS[i % MOON_COLORS.length],
+                                        node_count: folder.node_count
+                                    }}
+                                    position={{ x: 0, y: 0 }}
+                                    size="sm"
+                                    orbitActive
+                                    isPromoted={false}
+                                    delay={i * 0.05}
+                                    onClick={() => {
+                                        openPane({
+                                            id: `finder-folder-${folder.id}`,
+                                            type: 'finder',
+                                            title: folder.name,
+                                            data: { folderId: folder.id },
+                                            size: { width: 900, height: 600 }
+                                        });
+                                    }}
+                                    onHover={(hovered) => {
+                                        if (hovered && hoveredSpaceId) setHoverSpace(hoveredSpaceId);
+                                        if (!hovered) scheduleHoverClear();
+                                    }}
+                                />
+                            </div>
                         ))}
 
                         {spaces.length === 0 && !isLoadingSpaces && (
@@ -618,3 +633,5 @@ export const DepartmentLayer: React.FC = () => {
         </div>
     );
 };
+
+
