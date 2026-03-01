@@ -85,6 +85,7 @@ import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping'
 
 // Naming Conflict Modal (409 UX)
 import NameConflictModal from '@/components/ui/NameConflictModal';
+import { IntelligenceDiagnostics } from '@/components/dev/IntelligenceDiagnostics';
 
 // =============================================================================
 // LOADING SCREEN
@@ -573,6 +574,9 @@ export const MoraShell: React.FC = () => {
 
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />
+
+            {/* Dev-only intelligence diagnostics panel — hidden in prod unless ?diagnostics=1 */}
+            <IntelligenceDiagnostics />
 
             {/* Logout Transition Overlay */}
             {
