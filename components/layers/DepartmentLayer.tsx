@@ -124,9 +124,10 @@ export const DepartmentLayer: React.FC = () => {
             }
         }
 
+        // Guard: don't return bare numbers (e.g. "Workspace 1" → "1")
         const genericCleaned = spaceName.replace(/(workspace|team space|space)/gi, '').trim();
-        if (genericCleaned.length > 0) return genericCleaned;
-        return 'Teamraum';
+        if (genericCleaned.length > 2 && !/^\d+$/.test(genericCleaned)) return genericCleaned;
+        return spaceName; // keep original if stripping left only a number or empty
     }, [currentDepartment?.name, normalized]);
 
     const uniqueNames = useMemo(() => {
