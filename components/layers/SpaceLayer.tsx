@@ -88,10 +88,15 @@ export const SpaceLayer: React.FC = () => {
     const displaySpaceName = useCallback((name: string) => {
         const deptName = currentDepartment?.name || '';
         let value = name || 'Space';
+        // Strip department name prefix
         if (deptName && value.toLowerCase().startsWith(deptName.toLowerCase())) {
             value = value.slice(deptName.length).replace(/^[\s&–\-_:]+/, '').trim();
         }
-        value = value.replace(/\b(workspace|team space|space)\b/gi, '').trim();
+        // Strip generic words — but only if the result is meaningful (> 2 chars, not just a number)
+        const stripped = value.replace(/\b(workspace|team space|space)\b/gi, '').trim();
+        if (stripped.length > 2 && !/^\d+$/.test(stripped)) {
+            value = stripped;
+        }
         return value || 'Teamraum';
     }, [currentDepartment?.name]);
 
@@ -164,13 +169,13 @@ export const SpaceLayer: React.FC = () => {
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Depth Overlay: Darken and blur the galaxy background to create a sense of being 'inside' a Space */}
-            <div className="absolute inset-0 z-[-1] bg-black/40 backdrop-blur-[60px] pointer-events-none" />
+            {/* Depth Overlay: subtle blur to separate L3 from galaxy — was bg-black/40 blur-[60px], far too dark */}
+            <div className="absolute inset-0 z-[-1] bg-black/18 backdrop-blur-[20px] pointer-events-none" />
 
-            {/* Vignette for stronger depth and clearer L3 separation */}
+            {/* Vignette — softer than before */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
-                style={{ background: 'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.45) 100%)' }}
+                style={{ background: 'radial-gradient(circle at 50% 50%, transparent 48%, rgba(0,0,0,0.32) 100%)' }}
             />
 
             {/* Galaxy overlay reused from DepartmentLayer visual language, but subdued. */}
@@ -321,27 +326,27 @@ export const SpaceLayer: React.FC = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.9, ease: "easeOut" }}
                         >
-                            {/* Outer aura slow breathe */}
+                            {/* Outer aura — boosted from 28/55% → 55/70% */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 280, height: 280, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(16,185,129,1)'}28 0%, transparent 70%)` }}
-                                animate={{ scale: [1, 1.45, 1], opacity: [0.55, 0.12, 0.55] }}
+                                style={{ width: 300, height: 300, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}55 0%, transparent 68%)` }}
+                                animate={{ scale: [1, 1.40, 1], opacity: [0.70, 0.20, 0.70] }}
                                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                             />
                             {/* Mid aura */}
                             <motion.div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 180, height: 180, background: `radial-gradient(circle, ${currentDepartment?.color || 'rgba(6,182,212,1)'}38 0%, transparent 70%)` }}
-                                animate={{ scale: [1, 1.55, 1], opacity: [0.45, 0.09, 0.45] }}
+                                style={{ width: 200, height: 200, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}66 0%, transparent 68%)` }}
+                                animate={{ scale: [1, 1.50, 1], opacity: [0.55, 0.14, 0.55] }}
                                 transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                             />
-                            {/* Core orb — 144px, dept-colored */}
+                            {/* Core orb — 144px — fixed: was ${color}25 (9% alpha) → now ${color}AA (67%) */}
                             <div
                                 className="relative w-36 h-36 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
                                 style={{
-                                    background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.10) 0%, ${currentDepartment?.color || 'rgba(16,185,129,1)'}25 50%, rgba(0,0,0,0.35) 100%)`,
-                                    border: `1.5px solid ${currentDepartment?.color || 'rgba(16,185,129,.5)'}75`,
-                                    boxShadow: `0 0 70px ${currentDepartment?.color || 'rgba(16,185,129,1)'}50, 0 0 140px ${currentDepartment?.color || 'rgba(16,185,129,1)'}20, inset 2px 2px 8px rgba(255,255,255,0.22)`,
+                                    background: `radial-gradient(145% 145% at 28% 26%, rgba(255,255,255,0.22) 0%, ${currentDepartment?.color || '#10b981'}AA 45%, rgba(0,0,0,0.30) 100%)`,
+                                    border: `1.5px solid ${currentDepartment?.color || '#10b981'}99`,
+                                    boxShadow: `0 0 80px ${currentDepartment?.color || '#10b981'}60, 0 0 160px ${currentDepartment?.color || '#10b981'}28, inset 2px 2px 8px rgba(255,255,255,0.30)`,
                                 }}
                             >
                                 {/* Specular */}
