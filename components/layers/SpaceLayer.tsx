@@ -7,6 +7,7 @@ import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Folder as FolderStar } from '@/components/mora/Folder';
+import { ORBIT_PALETTE } from '@/lib/utils/deptStyle';
 
 const FOLDER_COLORS = [
     { name: 'Emerald', value: '#10b981' },
@@ -108,7 +109,8 @@ export const SpaceLayer: React.FC = () => {
     }, []);
 
     // Fallback color palette — assigned by folder index so each orb has a distinct colour
-    const FALLBACK_COLORS = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#f43f5e', '#3b82f6'];
+    // Use shared ORBIT_PALETTE — single source of truth for folder orb colours
+    const FALLBACK_COLORS = ORBIT_PALETTE;
 
     // Animated orbit positions in 3 rings.
     // Uses module-level RING_RADII_X/Y/SPEEDS — no local shadowing.

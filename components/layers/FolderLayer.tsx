@@ -5,6 +5,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { Zap, Network, LayoutGrid, List, Plus, Search, X, FileText, Box, Link as LinkIcon, CheckSquare, Folder as FolderIcon, RotateCcw } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { IntelligenceContextBar } from '@/components/layers/IntelligenceContextBar';
+import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -270,13 +271,33 @@ export const FolderLayer: React.FC = () => {
 
     if (!activeFolderId) return null;
 
+    // Folder + dept colour for visual coherence across layers
+    const folderColor = currentFolder?.color || '#6366F1';
+    const deptStyle = getDeptStyle(currentDepartment?.name || '', currentDepartment?.color || undefined);
+    const accentColor = folderColor; // primary accent = folder color
+    const deptGlow = deptStyle.glow;
+
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Background Title */}
+            {/* Folder-coloured atmospheric background */}
+            <div
+                className="absolute inset-0 z-[-1] pointer-events-none"
+                style={{
+                    background: `
+                        radial-gradient(900px 500px at 50% 40%, ${accentColor}22 0%, transparent 65%),
+                        radial-gradient(600px 400px at 20% 70%, ${deptGlow}14 0%, transparent 60%),
+                        radial-gradient(500px 300px at 80% 20%, ${accentColor}0e 0%, transparent 55%)
+                    `
+                }}
+            />
+            <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.30)_80%,rgba(0,0,0,0.55)_100%)]" />
+
+            {/* Background Title — tinted with folder color */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
                 <motion.h1
-                    className="text-[140px] font-thin text-white/[0.12] tracking-[0.25em] whitespace-nowrap select-none font-sans"
+                    className="text-[140px] font-thin tracking-[0.25em] whitespace-nowrap select-none font-sans"
+                    style={{ color: `${accentColor}14` }}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
@@ -487,25 +508,38 @@ export const FolderLayer: React.FC = () => {
                                     {/* Grid View */}
                                     {viewMode === 'grid' && !isLoadingNodes && (
                                         <div className="h-full overflow-y-auto p-6 custom-scrollbar">
-                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                                 {filteredNodes.map((node) => {
                                                     const Icon = TYPE_ICONS[node.type] || Box;
-                                                    const color = TYPE_COLORS[node.type] || 'text-gray-400';
                                                     return (
                                                         <motion.button
                                                             key={node.id}
                                                             data-testid={`node-${node.id}`}
                                                             data-node-name={node.name}
                                                             onClick={() => handleNodeClick(node)}
-                                                            whileHover={{ scale: 1.02, y: -2 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            className="flex flex-col items-center gap-3 p-6 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all group"
+                                                            whileHover={{ scale: 1.03, y: -3 }}
+                                                            whileTap={{ scale: 0.97 }}
+                                                            className="flex flex-col items-center gap-3 p-5 rounded-xl transition-all group backdrop-blur-sm"
+                                                            style={{
+                                                                background: `linear-gradient(135deg, ${accentColor}0d 0%, rgba(0,0,0,0.18) 100%)`,
+                                                                border: `1px solid ${accentColor}28`,
+                                                                boxShadow: `0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 ${accentColor}18`,
+                                                            }}
                                                         >
-                                                            <div className={`w-12 h-12 rounded-lg bg-black/20 flex items-center justify-center ${color}`}>
-                                                                <Icon size={24} />
+                                                            <div
+                                                                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                                                style={{ background: `${accentColor}22`, color: accentColor }}
+                                                            >
+                                                                <Icon size={22} />
                                                             </div>
-                                                            <span className="text-sm text-white/70 group-hover:text-white text-center line-clamp-2">
+                                                            <span className="text-xs text-white/65 group-hover:text-white text-center line-clamp-2 leading-relaxed">
                                                                 {node.name}
+                                                            </span>
+                                                            <span
+                                                                className="text-[9px] uppercase tracking-widest opacity-50"
+                                                                style={{ color: accentColor }}
+                                                            >
+                                                                {node.type}
                                                             </span>
                                                         </motion.button>
                                                     );
@@ -521,25 +555,37 @@ export const FolderLayer: React.FC = () => {
                                             <div className="flex flex-col gap-2">
                                                 {filteredNodes.map((node) => {
                                                     const Icon = TYPE_ICONS[node.type] || Box;
-                                                    const color = TYPE_COLORS[node.type] || 'text-gray-400';
                                                     return (
-                                                        <button
+                                                        <motion.button
                                                             key={node.id}
                                                             data-testid={`node-${node.id}`}
                                                             data-node-name={node.name}
                                                             onClick={() => handleNodeClick(node)}
-                                                            className="flex items-center gap-4 p-4 rounded-lg bg-white/5 border border-white/5 hover:border-emerald-500/30 hover:bg-white/10 transition-all text-left group"
+                                                            whileHover={{ x: 3 }}
+                                                            className="flex items-center gap-4 p-4 rounded-lg bg-white/[0.04] border border-white/8 hover:bg-white/[0.08] transition-all text-left group relative overflow-hidden"
+                                                            style={{ borderColor: `${accentColor}20` }}
                                                         >
-                                                            <div className={`p-2 rounded bg-black/20 ${color}`}>
+                                                            {/* Folder-color left accent bar */}
+                                                            <div
+                                                                className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full opacity-70"
+                                                                style={{ background: `linear-gradient(180deg, ${accentColor}, ${accentColor}44)` }}
+                                                            />
+                                                            <div
+                                                                className="p-2 rounded-lg flex items-center justify-center"
+                                                                style={{ background: `${accentColor}18`, color: accentColor }}
+                                                            >
                                                                 <Icon size={18} />
                                                             </div>
-                                                            <span className="text-white/70 group-hover:text-white flex-1">
+                                                            <span className="text-white/75 group-hover:text-white flex-1 text-sm">
                                                                 {node.name}
                                                             </span>
-                                                            <span className="text-xs text-white/30 uppercase tracking-wider">
+                                                            <span
+                                                                className="text-[10px] uppercase tracking-wider font-medium px-2 py-0.5 rounded"
+                                                                style={{ color: `${accentColor}99`, background: `${accentColor}12` }}
+                                                            >
                                                                 {node.type}
                                                             </span>
-                                                        </button>
+                                                        </motion.button>
                                                     );
                                                 })}
                                             </div>

@@ -8,10 +8,13 @@ import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { getDeptStyle } from '@/lib/utils/deptStyle';
 
 /**
  * DEPARTMENT LAYER (L2)
  * Visual language aligned with L1 while staying distinct from L3.
+ * Background nebula derives from the active department's semantic colour
+ * (via getDeptStyle) so HR looks pink, Tech looks cyan, Management green, etc.
  */
 export const DepartmentLayer: React.FC = () => {
     const {
@@ -215,22 +218,27 @@ export const DepartmentLayer: React.FC = () => {
 
     if (!activeDepartmentId) return null;
 
+    // Dept-specific nebula colours — same semantic mapping as Planet.tsx (via getDeptStyle)
+    const deptStyle = getDeptStyle(deptTitle, deptColor || undefined);
+    const g = deptStyle.glow; // primary accent, e.g. "#EC4899" for HR
+
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
+            {/* Dept-coloured nebula — shifts hue per department */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
                     background: `
-                        radial-gradient(1400px 720px at 54% 56%, rgba(15,125,183,0.42) 0%, transparent 66%),
-                        radial-gradient(1050px 540px at 18% 25%, rgba(16,185,129,0.32) 0%, transparent 62%),
-                        radial-gradient(880px 440px at 84% 34%, rgba(99,102,241,0.28) 0%, transparent 58%),
-                        radial-gradient(720px 340px at 62% 82%, rgba(20,184,166,0.24) 0%, transparent 58%),
-                        radial-gradient(620px 520px at 88% 72%, rgba(245,158,11,0.20) 0%, transparent 55%),
-                        radial-gradient(520px 420px at 8% 72%, rgba(139,92,246,0.18) 0%, transparent 52%)
+                        radial-gradient(1400px 720px at 52% 54%, ${g}38 0%, transparent 66%),
+                        radial-gradient(1050px 540px at 18% 25%, ${g}22 0%, transparent 62%),
+                        radial-gradient(880px 440px at 84% 34%, ${g}1a 0%, transparent 58%),
+                        radial-gradient(720px 340px at 62% 82%, ${g}16 0%, transparent 58%),
+                        radial-gradient(500px 400px at 88% 72%, ${g}12 0%, transparent 55%)
                     `
                 }}
             />
-            <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.38)_84%,rgba(0,0,0,0.6)_100%)]" />
+            {/* Edge vignette */}
+            <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.35)_82%,rgba(0,0,0,0.55)_100%)]" />
 
             <motion.button
                 data-testid="nav-back-to-universe"
