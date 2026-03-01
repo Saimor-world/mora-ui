@@ -409,10 +409,6 @@ export const DepartmentLayer: React.FC = () => {
                                     {deptTitle.length > 20 ? deptTitle.substring(0, 18) + 'â€¦' : deptTitle}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
-                                style={{ borderColor: `${deptColor}66`, color: `${deptColor}CC`, boxShadow: `0 0 12px ${deptColor}44` }}>
-                                Department Core
-                            </div>
                         </motion.div>
 
                         {moonPositions.map(({ space, displayName, color, x, y, delay }) => {

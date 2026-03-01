@@ -369,10 +369,6 @@ export const SpaceLayer: React.FC = () => {
                                     {spaceName.length > 20 ? spaceName.substring(0, 18) + 'â€¦' : spaceName}
                                 </span>
                             </div>
-                            <div className="absolute top-[100%] left-1/2 -translate-x-1/2 mt-4 rounded-full border bg-black/40 px-4 py-1 text-[9px] tracking-[0.18em] uppercase whitespace-nowrap"
-                                style={{ borderColor: `${currentDepartment?.color || 'rgba(6,182,212,1)'}55`, color: `${currentDepartment?.color || 'rgba(6,182,212,1)'}CC` }}>
-                                Folder Cluster
-                            </div>
                         </motion.div>
 
                         {/* Folder orbs orbit the space core */}
