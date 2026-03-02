@@ -122,7 +122,6 @@ export const Star: React.FC<StarProps> = ({
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: isActive ? 1.08 : 1, opacity: 1 }}
             transition={{ delay, scale: { type: 'spring', stiffness: 300, damping: 25 } }}
-            whileHover={{ scale: 1.15 }}
         >
             {/* SVG rings — capacity fill + activity pulse (mirrors Planet.tsx) */}
             <svg
@@ -195,7 +194,6 @@ export const Star: React.FC<StarProps> = ({
                         : `0 0 30px ${coreColor}72, 0 6px 18px rgba(0,0,0,0.28), inset 1px 1px 4px rgba(255,255,255,0.24)`,
                     border: `1.5px solid ${coreColor}99`,
                 }}
-                whileHover={{ scale: 1.08 }}
                 transition={{ type: 'spring', stiffness: 250, damping: 20 }}
             >
                 {/* Specular point */}

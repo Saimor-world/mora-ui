@@ -148,6 +148,11 @@ export const DepartmentLayer: React.FC = () => {
             setHoveredSpaceAnchor(null);
             return;
         }
+        if (hoveredSpaceId === spaceId) {
+            // Do not overwrite an already-stable anchor for the active hovered orb.
+            if (anchor && anchor.id === spaceId) setHoveredSpaceAnchor(anchor);
+            return;
+        }
         if (anchor && anchor.id === spaceId) {
             setHoveredSpaceAnchor(anchor);
             return;
@@ -160,7 +165,7 @@ export const DepartmentLayer: React.FC = () => {
         if (match) {
             setHoveredSpaceAnchor({ id: spaceId, x: match.x, y: match.y });
         }
-    }, [clearHoverTimeout, hoveredSpaceAnchor]);
+    }, [clearHoverTimeout, hoveredSpaceAnchor, hoveredSpaceId]);
 
     const scheduleHoverClear = useCallback(() => {
         clearHoverTimeout();
@@ -587,8 +592,11 @@ export const DepartmentLayer: React.FC = () => {
                                         isActive={false}
                                         delay={delay}
                                         onHover={(hovered) => {
-                                            if (hovered) setHoverSpace(space.id);
-                                            else scheduleHoverClear();
+                                            if (hovered) {
+                                                clearHoverTimeout();
+                                            } else {
+                                                scheduleHoverClear();
+                                            }
                                         }}
                                     />
                                     {/* Clean minimal label below â€” no icon duplication, no 'Layer 3' text */}
@@ -668,8 +676,11 @@ export const DepartmentLayer: React.FC = () => {
                                         });
                                     }}
                                     onHover={(hovered) => {
-                                        if (hovered && hoveredSpaceId) setHoverSpace(hoveredSpaceId);
-                                        if (!hovered) scheduleHoverClear();
+                                        if (hovered) {
+                                            clearHoverTimeout();
+                                        } else {
+                                            scheduleHoverClear();
+                                        }
                                     }}
                                 />
                             </div>
