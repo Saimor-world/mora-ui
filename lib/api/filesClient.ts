@@ -163,3 +163,15 @@ export const confirmCreateNodeFromFile = async (fileId: string, confirmationToke
 export const rejectCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {
     return corePost(`/v1/files/${fileId}/reject-node`, { confirmation_token: confirmationToken });
 };
+
+export interface FileNodeStatus {
+    status: 'linked' | 'not_linked';
+    node_id?: string;
+    folder_id?: string;
+    company_id?: string;
+}
+
+/** Query where a file's node ended up — use as fallback if create-node response lacks folder_id */
+export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {
+    return coreGet(`/v1/files/${fileId}/node`) as Promise<FileNodeStatus>;
+};

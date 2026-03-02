@@ -10,7 +10,7 @@ import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
-import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
+import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
 
 // Helper: Merge lists and deduplicate by ID
@@ -263,6 +263,39 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // Navigation
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string; type: string }[]>([]);
+
+    /**
+     * Click-race guard for folder navigation.
+     * Framer Motion's gesture system can absorb native `dblclick` on animated elements.
+     * Instead we track two rapid clicks ourselves: first click selects, second click
+     * within DOUBLE_CLICK_MS navigates forward — deterministic in all view modes.
+     */
+    const DOUBLE_CLICK_MS = 300;
+    const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastClickedFolderRef = useRef<string | null>(null);
+
+    const handleFolderClick = useCallback((e: React.MouseEvent, folderId: string) => {
+        e.stopPropagation();
+        if (
+            lastClickedFolderRef.current === folderId &&
+            clickTimerRef.current !== null
+        ) {
+            // Second click within window → navigate forward
+            clearTimeout(clickTimerRef.current);
+            clickTimerRef.current = null;
+            lastClickedFolderRef.current = null;
+            setCurrentFolderId(folderId);
+        } else {
+            // First click → select only; arm timer
+            if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+            setSelectedNodeId(folderId);
+            lastClickedFolderRef.current = folderId;
+            clickTimerRef.current = setTimeout(() => {
+                clickTimerRef.current = null;
+                lastClickedFolderRef.current = null;
+            }, DOUBLE_CLICK_MS);
+        }
+    }, []);
 
     // DEEP VIEW STATE
     const [isDeepView, setIsDeepView] = useState(false);
@@ -622,10 +655,32 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     if (response?.status === 'executed') {
                         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
-                        if (targetFolderId) {
-                            await loadNodesForFolder(targetFolderId);
-                            setCurrentFolderId(targetFolderId);
+
+                        // Prefer folder_id from API response (backend knows exact placement).
+                        // Fall back to pre-computed targetFolderId, then poll GET /node as last resort.
+                        let resolvedFolderId: string | undefined =
+                            response.folder_id || targetFolderId || undefined;
+
+                        if (!resolvedFolderId) {
+                            try {
+                                const nodeStatus = await getFileNode(uploaded.id);
+                                if (nodeStatus.status === 'linked' && nodeStatus.folder_id) {
+                                    resolvedFolderId = nodeStatus.folder_id;
+                                }
+                            } catch {
+                                // best-effort — silently ignore if endpoint unavailable
+                            }
                         }
+
+                        if (resolvedFolderId) {
+                            const folderName = findNodeInTree(rawTree, resolvedFolderId)?.name || resolvedFolderId;
+                            await loadNodesForFolder(resolvedFolderId);
+                            setCurrentFolderId(resolvedFolderId);
+                            // Override the generic end-of-loop toast with a precise one
+                            toast.success(`${file.name} → ${folderName}`);
+                            successCount = 0; // suppress duplicate success toast below
+                        }
+
                         // P6: Auto-executed, return to idle
                         setIdle();
                     }
@@ -961,7 +1016,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             {/* Actions */}
                             <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-3">
                                 <button
-                                    onClick={loadContent}
+                                    onClick={() => loadContent()}
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
                                     title="Refresh"
                                 >
@@ -1038,9 +1093,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     <motion.div
                                                         key={folder.id}
                                                         layoutId={`item-${folder.id}`}
-                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(folder.id); }}
+                                                        onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); setCurrentFolderId(folder.id); }}
                                                         whileHover={{ y: -2 }}
                                                         whileTap={{ scale: 0.98 }}
                                                         className={`p-4 rounded-2xl border transition-all flex flex-col gap-3 cursor-pointer group relative ${isSelected
@@ -1195,8 +1249,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             top: `calc(50% + ${y}px)`,
                                                             transform: 'translate(-50%, -50%)'
                                                         }}
-                                                        onClick={(e) => { e.stopPropagation(); setSelectedNodeId(folder.id); }}
-                                                        onDoubleClick={(e) => { e.stopPropagation(); setCurrentFolderId(folder.id); }}
+                                                        onClick={(e) => handleFolderClick(e, folder.id)}
                                                     >
                                                         {/* Connection line to center */}
                                                         <svg
@@ -1321,9 +1374,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 return (
                                                     <div
                                                         key={folder.id}
-                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(folder.id); }}
+                                                        onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); setCurrentFolderId(folder.id); }}
                                                         className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50'
                                                             : 'bg-white/5 border-white/5 hover:border-emerald-500/30 hover:bg-white/10'

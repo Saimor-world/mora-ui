@@ -424,16 +424,27 @@ export async function fetchFoldersByCompany(companyId: string): Promise<CoreFold
     return result || [];
 }
 
-export async function fetchNodes(folderId: string, options?: { search?: string, type?: string }): Promise<CoreNode[]> {
+export async function fetchNodes(
+    folderId: string,
+    options?: { search?: string; type?: string; limit?: number; offset?: number }
+): Promise<CoreNode[]> {
     let query = `?folder_id=${folderId}`;
     if (options?.search) query += `&search=${encodeURIComponent(options.search)}`;
     if (options?.type && options.type !== 'all') query += `&type=${encodeURIComponent(options.type)}`;
+    if (options?.limit != null) query += `&limit=${options.limit}`;
+    if (options?.offset != null) query += `&offset=${options.offset}`;
     const result = await coreGet(`/v1/nodes${query}`, { isOptional: true });
     return result || [];
 }
 
-export async function fetchNodesByCompany(companyId: string): Promise<CoreNode[]> {
-    const result = await coreGet(`/v1/nodes?company_id=${companyId}`, { isOptional: true });
+export async function fetchNodesByCompany(
+    companyId: string,
+    options?: { limit?: number; offset?: number }
+): Promise<CoreNode[]> {
+    let query = `?company_id=${companyId}`;
+    if (options?.limit != null) query += `&limit=${options.limit}`;
+    if (options?.offset != null) query += `&offset=${options.offset}`;
+    const result = await coreGet(`/v1/nodes${query}`, { isOptional: true });
     return result || [];
 }
 

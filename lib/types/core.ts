@@ -35,6 +35,7 @@ export interface CoreSpace {
     description?: string | null;
     icon?: string | null;
     color?: string | null;
+    folder_count?: number;
     order: number;
     is_default: boolean;
     created_at?: string | null;
@@ -44,6 +45,7 @@ export interface CoreSpace {
 export interface CoreFolder {
     id: string;
     space_id: string;
+    parent_folder_id?: string | null;
     name: string;
     description?: string | null;
     icon?: string | null;
@@ -59,6 +61,7 @@ export interface CoreNode {
     id: string;
     space_id: string;
     folder_id?: string | null;
+    parent_id?: string | null;
     type: 'document' | 'task' | 'note' | 'link' | 'other';
     title?: string; // Optional, some endpoints return 'name' instead
     name?: string;  // Some endpoints return this instead of title

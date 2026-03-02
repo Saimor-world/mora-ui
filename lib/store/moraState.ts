@@ -64,6 +64,10 @@ const readStandardMode = (companyId?: string | null) => {
 export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
+/** Module-level guard: tracks the last company ID for which departments were fully loaded.
+ *  Prevents redundant sequential calls when multiple components mount simultaneously. */
+let _deptCacheCompanyId: string | null = null;
+
 export interface NameConflictState {
     type: 'department' | 'space' | 'folder';
     message: string;
@@ -197,7 +201,7 @@ interface MoraState {
     loadDepartments: (companyId?: string) => Promise<void>;
     loadSpacesForDepartment: (departmentId: string) => Promise<void>;
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
-    loadNodesForFolder: (folderId: string, options?: { search?: string, type?: string }) => Promise<void>;
+    loadNodesForFolder: (folderId: string, options?: { search?: string; type?: string; limit?: number; offset?: number }) => Promise<void>;
     loadNodesForCompany: (companyId: string) => Promise<void>;
     loadNodeDetails: (nodeId: string) => Promise<void>;
     loadTree: (tenantId?: string, companyId?: string) => Promise<void>;
@@ -626,30 +630,42 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             return; // Already loading, skip
         }
 
-        set({ isLoadingDepartments: true, coreError: null, departments: [] });
+        // DEDUP GUARD: Skip if we already have fresh data for the same company
+        const targetCompanyId = companyId || state.activeCompanyId || undefined;
+        if (
+            targetCompanyId &&
+            _deptCacheCompanyId === targetCompanyId &&
+            state.departments.length > 0
+        ) {
+            return; // Already loaded for this company, no refetch needed
+        }
+
+        // Keep existing departments visible during reload (no flash-to-empty)
+        set({ isLoadingDepartments: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadDepartments' } });
         set({ orbState: mindLoop.getCurrentState() });
 
-        // PRODUCTION MODE: Demo now uses real DB data for authenticity
-        // Mock data fallback removed - all modes fetch from backend
-
         try {
-            // Use active company if not provided
-            const targetCompanyId = companyId || get().activeCompanyId || undefined;
             // Reduce console spam - only log once per load cycle
             if (process.env.NODE_ENV !== 'production') {
                 console.debug('[MoraState] Loading Departments for:', targetCompanyId);
             }
 
-            // Parallelize fetching to eliminate sequential lag
+            // Parallelize fetching to eliminate sequential lag.
+            // Cap company-wide node fetch at 200 to stay within backend pagination limits.
             const [deptData, nodeData] = await Promise.all([
                 fetchDepartments(targetCompanyId),
-                fetchNodesByCompany(targetCompanyId!)
+                targetCompanyId
+                    ? fetchNodesByCompany(targetCompanyId, { limit: 200 })
+                    : Promise.resolve([])
             ]);
 
+            _deptCacheCompanyId = targetCompanyId ?? null;
             set({
                 departments: deptData || [],
-                nodesByCompany: { ...get().nodesByCompany, [targetCompanyId!]: nodeData || [] },
+                nodesByCompany: targetCompanyId
+                    ? { ...get().nodesByCompany, [targetCompanyId]: nodeData || [] }
+                    : get().nodesByCompany,
                 isLoadingDepartments: false
             });
             mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'idle', severity: 0.1, payload: { status: 'success' } });
@@ -660,7 +676,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 : "Failed to load departments.";
 
             mindLoop.dispatch({ type: 'SYSTEM_ALERT', source: 'Core', severity: 0.8, payload: { error: msg, handled: true } });
-            set({ departments: [], isLoadingDepartments: false, coreError: msg, orbState: mindLoop.getCurrentState() });
+            set({ isLoadingDepartments: false, coreError: msg, orbState: mindLoop.getCurrentState() });
         }
     },
 
@@ -719,7 +735,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
 
-    loadNodesForFolder: async (folderId: string, options?: { search?: string, type?: string }) => {
+    loadNodesForFolder: async (folderId: string, options?: { search?: string; type?: string; limit?: number; offset?: number }) => {
         set({ isLoadingNodes: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadNodes' } });
         set({ orbState: mindLoop.getCurrentState() });
@@ -745,12 +761,12 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadNodesForCompany: async (companyId: string) => {
-        set({ isLoadingNodes: true, coreError: null, nodesByCompany: { ...get().nodesByCompany, [companyId]: [] } });
-
-        // PRODUCTION MODE: Demo now uses real DB nodes for authenticity
+        // Don't wipe existing data — update in-place to avoid flicker
+        set({ isLoadingNodes: true, coreError: null });
 
         try {
-            let data = await fetchNodesByCompany(companyId);
+            // Cap at 200 nodes initially; deep-view can page further as needed
+            const data = await fetchNodesByCompany(companyId, { limit: 200 });
 
             set(state => ({
                 nodesByCompany: { ...state.nodesByCompany, [companyId]: data },
