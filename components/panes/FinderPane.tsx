@@ -80,6 +80,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const startSpaceId = pane?.data?.spaceId as string | undefined;
     // Folder-level start (for direct folder access)
     const startFolderId = pane?.data?.folderId as string | undefined;
+    // Optional company hint from caller (used when store has no active company yet)
+    const paneCompanyId = pane?.data?.companyId as string | undefined;
     // Auto-show upload on open
     const autoShowUpload = pane?.data?.showUpload as boolean | undefined;
     // Initial search query
@@ -176,8 +178,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 if (['folder', 'space', 'department'].includes(clipboard.item.type)) {
                     toast.info("Folder duplication not supported");
                 } else {
+                    if (!resolvedCompanyId) {
+                        toast.error('Select a company first.');
+                        return;
+                    }
                     await addNode({
-                        company_id: activeCompanyId!,
+                        company_id: resolvedCompanyId,
                         folder_id: targetFolderId || undefined,
                         title: `${clipboard.item.name || clipboard.item.title} (Copy)`,
                         type: clipboard.item.type,
@@ -187,7 +193,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     toast.success('File duplicated');
                 }
             }
-            loadContent();
+            void loadContent();
             setClipboard(null);
         } catch (e: any) { toast.error(e.message || 'Paste failed'); }
         setContextMenu(null);
@@ -261,6 +267,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // DEEP VIEW STATE
     const [isDeepView, setIsDeepView] = useState(false);
 
+    const resolvedCompanyId = useMemo(() => {
+        if (activeCompanyId) return activeCompanyId;
+        if (paneCompanyId) return paneCompanyId;
+        if (companies.length === 1) return companies[0].id;
+        return null;
+    }, [activeCompanyId, paneCompanyId, companies]);
+
     // DATA CONSISTENCY FIX: Stabilize rawTree to prevent infinite loops (useEffect deps)
     const rawTree = useMemo(() => treeData || [], [treeData]);
 
@@ -288,6 +301,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
         return null;
     }, []);
+
+    const resolveUploadFolderId = useCallback((): string | undefined => {
+        if (!currentFolderId) return undefined;
+        const targetNode = findNodeInTree(rawTree, currentFolderId);
+        return targetNode?.type === 'folder' ? currentFolderId : undefined;
+    }, [currentFolderId, findNodeInTree, rawTree]);
 
     // Recursively extract content for current view
     const getCurrentContent = useCallback(() => {
@@ -327,8 +346,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             traverse(roots);
 
             // If global search but no results from tree, check nodesByCompany
-            if (globalSearch && results.files.length === 0 && activeCompanyId) {
-                const companyNodes = useMoraStore.getState().nodesByCompany[activeCompanyId] || [];
+            if (globalSearch && results.files.length === 0 && resolvedCompanyId) {
+                const companyNodes = useMoraStore.getState().nodesByCompany[resolvedCompanyId] || [];
                 companyNodes.forEach(node => {
                     results.files.push({ ...node, name: node.title || node.name });
                 });
@@ -363,9 +382,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
 
         // 2. DRILLED DOWN VIEW vs DEEP VIEW
-        if (isDeepView && activeCompanyId) {
+        if (isDeepView && resolvedCompanyId) {
             // DEEP VIEW: Show ALL files in the company, ignoring folders
-            const allNodes = useMoraStore.getState().nodesByCompany[activeCompanyId] || [];
+            const allNodes = useMoraStore.getState().nodesByCompany[resolvedCompanyId] || [];
             return {
                 folders: [],
                 files: allNodes.filter(n => !['folder', 'space', 'department'].includes(n.type))
@@ -415,7 +434,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             folders: Array.from(folderMap.values()),
             files: Array.from(fileMap.values())
         };
-    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, activeCompanyId]);
+    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery]);
 
     // Effect to update breadcrumbs only when necessary
     useEffect(() => {
@@ -454,19 +473,22 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     // SIDE EFFECT: Load ALL company nodes when "Deep View" is enabled
     useEffect(() => {
-        if (isDeepView && activeCompanyId) {
-            useMoraStore.getState().loadNodesForCompany(activeCompanyId);
+        if (isDeepView && resolvedCompanyId) {
+            useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
         }
-    }, [isDeepView, activeCompanyId]);
+    }, [isDeepView, resolvedCompanyId]);
 
     // DATA CONSISTENCY FIX: Use loadTree from store instead of direct fetchTree
     // This ensures both Universe and Finder use the same data source
-    const loadContent = async () => {
+    const loadContent = useCallback(async (opts?: { preferCache?: boolean }) => {
         try {
-            if (globalSearch && activeCompanyId) {
-                await useMoraStore.getState().loadNodesForCompany(activeCompanyId);
+            const shouldReuseTree = opts?.preferCache === true && rawTree.length > 0;
+            if (globalSearch && resolvedCompanyId) {
+                await useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
             }
-            await loadTree();
+            if (!shouldReuseTree) {
+                await loadTree(undefined, resolvedCompanyId || undefined);
+            }
             // After tree loads, handle departmentId navigation if needed
             if (departmentId && treeData) {
                 const deptNode = findNodeInTree(treeData, departmentId);
@@ -475,7 +497,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         } catch (e) {
             console.error("Tree load failed", e);
         }
-    };
+    }, [departmentId, findNodeInTree, globalSearch, loadTree, rawTree.length, resolvedCompanyId, treeData]);
 
     // UNIFIED FINDER: Navigate to starting point based on pane data
     useEffect(() => {
@@ -502,8 +524,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [initialQuery]);
 
-    const handleUpload = async (fileList: File[]) => {
-        if (!activeCompanyId) {
+    const handleUpload = useCallback(async (fileList: File[]) => {
+        if (!resolvedCompanyId) {
             toast.error('Select a company first.');
             setShowUpload(false);
             return;
@@ -526,22 +548,25 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             }
         }));
 
+        const targetFolderId = resolveUploadFolderId();
         let successCount = 0;
+        let hasPendingConfirmation = false;
         try {
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
                 setUploadProgress({ current: i + 1, total: fileList.length, filename: file.name });
                 try {
-                    const uploaded = await uploadCompanyFile(file, activeCompanyId);
+                    const uploaded = await uploadCompanyFile(file, resolvedCompanyId);
                     successCount++;
 
                     // P6: Data Sovereignty - respect user's auto-execute preference
                     const autoExecute = user?.settings?.autoExecuteActions ?? true;
                     const response = await requestCreateNodeFromFile(uploaded.id, {
                         autoExecute,
-                        folderId: currentFolderId || undefined
+                        folderId: targetFolderId
                     });
                     if (response?.status === 'pending_confirmation') {
+                        hasPendingConfirmation = true;
                         // P6: Orb switches to focus (blau) - waiting for user
                         setFocus();
 
@@ -595,9 +620,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     }));
                 }
             }
-            if (successCount > 0 && !pendingAction) {
+            if (successCount > 0 && !hasPendingConfirmation) {
                 toast.success(`${successCount} file(s) uploaded`);
-                loadContent();
+                await loadContent();
             } else if (successCount === 0) {
                 toast.error('Failed to upload files');
                 setIdle();
@@ -609,7 +634,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setIsUploading(false);
             setUploadProgress(null);
         }
-    };
+    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions]);
 
     // Integrated Drag & Drop Handlers
     const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -655,8 +680,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     // Initial Load
     useEffect(() => {
-        if (activeCompanyId) loadContent();
-    }, [activeCompanyId]);
+        if (resolvedCompanyId) {
+            void loadContent({ preferCache: true });
+        }
+    }, [resolvedCompanyId, loadContent]);
 
     // Recursive search helper
     const deepSearch = useCallback((nodes: CoreTreeNode[], query: string): { files: any[], folders: any[] } => {

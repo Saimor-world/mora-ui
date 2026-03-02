@@ -9,6 +9,7 @@ import { Folder } from '@/components/mora/Folder';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { getDeptStyle } from '@/lib/utils/deptStyle';
+import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
 
@@ -21,6 +22,7 @@ const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60
 export const DepartmentLayer: React.FC = () => {
     const {
         activeDepartmentId,
+        activeCompanyId,
         departments,
         spacesByDepartment,
         foldersBySpace,
@@ -73,6 +75,7 @@ export const DepartmentLayer: React.FC = () => {
     const [viewportWidth, setViewportWidth] = useState<number>(
         typeof window !== 'undefined' ? window.innerWidth : 1920
     );
+    const [departmentDocsFromApi, setDepartmentDocsFromApi] = useState<number | null>(null);
     useEffect(() => {
         const handleResize = () => setViewportWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
@@ -86,6 +89,37 @@ export const DepartmentLayer: React.FC = () => {
             loadSpacesForDepartment(activeDepartmentId);
         }
     }, [activeDepartmentId, spacesByDepartment, loadSpacesForDepartment]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadDepartmentStats = async () => {
+            if (!activeDepartmentId) {
+                setDepartmentDocsFromApi(null);
+                return;
+            }
+
+            const stats = await fetchSingleDepartmentStats(activeDepartmentId);
+            if (cancelled) return;
+
+            if (!stats) {
+                setDepartmentDocsFromApi(null);
+                return;
+            }
+
+            const docs =
+                typeof stats.docs === 'number'
+                    ? stats.docs
+                    : (typeof stats.nodes === 'number' ? stats.nodes : null);
+            setDepartmentDocsFromApi(typeof docs === 'number' ? docs : null);
+        };
+
+        void loadDepartmentStats();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeDepartmentId]);
 
     const clearHoverTimeout = useCallback(() => {
         if (hoverClearRef.current) {
@@ -234,13 +268,16 @@ export const DepartmentLayer: React.FC = () => {
     );
 
     const docsCount = useMemo(() => {
+        if (typeof departmentDocsFromApi === 'number') {
+            return Math.max(0, departmentDocsFromApi);
+        }
         const fromLoadedFolders = spaces.reduce((sum, space) => {
             const spaceFolders = foldersBySpace[space.id] || [];
             return sum + spaceFolders.reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0);
         }, 0);
         if (fromLoadedFolders > 0) return fromLoadedFolders;
         return departmentDocs.length;
-    }, [spaces, foldersBySpace, departmentDocs.length]);
+    }, [departmentDocsFromApi, spaces, foldersBySpace, departmentDocs.length]);
 
     if (!activeDepartmentId) return null;
 
@@ -484,7 +521,7 @@ export const DepartmentLayer: React.FC = () => {
                                             department_id: activeDepartmentId,
                                             color,
                                             description: space.description || undefined,
-                                            folder_count: (foldersBySpace[space.id] || []).length
+                                            folder_count: space.folder_count ?? (foldersBySpace[space.id] || []).length
                                         }}
                                         position={{ x: 0, y: 0 }}
                                         size="xl"
@@ -559,10 +596,15 @@ export const DepartmentLayer: React.FC = () => {
                                     delay={i * 0.05}
                                     onClick={() => {
                                         openPane({
-                                            id: `finder-folder-${folder.id}`,
+                                            id: 'finder-main',
                                             type: 'finder',
                                             title: folder.name,
-                                            data: { folderId: folder.id },
+                                            data: {
+                                                folderId: folder.id,
+                                                spaceId: folder.space_id,
+                                                departmentId: activeDepartmentId,
+                                                companyId: activeCompanyId || currentDepartment?.company_id || undefined
+                                            },
                                             size: { width: 900, height: 600 }
                                         });
                                     }}
@@ -614,12 +656,13 @@ export const DepartmentLayer: React.FC = () => {
                                 onClick={() => {
                                     if (!activeDepartmentId) return;
                                     openPane({
-                                        id: `finder-dept-${activeDepartmentId}`,
+                                        id: 'finder-main',
                                         type: 'finder',
                                         title: currentDepartment?.name || 'Workspace',
                                         data: {
                                             departmentId: activeDepartmentId,
                                             departmentName: currentDepartment?.name,
+                                            companyId: activeCompanyId || currentDepartment?.company_id || undefined,
                                             showUpload: true
                                         },
                                         size: { width: 1000, height: 700 }

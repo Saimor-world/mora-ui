@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { Plus, RefreshCw, ArrowLeft, FolderOpen } from 'lucide-react';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -30,6 +31,7 @@ export const SpaceLayer: React.FC = () => {
     const {
         activeSpaceId,
         activeDepartmentId,
+        activeCompanyId,
         departments,
         spacesByDepartment,
         foldersBySpace,
@@ -39,8 +41,8 @@ export const SpaceLayer: React.FC = () => {
         loadFoldersForSpace,
         addFolder,
         viewLevel,
-        navigateToFolder,
     } = useMoraStore();
+    const { openPane } = usePaneStore();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
@@ -110,6 +112,10 @@ export const SpaceLayer: React.FC = () => {
         if (!activeSpaceId) return [];
         return foldersBySpace[activeSpaceId] || [];
     }, [activeSpaceId, foldersBySpace]);
+
+    const foldersWithContent = useMemo(() => {
+        return folders.filter((folder) => (folder.node_count || 0) > 0).length;
+    }, [folders]);
 
     const displaySpaceName = useCallback((name: string) => {
         const deptName = currentDepartment?.name || '';
@@ -303,7 +309,7 @@ export const SpaceLayer: React.FC = () => {
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
                         <div className="text-[9px] text-white/40 uppercase tracking-wide">Aktiv</div>
-                        <div className="text-lg leading-none text-emerald-200">{isAnyHovered ? 1 : 0}</div>
+                        <div className="text-lg leading-none text-emerald-200">{foldersWithContent}</div>
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
                         <div className="text-[9px] text-white/40 uppercase tracking-wide">Files</div>
@@ -439,7 +445,20 @@ export const SpaceLayer: React.FC = () => {
                                         isAnyHoveredRef.current = hovered;
                                         setIsAnyHovered(hovered);
                                     }}
-                                    onClick={() => navigateToFolder(folder.id)}
+                                    onClick={() => {
+                                        openPane({
+                                            id: 'finder-main',
+                                            type: 'finder',
+                                            title: folder.name,
+                                            size: { width: 1000, height: 700 },
+                                            data: {
+                                                folderId: folder.id,
+                                                spaceId: activeSpaceId,
+                                                departmentId: activeDepartmentId,
+                                                companyId: activeCompanyId || currentDepartment?.company_id || undefined
+                                            }
+                                        });
+                                    }}
                                 />
                                 {/* Persistent label below orb */}
                                 <div className="mt-1.5 whitespace-nowrap pointer-events-none">
