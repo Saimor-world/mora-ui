@@ -303,10 +303,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, []);
 
     const resolveUploadFolderId = useCallback((): string | undefined => {
-        if (!currentFolderId) return undefined;
-        const targetNode = findNodeInTree(rawTree, currentFolderId);
-        return targetNode?.type === 'folder' ? currentFolderId : undefined;
-    }, [currentFolderId, findNodeInTree, rawTree]);
+        if (currentFolderId) {
+            const currentNode = findNodeInTree(rawTree, currentFolderId);
+            if (currentNode?.type === 'folder') return currentFolderId;
+        }
+        if (startFolderId) {
+            const startNode = findNodeInTree(rawTree, startFolderId);
+            if (startNode?.type === 'folder') return startFolderId;
+        }
+        return undefined;
+    }, [currentFolderId, findNodeInTree, rawTree, startFolderId]);
 
     // Recursively extract content for current view
     const getCurrentContent = useCallback(() => {
@@ -463,13 +469,19 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         return;
                     }
                 }
+            } else if (!nodesByFolder[currentFolderId]) {
+                // Direct folder context can be valid even before full tree resolution.
+                setIsLoading(true);
+                loadNodesForFolder(currentFolderId)
+                    .finally(() => setIsLoading(false));
+                return;
             }
         }
 
         const content = getCurrentContent();
         setFiles(content.files);
         setFolders(content.folders);
-    }, [currentFolderId, rawTree, getCurrentContent, findNodeInTree, loadedNodes, loadChildren]);
+    }, [currentFolderId, rawTree, getCurrentContent, findNodeInTree, loadedNodes, loadChildren, nodesByFolder, loadNodesForFolder]);
 
     // SIDE EFFECT: Load ALL company nodes when "Deep View" is enabled
     useEffect(() => {
@@ -482,30 +494,34 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // This ensures both Universe and Finder use the same data source
     const loadContent = useCallback(async (opts?: { preferCache?: boolean }) => {
         try {
-            const shouldReuseTree = opts?.preferCache === true && rawTree.length > 0;
+            const existingTree = useMoraStore.getState().treeData;
+            const shouldReuseTree = opts?.preferCache === true && Array.isArray(existingTree) && existingTree.length > 0;
             if (globalSearch && resolvedCompanyId) {
                 await useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
             }
             if (!shouldReuseTree) {
                 await loadTree(undefined, resolvedCompanyId || undefined);
             }
-            // After tree loads, handle departmentId navigation if needed
-            if (departmentId && treeData) {
-                const deptNode = findNodeInTree(treeData, departmentId);
-                if (deptNode) setCurrentFolderId(departmentId);
-            }
         } catch (e) {
             console.error("Tree load failed", e);
         }
-    }, [departmentId, findNodeInTree, globalSearch, loadTree, rawTree.length, resolvedCompanyId, treeData]);
+    }, [globalSearch, loadTree, resolvedCompanyId]);
 
     // UNIFIED FINDER: Navigate to starting point based on pane data
+    const appliedStartKeyRef = useRef<string>('');
     useEffect(() => {
         if (!treeData?.length) return;
+        const startKey = `${startFolderId || ''}|${startSpaceId || ''}|${departmentId || ''}`;
+        if (appliedStartKeyRef.current === startKey) return;
 
         // Priority: startFolderId > startSpaceId > departmentId > root
         if (startFolderId) {
             setCurrentFolderId(startFolderId);
+            const folderNode = findNodeInTree(treeData, startFolderId);
+            if (!folderNode) {
+                console.warn('[FinderPane] startFolderId not in tree yet, loading folder nodes directly', startFolderId);
+                void loadNodesForFolder(startFolderId);
+            }
         } else if (startSpaceId) {
             // Find the space in tree and navigate to it
             const spaceNode = findNodeInTree(treeData, startSpaceId);
@@ -515,7 +531,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         } else if (departmentId) {
             setCurrentFolderId(departmentId);
         }
-    }, [treeData, startFolderId, startSpaceId, departmentId, findNodeInTree]);
+        appliedStartKeyRef.current = startKey;
+    }, [treeData, startFolderId, startSpaceId, departmentId, findNodeInTree, loadNodesForFolder]);
 
     // Sync search query from pane data (important for Chat -> Finder updates)
     useEffect(() => {
@@ -549,6 +566,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }));
 
         const targetFolderId = resolveUploadFolderId();
+        const targetFolderName = targetFolderId ? (findNodeInTree(rawTree, targetFolderId)?.name || 'current folder') : 'company root';
         let successCount = 0;
         let hasPendingConfirmation = false;
         try {
@@ -604,6 +622,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     if (response?.status === 'executed') {
                         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                        if (targetFolderId) {
+                            await loadNodesForFolder(targetFolderId);
+                            setCurrentFolderId(targetFolderId);
+                        }
                         // P6: Auto-executed, return to idle
                         setIdle();
                     }
@@ -621,7 +643,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 }
             }
             if (successCount > 0 && !hasPendingConfirmation) {
-                toast.success(`${successCount} file(s) uploaded`);
+                toast.success(`${successCount} file(s) uploaded to ${targetFolderName}`);
                 await loadContent();
             } else if (successCount === 0) {
                 toast.error('Failed to upload files');
@@ -634,7 +656,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setIsUploading(false);
             setUploadProgress(null);
         }
-    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions]);
+    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions, findNodeInTree, rawTree, loadNodesForFolder]);
 
     // Integrated Drag & Drop Handlers
     const handleDragEnter = useCallback((e: React.DragEvent) => {

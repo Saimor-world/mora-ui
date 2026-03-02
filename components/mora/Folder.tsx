@@ -104,8 +104,7 @@ export const Folder: React.FC<FolderProps> = ({
     const capR = diameter / 2 + ring * 0.40;
     const actR = diameter / 2 + ring * 0.80;
     const circ = 2 * Math.PI * capR;
-    // Fill: at least 0.2 so ring always shows; max at 20 files = full
-    const fillRatio = Math.max(0.20, Math.min(1, nodeCount / 20));
+    const fillRatio = Math.max(0, Math.min(1, nodeCount / 20));
 
     return (
         <motion.div
@@ -137,17 +136,25 @@ export const Folder: React.FC<FolderProps> = ({
                 width={svgSize} height={svgSize}
                 viewBox={`0 0 ${svgSize} ${svgSize}`}
             >
-                <motion.circle
+                <circle
                     cx={cx} cy={cy} r={capR}
                     fill="none" stroke={coreColor}
-                    strokeWidth={isHovered ? 2.4 : 1.8}
-                    strokeDasharray={circ}
-                    strokeDashoffset={circ - circ * fillRatio}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${cx} ${cy})`}
-                    animate={{ opacity: (isActive || isHovered) ? 1.0 : 0.65 }}
-                    transition={{ duration: 0.3 }}
+                    strokeWidth="1"
+                    opacity={0.2}
                 />
+                {fillRatio > 0 && (
+                    <motion.circle
+                        cx={cx} cy={cy} r={capR}
+                        fill="none" stroke={coreColor}
+                        strokeWidth={isHovered ? 2.4 : 1.8}
+                        strokeDasharray={circ}
+                        strokeDashoffset={circ - circ * fillRatio}
+                        strokeLinecap="round"
+                        transform={`rotate(-90 ${cx} ${cy})`}
+                        animate={{ opacity: (isActive || isHovered) ? 1.0 : 0.65 }}
+                        transition={{ duration: 0.3 }}
+                    />
+                )}
                 <motion.circle
                     cx={cx} cy={cy} r={actR}
                     fill="none" stroke={coreColor}

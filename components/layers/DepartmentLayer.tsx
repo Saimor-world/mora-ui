@@ -132,40 +132,24 @@ export const DepartmentLayer: React.FC = () => {
     }, []);
 
     const moonPositionsRef = useRef<{ space: { id: string }; x: number; y: number }[]>([]);
-    const captureHoverAnchorFromElement = useCallback((spaceId: string, element: HTMLElement | null) => {
-        if (!element || !orbitContainerRef.current) return null;
-        const containerRect = orbitContainerRef.current.getBoundingClientRect();
-        const elementRect = element.getBoundingClientRect();
-        const x = (elementRect.left + elementRect.width / 2) - (containerRect.left + containerRect.width / 2);
-        const y = (elementRect.top + elementRect.height / 2) - (containerRect.top + containerRect.height / 2);
-        return { id: spaceId, x, y };
-    }, []);
 
     const setHoverSpace = useCallback((spaceId: string | null, anchor?: { id: string; x: number; y: number } | null) => {
         clearHoverTimeout();
-        setHoveredSpaceId(spaceId);
         if (!spaceId) {
+            setHoveredSpaceId(null);
             setHoveredSpaceAnchor(null);
             return;
         }
-        if (hoveredSpaceId === spaceId) {
-            // Do not overwrite an already-stable anchor for the active hovered orb.
-            if (anchor && anchor.id === spaceId) setHoveredSpaceAnchor(anchor);
-            return;
-        }
+        setHoveredSpaceId(spaceId);
         if (anchor && anchor.id === spaceId) {
             setHoveredSpaceAnchor(anchor);
-            return;
-        }
-        // Keep the current precise DOM anchor while hovering the same space.
-        if (hoveredSpaceAnchor && hoveredSpaceAnchor.id === spaceId) {
             return;
         }
         const match = moonPositionsRef.current.find((m) => m.space.id === spaceId);
         if (match) {
             setHoveredSpaceAnchor({ id: spaceId, x: match.x, y: match.y });
         }
-    }, [clearHoverTimeout, hoveredSpaceAnchor, hoveredSpaceId]);
+    }, [clearHoverTimeout]);
 
     const scheduleHoverClear = useCallback(() => {
         clearHoverTimeout();
@@ -554,10 +538,7 @@ export const DepartmentLayer: React.FC = () => {
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay, duration: 0.5 }}
-                                    onMouseEnter={(event) => {
-                                        const anchor = captureHoverAnchorFromElement(space.id, event.currentTarget as HTMLElement);
-                                        setHoverSpace(space.id, anchor);
-                                    }}
+                                    onMouseEnter={() => setHoverSpace(space.id, { id: space.id, x, y })}
                                     onMouseLeave={() => scheduleHoverClear()}
                                     onClick={(event) => {
                                         setActiveSpace(space.id);
