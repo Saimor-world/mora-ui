@@ -681,6 +681,12 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadSpacesForDepartment: async (deptId: string) => {
+        const state = get();
+        // Concurrent-call guard: prevents redundant in-flight fetches
+        if (state.isLoadingSpaces) return;
+        // Cache guard: skip if we already have data for this department
+        if (state.spacesByDepartment[deptId]?.length > 0) return;
+
         set({ isLoadingSpaces: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadSpaces' } });
         set({ orbState: mindLoop.getCurrentState() });
@@ -710,6 +716,12 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadFoldersForSpace: async (spaceId: string) => {
+        const state = get();
+        // Concurrent-call guard: prevents redundant in-flight fetches
+        if (state.isLoadingFolders) return;
+        // Cache guard: skip if we already have data for this space
+        if (state.foldersBySpace[spaceId]?.length > 0) return;
+
         set({ isLoadingFolders: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadFolders' } });
         set({ orbState: mindLoop.getCurrentState() });
@@ -736,6 +748,12 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadNodesForFolder: async (folderId: string, options?: { search?: string; type?: string; limit?: number; offset?: number }) => {
+        const state = get();
+        // Concurrent-call guard: skip if already in-flight for an unfiltered request
+        if (state.isLoadingNodes && !options?.search && !options?.type) return;
+        // Cache guard: skip bare (unfiltered) loads when data already present
+        if (!options?.search && !options?.type && state.nodesByFolder[folderId]?.length > 0) return;
+
         set({ isLoadingNodes: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadNodes' } });
         set({ orbState: mindLoop.getCurrentState() });
@@ -806,7 +824,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     loadTree: async (tenantId?: string, companyId?: string) => {
-        set({ isLoadingTree: true, coreError: null, treeData: null });
+        // Preserve existing treeData during reload — setting null causes flash-to-empty.
+        set({ isLoadingTree: true, coreError: null });
         try {
             const resolvedTenant = tenantId || useAccountStore.getState().currentAccount?.tenantId;
             const targetCompany = companyId || get().activeCompanyId || undefined;

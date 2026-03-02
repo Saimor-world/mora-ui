@@ -300,7 +300,8 @@ export interface SystemStats {
 }
 
 export async function fetchSystemStats(): Promise<SystemStats | null> {
-    return coreGet('/v1/system/stats', { isOptional: true });
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return coreGet('/v3/system/stats', { isOptional: true });
 }
 
 // ========== DEPARTMENT STATS (for Planet Hover) ==========
@@ -323,7 +324,8 @@ export interface DepartmentStats {
 export async function fetchDepartmentStats(companyId?: string): Promise<DepartmentStats[]> {
     try {
         const query = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
-        const result = await coreGet(`/v1/stats/departments${query}`, { isOptional: true });
+        // v3: envelope unwrap handled transparently in coreRequest()
+        const result = await coreGet(`/v3/stats/departments${query}`, { isOptional: true });
         return result?.departments || [];
     } catch (error) {
         console.warn('[coreClient] fetchDepartmentStats failed:', error);
@@ -336,7 +338,8 @@ export async function fetchDepartmentStats(companyId?: string): Promise<Departme
  */
 export async function fetchSingleDepartmentStats(departmentId: string): Promise<DepartmentStats | null> {
     try {
-        return await coreGet(`/v1/stats/department/${departmentId}`, { isOptional: true });
+        // v3: envelope unwrap handled transparently in coreRequest()
+        return await coreGet(`/v3/stats/department/${departmentId}`, { isOptional: true });
     } catch (error) {
         console.warn('[coreClient] fetchSingleDepartmentStats failed:', error);
         return null;
@@ -854,14 +857,16 @@ export async function learnInsight(payload: {
 export async function searchMemory(query: string, limit: number = 10, companyId: string): Promise<any[]> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `&company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    return coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true }) || [];
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return coreGet(`/v3/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true }) || [];
 }
 
 // GET /v1/memory/pending - Review Queue laden
 export async function getMemoryPending(companyId: string): Promise<any[]> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    return coreGet(`/v1/memory/pending${companyQuery}`, { isOptional: true }) || [];
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return coreGet(`/v3/memory/pending${companyQuery}`, { isOptional: true }) || [];
 }
 
 // POST /v1/memory/approve/{id} - Review Item bestaetigen
@@ -882,5 +887,6 @@ export async function rejectMemoryItem(id: string | number, companyId: string): 
 export async function getMemoryMetrics(companyId: string): Promise<any> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    return coreGet(`/v1/memory/metrics${companyQuery}`, { isOptional: true });
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return coreGet(`/v3/memory/metrics${companyQuery}`, { isOptional: true });
 }
