@@ -12,6 +12,7 @@ import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
+const ORBIT_STEP_SECONDS = 1 / 30; // Cap visual updates to ~30 FPS to reduce rerender load.
 
 /**
  * DEPARTMENT LAYER (L2)
@@ -158,6 +159,7 @@ export const DepartmentLayer: React.FC = () => {
     const [orbitTime, setOrbitTime] = useState(0);
     const animationRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
+    const orbitAccumulatorRef = useRef<number>(0);
 
     useEffect(() => {
         // Respect prefers-reduced-motion: skip the orbit animation loop entirely.
@@ -171,7 +173,14 @@ export const DepartmentLayer: React.FC = () => {
 
             // Freeze orbital drift while a space/folder hover interaction is active.
             if (!hoveredSpaceId) {
-                setOrbitTime((prev) => prev + delta);
+                orbitAccumulatorRef.current += delta;
+                if (orbitAccumulatorRef.current >= ORBIT_STEP_SECONDS) {
+                    const step = orbitAccumulatorRef.current;
+                    orbitAccumulatorRef.current = 0;
+                    setOrbitTime((prev) => prev + step);
+                }
+            } else {
+                orbitAccumulatorRef.current = 0;
             }
             animationRef.current = requestAnimationFrame(animate);
         };

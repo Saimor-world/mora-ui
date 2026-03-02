@@ -18,6 +18,7 @@ const FOLDER_COLORS = [
     { name: 'Rose', value: '#f43f5e' },
     { name: 'Cyan', value: '#06b6d4' },
 ];
+const ORBIT_STEP_SECONDS = 1 / 30; // Cap visual updates to ~30 FPS to reduce rerender load.
 
 // Orbit speeds per ring: inner faster, outer slower â€” slow planetary drift.
 const RING_SPEEDS = [0.032, 0.020, 0.013];
@@ -79,6 +80,7 @@ export const SpaceLayer: React.FC = () => {
     const [orbitTime, setOrbitTime] = useState(0);
     const animationRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
+    const orbitAccumulatorRef = useRef<number>(0);
 
     useEffect(() => {
         // Respect prefers-reduced-motion: skip the animation loop entirely.
@@ -89,7 +91,14 @@ export const SpaceLayer: React.FC = () => {
             lastTimeRef.current = currentTime;
             // Pause orbit when hovering â€” folders freeze in place
             if (!isAnyHoveredRef.current) {
-                setOrbitTime(prev => prev + delta);
+                orbitAccumulatorRef.current += delta;
+                if (orbitAccumulatorRef.current >= ORBIT_STEP_SECONDS) {
+                    const step = orbitAccumulatorRef.current;
+                    orbitAccumulatorRef.current = 0;
+                    setOrbitTime(prev => prev + step);
+                }
+            } else {
+                orbitAccumulatorRef.current = 0;
             }
             animationRef.current = requestAnimationFrame(animate);
         };
