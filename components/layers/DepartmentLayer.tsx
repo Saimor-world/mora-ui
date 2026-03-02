@@ -86,6 +86,13 @@ export const DepartmentLayer: React.FC = () => {
     }, []);
     const isMobileViewport = viewportWidth < 600;
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
+    /**
+     * Ref mirror of hoveredSpaceId — read by the rAF animation loop to freeze the orbit.
+     * Must be updated synchronously (before any React setState) so the loop sees it on the
+     * very next frame without waiting for an effect restart.
+     * Pattern mirrors SpaceLayer's isAnyHoveredRef — do not change to state.
+     */
+    const hoveredSpaceIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (activeDepartmentId && !spacesByDepartment[activeDepartmentId]) {
@@ -134,6 +141,8 @@ export const DepartmentLayer: React.FC = () => {
     const moonPositionsRef = useRef<{ space: { id: string }; x: number; y: number }[]>([]);
 
     const setHoverSpace = useCallback((spaceId: string | null, anchor?: { id: string; x: number; y: number } | null) => {
+        // Update ref FIRST — rAF loop reads this synchronously, before React re-renders.
+        hoveredSpaceIdRef.current = spaceId ?? null;
         clearHoverTimeout();
         if (!spaceId) {
             setHoveredSpaceId(null);
@@ -154,6 +163,8 @@ export const DepartmentLayer: React.FC = () => {
     const scheduleHoverClear = useCallback(() => {
         clearHoverTimeout();
         hoverClearRef.current = setTimeout(() => {
+            // Clear ref before state so rAF loop resumes on the very next frame.
+            hoveredSpaceIdRef.current = null;
             setHoveredSpaceId(null);
             setHoveredSpaceAnchor(null);
         }, 600);
@@ -178,7 +189,11 @@ export const DepartmentLayer: React.FC = () => {
             lastTimeRef.current = currentTime;
 
             // Freeze orbital drift while a space/folder hover interaction is active.
-            if (!hoveredSpaceId) {
+            // IMPORTANT: read from ref, NOT from closure-captured state.
+            // State-based check would lag 1-2 frames behind (effect restarts after paint),
+            // causing drift to accumulate across repeated hover/unhover cycles.
+            // Mirrors SpaceLayer's isAnyHoveredRef.current pattern exactly.
+            if (!hoveredSpaceIdRef.current) {
                 orbitAccumulatorRef.current += delta;
                 if (orbitAccumulatorRef.current >= ORBIT_STEP_SECONDS) {
                     const step = orbitAccumulatorRef.current;
@@ -195,7 +210,7 @@ export const DepartmentLayer: React.FC = () => {
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [prefersReducedMotion, hoveredSpaceId]);
+    }, [prefersReducedMotion]); // hoveredSpaceId intentionally omitted — ref handles it
 
     const normalized = useCallback((value: string) => value.toLowerCase().trim(), []);
 
