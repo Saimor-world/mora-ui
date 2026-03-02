@@ -72,6 +72,7 @@ export const DepartmentLayer: React.FC = () => {
     const prefersReducedMotion = useReducedMotion();
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
     const [hoveredSpaceAnchor, setHoveredSpaceAnchor] = useState<{ id: string; x: number; y: number } | null>(null);
+    const orbitContainerRef = useRef<HTMLDivElement | null>(null);
 
     // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
     const [viewportWidth, setViewportWidth] = useState<number>(
@@ -131,12 +132,24 @@ export const DepartmentLayer: React.FC = () => {
     }, []);
 
     const moonPositionsRef = useRef<{ space: { id: string }; x: number; y: number }[]>([]);
+    const captureHoverAnchorFromElement = useCallback((spaceId: string, element: HTMLElement | null) => {
+        if (!element || !orbitContainerRef.current) return null;
+        const containerRect = orbitContainerRef.current.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const x = (elementRect.left + elementRect.width / 2) - (containerRect.left + containerRect.width / 2);
+        const y = (elementRect.top + elementRect.height / 2) - (containerRect.top + containerRect.height / 2);
+        return { id: spaceId, x, y };
+    }, []);
 
-    const setHoverSpace = useCallback((spaceId: string | null) => {
+    const setHoverSpace = useCallback((spaceId: string | null, anchor?: { id: string; x: number; y: number } | null) => {
         clearHoverTimeout();
         setHoveredSpaceId(spaceId);
         if (!spaceId) {
             setHoveredSpaceAnchor(null);
+            return;
+        }
+        if (anchor && anchor.id === spaceId) {
+            setHoveredSpaceAnchor(anchor);
             return;
         }
         const match = moonPositionsRef.current.find((m) => m.space.id === spaceId);
@@ -421,7 +434,7 @@ export const DepartmentLayer: React.FC = () => {
                 {isLoadingSpaces ? (
                     <LoadingState message="Scanning Sector..." />
                 ) : (
-                    <div className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
+                    <div ref={orbitContainerRef} className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
                         <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25">
                             {moonPositions.map(({ space, radiusX, radiusY }) => (
                                 <ellipse
@@ -526,7 +539,10 @@ export const DepartmentLayer: React.FC = () => {
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay, duration: 0.5 }}
-                                    onMouseEnter={() => setHoverSpace(space.id)}
+                                    onMouseEnter={(event) => {
+                                        const anchor = captureHoverAnchorFromElement(space.id, event.currentTarget as HTMLElement);
+                                        setHoverSpace(space.id, anchor);
+                                    }}
                                     onMouseLeave={() => scheduleHoverClear()}
                                     onClick={(event) => {
                                         setActiveSpace(space.id);

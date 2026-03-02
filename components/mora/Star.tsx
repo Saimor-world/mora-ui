@@ -195,7 +195,7 @@ export const Star: React.FC<StarProps> = ({
                         : `0 0 30px ${coreColor}72, 0 6px 18px rgba(0,0,0,0.28), inset 1px 1px 4px rgba(255,255,255,0.24)`,
                     border: `1.5px solid ${coreColor}99`,
                 }}
-                whileHover={{ scale: 1.08, rotate: 5 }}
+                whileHover={{ scale: 1.08 }}
                 transition={{ type: 'spring', stiffness: 250, damping: 20 }}
             >
                 {/* Specular point */}
