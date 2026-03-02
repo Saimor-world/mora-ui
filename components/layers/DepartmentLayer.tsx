@@ -70,6 +70,7 @@ export const DepartmentLayer: React.FC = () => {
 
     const prefersReducedMotion = useReducedMotion();
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
+    const [hoveredSpaceAnchor, setHoveredSpaceAnchor] = useState<{ id: string; x: number; y: number } | null>(null);
 
     // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
     const [viewportWidth, setViewportWidth] = useState<number>(
@@ -128,14 +129,27 @@ export const DepartmentLayer: React.FC = () => {
         }
     }, []);
 
+    const moonPositionsRef = useRef<{ space: { id: string }; x: number; y: number }[]>([]);
+
     const setHoverSpace = useCallback((spaceId: string | null) => {
         clearHoverTimeout();
         setHoveredSpaceId(spaceId);
+        if (!spaceId) {
+            setHoveredSpaceAnchor(null);
+            return;
+        }
+        const match = moonPositionsRef.current.find((m) => m.space.id === spaceId);
+        if (match) {
+            setHoveredSpaceAnchor({ id: spaceId, x: match.x, y: match.y });
+        }
     }, [clearHoverTimeout]);
 
     const scheduleHoverClear = useCallback(() => {
         clearHoverTimeout();
-        hoverClearRef.current = setTimeout(() => setHoveredSpaceId(null), 600);
+        hoverClearRef.current = setTimeout(() => {
+            setHoveredSpaceId(null);
+            setHoveredSpaceAnchor(null);
+        }, 600);
     }, [clearHoverTimeout]);
 
     useEffect(() => () => clearHoverTimeout(), [clearHoverTimeout]);
@@ -155,7 +169,10 @@ export const DepartmentLayer: React.FC = () => {
             const delta = (currentTime - lastTimeRef.current) / 1000;
             lastTimeRef.current = currentTime;
 
-            setOrbitTime((prev) => prev + delta);
+            // Freeze orbital drift while a space/folder hover interaction is active.
+            if (!hoveredSpaceId) {
+                setOrbitTime((prev) => prev + delta);
+            }
             animationRef.current = requestAnimationFrame(animate);
         };
 
@@ -163,7 +180,7 @@ export const DepartmentLayer: React.FC = () => {
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [prefersReducedMotion]);
+    }, [prefersReducedMotion, hoveredSpaceId]);
 
     const normalized = useCallback((value: string) => value.toLowerCase().trim(), []);
 
@@ -230,10 +247,17 @@ export const DepartmentLayer: React.FC = () => {
         });
     }, [spaceMeta, orbitTime]);
 
+    useEffect(() => {
+        moonPositionsRef.current = moonPositions.map((m) => ({ space: { id: m.space.id }, x: m.x, y: m.y }));
+    }, [moonPositions]);
+
     const hoveredSpacePosition = useMemo(() => {
         if (!hoveredSpaceId) return null;
+        if (hoveredSpaceAnchor && hoveredSpaceAnchor.id === hoveredSpaceId) {
+            return hoveredSpaceAnchor;
+        }
         return moonPositions.find((m) => m.space.id === hoveredSpaceId) || null;
-    }, [hoveredSpaceId, moonPositions]);
+    }, [hoveredSpaceId, hoveredSpaceAnchor, moonPositions]);
 
     const hoveredFolders = useMemo(() => (
         hoveredSpaceId ? (foldersBySpace[hoveredSpaceId] || []) : []
