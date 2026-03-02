@@ -602,6 +602,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         const targetFolderName = targetFolderId ? (findNodeInTree(rawTree, targetFolderId)?.name || 'current folder') : 'company root';
         let successCount = 0;
         let hasPendingConfirmation = false;
+        let hasPerFileError = false;
         try {
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
@@ -684,8 +685,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         // P6: Auto-executed, return to idle
                         setIdle();
                     }
-                } catch (e) {
+                } catch (e: any) {
+                    const errMsg = e?.message || 'Upload fehlgeschlagen';
                     console.error(`Failed to upload ${file.name}:`, e);
+                    // Show specific error to the user (e.g. "Empty files are not allowed")
+                    toast.error(`${file.name}: ${errMsg}`);
+                    hasPerFileError = true;
                     // P6: Timeline event - failed
                     window.dispatchEvent(new CustomEvent('mora:agency-update', {
                         detail: {
@@ -700,7 +705,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             if (successCount > 0 && !hasPendingConfirmation) {
                 toast.success(`${successCount} file(s) uploaded to ${targetFolderName}`);
                 await loadContent();
-            } else if (successCount === 0) {
+            } else if (successCount === 0 && !hasPerFileError) {
+                // Only show generic error if no per-file error toast was already displayed
                 toast.error('Failed to upload files');
                 setIdle();
             }

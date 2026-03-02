@@ -77,6 +77,11 @@ export const uploadCompanyFile = async (
     const token = getAuthToken();
     if (!token) throw new CoreError('Unauthorized', 401);
 
+    // Guard against empty files before hitting the network — backend returns 400 for these.
+    if (file.size === 0) {
+        throw new CoreError('Empty files are not allowed', 400);
+    }
+
     const formData = new FormData();
     // V10.6: Ensure field names match backend EXACTLY (file, company_id)
     formData.append('file', file);

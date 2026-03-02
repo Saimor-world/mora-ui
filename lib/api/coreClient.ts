@@ -157,7 +157,22 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         return null;
     }
     try {
-        return await response.json();
+        const json = await response.json();
+        // Unwrap v3 envelope { data: <payload>, meta: { api_version: "v3", ... } }
+        // Guard: both keys must exist AND meta.api_version must be exactly "v3"
+        // so v1 payloads that happen to contain a "data" key are not accidentally unwrapped.
+        if (
+            json !== null &&
+            typeof json === 'object' &&
+            !Array.isArray(json) &&
+            'data' in json &&
+            'meta' in json &&
+            typeof json.meta === 'object' &&
+            json.meta?.api_version === 'v3'
+        ) {
+            return json.data;
+        }
+        return json;
     } catch {
         return null;
     }
@@ -399,28 +414,29 @@ export async function fetchCompaniesHealth(): Promise<CompaniesHealthResponse> {
 
 export async function fetchDepartments(companyId?: string): Promise<CoreDepartment[]> {
     const query = companyId ? `?company_id=${companyId}` : '';
-    const result = await coreGet(`/v1/departments${query}`, { isOptional: true });
+    // v3: envelope unwrap handled transparently in coreRequest()
+    const result = await coreGet(`/v3/departments${query}`, { isOptional: true });
     return result || [];
 }
 
 export async function fetchSpaces(departmentId?: string): Promise<CoreSpace[]> {
     const query = departmentId ? `?department_id=${departmentId}` : '';
-    const result = await coreGet(`/v1/spaces${query}`, { isOptional: true });
+    const result = await coreGet(`/v3/spaces${query}`, { isOptional: true });
     return result || [];
 }
 
 export async function fetchSpacesByCompany(companyId: string): Promise<CoreSpace[]> {
-    const result = await coreGet(`/v1/spaces?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
+    const result = await coreGet(`/v3/spaces?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
     return result || [];
 }
 
 export async function fetchFolders(spaceId: string): Promise<CoreFolder[]> {
-    const result = await coreGet(`/v1/folders?space_id=${spaceId}`, { isOptional: true });
+    const result = await coreGet(`/v3/folders?space_id=${spaceId}`, { isOptional: true });
     return result || [];
 }
 
 export async function fetchFoldersByCompany(companyId: string): Promise<CoreFolder[]> {
-    const result = await coreGet(`/v1/folders?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
+    const result = await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
     return result || [];
 }
 
@@ -433,7 +449,7 @@ export async function fetchNodes(
     if (options?.type && options.type !== 'all') query += `&type=${encodeURIComponent(options.type)}`;
     if (options?.limit != null) query += `&limit=${options.limit}`;
     if (options?.offset != null) query += `&offset=${options.offset}`;
-    const result = await coreGet(`/v1/nodes${query}`, { isOptional: true });
+    const result = await coreGet(`/v3/nodes${query}`, { isOptional: true });
     return result || [];
 }
 
@@ -444,7 +460,7 @@ export async function fetchNodesByCompany(
     let query = `?company_id=${companyId}`;
     if (options?.limit != null) query += `&limit=${options.limit}`;
     if (options?.offset != null) query += `&offset=${options.offset}`;
-    const result = await coreGet(`/v1/nodes${query}`, { isOptional: true });
+    const result = await coreGet(`/v3/nodes${query}`, { isOptional: true });
     return result || [];
 }
 

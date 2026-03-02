@@ -232,22 +232,24 @@ export const Folder: React.FC<FolderProps> = ({
                 {/* Glass caustic */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_26%,rgba(255,255,255,0.18)_0%,transparent_52%)] pointer-events-none" />
 
-                {/* Node count badge */}
-                {nodeCount > 0 && (
-                    <div
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold z-20"
-                        style={{
-                            background: `linear-gradient(135deg, ${coreColor}ee, ${coreColor}99)`,
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            boxShadow: `0 0 6px ${coreColor}80`,
-                        }}
-                    >
-                        {nodeCount > 9 ? '9+' : nodeCount}
-                    </div>
-                )}
-
                 <Icon size={iconSize} className="relative z-10 text-white" strokeWidth={1.3} />
             </motion.div>
+
+            {/* Node count badge — outside overflow-hidden sphere to avoid clipping at top-right corner */}
+            {nodeCount > 0 && (
+                <div
+                    className="absolute w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold z-20"
+                    style={{
+                        top: `calc(50% - ${diameter / 2}px - 2px)`,
+                        right: `calc(50% - ${diameter / 2}px - 2px)`,
+                        background: `linear-gradient(135deg, ${coreColor}ee, ${coreColor}99)`,
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        boxShadow: `0 0 6px ${coreColor}80`,
+                    }}
+                >
+                    {nodeCount > 9 ? '9+' : nodeCount}
+                </div>
+            )}
 
             {/* Portal hover tooltip */}
             {isMounted && showPortal && createPortal(
