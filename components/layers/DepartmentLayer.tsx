@@ -152,11 +152,15 @@ export const DepartmentLayer: React.FC = () => {
             setHoveredSpaceAnchor(anchor);
             return;
         }
+        // Keep the current precise DOM anchor while hovering the same space.
+        if (hoveredSpaceAnchor && hoveredSpaceAnchor.id === spaceId) {
+            return;
+        }
         const match = moonPositionsRef.current.find((m) => m.space.id === spaceId);
         if (match) {
             setHoveredSpaceAnchor({ id: spaceId, x: match.x, y: match.y });
         }
-    }, [clearHoverTimeout]);
+    }, [clearHoverTimeout, hoveredSpaceAnchor]);
 
     const scheduleHoverClear = useCallback(() => {
         clearHoverTimeout();
@@ -295,9 +299,15 @@ export const DepartmentLayer: React.FC = () => {
     const hoveredFolderPositions = useMemo(() => {
         if (!hoveredSpaceId || !hoveredSpacePosition || hoveredFolders.length === 0) return [];
         const count = Math.max(hoveredFolders.length, 1);
+        const perRing = 8;
+        const baseRadius = 88;
+        const ringGap = 34;
         return hoveredFolders.map((folder, i) => {
-            const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-            const radius = 70 + (i % 3) * 14;
+            const ring = Math.floor(i / perRing);
+            const indexInRing = i % perRing;
+            const ringCount = Math.min(perRing, count - ring * perRing);
+            const angle = (indexInRing / Math.max(1, ringCount)) * Math.PI * 2 - Math.PI / 2;
+            const radius = baseRadius + ring * ringGap;
             return {
                 folder,
                 x: hoveredSpacePosition.x + Math.cos(angle) * radius,
