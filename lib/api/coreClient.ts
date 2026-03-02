@@ -843,44 +843,51 @@ function requireMemoryCompanyId(companyId?: string): string {
     return companyId;
 }
 
-// POST /v1/memory/learn - Neues Insight lernen
+// POST /v3/memory/learn - Neues Insight lernen
 export async function learnInsight(payload: {
     insight: string;
     category: string;
     auto_commit?: boolean;
     company_id: string;
 }): Promise<{ status: string; message: string; committed?: boolean; risk?: string }> {
-    return corePost('/v1/memory/learn', payload);
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return corePost('/v3/memory/learn', payload);
 }
 
-// GET /v1/memory/search - Gedaechtnis durchsuchen
+// GET /v3/memory/search - Gedaechtnis durchsuchen
 export async function searchMemory(query: string, limit: number = 10, companyId: string): Promise<any[]> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `&company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    // v3: envelope unwrap handled transparently in coreRequest()
-    return coreGet(`/v3/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true }) || [];
+    // v3: envelope unwrap handled transparently in coreRequest().
+    // Awaited explicitly so the || [] fallback applies to the resolved value, not the Promise.
+    const result = await coreGet(`/v3/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true });
+    return result || [];
 }
 
-// GET /v1/memory/pending - Review Queue laden
+// GET /v3/memory/pending - Review Queue laden
 export async function getMemoryPending(companyId: string): Promise<any[]> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    // v3: envelope unwrap handled transparently in coreRequest()
-    return coreGet(`/v3/memory/pending${companyQuery}`, { isOptional: true }) || [];
+    // v3: envelope unwrap handled transparently in coreRequest().
+    // Awaited explicitly so the || [] fallback applies to the resolved value, not the Promise.
+    const result = await coreGet(`/v3/memory/pending${companyQuery}`, { isOptional: true });
+    return result || [];
 }
 
-// POST /v1/memory/approve/{id} - Review Item bestaetigen
+// POST /v3/memory/approve/{id} - Review Item bestaetigen
 export async function approveMemoryItem(id: string | number, companyId: string): Promise<{ success: boolean }> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    return corePost(`/v1/memory/approve/${id}${companyQuery}`, {});
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return corePost(`/v3/memory/approve/${id}${companyQuery}`, {});
 }
 
-// POST /v1/memory/reject/{id} - Review Item ablehnen
+// POST /v3/memory/reject/{id} - Review Item ablehnen
 export async function rejectMemoryItem(id: string | number, companyId: string): Promise<{ success: boolean }> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    return corePost(`/v1/memory/reject/${id}${companyQuery}`, {});
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return corePost(`/v3/memory/reject/${id}${companyQuery}`, {});
 }
 
 // GET /v1/memory/metrics - Statistiken

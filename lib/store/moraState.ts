@@ -749,10 +749,11 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
     loadNodesForFolder: async (folderId: string, options?: { search?: string; type?: string; limit?: number; offset?: number }) => {
         const state = get();
-        // Concurrent-call guard: skip if already in-flight for an unfiltered request
+        // Concurrent-call guard: prevents duplicate simultaneous in-flight fetches.
+        // Only applies to unfiltered calls — search/type requests must always fire.
+        // NOTE: no cache guard here — callers like the post-upload refresh path need
+        // fresh data even when the folder already has visible items.
         if (state.isLoadingNodes && !options?.search && !options?.type) return;
-        // Cache guard: skip bare (unfiltered) loads when data already present
-        if (!options?.search && !options?.type && state.nodesByFolder[folderId]?.length > 0) return;
 
         set({ isLoadingNodes: true, coreError: null });
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadNodes' } });
