@@ -633,7 +633,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
 
         const currentNode = findNodeInTree(rawTree, currentFolderId);
-        const isDirectFolderStart = !currentNode && startFolderId === currentFolderId;
+        const knownFolderFromSpaces = Object.values(foldersBySpace)
+            .flat()
+            .some((f) => f?.id === currentFolderId);
+        const hasFolderNodeCache = Object.prototype.hasOwnProperty.call(nodesByFolder, currentFolderId);
+        const isDirectFolderStart =
+            !currentNode &&
+            startFolderId === currentFolderId &&
+            (knownFolderFromSpaces || hasFolderNodeCache);
         const isFolderContext = currentNode?.type === 'folder' || isDirectFolderStart;
 
         if (!isFolderContext) {
@@ -648,7 +655,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             }
         });
         return () => { cancelled = true; };
-    }, [currentFolderId, findNodeInTree, rawTree, startFolderId]);
+    }, [currentFolderId, findNodeInTree, foldersBySpace, nodesByFolder, rawTree, startFolderId]);
 
     // Effect to handle view content and lazy loading
     useEffect(() => {
