@@ -6,7 +6,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
 import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, FolderContext } from '@/lib/api/coreClient';
-import type { CoreTreeNode, ExplorerNavigationState } from '@/lib/types/core';
+import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
@@ -342,11 +342,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [forwardStack, setForwardStack] = useState<Array<string | null>>([]);
     const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string; type: string }[]>([]);
     const [folderContext, setFolderContext] = useState<FolderContext | null>(null);
-    const navigationState = useMemo<ExplorerNavigationState>(() => ({
-        currentFolderId,
-        backStack,
-        forwardStack
-    }), [currentFolderId, backStack, forwardStack]);
     const currentFolderIdRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -724,7 +719,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             resetNavigationRoot(startFolderId);
             const folderNode = findNodeInTree(treeData, startFolderId);
             if (!folderNode) {
-                console.warn('[FinderPane] startFolderId not in tree yet, loading folder nodes directly', startFolderId);
                 void loadNodesForFolder(startFolderId);
             }
         } else if (startSpaceId) {
@@ -1054,14 +1048,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 onResize={(w, h) => {
                     updatePaneSize(id, w, h);
                 }}
-                showBackButton={navigationState.backStack.length > 0 || currentFolderId !== null}
-                onBack={() => {
-                    if (navigationState.backStack.length > 0) {
-                        navigateBack();
-                        return;
-                    }
-                    navigateUp();
-                }}
+                showBackButton={false}
                 onClose={() => removePane(id)}
                 onMinimize={() => minimizePane(id)}
                 onFocus={() => focusPane(id)}
@@ -1108,16 +1095,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         <div className="flex items-center gap-1.5 shrink-0">
                             <button
                                 onClick={navigateBack}
-                                disabled={navigationState.backStack.length === 0}
-                                className={`p-1.5 rounded-lg border transition-colors ${navigationState.backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
+                                disabled={backStack.length === 0}
+                                className={`p-1.5 rounded-lg border transition-colors ${backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Back"
                             >
                                 <ChevronLeft size={14} />
                             </button>
                             <button
                                 onClick={navigateForward}
-                                disabled={navigationState.forwardStack.length === 0}
-                                className={`p-1.5 rounded-lg border transition-colors ${navigationState.forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
+                                disabled={forwardStack.length === 0}
+                                className={`p-1.5 rounded-lg border transition-colors ${forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Forward"
                             >
                                 <ChevronRight size={14} />
@@ -1132,7 +1119,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </button>
                         </div>
                         {/* Breadcrumbs Row */}
-                        <div className="flex items-center gap-1 mr-3 md:mr-4 border-r border-white/10 pr-3 md:pr-4 shrink-0">
+                        <div className="hidden">
                             <button onClick={navigateBack} disabled={backStack.length === 0} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Zurück">
                                 <ChevronLeft size={18} />
                             </button>
