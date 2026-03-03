@@ -20,13 +20,12 @@ const FOLDER_COLORS = [
 ];
 const ORBIT_STEP_SECONDS = 1 / 30; // Cap visual updates to ~30 FPS to reduce rerender load.
 
-// Orbit speeds per ring: inner faster, outer slower â€” slow planetary drift.
+// Orbit speeds per ring: inner faster, outer slower — slow planetary drift.
 const RING_SPEEDS = [0.032, 0.020, 0.013];
-// Single source of truth â€” used by BOTH SVG orbit rings AND folder positions.
-// Bug fix: previously shadowed by a local const inside folderOrbitPositions useMemo,
-// causing the visual orbit rings and actual folder orbs to orbit at different radii.
-const RING_RADII_X = [200, 310, 410];
-const RING_RADII_Y = [140, 215, 285];
+// Single source of truth — used by BOTH SVG orbit rings AND folder positions.
+// Updated radii to guarantee clearance from the central space orb aura (which extends up to ~150px radius).
+const RING_RADII_X = [Math.max(220, 200), Math.max(330, 310), Math.max(430, 410)];
+const RING_RADII_Y = [Math.max(160, 140), Math.max(235, 215), Math.max(305, 285)];
 
 export const SpaceLayer: React.FC = () => {
     const {
@@ -215,7 +214,7 @@ export const SpaceLayer: React.FC = () => {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-white/60">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                    <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
                 </svg>
                 <p className="text-sm tracking-widest uppercase">Best viewed on desktop</p>
             </div>
@@ -401,12 +400,24 @@ export const SpaceLayer: React.FC = () => {
                             />
                             {/* Core orb â€” 144px â€” fixed: was ${color}25 (9% alpha) â†’ now ${color}AA (67%) */}
                             <div
-                                className="relative w-36 h-36 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
+                                className="relative w-36 h-36 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm pointer-events-auto cursor-pointer"
                                 style={{
                                     background: `radial-gradient(145% 145% at 28% 26%, rgba(255,255,255,0.22) 0%, ${currentDepartment?.color || '#10b981'}AA 45%, rgba(0,0,0,0.30) 100%)`,
                                     border: `1.5px solid ${currentDepartment?.color || '#10b981'}99`,
                                     boxShadow: `0 0 80px ${currentDepartment?.color || '#10b981'}60, 0 0 160px ${currentDepartment?.color || '#10b981'}28, inset 2px 2px 8px rgba(255,255,255,0.30)`,
                                 }}
+                                onClick={() => openPane({
+                                    id: 'finder-main',
+                                    type: 'finder',
+                                    title: spaceName,
+                                    size: { width: 1000, height: 700 },
+                                    data: {
+                                        spaceId: activeSpaceId,
+                                        departmentId: activeDepartmentId,
+                                        companyId: activeCompanyId || currentDepartment?.company_id || undefined
+                                    }
+                                })}
+                                title={`Finder öffnen: ${spaceName}`}
                             >
                                 {/* Specular */}
                                 <div className="absolute top-[16%] left-[16%] w-[18%] h-[10%] rounded-full bg-white/70 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />

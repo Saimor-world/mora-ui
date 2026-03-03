@@ -252,9 +252,9 @@ export const DepartmentLayer: React.FC = () => {
 
     const moonPositions = useMemo(() => {
         if (spaceMeta.length === 0) return [];
-
-        const ringRadiiX = [230, 320, 405];
-        const ringRadiiY = [165, 238, 298];
+        // Minimum radii increased to clear the large center department aura (radius ~180px)
+        const ringRadiiX = [Math.max(260, 230), Math.max(340, 320), Math.max(420, 405)];
+        const ringRadiiY = [Math.max(190, 165), Math.max(260, 238), Math.max(320, 298)];
         const ringSpeed = [0.032, 0.022, 0.015];
 
         return spaceMeta.map((entry, i) => {
@@ -304,8 +304,9 @@ export const DepartmentLayer: React.FC = () => {
         if (!hoveredSpaceId || !hoveredSpacePosition || hoveredFolders.length === 0) return [];
         const count = Math.max(hoveredFolders.length, 1);
         const perRing = 8;
-        const baseRadius = 88;
-        const ringGap = 34;
+        // Increased base radius from 88 to 110 so hovered folders clear the space moon
+        const baseRadius = 110;
+        const ringGap = 36;
         return hoveredFolders.map((folder, i) => {
             const ring = Math.floor(i / perRing);
             const indexInRing = i % perRing;
@@ -345,7 +346,7 @@ export const DepartmentLayer: React.FC = () => {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-white/60">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                    <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
                 </svg>
                 <p className="text-sm tracking-widest uppercase">Best viewed on desktop</p>
             </div>
@@ -596,11 +597,17 @@ export const DepartmentLayer: React.FC = () => {
                                         }}
                                     />
                                     {/* Clean minimal label below â€” no icon duplication, no 'Layer 3' text */}
-                                    <div className="absolute top-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-                                        <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[140px] truncate block text-center">
-                                            {displayName}
-                                        </span>
-                                    </div>
+                                    {/* Side-adaptive label: right-half moons show label left, left-half show right */}
+                                    {(() => {
+                                        const isRightHalf = x > 0;
+                                        return (
+                                            <div className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-none ${isRightHalf ? 'right-full mr-2 text-right' : 'left-full ml-2 text-left'}`}>
+                                                <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[120px] truncate block">
+                                                    {displayName}
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
                                 </motion.div>
                             );
                         })}
