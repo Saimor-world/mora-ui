@@ -375,6 +375,8 @@ Was kann ich fuer dich tun?`,
         return (foldersBySpace[activeSpaceId] || []).find((f) => f.id === activeFolderId) || null;
     }, [foldersBySpace, activeSpaceId, activeFolderId]);
     const { lastChatScope } = useMoraStore();
+    const scopeBoundaryLevel = lastChatScope?.scope_contract?.boundary_level;
+    const droppedScopeFields = lastChatScope?.scope_contract?.dropped_fields ?? [];
     const chatScopeLabel = useMemo(() => {
         if (activeFolder) return 'Folder Scope';
         if (activeSpace) return 'Space Scope';
@@ -590,7 +592,10 @@ Was kann ich fuer dich tun?`,
 
                 const fullReply = await streamSend(content, {
                     history: historyForStream,
-                    context: buildChatContext({ session_id: "chat_pane" }) as Record<string, unknown> | undefined
+                    context: buildChatContext({
+                        session_id: "chat_pane",
+                        pane_id: id,
+                    }) as Record<string, unknown> | undefined
                 });
 
                 // After stream done — add finalized message to local list
@@ -684,13 +689,24 @@ Was kann ich fuer dich tun?`,
                         }`}>
                         <Wand2 size={12} />
                         <span>{chatScopeLabel}</span>
+                        {scopeBoundaryLevel && (
+                            <span className="text-[10px] text-white/35">• {scopeBoundaryLevel}</span>
+                        )}
                     </div>
                 </div>
                 {/* scope_enforced: subtle warning strip when backend narrowed the context */}
                 {scopeEnforced && (
                     <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/8 border-b border-amber-500/15 text-[10px] text-amber-300/70">
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                        Kontext angepasst — Scope wurde vom System eingeschränkt
+                        Kontext angepasst - Scope wurde vom System eingeschränkt
+                        {scopeBoundaryLevel && (
+                            <span className="ml-1 text-amber-200/80">({scopeBoundaryLevel})</span>
+                        )}
+                        {droppedScopeFields.length > 0 && (
+                            <span className="ml-auto text-amber-200/70">
+                                dropped: {droppedScopeFields.join(', ')}
+                            </span>
+                        )}
                     </div>
                 )}
 

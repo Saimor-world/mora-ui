@@ -54,6 +54,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const {
         activeCompanyId,
         companies,
+        setViewLevel,
         setActiveDepartment,
         setActiveSpace,
         setActiveFolder,
@@ -218,9 +219,78 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setContextMenu(null);
     };
 
+    const handleOpenInUniverse = useCallback(() => {
+        if (!contextMenu?.item) return;
+
+        const item = contextMenu.item as any;
+        const itemType = (item.type || (contextMenu.type === 'file' ? 'node' : 'folder')) as string;
+        const departmentIdFromItem = item.department_id ?? null;
+        const spaceIdFromItem = item.space_id ?? null;
+        const folderIdFromItem = itemType === 'folder' ? item.id : (item.folder_id ?? null);
+
+        if (itemType === 'department') {
+            const departmentId = item.id ?? departmentIdFromItem;
+            if (!departmentId) {
+                toast.error('Department konnte nicht im Universe geöffnet werden');
+                setContextMenu(null);
+                return;
+            }
+            setActiveDepartment(departmentId);
+            setActiveSpace(null);
+            setActiveFolder(null);
+            setViewLevel('department');
+            void loadSpacesForDepartment(departmentId);
+            toast.success('Department im Universe geöffnet');
+            setContextMenu(null);
+            return;
+        }
+
+        if (itemType === 'space') {
+            const spaceId = item.id ?? spaceIdFromItem;
+            if (!spaceId) {
+                toast.error('Space konnte nicht im Universe geöffnet werden');
+                setContextMenu(null);
+                return;
+            }
+            if (departmentIdFromItem) setActiveDepartment(departmentIdFromItem);
+            setActiveSpace(spaceId);
+            setActiveFolder(null);
+            setViewLevel('space');
+            void loadFoldersForSpace(spaceId);
+            toast.success('Space im Universe geöffnet');
+            setContextMenu(null);
+            return;
+        }
+
+        const fallbackCurrent = currentFolderIdRef.current;
+        const folderId = folderIdFromItem ?? fallbackCurrent;
+        if (!folderId) {
+            toast.error('Kein Ordnerkontext für Universe-Navigation verfügbar');
+            setContextMenu(null);
+            return;
+        }
+
+        if (departmentIdFromItem) setActiveDepartment(departmentIdFromItem);
+        if (spaceIdFromItem) setActiveSpace(spaceIdFromItem);
+        setActiveFolder(folderId);
+        setViewLevel('folder');
+        void loadNodesForFolder(folderId);
+        toast.success(itemType === 'folder' ? 'Ordner im Universe geöffnet' : 'Dateikontext im Universe geöffnet');
+        setContextMenu(null);
+    }, [
+        contextMenu,
+        loadFoldersForSpace,
+        loadNodesForFolder,
+        loadSpacesForDepartment,
+        setActiveDepartment,
+        setActiveFolder,
+        setActiveSpace,
+        setViewLevel,
+    ]);
+
     // UNIFIED FINDER: View modes (like SpacePane had) + Graph view for semantic network
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
-    const [graphZoom, setGraphZoom] = useState(1);
+    const [graphZoom, setGraphZoom] = useState(0.85);
     const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
     const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: {x: number, y: number} }>({ isDragging: false, startX: 0, startY: 0, initialPan: {x: 0, y: 0} });
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
@@ -554,26 +624,31 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [currentFolderId, rawTree, buildBreadcrumbs]);
 
-    // Fetch server-side full path context for persistent breadcrumb bar
+    // Fetch server-side full path context for persistent breadcrumb bar.
+    // Important: only folders have /folders/{id}/context. Department/space IDs must not call this endpoint.
     useEffect(() => {
         if (!currentFolderId) {
             setFolderContext(null);
-            setActiveFolder(null);
-            setActiveSpace(null);
-            setActiveDepartment(null);
             return;
         }
+
+        const currentNode = findNodeInTree(rawTree, currentFolderId);
+        const isDirectFolderStart = !currentNode && startFolderId === currentFolderId;
+        const isFolderContext = currentNode?.type === 'folder' || isDirectFolderStart;
+
+        if (!isFolderContext) {
+            setFolderContext(null);
+            return;
+        }
+
         let cancelled = false;
-        fetchFolderContext(currentFolderId).then(ctx => {
+        fetchFolderContext(currentFolderId).then((ctx) => {
             if (!cancelled) {
                 setFolderContext(ctx);
-                if (ctx?.folder?.id) setActiveFolder(ctx.folder.id);
-                if (ctx?.path?.space?.id) setActiveSpace(ctx.path.space.id);
-                if (ctx?.path?.department?.id) setActiveDepartment(ctx.path.department.id);
             }
         });
         return () => { cancelled = true; };
-    }, [currentFolderId, setActiveDepartment, setActiveFolder, setActiveSpace]);
+    }, [currentFolderId, findNodeInTree, rawTree, startFolderId]);
 
     // Effect to handle view content and lazy loading
     useEffect(() => {
@@ -1357,7 +1432,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <span className={`text-sm truncate block ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={file.name}>{file.name}</span>
+                                                            <span className={`text-sm truncate block ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={file.name}>
+        {file.name}
+        {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
+            <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
+                {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i)[1].toUpperCase()}
+            </span>
+        )}
+    </span>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-[9px] text-white/30 uppercase tracking-tighter">{file.type || 'system'}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
@@ -1454,7 +1536,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             top: `calc(50% + ${y}px)`,
                                                             transform: 'translate(-50%, -50%)'
                                                         }}
-                                                        onClick={(e) => handleFolderClick(e, folder.id)}
+                                                        onClick={(e) => handleFolderClick(e, folder.id)} onContextMenu={(e) => handleContextMenu(e, folder, "folder")}
                                                     >
                                                         {/* Connection line to center */}
                                                         <svg
@@ -1534,7 +1616,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 size: { width: 800, height: 600 },
                                                                 data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
                                                             });
-                                                        }}
+                                                        }} onContextMenu={(e) => handleContextMenu(e, file, "file")}
                                                         title={file.name}
                                                         onMouseEnter={() => {
                                                             // Map current node positions for the constellation engine
@@ -1732,6 +1814,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     </div>
                                     <button onClick={handleOpen} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
                                         <ExternalLink size={14} /> Open
+                                    </button>
+                                    <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
+                                        <Globe size={14} /> Im Universe öffnen
                                     </button>
                                     <button onClick={handleRename} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
                                         <Edit size={14} /> Rename

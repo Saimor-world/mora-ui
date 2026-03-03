@@ -2,10 +2,9 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useMoraStore } from "@/lib/store/moraState";
+import { getCoreBaseUrl } from "@/lib/api/coreClient";
+import { useMoraStore, type LastChatScopeState, type ScopeContract, type UiScopeHints } from "@/lib/store/moraState";
 import type { OrbState } from "@/lib/api/awarenessClient";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface ChatMessage {
     role: "user" | "assistant";
@@ -13,13 +12,9 @@ export interface ChatMessage {
 }
 
 export interface StreamOptions {
-    /** Mindloop / UI context forwarded to backend (space_id, folder_id, …) */
     context?: Record<string, unknown>;
-    /** Conversation history (last N turns, excluding the current message) */
     history?: ChatMessage[];
-    /** Optional temperature override (0–1) */
     temperature?: number;
-    /** Optional max tokens override */
     maxTokens?: number;
 }
 
@@ -32,48 +27,119 @@ export interface ResolvedScope {
 }
 
 export interface UseMoraStreamReturn {
-    /** Whether a stream is in progress */
     isStreaming: boolean;
-    /** The currently accumulating AI reply */
     streamingText: string;
-    /** Error message if the last stream failed */
     error: string | null;
-    /** Full conversation history (user + assistant turns) */
     messages: ChatMessage[];
-    /**
-     * Send a message and stream the response token-by-token.
-     * Returns the full assistant reply once the stream completes.
-     */
     sendMessage: (message: string, opts?: StreamOptions) => Promise<string>;
-    /** Clear conversation history */
     clearHistory: () => void;
-    /** Last resolved scope from v3/chat SSE preamble (null if not yet received) */
     lastResolvedScope: ResolvedScope | null;
-    /** Whether backend enforced scope narrowing on last request */
     scopeEnforced: boolean;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+const AUTH_COOKIE = "mora_auth_token";
 
-/**
- * useMoraStream
- *
- * Connects to the SAIMÔR backend `POST /v1/chat/stream` SSE endpoint and
- * streams AI tokens in real-time.  Each token is appended to `streamingText`
- * so the UI can re-render word-by-word, giving a ChatGPT-style typing effect.
- *
- * Supports full conversation history, Mindloop context injection, and
- * automatic fallback to the regular `/v1/chat` endpoint if streaming fails.
- *
- * @example
- * ```tsx
- * const { sendMessage, streamingText, isStreaming } = useMoraStream();
- *
- * const handleSend = async () => {
- *   await sendMessage("Zeig mir die Risiken in Finance");
- * };
- * ```
- */
+type ScopePolicyPayload = {
+    policy?: string;
+    enforced?: boolean;
+};
+
+type StreamFrame = {
+    token?: string;
+    error?: string;
+    orbState?: OrbState;
+    resolvedScope?: ResolvedScope;
+    resolved_scope?: ResolvedScope;
+    scopePolicy?: string | ScopePolicyPayload;
+    scope_policy?: string | ScopePolicyPayload;
+    scope_enforced?: boolean;
+    scopeEnforced?: boolean;
+    scopeContract?: ScopeContract;
+    scope_contract?: ScopeContract;
+    uiScopeHints?: UiScopeHints;
+    ui_scope_hints?: UiScopeHints;
+};
+
+function readCookie(name: string): string | null {
+    if (typeof document === "undefined") return null;
+    const value = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${name}=`));
+    if (!value) return null;
+    const [, raw] = value.split("=");
+    try {
+        return decodeURIComponent(raw);
+    } catch {
+        return raw;
+    }
+}
+
+function isLocalhost(): boolean {
+    if (typeof window === "undefined") return false;
+    const h = window.location.hostname;
+    return h === "localhost" || h === "127.0.0.1" || h === "::1";
+}
+
+function resolveToken(session: any): string {
+    const sessionToken = session?.accessToken ?? session?.token ?? "";
+    if (sessionToken) return sessionToken;
+
+    const cookieToken = readCookie(AUTH_COOKIE) || readCookie("saimor_auth");
+    if (cookieToken) return cookieToken;
+
+    if (typeof window !== "undefined" && isLocalhost()) {
+        const devToken = localStorage.getItem("saimor_dev_token");
+        if (devToken) return devToken;
+    }
+
+    return "";
+}
+
+function parseScopePolicy(scopePolicy: string | ScopePolicyPayload | undefined): { policy: string; enforcedFromPolicy?: boolean } {
+    if (typeof scopePolicy === "string") {
+        return { policy: scopePolicy };
+    }
+    if (scopePolicy && typeof scopePolicy === "object") {
+        return {
+            policy: scopePolicy.policy ?? "passthrough",
+            enforcedFromPolicy: typeof scopePolicy.enforced === "boolean" ? scopePolicy.enforced : undefined,
+        };
+    }
+    return { policy: "passthrough" };
+}
+
+function extractScopeUpdate(frame: StreamFrame): LastChatScopeState | null {
+    const resolvedScope = frame.resolvedScope ?? frame.resolved_scope;
+    const scopePolicyRaw = frame.scopePolicy ?? frame.scope_policy;
+    const scopeContract = frame.scopeContract ?? frame.scope_contract;
+    const uiScopeHints = frame.uiScopeHints ?? frame.ui_scope_hints ?? scopeContract?.ui_scope_hints;
+
+    const hasScopePayload =
+        !!resolvedScope ||
+        scopePolicyRaw !== undefined ||
+        frame.scope_enforced !== undefined ||
+        frame.scopeEnforced !== undefined ||
+        !!scopeContract ||
+        !!uiScopeHints;
+    if (!hasScopePayload) return null;
+
+    const { policy, enforcedFromPolicy } = parseScopePolicy(scopePolicyRaw);
+    const enforced =
+        frame.scope_enforced ??
+        frame.scopeEnforced ??
+        scopeContract?.enforced ??
+        enforcedFromPolicy ??
+        false;
+
+    return {
+        resolved_scope: (resolvedScope ?? {}) as Record<string, string | undefined>,
+        scope_policy: policy,
+        scope_enforced: enforced,
+        scope_contract: scopeContract,
+        ui_scope_hints: uiScopeHints,
+    };
+}
+
 export function useMoraStream(): UseMoraStreamReturn {
     const { data: session } = useSession();
     const [isStreaming, setIsStreaming] = useState(false);
@@ -83,12 +149,10 @@ export function useMoraStream(): UseMoraStreamReturn {
     const [lastResolvedScope, setLastResolvedScope] = useState<ResolvedScope | null>(null);
     const [scopeEnforced, setScopeEnforced] = useState(false);
 
-    // Abort controller so callers can cancel in-flight requests
     const abortRef = useRef<AbortController | null>(null);
 
     const sendMessage = useCallback(
         async (message: string, opts: StreamOptions = {}): Promise<string> => {
-            // Abort any existing stream
             abortRef.current?.abort();
             const controller = new AbortController();
             abortRef.current = controller;
@@ -97,13 +161,17 @@ export function useMoraStream(): UseMoraStreamReturn {
             setStreamingText("");
             setError(null);
 
-            // Add user message to history
+            const token = resolveToken(session as any);
+            if (!token) {
+                setIsStreaming(false);
+                setError("Nicht angemeldet. Bitte neu einloggen.");
+                return "";
+            }
+
             const userMsg: ChatMessage = { role: "user", content: message };
             setMessages((prev) => [...prev, userMsg]);
 
-            // Build the history to forward (all previous turns, not the current one)
             const historyForRequest = opts.history ?? messages;
-
             const body = JSON.stringify({
                 message,
                 context: opts.context ?? null,
@@ -116,141 +184,156 @@ export function useMoraStream(): UseMoraStreamReturn {
                 max_tokens: opts.maxTokens ?? null,
             });
 
-            // Resolve the backend URL (env var or relative)
-            const baseUrl =
-                process.env.NEXT_PUBLIC_CORE_API_URL ||
-                process.env.NEXT_PUBLIC_API_URL ||
-                "";
-            const token = (session as any)?.accessToken ?? (session as any)?.token ?? "";
-
+            const baseUrl = getCoreBaseUrl();
             let fullText = "";
-
-            // Reset scope state at start of each request
             setScopeEnforced(false);
 
-            // ── Stream helper: attempt an SSE stream against the given URL ─────────
             const attemptStream = async (url: string): Promise<string> => {
                 const response = await fetch(url, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        Authorization: `Bearer ${token}`,
                     },
+                    credentials: "include",
                     body,
                     signal: controller.signal,
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Stream request failed (${url}): ${response.status}`);
+                    const requestError = new Error(`Stream request failed (${url}): ${response.status}`) as Error & { status?: number };
+                    requestError.status = response.status;
+                    throw requestError;
                 }
 
                 const reader = response.body?.getReader();
                 if (!reader) throw new Error("ReadableStream not supported");
 
                 const decoder = new TextDecoder();
-                let buf = "";
+                let buffer = "";
                 let accumulated = "";
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
 
-                    buf += decoder.decode(value, { stream: true });
-                    const parts = buf.split("\n\n");
-                    buf = parts.pop() ?? "";
+                    buffer += decoder.decode(value, { stream: true });
+                    const chunks = buffer.split("\n\n");
+                    buffer = chunks.pop() ?? "";
 
-                    for (const part of parts) {
-                        const line = part.replace(/^data:\s?/, "").trim();
+                    for (const chunk of chunks) {
+                        const line = chunk.replace(/^data:\s?/, "").trim();
                         if (!line || line === "[DONE]") continue;
-                        if (line === "[ERROR]") { setError("Stream error from server"); break; }
+                        if (line === "[ERROR]") {
+                            setError("Stream error from server");
+                            break;
+                        }
 
                         try {
-                            const json = JSON.parse(line) as {
-                                token?: string;
-                                error?: string;
-                                orbState?: OrbState;
-                                // v3/chat SSE preamble fields (Codex 3f975e8)
-                                resolvedScope?: ResolvedScope;
-                                scopePolicy?: string;
-                                scope_enforced?: boolean;
-                            };
-                            if (json.error) { setError(json.error); break; }
+                            const json = JSON.parse(line) as StreamFrame;
+
+                            if (json.error) {
+                                setError(json.error);
+                                break;
+                            }
+
                             if (json.orbState) {
                                 useMoraStore.getState().setOrbState(json.orbState);
                                 continue;
                             }
-                            // v3 preamble: scope signal
-                            if (json.resolvedScope || json.scopePolicy !== undefined || json.scope_enforced !== undefined) {
-                                const scopeData = {
-                                    resolved_scope: (json.resolvedScope ?? {}) as Record<string, string | undefined>,
-                                    scope_policy: json.scopePolicy ?? 'passthrough',
-                                    scope_enforced: json.scope_enforced ?? false,
-                                };
-                                useMoraStore.getState().setLastChatScope(scopeData);
-                                setLastResolvedScope(json.resolvedScope ?? null);
-                                setScopeEnforced(json.scope_enforced ?? false);
+
+                            const scopeUpdate = extractScopeUpdate(json);
+                            if (scopeUpdate) {
+                                useMoraStore.getState().setLastChatScope(scopeUpdate);
+                                setLastResolvedScope(
+                                    Object.keys(scopeUpdate.resolved_scope).length > 0
+                                        ? (scopeUpdate.resolved_scope as ResolvedScope)
+                                        : null
+                                );
+                                setScopeEnforced(scopeUpdate.scope_enforced);
                                 continue;
                             }
+
                             if (json.token) {
                                 accumulated += json.token;
                                 setStreamingText((prev) => prev + json.token!);
                             }
                         } catch {
-                            // Ignore non-JSON lines
+                            // Ignore malformed/non-JSON chunks
                         }
                     }
                 }
+
                 return accumulated;
             };
 
             try {
-                // Primary: v3/chat/stream (Codex 3f975e8 — scope enforcement + resolved_scope)
-                // Fallback 1: v1/chat/stream (previous stable)
-                let streamUrl = `${baseUrl}/v3/chat/stream`;
+                const v3StreamUrl = `${baseUrl}/v3/chat/stream`;
                 try {
-                    fullText = await attemptStream(streamUrl);
-                } catch (v3Err) {
-                    // v3 failed — try v1 stream
-                    streamUrl = `${baseUrl}/v1/chat/stream`;
-                    fullText = await attemptStream(streamUrl);
-                }
+                    fullText = await attemptStream(v3StreamUrl);
+                } catch (v3Err: any) {
+                    if (v3Err?.name === "AbortError") throw v3Err;
+                    if (v3Err?.status === 401 || v3Err?.status === 403) throw v3Err;
 
-                if (false as boolean) { // unreachable — kept for TypeScript flow
-                    throw new Error("unreachable");
+                    const v1StreamUrl = `${baseUrl}/v1/chat/stream`;
+                    fullText = await attemptStream(v1StreamUrl);
                 }
-
             } catch (err: unknown) {
                 if ((err as Error).name === "AbortError") {
-                    // User cancelled — don't update error state
                     return fullText;
                 }
+
+                const status = (err as Error & { status?: number }).status;
+                if (status === 401 || status === 403) {
+                    setError("Nicht authorisiert. Bitte neu anmelden.");
+                    setIsStreaming(false);
+                    return fullText;
+                }
+
                 const msg = err instanceof Error ? err.message : "Streaming failed";
                 setError(msg);
 
-                // Final fallback: one-shot non-streaming request to /v1/chat
                 try {
                     const fallback = await fetch(`${baseUrl}/v1/chat`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            Authorization: `Bearer ${token}`,
                         },
+                        credentials: "include",
                         body,
+                        signal: controller.signal,
                     });
+
                     if (fallback.ok) {
                         const data = await fallback.json();
+                        const scopeUpdate = extractScopeUpdate({
+                            resolved_scope: data?.metadata?.resolved_scope ?? data?.context_used?.resolved_scope,
+                            scope_policy: data?.metadata?.scope_policy,
+                            scope_enforced: data?.metadata?.scope_enforced,
+                            scope_contract: data?.metadata?.scope_contract ?? data?.context_used?.scope_contract,
+                            ui_scope_hints: data?.metadata?.ui_scope_hints ?? data?.context_used?.ui_scope_hints,
+                        } as StreamFrame);
+                        if (scopeUpdate) {
+                            useMoraStore.getState().setLastChatScope(scopeUpdate);
+                            setLastResolvedScope(
+                                Object.keys(scopeUpdate.resolved_scope).length > 0
+                                    ? (scopeUpdate.resolved_scope as ResolvedScope)
+                                    : null
+                            );
+                            setScopeEnforced(scopeUpdate.scope_enforced);
+                        }
                         fullText = data.reply ?? "";
                         setStreamingText(fullText);
                         setError(null);
                     }
                 } catch {
-                    // All fallbacks failed — keep original error visible
+                    // Keep original error visible
                 }
             } finally {
                 setIsStreaming(false);
             }
 
-            // Append assistant reply to history
             if (fullText) {
                 const assistantMsg: ChatMessage = {
                     role: "assistant",

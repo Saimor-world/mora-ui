@@ -74,8 +74,8 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                             ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
                             : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
             }`}
-            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.08 }}
-            whileTap={item.disabled   || prefersReducedMotion ? {} : { scale: 0.92 }}
+            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.08, transition: { type: 'tween', duration: 0.05 } }}
+            whileTap={item.disabled || prefersReducedMotion ? {} : { scale: 0.92, transition: { type: 'tween', duration: 0.05 } }}
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
         >
@@ -92,7 +92,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             )}
 
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-[200]">
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-75 delay-75 pointer-events-none z-[200]">
                 <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${
                     isStandardMode
                         ? 'bg-gray-800 border border-gray-700'
@@ -181,7 +181,7 @@ export const Dock = () => {
 
     // Core apps - German labels
     const dockItems: DockItem[] = [
-        { icon: HomeOrbitIcon, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zurueck zur Uebersicht' },
+        { icon: HomeOrbitIcon, label: 'Universe Home', shortcut: `${mod}+H`, action: 'home', description: 'Alle Departments & Spaces' },
         { icon: MoraBrainIcon, label: 'Mora', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
         { icon: ChatOrbitIcon, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
         { icon: MemoryCrystalIcon, label: 'Gedaechtnis', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },

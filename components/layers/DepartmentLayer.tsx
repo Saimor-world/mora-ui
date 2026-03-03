@@ -253,8 +253,8 @@ export const DepartmentLayer: React.FC = () => {
     const moonPositions = useMemo(() => {
         if (spaceMeta.length === 0) return [];
         // Minimum radii increased to clear the large center department aura (radius ~180px)
-        const ringRadiiX = [Math.max(260, 230), Math.max(340, 320), Math.max(420, 405)];
-        const ringRadiiY = [Math.max(190, 165), Math.max(260, 238), Math.max(320, 298)];
+        const ringRadiiX = [Math.max(300, 280), Math.max(420, 400), Math.max(540, 520)];
+        const ringRadiiY = [Math.max(220, 200), Math.max(310, 290), Math.max(400, 380)];
         const ringSpeed = [0.032, 0.022, 0.015];
 
         return spaceMeta.map((entry, i) => {

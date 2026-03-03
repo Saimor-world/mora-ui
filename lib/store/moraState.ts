@@ -64,6 +64,30 @@ const readStandardMode = (companyId?: string | null) => {
 export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
+export interface UiScopeHints {
+    view_level?: string;
+    layer?: string;
+    route_path?: string;
+    pane_id?: string;
+    [key: string]: string | undefined;
+}
+
+export interface ScopeContract {
+    contract_version?: string;
+    boundary_level?: string;
+    enforced?: boolean;
+    dropped_fields?: string[];
+    ui_scope_hints?: UiScopeHints;
+}
+
+export interface LastChatScopeState {
+    resolved_scope: Record<string, string | undefined>;
+    scope_policy: string;
+    scope_enforced: boolean;
+    scope_contract?: ScopeContract;
+    ui_scope_hints?: UiScopeHints;
+}
+
 /** Module-level guard: tracks the last company ID for which departments were fully loaded.
  *  Prevents redundant sequential calls when multiple components mount simultaneously. */
 let _deptCacheCompanyId: string | null = null;
@@ -168,7 +192,7 @@ interface MoraState {
     speculativeUntil?: number;
 
     // v3/chat: Last resolved scope from backend (scope enforcement signal)
-    lastChatScope: { resolved_scope: Record<string, string | undefined>; scope_policy: string; scope_enforced: boolean } | null;
+    lastChatScope: LastChatScopeState | null;
 
     // Visual State
     isStandardMode: boolean;
@@ -187,7 +211,7 @@ interface MoraState {
     setOrbState: (state: OrbState) => void;
     setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
     clearSpeculativeState: () => void;
-    setLastChatScope: (scope: { resolved_scope: Record<string, string | undefined>; scope_policy: string; scope_enforced: boolean } | null) => void;
+    setLastChatScope: (scope: LastChatScopeState | null) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;

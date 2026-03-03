@@ -15,6 +15,10 @@ export interface ChatContext {
     node_id?: string;
     user_id?: string;
     session_id?: string;
+    view_level?: string;
+    layer?: string;
+    route_path?: string;
+    pane_id?: string;
 }
 
 export interface AgentChatRequest {
@@ -49,6 +53,14 @@ export interface ChatApiResponse {
     timestamp: string;
 }
 
+function mapLayerFromViewLevel(viewLevel?: string): string | undefined {
+    if (!viewLevel) return undefined;
+    if (viewLevel === 'department') return 'L2';
+    if (viewLevel === 'space') return 'L3';
+    if (viewLevel === 'folder') return 'L4';
+    return 'L1';
+}
+
 function mergeChatContext(...parts: Array<ChatContext | undefined>): ChatContext | undefined {
     const merged: ChatContext = {};
     for (const part of parts) {
@@ -62,13 +74,20 @@ function mergeChatContext(...parts: Array<ChatContext | undefined>): ChatContext
 
 export function buildChatContext(overrides?: ChatContext): ChatContext | undefined {
     const state = useMoraStore.getState();
+    const routePath = typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search ?? ''}`
+        : undefined;
+    const viewLevel = state.viewLevel || undefined;
     return mergeChatContext(
         {
             company_id: state.activeCompanyId || undefined,
             department_id: state.activeDepartmentId || undefined,
             space_id: state.activeSpaceId || undefined,
             folder_id: state.activeFolderId || undefined,
-            node_id: state.activeNode?.id || undefined
+            node_id: state.activeNode?.id || undefined,
+            view_level: viewLevel,
+            layer: mapLayerFromViewLevel(viewLevel),
+            route_path: routePath,
         },
         overrides
     );

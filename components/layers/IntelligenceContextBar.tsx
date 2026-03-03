@@ -129,6 +129,7 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
     const scopeLabel = scopeParts.length > 0 ? scopeParts.join(' › ') : 'Gesamter Workspace';
     const hasScopeContext = !!activeDepartmentId;
     const scopeEnforced = lastChatScope?.scope_enforced ?? false;
+    const scopeBoundaryLevel = lastChatScope?.scope_contract?.boundary_level;
 
     return (
         <AnimatePresence>
@@ -223,6 +224,9 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
                         <div className="w-full flex items-center gap-1.5 px-6 py-0.5 text-[10px] border-b" style={{ backgroundColor: 'rgba(3, 8, 6, 0.75)', borderColor: 'rgba(255,255,255,0.04)' }}>
                             <span className="text-white/20">Kontext:</span>
                             <span className="text-white/50 font-medium tracking-wide">{scopeLabel}</span>
+                            {scopeBoundaryLevel && (
+                                <span className="text-white/35">· {scopeBoundaryLevel}</span>
+                            )}
                             {scopeEnforced && (
                                 <span className="ml-auto flex items-center gap-1 text-amber-400/60 text-[9px]">
                                     <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />

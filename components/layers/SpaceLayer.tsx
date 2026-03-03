@@ -322,7 +322,10 @@ export const SpaceLayer: React.FC = () => {
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
                         <div className="text-[9px] text-white/40 uppercase tracking-wide">Files</div>
                         <div className="text-lg leading-none text-violet-200">
-                            {folders.reduce((sum, folder) => sum + (folder.node_count || 0), 0)}
+                            {folders.reduce((sum, folder) => {
+        const realNodes = useMoraStore.getState().nodesByFolder[folder.id];
+        return sum + (realNodes ? realNodes.length : (folder.node_count || 0));
+    }, 0)}
                         </div>
                     </div>
                 </div>
@@ -334,7 +337,7 @@ export const SpaceLayer: React.FC = () => {
                     <LoadingState message="Scanning Space..." />
                 ) : (
                     /* pb-16 offsets the fixed dock (~64px) so top-1/2 centres within the visible area */
-                    <div className="relative w-full h-full pb-16">
+                    <div className="relative w-full h-full">
 
                         {/* Connection lines center -> folder nodes for constellation clarity */}
                         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">

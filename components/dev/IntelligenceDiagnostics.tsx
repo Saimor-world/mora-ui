@@ -60,6 +60,7 @@ function relativeTime(ts: number): string {
 export function IntelligenceDiagnostics() {
     const [visible, setVisible] = useState(false);
     const orbState = useMoraStore((s) => s.orbState);
+    const lastChatScope = useMoraStore((s) => s.lastChatScope);
     const prevOrbRef = useRef<OrbState>(orbState);
     const [state, setState] = useState<DiagnosticsState>({
         orbState,
@@ -211,6 +212,39 @@ export function IntelligenceDiagnostics() {
                     ) : (
                         <Row label="Providers" value="loading…" color="rgba(255,255,255,0.3)" />
                     )}
+
+                    <Divider />
+
+                    {/* Scope Contract (from v3/v1 chat metadata + SSE preamble) */}
+                    <Row
+                        label="Scope Policy"
+                        value={lastChatScope?.scope_policy ?? "—"}
+                        color="rgba(255,255,255,0.45)"
+                    />
+                    <Row
+                        label="Boundary"
+                        value={lastChatScope?.scope_contract?.boundary_level ?? "—"}
+                        color="#F59E0B"
+                    />
+                    <Row
+                        label="Enforced"
+                        value={String(lastChatScope?.scope_enforced ?? false)}
+                        color={(lastChatScope?.scope_enforced ?? false) ? "#F59E0B" : "rgba(255,255,255,0.45)"}
+                    />
+                    <Row
+                        label="Contract"
+                        value={lastChatScope?.scope_contract?.contract_version ?? "—"}
+                        color="rgba(255,255,255,0.45)"
+                    />
+                    <Row
+                        label="Dropped"
+                        value={
+                            lastChatScope?.scope_contract?.dropped_fields?.length
+                                ? lastChatScope.scope_contract.dropped_fields.join(",")
+                                : "—"
+                        }
+                        color="rgba(255,255,255,0.35)"
+                    />
                 </div>
             )}
         </div>

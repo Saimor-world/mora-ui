@@ -50,10 +50,10 @@ function resolveIcon(name: string): LucideIcon {
 }
 
 const SIZE_MAP = {
-    sm: { diameter: 32,  iconSize: 13, ring: 10 },
-    md: { diameter: 44,  iconSize: 17, ring: 14 },
-    lg: { diameter: 58,  iconSize: 21, ring: 18 },
-    xl: { diameter: 72,  iconSize: 26, ring: 24 },
+    sm: { diameter: 28,  iconSize: 12, ring: 12 },
+    md: { diameter: 36,  iconSize: 15, ring: 16 },
+    lg: { diameter: 48,  iconSize: 19, ring: 20 },
+    xl: { diameter: 60,  iconSize: 24, ring: 26 },
 };
 
 export const Star: React.FC<StarProps> = ({
@@ -119,7 +119,7 @@ export const Star: React.FC<StarProps> = ({
     return (
         <motion.div
             ref={orbRef}
-            className="relative cursor-pointer group pointer-events-auto inline-flex items-center justify-center"
+            className="relative cursor-pointer group pointer-events-auto inline-flex items-center justify-center p-4"
             style={{ width: svgSize, height: svgSize }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}

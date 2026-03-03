@@ -163,9 +163,9 @@ export const Folder: React.FC<FolderProps> = ({
                 <motion.circle
                     cx={cx} cy={cy} r={actR}
                     fill="none" stroke={coreColor}
-                    strokeWidth="0.6"
-                    strokeDasharray="2 6"
-                    opacity={isHovered ? 0.50 : 0.22}
+                    strokeWidth="1.2"
+                    strokeDasharray="2 8"
+                    opacity={isHovered ? 0.70 : 0.40}
                     animate={prefersReducedMotion ? {} : { rotate: -360 }}
                     transition={{ duration: 22, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
                     style={{ transformOrigin: `${cx}px ${cy}px` }}
@@ -182,7 +182,7 @@ export const Folder: React.FC<FolderProps> = ({
                     zIndex: -1,
                 }}
                 animate={{
-                    opacity: isActive ? 0.50 : isHovered ? 0.42 : 0.28,
+                    opacity: isActive ? 0.65 : isHovered ? 0.55 : 0.40,
                     scale: isHovered ? 1.15 : 1,
                 }}
                 transition={{ duration: 0.35 }}
@@ -207,7 +207,7 @@ export const Folder: React.FC<FolderProps> = ({
                     left: '50%', top: '50%',
                     transform: 'translate(-50%, -50%)',
                     // Key fix: ${coreColor}BB = 73% alpha (was ${coreColor}38 = 22%)
-                    background: `radial-gradient(145% 145% at 30% 26%, rgba(255,255,255,0.24) 0%, ${coreColor}BB 42%, rgba(0,0,0,0.26) 100%)`,
+                    background: `radial-gradient(145% 145% at 30% 26%, rgba(255,255,255,0.4) 0%, ${coreColor}DD 45%, rgba(0,0,0,0.2) 100%)`,
                     boxShadow: isActive || isHovered
                         ? `0 0 45px ${coreColor}88, inset 0 0 22px ${coreColor}50, inset 2px 2px 7px rgba(255,255,255,0.35)`
                         : `0 0 26px ${coreColor}70, 0 5px 16px rgba(0,0,0,0.26), inset 1px 1px 4px rgba(255,255,255,0.22)`,
@@ -237,7 +237,7 @@ export const Folder: React.FC<FolderProps> = ({
                 {/* Glass caustic */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_26%,rgba(255,255,255,0.18)_0%,transparent_52%)] pointer-events-none" />
 
-                <Icon size={iconSize} className="relative z-10 text-white" strokeWidth={1.3} />
+                <Icon size={iconSize} className="relative z-10 text-white drop-shadow-md" strokeWidth={1.8} />
             </motion.div>
 
             {/* Node count badge — outside overflow-hidden sphere to avoid clipping at top-right corner */}
