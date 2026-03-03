@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { Zap, Network, LayoutGrid, List, Plus, Search, X, FileText, Box, Link as LinkIcon, CheckSquare, Folder as FolderIcon, RotateCcw } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { IntelligenceContextBar } from '@/components/layers/IntelligenceContextBar';
@@ -59,12 +60,11 @@ export const FolderLayer: React.FC = () => {
         loadFoldersForSpace,
         loadNodesForFolder,
         addNode,
-        setActiveNode,
-        loadNodeDetails,
         viewLevel,
         addFolder,
         deleteFolder,
     } = useMoraStore();
+    const { openPane } = usePaneStore();
 
     // ... (Keep state) ...
     const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('list');
@@ -258,8 +258,20 @@ export const FolderLayer: React.FC = () => {
     };
 
     const handleNodeClick = (node: CoreNode) => {
-        loadNodeDetails((node as any).id);
-        setActiveNode(node);
+        const nodeId = (node as any).id as string;
+        openPane({
+            id: `doc-${nodeId}`,
+            type: 'document',
+            title: node.name || 'Document',
+            size: { width: 800, height: 600 },
+            data: {
+                nodeId,
+                content: (node as any).content,
+                name: node.name,
+                type: node.type,
+                metadata: (node as any).metadata,
+            },
+        });
     };
 
     const breadcrumb = [

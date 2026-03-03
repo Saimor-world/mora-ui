@@ -5,7 +5,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
 import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
-import { getSemanticallySimilarNodes } from '@/lib/api/coreClient';
+import { getSemanticallySimilarNodes, fetchFolderContext, FolderContext } from '@/lib/api/coreClient';
 import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
@@ -263,6 +263,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // Navigation
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string; type: string }[]>([]);
+    const [folderContext, setFolderContext] = useState<FolderContext | null>(null);
 
     /**
      * Click-race guard for folder navigation.
@@ -484,6 +485,19 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setBreadcrumbs([]);
         }
     }, [currentFolderId, rawTree, buildBreadcrumbs]);
+
+    // Fetch server-side full path context for persistent breadcrumb bar
+    useEffect(() => {
+        if (!currentFolderId) {
+            setFolderContext(null);
+            return;
+        }
+        let cancelled = false;
+        fetchFolderContext(currentFolderId).then(ctx => {
+            if (!cancelled) setFolderContext(ctx);
+        });
+        return () => { cancelled = true; };
+    }, [currentFolderId]);
 
     // Effect to handle view content and lazy loading
     useEffect(() => {
@@ -1049,6 +1063,39 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                     </div>
+
+                    {/* API breadcrumb — full path from server */}
+                    {folderContext?.path && (
+                        <div className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-white/40 border-b border-white/5 bg-white/[0.03] overflow-x-auto whitespace-nowrap flex-shrink-0">
+                            {folderContext.path.company && (
+                                <span className="hover:text-white/70 transition-colors">{folderContext.path.company.name}</span>
+                            )}
+                            {folderContext.path.department && (
+                                <>
+                                    <span className="text-white/20 mx-0.5">/</span>
+                                    <span className="hover:text-white/70 transition-colors">{folderContext.path.department.name}</span>
+                                </>
+                            )}
+                            {folderContext.path.space && (
+                                <>
+                                    <span className="text-white/20 mx-0.5">/</span>
+                                    <span className="hover:text-white/70 transition-colors">{folderContext.path.space.name}</span>
+                                </>
+                            )}
+                            {folderContext.path.breadcrumbs.map((seg, i) => (
+                                <React.Fragment key={seg.id}>
+                                    <span className="text-white/20 mx-0.5">/</span>
+                                    <span className={
+                                        i === folderContext.path.breadcrumbs.length - 1
+                                            ? 'text-white/70 font-medium'
+                                            : 'hover:text-white/70 transition-colors'
+                                    }>
+                                        {seg.name}
+                                    </span>
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Content Container with Animation */}
                     <div className="flex-1 overflow-y-auto p-6 bg-black/40 relative" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>

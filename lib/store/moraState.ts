@@ -119,6 +119,7 @@ interface MoraState {
     activeDepartmentId: string | null;
     activeSpaceId: string | null;
     activeFolderId: string | null;
+    // @deprecated — FolderLayer no longer drives this; used by DocumentViewer, MoraCommand, MyceliumLayer, ResonanceRoom, useIntelFeed. Remove in a future dedicated pass.
     activeNode: CoreNode | null;
     minimizedNodes: CoreNode[]; // Phase 3: Dock Integration
 
@@ -179,7 +180,7 @@ interface MoraState {
     setActiveDepartment: (id: string | null) => void;
     setActiveSpace: (id: string | null) => void;
     setActiveFolder: (id: string | null) => void;
-    setActiveNode: (node: CoreNode | null) => void;
+    setActiveNode: (node: CoreNode | null) => void; // @deprecated — see activeNode
     setOrbState: (state: OrbState) => void;
     setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
     clearSpeculativeState: () => void;
@@ -203,7 +204,7 @@ interface MoraState {
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
     loadNodesForFolder: (folderId: string, options?: { search?: string; type?: string; limit?: number; offset?: number }) => Promise<void>;
     loadNodesForCompany: (companyId: string) => Promise<void>;
-    loadNodeDetails: (nodeId: string) => Promise<void>;
+    loadNodeDetails: (nodeId: string) => Promise<void>; // @deprecated — see activeNode
     loadTree: (tenantId?: string, companyId?: string) => Promise<void>;
 
     // Tree Actions

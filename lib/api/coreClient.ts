@@ -475,6 +475,31 @@ export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
     return coreGet(`/v1/nodes/${nodeId}/relations`);
 }
 
+// ─── Folder context (breadcrumb path) ────────────────────────────────────────
+
+export interface FolderContextSegment {
+    id: string;
+    name: string;
+}
+
+export interface FolderContextPath {
+    company: FolderContextSegment | null;
+    department: FolderContextSegment | null;
+    space: FolderContextSegment | null;
+    breadcrumbs: FolderContextSegment[];
+}
+
+export interface FolderContext {
+    scope: string;
+    folder: FolderContextSegment;
+    path: FolderContextPath;
+    counts: { nodes: number; subfolders: number };
+}
+
+export async function fetchFolderContext(folderId: string): Promise<FolderContext | null> {
+    return coreGet(`/v3/folders/${folderId}/context`, { isOptional: true });
+}
+
 export type TreeApiResponse = {
     departments?: any[];
 };

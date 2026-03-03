@@ -56,7 +56,6 @@ import { Dock } from '@/components/mora/Dock';
 import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOverlay';
-import { NodeDetailPanel } from '@/components/organic/NodeDetailPanel';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { MoraInsightPopup } from '@/components/mora/MoraInsightPopup';
 import { useMindLoopInsights } from '@/lib/hooks/useMindLoopInsights';
@@ -506,9 +505,6 @@ export const MoraShell: React.FC = () => {
                 onToggleExpand={() => setIsResonanceExpanded(!isResonanceExpanded)}
                 isExpanded={isResonanceExpanded}
             />
-
-            {/* Node Detail Panel — renders whenever activeNode is set (click node in FolderLayer) */}
-            <NodeDetailPanel />
 
             {/* Mora Insight Popup — surfaces MindLoop insight events above the Dock */}
             <MoraInsightPopup

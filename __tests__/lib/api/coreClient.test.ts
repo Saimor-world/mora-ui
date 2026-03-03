@@ -26,6 +26,7 @@ import {
     fetchDepartments,
     fetchSpaces,
     authLogin,
+    fetchFolderContext,
 } from '@/lib/api/coreClient';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -364,5 +365,45 @@ describe('previously-migrated v3 list endpoints (regression guard)', () => {
         mockFetchRaw([]);
         await fetchSpaces('dept-1');
         expect(lastFetchUrl()).toContain('/v3/spaces');
+    });
+});
+
+// ─── 8. Folder context (breadcrumb) ──────────────────────────────────────────
+
+describe('fetchFolderContext', () => {
+    it('routes to /v3/folders/{id}/context', async () => {
+        mockFetchV3({
+            scope: 'folder',
+            folder: { id: 'f1', name: 'Invoices' },
+            path: {
+                company: { id: 'c1', name: 'Acme' },
+                department: { id: 'd1', name: 'Sales' },
+                space: { id: 's1', name: 'Shared Files' },
+                breadcrumbs: [{ id: 'f1', name: 'Invoices' }],
+            },
+            counts: { nodes: 5, subfolders: 2 },
+        });
+        await fetchFolderContext('f1');
+        expect(lastFetchUrl()).toContain('/v3/folders/f1/context');
+    });
+
+    it('returns null on error (isOptional)', async () => {
+        mockFetchError(404);
+        const result = await fetchFolderContext('nonexistent');
+        expect(result).toBeNull();
+    });
+
+    it('unwraps v3 envelope', async () => {
+        const ctx = {
+            scope: 'folder',
+            folder: { id: 'f2', name: 'Q1' },
+            path: { company: null, department: null, space: null, breadcrumbs: [] },
+            counts: { nodes: 0, subfolders: 0 },
+        };
+        mockFetchV3(ctx);
+        const result = await fetchFolderContext('f2');
+        expect(result).toEqual(ctx);
+        expect(result).not.toHaveProperty('meta');
+        expect(result).not.toHaveProperty('data');
     });
 });
