@@ -497,19 +497,32 @@ export interface FolderContext {
 }
 
 export async function fetchFolderContext(folderId: string): Promise<FolderContext | null> {
-    return coreGet(`/v3/folders/${folderId}/context`, { isOptional: true });
+    const v3Context = await coreGet(`/v3/folders/${folderId}/context`, { isOptional: true });
+    if (v3Context) return v3Context;
+    try {
+        return await coreGet(`/v1/folders/${folderId}/context?raw=true`, { isOptional: true });
+    } catch {
+        return null;
+    }
 }
 
 // ─── Admin user management (v3) ──────────────────────────────────────────────
 
 export interface AdminUser {
-    user_id: string;
-    name: string;
+    user_id?: string;
+    id?: string;
+    name?: string;
+    full_name?: string | null;
     email: string;
     role: 'member' | 'admin' | 'owner';
     is_active: boolean;
     default_company_id?: string | null;
     created_at?: string;
+    company_context?: {
+        owned_companies?: Array<{ id: string; name: string }>;
+        effective_companies?: Array<{ id: string; name: string }>;
+        binding_source?: 'owner' | 'tenant_scope' | string;
+    };
 }
 
 export interface AdminUserPatch {
@@ -529,8 +542,8 @@ export async function patchAdminUser(userId: string, patch: AdminUserPatch): Pro
     return corePatch(`/v3/team/admin/users/${userId}`, patch);
 }
 
-export async function patchUserCompanyBinding(userId: string, companyId: string): Promise<{ success: boolean } | null> {
-    return corePatch(`/v3/team/admin/users/${userId}/company-binding`, { company_id: companyId });
+export async function patchUserCompanyBinding(userId: string, companyId?: string | null): Promise<AdminUser | null> {
+    return corePatch(`/v3/team/admin/users/${userId}/company-binding`, { default_company_id: companyId ?? null });
 }
 
 export type TreeApiResponse = {

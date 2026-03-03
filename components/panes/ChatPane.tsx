@@ -14,13 +14,13 @@
  * - Show relevant memories for context
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
-import { moraAgentClient } from '@/lib/api/moraAgentClient';
+import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff } from 'lucide-react';
@@ -308,7 +308,17 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const { departments, isStandardMode, activeCompanyId } = useMoraStore();
+    const {
+        companies,
+        departments,
+        spacesByDepartment,
+        foldersBySpace,
+        isStandardMode,
+        activeCompanyId,
+        activeDepartmentId,
+        activeSpaceId,
+        activeFolderId
+    } = useMoraStore();
     const pane = getPane(id);
 
     // Streaming hook — real AI, token-by-token
@@ -319,6 +329,7 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         error: streamError,
         messages: streamHistory,
         clearHistory,
+        scopeEnforced,
     } = useMoraStream();
 
     const [messages, setMessages] = useState<Message[]>([
@@ -347,6 +358,45 @@ Was kann ich fuer dich tun?`,
     const [memoryHint, setMemoryHint] = useState<{ show: boolean; content: string }>({ show: false, content: '' });
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
+    const activeCompany = useMemo(
+        () => companies.find((c) => c.id === activeCompanyId) || null,
+        [companies, activeCompanyId]
+    );
+    const activeDepartment = useMemo(
+        () => departments.find((d) => d.id === activeDepartmentId) || null,
+        [departments, activeDepartmentId]
+    );
+    const activeSpace = useMemo(() => {
+        if (!activeDepartmentId || !activeSpaceId) return null;
+        return (spacesByDepartment[activeDepartmentId] || []).find((s) => s.id === activeSpaceId) || null;
+    }, [spacesByDepartment, activeDepartmentId, activeSpaceId]);
+    const activeFolder = useMemo(() => {
+        if (!activeSpaceId || !activeFolderId) return null;
+        return (foldersBySpace[activeSpaceId] || []).find((f) => f.id === activeFolderId) || null;
+    }, [foldersBySpace, activeSpaceId, activeFolderId]);
+    const { lastChatScope } = useMoraStore();
+    const chatScopeLabel = useMemo(() => {
+        if (activeFolder) return 'Folder Scope';
+        if (activeSpace) return 'Space Scope';
+        if (activeDepartment) return 'Department Scope';
+        if (activeCompany) return 'Company Scope';
+        return 'Global Scope';
+    }, [activeCompany, activeDepartment, activeSpace, activeFolder]);
+    const chatScopePath = useMemo(() => {
+        // Prefer real API-resolved scope names when available
+        if (lastChatScope?.resolved_scope) {
+            const rs = lastChatScope.resolved_scope;
+            const segments = [rs.company_name, rs.department_name, rs.space_name, rs.folder_name].filter(Boolean) as string[];
+            if (segments.length > 0) return segments.join(' / ');
+        }
+        const segments = [
+            activeCompany?.name,
+            activeDepartment?.name,
+            activeSpace?.name,
+            activeFolder?.name
+        ].filter(Boolean) as string[];
+        return segments.length > 0 ? segments.join(' / ') : 'Keine Kontextgrenze aktiv';
+    }, [activeCompany, activeDepartment, activeSpace, activeFolder, lastChatScope]);
 
     // Search for relevant memories based on user query
     const fetchRelevantMemories = useCallback(async (query: string) => {
@@ -538,7 +588,10 @@ Was kann ich fuer dich tun?`,
                     .slice(-10)
                     .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-                const fullReply = await streamSend(content, { history: historyForStream });
+                const fullReply = await streamSend(content, {
+                    history: historyForStream,
+                    context: buildChatContext({ session_id: "chat_pane" }) as Record<string, unknown> | undefined
+                });
 
                 // After stream done — add finalized message to local list
                 // (streamingText already shown live; now commit it)
@@ -613,8 +666,8 @@ Was kann ich fuer dich tun?`,
                 <div className={`flex items-center gap-3 p-4 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
                     }`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isStandardMode
-                            ? 'bg-[#0078D4]'
-                            : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
+                        ? 'bg-[#0078D4]'
+                        : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
                         }`}>
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
@@ -623,13 +676,23 @@ Was kann ich fuer dich tun?`,
                             }`}>Môra</h3>
                         <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
                             }`}>Deine KI-Begleiterin</p>
+                        <p className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/50'}`}>
+                            Scope: {chatScopePath}
+                        </p>
                     </div>
                     <div className={`ml-auto flex items-center gap-1 text-xs ${isStandardMode ? 'text-gray-400' : 'text-white/40'
                         }`}>
                         <Wand2 size={12} />
-                        <span>{isStandardMode ? 'Assistant Mode' : 'Disney Fairy Mode'}</span>
+                        <span>{chatScopeLabel}</span>
                     </div>
                 </div>
+                {/* scope_enforced: subtle warning strip when backend narrowed the context */}
+                {scopeEnforced && (
+                    <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/8 border-b border-amber-500/15 text-[10px] text-amber-300/70">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                        Kontext angepasst — Scope wurde vom System eingeschränkt
+                    </div>
+                )}
 
                 {/* Relevant Memories Context */}
                 <AnimatePresence>
@@ -653,12 +716,12 @@ Was kann ich fuer dich tun?`,
                                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
                                 <div className={`max-w-[80%] px-4 py-3 ${isStandardMode
-                                        ? msg.role === 'user'
-                                            ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
-                                            : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
-                                        : msg.role === 'user'
-                                            ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
-                                            : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
+                                    ? msg.role === 'user'
+                                        ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
+                                        : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
+                                    : msg.role === 'user'
+                                        ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
+                                        : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
                                     }`}>
                                     <div className="flex items-start gap-2">
                                         {msg.role === 'assistant' && (

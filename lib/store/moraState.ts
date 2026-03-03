@@ -167,6 +167,9 @@ interface MoraState {
     speculativeState?: OrbState;
     speculativeUntil?: number;
 
+    // v3/chat: Last resolved scope from backend (scope enforcement signal)
+    lastChatScope: { resolved_scope: Record<string, string | undefined>; scope_policy: string; scope_enforced: boolean } | null;
+
     // Visual State
     isStandardMode: boolean;
     setIsStandardMode: (active: boolean) => void;
@@ -184,6 +187,7 @@ interface MoraState {
     setOrbState: (state: OrbState) => void;
     setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
     clearSpeculativeState: () => void;
+    setLastChatScope: (scope: { resolved_scope: Record<string, string | undefined>; scope_policy: string; scope_enforced: boolean } | null) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
@@ -279,6 +283,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     hasBooted: false,
     isLoggingOut: false,
     hilEnabled: true,
+    lastChatScope: null,
 
     // User & Permissions (Phase 6.3) - Default to demo role
     user: null,
@@ -407,6 +412,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // let the next poll (or manual setIdle) handle it naturally.
         });
     },
+    setLastChatScope: (scope) => set({ lastChatScope: scope }),
     addOrbNotification: (notification) => set((state) => ({
         orbNotifications: [...state.orbNotifications, notification]
     })),
@@ -485,7 +491,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     // -------------------------------------------------------------------------
     // SYSTEM ACTIONS
     // -------------------------------------------------------------------------
-    
+
     resolveNameConflict: async (newName: string) => {
         const state = get();
         const conflict = state.nameConflict;
@@ -509,9 +515,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             console.error("Failed to resolve name conflict:", e);
         }
     },
-    
+
     cancelNameConflict: () => set({ nameConflict: null }),
-    
+
     resetStore: () => {
         set({
             user: null,
@@ -966,13 +972,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             get().loadTree();
         } catch (error: any) {
             if (error instanceof CoreError && error.status === 409 && error.details?.error_code === 'name_conflict') {
-                set({ 
-                    nameConflict: { 
+                set({
+                    nameConflict: {
                         type: 'space',
                         message: error.details?.message || 'Name already exists in this Department.',
                         suggestions: error.details?.suggestions || [],
                         originalPayload: payload
-                    } 
+                    }
                 });
                 return;
             }
@@ -1002,13 +1008,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             get().loadTree();
         } catch (error: any) {
             if (error instanceof CoreError && error.status === 409 && error.details?.error_code === 'name_conflict') {
-                set({ 
-                    nameConflict: { 
+                set({
+                    nameConflict: {
                         type: 'folder',
                         message: error.details?.message || 'Name already exists in this Space.',
                         suggestions: error.details?.suggestions || [],
                         originalPayload: payload
-                    } 
+                    }
                 });
                 return;
             }
@@ -1124,13 +1130,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             get().loadTree();
         } catch (error: any) {
             if (error instanceof CoreError && error.status === 409 && error.details?.error_code === 'name_conflict') {
-                set({ 
-                    nameConflict: { 
+                set({
+                    nameConflict: {
                         type: 'department',
                         message: error.details?.message || 'Name already exists in this Workspace.',
                         suggestions: error.details?.suggestions || [],
                         originalPayload: payload
-                    } 
+                    }
                 });
                 return;
             }

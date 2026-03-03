@@ -23,6 +23,14 @@ export interface StreamOptions {
     maxTokens?: number;
 }
 
+export interface ResolvedScope {
+    company_id?: string;
+    department_id?: string;
+    space_id?: string;
+    folder_id?: string;
+    [key: string]: string | undefined;
+}
+
 export interface UseMoraStreamReturn {
     /** Whether a stream is in progress */
     isStreaming: boolean;
@@ -39,6 +47,10 @@ export interface UseMoraStreamReturn {
     sendMessage: (message: string, opts?: StreamOptions) => Promise<string>;
     /** Clear conversation history */
     clearHistory: () => void;
+    /** Last resolved scope from v3/chat SSE preamble (null if not yet received) */
+    lastResolvedScope: ResolvedScope | null;
+    /** Whether backend enforced scope narrowing on last request */
+    scopeEnforced: boolean;
 }
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -68,6 +80,8 @@ export function useMoraStream(): UseMoraStreamReturn {
     const [streamingText, setStreamingText] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [lastResolvedScope, setLastResolvedScope] = useState<ResolvedScope | null>(null);
+    const [scopeEnforced, setScopeEnforced] = useState(false);
 
     // Abort controller so callers can cancel in-flight requests
     const abortRef = useRef<AbortController | null>(null);
@@ -111,8 +125,12 @@ export function useMoraStream(): UseMoraStreamReturn {
 
             let fullText = "";
 
-            try {
-                const response = await fetch(`${baseUrl}/v1/chat/stream`, {
+            // Reset scope state at start of each request
+            setScopeEnforced(false);
+
+            // ── Stream helper: attempt an SSE stream against the given URL ─────────
+            const attemptStream = async (url: string): Promise<string> => {
+                const response = await fetch(url, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -123,58 +141,84 @@ export function useMoraStream(): UseMoraStreamReturn {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Stream request failed: ${response.status}`);
+                    throw new Error(`Stream request failed (${url}): ${response.status}`);
                 }
 
                 const reader = response.body?.getReader();
                 if (!reader) throw new Error("ReadableStream not supported");
 
                 const decoder = new TextDecoder();
-                let buffer = "";
+                let buf = "";
+                let accumulated = "";
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
 
-                    buffer += decoder.decode(value, { stream: true });
-
-                    // SSE messages are separated by double newlines
-                    const parts = buffer.split("\n\n");
-                    buffer = parts.pop() ?? ""; // keep incomplete tail
+                    buf += decoder.decode(value, { stream: true });
+                    const parts = buf.split("\n\n");
+                    buf = parts.pop() ?? "";
 
                     for (const part of parts) {
                         const line = part.replace(/^data:\s?/, "").trim();
                         if (!line || line === "[DONE]") continue;
-                        if (line === "[ERROR]") {
-                            setError("Stream error from server");
-                            break;
-                        }
+                        if (line === "[ERROR]") { setError("Stream error from server"); break; }
 
                         try {
                             const json = JSON.parse(line) as {
                                 token?: string;
                                 error?: string;
                                 orbState?: OrbState;
+                                // v3/chat SSE preamble fields (Codex 3f975e8)
+                                resolvedScope?: ResolvedScope;
+                                scopePolicy?: string;
+                                scope_enforced?: boolean;
                             };
-                            if (json.error) {
-                                setError(json.error);
-                                break;
-                            }
-                            // SSE preamble: backend sends orbState before first token
-                            // e.g. {"orbState": "curious"} — wire it to the Mora Orb
+                            if (json.error) { setError(json.error); break; }
                             if (json.orbState) {
                                 useMoraStore.getState().setOrbState(json.orbState);
                                 continue;
                             }
+                            // v3 preamble: scope signal
+                            if (json.resolvedScope || json.scopePolicy !== undefined || json.scope_enforced !== undefined) {
+                                const scopeData = {
+                                    resolved_scope: (json.resolvedScope ?? {}) as Record<string, string | undefined>,
+                                    scope_policy: json.scopePolicy ?? 'passthrough',
+                                    scope_enforced: json.scope_enforced ?? false,
+                                };
+                                useMoraStore.getState().setLastChatScope(scopeData);
+                                setLastResolvedScope(json.resolvedScope ?? null);
+                                setScopeEnforced(json.scope_enforced ?? false);
+                                continue;
+                            }
                             if (json.token) {
-                                fullText += json.token;
+                                accumulated += json.token;
                                 setStreamingText((prev) => prev + json.token!);
                             }
                         } catch {
-                            // Ignore non-JSON lines (e.g. keep-alive pings)
+                            // Ignore non-JSON lines
                         }
                     }
                 }
+                return accumulated;
+            };
+
+            try {
+                // Primary: v3/chat/stream (Codex 3f975e8 — scope enforcement + resolved_scope)
+                // Fallback 1: v1/chat/stream (previous stable)
+                let streamUrl = `${baseUrl}/v3/chat/stream`;
+                try {
+                    fullText = await attemptStream(streamUrl);
+                } catch (v3Err) {
+                    // v3 failed — try v1 stream
+                    streamUrl = `${baseUrl}/v1/chat/stream`;
+                    fullText = await attemptStream(streamUrl);
+                }
+
+                if (false as boolean) { // unreachable — kept for TypeScript flow
+                    throw new Error("unreachable");
+                }
+
             } catch (err: unknown) {
                 if ((err as Error).name === "AbortError") {
                     // User cancelled — don't update error state
@@ -183,13 +227,8 @@ export function useMoraStream(): UseMoraStreamReturn {
                 const msg = err instanceof Error ? err.message : "Streaming failed";
                 setError(msg);
 
-                // Graceful fallback: one-shot request to /v1/chat
+                // Final fallback: one-shot non-streaming request to /v1/chat
                 try {
-                    const baseUrl =
-                        process.env.NEXT_PUBLIC_CORE_API_URL ||
-                        process.env.NEXT_PUBLIC_API_URL ||
-                        "";
-                    const token = (session as any)?.accessToken ?? (session as any)?.token ?? "";
                     const fallback = await fetch(`${baseUrl}/v1/chat`, {
                         method: "POST",
                         headers: {
@@ -205,7 +244,7 @@ export function useMoraStream(): UseMoraStreamReturn {
                         setError(null);
                     }
                 } catch {
-                    // Fallback also failed — keep original error visible
+                    // All fallbacks failed — keep original error visible
                 }
             } finally {
                 setIsStreaming(false);
@@ -239,6 +278,8 @@ export function useMoraStream(): UseMoraStreamReturn {
         messages,
         sendMessage,
         clearHistory,
+        lastResolvedScope,
+        scopeEnforced,
     };
 }
 

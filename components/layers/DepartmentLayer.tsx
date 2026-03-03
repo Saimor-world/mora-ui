@@ -549,7 +549,8 @@ export const DepartmentLayer: React.FC = () => {
                                     style={{
                                         left: `calc(50% + ${x}px)`,
                                         top: `calc(50% + ${y}px)`,
-                                        transform: 'translate(-50%, -50%)'
+                                        transform: 'translate(-50%, -50%)',
+                                        zIndex: hoveredSpaceId === space.id ? 30 : 10
                                     }}
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}

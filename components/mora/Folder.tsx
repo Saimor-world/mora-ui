@@ -68,7 +68,7 @@ export const Folder: React.FC<FolderProps> = ({
     const prefersReducedMotion = useReducedMotion();
     const [isHovered, setIsHovered] = useState(false);
     const [showPortal, setShowPortal] = useState(false);
-    const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
+    const [portalPos, setPortalPos] = useState({ x: 0, y: 0, isRightSide: false });
     const [isMounted, setIsMounted] = useState(false);
     const orbRef = useRef<HTMLDivElement>(null);
     const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,7 +86,12 @@ export const Folder: React.FC<FolderProps> = ({
         setIsHovered(true);
         onHover?.(true);
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        setPortalPos({ x: rect.right + 12, y: rect.top + rect.height / 2 });
+        const isRightSide = rect.right > window.innerWidth - 250;
+        setPortalPos({ 
+            x: isRightSide ? rect.left - 12 : rect.right + 12, 
+            y: rect.top + rect.height / 2,
+            isRightSide
+        });
         setShowPortal(true);
     };
 
@@ -116,7 +121,8 @@ export const Folder: React.FC<FolderProps> = ({
             onClick={onClick}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
-                scale: 1,
+                scale: isHovered ? 1.28 : 1,
+                rotate: isHovered ? 5 : 0,
                 opacity: 1,
                 x: (orbitActive && !prefersReducedMotion) ? [0, 2, 0, -2, 0] : 0,
                 y: (orbitActive && !prefersReducedMotion) ? [0, -1.2, 0, 1.2, 0] : 0,
@@ -127,7 +133,6 @@ export const Folder: React.FC<FolderProps> = ({
                 x: (orbitActive && !prefersReducedMotion) ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut' } : undefined,
                 y: (orbitActive && !prefersReducedMotion) ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut', delay: 0.4 } : undefined,
             }}
-            whileHover={{ scale: 1.28, rotate: 5 }}
             whileTap={{ scale: 0.88 }}
         >
             {/* SVG rings — capacity fill + activity pulse */}
@@ -261,7 +266,7 @@ export const Folder: React.FC<FolderProps> = ({
                         exit={{ opacity: 0, x: -8, scale: 0.94 }}
                         transition={{ type: 'spring', stiffness: 440, damping: 26 }}
                         className="fixed z-[9999] pointer-events-none"
-                        style={{ left: portalPos.x, top: portalPos.y, transform: 'translateY(-50%)' }}
+                        style={{ left: portalPos.x, top: portalPos.y, transform: portalPos.isRightSide ? 'translate(-100%, -50%)' : 'translateY(-50%)' }}
                     >
                         <div
                             className="relative px-3.5 py-2.5 rounded-xl backdrop-blur-xl border border-white/15 shadow-xl min-w-[140px]"

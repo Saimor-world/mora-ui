@@ -71,7 +71,7 @@ export const Star: React.FC<StarProps> = ({
     const prefersReducedMotion = useReducedMotion();
     const [isHovered, setIsHovered] = useState(false);
     const [showPortal, setShowPortal] = useState(false);
-    const [portalPos, setPortalPos] = useState({ x: 0, y: 0 });
+    const [portalPos, setPortalPos] = useState({ x: 0, y: 0, isRightSide: false });
     const [isMounted, setIsMounted] = useState(false);
     const orbRef = useRef<HTMLDivElement>(null);
     const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,7 +89,12 @@ export const Star: React.FC<StarProps> = ({
         setIsHovered(true);
         onHover?.(true);
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        setPortalPos({ x: rect.right + 14, y: rect.top + rect.height / 2 });
+        const isRightSide = rect.right > window.innerWidth - 250;
+        setPortalPos({ 
+            x: isRightSide ? rect.left - 14 : rect.right + 14, 
+            y: rect.top + rect.height / 2,
+            isRightSide
+        });
         setShowPortal(true);
     };
 
@@ -224,7 +229,7 @@ export const Star: React.FC<StarProps> = ({
                         exit={{ opacity: 0, x: -8, scale: 0.94 }}
                         transition={{ type: 'spring', stiffness: 420, damping: 28 }}
                         className="fixed z-[9999] pointer-events-none"
-                        style={{ left: portalPos.x, top: portalPos.y, transform: 'translateY(-50%)' }}
+                        style={{ left: portalPos.x, top: portalPos.y, transform: portalPos.isRightSide ? 'translate(-100%, -50%)' : 'translateY(-50%)' }}
                     >
                         <div
                             className="relative px-4 py-3 rounded-xl backdrop-blur-xl border border-white/20 shadow-2xl min-w-[160px]"

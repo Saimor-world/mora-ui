@@ -21,6 +21,7 @@ export const SystemStats: React.FC = () => {
     const orbState = useMoraStore((s) => s.orbState);
 
     const [uptime, setUptime] = useState(0);
+    const [isVisible, setIsVisible] = useState(false);
 
     // Count total nodes
     const totalNodes = Object.values(nodesByFolder).flat().length;
@@ -31,6 +32,12 @@ export const SystemStats: React.FC = () => {
             setUptime(prev => prev + 1);
         }, 1000);
         return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const forced = new URLSearchParams(window.location.search).get('stats') === '1';
+        setIsVisible(process.env.NODE_ENV !== 'production' || forced);
     }, []);
 
     const formatUptime = (seconds: number) => {
@@ -48,11 +55,13 @@ export const SystemStats: React.FC = () => {
         }
     };
 
+    if (!isVisible) return null;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-[50] pointer-events-none"
+            className="fixed bottom-24 left-0 right-0 z-[50] pointer-events-none"
         >
             <div className="flex items-center justify-center gap-6 py-1.5 text-[9px] font-mono text-white/20">
                 {/* Companies */}

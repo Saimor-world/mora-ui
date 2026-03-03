@@ -452,10 +452,10 @@ describe('patchUserCompanyBinding', () => {
         expect(lastFetchInit().method).toBe('PATCH');
     });
 
-    it('sends company_id in body', async () => {
+    it('sends default_company_id in body', async () => {
         mockFetchV3({ success: true });
         await patchUserCompanyBinding('u3', 'my-company');
         const body = JSON.parse(lastFetchInit().body as string);
-        expect(body).toMatchObject({ company_id: 'my-company' });
+        expect(body).toMatchObject({ default_company_id: 'my-company' });
     });
 });

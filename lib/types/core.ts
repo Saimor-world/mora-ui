@@ -85,3 +85,9 @@ export interface CoreTreeNode {
     // Optional metadata for nodes
     nodeType?: 'document' | 'task' | 'note' | 'link' | 'other';
 }
+
+export interface ExplorerNavigationState {
+    currentFolderId: string | null;
+    backStack: Array<string | null>;
+    forwardStack: Array<string | null>;
+}

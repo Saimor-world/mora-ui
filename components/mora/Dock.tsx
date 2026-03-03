@@ -57,53 +57,13 @@ interface MagneticDockIconProps {
     onAction: (action: string) => void;
 }
 
-const MAGNETIC_RADIUS = 72; // px — cursor must be within this distance
-const MAX_SHIFT       = 6;  // px — max x/y displacement at center
-const MAX_TILT        = 8;  // deg — max rotateX/Y at center
-
 const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMode, onAction }) => {
-    const ref = useRef<HTMLButtonElement>(null);
     const prefersReducedMotion = useReducedMotion();
-
-    const springCfg = { stiffness: 320, damping: 24 };
-    const x       = useSpring(0, springCfg);
-    const y       = useSpring(0, springCfg);
-    const rotateX = useSpring(0, springCfg);
-    const rotateY = useSpring(0, springCfg);
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!ref.current || item.disabled || prefersReducedMotion) return;
-        const rect = ref.current.getBoundingClientRect();
-        const cx   = rect.left + rect.width  / 2;
-        const cy   = rect.top  + rect.height / 2;
-        const dx   = e.clientX - cx;
-        const dy   = e.clientY - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist < MAGNETIC_RADIUS) {
-            const strength = 1 - dist / MAGNETIC_RADIUS;
-            x.set(dx * strength * MAX_SHIFT);
-            y.set(dy * strength * MAX_SHIFT);
-            rotateY.set( dx * strength * MAX_TILT * 0.01);
-            rotateX.set(-dy * strength * MAX_TILT * 0.01);
-        }
-    };
-
-    const resetSprings = () => {
-        x.set(0); y.set(0); rotateX.set(0); rotateY.set(0);
-    };
-
-    // Reset springs immediately if reduced-motion preference changes while hovering
-    React.useEffect(() => {
-        if (prefersReducedMotion) resetSprings();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [prefersReducedMotion]);
 
     return (
         <motion.button
-            ref={ref}
             aria-label={item.label}
-            style={{ x, y, rotateX, rotateY, transformPerspective: 400 }}
-            className={`p-3.5 rounded-2xl transition-all duration-200 relative group ${
+            className={`w-[54px] h-[54px] flex items-center justify-center rounded-2xl transition-colors relative group ${
                 item.disabled
                     ? isStandardMode
                         ? 'text-gray-300 cursor-not-allowed'
@@ -114,9 +74,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                             ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
                             : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
             }`}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={resetSprings}
-            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.18 }}
+            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.08 }}
             whileTap={item.disabled   || prefersReducedMotion ? {} : { scale: 0.92 }}
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
@@ -346,7 +304,7 @@ export const Dock = () => {
                     </div>
 
                     {/* CENTER: SEARCH - Enhanced */}
-                    <div className="relative flex items-center flex-1 max-w-md mx-3">
+                    <div className="relative flex items-center flex-1 max-w-sm mx-4">
                         <Search size={16} className={`absolute left-4 ${isStandardMode ? 'text-gray-400' : 'text-emerald-400/50'}`} />
                         <input
                             ref={inputRef}
@@ -390,7 +348,7 @@ export const Dock = () => {
                         }`} />
 
                     {/* CENTER: DOCK APPS — Magnetic Icons */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                         {dockItems.filter(item => !item.hidden).map((item, i) => (
                             <MagneticDockIcon
                                 key={i}

@@ -6,7 +6,7 @@ import { Users, UserPlus, Shield, Crown, User, Mail, MoreVertical, Search, Refre
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { coreGet, corePost, fetchAdminUsers, patchAdminUser, AdminUser, AdminUserPatch } from '@/lib/api/coreClient';
+import { coreGet, corePost, fetchAdminUsers, patchAdminUser, patchUserCompanyBinding, AdminUser, AdminUserPatch } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 
 /**
@@ -25,6 +25,8 @@ interface TeamMember {
     email: string;
     role: 'owner' | 'manager' | 'member' | 'admin';
     status: 'active' | 'invited' | 'inactive';
+    defaultCompanyId?: string | null;
+    companyOptions?: Array<{ id: string; name: string }>;
     avatar?: string;
     lastActive?: string;
 }
@@ -66,18 +68,21 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                     // v3 admin path: includes inactive users, richer data
                     const adminUsers = await fetchAdminUsers(true);
                     setMembers(adminUsers.map((u: AdminUser) => ({
-                        id: u.user_id,
-                        name: u.name || (u.email ? u.email.split('@')[0] : 'User'),
+                        id: u.user_id || u.id || u.email,
+                        name: u.name || u.full_name || (u.email ? u.email.split('@')[0] : 'User'),
                         email: u.email,
                         role: u.role,
                         status: u.is_active ? 'active' : 'inactive',
+                        defaultCompanyId: u.default_company_id || null,
+                        companyOptions: u.company_context?.effective_companies || [],
                         lastActive: u.created_at
                     })));
                     setInvites([]);
                 } else {
                     // v1 member path: active members + pending invites
+                    const membersV3Res = await coreGet("/v3/team/members?include_inactive=false", { isOptional: true });
                     const [membersRes, invitesRes] = await Promise.all([
-                        coreGet("/v1/team/members", { isOptional: true }),
+                        Array.isArray(membersV3Res) ? Promise.resolve(membersV3Res) : coreGet("/v1/team/members", { isOptional: true }),
                         coreGet("/v1/team/invites", { isOptional: true })
                     ]);
 
@@ -181,6 +186,16 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
             ));
             toast.success(updated.is_active ? 'User activated' : 'User deactivated');
         }
+    };
+
+    const handleCompanyBindingChange = async (memberId: string, companyId: string) => {
+        const selectedCompanyId = companyId || null;
+        const updated = await patchUserCompanyBinding(memberId, selectedCompanyId);
+        if (!updated) return;
+        setMembers(prev => prev.map(m =>
+            m.id === memberId ? { ...m, defaultCompanyId: updated.default_company_id || null } : m
+        ));
+        toast.success(selectedCompanyId ? 'Default company updated' : 'Default company cleared');
     };
 
     if (!pane) return null;
@@ -325,6 +340,21 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                                     <RoleIcon size={12} className={roleConfig.color} />
                                                     <span className={`text-xs ${roleConfig.color}`}>{roleConfig.label}</span>
                                                 </div>
+                                            )}
+
+                                            {isAdmin && member.status !== 'invited' && Array.isArray(member.companyOptions) && member.companyOptions.length > 0 && (
+                                                <select
+                                                    value={member.defaultCompanyId || ''}
+                                                    onChange={(e) => handleCompanyBindingChange(member.id, e.target.value)}
+                                                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 cursor-pointer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    title="Default company"
+                                                >
+                                                    <option value="">No default company</option>
+                                                    {member.companyOptions.map(company => (
+                                                        <option key={company.id} value={company.id}>{company.name}</option>
+                                                    ))}
+                                                </select>
                                             )}
 
                                             {/* Admin Active Toggle */}

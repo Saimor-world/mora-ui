@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
+import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
 import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, FolderContext } from '@/lib/api/coreClient';
-import type { CoreTreeNode } from '@/lib/types/core';
+import type { CoreTreeNode, ExplorerNavigationState } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
@@ -54,6 +54,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const {
         activeCompanyId,
         companies,
+        setActiveDepartment,
+        setActiveSpace,
+        setActiveFolder,
         spacesByDepartment,
         loadSpacesForDepartment,
         foldersBySpace,
@@ -202,7 +205,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const handleOpen = () => {
         if (!contextMenu?.item) return;
         if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
-            setCurrentFolderId(contextMenu.item.id);
+            navigateToFolder(contextMenu.item.id);
         } else {
             openPane({
                 id: `doc-${contextMenu.item.id}`,
@@ -217,6 +220,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     // UNIFIED FINDER: View modes (like SpacePane had) + Graph view for semantic network
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
+    const [graphZoom, setGraphZoom] = useState(1);
+    const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
+    const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: {x: number, y: number} }>({ isDragging: false, startX: 0, startY: 0, initialPan: {x: 0, y: 0} });
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -262,8 +268,70 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     // Navigation
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [backStack, setBackStack] = useState<Array<string | null>>([]);
+    const [forwardStack, setForwardStack] = useState<Array<string | null>>([]);
     const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string; type: string }[]>([]);
     const [folderContext, setFolderContext] = useState<FolderContext | null>(null);
+    const navigationState = useMemo<ExplorerNavigationState>(() => ({
+        currentFolderId,
+        backStack,
+        forwardStack
+    }), [currentFolderId, backStack, forwardStack]);
+    const currentFolderIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        currentFolderIdRef.current = currentFolderId;
+    }, [currentFolderId]);
+
+    const resetNavigationRoot = useCallback((folderId: string | null) => {
+        currentFolderIdRef.current = folderId;
+        setBackStack([]);
+        setForwardStack([]);
+        setCurrentFolderId(folderId);
+    }, []);
+
+    const navigateToFolder = useCallback((targetFolderId: string | null, mode: 'push' | 'replace' = 'push') => {
+        const current = currentFolderIdRef.current;
+        if (current === targetFolderId) return;
+        if (mode === 'push') {
+            setBackStack((prev) => [...prev, current]);
+            setForwardStack([]);
+        }
+        currentFolderIdRef.current = targetFolderId;
+        setCurrentFolderId(targetFolderId);
+    }, []);
+
+    const navigateBack = useCallback(() => {
+        setBackStack((prev) => {
+            if (prev.length === 0) return prev;
+            const next = prev[prev.length - 1];
+            const trimmed = prev.slice(0, -1);
+            setForwardStack((forwardPrev) => [currentFolderIdRef.current, ...forwardPrev]);
+            currentFolderIdRef.current = next ?? null;
+            setCurrentFolderId(next ?? null);
+            return trimmed;
+        });
+    }, []);
+
+    const navigateForward = useCallback(() => {
+        setForwardStack((prev) => {
+            if (prev.length === 0) return prev;
+            const [next, ...rest] = prev;
+            setBackStack((backPrev) => [...backPrev, currentFolderIdRef.current]);
+            currentFolderIdRef.current = next ?? null;
+            setCurrentFolderId(next ?? null);
+            return rest;
+        });
+    }, []);
+
+    const navigateUp = useCallback(() => {
+        if (!currentFolderIdRef.current) return;
+        if (breadcrumbs.length > 1) {
+            navigateToFolder(breadcrumbs[breadcrumbs.length - 2].id);
+            return;
+        }
+        navigateToFolder(null);
+    }, [breadcrumbs, navigateToFolder]);
 
     /**
      * Click-race guard for folder navigation.
@@ -285,7 +353,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             clearTimeout(clickTimerRef.current);
             clickTimerRef.current = null;
             lastClickedFolderRef.current = null;
-            setCurrentFolderId(folderId);
+            navigateToFolder(folderId);
         } else {
             // First click → select only; arm timer
             if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
@@ -296,7 +364,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 lastClickedFolderRef.current = null;
             }, DOUBLE_CLICK_MS);
         }
-    }, []);
+    }, [navigateToFolder]);
 
     // DEEP VIEW STATE
     const [isDeepView, setIsDeepView] = useState(false);
@@ -490,14 +558,22 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     useEffect(() => {
         if (!currentFolderId) {
             setFolderContext(null);
+            setActiveFolder(null);
+            setActiveSpace(null);
+            setActiveDepartment(null);
             return;
         }
         let cancelled = false;
         fetchFolderContext(currentFolderId).then(ctx => {
-            if (!cancelled) setFolderContext(ctx);
+            if (!cancelled) {
+                setFolderContext(ctx);
+                if (ctx?.folder?.id) setActiveFolder(ctx.folder.id);
+                if (ctx?.path?.space?.id) setActiveSpace(ctx.path.space.id);
+                if (ctx?.path?.department?.id) setActiveDepartment(ctx.path.department.id);
+            }
         });
         return () => { cancelled = true; };
-    }, [currentFolderId]);
+    }, [currentFolderId, setActiveDepartment, setActiveFolder, setActiveSpace]);
 
     // Effect to handle view content and lazy loading
     useEffect(() => {
@@ -563,7 +639,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
         // Priority: startFolderId > startSpaceId > departmentId > root
         if (startFolderId) {
-            setCurrentFolderId(startFolderId);
+            resetNavigationRoot(startFolderId);
             const folderNode = findNodeInTree(treeData, startFolderId);
             if (!folderNode) {
                 console.warn('[FinderPane] startFolderId not in tree yet, loading folder nodes directly', startFolderId);
@@ -573,13 +649,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             // Find the space in tree and navigate to it
             const spaceNode = findNodeInTree(treeData, startSpaceId);
             if (spaceNode) {
-                setCurrentFolderId(startSpaceId);
+                resetNavigationRoot(startSpaceId);
             }
         } else if (departmentId) {
-            setCurrentFolderId(departmentId);
+            resetNavigationRoot(departmentId);
         }
         appliedStartKeyRef.current = startKey;
-    }, [treeData, startFolderId, startSpaceId, departmentId, findNodeInTree, loadNodesForFolder]);
+    }, [treeData, startFolderId, startSpaceId, departmentId, findNodeInTree, loadNodesForFolder, resetNavigationRoot]);
 
     // Sync search query from pane data (important for Chat -> Finder updates)
     useEffect(() => {
@@ -690,7 +766,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         if (resolvedFolderId) {
                             const folderName = findNodeInTree(rawTree, resolvedFolderId)?.name || resolvedFolderId;
                             await loadNodesForFolder(resolvedFolderId);
-                            setCurrentFolderId(resolvedFolderId);
+                            navigateToFolder(resolvedFolderId);
                             // Override the generic end-of-loop toast with a precise one
                             toast.success(`${file.name} → ${folderName}`);
                             successCount = 0; // suppress duplicate success toast below
@@ -731,7 +807,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setIsUploading(false);
             setUploadProgress(null);
         }
-    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions, findNodeInTree, rawTree, loadNodesForFolder]);
+    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions, findNodeInTree, rawTree, loadNodesForFolder, navigateToFolder]);
 
     // Integrated Drag & Drop Handlers
     const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -896,14 +972,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 onResize={(w, h) => {
                     updatePaneSize(id, w, h);
                 }}
-                showBackButton={breadcrumbs.length > 0}
+                showBackButton={navigationState.backStack.length > 0 || currentFolderId !== null}
                 onBack={() => {
-                    // Navigate one level up
-                    if (breadcrumbs.length > 1) {
-                        setCurrentFolderId(breadcrumbs[breadcrumbs.length - 2].id);
-                    } else {
-                        setCurrentFolderId(null);
+                    if (navigationState.backStack.length > 0) {
+                        navigateBack();
+                        return;
                     }
+                    navigateUp();
                 }}
                 onClose={() => removePane(id)}
                 onMinimize={() => minimizePane(id)}
@@ -948,42 +1023,112 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
                     <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 md:px-6 py-2 md:py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                                onClick={navigateBack}
+                                disabled={navigationState.backStack.length === 0}
+                                className={`p-1.5 rounded-lg border transition-colors ${navigationState.backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
+                                title="Back"
+                            >
+                                <ChevronLeft size={14} />
+                            </button>
+                            <button
+                                onClick={navigateForward}
+                                disabled={navigationState.forwardStack.length === 0}
+                                className={`p-1.5 rounded-lg border transition-colors ${navigationState.forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
+                                title="Forward"
+                            >
+                                <ChevronRight size={14} />
+                            </button>
+                            <button
+                                onClick={navigateUp}
+                                disabled={!currentFolderId}
+                                className={`p-1.5 rounded-lg border transition-colors ${currentFolderId ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
+                                title="Up"
+                            >
+                                <CornerUpLeft size={14} />
+                            </button>
+                        </div>
                         {/* Breadcrumbs Row */}
+                        <div className="flex items-center gap-1 mr-3 md:mr-4 border-r border-white/10 pr-3 md:pr-4 shrink-0">
+                            <button onClick={navigateBack} disabled={backStack.length === 0} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Zurück">
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button onClick={navigateForward} disabled={forwardStack.length === 0} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Vor">
+                                <ChevronRight size={18} />
+                            </button>
+                            <button onClick={navigateUp} disabled={!currentFolderId} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Nach oben">
+                                <CornerUpLeft size={16} />
+                            </button>
+                        </div>
+                        
+                        {/* Breadcrumbs (API-first, fallback to local) */}
                         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth min-w-0 flex-1">
                             <button
-                                onClick={() => setCurrentFolderId(null)}
+                                onClick={() => navigateToFolder(null)}
                                 className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${!currentFolderId ? 'text-emerald-400 bg-emerald-500/10' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
                             >
                                 <Home size={14} className={!currentFolderId ? 'text-emerald-400' : 'text-white/40'} />
-                                <span className="font-medium tracking-tight">Home</span>
+                                <span className="font-medium tracking-tight">{folderContext?.path?.company?.name || 'Home'}</span>
                             </button>
 
-                            {breadcrumbs.map((bc, idx) => {
-                                // NAMING FIX: Avoid duplicate names in breadcrumbs
-                                // If Space has same name as parent Department, show "Allgemein" instead
+                            {folderContext?.path?.department && (
+                                <React.Fragment>
+                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                    <button
+                                        onClick={() => navigateToFolder(folderContext.path.department?.id || null)}
+                                        className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${currentFolderId === folderContext.path.department.id ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                    >
+                                        <Globe size={13} className="text-emerald-500/60" />
+                                        <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{folderContext.path.department.name}</span>
+                                    </button>
+                                </React.Fragment>
+                            )}
+                            
+                            {folderContext?.path?.space && (
+                                <React.Fragment>
+                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                    <button
+                                        onClick={() => navigateToFolder(folderContext.path.space?.id || null)}
+                                        className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${(currentFolderId === folderContext.path.space.id || (currentFolderId === folderContext.path.department?.id && !folderContext.path.space)) ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                    >
+                                        <Circle size={12} className="text-cyan-500/60" />
+                                        <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{folderContext.path.space.name}</span>
+                                    </button>
+                                </React.Fragment>
+                            )}
+
+                            {folderContext?.path?.breadcrumbs?.map((seg: any, i: number) => (
+                                <React.Fragment key={seg.id || i}>
+                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                    <button
+                                        onClick={() => navigateToFolder(seg.id)}
+                                        className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${(currentFolderId === seg.id) ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                    >
+                                        <FolderIcon size={13} className="text-blue-500/60" />
+                                        <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{seg.name}</span>
+                                    </button>
+                                </React.Fragment>
+                            ))}
+
+                            {!folderContext?.path && breadcrumbs.map((bc, idx) => {
                                 const prevBc = idx > 0 ? breadcrumbs[idx - 1] : null;
                                 const isDuplicateName = prevBc && bc.name?.toLowerCase() === prevBc.name?.toLowerCase();
-                                const displayName = isDuplicateName && bc.type === 'space'
-                                    ? 'Allgemein'
-                                    : bc.name;
-
+                                const displayName = isDuplicateName && bc.type === 'space' ? 'Allgemein' : bc.name;
                                 return (
                                     <React.Fragment key={bc.id}>
                                         <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
                                         <button
-                                            onClick={() => setCurrentFolderId(bc.id)}
-                                            className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group whitespace-nowrap shrink-0 ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                                            onClick={() => navigateToFolder(bc.id)}
+                                            className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
                                         >
-                                            {bc.type === 'department' ? <Globe size={13} className="text-emerald-500/60" /> :
-                                                bc.type === 'space' ? <Circle size={12} className="text-cyan-500/60" /> :
-                                                    <FolderIcon size={13} className="text-blue-500/60" />}
+                                            {bc.type === 'department' ? <Globe size={13} className="text-emerald-500/60" /> : bc.type === 'space' ? <Circle size={12} className="text-cyan-500/60" /> : <FolderIcon size={13} className="text-blue-500/60" />}
                                             <span className="font-medium tracking-tight max-w-[100px] md:max-w-none truncate">{displayName}</span>
                                         </button>
                                     </React.Fragment>
                                 );
                             })}
                         </div>
-
                         {/* Actions Row */}
                         <div className="flex items-center gap-2 md:gap-3 flex-wrap lg:flex-nowrap">
                             {/* Search - Hidden on mobile, shown on md+ */}
@@ -1054,8 +1199,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 )}
 
                                 <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black transition-all text-xs md:text-sm font-bold shadow-lg shadow-emerald-500/20"
+                                    onClick={() => currentFolderId && fileInputRef.current?.click()}
+                                    disabled={!currentFolderId}
+                                    title={!currentFolderId ? 'Navigiere in einen Ordner um Dateien hochzuladen' : 'Upload'}
+                                    className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm font-bold shadow-lg ${currentFolderId ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20' : 'bg-emerald-500/20 text-emerald-500/40 cursor-not-allowed opacity-50'}`}
                                 >
                                     <Upload size={14} />
                                     <span className="hidden sm:inline">Upload</span>
@@ -1063,39 +1210,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                     </div>
-
-                    {/* API breadcrumb — full path from server */}
-                    {folderContext?.path && (
-                        <div className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-white/40 border-b border-white/5 bg-white/[0.03] overflow-x-auto whitespace-nowrap flex-shrink-0">
-                            {folderContext.path.company && (
-                                <span className="hover:text-white/70 transition-colors">{folderContext.path.company.name}</span>
-                            )}
-                            {folderContext.path.department && (
-                                <>
-                                    <span className="text-white/20 mx-0.5">/</span>
-                                    <span className="hover:text-white/70 transition-colors">{folderContext.path.department.name}</span>
-                                </>
-                            )}
-                            {folderContext.path.space && (
-                                <>
-                                    <span className="text-white/20 mx-0.5">/</span>
-                                    <span className="hover:text-white/70 transition-colors">{folderContext.path.space.name}</span>
-                                </>
-                            )}
-                            {folderContext.path.breadcrumbs.map((seg, i) => (
-                                <React.Fragment key={seg.id}>
-                                    <span className="text-white/20 mx-0.5">/</span>
-                                    <span className={
-                                        i === folderContext.path.breadcrumbs.length - 1
-                                            ? 'text-white/70 font-medium'
-                                            : 'hover:text-white/70 transition-colors'
-                                    }>
-                                        {seg.name}
-                                    </span>
-                                </React.Fragment>
-                            ))}
-                        </div>
-                    )}
 
                     {/* Content Container with Animation */}
                     <div className="flex-1 overflow-y-auto p-6 bg-black/40 relative" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
@@ -1278,7 +1392,45 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
-                                        <div className="relative w-full h-full min-h-[400px]">
+                                        <div 
+                                            className="relative w-full h-full min-h-[400px] overflow-hidden cursor-grab active:cursor-grabbing"
+                                            onWheel={(e) => {
+                                                if (viewMode === 'graph') {
+                                                    e.preventDefault();
+                                                    setGraphZoom(z => Math.max(0.2, Math.min(3, z - e.deltaY * 0.001)));
+                                                }
+                                            }}
+                                            onMouseDown={(e) => {
+                                                if (e.button !== 0) return;
+                                                graphDragRef.current = { isDragging: true, startX: e.clientX, startY: e.clientY, initialPan: graphPan };
+                                            }}
+                                            onMouseMove={(e) => {
+                                                if (!graphDragRef.current.isDragging) return;
+                                                const dx = e.clientX - graphDragRef.current.startX;
+                                                const dy = e.clientY - graphDragRef.current.startY;
+                                                setGraphPan({ x: graphDragRef.current.initialPan.x + dx, y: graphDragRef.current.initialPan.y + dy });
+                                            }}
+                                            onMouseUp={() => { graphDragRef.current.isDragging = false; }}
+                                            onMouseLeave={() => { graphDragRef.current.isDragging = false; }}
+                                        >
+                                            <div className="absolute bottom-16 right-4 flex flex-col gap-2 z-50">
+                                                <button onClick={() => setGraphZoom(z => Math.min(3, z + 0.2))} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">+</button>
+                                                <button onClick={() => setGraphZoom(z => Math.max(0.2, z - 0.2))} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">-</button>
+                                                <button onClick={() => { setGraphZoom(1); setGraphPan({x:0, y:0}); }} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">Reset</button>
+                                            </div>
+                                            <div 
+                                                className="absolute inset-0 transition-transform duration-75 ease-out origin-center" 
+                                                style={{ transform: `translate(${graphPan.x}px, ${graphPan.y}px) scale(${graphZoom})` }}
+                                            >
+                                                {/* Center core: Current Context */}
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2 z-30">
+                                                    <div className="relative w-12 h-12 rounded-xl border-2 border-emerald-400/50 bg-emerald-500/20 backdrop-blur-md shadow-[0_0_30px_rgba(16,185,129,0.3)] flex items-center justify-center">
+                                                        {currentFolderId ? <FolderIcon size={24} className="text-emerald-400" /> : <Home size={24} className="text-emerald-400" />}
+                                                    </div>
+                                                    <span className="text-xs text-white bg-black/50 px-2 py-1 rounded-md border border-white/10 backdrop-blur-sm">
+                                                        {folderContext?.path?.breadcrumbs?.slice(-1)[0]?.name || folderContext?.path?.space?.name || folderContext?.path?.department?.name || 'Home'}
+                                                    </span>
+                                                </div>
                                             {/* Center core */}
                                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 blur-sm opacity-50" />
                                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-lg" />
@@ -1287,7 +1439,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {filteredFolders.map((folder, i) => {
                                                 const count = Math.max(filteredFolders.length, 1);
                                                 const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-                                                const radius = 120 + (i % 3) * 40;
+                                                const radius = 150 + (i % 3) * 42;
                                                 const x = Math.cos(angle) * radius;
                                                 const y = Math.sin(angle) * radius;
                                                 const isSelected = selectedNodeId === folder.id;
@@ -1355,11 +1507,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                             {/* Files shown as smaller stars further out */}
                                             {filteredFiles.slice(0, 10).map((file, i) => {
-                                                const baseAngle = (filteredFolders.length > 0)
-                                                    ? ((i / Math.max(filteredFiles.slice(0, 10).length, 1)) * Math.PI * 2)
-                                                    : ((i / Math.max(filteredFiles.slice(0, 10).length, 1)) * Math.PI * 2);
-                                                const angle = baseAngle + 0.3;
-                                                const radius = 200 + (i % 4) * 25;
+                                                const fileCount = Math.max(filteredFiles.slice(0, 10).length, 1);
+                                                const angle = (i / fileCount) * Math.PI * 2 - Math.PI / 2;
+                                                const radius = filteredFolders.length > 0
+                                                    ? 175 + (i % 3) * 22
+                                                    : 130 + (i % 3) * 18;
                                                 const x = Math.cos(angle) * radius;
                                                 const y = Math.sin(angle) * radius;
                                                 const isResonant = resonanceIds.includes(file.id);
@@ -1399,7 +1551,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             })}
 
                                             {/* Legend */}
-                                            <div className="absolute bottom-4 left-4 flex items-center gap-4 text-[10px] text-white/40">
+                                            <div className="absolute bottom-4 left-4 flex items-center justify-center flex-wrap gap-4 text-[10px] text-white/60 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl z-50 shadow-2xl">
+                                                <div className="font-medium text-emerald-400/80 mr-2 uppercase tracking-widest hidden sm:block">Legend</div>
                                                 <div className="flex items-center gap-1">
                                                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
                                                     <span>Planet</span>
@@ -1418,6 +1571,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
                                     ) : (
                                         /* LIST VIEW */
                                         <div className="flex flex-col gap-1">
@@ -1607,7 +1761,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         <FolderIcon size={14} /> New Folder
                                     </button>
                                     {breadcrumbs.length > 1 && (
-                                        <button onClick={() => setCurrentFolderId(breadcrumbs[breadcrumbs.length - 2].id)} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
+                                        <button onClick={navigateUp} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
                                             <CornerUpLeft size={14} /> Go Up
                                         </button>
                                     )}

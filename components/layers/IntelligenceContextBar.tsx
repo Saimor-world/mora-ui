@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { useMoraStore } from '@/lib/store/moraState';
 
 export interface BreadcrumbItem {
     label: string;
@@ -114,6 +115,21 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
     const currentRisk = riskConfig[riskLevel];
     const RiskIcon = currentRisk.icon;
 
+    // Scope signal: prefer real API scope (from v3/chat SSE preamble) over store-derived
+    const { activeCompanyId, activeDepartmentId, activeSpaceId, companies, departments, spacesByDepartment, lastChatScope } = useMoraStore();
+    const company = companies.find(c => c.id === activeCompanyId);
+    const dept = departments.find(d => d.id === activeDepartmentId);
+    const allSpaces = Object.values(spacesByDepartment).flat();
+    const space = allSpaces.find(s => s.id === activeSpaceId);
+    // Use API-resolved names if available (e.g. company_name, department_name from v3/chat)
+    const apiScope = lastChatScope?.resolved_scope;
+    const scopeParts = apiScope
+        ? [apiScope.company_name, apiScope.department_name, apiScope.space_name].filter(Boolean)
+        : [company?.name, dept?.name, space?.name].filter(Boolean);
+    const scopeLabel = scopeParts.length > 0 ? scopeParts.join(' › ') : 'Gesamter Workspace';
+    const hasScopeContext = !!activeDepartmentId;
+    const scopeEnforced = lastChatScope?.scope_enforced ?? false;
+
     return (
         <AnimatePresence>
             {isVisible && (
@@ -201,6 +217,20 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
                             />
                         </div>
                     </div>
+
+                    {/* Scope context signal — shown below main bar when in a dept/space context */}
+                    {hasScopeContext && (
+                        <div className="w-full flex items-center gap-1.5 px-6 py-0.5 text-[10px] border-b" style={{ backgroundColor: 'rgba(3, 8, 6, 0.75)', borderColor: 'rgba(255,255,255,0.04)' }}>
+                            <span className="text-white/20">Kontext:</span>
+                            <span className="text-white/50 font-medium tracking-wide">{scopeLabel}</span>
+                            {scopeEnforced && (
+                                <span className="ml-auto flex items-center gap-1 text-amber-400/60 text-[9px]">
+                                    <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />
+                                    eingeschränkt
+                                </span>
+                            )}
+                        </div>
+                    )}
 
                     {/* Subtle bottom glow */}
                     <div
