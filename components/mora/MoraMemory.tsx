@@ -17,7 +17,13 @@ import {
     Target,
     Shield,
 } from "lucide-react";
-import { coreGet, corePost } from "@/lib/api/coreClient";
+import {
+    searchMemory as searchMemoryApi,
+    getMemoryPending,
+    getMemoryMetrics,
+    approveMemoryItem,
+    rejectMemoryItem,
+} from "@/lib/api/coreClient";
 import { toast } from "sonner";
 import { useMoraStore } from "@/lib/store/moraState";
 
@@ -85,7 +91,7 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
     const [results, setResults] = useState<MemoryEntry[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
-    const searchMemory = useCallback(async () => {
+    const runMemorySearch = useCallback(async () => {
         if (!companyId) {
             setResults([]);
             return;
@@ -97,8 +103,7 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
 
         setIsSearching(true);
         try {
-            const companyQuery = companyId ? `&company_id=${encodeURIComponent(companyId)}` : "";
-            const data = await coreGet(`/v1/memory/search?q=${encodeURIComponent(query)}&limit=10${companyQuery}`, { isOptional: true });
+            const data = await searchMemoryApi(query, 10, companyId);
             if (data && Array.isArray(data)) {
                 setResults(data);
             } else {
@@ -116,11 +121,11 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
     useEffect(() => {
         const timer = setTimeout(() => {
             if (query.length >= 2) {
-                searchMemory();
+                runMemorySearch();
             }
         }, 300);
         return () => clearTimeout(timer);
-    }, [query, searchMemory]);
+    }, [query, runMemorySearch]);
 
     return (
         <div className="space-y-2">
@@ -197,8 +202,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
             return;
         }
         try {
-            const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
-            const data = await coreGet(`/v1/memory/pending${companyQuery}`, { isOptional: true });
+            const data = await getMemoryPending(companyId);
             if (data && Array.isArray(data)) {
                 setItems(data);
             }
@@ -217,8 +221,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
         if (!companyId) return;
         setProcessingId(id);
         try {
-            const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
-            await corePost(`/v1/memory/approve/${id}${companyQuery}`, {});
+            await approveMemoryItem(id, companyId);
             toast.success("Insight gelernt und gespeichert");
             setItems((prev) => prev.filter((item) => item.id !== id));
             onUpdate?.();
@@ -233,8 +236,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
         if (!companyId) return;
         setProcessingId(id);
         try {
-            const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
-            await corePost(`/v1/memory/reject/${id}${companyQuery}`, {});
+            await rejectMemoryItem(id, companyId);
             toast.info("Insight abgelehnt");
             setItems((prev) => prev.filter((item) => item.id !== id));
         } catch (err) {
@@ -344,8 +346,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
                 return;
             }
             try {
-                const companyQuery = companyId ? `?company_id=${encodeURIComponent(companyId)}` : "";
-                const data = await coreGet(`/v1/memory/metrics${companyQuery}`, { isOptional: true });
+                const data = await getMemoryMetrics(companyId);
                 if (data && !data.error) {
                     setMetrics(data);
                 }
@@ -361,8 +362,29 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
         return () => clearInterval(interval);
     }, [companyId]);
 
-    if (isLoading || !metrics) {
-        return null;
+    if (!companyId) {
+        return (
+            <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
+                Keine Company im Scope. Bitte Workspace/Company waehlen.
+            </div>
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center gap-2 text-xs text-white/40 p-2">
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-400/70" />
+                Lade Memory-Statistiken...
+            </div>
+        );
+    }
+
+    if (!metrics) {
+        return (
+            <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
+                Keine Memory-Statistiken verfuegbar.
+            </div>
+        );
     }
 
     const totalEpisodic = Object.values(metrics.episodic_memories).reduce((a, b) => a + b, 0);
@@ -420,7 +442,8 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     companyId = null,
 }) => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const resolvedCompanyId = companyId || activeCompanyId || null;
+    const companies = useMoraStore((s) => s.companies);
+    const resolvedCompanyId = companyId || activeCompanyId || companies[0]?.id || null;
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
 

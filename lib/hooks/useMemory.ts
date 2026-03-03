@@ -29,12 +29,13 @@ interface MemoryMetrics {
 
 export function useMemory() {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const companies = useMoraStore((s) => s.companies);
     const [pendingItems, setPendingItems] = useState<ReviewItem[]>([]);
     const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const scopedCompanyId = activeCompanyId || null;
+    const scopedCompanyId = activeCompanyId || companies[0]?.id || null;
 
     // Load pending review items
     const loadPending = useCallback(async () => {

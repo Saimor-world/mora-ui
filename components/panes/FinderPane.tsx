@@ -631,11 +631,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         const knownFolderFromSpaces = Object.values(foldersBySpace)
             .flat()
             .some((f) => f?.id === currentFolderId);
-        const hasFolderNodeCache = Object.prototype.hasOwnProperty.call(nodesByFolder, currentFolderId);
         const isDirectFolderStart =
             !currentNode &&
             startFolderId === currentFolderId &&
-            (knownFolderFromSpaces || hasFolderNodeCache);
+            knownFolderFromSpaces;
         const isFolderContext = currentNode?.type === 'folder' || isDirectFolderStart;
 
         if (!isFolderContext) {
@@ -644,13 +643,19 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
 
         let cancelled = false;
-        fetchFolderContext(currentFolderId).then((ctx) => {
-            if (!cancelled) {
-                setFolderContext(ctx);
-            }
-        });
+        fetchFolderContext(currentFolderId)
+            .then((ctx) => {
+                if (!cancelled) {
+                    setFolderContext(ctx);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setFolderContext(null);
+                }
+            });
         return () => { cancelled = true; };
-    }, [currentFolderId, findNodeInTree, foldersBySpace, nodesByFolder, rawTree, startFolderId]);
+    }, [currentFolderId, findNodeInTree, foldersBySpace, rawTree, startFolderId]);
 
     // Effect to handle view content and lazy loading
     useEffect(() => {
@@ -1118,19 +1123,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 <CornerUpLeft size={14} />
                             </button>
                         </div>
-                        {/* Breadcrumbs Row */}
-                        <div className="hidden">
-                            <button onClick={navigateBack} disabled={backStack.length === 0} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Zurück">
-                                <ChevronLeft size={18} />
-                            </button>
-                            <button onClick={navigateForward} disabled={forwardStack.length === 0} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Vor">
-                                <ChevronRight size={18} />
-                            </button>
-                            <button onClick={navigateUp} disabled={!currentFolderId} className="p-1 md:p-1.5 rounded-md text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-white/50 transition-colors" title="Nach oben">
-                                <CornerUpLeft size={16} />
-                            </button>
-                        </div>
-                        
                         {/* Breadcrumbs (API-first, fallback to local) */}
                         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth min-w-0 flex-1">
                             <button

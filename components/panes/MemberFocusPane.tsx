@@ -33,7 +33,7 @@ export const MemberFocusPane = () => {
         { label: 'Finder', sub: 'Dokumente', icon: FolderOpen, onClick: () => openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 900, height: 600 } }) },
         { label: 'Suche', sub: 'Semantisch', icon: Search, onClick: () => openPane({ id: 'search-main', type: 'search', title: 'Suche', size: { width: 600, height: 400 } }) },
         { label: 'Team', sub: 'Overview', icon: Users, onClick: () => openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 780, height: 620 } }) },
-        { label: 'Mora', sub: 'KI-Support', icon: Sparkles, onClick: () => openPane({ id: 'chat-mora', type: 'chat', title: 'Mora', size: { width: 500, height: 600 } }) }
+        { label: 'Mora', sub: 'KI-Support', icon: Sparkles, onClick: () => openPane({ id: 'chat-mora', type: 'chat', title: 'Mora', size: { width: 920, height: 760 } }) }
     ];
 
     return (

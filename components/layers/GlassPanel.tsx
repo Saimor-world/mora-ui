@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion';
-import { X, ChevronLeft, Minus } from 'lucide-react';
+import { X, ChevronLeft, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 
 interface GlassPanelProps {
@@ -33,6 +33,8 @@ interface GlassPanelProps {
     showBackButton?: boolean;
     /** UPGRADE C1: Show minimize button */
     showMinimizeButton?: boolean;
+    /** Show maximize / restore button */
+    showMaximizeButton?: boolean;
     /** UPGRADE C1: Draggable panel */
     draggable?: boolean;
     /** UPGRADE C1: Resizable panel */
@@ -94,6 +96,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     showCloseButton = false,
     showBackButton = true,
     showMinimizeButton = false,
+    showMaximizeButton = false,
     draggable = false,
     resizable = false,
     tabs = [],
@@ -122,6 +125,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const dragControls = useDragControls();
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
+    const [isMaximized, setIsMaximized] = useState(false);
+    const preMaximizeRef = useRef<{ position: { x: number; y: number }; size: { width: number; height: number } } | null>(null);
 
     // Determine center position if not provided
     const getInitialX = () => {
@@ -140,12 +145,68 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const [panelSize, setPanelSize] = useState({ width: typeof width === 'number' ? width : 800, height: typeof height === 'number' ? height : 600 });
     const panelRef = useRef<HTMLDivElement>(null);
 
+    const emitFullscreenEvent = useCallback((isFullscreen: boolean) => {
+        if (typeof window === 'undefined') return;
+        window.dispatchEvent(new CustomEvent('mora-pane-fullscreen-change', {
+            detail: { paneId, isFullscreen }
+        }));
+    }, [paneId]);
+
     // Sync position if initialX/Y change (e.g. from store)
     useEffect(() => {
-        if (initialX !== undefined && initialY !== undefined) {
+        if (!isMaximized && initialX !== undefined && initialY !== undefined) {
             setPanelPosition({ x: initialX, y: initialY });
         }
-    }, [initialX, initialY]);
+    }, [initialX, initialY, isMaximized]);
+
+    // Keep maximized panes pinned to viewport.
+    useEffect(() => {
+        if (!isMaximized) return;
+        const handleResize = () => {
+            setPanelPosition({ x: 0, y: 0 });
+            setPanelSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isMaximized]);
+
+    useEffect(() => {
+        return () => {
+            if (isMaximized) {
+                emitFullscreenEvent(false);
+            }
+        };
+    }, [emitFullscreenEvent, isMaximized]);
+
+    const toggleMaximize = useCallback(() => {
+        if (typeof window === 'undefined') return;
+
+        if (!isMaximized) {
+            preMaximizeRef.current = {
+                position: panelPosition,
+                size: panelSize
+            };
+            const nextPosition = { x: 0, y: 0 };
+            const nextSize = { width: window.innerWidth, height: window.innerHeight };
+            setPanelPosition(nextPosition);
+            setPanelSize(nextSize);
+            onPositionChange?.(nextPosition.x, nextPosition.y);
+            onResize?.(nextSize.width, nextSize.height);
+            setIsMaximized(true);
+            emitFullscreenEvent(true);
+            return;
+        }
+
+        const restore = preMaximizeRef.current;
+        if (restore) {
+            setPanelPosition(restore.position);
+            setPanelSize(restore.size);
+            onPositionChange?.(restore.position.x, restore.position.y);
+            onResize?.(restore.size.width, restore.size.height);
+        }
+        setIsMaximized(false);
+        emitFullscreenEvent(false);
+    }, [emitFullscreenEvent, isMaximized, onPositionChange, onResize, panelPosition, panelSize]);
 
     // UPGRADE C1: Drag handlers with Window Snapping support
     const handleDragStart = useCallback((e: any) => {
@@ -268,7 +329,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             {/* UPGRADE C1: Enhanced Glass Panel with drag and resize */}
             <motion.div
                 ref={panelRef}
-                drag={draggable}
+                drag={draggable && !isMaximized}
                 dragControls={dragControls}
                 dragListener={false}
                 dragMomentum={false}
@@ -319,11 +380,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     zIndex: zIndex, // Use store-managed z-index directly
                     left: 0,
                     top: 0,
-                    width: panelWidth,
-                    height: panelHeight,
-                    maxWidth: 'calc(100vw - 32px)',
+                    width: isMaximized ? '100vw' : panelWidth,
+                    height: isMaximized ? '100vh' : panelHeight,
+                    maxWidth: isMaximized ? '100vw' : 'calc(100vw - 32px)',
                     // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
-                    maxHeight: 'calc(100vh - 160px)',
+                    maxHeight: isMaximized ? '100vh' : 'calc(100vh - 160px)',
                     // Standard mode: solid (CSS handles light/dark), Transparent: glass effect
                     // Note: .standard-mode CSS class overrides to white/light colors
                     backgroundColor: isStandardMode
@@ -347,14 +408,14 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
                 )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
-                {(title || showBackButton || showCloseButton || showMinimizeButton || tabs.length > 0) && (
+                {(title || showBackButton || showCloseButton || showMinimizeButton || showMaximizeButton || tabs.length > 0) && (
                     <div className="shrink-0 border-b" style={{ borderColor: 'var(--mora-glass-border)' }}>
                         {/* Title Bar */}
-                        {(title || showBackButton || showCloseButton || showMinimizeButton) && (
+                        {(title || showBackButton || showCloseButton || showMinimizeButton || showMaximizeButton) && (
                             <div
                                 className="flex items-center justify-between pointer-events-auto"
-                                style={{ padding: paddingValue, cursor: draggable ? 'grab' : 'default' }}
-                                onPointerDown={(e) => draggable && dragControls.start(e)}
+                                style={{ padding: paddingValue, cursor: draggable && !isMaximized ? 'grab' : 'default' }}
+                                onPointerDown={(e) => draggable && !isMaximized && dragControls.start(e)}
                             >
                                 {/* Back Button */}
                                 {showBackButton && onBack && (
@@ -394,6 +455,15 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                             <Minus className="w-4 h-4" />
                                         </button>
                                     )}
+                                    {showMaximizeButton && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
+                                            className="p-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-emerald-100/60 hover:text-cyan-300 transition-all"
+                                            aria-label={isMaximized ? "Restore panel" : "Maximize panel"}
+                                        >
+                                            {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                                        </button>
+                                    )}
                                     {showCloseButton && onClose && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onClose(); }}
@@ -428,7 +498,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 )}
 
                 {/* UPGRADE C1: Resize Handle */}
-                {resizable && (
+                {resizable && !isMaximized && (
                     <div
                         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-30 hover:opacity-60 transition-opacity"
                         onMouseDown={handleResizeStart}

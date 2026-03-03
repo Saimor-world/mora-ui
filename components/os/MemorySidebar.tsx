@@ -189,6 +189,8 @@ const MemoryItem: React.FC<{ memory: MemorySearchResult }> = ({ memory }) => {
 
 export const MemorySidebar: React.FC = () => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const companies = useMoraStore((s) => s.companies);
+    const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
     const mod = usePlatformModifier();
     const { isOpen, isCollapsed, setOpen, setCollapsed } = useMemorySidebarStore();
     const { pendingCount, pendingItems, refresh, approve, reject } = useMemory();
@@ -200,13 +202,13 @@ export const MemorySidebar: React.FC = () => {
 
     // Load recent memories on mount
     useEffect(() => {
-        if (!activeCompanyId) {
+        if (!resolvedCompanyId) {
             setRecentMemories([]);
             return;
         }
         const loadRecent = async () => {
             try {
-                const results = await searchMemory('', 10, activeCompanyId);
+                const results = await searchMemory('', 10, resolvedCompanyId);
                 if (results) {
                     setRecentMemories(results);
                 }
@@ -217,7 +219,7 @@ export const MemorySidebar: React.FC = () => {
         if (isOpen) {
             loadRecent();
         }
-    }, [activeCompanyId, isOpen]);
+    }, [resolvedCompanyId, isOpen]);
 
     // Search memories
     useEffect(() => {
@@ -227,14 +229,14 @@ export const MemorySidebar: React.FC = () => {
         }
 
         const timer = setTimeout(async () => {
-            if (!activeCompanyId) {
+            if (!resolvedCompanyId) {
                 setIsSearching(false);
                 setSearchResults([]);
                 return;
             }
             setIsSearching(true);
             try {
-                const results = await searchMemory(searchQuery, 5, activeCompanyId);
+                const results = await searchMemory(searchQuery, 5, resolvedCompanyId);
                 setSearchResults(results || []);
             } catch (err) {
                 console.error('[MemorySidebar] Search failed:', err);
@@ -244,7 +246,7 @@ export const MemorySidebar: React.FC = () => {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [activeCompanyId, searchQuery]);
+    }, [resolvedCompanyId, searchQuery]);
 
     // Register shortcut
     useMemorySidebarShortcut();

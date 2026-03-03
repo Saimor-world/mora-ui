@@ -20,7 +20,7 @@
  * - useKeyboardShortcuts: Global shortcuts
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Store
@@ -279,6 +279,8 @@ export const MoraShell: React.FC = () => {
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
     const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
+    const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
+    const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
@@ -330,6 +332,25 @@ export const MoraShell: React.FC = () => {
         resetPanes();
     }, [viewMode, resetPanes]);
 
+    // Hide dock while one or more panes are in fullscreen/maximized mode.
+    useEffect(() => {
+        const handleFullscreenChange = (event: Event) => {
+            const detail = (event as CustomEvent<{ paneId?: string; isFullscreen?: boolean }>).detail;
+            const paneId = detail?.paneId;
+            if (!paneId) return;
+
+            if (detail?.isFullscreen) {
+                fullscreenPaneIdsRef.current.add(paneId);
+            } else {
+                fullscreenPaneIdsRef.current.delete(paneId);
+            }
+            setHasFullscreenPane(fullscreenPaneIdsRef.current.size > 0);
+        };
+
+        window.addEventListener('mora-pane-fullscreen-change', handleFullscreenChange);
+        return () => window.removeEventListener('mora-pane-fullscreen-change', handleFullscreenChange);
+    }, []);
+
     // Hooks
     const apiOrbState = useAwareness();
     useMindloopStream(isBootstrapped && viewMode !== 'demo');
@@ -343,7 +364,7 @@ export const MoraShell: React.FC = () => {
     useKeyboardShortcuts({
         onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), []),
         onOpenChat: useCallback(() => {
-            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 520, height: 620 } });
+            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 920, height: 760 } });
         }, [openPane]),
         onOpenFinder: useCallback(() => {
             openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1200, height: 780 } });
@@ -514,7 +535,7 @@ export const MoraShell: React.FC = () => {
             />
 
             {/* Dock (Bottom Navigation) */}
-            <Dock />
+            {!hasFullscreenPane && <Dock />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight

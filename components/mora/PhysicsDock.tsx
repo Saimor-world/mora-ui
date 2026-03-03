@@ -36,7 +36,7 @@ export const PhysicsDock = () => {
 
             <div className="w-px h-10 bg-white/10 mx-1" />
 
-            <DockIcon mouseX={mouseX} icon={MessageCircle} label="Chat" onClick={() => openPane({ id: 'chat-main', type: 'chat', size: { width: 400, height: 600 }, title: 'Môra Chat' })} />
+            <DockIcon mouseX={mouseX} icon={MessageCircle} label="Chat" onClick={() => openPane({ id: 'chat-main', type: 'chat', size: { width: 920, height: 760 }, title: 'Môra Chat' })} />
             <DockIcon mouseX={mouseX} icon={Settings} label="Settings" onClick={() => openPane({ id: 'settings-main', type: 'settings', size: { width: 700, height: 500 }, title: 'Settings' })} />
         </motion.div>
     );

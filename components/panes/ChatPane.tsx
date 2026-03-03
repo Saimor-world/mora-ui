@@ -663,6 +663,7 @@ Was kann ich fuer dich tun?`,
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
+            showMaximizeButton
             draggable
             resizable
         >
