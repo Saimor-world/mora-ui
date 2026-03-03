@@ -27,6 +27,9 @@ import {
     fetchSpaces,
     authLogin,
     fetchFolderContext,
+    fetchAdminUsers,
+    patchAdminUser,
+    patchUserCompanyBinding,
 } from '@/lib/api/coreClient';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -405,5 +408,54 @@ describe('fetchFolderContext', () => {
         expect(result).toEqual(ctx);
         expect(result).not.toHaveProperty('meta');
         expect(result).not.toHaveProperty('data');
+    });
+});
+
+// ─── 9. Admin user management (v3) ───────────────────────────────────────────
+
+describe('fetchAdminUsers', () => {
+    it('routes to /v3/team/admin/users with include_inactive=true', async () => {
+        mockFetchV3([]);
+        await fetchAdminUsers(true);
+        expect(lastFetchUrl()).toContain('/v3/team/admin/users');
+        expect(lastFetchUrl()).toContain('include_inactive=true');
+    });
+
+    it('returns [] on error (isOptional)', async () => {
+        mockFetchError(403);
+        const result = await fetchAdminUsers();
+        expect(result).toEqual([]);
+    });
+});
+
+describe('patchAdminUser', () => {
+    it('routes to /v3/team/admin/users/{id} via PATCH', async () => {
+        mockFetchV3({ user_id: 'u1', role: 'admin', is_active: true });
+        await patchAdminUser('u1', { role: 'admin' });
+        expect(lastFetchUrl()).toContain('/v3/team/admin/users/u1');
+        expect(lastFetchInit().method).toBe('PATCH');
+    });
+
+    it('sends patch body', async () => {
+        mockFetchV3({});
+        await patchAdminUser('u2', { is_active: false });
+        const body = JSON.parse(lastFetchInit().body as string);
+        expect(body).toMatchObject({ is_active: false });
+    });
+});
+
+describe('patchUserCompanyBinding', () => {
+    it('routes to /v3/team/admin/users/{id}/company-binding via PATCH', async () => {
+        mockFetchV3({ success: true });
+        await patchUserCompanyBinding('u1', 'co-abc');
+        expect(lastFetchUrl()).toContain('/v3/team/admin/users/u1/company-binding');
+        expect(lastFetchInit().method).toBe('PATCH');
+    });
+
+    it('sends company_id in body', async () => {
+        mockFetchV3({ success: true });
+        await patchUserCompanyBinding('u3', 'my-company');
+        const body = JSON.parse(lastFetchInit().body as string);
+        expect(body).toMatchObject({ company_id: 'my-company' });
     });
 });

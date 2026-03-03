@@ -23,7 +23,6 @@ import { realtime } from "@/lib/api/realtimeClient";
 import { toast } from "sonner";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useMoraStore } from "@/lib/store/moraState";
-import { usePresence, PeerUser } from "@/lib/hooks/usePresence";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 
 interface ChatMessage {
@@ -74,9 +73,6 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     const isActive = usePaneStore(state => state.activePaneId === id);
     const { user } = useMoraStore();
 
-    // Multi-Tab Presence
-    const { peers } = usePresence();
-
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [activities, setActivities] = useState<TeamActivity[]>([]);
     const [activeTab, setActiveTab] = useState<"members" | "activity" | "invite" | "room">("members");
@@ -104,16 +100,6 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         removePane(id);
         if (onClose) onClose();
     };
-
-    // Helper to map PeerUser to TeamMember
-    const mapPeerToMember = (peer: PeerUser): TeamMember => ({
-        id: `peer-${peer.sessionId}`,
-        name: `${peer.name} (Tab)`,
-        email: peer.email,
-        role: peer.role,
-        status: peer.status as any,
-        last_seen: new Date(peer.lastHeartbeat).toISOString()
-    });
 
     // Realtime connection is managed by useRealtime (MoraShell).
     // TeamPane only subscribes to events below — no connect() here.
@@ -288,10 +274,8 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
 
 
 
-    // Fetch team data
+    // Fetch team data — real DB members only (no synthetic peers or AI bot)
     const fetchTeamData = useCallback(async () => {
-        const peerMembers = peers.map(mapPeerToMember);
-
         try {
             const [membersRes, activityRes] = await Promise.all([
                 coreGet("/v1/team/members", { isOptional: true }),
@@ -308,28 +292,16 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                 }))
                 : [];
 
-            const moraMember: TeamMember = {
-                id: "mora",
-                name: "MA'RA",
-                email: "mora@saimor.io",
-                role: "assistant",
-                status: "online"
-            };
-
-            const withMora = realMembers.some(m => m.id === moraMember.id)
-                ? realMembers
-                : [...realMembers, moraMember];
-
-            setMembers([...withMora, ...peerMembers]);
+            setMembers(realMembers);
 
             if (activityRes) setActivities(activityRes);
         } catch (error) {
             console.error("Failed to load team data", error);
-            setMembers(peerMembers);
+            setMembers([]);
         } finally {
             setIsLoading(false);
         }
-    }, [peers]);
+    }, []);
 
 
     // Poll for updates

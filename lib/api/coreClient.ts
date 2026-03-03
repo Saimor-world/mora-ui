@@ -500,6 +500,39 @@ export async function fetchFolderContext(folderId: string): Promise<FolderContex
     return coreGet(`/v3/folders/${folderId}/context`, { isOptional: true });
 }
 
+// ─── Admin user management (v3) ──────────────────────────────────────────────
+
+export interface AdminUser {
+    user_id: string;
+    name: string;
+    email: string;
+    role: 'member' | 'admin' | 'owner';
+    is_active: boolean;
+    default_company_id?: string | null;
+    created_at?: string;
+}
+
+export interface AdminUserPatch {
+    role?: 'member' | 'admin' | 'owner';
+    is_active?: boolean;
+}
+
+export async function fetchAdminUsers(includeInactive = true): Promise<AdminUser[]> {
+    const result = await coreGet(
+        `/v3/team/admin/users?include_inactive=${includeInactive}`,
+        { isOptional: true }
+    );
+    return result || [];
+}
+
+export async function patchAdminUser(userId: string, patch: AdminUserPatch): Promise<AdminUser | null> {
+    return corePatch(`/v3/team/admin/users/${userId}`, patch);
+}
+
+export async function patchUserCompanyBinding(userId: string, companyId: string): Promise<{ success: boolean } | null> {
+    return corePatch(`/v3/team/admin/users/${userId}/company-binding`, { company_id: companyId });
+}
+
 export type TreeApiResponse = {
     departments?: any[];
 };

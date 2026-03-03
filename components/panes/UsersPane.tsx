@@ -6,7 +6,7 @@ import { Users, UserPlus, Shield, Crown, User, Mail, MoreVertical, Search, Refre
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { coreGet, corePost } from '@/lib/api/coreClient';
+import { coreGet, corePost, fetchAdminUsers, patchAdminUser, AdminUser, AdminUserPatch } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 
 /**
@@ -54,53 +54,70 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     const [inviteRole, setInviteRole] = useState<'member' | 'manager'>('member');
 
     const { viewMode } = useMoraStore();
+    const currentUser = useMoraStore(s => s.user);
+    const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
     // Load team members
     useEffect(() => {
         const loadMembers = async () => {
             setIsLoading(true);
             try {
-            const [membersRes, invitesRes] = await Promise.all([
-                coreGet("/v1/team/members", { isOptional: true }),
-                coreGet("/v1/team/invites", { isOptional: true })
-            ]);
+                if (isAdmin) {
+                    // v3 admin path: includes inactive users, richer data
+                    const adminUsers = await fetchAdminUsers(true);
+                    setMembers(adminUsers.map((u: AdminUser) => ({
+                        id: u.user_id,
+                        name: u.name || (u.email ? u.email.split('@')[0] : 'User'),
+                        email: u.email,
+                        role: u.role,
+                        status: u.is_active ? 'active' : 'inactive',
+                        lastActive: u.created_at
+                    })));
+                    setInvites([]);
+                } else {
+                    // v1 member path: active members + pending invites
+                    const [membersRes, invitesRes] = await Promise.all([
+                        coreGet("/v1/team/members", { isOptional: true }),
+                        coreGet("/v1/team/invites", { isOptional: true })
+                    ]);
 
-            if (Array.isArray(membersRes)) {
-                setMembers(membersRes.map((u: any) => ({
-                    id: u.id,
-                    name: u.name || u.full_name || (u.email ? u.email.split('@')[0] : 'User'),
-                    email: u.email,
-                    role: u.role,
-                    status: 'active',
-                    lastActive: u.last_seen
-                })));
-            } else {
+                    if (Array.isArray(membersRes)) {
+                        setMembers(membersRes.map((u: any) => ({
+                            id: u.id,
+                            name: u.name || u.full_name || (u.email ? u.email.split('@')[0] : 'User'),
+                            email: u.email,
+                            role: u.role,
+                            status: 'active',
+                            lastActive: u.last_seen
+                        })));
+                    } else {
+                        setMembers([]);
+                    }
+
+                    if (Array.isArray(invitesRes)) {
+                        setInvites(invitesRes.map((invite: any) => ({
+                            id: invite.id,
+                            name: invite.email.split('@')[0],
+                            email: invite.email,
+                            role: invite.role,
+                            status: 'invited',
+                            lastActive: undefined
+                        })));
+                    } else {
+                        setInvites([]);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load team members', error);
                 setMembers([]);
-            }
-
-            if (Array.isArray(invitesRes)) {
-                setInvites(invitesRes.map((invite: any) => ({
-                    id: invite.id,
-                    name: invite.email.split('@')[0],
-                    email: invite.email,
-                    role: invite.role,
-                    status: 'invited',
-                    lastActive: undefined
-                })));
-            } else {
                 setInvites([]);
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error('Failed to load team members', error);
-            setMembers([]);
-            setInvites([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        };
 
         loadMembers();
-    }, []);
+    }, [isAdmin]);
 
     const combinedMembers = [...members, ...invites];
 
@@ -142,6 +159,27 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
             console.error('Failed to send invite:', error);
             setShowInviteModal(false);
             setInviteEmail('');
+        }
+    };
+
+    const handleRoleChange = async (memberId: string, newRole: AdminUserPatch['role']) => {
+        if (!newRole) return;
+        const updated = await patchAdminUser(memberId, { role: newRole });
+        if (updated) {
+            setMembers(prev => prev.map(m =>
+                m.id === memberId ? { ...m, role: updated.role } : m
+            ));
+            toast.success('Role updated');
+        }
+    };
+
+    const handleActiveToggle = async (memberId: string, currentlyActive: boolean) => {
+        const updated = await patchAdminUser(memberId, { is_active: !currentlyActive });
+        if (updated) {
+            setMembers(prev => prev.map(m =>
+                m.id === memberId ? { ...m, status: updated.is_active ? 'active' : 'inactive' } : m
+            ));
+            toast.success(updated.is_active ? 'User activated' : 'User deactivated');
         }
     };
 
@@ -270,11 +308,35 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Role Badge */}
-                                            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${roleConfig.bg}`}>
-                                                <RoleIcon size={12} className={roleConfig.color} />
-                                                <span className={`text-xs ${roleConfig.color}`}>{roleConfig.label}</span>
-                                            </div>
+                                            {/* Role Badge / Admin Role Select */}
+                                            {isAdmin && member.status !== 'invited' ? (
+                                                <select
+                                                    value={member.role}
+                                                    onChange={(e) => handleRoleChange(member.id, e.target.value as AdminUserPatch['role'])}
+                                                    className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 cursor-pointer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <option value="member">Member</option>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="owner">Owner</option>
+                                                </select>
+                                            ) : (
+                                                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${roleConfig.bg}`}>
+                                                    <RoleIcon size={12} className={roleConfig.color} />
+                                                    <span className={`text-xs ${roleConfig.color}`}>{roleConfig.label}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Admin Active Toggle */}
+                                            {isAdmin && member.status !== 'invited' && (
+                                                <button
+                                                    onClick={() => handleActiveToggle(member.id, member.status === 'active')}
+                                                    className={`w-8 h-4 rounded-full transition-all flex-shrink-0 relative ${member.status === 'active' ? 'bg-emerald-500/60' : 'bg-white/10'}`}
+                                                    title={member.status === 'active' ? 'Deactivate user' : 'Activate user'}
+                                                >
+                                                    <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${member.status === 'active' ? 'left-4' : 'left-0.5'}`} />
+                                                </button>
+                                            )}
 
                                             {/* Last Active */}
                                             {member.lastActive && (
