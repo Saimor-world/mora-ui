@@ -37,6 +37,7 @@ export const PhysicsDock = () => {
             <div className="w-px h-10 bg-white/10 mx-1" />
 
             <DockIcon mouseX={mouseX} icon={MessageCircle} label="Chat" onClick={() => openPane({ id: 'chat-main', type: 'chat', size: { width: 1080, height: 820 }, title: 'Môra Chat' })} />
+
             <DockIcon mouseX={mouseX} icon={Settings} label="Settings" onClick={() => openPane({ id: 'settings-main', type: 'settings', size: { width: 700, height: 500 }, title: 'Settings' })} />
         </motion.div>
     );
@@ -57,15 +58,24 @@ function DockIcon({ mouseX, icon: Icon, label, onClick }: any) {
         <motion.div
             ref={ref}
             style={{ width, height: width }}
-            className="aspect-square rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center relative group cursor-pointer hover:bg-white/10 transition-colors"
+            className="aspect-square rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center relative cursor-pointer transition-colors"
             onClick={onClick}
+            whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.10)' }}
             whileTap={{ scale: 0.9 }}
+            transition={{ duration: 0.08 }}
         >
             <Icon className="text-white/80 w-1/2 h-1/2" />
 
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 backdrop-blur rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10">
+            {/* Tooltip: framer whileHover avoids CSS group-hover latency between layout layers */}
+            <motion.div
+                className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 backdrop-blur rounded text-xs text-white pointer-events-none whitespace-nowrap border border-white/10"
+                style={{ zIndex: 200 }}
+                initial={{ opacity: 0, y: 4 }}
+                whileHover={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
                 {label}
-            </div>
+            </motion.div>
         </motion.div>
     );
 }

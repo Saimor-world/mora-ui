@@ -1211,28 +1211,32 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
                     <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 md:px-6 py-2 md:py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        {/* nav-group: exactly one Back/Forward/Up set — do not duplicate */}
+                        <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
                                 onClick={navigateBack}
                                 disabled={backStack.length === 0}
+                                aria-label="Navigate back"
                                 className={`p-1.5 rounded-lg border transition-colors ${backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
-                                title="Back"
+                                title="Back (Alt+Left)"
                             >
                                 <ChevronLeft size={14} />
                             </button>
                             <button
                                 onClick={navigateForward}
                                 disabled={forwardStack.length === 0}
+                                aria-label="Navigate forward"
                                 className={`p-1.5 rounded-lg border transition-colors ${forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
-                                title="Forward"
+                                title="Forward (Alt+Right)"
                             >
                                 <ChevronRight size={14} />
                             </button>
                             <button
                                 onClick={navigateUp}
                                 disabled={!currentFolderId}
+                                aria-label="Navigate up"
                                 className={`p-1.5 rounded-lg border transition-colors ${currentFolderId ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
-                                title="Up"
+                                title="Up (Alt+Up)"
                             >
                                 <CornerUpLeft size={14} />
                             </button>
