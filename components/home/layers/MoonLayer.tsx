@@ -73,8 +73,11 @@ export const MoonLayer: React.FC<MoonLayerProps> = ({
                             animate={{
                                 scale: 1,
                                 opacity: 1,
-                                x: (orbitActive && moonOrbitOffsets) ? moonOrbitOffsets.map(o => o.x) : 0,
-                                y: (orbitActive && moonOrbitOffsets) ? moonOrbitOffsets.map(o => o.y) : 0
+                                // Pause orbit while parent planet is hovered/held so moons are easier to click
+                                x: (orbitActive && moonOrbitOffsets && hoveredPlanet !== space.departmentId && heldPlanetId !== space.departmentId)
+                                    ? moonOrbitOffsets.map(o => o.x) : 0,
+                                y: (orbitActive && moonOrbitOffsets && hoveredPlanet !== space.departmentId && heldPlanetId !== space.departmentId)
+                                    ? moonOrbitOffsets.map(o => o.y) : 0
                             }}
                             transition={{
                                 delay,

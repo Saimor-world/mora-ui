@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Folder, ArrowRight, Activity, Database } from 'lucide-react';
@@ -46,6 +46,28 @@ export const Planet: React.FC<PlanetProps> = ({
     const [isMounted, setIsMounted] = useState(false);
     const contextRef = useRef<HTMLDivElement>(null);
     const planetRef = useRef<HTMLDivElement>(null);
+    // Dwell timer: prevent blink when cursor briefly leaves the planet
+    const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleMouseEnter = useCallback((e: React.MouseEvent) => {
+        if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
+        setIsHovered(true);
+        onHover?.(true);
+        const rect = e.currentTarget.getBoundingClientRect();
+        setContextMenuPos({ x: rect.right + 16, y: rect.top + rect.height / 2 });
+        setShowContextMenu(true);
+    }, [onHover]);
+
+    const handleMouseLeave = useCallback(() => {
+        leaveTimerRef.current = setTimeout(() => {
+            setIsHovered(false);
+            onHover?.(false);
+            setShowContextMenu(false);
+        }, 300); // 300ms dwell — screenshot-stable, no blink
+    }, [onHover]);
+
+    // Cleanup dwell timer on unmount
+    useEffect(() => () => { if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current); }, []);
 
     // Portal mount check (SSR safety)
     useEffect(() => {
@@ -73,23 +95,8 @@ export const Planet: React.FC<PlanetProps> = ({
                 top: position.y,
                 transform: 'translate(-50%, -50%)',
             }}
-            onMouseEnter={(e) => {
-                setIsHovered(true);
-                onHover?.(true);
-
-                // Calculate tooltip position (right of planet)
-                const rect = e.currentTarget.getBoundingClientRect();
-                setContextMenuPos({
-                    x: rect.right + 16,
-                    y: rect.top + rect.height / 2
-                });
-                setShowContextMenu(true);
-            }}
-            onMouseLeave={() => {
-                setIsHovered(false);
-                onHover?.(false);
-                setShowContextMenu(false);
-            }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
             onClick={onClick}
         >
             {/* ═ V10 FUNCTIONAL RINGS (Health & Capacity) ═ */}
@@ -172,8 +179,8 @@ export const Planet: React.FC<PlanetProps> = ({
 
                     border: `1.5px solid ${style.border}30` // More defined border
                 }}
-                whileHover={{ scale: 1.2, rotate: 5 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                whileHover={{ scale: 1.08 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
             >
                 {/* Specular Point (Tiny crisp reflection) */}
                 <div
@@ -265,9 +272,8 @@ export const Planet: React.FC<PlanetProps> = ({
                         exit={{ opacity: 0, x: -10, scale: 0.95 }}
                         transition={{
                             type: 'spring',
-                            stiffness: 400,
-                            damping: 25,
-                            duration: 0.2
+                            stiffness: 220,
+                            damping: 30,
                         }}
                         className="fixed z-[9999] pointer-events-none"
                         style={{
