@@ -87,8 +87,8 @@ export const Folder: React.FC<FolderProps> = ({
         onHover?.(true);
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const isRightSide = rect.right > window.innerWidth - 250;
-        setPortalPos({ 
-            x: isRightSide ? rect.left - 12 : rect.right + 12, 
+        setPortalPos({
+            x: isRightSide ? rect.left - 12 : rect.right + 12,
             y: rect.top + rect.height / 2,
             isRightSide
         });
@@ -100,7 +100,7 @@ export const Folder: React.FC<FolderProps> = ({
             setIsHovered(false);
             onHover?.(false);
             setShowPortal(false);
-        }, 120);
+        }, 300); // 300ms — screenshot-stable, matches Planet.tsx dwell
     };
 
     const svgSize = diameter + ring * 2;
@@ -121,8 +121,7 @@ export const Folder: React.FC<FolderProps> = ({
             onClick={onClick}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
-                scale: isHovered ? 1.28 : 1,
-                rotate: isHovered ? 5 : 0,
+                scale: isHovered ? 1.10 : 1,
                 opacity: 1,
                 x: (orbitActive && !prefersReducedMotion) ? [0, 2, 0, -2, 0] : 0,
                 y: (orbitActive && !prefersReducedMotion) ? [0, -1.2, 0, 1.2, 0] : 0,
@@ -264,7 +263,7 @@ export const Folder: React.FC<FolderProps> = ({
                         initial={{ opacity: 0, x: -8, scale: 0.94 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -8, scale: 0.94 }}
-                        transition={{ type: 'spring', stiffness: 440, damping: 26 }}
+                        transition={{ type: 'spring', stiffness: 220, damping: 28 }}
                         className="fixed z-[9999] pointer-events-none"
                         style={{ left: portalPos.x, top: portalPos.y, transform: portalPos.isRightSide ? 'translate(-100%, -50%)' : 'translateY(-50%)' }}
                     >

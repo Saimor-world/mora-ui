@@ -1047,7 +1047,8 @@ export interface CachePerformance {
         metrics: CacheBucket;
     };
     folder_context: CacheBucket;
-    [key: string]: CacheBucket | { search: CacheBucket; metrics: CacheBucket };
+    entity_context?: CacheBucket; // Added core 3161388
+    [key: string]: CacheBucket | { search: CacheBucket; metrics: CacheBucket } | undefined;
 }
 
 export async function getCachePerformance(): Promise<CachePerformance | null> {

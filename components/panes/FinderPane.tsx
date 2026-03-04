@@ -860,6 +860,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                         if (resolvedFolderId) {
                             const folderName = findNodeInTree(rawTree, resolvedFolderId)?.name || resolvedFolderId;
+                            // Load nodes FIRST so the store already has data
+                            // when navigateToFolder triggers the content-display effect.
+                            // This prevents the empty-flash (flicker) between old and new content.
                             await loadNodesForFolder(resolvedFolderId);
                             navigateToFolder(resolvedFolderId);
                             // Override the generic end-of-loop toast with a precise one

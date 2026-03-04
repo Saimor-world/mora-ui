@@ -375,6 +375,12 @@ const DiagnosticsPanel: React.FC<{
                         <CacheBucketRow label="learning_brain · metrics" bucket={cachePerf.learning_brain.metrics} />
                         <div className="border-t border-white/5" />
                         <CacheBucketRow label="folder_context" bucket={cachePerf.folder_context} />
+                        {cachePerf.entity_context && (
+                            <>
+                                <div className="border-t border-white/5" />
+                                <CacheBucketRow label="entity_context" bucket={cachePerf.entity_context} />
+                            </>
+                        )}
                     </div>
                 </div>
             )}

@@ -50,10 +50,10 @@ function resolveIcon(name: string): LucideIcon {
 }
 
 const SIZE_MAP = {
-    sm: { diameter: 28,  iconSize: 12, ring: 12 },
-    md: { diameter: 36,  iconSize: 15, ring: 16 },
-    lg: { diameter: 48,  iconSize: 19, ring: 20 },
-    xl: { diameter: 60,  iconSize: 24, ring: 26 },
+    sm: { diameter: 32, iconSize: 13, ring: 13 },
+    md: { diameter: 42, iconSize: 17, ring: 18 },
+    lg: { diameter: 54, iconSize: 21, ring: 22 },
+    xl: { diameter: 60, iconSize: 24, ring: 26 },
 };
 
 export const Star: React.FC<StarProps> = ({
@@ -90,8 +90,8 @@ export const Star: React.FC<StarProps> = ({
         onHover?.(true);
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const isRightSide = rect.right > window.innerWidth - 250;
-        setPortalPos({ 
-            x: isRightSide ? rect.left - 14 : rect.right + 14, 
+        setPortalPos({
+            x: isRightSide ? rect.left - 14 : rect.right + 14,
             y: rect.top + rect.height / 2,
             isRightSide
         });
@@ -103,7 +103,7 @@ export const Star: React.FC<StarProps> = ({
             setIsHovered(false);
             onHover?.(false);
             setShowPortal(false);
-        }, 120);
+        }, 300);
     };
 
     // SVG canvas is diameter + 2*ring on each side
