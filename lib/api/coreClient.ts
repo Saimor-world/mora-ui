@@ -506,6 +506,20 @@ export async function fetchFolderContext(folderId: string): Promise<FolderContex
     }
 }
 
+// GET /v3/{entity_id}/context — generic entity resolver (core SHA 001f61c)
+// Returns {resolved:false} for unknown ids (no 404), so safe to call speculatively.
+export interface EntityContext {
+    resolved: boolean;
+    entity_type?: 'folder' | 'space' | 'department' | 'company' | string;
+    entity_id?: string;
+    path?: FolderContextPath;
+    name?: string;
+}
+
+export async function getEntityContext(entityId: string): Promise<EntityContext | null> {
+    return coreGet(`/v3/${entityId}/context`, { isOptional: true });
+}
+
 // ─── Admin user management (v3) ──────────────────────────────────────────────
 
 export interface AdminUser {

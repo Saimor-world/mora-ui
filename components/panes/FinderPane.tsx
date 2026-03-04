@@ -5,7 +5,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
 import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
-import { getSemanticallySimilarNodes, fetchFolderContext, FolderContext } from '@/lib/api/coreClient';
+import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
 import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
@@ -292,7 +292,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
     const [graphZoom, setGraphZoom] = useState(0.85);
     const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
-    const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: {x: number, y: number} }>({ isDragging: false, startX: 0, startY: 0, initialPan: {x: 0, y: 0} });
+    const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: { x: number, y: number } }>({ isDragging: false, startX: 0, startY: 0, initialPan: { x: 0, y: 0 } });
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -620,7 +620,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, [currentFolderId, rawTree, buildBreadcrumbs]);
 
     // Fetch server-side full path context for persistent breadcrumb bar.
-    // Important: only folders have /folders/{id}/context. Department/space IDs must not call this endpoint.
+    // PRIMARY: /v3/folders/{id}/context — strict folder paths only.
+    // FALLBACK: /v3/{id}/context — generic entity resolver, safe for any id.
+    //   Returns {resolved:false} instead of 404 if id is unknown.
     useEffect(() => {
         if (!currentFolderId) {
             setFolderContext(null);
@@ -637,23 +639,35 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             knownFolderFromSpaces;
         const isFolderContext = currentNode?.type === 'folder' || isDirectFolderStart;
 
-        if (!isFolderContext) {
-            setFolderContext(null);
-            return;
-        }
-
         let cancelled = false;
-        fetchFolderContext(currentFolderId)
-            .then((ctx) => {
-                if (!cancelled) {
-                    setFolderContext(ctx);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setFolderContext(null);
-                }
-            });
+
+        if (isFolderContext) {
+            // Path 1: strict folder context (breadcrumb-quality data)
+            fetchFolderContext(currentFolderId)
+                .then((ctx) => { if (!cancelled) setFolderContext(ctx); })
+                .catch(() => { if (!cancelled) setFolderContext(null); });
+        } else {
+            // Path 2: generic entity context — no 404 noise
+            getEntityContext(currentFolderId)
+                .then((ec) => {
+                    if (cancelled) return;
+                    if (ec?.resolved && ec.path) {
+                        // Adapt EntityContext shape to FolderContext if path is available
+                        setFolderContext({
+                            scope: ec.entity_type ?? 'entity',
+                            folder: { id: currentFolderId, name: ec.name ?? currentFolderId },
+                            path: ec.path,
+                            counts: { nodes: 0, subfolders: 0 },
+                        });
+                    } else if (ec && !ec.resolved) {
+                        // resolved=false: unknown id — silent, no console error
+                        setFolderContext(null);
+                    } else {
+                        setFolderContext(null);
+                    }
+                })
+                .catch(() => { if (!cancelled) setFolderContext(null); });
+        }
         return () => { cancelled = true; };
     }, [currentFolderId, findNodeInTree, foldersBySpace, rawTree, startFolderId]);
 
@@ -1145,7 +1159,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     </button>
                                 </React.Fragment>
                             )}
-                            
+
                             {folderContext?.path?.space && (
                                 <React.Fragment>
                                     <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
@@ -1419,13 +1433,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         </div>
                                                         <div className="space-y-1">
                                                             <span className={`text-sm truncate block ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={file.name}>
-        {file.name}
-        {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
-            <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
-                {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i)[1].toUpperCase()}
-            </span>
-        )}
-    </span>
+                                                                {file.name}
+                                                                {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
+                                                                    <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
+                                                                        {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i)[1].toUpperCase()}
+                                                                    </span>
+                                                                )}
+                                                            </span>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-[9px] text-white/30 uppercase tracking-tighter">{file.type || 'system'}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
@@ -1460,7 +1474,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
-                                        <div 
+                                        <div
                                             className="relative w-full h-full min-h-[400px] overflow-hidden cursor-grab active:cursor-grabbing"
                                             onWheel={(e) => {
                                                 if (viewMode === 'graph') {
@@ -1484,10 +1498,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             <div className="absolute bottom-16 right-4 flex flex-col gap-2 z-50">
                                                 <button onClick={() => setGraphZoom(z => Math.min(3, z + 0.2))} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">+</button>
                                                 <button onClick={() => setGraphZoom(z => Math.max(0.2, z - 0.2))} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">-</button>
-                                                <button onClick={() => { setGraphZoom(1); setGraphPan({x:0, y:0}); }} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">Reset</button>
+                                                <button onClick={() => { setGraphZoom(1); setGraphPan({ x: 0, y: 0 }); }} className="p-2 bg-black/40 border border-white/10 rounded-lg hover:bg-white/10 text-white/70">Reset</button>
                                             </div>
-                                            <div 
-                                                className="absolute inset-0 transition-transform duration-75 ease-out origin-center" 
+                                            <div
+                                                className="absolute inset-0 transition-transform duration-75 ease-out origin-center"
                                                 style={{ transform: `translate(${graphPan.x}px, ${graphPan.y}px) scale(${graphZoom})` }}
                                             >
                                                 {/* Center core: Current Context */}
@@ -1499,147 +1513,147 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         {folderContext?.path?.breadcrumbs?.slice(-1)[0]?.name || folderContext?.path?.space?.name || folderContext?.path?.department?.name || 'Home'}
                                                     </span>
                                                 </div>
-                                            {/* Center core */}
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 blur-sm opacity-50" />
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-lg" />
+                                                {/* Center core */}
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 blur-sm opacity-50" />
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-lg" />
 
-                                            {/* Render folders/spaces as orbiting nodes */}
-                                            {filteredFolders.map((folder, i) => {
-                                                const count = Math.max(filteredFolders.length, 1);
-                                                const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-                                                const radius = 150 + (i % 3) * 42;
-                                                const x = Math.cos(angle) * radius;
-                                                const y = Math.sin(angle) * radius;
-                                                const isSelected = selectedNodeId === folder.id;
+                                                {/* Render folders/spaces as orbiting nodes */}
+                                                {filteredFolders.map((folder, i) => {
+                                                    const count = Math.max(filteredFolders.length, 1);
+                                                    const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+                                                    const radius = 150 + (i % 3) * 42;
+                                                    const x = Math.cos(angle) * radius;
+                                                    const y = Math.sin(angle) * radius;
+                                                    const isSelected = selectedNodeId === folder.id;
 
-                                                return (
-                                                    <div
-                                                        key={folder.id}
-                                                        className={`absolute cursor-pointer transition-all duration-300 group ${isSelected ? 'z-20 scale-110' : 'z-10 hover:scale-105'
-                                                            }`}
-                                                        style={{
-                                                            left: `calc(50% + ${x}px)`,
-                                                            top: `calc(50% + ${y}px)`,
-                                                            transform: 'translate(-50%, -50%)'
-                                                        }}
-                                                        onClick={(e) => handleFolderClick(e, folder.id)} onContextMenu={(e) => handleContextMenu(e, folder, "folder")}
-                                                    >
-                                                        {/* Connection line to center */}
-                                                        <svg
-                                                            className="absolute pointer-events-none opacity-30 group-hover:opacity-60 transition-opacity"
+                                                    return (
+                                                        <div
+                                                            key={folder.id}
+                                                            className={`absolute cursor-pointer transition-all duration-300 group ${isSelected ? 'z-20 scale-110' : 'z-10 hover:scale-105'
+                                                                }`}
                                                             style={{
-                                                                width: Math.abs(x) + 20,
-                                                                height: Math.abs(y) + 20,
-                                                                left: x < 0 ? 0 : -x,
-                                                                top: y < 0 ? 0 : -y,
-                                                                overflow: 'visible'
+                                                                left: `calc(50% + ${x}px)`,
+                                                                top: `calc(50% + ${y}px)`,
+                                                                transform: 'translate(-50%, -50%)'
                                                             }}
+                                                            onClick={(e) => handleFolderClick(e, folder.id)} onContextMenu={(e) => handleContextMenu(e, folder, "folder")}
                                                         >
-                                                            <line
-                                                                x1={x < 0 ? Math.abs(x) : 0}
-                                                                y1={y < 0 ? Math.abs(y) : 0}
-                                                                x2={x < 0 ? 0 : x}
-                                                                y2={y < 0 ? 0 : y}
-                                                                stroke={folder.type === 'department' ? '#10b981' : folder.type === 'space' ? '#06b6d4' : '#3b82f6'}
-                                                                strokeWidth="1"
-                                                                strokeDasharray="4 4"
-                                                            />
-                                                        </svg>
+                                                            {/* Connection line to center */}
+                                                            <svg
+                                                                className="absolute pointer-events-none opacity-30 group-hover:opacity-60 transition-opacity"
+                                                                style={{
+                                                                    width: Math.abs(x) + 20,
+                                                                    height: Math.abs(y) + 20,
+                                                                    left: x < 0 ? 0 : -x,
+                                                                    top: y < 0 ? 0 : -y,
+                                                                    overflow: 'visible'
+                                                                }}
+                                                            >
+                                                                <line
+                                                                    x1={x < 0 ? Math.abs(x) : 0}
+                                                                    y1={y < 0 ? Math.abs(y) : 0}
+                                                                    x2={x < 0 ? 0 : x}
+                                                                    y2={y < 0 ? 0 : y}
+                                                                    stroke={folder.type === 'department' ? '#10b981' : folder.type === 'space' ? '#06b6d4' : '#3b82f6'}
+                                                                    strokeWidth="1"
+                                                                    strokeDasharray="4 4"
+                                                                />
+                                                            </svg>
 
-                                                        {/* Node */}
-                                                        <div className={`p-3 rounded-xl border-2 backdrop-blur-sm ${isSelected
-                                                            ? 'bg-emerald-500/30 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
-                                                            : folder.type === 'department'
-                                                                ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
-                                                                : folder.type === 'space'
-                                                                    ? 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20'
-                                                                    : 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
-                                                            }`}>
-                                                            {folder.type === 'department' ? (
-                                                                <Globe size={24} className="text-emerald-400" />
-                                                            ) : folder.type === 'space' ? (
-                                                                <Circle size={24} className="text-cyan-400" />
-                                                            ) : (
-                                                                <FolderIcon size={24} className="text-blue-400" />
-                                                            )}
+                                                            {/* Node */}
+                                                            <div className={`p-3 rounded-xl border-2 backdrop-blur-sm ${isSelected
+                                                                ? 'bg-emerald-500/30 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                                                                : folder.type === 'department'
+                                                                    ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
+                                                                    : folder.type === 'space'
+                                                                        ? 'bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20'
+                                                                        : 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
+                                                                }`}>
+                                                                {folder.type === 'department' ? (
+                                                                    <Globe size={24} className="text-emerald-400" />
+                                                                ) : folder.type === 'space' ? (
+                                                                    <Circle size={24} className="text-cyan-400" />
+                                                                ) : (
+                                                                    <FolderIcon size={24} className="text-blue-400" />
+                                                                )}
+                                                            </div>
+
+                                                            {/* Label */}
+                                                            <div className={`absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium transition-colors ${isSelected ? 'text-emerald-400' : 'text-white/60 group-hover:text-white'
+                                                                }`}>
+                                                                {folder.name.length > 12 ? folder.name.slice(0, 12) + '...' : folder.name}
+                                                            </div>
                                                         </div>
+                                                    );
+                                                })}
 
-                                                        {/* Label */}
-                                                        <div className={`absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium transition-colors ${isSelected ? 'text-emerald-400' : 'text-white/60 group-hover:text-white'
-                                                            }`}>
-                                                            {folder.name.length > 12 ? folder.name.slice(0, 12) + '...' : folder.name}
+                                                {/* Files shown as smaller stars further out */}
+                                                {filteredFiles.slice(0, 10).map((file, i) => {
+                                                    const fileCount = Math.max(filteredFiles.slice(0, 10).length, 1);
+                                                    const angle = (i / fileCount) * Math.PI * 2 - Math.PI / 2;
+                                                    const radius = filteredFolders.length > 0
+                                                        ? 175 + (i % 3) * 22
+                                                        : 130 + (i % 3) * 18;
+                                                    const x = Math.cos(angle) * radius;
+                                                    const y = Math.sin(angle) * radius;
+                                                    const isResonant = resonanceIds.includes(file.id);
+
+                                                    return (
+                                                        <div
+                                                            key={file.id}
+                                                            className="absolute cursor-pointer opacity-60 hover:opacity-100 transition-all"
+                                                            style={{
+                                                                left: `calc(50% + ${x}px)`,
+                                                                top: `calc(50% + ${y}px)`,
+                                                                transform: 'translate(-50%, -50%)'
+                                                            }}
+                                                            onClick={() => {
+                                                                checkResonance(file.id);
+                                                                openPane({
+                                                                    id: `doc-${file.id}`,
+                                                                    type: 'document',
+                                                                    title: file.name || 'Document',
+                                                                    size: { width: 800, height: 600 },
+                                                                    data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
+                                                                });
+                                                            }} onContextMenu={(e) => handleContextMenu(e, file, "file")}
+                                                            title={file.name}
+                                                            onMouseEnter={() => {
+                                                                // Map current node positions for the constellation engine
+                                                                fetchConstellation(file.id, new Map());
+                                                            }}
+                                                            onMouseLeave={clearConstellation}
+                                                        >
+                                                            <div className={`w-3 h-3 rounded-full ${isResonant || connections.some(c => c.id.includes(file.id))
+                                                                ? 'bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)] scale-125'
+                                                                : 'bg-white/40 hover:bg-emerald-400'
+                                                                } transition-all duration-300`} />
                                                         </div>
+                                                    );
+                                                })}
+
+                                                {/* Legend */}
+                                                <div className="absolute bottom-4 left-4 flex items-center justify-center flex-wrap gap-4 text-[10px] text-white/60 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl z-50 shadow-2xl">
+                                                    <div className="font-medium text-emerald-400/80 mr-2 uppercase tracking-widest hidden sm:block">Legend</div>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                                                        <span>Planet</span>
                                                     </div>
-                                                );
-                                            })}
-
-                                            {/* Files shown as smaller stars further out */}
-                                            {filteredFiles.slice(0, 10).map((file, i) => {
-                                                const fileCount = Math.max(filteredFiles.slice(0, 10).length, 1);
-                                                const angle = (i / fileCount) * Math.PI * 2 - Math.PI / 2;
-                                                const radius = filteredFolders.length > 0
-                                                    ? 175 + (i % 3) * 22
-                                                    : 130 + (i % 3) * 18;
-                                                const x = Math.cos(angle) * radius;
-                                                const y = Math.sin(angle) * radius;
-                                                const isResonant = resonanceIds.includes(file.id);
-
-                                                return (
-                                                    <div
-                                                        key={file.id}
-                                                        className="absolute cursor-pointer opacity-60 hover:opacity-100 transition-all"
-                                                        style={{
-                                                            left: `calc(50% + ${x}px)`,
-                                                            top: `calc(50% + ${y}px)`,
-                                                            transform: 'translate(-50%, -50%)'
-                                                        }}
-                                                        onClick={() => {
-                                                            checkResonance(file.id);
-                                                            openPane({
-                                                                id: `doc-${file.id}`,
-                                                                type: 'document',
-                                                                title: file.name || 'Document',
-                                                                size: { width: 800, height: 600 },
-                                                                data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
-                                                            });
-                                                        }} onContextMenu={(e) => handleContextMenu(e, file, "file")}
-                                                        title={file.name}
-                                                        onMouseEnter={() => {
-                                                            // Map current node positions for the constellation engine
-                                                            fetchConstellation(file.id, new Map());
-                                                        }}
-                                                        onMouseLeave={clearConstellation}
-                                                    >
-                                                        <div className={`w-3 h-3 rounded-full ${isResonant || connections.some(c => c.id.includes(file.id))
-                                                            ? 'bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)] scale-125'
-                                                            : 'bg-white/40 hover:bg-emerald-400'
-                                                            } transition-all duration-300`} />
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                                                        <span>Moon</span>
                                                     </div>
-                                                );
-                                            })}
-
-                                            {/* Legend */}
-                                            <div className="absolute bottom-4 left-4 flex items-center justify-center flex-wrap gap-4 text-[10px] text-white/60 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl z-50 shadow-2xl">
-                                                <div className="font-medium text-emerald-400/80 mr-2 uppercase tracking-widest hidden sm:block">Legend</div>
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                    <span>Planet</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                                                    <span>Moon</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 rounded-full bg-blue-400" />
-                                                    <span>Folder</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-2 h-2 rounded-full bg-white/40" />
-                                                    <span>File</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-full bg-blue-400" />
+                                                        <span>Folder</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-2 h-2 rounded-full bg-white/40" />
+                                                        <span>File</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                     ) : (
                                         /* LIST VIEW */
                                         <div className="flex flex-col gap-1">
@@ -1831,11 +1845,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     <button onClick={() => setIsCreateFolderOpen(true)} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
                                         <FolderIcon size={14} /> New Folder
                                     </button>
-                                    {breadcrumbs.length > 1 && (
-                                        <button onClick={navigateUp} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
-                                            <CornerUpLeft size={14} /> Go Up
-                                        </button>
-                                    )}
                                 </>
                             )}
                         </div>
