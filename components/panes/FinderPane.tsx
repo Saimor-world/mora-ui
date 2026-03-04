@@ -113,11 +113,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return () => window.removeEventListener('click', closeMenu);
     }, []);
 
-    const handleContextMenu = (e: React.MouseEvent, item: any, type: 'folder' | 'file' | 'background') => {
+    const handleContextMenu = useCallback((e: React.MouseEvent, item: any, type: 'folder' | 'file' | 'background') => {
         e.preventDefault();
         e.stopPropagation();
         setContextMenu({ x: e.clientX, y: e.clientY, item, type });
-    };
+    }, []);
 
     const handleRename = async () => {
         if (!contextMenu?.item) return;
@@ -347,6 +347,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [folderContext, setFolderContext] = useState<FolderContext | null>(null);
     const [contextHint, setContextHint] = useState<string | null>(null);
     const currentFolderIdRef = useRef<string | null>(null);
+    const contextCacheRef = useRef<Map<string, { ctx: FolderContext | null; hint: string | null }>>(new Map());
 
     useEffect(() => {
         currentFolderIdRef.current = currentFolderId;
@@ -481,6 +482,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (companies.length === 1) return companies[0].id;
         return null;
     }, [activeCompanyId, paneCompanyId, companies]);
+
+    useEffect(() => {
+        contextCacheRef.current.clear();
+    }, [resolvedCompanyId]);
 
     const currentPathLabel = useMemo(() => {
         const parts: string[] = [];
@@ -688,9 +693,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [currentFolderId, rawTree, buildBreadcrumbs]);
 
-    // Fetch server-side full path context for persistent breadcrumb bar.
-    // PRIMARY: /v3/folders/{id}/context — strict folder paths only.
-    // FALLBACK: /v3/{id}/context — generic entity resolver, safe for any id.
+        // Fetch server-side full path context for persistent breadcrumb bar.
+    // PRIMARY: /v3/folders/{id}/context - strict folder paths only.
+    // FALLBACK: /v3/{id}/context - generic entity resolver, safe for any id.
     //   Returns {resolved:false} instead of 404 if id is unknown.
     useEffect(() => {
         if (!currentFolderId) {
@@ -700,7 +705,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
         if (!UUID_RE.test(currentFolderId)) {
             setFolderContext(null);
-            setContextHint('Kontext konnte nicht eindeutig aufgelöst werden.');
+            setContextHint('Kontext konnte nicht eindeutig aufgeloest werden.');
+            return;
+        }
+
+        const cached = contextCacheRef.current.get(currentFolderId);
+        if (cached) {
+            setFolderContext(cached.ctx);
+            setContextHint(cached.hint);
             return;
         }
 
@@ -715,47 +727,46 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         const isFolderContext = currentNode?.type === 'folder' || isDirectFolderStart;
 
         let cancelled = false;
+        const storeCache = (ctx: FolderContext | null, hint: string | null) => {
+            contextCacheRef.current.set(currentFolderId, { ctx, hint });
+            setFolderContext(ctx);
+            setContextHint(hint);
+        };
 
         if (isFolderContext) {
             // Path 1: strict folder context (breadcrumb-quality data)
             fetchFolderContext(currentFolderId)
                 .then((ctx) => {
                     if (cancelled) return;
-                    setFolderContext(ctx);
-                    setContextHint(ctx ? null : 'Ordnerkontext aktuell nicht verfügbar.');
+                    storeCache(ctx, ctx ? null : 'Ordnerkontext aktuell nicht verfuegbar.');
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        setFolderContext(null);
-                        setContextHint('Ordnerkontext aktuell nicht verfügbar.');
+                        storeCache(null, 'Ordnerkontext aktuell nicht verfuegbar.');
                     }
                 });
         } else {
-            // Path 2: generic entity context — no 404 noise
+            // Path 2: generic entity context - no 404 noise
             getEntityContext(currentFolderId)
                 .then((ec) => {
                     if (cancelled) return;
                     if (ec?.resolved && ec.path) {
                         // Adapt EntityContext shape to FolderContext if path is available
-                        setFolderContext({
+                        storeCache({
                             scope: ec.entity_type ?? 'entity',
                             folder: { id: currentFolderId, name: ec.name ?? currentFolderId },
                             path: ec.path,
                             counts: { nodes: 0, subfolders: 0 },
-                        });
-                        setContextHint(null);
+                        }, null);
                     } else if (ec && !ec.resolved) {
-                        setFolderContext(null);
-                        setContextHint('Kontext-ID nicht aufloesbar, Inhalte bleiben verfuegbar.');
+                        storeCache(null, 'Kontext-ID nicht aufloesbar, Inhalte bleiben verfuegbar.');
                     } else {
-                        setFolderContext(null);
-                        setContextHint('Kontext konnte nicht aufgeloest werden.');
+                        storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
                     }
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        setFolderContext(null);
-                        setContextHint('Kontext konnte nicht aufgeloest werden.');
+                        storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
                     }
                 });
         }
@@ -2037,3 +2048,4 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         </>
     );
 };
+

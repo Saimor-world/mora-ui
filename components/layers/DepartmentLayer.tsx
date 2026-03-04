@@ -12,7 +12,7 @@ import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
-const ORBIT_STEP_SECONDS = 1 / 30; // Cap visual updates to ~30 FPS to reduce rerender load.
+const ORBIT_STEP_SECONDS = 1 / 24; // Cap visual updates to ~24 FPS to reduce rerender load.
 
 /**
  * DEPARTMENT LAYER (L2)
@@ -21,25 +21,28 @@ const ORBIT_STEP_SECONDS = 1 / 30; // Cap visual updates to ~30 FPS to reduce re
  * (via getDeptStyle) so HR looks pink, Tech looks cyan, Management green, etc.
  */
 export const DepartmentLayer: React.FC = () => {
-    const {
-        activeDepartmentId,
-        activeCompanyId,
-        departments,
-        spacesByDepartment,
-        foldersBySpace,
-        orbState,
-        isLoadingSpaces,
-        loadSpacesForDepartment,
-        loadFoldersForSpace,
-        navigateToCore,
-        navigateToSpace,
-        addSpace,
-        setActiveSpace,
-        treeData
-    } = useMoraStore();
+    // Granular store selectors — prevents rerender on unrelated store mutations
+    const activeDepartmentId      = useMoraStore(s => s.activeDepartmentId);
+    const activeCompanyId         = useMoraStore(s => s.activeCompanyId);
+    const departments             = useMoraStore(s => s.departments);
+    const spacesByDepartment      = useMoraStore(s => s.spacesByDepartment);
+    const foldersBySpace          = useMoraStore(s => s.foldersBySpace);
+    const orbState                = useMoraStore(s => s.orbState);
+    const isLoadingSpaces         = useMoraStore(s => s.isLoadingSpaces);
+    const treeData                = useMoraStore(s => s.treeData);
+    const loadSpacesForDepartment = useMoraStore(s => s.loadSpacesForDepartment);
+    const loadFoldersForSpace     = useMoraStore(s => s.loadFoldersForSpace);
+    const navigateToCore          = useMoraStore(s => s.navigateToCore);
+    const navigateToSpace         = useMoraStore(s => s.navigateToSpace);
+    const addSpace                = useMoraStore(s => s.addSpace);
+    const setActiveSpace          = useMoraStore(s => s.setActiveSpace);
     const { openPane } = usePaneStore();
 
-    const currentDepartment = departments.find((d) => d.id === activeDepartmentId);
+    // Memoized — was running raw find() on every RAF tick (30fps)
+    const currentDepartment = useMemo(
+        () => departments.find((d) => d.id === activeDepartmentId),
+        [departments, activeDepartmentId]
+    );
     const deptTitle = currentDepartment?.name || '';
     const deptColor = currentDepartment?.color || '#10b981';
     const nebulaIntensity = useMemo(() => {

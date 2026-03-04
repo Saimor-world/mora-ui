@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -18,7 +18,7 @@ const FOLDER_COLORS = [
     { name: 'Rose', value: '#f43f5e' },
     { name: 'Cyan', value: '#06b6d4' },
 ];
-const ORBIT_STEP_SECONDS = 1 / 30; // Cap visual updates to ~30 FPS to reduce rerender load.
+const ORBIT_STEP_SECONDS = 1 / 24; // Cap visual updates to ~24 FPS to reduce rerender load.
 
 // Orbit speeds per ring: inner faster, outer slower â€” slow planetary drift.
 const RING_SPEEDS = [0.032, 0.020, 0.013];
@@ -28,27 +28,25 @@ const RING_RADII_X = [Math.max(240, 220), Math.max(370, 350), Math.max(490, 470)
 const RING_RADII_Y = [Math.max(175, 155), Math.max(265, 245), Math.max(345, 325)];
 
 export const SpaceLayer: React.FC = () => {
-    const {
-        activeSpaceId,
-        activeDepartmentId,
-        activeCompanyId,
-        departments,
-        spacesByDepartment,
-        foldersBySpace,
-        orbState,
-        isLoadingFolders,
-        navigateToDepartment,
-        loadFoldersForSpace,
-        addFolder,
-        viewLevel,
-    } = useMoraStore();
+    // Granular store selectors — prevents rerender on unrelated store mutations
+    const activeSpaceId         = useMoraStore(s => s.activeSpaceId);
+    const activeDepartmentId    = useMoraStore(s => s.activeDepartmentId);
+    const activeCompanyId       = useMoraStore(s => s.activeCompanyId);
+    const departments           = useMoraStore(s => s.departments);
+    const spacesByDepartment    = useMoraStore(s => s.spacesByDepartment);
+    const foldersBySpace        = useMoraStore(s => s.foldersBySpace);
+    const orbState              = useMoraStore(s => s.orbState);
+    const isLoadingFolders      = useMoraStore(s => s.isLoadingFolders);
+    const viewLevel             = useMoraStore(s => s.viewLevel);
+    const navigateToDepartment  = useMoraStore(s => s.navigateToDepartment);
+    const loadFoldersForSpace   = useMoraStore(s => s.loadFoldersForSpace);
+    const addFolder             = useMoraStore(s => s.addFolder);
     const { openPane } = usePaneStore();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const prefersReducedMotion = useReducedMotion();
-    const [isAnyHovered, setIsAnyHovered] = useState(false);
 
     // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
     const [viewportWidth, setViewportWidth] = useState<number>(
@@ -467,7 +465,6 @@ export const SpaceLayer: React.FC = () => {
                                     delay={delay}
                                     onHover={(hovered) => {
                                         isAnyHoveredRef.current = hovered;
-                                        setIsAnyHovered(hovered);
                                     }}
                                     onClick={() => {
                                         openPane({
