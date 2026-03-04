@@ -38,6 +38,8 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const viewLevel = useMoraStore((s) => s.viewLevel);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const companies = useMoraStore((s) => s.companies);
+    const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
 
     // Tab state - respects data.activeSection if provided
     const [activeSection, setActiveSection] = useState<HubSection>(
@@ -72,7 +74,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                             showSearch={true}
                             showQueue={true}
                             showStats={!isCompact}
-                            companyId={activeCompanyId}
+                            companyId={resolvedCompanyId}
                         />
                     </div>
                 );
@@ -82,32 +84,9 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-4">
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
-                                <span className="text-xs font-medium text-white/80">Mora Statistics</span>
+                                <span className="text-xs font-medium text-white/80">Mora Statistics (Live)</span>
                             </div>
-                            <MemoryStats compact={isCompact} companyId={activeCompanyId} />
-                            <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                                <div className="text-[9px] uppercase tracking-[0.3em] text-white/30 mb-3">
-                                    Cognitive Metrics
-                                </div>
-                                <div className={`grid ${isCompact ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
-                                    <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                                        <div className="text-lg font-light text-emerald-400">98%</div>
-                                        <div className="text-[9px] text-white/40">Response Accuracy</div>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                                        <div className="text-lg font-light text-blue-400">1.2s</div>
-                                        <div className="text-[9px] text-white/40">Avg. Response Time</div>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-violet-500/5 border border-violet-500/10">
-                                        <div className="text-lg font-light text-violet-400">847</div>
-                                        <div className="text-[9px] text-white/40">Interactions (7d)</div>
-                                    </div>
-                                    <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                                        <div className="text-lg font-light text-amber-400">24</div>
-                                        <div className="text-[9px] text-white/40">Tools Executed</div>
-                                    </div>
-                                </div>
-                            </div>
+                            <MemoryStats compact={isCompact} companyId={resolvedCompanyId} />
                         </div>
                     </div>
                 );

@@ -158,7 +158,7 @@ export const Dock = () => {
         }
     }, [orbState]);
 
-    const handleDockClick = (action: string) => {
+    const handleDockClick = useCallback((action: string) => {
         const defaultSize = { width: 900, height: 640 };
         switch (action) {
             case 'home': setViewLevel('core'); setActiveDepartment(null); break;
@@ -174,10 +174,10 @@ export const Dock = () => {
             case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 1080, height: 820 } }); break;
             default: break;
         }
-    };
+    }, [openPane, setActiveDepartment, setViewLevel]);
 
     // Core apps - German labels
-    const dockItems: DockItem[] = [
+    const dockItems: DockItem[] = useMemo(() => [
         { icon: HomeOrbitIcon, label: 'Universe Home', shortcut: `${mod}+H`, action: 'home', description: 'Alle Departments & Spaces' },
         { icon: MoraBrainIcon, label: 'Mora', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
         { icon: ChatOrbitIcon, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
@@ -189,7 +189,12 @@ export const Dock = () => {
         { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfuegbar', disabled: true },
         { icon: TerminalGlyphIcon, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
         { icon: SettingsRingIcon, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
-    ];
+    ], [mod, pendingCount]);
+
+    const visibleDockItems = useMemo(
+        () => dockItems.filter(item => !item.hidden),
+        [dockItems]
+    );
 
     const minimizedIconMap: Record<string, React.ComponentType<any>> = {
         finder: FolderStarIcon,
@@ -346,9 +351,9 @@ export const Dock = () => {
 
                     {/* CENTER: DOCK APPS — Magnetic Icons */}
                     <div className="flex items-center gap-2">
-                        {dockItems.filter(item => !item.hidden).map((item, i) => (
+                        {visibleDockItems.map((item) => (
                             <MagneticDockIcon
-                                key={i}
+                                key={item.action}
                                 item={item}
                                 isStandardMode={isStandardMode}
                                 onAction={handleDockClick}
