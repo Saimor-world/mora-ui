@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence, useSpring, useReducedMotion } from 'framer-motion';
 import {
     Search, Minus, Mail, Calendar, Command, User, Building2, ChevronUp, Bell
@@ -63,17 +63,16 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
     return (
         <motion.button
             aria-label={item.label}
-            className={`w-[54px] h-[54px] flex items-center justify-center rounded-2xl transition-colors relative group ${
-                item.disabled
-                    ? isStandardMode
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-white/20 cursor-not-allowed'
-                    : item.action === 'memory'
-                        ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
-                        : isStandardMode
-                            ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
-                            : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
-            }`}
+            className={`w-[54px] h-[54px] flex items-center justify-center rounded-2xl transition-colors relative group ${item.disabled
+                ? isStandardMode
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-white/20 cursor-not-allowed'
+                : item.action === 'memory'
+                    ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
+                    : isStandardMode
+                        ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
+                        : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
+                }`}
             whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.08, transition: { type: 'tween', duration: 0.05 } }}
             whileTap={item.disabled || prefersReducedMotion ? {} : { scale: 0.92, transition: { type: 'tween', duration: 0.05 } }}
             onClick={() => !item.disabled && onAction(item.action)}
@@ -93,40 +92,37 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
 
             {/* Tooltip */}
             <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-75 delay-75 pointer-events-none z-[200]">
-                <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${
-                    isStandardMode
-                        ? 'bg-gray-800 border border-gray-700'
-                        : 'bg-black/95 backdrop-blur-xl border border-white/10'
-                }`}>
+                <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
+                    ? 'bg-gray-800 border border-gray-700'
+                    : 'bg-black/95 backdrop-blur-xl border border-white/10'
+                    }`}>
                     <div className="text-white text-xs font-medium">{item.label}</div>
                     <div className="text-white/50 text-[10px] mt-0.5">{item.description}</div>
                     {item.shortcut && (
-                        <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${
-                            isStandardMode ? 'bg-gray-700 text-blue-300' : 'bg-white/10 text-emerald-400'
-                        }`}>
+                        <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${isStandardMode ? 'bg-gray-700 text-blue-300' : 'bg-white/10 text-emerald-400'
+                            }`}>
                             {item.shortcut}
                         </kbd>
                     )}
                 </div>
-                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${
-                    isStandardMode
-                        ? 'bg-gray-800 border-r border-b border-gray-700'
-                        : 'bg-black/95 border-r border-b border-white/10'
-                }`} />
+                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${isStandardMode
+                    ? 'bg-gray-800 border-r border-b border-gray-700'
+                    : 'bg-black/95 border-r border-b border-white/10'
+                    }`} />
             </div>
 
             {/* Active dot */}
             {!item.disabled && (
-                <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${
-                    isStandardMode
-                        ? 'bg-transparent group-hover:bg-[#0078D4]'
-                        : 'bg-emerald-400/0 group-hover:bg-emerald-400'
-                }`} />
+                <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${isStandardMode
+                    ? 'bg-transparent group-hover:bg-[#0078D4]'
+                    : 'bg-emerald-400/0 group-hover:bg-emerald-400'
+                    }`} />
             )}
         </motion.button>
     );
 };
-// ─── End MagneticDockIcon ─────────────────────────────────────────────────────
+// ─── End MagneticDockIcon (memoized to prevent spurious re-renders) ───────────────────────
+const MagneticDockIconMemo = React.memo(MagneticDockIcon);
 
 export const Dock = () => {
     const {
@@ -134,7 +130,7 @@ export const Dock = () => {
     } = useMoraStore();
 
     const { panes, restorePane, openPane } = usePaneStore();
-    const minimizedPanes = panes.filter(p => p.minimized);
+    const minimizedPanes = useMemo(() => panes.filter(p => p.minimized), [panes]);
     const { pendingCount } = useMemory();
     const mod = usePlatformModifier();
     const unreadNotifications = useNotificationStore((s) => s.notifications.filter(n => !n.read).length);
@@ -147,9 +143,12 @@ export const Dock = () => {
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const activeCompany = companies.find(c => c.id === activeCompanyId);
+    const activeCompany = useMemo(
+        () => companies.find(c => c.id === activeCompanyId),
+        [companies, activeCompanyId]
+    );
 
-    const getAccentColor = () => {
+    const accent = useMemo(() => {
         switch (orbState) {
             case 'alert': return '#EF4444';
             case 'thinking': return '#3B82F6';
@@ -157,9 +156,7 @@ export const Dock = () => {
             case 'demo': return '#14B8A6';
             default: return '#10B981';
         }
-    };
-
-    const accent = getAccentColor();
+    }, [orbState]);
 
     const handleDockClick = (action: string) => {
         const defaultSize = { width: 850, height: 600 };
@@ -232,8 +229,8 @@ export const Dock = () => {
                                     onClick={() => restorePane(pane.id)}
                                     title={pane.title}
                                     className={`w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg ${isStandardMode
-                                            ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
-                                            : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
+                                        ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
+                                        : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
                                         }`}
                                     whileHover={{ y: -4, scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -255,8 +252,8 @@ export const Dock = () => {
             >
                 <div
                     className={`relative flex items-center gap-4 px-5 py-4 ${isStandardMode
-                            ? 'rounded-xl bg-white border-gray-200'
-                            : 'rounded-3xl backdrop-blur-2xl'
+                        ? 'rounded-xl bg-white border-gray-200'
+                        : 'rounded-3xl backdrop-blur-2xl'
                         }`}
                     style={isStandardMode ? {
                         background: '#FFFFFF',
@@ -333,8 +330,8 @@ export const Dock = () => {
                             }}
                             placeholder={`Suche im System... ${mod}+K`}
                             className={`w-full pl-11 pr-4 py-3 text-sm transition-all duration-200 focus:outline-none ${isStandardMode
-                                    ? 'bg-gray-100 border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
-                                    : 'bg-white/[0.04] border border-white/[0.1] rounded-2xl text-white/90 placeholder:text-white/30 focus:border-emerald-500/50 focus:bg-white/[0.08] focus:shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+                                ? 'bg-gray-100 border border-gray-300 rounded-lg text-gray-800 placeholder:text-gray-400 focus:border-[#0078D4] focus:bg-white'
+                                : 'bg-white/[0.04] border border-white/[0.1] rounded-2xl text-white/90 placeholder:text-white/30 focus:border-emerald-500/50 focus:bg-white/[0.08] focus:shadow-[0_0_20px_rgba(16,185,129,0.15)]'
                                 }`}
                         />
                         <kbd className={`absolute right-3 px-2 py-1 rounded-lg text-[10px] font-mono ${isStandardMode ? 'bg-gray-200 text-gray-500' : 'bg-white/10 text-white/40'
@@ -383,8 +380,8 @@ export const Dock = () => {
                     <div className="relative">
                         <motion.button
                             className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all group ${isStandardMode
-                                    ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
-                                    : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
+                                ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
+                                : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
                                 }`}
                             onClick={() => setShowCompanySwitcher(!showCompanySwitcher)}
                             whileHover={{ scale: 1.03 }}
@@ -433,8 +430,8 @@ export const Dock = () => {
                                                     setShowCompanySwitcher(false);
                                                 }}
                                                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${company.id === activeCompanyId
-                                                        ? 'bg-emerald-500/20 text-emerald-300'
-                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                                                     }`}
                                             >
                                                 <Building2 size={14} className={company.id === activeCompanyId ? 'text-emerald-400' : 'text-white/40'} />
@@ -471,8 +468,8 @@ export const Dock = () => {
                             whileHover={{ scale: 1.08 }}
                             whileTap={{ scale: 0.95 }}
                             className={`relative w-16 h-16 rounded-full overflow-visible transition-all group ${isStandardMode
-                                    ? 'bg-white'
-                                    : 'bg-transparent'
+                                ? 'bg-white'
+                                : 'bg-transparent'
                                 }`}
                             title="Mora Nexus oeffnen"
                             style={!isStandardMode ? {
@@ -512,8 +509,8 @@ export const Dock = () => {
                             <div className="flex items-center gap-1.5 mt-1">
                                 <motion.div
                                     className={`w-2 h-2 rounded-full ${orbState === 'thinking' ? 'bg-blue-400' :
-                                            orbState === 'alert' ? 'bg-red-400' :
-                                                'bg-emerald-400'
+                                        orbState === 'alert' ? 'bg-red-400' :
+                                            'bg-emerald-400'
                                         }`}
                                     animate={{ scale: [1, 1.3, 1] }}
                                     transition={{ duration: 1.5, repeat: Infinity }}

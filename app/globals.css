@@ -102,11 +102,13 @@
   /* === STANDARD MODE (LIGHT CORPORATE THEME - Like Excel/Word) === */
   .standard-mode {
     /* Microsoft Office-like Light Palette */
-    --mora-emerald-core: #217346; /* Excel Green */
+    --mora-emerald-core: #217346;
+    /* Excel Green */
     --mora-deep-forest: #F3F3F3;
     --mora-frost-white: #FFFFFF;
     --mora-shadow-black: #1F1F1F;
-    --mora-gold: #D83B01; /* Office Orange */
+    --mora-gold: #D83B01;
+    /* Office Orange */
 
     /* Corporate blue accent (like Office ribbon) */
     --mora-accent: #0078D4;
@@ -161,41 +163,124 @@
   }
 
   /* Text colors - dark on light */
-  .standard-mode .text-white { color: #1F1F1F !important; }
-  .standard-mode .text-white\/90 { color: rgba(31, 31, 31, 0.9) !important; }
-  .standard-mode .text-white\/80 { color: rgba(31, 31, 31, 0.8) !important; }
-  .standard-mode .text-white\/70 { color: rgba(31, 31, 31, 0.7) !important; }
-  .standard-mode .text-white\/60 { color: rgba(31, 31, 31, 0.6) !important; }
-  .standard-mode .text-white\/50 { color: rgba(31, 31, 31, 0.5) !important; }
-  .standard-mode .text-white\/40 { color: rgba(31, 31, 31, 0.4) !important; }
-  .standard-mode .text-white\/30 { color: rgba(31, 31, 31, 0.3) !important; }
+  .standard-mode .text-white {
+    color: #1F1F1F !important;
+  }
+
+  .standard-mode .text-white\/90 {
+    color: rgba(31, 31, 31, 0.9) !important;
+  }
+
+  .standard-mode .text-white\/80 {
+    color: rgba(31, 31, 31, 0.8) !important;
+  }
+
+  .standard-mode .text-white\/70 {
+    color: rgba(31, 31, 31, 0.7) !important;
+  }
+
+  .standard-mode .text-white\/60 {
+    color: rgba(31, 31, 31, 0.6) !important;
+  }
+
+  .standard-mode .text-white\/50 {
+    color: rgba(31, 31, 31, 0.5) !important;
+  }
+
+  .standard-mode .text-white\/40 {
+    color: rgba(31, 31, 31, 0.4) !important;
+  }
+
+  .standard-mode .text-white\/30 {
+    color: rgba(31, 31, 31, 0.3) !important;
+  }
 
   /* Replace emerald with Office blue */
-  .standard-mode .text-emerald-300 { color: #0078D4 !important; }
-  .standard-mode .text-emerald-400 { color: #0078D4 !important; }
-  .standard-mode .text-emerald-500 { color: #004578 !important; }
-  .standard-mode .text-emerald-50 { color: #DEECF9 !important; }
-  .standard-mode .bg-emerald-500\/10 { background-color: rgba(0, 120, 212, 0.1) !important; }
-  .standard-mode .bg-emerald-500\/15 { background-color: rgba(0, 120, 212, 0.15) !important; }
-  .standard-mode .bg-emerald-500\/20 { background-color: rgba(0, 120, 212, 0.2) !important; }
-  .standard-mode .border-emerald-500 { border-color: #0078D4 !important; }
-  .standard-mode .border-emerald-500\/20 { border-color: rgba(0, 120, 212, 0.2) !important; }
-  .standard-mode .border-emerald-500\/30 { border-color: rgba(0, 120, 212, 0.3) !important; }
+  .standard-mode .text-emerald-300 {
+    color: #0078D4 !important;
+  }
+
+  .standard-mode .text-emerald-400 {
+    color: #0078D4 !important;
+  }
+
+  .standard-mode .text-emerald-500 {
+    color: #004578 !important;
+  }
+
+  .standard-mode .text-emerald-50 {
+    color: #DEECF9 !important;
+  }
+
+  .standard-mode .bg-emerald-500\/10 {
+    background-color: rgba(0, 120, 212, 0.1) !important;
+  }
+
+  .standard-mode .bg-emerald-500\/15 {
+    background-color: rgba(0, 120, 212, 0.15) !important;
+  }
+
+  .standard-mode .bg-emerald-500\/20 {
+    background-color: rgba(0, 120, 212, 0.2) !important;
+  }
+
+  .standard-mode .border-emerald-500 {
+    border-color: #0078D4 !important;
+  }
+
+  .standard-mode .border-emerald-500\/20 {
+    border-color: rgba(0, 120, 212, 0.2) !important;
+  }
+
+  .standard-mode .border-emerald-500\/30 {
+    border-color: rgba(0, 120, 212, 0.3) !important;
+  }
 
   /* Dark backgrounds → Light backgrounds */
-  .standard-mode .bg-black { background-color: #FFFFFF !important; }
-  .standard-mode .bg-black\/95 { background-color: #FAFAFA !important; }
-  .standard-mode .bg-black\/90 { background-color: #F5F5F5 !important; }
-  .standard-mode .bg-black\/80 { background-color: #F0F0F0 !important; }
-  .standard-mode .bg-black\/60 { background-color: #E8E8E8 !important; }
-  .standard-mode .bg-black\/40 { background-color: #E1E1E1 !important; }
-  .standard-mode .bg-black\/30 { background-color: #EBEBEB !important; }
-  .standard-mode .bg-black\/20 { background-color: #F0F0F0 !important; }
+  .standard-mode .bg-black {
+    background-color: #FFFFFF !important;
+  }
+
+  .standard-mode .bg-black\/95 {
+    background-color: #FAFAFA !important;
+  }
+
+  .standard-mode .bg-black\/90 {
+    background-color: #F5F5F5 !important;
+  }
+
+  .standard-mode .bg-black\/80 {
+    background-color: #F0F0F0 !important;
+  }
+
+  .standard-mode .bg-black\/60 {
+    background-color: #E8E8E8 !important;
+  }
+
+  .standard-mode .bg-black\/40 {
+    background-color: #E1E1E1 !important;
+  }
+
+  .standard-mode .bg-black\/30 {
+    background-color: #EBEBEB !important;
+  }
+
+  .standard-mode .bg-black\/20 {
+    background-color: #F0F0F0 !important;
+  }
 
   /* White borders → Gray borders */
-  .standard-mode .border-white\/10 { border-color: #E1E1E1 !important; }
-  .standard-mode .border-white\/20 { border-color: #D1D1D1 !important; }
-  .standard-mode .border-white\/5 { border-color: #EBEBEB !important; }
+  .standard-mode .border-white\/10 {
+    border-color: #E1E1E1 !important;
+  }
+
+  .standard-mode .border-white\/20 {
+    border-color: #D1D1D1 !important;
+  }
+
+  .standard-mode .border-white\/5 {
+    border-color: #EBEBEB !important;
+  }
 
   /* Left sidebar - Office ribbon style */
   .standard-mode .bg-black\/40.backdrop-blur-xl {
@@ -204,8 +289,13 @@
   }
 
   /* Ring focus states */
-  .standard-mode .ring-emerald-400\/60 { --tw-ring-color: rgba(0, 120, 212, 0.6) !important; }
-  .standard-mode .focus\:ring-emerald-400\/60:focus { --tw-ring-color: rgba(0, 120, 212, 0.6) !important; }
+  .standard-mode .ring-emerald-400\/60 {
+    --tw-ring-color: rgba(0, 120, 212, 0.6) !important;
+  }
+
+  .standard-mode .focus\:ring-emerald-400\/60:focus {
+    --tw-ring-color: rgba(0, 120, 212, 0.6) !important;
+  }
 
   /* Universe canvas - HIDDEN completely */
   .standard-mode canvas {
@@ -223,20 +313,47 @@
   }
 
   /* Animations - DISABLED */
-  .standard-mode .animate-pulse { animation: none !important; }
-  .standard-mode .animate-spin { animation: none !important; }
-  .standard-mode .animate-bounce { animation: none !important; }
-  .standard-mode [class*="animate-"] { animation: none !important; }
+  .standard-mode .animate-pulse {
+    animation: none !important;
+  }
+
+  .standard-mode .animate-spin {
+    animation: none !important;
+  }
+
+  .standard-mode .animate-bounce {
+    animation: none !important;
+  }
+
+  .standard-mode [class*="animate-"] {
+    animation: none !important;
+  }
 
   /* Hover states - subtle like Office */
-  .standard-mode .hover\:bg-white\/5:hover { background-color: #E8E8E8 !important; }
-  .standard-mode .hover\:bg-white\/10:hover { background-color: #E1E1E1 !important; }
-  .standard-mode .hover\:text-white:hover { color: #1F1F1F !important; }
+  .standard-mode .hover\:bg-white\/5:hover {
+    background-color: #E8E8E8 !important;
+  }
+
+  .standard-mode .hover\:bg-white\/10:hover {
+    background-color: #E1E1E1 !important;
+  }
+
+  .standard-mode .hover\:text-white:hover {
+    color: #1F1F1F !important;
+  }
 
   /* Shadows - subtle corporate */
-  .standard-mode .shadow-lg { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important; }
-  .standard-mode .shadow-xl { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important; }
-  .standard-mode .shadow-2xl { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important; }
+  .standard-mode .shadow-lg {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .standard-mode .shadow-xl {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  .standard-mode .shadow-2xl {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  }
 
   /* Buttons - Office style */
   .standard-mode button {
@@ -248,21 +365,33 @@
     width: 12px;
     height: 12px;
   }
+
   .standard-mode ::-webkit-scrollbar-track {
     background: #F3F3F3;
   }
+
   .standard-mode ::-webkit-scrollbar-thumb {
     background: #C1C1C1;
     border-radius: 0;
   }
+
   .standard-mode ::-webkit-scrollbar-thumb:hover {
     background: #A1A1A1;
   }
 
   /* Reduced border radius on common elements */
-  .standard-mode .rounded-2xl { border-radius: 12px; }
-  .standard-mode .rounded-xl { border-radius: 8px; }
-  .standard-mode .rounded-full { border-radius: 9999px; /* keep pills round */ }
+  .standard-mode .rounded-2xl {
+    border-radius: 12px;
+  }
+
+  .standard-mode .rounded-xl {
+    border-radius: 8px;
+  }
+
+  .standard-mode .rounded-full {
+    border-radius: 9999px;
+    /* keep pills round */
+  }
 
 
   /* Glass Effect Utilities */
@@ -453,6 +582,24 @@
 }
 
 @layer utilities {
+
+  /* ── Chat Fullscreen: hide Dock ─────────────────────────────────────────────
+     Applied to <body> by ChatPane when isFullscreen=true.
+     Targets the Dock (fixed bottom bar at z-[100]) and the Memory sidebar tab. */
+  body.chat-fullscreen>div>[class*="fixed"][class*="bottom-0"],
+  body.chat-fullscreen [class*="fixed bottom-0"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(100%) !important;
+    transition: opacity 0.2s, transform 0.2s !important;
+  }
+
+  /* Memory sidebar tab hidden in fullscreen too */
+  body.chat-fullscreen [class*="fixed right-0"][class*="top-1/2"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
   /* 🌿 Môra Utilities - Organische Bewegung (langsamer, weiser, wie Bäume) */
 
   .mora-transition {
@@ -982,44 +1129,124 @@
 
   /* ─── Aurora curtain sweep ─── */
   @keyframes aurora-sweep {
-    0%, 100% { transform: translateX(-7%) scaleX(0.91); opacity: 0.05; }
-    30%      { transform: translateX(4%)  scaleX(1.08); opacity: 0.13; }
-    60%      { transform: translateX(-2%) scaleX(0.98); opacity: 0.08; }
-    80%      { transform: translateX(5%)  scaleX(1.05); opacity: 0.10; }
+
+    0%,
+    100% {
+      transform: translateX(-7%) scaleX(0.91);
+      opacity: 0.05;
+    }
+
+    30% {
+      transform: translateX(4%) scaleX(1.08);
+      opacity: 0.13;
+    }
+
+    60% {
+      transform: translateX(-2%) scaleX(0.98);
+      opacity: 0.08;
+    }
+
+    80% {
+      transform: translateX(5%) scaleX(1.05);
+      opacity: 0.10;
+    }
   }
 
   /* ─── Floating geometry variants ─── */
   @keyframes geo-float-1 {
-    0%, 100% { transform: translateY(0px)   rotate(0deg);  opacity: 0.06; }
-    33%      { transform: translateY(-20px) rotate(14deg); opacity: 0.10; }
-    66%      { transform: translateY(-8px)  rotate(6deg);  opacity: 0.07; }
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+      opacity: 0.06;
+    }
+
+    33% {
+      transform: translateY(-20px) rotate(14deg);
+      opacity: 0.10;
+    }
+
+    66% {
+      transform: translateY(-8px) rotate(6deg);
+      opacity: 0.07;
+    }
   }
 
   @keyframes geo-float-2 {
-    0%, 100% { transform: translateY(-10px) translateX(0px)  rotate(45deg); opacity: 0.05; }
-    40%      { transform: translateY(9px)   translateX(14px) rotate(68deg); opacity: 0.09; }
-    70%      { transform: translateY(-4px)  translateX(7px)  rotate(55deg); opacity: 0.06; }
+
+    0%,
+    100% {
+      transform: translateY(-10px) translateX(0px) rotate(45deg);
+      opacity: 0.05;
+    }
+
+    40% {
+      transform: translateY(9px) translateX(14px) rotate(68deg);
+      opacity: 0.09;
+    }
+
+    70% {
+      transform: translateY(-4px) translateX(7px) rotate(55deg);
+      opacity: 0.06;
+    }
   }
 
   @keyframes geo-float-3 {
-    0%, 100% { transform: translateY(0px)   rotate(20deg); opacity: 0.04; }
-    33%      { transform: translateY(-16px) rotate(38deg); opacity: 0.08; }
-    66%      { transform: translateY(-5px)  rotate(12deg); opacity: 0.05; }
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(20deg);
+      opacity: 0.04;
+    }
+
+    33% {
+      transform: translateY(-16px) rotate(38deg);
+      opacity: 0.08;
+    }
+
+    66% {
+      transform: translateY(-5px) rotate(12deg);
+      opacity: 0.05;
+    }
   }
 
   /* ─── Scanline sweep ─── */
   @keyframes scanline-sweep {
-    0%   { top: -2px;  opacity: 0.06; }
-    50%  { opacity: 0.03; }
-    100% { top: 100vh; opacity: 0.06; }
+    0% {
+      top: -2px;
+      opacity: 0.06;
+    }
+
+    50% {
+      opacity: 0.03;
+    }
+
+    100% {
+      top: 100vh;
+      opacity: 0.06;
+    }
   }
 
   /* ─── Utility classes ─── */
-  .animate-aurora-sweep { animation: aurora-sweep   30s ease-in-out infinite; }
-  .animate-geo-1        { animation: geo-float-1    15s ease-in-out infinite; }
-  .animate-geo-2        { animation: geo-float-2    20s ease-in-out infinite; }
-  .animate-geo-3        { animation: geo-float-3    24s ease-in-out infinite; }
-  .animate-scanline     { animation: scanline-sweep 13s linear       infinite; }
+  .animate-aurora-sweep {
+    animation: aurora-sweep 30s ease-in-out infinite;
+  }
+
+  .animate-geo-1 {
+    animation: geo-float-1 15s ease-in-out infinite;
+  }
+
+  .animate-geo-2 {
+    animation: geo-float-2 20s ease-in-out infinite;
+  }
+
+  .animate-geo-3 {
+    animation: geo-float-3 24s ease-in-out infinite;
+  }
+
+  .animate-scanline {
+    animation: scanline-sweep 13s linear infinite;
+  }
 
   /* ─── Dock icon 3-D tilt perspective helper ─── */
   .dock-3d {

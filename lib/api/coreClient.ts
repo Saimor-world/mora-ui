@@ -968,3 +968,74 @@ export async function getMemoryMetrics(companyId: string): Promise<any> {
     // v3: envelope unwrap handled transparently in coreRequest()
     return coreGet(`/v3/memory/metrics${companyQuery}`, { isOptional: true });
 }
+
+// GET /v3/memory/debug/scope - Diagnostics endpoint (dev mode or ?diagnostics=1)
+export interface MemoryDebugScope {
+    scope: { type: string; tenant_id?: string; company_id?: string; user_id?: string };
+    counts: {
+        mem_episodic: number;
+        mem_facts: number;
+        mem_review_queue: number;
+        memories: number;
+    };
+    sample_limit: number;
+    hints: string[];
+    errors: string[];
+    samples?: any[];
+}
+
+export async function getMemoryDebugScope(
+    companyId: string,
+    sampleLimit: number = 5
+): Promise<MemoryDebugScope | null> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    return coreGet(
+        `/v3/memory/debug/scope?company_id=${encodeURIComponent(resolvedCompanyId)}&sample_limit=${sampleLimit}`,
+        { isOptional: true }
+    );
+}
+
+// POST /v3/memory/debug/reconcile - Migrate legacy memories to v3 scope
+export interface MemoryReconcileResult {
+    applied: boolean;
+    created: number;
+    skipped: number;
+    already_present: number;
+    errors: string[];
+    preview?: any[];
+}
+
+export async function reconcileMemory(
+    companyId: string,
+    apply: boolean = false
+): Promise<MemoryReconcileResult | null> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    return corePost(
+        `/v3/memory/debug/reconcile?apply=${apply}`,
+        { company_id: resolvedCompanyId },
+        { isOptional: true }
+    );
+}
+
+// GET /v3/system/performance/caches — Cache telemetry (dev/diagnostics mode)
+export interface CacheBucket {
+    hits: number;
+    misses: number;
+    evictions?: number;
+    invalidations?: number;
+    entries: number;
+    active_entries?: number;
+}
+
+export interface CachePerformance {
+    learning_brain: {
+        search: CacheBucket;
+        metrics: CacheBucket;
+    };
+    folder_context: CacheBucket;
+    [key: string]: CacheBucket | { search: CacheBucket; metrics: CacheBucket };
+}
+
+export async function getCachePerformance(): Promise<CachePerformance | null> {
+    return coreGet('/v3/system/performance/caches', { isOptional: true });
+}

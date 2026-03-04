@@ -23,7 +23,7 @@ import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
-import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2 } from 'lucide-react';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 
 interface Message {
@@ -305,6 +305,8 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
         </div>
     );
 };
+// Memoize so parent stream re-renders don't re-run this subtree
+const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
@@ -358,6 +360,7 @@ Was kann ich fuer dich tun?`,
     const [memoryHint, setMemoryHint] = useState<{ show: boolean; content: string }>({ show: false, content: '' });
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const activeCompany = useMemo(
         () => companies.find((c) => c.id === activeCompanyId) || null,
         [companies, activeCompanyId]
@@ -449,6 +452,24 @@ Was kann ich fuer dich tun?`,
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
+
+    // Fullscreen: toggle dock visibility via body class
+    useEffect(() => {
+        if (isFullscreen) {
+            document.body.classList.add('chat-fullscreen');
+        } else {
+            document.body.classList.remove('chat-fullscreen');
+        }
+        return () => { document.body.classList.remove('chat-fullscreen'); };
+    }, [isFullscreen]);
+
+    // Fullscreen: ESC to exit
+    useEffect(() => {
+        if (!isFullscreen) return;
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [isFullscreen]);
 
     // Handle initial message from Dock/Spotlight chat input
     useEffect(() => {
@@ -546,8 +567,8 @@ Was kann ich fuer dich tun?`,
             }
         }
 
-        // Fetch relevant memories for context
-        await fetchRelevantMemories(content);
+        // Fetch relevant memories for context (debounced — don't block stream start)
+        const memSearchTimer = setTimeout(() => { void fetchRelevantMemories(content); }, 500);
 
         let responseContent = '';
 
@@ -624,9 +645,12 @@ Was kann ich fuer dich tun?`,
                 content: 'Es gab einen Fehler. Bitte versuche es erneut.',
                 timestamp: new Date()
             }]);
+        } finally {
+            // Ensure isLoading is always cleared (noop if streaming path already cleared it)
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
+        // Cancel memSearch if it hasn't fired yet — not possible with simple setTimeout
+        // (fire-and-forget is fine for memory hints)
     };
 
     const sendMessage = async () => {
@@ -645,6 +669,222 @@ Was kann ich fuer dich tun?`,
     };
 
     if (!pane) return null;
+
+    // ── Fullscreen wrapper ───────────────────────────────────────────────────
+    const chatInner = (
+        <div className={`flex flex-col ${isFullscreen ? 'h-full' : 'h-full'}`}>
+            {/* Header */}
+            <div className={`flex items-center gap-3 p-4 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
+                }`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isStandardMode
+                    ? 'bg-[#0078D4]'
+                    : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
+                    }`}>
+                    <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                    <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
+                        }`}>Môra</h3>
+                    <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                        }`}>Deine KI-Begleiterin</p>
+                    <p className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/50'}`}>
+                        Scope: {chatScopePath}
+                    </p>
+                </div>
+                <div className={`ml-auto flex items-center gap-2 text-xs ${isStandardMode ? 'text-gray-400' : 'text-white/40'
+                    }`}>
+                    <Wand2 size={12} />
+                    <span>{chatScopeLabel}</span>
+                    {scopeBoundaryLevel && (
+                        <span className="text-[10px] text-white/35">• {scopeBoundaryLevel}</span>
+                    )}
+                    {/* Fullscreen toggle */}
+                    <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="ml-2 p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/70 transition-colors"
+                        title={isFullscreen ? 'Normalmodus (Esc)' : 'Vollbild'}
+                    >
+                        {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                    </button>
+                </div>
+            </div>
+            {/* scope_enforced: subtle warning strip when backend narrowed the context */}
+            {scopeEnforced && (
+                <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/8 border-b border-amber-500/15 text-[10px] text-amber-300/70">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                    Kontext angepasst - Scope wurde vom System eingeschränkt
+                    {scopeBoundaryLevel && (
+                        <span className="ml-1 text-amber-200/80">({scopeBoundaryLevel})</span>
+                    )}
+                    {droppedScopeFields.length > 0 && (
+                        <span className="ml-auto text-amber-200/70">
+                            dropped: {droppedScopeFields.join(', ')}
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {/* Relevant Memories Context */}
+            <AnimatePresence>
+                {showMemories && relevantMemories.length > 0 && (
+                    <RelevantMemories
+                        memories={relevantMemories}
+                        onDismiss={() => setShowMemories(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Messages */}
+            <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isFullscreen ? 'text-base leading-7' : ''}`}>
+                <AnimatePresence>
+                    {messages.map((msg) => (
+                        <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                            <div className={`max-w-[80%] px-4 py-3 ${isStandardMode
+                                ? msg.role === 'user'
+                                    ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
+                                    : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
+                                : msg.role === 'user'
+                                    ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
+                                    : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
+                                }`}>
+                                <div className="flex items-start gap-2">
+                                    {msg.role === 'assistant' && (
+                                        <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                            }`} />
+                                    )}
+                                    <div
+                                        className={`text-sm leading-relaxed prose prose-sm max-w-none ${isStandardMode ? '' : 'prose-invert'
+                                            }`}
+                                        dangerouslySetInnerHTML={{
+                                            __html: msg.content
+                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                .replace(/\n/g, '<br/>')
+                                        }}
+                                    />
+                                    {msg.role === 'user' && (
+                                        <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                            }`} />
+                                    )}
+                                </div>
+                                <div className={`flex items-center text-[10px] mt-2 ${isStandardMode ? 'text-gray-400' : 'text-white/30'
+                                    }`}>
+                                    <span>{msg.timestamp.toLocaleTimeString()}</span>
+                                    {/* Save as Insight Button - only for assistant messages (not welcome) */}
+                                    {msg.role === 'assistant' && msg.id !== 'welcome' && (
+                                        <SaveInsightButton
+                                            content={msg.content}
+                                            companyId={activeCompanyId || undefined}
+                                            onSaved={() => markMessageAsSaved(msg.id)}
+                                            isSaved={msg.savedAsInsight || false}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {/* Live streaming bubble — shown while Mora is generating */}
+                <AnimatePresence>
+                    {isStreaming && streamingText && (
+                        <motion.div
+                            key="stream-bubble"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex justify-start"
+                        >
+                            <div className="max-w-[80%] px-4 py-3 bg-white/5 border border-white/10 text-white/90 rounded-2xl">
+                                <div className="flex items-start gap-2">
+                                    <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                                    <div
+                                        className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none"
+                                        dangerouslySetInnerHTML={{
+                                            __html: streamingText
+                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                                .replace(/\n/g, '<br/>') +
+                                                // Blinking cursor appended inline
+                                                '<span class="inline-block w-[2px] h-[1em] bg-emerald-400 align-middle ml-0.5 animate-pulse" />'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Spinner shown only for navigation/search intents (no stream needed) */}
+                {isLoading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex justify-start"
+                    >
+                        <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                            <span className="text-sm text-white/60">Môra denkt nach...</span>
+                        </div>
+                    </motion.div>
+                )}
+
+                <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="p-4 border-t border-white/10 space-y-2">
+                {/* Memory Hint - shown when user types "merke dir..." etc. */}
+                <AnimatePresence>
+                    {memoryHint.show && (
+                        <MemoryHint
+                            onConfirm={handleMemoryConfirm}
+                            onDismiss={() => setMemoryHint({ show: false, content: '' })}
+                        />
+                    )}
+                </AnimatePresence>
+
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !isStreaming && sendMessage()}
+                        placeholder="Schreib Mora... (z.B. 'Merke dir...')"
+                        disabled={isStreaming}
+                        className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50"
+                    />
+                    <button
+                        onClick={sendMessage}
+                        disabled={!input.trim() || isLoading || isStreaming}
+                        className="px-4 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2"
+                    >
+                        {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    </button>
+                </div>
+                <ChatSuggestions onSelect={setInput} />
+            </div>
+        </div>
+    );
+
+    if (isFullscreen) {
+        return (
+            <motion.div
+                key="chat-fullscreen"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[500] flex flex-col bg-black/95 backdrop-blur-xl"
+                style={{ paddingBottom: '0' }}
+            >
+                {chatInner}
+            </motion.div>
+        );
+    }
 
     return (
         <GlassPanel
@@ -667,195 +907,7 @@ Was kann ich fuer dich tun?`,
             draggable
             resizable
         >
-            <div className="flex flex-col h-full">
-                {/* Header */}
-                <div className={`flex items-center gap-3 p-4 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
-                    }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isStandardMode
-                        ? 'bg-[#0078D4]'
-                        : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
-                        }`}>
-                        <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
-                            }`}>Môra</h3>
-                        <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
-                            }`}>Deine KI-Begleiterin</p>
-                        <p className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/50'}`}>
-                            Scope: {chatScopePath}
-                        </p>
-                    </div>
-                    <div className={`ml-auto flex items-center gap-1 text-xs ${isStandardMode ? 'text-gray-400' : 'text-white/40'
-                        }`}>
-                        <Wand2 size={12} />
-                        <span>{chatScopeLabel}</span>
-                        {scopeBoundaryLevel && (
-                            <span className="text-[10px] text-white/35">• {scopeBoundaryLevel}</span>
-                        )}
-                    </div>
-                </div>
-                {/* scope_enforced: subtle warning strip when backend narrowed the context */}
-                {scopeEnforced && (
-                    <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/8 border-b border-amber-500/15 text-[10px] text-amber-300/70">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                        Kontext angepasst - Scope wurde vom System eingeschränkt
-                        {scopeBoundaryLevel && (
-                            <span className="ml-1 text-amber-200/80">({scopeBoundaryLevel})</span>
-                        )}
-                        {droppedScopeFields.length > 0 && (
-                            <span className="ml-auto text-amber-200/70">
-                                dropped: {droppedScopeFields.join(', ')}
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {/* Relevant Memories Context */}
-                <AnimatePresence>
-                    {showMemories && relevantMemories.length > 0 && (
-                        <RelevantMemories
-                            memories={relevantMemories}
-                            onDismiss={() => setShowMemories(false)}
-                        />
-                    )}
-                </AnimatePresence>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <AnimatePresence>
-                        {messages.map((msg) => (
-                            <motion.div
-                                key={msg.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                <div className={`max-w-[80%] px-4 py-3 ${isStandardMode
-                                    ? msg.role === 'user'
-                                        ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
-                                        : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
-                                    : msg.role === 'user'
-                                        ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
-                                        : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
-                                    }`}>
-                                    <div className="flex items-start gap-2">
-                                        {msg.role === 'assistant' && (
-                                            <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
-                                                }`} />
-                                        )}
-                                        <div
-                                            className={`text-sm leading-relaxed prose prose-sm max-w-none ${isStandardMode ? '' : 'prose-invert'
-                                                }`}
-                                            dangerouslySetInnerHTML={{
-                                                __html: msg.content
-                                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                    .replace(/\n/g, '<br/>')
-                                            }}
-                                        />
-                                        {msg.role === 'user' && (
-                                            <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
-                                                }`} />
-                                        )}
-                                    </div>
-                                    <div className={`flex items-center text-[10px] mt-2 ${isStandardMode ? 'text-gray-400' : 'text-white/30'
-                                        }`}>
-                                        <span>{msg.timestamp.toLocaleTimeString()}</span>
-                                        {/* Save as Insight Button - only for assistant messages (not welcome) */}
-                                        {msg.role === 'assistant' && msg.id !== 'welcome' && (
-                                            <SaveInsightButton
-                                                content={msg.content}
-                                                companyId={activeCompanyId || undefined}
-                                                onSaved={() => markMessageAsSaved(msg.id)}
-                                                isSaved={msg.savedAsInsight || false}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-
-                    {/* Live streaming bubble — shown while Mora is generating */}
-                    <AnimatePresence>
-                        {isStreaming && streamingText && (
-                            <motion.div
-                                key="stream-bubble"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="flex justify-start"
-                            >
-                                <div className="max-w-[80%] px-4 py-3 bg-white/5 border border-white/10 text-white/90 rounded-2xl">
-                                    <div className="flex items-start gap-2">
-                                        <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
-                                        <div
-                                            className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none"
-                                            dangerouslySetInnerHTML={{
-                                                __html: streamingText
-                                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                    .replace(/\n/g, '<br/>') +
-                                                    // Blinking cursor appended inline
-                                                    '<span class="inline-block w-[2px] h-[1em] bg-emerald-400 align-middle ml-0.5 animate-pulse" />'
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Spinner shown only for navigation/search intents (no stream needed) */}
-                    {isLoading && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="flex justify-start"
-                        >
-                            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                                <span className="text-sm text-white/60">Môra denkt nach...</span>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input */}
-                <div className="p-4 border-t border-white/10 space-y-2">
-                    {/* Memory Hint - shown when user types "merke dir..." etc. */}
-                    <AnimatePresence>
-                        {memoryHint.show && (
-                            <MemoryHint
-                                onConfirm={handleMemoryConfirm}
-                                onDismiss={() => setMemoryHint({ show: false, content: '' })}
-                            />
-                        )}
-                    </AnimatePresence>
-
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !isStreaming && sendMessage()}
-                            placeholder="Schreib Mora... (z.B. 'Merke dir...')"
-                            disabled={isStreaming}
-                            className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50"
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={!input.trim() || isLoading || isStreaming}
-                            className="px-4 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2"
-                        >
-                            {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                        </button>
-                    </div>
-                    <ChatSuggestions onSelect={setInput} />
-                </div>
-            </div>
+            {chatInner}
         </GlassPanel>
     );
 }

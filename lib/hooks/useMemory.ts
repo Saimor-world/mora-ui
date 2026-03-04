@@ -5,7 +5,9 @@ import {
     approveMemoryItem,
     getMemoryMetrics,
     getMemoryPending,
+    getMemoryDebugScope,
     rejectMemoryItem,
+    type MemoryDebugScope,
 } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { toast } from 'sonner';
@@ -32,6 +34,7 @@ export function useMemory() {
     const companies = useMoraStore((s) => s.companies);
     const [pendingItems, setPendingItems] = useState<ReviewItem[]>([]);
     const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
+    const [debugScope, setDebugScope] = useState<MemoryDebugScope | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -69,18 +72,34 @@ export function useMemory() {
         }
     }, [scopedCompanyId]);
 
+    // Load debug scope (dev mode or ?diagnostics=1 query param)
+    const loadDebugScope = useCallback(async () => {
+        if (!scopedCompanyId) return;
+        const isDev = process.env.NODE_ENV === 'development';
+        const hasDiagnosticsParam =
+            typeof window !== 'undefined' &&
+            new URL(window.location.href).searchParams.has('diagnostics');
+        if (!isDev && !hasDiagnosticsParam) return;
+        try {
+            const data = await getMemoryDebugScope(scopedCompanyId, 5);
+            if (data) setDebugScope(data);
+        } catch (err) {
+            console.warn('[useMemory] Debug scope load failed:', err);
+        }
+    }, [scopedCompanyId]);
+
     // Refresh all
     const refresh = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            await Promise.all([loadPending(), loadMetrics()]);
+            await Promise.all([loadPending(), loadMetrics(), loadDebugScope()]);
         } catch (err) {
             setError('Fehler beim Laden');
         } finally {
             setIsLoading(false);
         }
-    }, [loadPending, loadMetrics]);
+    }, [loadPending, loadMetrics, loadDebugScope]);
 
     // Approve item
     const approve = useCallback(async (id: string) => {
@@ -132,6 +151,7 @@ export function useMemory() {
         pendingItems,
         pendingCount: pendingItems.length,
         metrics,
+        debugScope,
         isLoading,
         error,
         refresh,
