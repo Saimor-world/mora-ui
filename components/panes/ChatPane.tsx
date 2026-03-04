@@ -891,6 +891,8 @@ Was kann ich fuer dich tun?`,
             title="Chat mit Môra"
             width={pane.size.width}
             height={pane.size.height}
+            minWidth={560}
+            minHeight={420}
             initialX={pane.position.x}
             initialY={pane.position.y}
             paneId={id}

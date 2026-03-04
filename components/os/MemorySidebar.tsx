@@ -339,15 +339,23 @@ const DiagnosticsPanel: React.FC<{
                 </div>
             )}
 
-            {/* Scope mismatch warning */}
+            {/* Scope mismatch warning + actionable CTA */}
             {hasScopeMismatch && (
                 <div className="flex items-start gap-2 p-2 rounded-lg border border-red-500/30 bg-red-500/10">
                     <ShieldAlert size={14} className="text-red-400 mt-0.5 shrink-0" />
-                    <div className="space-y-0.5">
+                    <div className="flex-1 space-y-1.5">
                         <p className="text-[10px] font-semibold text-red-300">Scope-Mismatch erkannt</p>
                         {debugScope.errors.map((e: string, i: number) => (
                             <p key={i} className="text-[10px] text-red-400/80">{e}</p>
                         ))}
+                        {isOwner && step === 'idle' && (
+                            <button
+                                onClick={handlePreview}
+                                className="mt-1 flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/20 hover:bg-red-500/30 text-red-200 text-[10px] font-medium transition-colors"
+                            >
+                                <Zap size={10} /> Reconcile starten
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -379,6 +387,12 @@ const DiagnosticsPanel: React.FC<{
                             <>
                                 <div className="border-t border-white/5" />
                                 <CacheBucketRow label="entity_context" bucket={cachePerf.entity_context} />
+                            </>
+                        )}
+                        {cachePerf.default_company_scope && (
+                            <>
+                                <div className="border-t border-white/5" />
+                                <CacheBucketRow label="default_company_scope" bucket={cachePerf.default_company_scope} />
                             </>
                         )}
                     </div>

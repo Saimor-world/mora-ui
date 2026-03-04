@@ -1047,7 +1047,8 @@ export interface CachePerformance {
         metrics: CacheBucket;
     };
     folder_context: CacheBucket;
-    entity_context?: CacheBucket; // Added core 3161388
+    entity_context?: CacheBucket;         // core 3161388
+    default_company_scope?: CacheBucket;  // core 65fc157
     [key: string]: CacheBucket | { search: CacheBucket; metrics: CacheBucket } | undefined;
 }
 

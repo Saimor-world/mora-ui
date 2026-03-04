@@ -43,6 +43,14 @@ interface GlassPanelProps {
     tabs?: Array<{ id: string, title: string, active?: boolean }>;
     /** UPGRADE C1: Active tab ID */
     activeTabId?: string;
+    /** Minimum width when panel is resizable */
+    minWidth?: number;
+    /** Minimum height when panel is resizable */
+    minHeight?: number;
+    /** Maximum width when panel is resizable */
+    maxWidth?: number;
+    /** Maximum height when panel is resizable */
+    maxHeight?: number;
     /** Close callback */
     onClose?: () => void;
     /** Back callback */
@@ -101,6 +109,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     resizable = false,
     tabs = [],
     activeTabId,
+    minWidth = 300,
+    minHeight = 200,
+    maxWidth,
+    maxHeight,
     isActive = true, // Default to true if not managed
     onClose,
     onBack,
@@ -144,6 +156,16 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const [panelPosition, setPanelPosition] = useState({ x: getInitialX(), y: getInitialY() });
     const [panelSize, setPanelSize] = useState({ width: typeof width === 'number' ? width : 800, height: typeof height === 'number' ? height : 600 });
     const panelRef = useRef<HTMLDivElement>(null);
+    const getEffectiveMaxWidth = useCallback(() => {
+        if (typeof maxWidth === 'number' && Number.isFinite(maxWidth)) return maxWidth;
+        if (typeof window !== 'undefined') return window.innerWidth - 20;
+        return Number.POSITIVE_INFINITY;
+    }, [maxWidth]);
+    const getEffectiveMaxHeight = useCallback(() => {
+        if (typeof maxHeight === 'number' && Number.isFinite(maxHeight)) return maxHeight;
+        if (typeof window !== 'undefined') return window.innerHeight - 20;
+        return Number.POSITIVE_INFINITY;
+    }, [maxHeight]);
 
     const emitFullscreenEvent = useCallback((isFullscreen: boolean) => {
         if (typeof window === 'undefined') return;
@@ -245,8 +267,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         const startHeight = panelSize.height;
 
         const handleResizeMouseMove = (moveEvent: MouseEvent) => {
-            const newWidth = Math.max(300, startWidth + (moveEvent.clientX - startX));
-            const newHeight = Math.max(200, startHeight + (moveEvent.clientY - startY));
+            const requestedWidth = startWidth + (moveEvent.clientX - startX);
+            const requestedHeight = startHeight + (moveEvent.clientY - startY);
+            const newWidth = Math.max(minWidth, Math.min(requestedWidth, getEffectiveMaxWidth()));
+            const newHeight = Math.max(minHeight, Math.min(requestedHeight, getEffectiveMaxHeight()));
             setPanelSize({ width: newWidth, height: newHeight });
         };
 
@@ -264,7 +288,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
         document.addEventListener('mousemove', handleResizeMouseMove);
         document.addEventListener('mouseup', handleResizeMouseUp);
-    }, [panelSize, onFocus]);
+    }, [getEffectiveMaxHeight, getEffectiveMaxWidth, minHeight, minWidth, onFocus, panelSize]);
 
     // Update onResize when resizing ends
     useEffect(() => {
@@ -524,3 +548,4 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
 // Export type for external use
 export type { GlassPanelProps };
+
