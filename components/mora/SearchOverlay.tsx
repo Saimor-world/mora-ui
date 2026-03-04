@@ -90,7 +90,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
             id: 'mora-chat', // Reuse singleton chat ID
             type: 'chat', // Should map to a Chat Pane
             title: 'Môra Intelligence',
-            size: { width: 400, height: 600 },
+            size: { width: 1080, height: 820 },
             data: { initialMessage: cleanQuery }
         });
         onClose();
@@ -102,7 +102,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
             id: 'finder-main',
             type: 'finder',
             title: `Finder: ${query}`,
-            size: { width: 900, height: 600 },
+            size: { width: 1280, height: 820 },
             data: { query }
         });
         onClose();

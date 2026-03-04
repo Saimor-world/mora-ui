@@ -414,7 +414,7 @@ export const SpaceLayer: React.FC = () => {
                                     id: 'finder-main',
                                     type: 'finder',
                                     title: spaceName,
-                                    size: { width: 1000, height: 700 },
+                                    size: { width: 1280, height: 820 },
                                     data: {
                                         spaceId: activeSpaceId,
                                         departmentId: activeDepartmentId,
@@ -474,7 +474,7 @@ export const SpaceLayer: React.FC = () => {
                                             id: 'finder-main',
                                             type: 'finder',
                                             title: folder.name,
-                                            size: { width: 1000, height: 700 },
+                                            size: { width: 1280, height: 820 },
                                             data: {
                                                 folderId: folder.id,
                                                 spaceId: activeSpaceId,

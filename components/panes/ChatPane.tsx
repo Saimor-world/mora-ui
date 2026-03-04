@@ -546,7 +546,7 @@ Was kann ich fuer dich tun?`,
             id: 'finder-main',
             type: 'finder',
             title: global ? 'Saimôr Mycelium (Alle Daten)' : `Finder: ${query}`,
-            size: { width: 900, height: 600 },
+            size: { width: 1280, height: 820 },
             data: { query, globalSearch: global }
         });
         return global

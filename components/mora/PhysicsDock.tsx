@@ -32,11 +32,11 @@ export const PhysicsDock = () => {
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
             }} />
             <DockIcon mouseX={mouseX} icon={Layout} label="Dashboard" onClick={() => openPane({ id: 'dashboard', type: 'apps', size: { width: 800, height: 600 }, title: 'Dashboard' })} />
-            <DockIcon mouseX={mouseX} icon={Folder} label="Finder" onClick={() => openPane({ id: 'finder-main', type: 'finder', size: { width: 900, height: 600 }, title: 'Finder' })} />
+            <DockIcon mouseX={mouseX} icon={Folder} label="Finder" onClick={() => openPane({ id: 'finder-main', type: 'finder', size: { width: 1280, height: 820 }, title: 'Finder' })} />
 
             <div className="w-px h-10 bg-white/10 mx-1" />
 
-            <DockIcon mouseX={mouseX} icon={MessageCircle} label="Chat" onClick={() => openPane({ id: 'chat-main', type: 'chat', size: { width: 920, height: 760 }, title: 'Môra Chat' })} />
+            <DockIcon mouseX={mouseX} icon={MessageCircle} label="Chat" onClick={() => openPane({ id: 'chat-main', type: 'chat', size: { width: 1080, height: 820 }, title: 'Môra Chat' })} />
             <DockIcon mouseX={mouseX} icon={Settings} label="Settings" onClick={() => openPane({ id: 'settings-main', type: 'settings', size: { width: 700, height: 500 }, title: 'Settings' })} />
         </motion.div>
     );

@@ -364,10 +364,10 @@ export const MoraShell: React.FC = () => {
     useKeyboardShortcuts({
         onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), []),
         onOpenChat: useCallback(() => {
-            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 920, height: 760 } });
+            openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 1080, height: 820 } });
         }, [openPane]),
         onOpenFinder: useCallback(() => {
-            openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1200, height: 780 } });
+            openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
         }, [openPane]),
         onOpenNotes: useCallback(() => {
             openPane({ id: 'notes-main', type: 'notes', title: 'Notes', size: { width: 720, height: 560 } });
@@ -421,7 +421,7 @@ export const MoraShell: React.FC = () => {
                     id: `${type}-main`,
                     type: type as any,
                     title: type.charAt(0).toUpperCase() + type.slice(1),
-                    size: { width: 900, height: 600 },
+                    size: { width: 1080, height: 760 },
                     data: data || {}
                 });
             }

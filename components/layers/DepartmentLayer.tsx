@@ -571,7 +571,7 @@ export const DepartmentLayer: React.FC = () => {
                                                 spaceId: space.id,
                                                 departmentId: activeDepartmentId
                                             },
-                                            size: { width: 1000, height: 700 },
+                                            size: { width: 1280, height: 820 },
                                             position: { x: 100, y: 100 }
                                         });
                                     }}
@@ -676,7 +676,7 @@ export const DepartmentLayer: React.FC = () => {
                                                 departmentId: activeDepartmentId,
                                                 companyId: activeCompanyId || currentDepartment?.company_id || undefined
                                             },
-                                            size: { width: 900, height: 600 }
+                                            size: { width: 1280, height: 820 }
                                         });
                                     }}
                                     onHover={(hovered) => {
@@ -739,7 +739,7 @@ export const DepartmentLayer: React.FC = () => {
                                             companyId: activeCompanyId || currentDepartment?.company_id || undefined,
                                             showUpload: true
                                         },
-                                        size: { width: 1000, height: 700 }
+                                        size: { width: 1280, height: 820 }
                                     });
                                 }}
                             >

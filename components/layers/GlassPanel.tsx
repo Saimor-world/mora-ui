@@ -524,7 +524,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 {/* UPGRADE C1: Resize Handle */}
                 {resizable && !isMaximized && (
                     <div
-                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-30 hover:opacity-60 transition-opacity"
+                        className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize opacity-45 hover:opacity-80 transition-opacity"
                         onMouseDown={handleResizeStart}
                         onMouseUp={handleResizeEnd}
                         style={{

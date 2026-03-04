@@ -297,6 +297,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: { x: number, y: number } }>({ isDragging: false, startX: 0, startY: 0, initialPan: { x: 0, y: 0 } });
     const [searchQuery, setSearchQuery] = useState(initialQuery || '');
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Create folder modal
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
@@ -401,6 +402,43 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         navigateToFolder(null);
     }, [breadcrumbs, navigateToFolder]);
 
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            const tag = target?.tagName;
+            const editable = !!target?.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+                searchInputRef.current?.select();
+                return;
+            }
+
+            // Do not hijack navigation keys while typing
+            if (editable) return;
+
+            if (e.altKey && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                navigateBack();
+                return;
+            }
+            if (e.altKey && e.key === 'ArrowRight') {
+                e.preventDefault();
+                navigateForward();
+                return;
+            }
+            if (e.altKey && e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateUp();
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [navigateBack, navigateForward, navigateUp]);
+
     /**
      * Click-race guard for folder navigation.
      * Framer Motion's gesture system can absorb native `dblclick` on animated elements.
@@ -443,6 +481,34 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (companies.length === 1) return companies[0].id;
         return null;
     }, [activeCompanyId, paneCompanyId, companies]);
+
+    const currentPathLabel = useMemo(() => {
+        const parts: string[] = [];
+
+        if (folderContext?.path?.company?.name) parts.push(folderContext.path.company.name);
+        if (folderContext?.path?.department?.name) parts.push(folderContext.path.department.name);
+        if (folderContext?.path?.space?.name) parts.push(folderContext.path.space.name);
+        if (Array.isArray(folderContext?.path?.breadcrumbs)) {
+            folderContext.path.breadcrumbs.forEach((b) => {
+                if (b?.name) parts.push(b.name);
+            });
+        }
+        if (parts.length > 0) return parts.join(' / ');
+
+        if (breadcrumbs.length > 0) {
+            return breadcrumbs.map((b) => b.name).filter(Boolean).join(' / ');
+        }
+        return 'Home';
+    }, [folderContext, breadcrumbs]);
+
+    const handleCopyPath = useCallback(async () => {
+        try {
+            await navigator.clipboard.writeText(currentPathLabel);
+            toast.success('Pfad kopiert');
+        } catch {
+            toast.error('Pfad konnte nicht kopiert werden');
+        }
+    }, [currentPathLabel]);
 
     // DATA CONSISTENCY FIX: Stabilize rawTree to prevent infinite loops (useEffect deps)
     const rawTree = useMemo(() => treeData || [], [treeData]);
@@ -695,6 +761,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
         return () => { cancelled = true; };
     }, [currentFolderId, findNodeInTree, foldersBySpace, rawTree, startFolderId]);
+
+    useEffect(() => {
+        if (!contextHint) return;
+        const timeout = window.setTimeout(() => setContextHint(null), 4000);
+        return () => window.clearTimeout(timeout);
+    }, [contextHint, currentFolderId]);
 
     // Effect to handle view content and lazy loading
     useEffect(() => {
@@ -1238,6 +1310,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <div className="relative hidden md:block">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                                 <input
+                                    ref={searchInputRef}
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -1283,6 +1356,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                             {/* Actions */}
                             <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-3">
+                                <button
+                                    onClick={handleCopyPath}
+                                    className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+                                    title="Copy Path"
+                                >
+                                    <Copy size={16} />
+                                </button>
                                 <button
                                     onClick={() => loadContent()}
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"

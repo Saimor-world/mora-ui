@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence, useSpring, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
     Search, Minus, Mail, Calendar, Command, User, Building2, ChevronUp, Bell
 } from 'lucide-react';
@@ -69,12 +69,12 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     : 'text-white/20 cursor-not-allowed'
                 : item.action === 'memory'
                     ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
-                    : isStandardMode
+                : isStandardMode
                         ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
                         : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
                 }`}
-            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.08, transition: { type: 'tween', duration: 0.05 } }}
-            whileTap={item.disabled || prefersReducedMotion ? {} : { scale: 0.92, transition: { type: 'tween', duration: 0.05 } }}
+            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.04, transition: { type: 'tween', duration: 0.03 } }}
+            whileTap={item.disabled || prefersReducedMotion ? {} : { scale: 0.96, transition: { type: 'tween', duration: 0.03 } }}
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
         >
@@ -91,7 +91,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             )}
 
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-75 delay-75 pointer-events-none z-[200]">
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-50 pointer-events-none z-[200]">
                 <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
                     ? 'bg-gray-800 border border-gray-700'
                     : 'bg-black/95 backdrop-blur-xl border border-white/10'
@@ -159,10 +159,10 @@ export const Dock = () => {
     }, [orbState]);
 
     const handleDockClick = (action: string) => {
-        const defaultSize = { width: 850, height: 600 };
+        const defaultSize = { width: 900, height: 640 };
         switch (action) {
             case 'home': setViewLevel('core'); setActiveDepartment(null); break;
-            case 'finder': openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1200, height: 780 } }); break;
+            case 'finder': openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } }); break;
             case 'team': openPane({ id: 'team-main', type: 'team', title: 'Team', size: defaultSize }); break;
             case 'mail': openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: defaultSize }); break;
             case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: defaultSize }); break;
@@ -171,7 +171,7 @@ export const Dock = () => {
             case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 } }); break;
             case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } }); break;
             case 'notes': openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } }); break;
-            case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 920, height: 760 } }); break;
+            case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 1080, height: 820 } }); break;
             default: break;
         }
     };
@@ -228,12 +228,12 @@ export const Dock = () => {
                                     key={pane.id}
                                     onClick={() => restorePane(pane.id)}
                                     title={pane.title}
-                                    className={`w-12 h-12 flex items-center justify-center transition-all duration-200 shadow-lg ${isStandardMode
+                                    className={`w-12 h-12 flex items-center justify-center transition-colors shadow-lg ${isStandardMode
                                         ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
                                         : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
                                         }`}
-                                    whileHover={{ y: -4, scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
+                                    whileHover={{ scale: 1.02, transition: { type: 'tween', duration: 0.03 } }}
+                                    whileTap={{ scale: 0.98, transition: { type: 'tween', duration: 0.03 } }}
                                 >
                                     <Icon size={18} />
                                 </motion.button>
