@@ -3,26 +3,15 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
-    Search, Minus, Mail, Calendar, Command, User, Building2, ChevronUp, Bell
+    Search, Minus, Mail, Calendar, Building2, ChevronUp,
+    Home, Sparkles, MessageCircle, Brain, FolderOpen, Users, FileText, Terminal, Settings
 } from 'lucide-react';
-import {
-    HomeOrbitIcon,
-    MoraBrainIcon,
-    ChatOrbitIcon,
-    FolderStarIcon,
-    TeamNetworkIcon,
-    NotesRuneIcon,
-    SettingsRingIcon,
-    TerminalGlyphIcon,
-    MemoryCrystalIcon,
-    GridConstellationIcon,
-} from '@/components/icons/MoraIcons';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SearchPopup } from './SearchPopup';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
-import { NotificationCenter, useNotificationStore } from '@/components/os/NotificationCenter';
+import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 import { ActionTray } from '@/components/os/ActionTray';
 import { PlasmaOrb } from './PlasmaOrb';
@@ -83,7 +72,6 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             {/* Badge */}
             {item.badge && item.badge > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
                         {item.badge > 9 ? '!' : item.badge}
                     </span>
@@ -91,7 +79,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             )}
 
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-50 pointer-events-none z-[200]">
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-none pointer-events-none z-[200]">
                 <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
                     ? 'bg-gray-800 border border-gray-700'
                     : 'bg-black/95 backdrop-blur-xl border border-white/10'
@@ -125,16 +113,22 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
 const MagneticDockIconMemo = React.memo(MagneticDockIcon);
 
 export const Dock = () => {
-    const {
-        setViewLevel, setActiveDepartment, orbState, user, companies, activeCompanyId, setActiveCompany, viewMode, isStandardMode
-    } = useMoraStore();
+    const setViewLevel = useMoraStore((s) => s.setViewLevel);
+    const setActiveDepartment = useMoraStore((s) => s.setActiveDepartment);
+    const orbState = useMoraStore((s) => s.orbState);
+    const user = useMoraStore((s) => s.user);
+    const companies = useMoraStore((s) => s.companies);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const setActiveCompany = useMoraStore((s) => s.setActiveCompany);
+    const viewMode = useMoraStore((s) => s.viewMode);
+    const isStandardMode = useMoraStore((s) => s.isStandardMode);
 
-    const { panes, restorePane, openPane } = usePaneStore();
+    const panes = usePaneStore((s) => s.panes);
+    const restorePane = usePaneStore((s) => s.restorePane);
+    const openPane = usePaneStore((s) => s.openPane);
     const minimizedPanes = useMemo(() => panes.filter(p => p.minimized), [panes]);
     const { pendingCount } = useMemory();
     const mod = usePlatformModifier();
-    const unreadNotifications = useNotificationStore((s) => s.notifications.filter(n => !n.read).length);
-
     // Register keyboard shortcut for Focus Mode
     useFocusModeShortcut();
 
@@ -176,19 +170,19 @@ export const Dock = () => {
         }
     }, [openPane, setActiveDepartment, setViewLevel]);
 
-    // Core apps - German labels
+    // Core apps - native-style, high-recognition icons
     const dockItems: DockItem[] = useMemo(() => [
-        { icon: HomeOrbitIcon, label: 'Universe Home', shortcut: `${mod}+H`, action: 'home', description: 'Alle Departments & Spaces' },
-        { icon: MoraBrainIcon, label: 'Mora', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
-        { icon: ChatOrbitIcon, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
-        { icon: MemoryCrystalIcon, label: 'Gedaechtnis', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Mora lernt', hidden: pendingCount === 0 },
-        { icon: FolderStarIcon, label: 'Dateien', shortcut: `${mod}+F`, action: 'finder', description: 'Dokumente & Ordner' },
-        { icon: TeamNetworkIcon, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
-        { icon: NotesRuneIcon, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
+        { icon: Home, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zur Universe-Uebersicht' },
+        { icon: Sparkles, label: 'Mora Nexus', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
+        { icon: MessageCircle, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
+        { icon: Brain, label: 'Memory', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Lernspeicher', hidden: pendingCount === 0 },
+        { icon: FolderOpen, label: 'Finder', shortcut: `${mod}+F`, action: 'finder', description: 'Dateien & Ordner' },
+        { icon: Users, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
+        { icon: FileText, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
         { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Bald verfuegbar', disabled: true },
         { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfuegbar', disabled: true },
-        { icon: TerminalGlyphIcon, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
-        { icon: SettingsRingIcon, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
+        { icon: Terminal, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
+        { icon: Settings, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
     ], [mod, pendingCount]);
 
     const visibleDockItems = useMemo(
@@ -197,23 +191,18 @@ export const Dock = () => {
     );
 
     const minimizedIconMap: Record<string, React.ComponentType<any>> = {
-        finder: FolderStarIcon,
-        chat: ChatOrbitIcon,
-        team: TeamNetworkIcon,
+        finder: FolderOpen,
+        chat: MessageCircle,
+        team: Users,
         mail: Mail,
         calendar: Calendar,
-        terminal: TerminalGlyphIcon,
+        terminal: Terminal,
         search: Search,
-        notes: NotesRuneIcon,
-        settings: SettingsRingIcon,
-        apps: GridConstellationIcon,
-        'mora-hub': MoraBrainIcon
+        notes: FileText,
+        settings: Settings,
+        apps: Sparkles,
+        'mora-hub': Brain
     };
-
-    // Get user initials
-    const userInitials = user?.name
-        ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-        : user?.email?.slice(0, 2).toUpperCase() || 'U';
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
@@ -352,7 +341,7 @@ export const Dock = () => {
                     {/* CENTER: DOCK APPS — Magnetic Icons */}
                     <div className="flex items-center gap-2">
                         {visibleDockItems.map((item) => (
-                            <MagneticDockIcon
+                            <MagneticDockIconMemo
                                 key={item.action}
                                 item={item}
                                 isStandardMode={isStandardMode}
