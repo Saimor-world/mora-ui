@@ -269,15 +269,7 @@ export function useMoraStream(): UseMoraStreamReturn {
 
             try {
                 const v3StreamUrl = `${baseUrl}/v3/chat/stream`;
-                try {
-                    fullText = await attemptStream(v3StreamUrl);
-                } catch (v3Err: any) {
-                    if (v3Err?.name === "AbortError") throw v3Err;
-                    if (v3Err?.status === 401 || v3Err?.status === 403) throw v3Err;
-
-                    const v1StreamUrl = `${baseUrl}/v1/chat/stream`;
-                    fullText = await attemptStream(v1StreamUrl);
-                }
+                fullText = await attemptStream(v3StreamUrl);
             } catch (err: unknown) {
                 if ((err as Error).name === "AbortError") {
                     return fullText;
@@ -292,44 +284,6 @@ export function useMoraStream(): UseMoraStreamReturn {
 
                 const msg = err instanceof Error ? err.message : "Streaming failed";
                 setError(msg);
-
-                try {
-                    const fallback = await fetch(`${baseUrl}/v1/chat`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
-                        },
-                        credentials: "include",
-                        body,
-                        signal: controller.signal,
-                    });
-
-                    if (fallback.ok) {
-                        const data = await fallback.json();
-                        const scopeUpdate = extractScopeUpdate({
-                            resolved_scope: data?.metadata?.resolved_scope ?? data?.context_used?.resolved_scope,
-                            scope_policy: data?.metadata?.scope_policy,
-                            scope_enforced: data?.metadata?.scope_enforced,
-                            scope_contract: data?.metadata?.scope_contract ?? data?.context_used?.scope_contract,
-                            ui_scope_hints: data?.metadata?.ui_scope_hints ?? data?.context_used?.ui_scope_hints,
-                        } as StreamFrame);
-                        if (scopeUpdate) {
-                            useMoraStore.getState().setLastChatScope(scopeUpdate);
-                            setLastResolvedScope(
-                                Object.keys(scopeUpdate.resolved_scope).length > 0
-                                    ? (scopeUpdate.resolved_scope as ResolvedScope)
-                                    : null
-                            );
-                            setScopeEnforced(scopeUpdate.scope_enforced);
-                        }
-                        fullText = data.reply ?? "";
-                        setStreamingText(fullText);
-                        setError(null);
-                    }
-                } catch {
-                    // Keep original error visible
-                }
             } finally {
                 setIsStreaming(false);
             }

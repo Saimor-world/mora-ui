@@ -497,13 +497,8 @@ export interface FolderContext {
 }
 
 export async function fetchFolderContext(folderId: string): Promise<FolderContext | null> {
-    const v3Context = await coreGet(`/v3/folders/${folderId}/context`, { isOptional: true });
-    if (v3Context) return v3Context;
-    try {
-        return await coreGet(`/v1/folders/${folderId}/context?raw=true`, { isOptional: true });
-    } catch {
-        return null;
-    }
+    if (!folderId) return null;
+    return coreGet(`/v3/folders/${folderId}/context`, { isOptional: true });
 }
 
 // GET /v3/{entity_id}/context — generic entity resolver (core SHA 001f61c)
@@ -517,6 +512,7 @@ export interface EntityContext {
 }
 
 export async function getEntityContext(entityId: string): Promise<EntityContext | null> {
+    if (!entityId) return null;
     return coreGet(`/v3/${entityId}/context`, { isOptional: true });
 }
 

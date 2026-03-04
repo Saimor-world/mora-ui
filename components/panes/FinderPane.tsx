@@ -13,6 +13,8 @@ import { SemanticItem } from '@/components/organic/SemanticItem';
 import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 // Helper: Merge lists and deduplicate by ID
 const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null)[]): T[] => {
     const map = new Map<string, T>();
@@ -342,6 +344,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [forwardStack, setForwardStack] = useState<Array<string | null>>([]);
     const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string; type: string }[]>([]);
     const [folderContext, setFolderContext] = useState<FolderContext | null>(null);
+    const [contextHint, setContextHint] = useState<string | null>(null);
     const currentFolderIdRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -626,6 +629,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     useEffect(() => {
         if (!currentFolderId) {
             setFolderContext(null);
+            setContextHint(null);
+            return;
+        }
+        if (!UUID_RE.test(currentFolderId)) {
+            setFolderContext(null);
+            setContextHint('Kontext konnte nicht eindeutig aufgelöst werden.');
             return;
         }
 
@@ -644,8 +653,17 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (isFolderContext) {
             // Path 1: strict folder context (breadcrumb-quality data)
             fetchFolderContext(currentFolderId)
-                .then((ctx) => { if (!cancelled) setFolderContext(ctx); })
-                .catch(() => { if (!cancelled) setFolderContext(null); });
+                .then((ctx) => {
+                    if (cancelled) return;
+                    setFolderContext(ctx);
+                    setContextHint(ctx ? null : 'Ordnerkontext aktuell nicht verfügbar.');
+                })
+                .catch(() => {
+                    if (!cancelled) {
+                        setFolderContext(null);
+                        setContextHint('Ordnerkontext aktuell nicht verfügbar.');
+                    }
+                });
         } else {
             // Path 2: generic entity context — no 404 noise
             getEntityContext(currentFolderId)
@@ -659,14 +677,21 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             path: ec.path,
                             counts: { nodes: 0, subfolders: 0 },
                         });
+                        setContextHint(null);
                     } else if (ec && !ec.resolved) {
-                        // resolved=false: unknown id — silent, no console error
                         setFolderContext(null);
+                        setContextHint('Kontext-ID nicht aufloesbar, Inhalte bleiben verfuegbar.');
                     } else {
                         setFolderContext(null);
+                        setContextHint('Kontext konnte nicht aufgeloest werden.');
                     }
                 })
-                .catch(() => { if (!cancelled) setFolderContext(null); });
+                .catch(() => {
+                    if (!cancelled) {
+                        setFolderContext(null);
+                        setContextHint('Kontext konnte nicht aufgeloest werden.');
+                    }
+                });
         }
         return () => { cancelled = true; };
     }, [currentFolderId, findNodeInTree, foldersBySpace, rawTree, startFolderId]);
@@ -1152,7 +1177,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                             {folderContext?.path?.department && (
                                 <React.Fragment>
-                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                    <span className="text-white/20 text-xs shrink-0 mx-0.5">/</span>
                                     <button
                                         onClick={() => navigateToFolder(folderContext.path.department?.id || null)}
                                         className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${currentFolderId === folderContext.path.department.id ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
@@ -1165,7 +1190,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                             {folderContext?.path?.space && (
                                 <React.Fragment>
-                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                    <span className="text-white/20 text-xs shrink-0 mx-0.5">/</span>
                                     <button
                                         onClick={() => navigateToFolder(folderContext.path.space?.id || null)}
                                         className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${(currentFolderId === folderContext.path.space.id || (currentFolderId === folderContext.path.department?.id && !folderContext.path.space)) ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
@@ -1178,7 +1203,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                             {folderContext?.path?.breadcrumbs?.map((seg: any, i: number) => (
                                 <React.Fragment key={seg.id || i}>
-                                    <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                    <span className="text-white/20 text-xs shrink-0 mx-0.5">/</span>
                                     <button
                                         onClick={() => navigateToFolder(seg.id)}
                                         className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${(currentFolderId === seg.id) ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
@@ -1195,7 +1220,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 const displayName = isDuplicateName && bc.type === 'space' ? 'Allgemein' : bc.name;
                                 return (
                                     <React.Fragment key={bc.id}>
-                                        <ChevronRight size={12} className="text-white/10 shrink-0 mx-0.5" />
+                                        <span className="text-white/20 text-xs shrink-0 mx-0.5">/</span>
                                         <button
                                             onClick={() => navigateToFolder(bc.id)}
                                             className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${idx === breadcrumbs.length - 1 ? 'text-white bg-white/5 shadow-[0_0_15px_rgba(255,255,255,0.05)]' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
@@ -1288,6 +1313,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                     </div>
+
+                    {contextHint && (
+                        <div className="px-3 md:px-6 pb-2 pt-0.5">
+                            <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-200/90">
+                                <AlertCircle size={11} />
+                                <span>{contextHint}</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Content Container with Animation */}
                     <div className="flex-1 overflow-y-auto p-6 bg-black/40 relative" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
