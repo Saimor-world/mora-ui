@@ -7,8 +7,8 @@
  * 3. Exactly ONE [data-testid="finder-nav-group"] exists (no duplicate nav controls).
  * 4. No network requests to /v1/chat or /v1/folders/{id}/context were made.
  *
- * Run: npx playwright test e2e / finder - from - l3.spec.ts
-    */
+ * Run: npx playwright test e2e/finder-from-l3.spec.ts
+ */
 
 import { test, expect, Page, Request } from '@playwright/test';
 
