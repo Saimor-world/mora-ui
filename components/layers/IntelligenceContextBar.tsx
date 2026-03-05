@@ -117,9 +117,13 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
 
     // Scope signal: prefer real API scope (from v3/chat SSE preamble) over store-derived
     const { activeCompanyId, activeDepartmentId, activeSpaceId, companies, departments, spacesByDepartment, lastChatScope } = useMoraStore();
-    const company = companies.find(c => c.id === activeCompanyId);
-    const dept = departments.find(d => d.id === activeDepartmentId);
-    const allSpaces = Object.values(spacesByDepartment).flat();
+    const safeCompanies = Array.isArray(companies) ? companies : [];
+    const safeDepartments = Array.isArray(departments) ? departments : [];
+    const allSpaces = Object.values(spacesByDepartment || {})
+        .filter((value): value is any[] => Array.isArray(value))
+        .flat();
+    const company = safeCompanies.find(c => c.id === activeCompanyId);
+    const dept = safeDepartments.find(d => d.id === activeDepartmentId);
     const space = allSpaces.find(s => s.id === activeSpaceId);
     // Use API-resolved names if available (e.g. company_name, department_name from v3/chat)
     const apiScope = lastChatScope?.resolved_scope;

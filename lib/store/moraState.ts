@@ -51,6 +51,8 @@ const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null
     return Array.from(map.values());
 };
 
+const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+
 const getStandardModeKey = (companyId?: string | null) =>
     companyId ? `saimor_standard_mode_${companyId}` : 'saimor_standard_mode_default';
 
@@ -580,10 +582,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const viewMode = get().viewMode;
             const userRole = get().user?.role;
             const includeDemo = viewMode === 'demo' || userRole === ROLE_SYSTEM_OWNER;
-            let data = await fetchCompanies(includeDemo);
+            let data = asArray<any>(await fetchCompanies(includeDemo));
 
             // Use DB name if available, only fallback to defaults if empty/null
-            data = data.map((company: any) => {
+            data = asArray<any>(data).map((company: any) => {
                 let name = company?.name?.trim();
 
                 // Only use fallback names if DB name is empty/null
@@ -690,12 +692,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     ? fetchNodesByCompany(targetCompanyId, { limit: 200 })
                     : Promise.resolve([])
             ]);
+            const safeDeptData = asArray<CoreDepartment>(deptData);
+            const safeNodeData = asArray<CoreNode>(nodeData);
 
             _deptCacheCompanyId = targetCompanyId ?? null;
             set({
-                departments: deptData || [],
+                departments: safeDeptData,
                 nodesByCompany: targetCompanyId
-                    ? { ...get().nodesByCompany, [targetCompanyId]: nodeData || [] }
+                    ? { ...get().nodesByCompany, [targetCompanyId]: safeNodeData }
                     : get().nodesByCompany,
                 isLoadingDepartments: false
             });
@@ -725,10 +729,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         // PRODUCTION MODE: Demo now uses real DB spaces for authenticity
 
         try {
-            let data = await fetchSpaces(deptId);
+            let data = asArray<CoreSpace>(await fetchSpaces(deptId));
 
             set(state => ({
-                spacesByDepartment: { ...state.spacesByDepartment, [deptId]: data || [] },
+                spacesByDepartment: { ...state.spacesByDepartment, [deptId]: asArray<CoreSpace>(data) },
                 isLoadingSpaces: false
             }));
 
@@ -758,7 +762,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({ orbState: mindLoop.getCurrentState() });
 
         try {
-            const data = await fetchFolders(spaceId);
+            const data = asArray<CoreFolder>(await fetchFolders(spaceId));
             set(state => ({
                 foldersBySpace: { ...state.foldersBySpace, [spaceId]: data },
                 isLoadingFolders: false
@@ -791,7 +795,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({ orbState: mindLoop.getCurrentState() });
 
         try {
-            const data = await fetchNodes(folderId, options);
+            const data = asArray<CoreNode>(await fetchNodes(folderId, options));
             set(state => ({
                 nodesByFolder: { ...state.nodesByFolder, [folderId]: data },
                 isLoadingNodes: false
@@ -816,7 +820,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
         try {
             // Cap at 200 nodes initially; deep-view can page further as needed
-            const data = await fetchNodesByCompany(companyId, { limit: 200 });
+            const data = asArray<CoreNode>(await fetchNodesByCompany(companyId, { limit: 200 }));
 
             set(state => ({
                 nodesByCompany: { ...state.nodesByCompany, [companyId]: data },
@@ -837,6 +841,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
         // Search in loaded folders
         for (const nodes of Object.values(state.nodesByFolder)) {
+            if (!Array.isArray(nodes)) continue;
             foundNode = nodes.find(n => n.id === nodeId);
             if (foundNode) break;
         }
@@ -862,11 +867,11 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const resolvedTenant = tenantId || useAccountStore.getState().currentAccount?.tenantId;
             const targetCompany = companyId || get().activeCompanyId || undefined;
 
-            const tree = await fetchTree(resolvedTenant || undefined, targetCompany);
-            if (!tree || (tree?.length || 0) === 0) {
+            const tree = asArray<CoreTreeNode>(await fetchTree(resolvedTenant || undefined, targetCompany));
+            if (tree.length === 0) {
                 // Retry once
-                const retryTree = await fetchTree(resolvedTenant || undefined, targetCompany);
-                if (!retryTree || (retryTree?.length || 0) === 0) {
+                const retryTree = asArray<CoreTreeNode>(await fetchTree(resolvedTenant || undefined, targetCompany));
+                if (retryTree.length === 0) {
                     set({
                         treeData: [],
                         isLoadingTree: false,

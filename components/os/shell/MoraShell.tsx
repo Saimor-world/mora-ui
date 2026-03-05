@@ -226,28 +226,29 @@ export const MoraShell: React.FC = () => {
     } = useMoraStore();
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
+    const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
-    const activeCompany = companies.find(c => c.id === activeCompanyId);
+    const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
     const role = user?.role || 'demo';
     const tenantId = user?.tenant_id;
 
     const filteredCompanies = React.useMemo(() => {
-        if (!companies.length) return [];
+        if (!safeCompanies.length) return [];
         if (viewMode === 'demo') {
-            return companies.filter((c) => c.is_demo);
+            return safeCompanies.filter((c) => c.is_demo);
         }
         if (viewMode === 'workspace') {
             if (tenantId === TENANT_DEMO) {
-                return companies.filter((c) => c.tenant_id === TENANT_HQ);
+                return safeCompanies.filter((c) => c.tenant_id === TENANT_HQ);
             }
             if (role === 'system_owner') {
-                return companies.filter((c) => !c.is_demo);
+                return safeCompanies.filter((c) => !c.is_demo);
             }
-            return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
+            return tenantId ? safeCompanies.filter((c) => c.tenant_id === tenantId) : safeCompanies;
         }
-        if (role === 'system_owner') return companies;
-        return tenantId ? companies.filter((c) => c.tenant_id === tenantId) : companies;
-    }, [companies, viewMode, role, tenantId]);
+        if (role === 'system_owner') return safeCompanies;
+        return tenantId ? safeCompanies.filter((c) => c.tenant_id === tenantId) : safeCompanies;
+    }, [safeCompanies, viewMode, role, tenantId]);
 
     const activeCompanyForView = React.useMemo(() => {
         if (filteredCompanies.length === 0) return activeCompany;
@@ -255,7 +256,7 @@ export const MoraShell: React.FC = () => {
     }, [filteredCompanies, activeCompanyId, activeCompany]);
 
     const displayCompany = activeCompanyForView || activeCompany;
-    const hasDemoCompany = companies.some((c) => c.is_demo);
+    const hasDemoCompany = safeCompanies.some((c) => c.is_demo);
     const visibleModes = React.useMemo<UniverseViewMode[]>(() => {
         if (role === 'system_owner') {
             return hasDemoCompany ? ['owner', 'workspace', 'demo'] : ['owner', 'workspace'];

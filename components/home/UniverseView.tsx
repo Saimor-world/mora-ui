@@ -34,6 +34,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
     useEffect(() => {
@@ -109,8 +111,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     // Dynamic Context Resolver
     const currentCompany = useMemo(() =>
-        companies.find(c => c.id === activeCompanyId),
-        [companies, activeCompanyId]);
+        safeCompanies.find(c => c.id === activeCompanyId),
+        [safeCompanies, activeCompanyId]);
 
     // ─── SYNC GUARD (V10.6) ───
     // Ensures data is loaded without disruptive flashes
@@ -131,11 +133,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     ], []);
 
     const planetPositions = useMemo(() => {
-        if (!departments || departments.length === 0) return [];
-        const count = departments.length;
+        if (safeDepartments.length === 0) return [];
+        const count = safeDepartments.length;
 
         // Deterministic sorting to ensure planets stay in place
-        const sortedDepts = [...departments].sort((a, b) => a.name.localeCompare(b.name));
+        const sortedDepts = [...safeDepartments].sort((a, b) => a.name.localeCompare(b.name));
 
         return sortedDepts.map((dept, index) => {
             let ringIndex = 0;
@@ -170,7 +172,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ringIndex
             };
         });
-    }, [departments, rings]);
+    }, [safeDepartments, rings]);
 
     // ─── SILK DRIFT PATHS (V10.6) ───
     const connectionPath = useMemo(() => {

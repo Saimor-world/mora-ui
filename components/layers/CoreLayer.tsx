@@ -23,10 +23,11 @@ export const CoreLayer: React.FC = () => {
     const [inboxNodes, setInboxNodes] = useState<CoreNode[]>([]);
     const [inboxError, setInboxError] = useState<string | null>(null);
     const [isLoadingInbox, setIsLoadingInbox] = useState(false);
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const activeCompany = useMemo(
-        () => companies.find((company) => company.id === activeCompanyId) || null,
-        [companies, activeCompanyId]
+        () => safeCompanies.find((company) => company.id === activeCompanyId) || null,
+        [safeCompanies, activeCompanyId]
     );
 
     // NOTE: loadDepartments is called by UniverseView/MoraShell on mount.\n    // We don't call it here to prevent double-loading.\n    // The debounce in moraState.ts also prevents redundant calls."
@@ -42,11 +43,13 @@ export const CoreLayer: React.FC = () => {
         setInboxError(null);
 
         try {
-            const folders = await fetchFoldersByCompany(activeCompanyId);
+            const foldersRaw = await fetchFoldersByCompany(activeCompanyId);
+            const folders = Array.isArray(foldersRaw) ? foldersRaw : [];
             let inbox = folders.find((folder) => folder.name?.toLowerCase() === 'inbox') || null;
 
             if (!inbox) {
-                const spaces = await fetchSpacesByCompany(activeCompanyId);
+                const spacesRaw = await fetchSpacesByCompany(activeCompanyId);
+                const spaces = Array.isArray(spacesRaw) ? spacesRaw : [];
                 if (spaces.length === 0) {
                     setInboxError('No space available for Inbox');
                     setInboxNodes([]);
@@ -59,7 +62,8 @@ export const CoreLayer: React.FC = () => {
                 });
             }
 
-            const nodes = await fetchNodes(inbox.id);
+            const nodesRaw = await fetchNodes(inbox.id);
+            const nodes = Array.isArray(nodesRaw) ? nodesRaw : [];
             const sorted = [...nodes].sort((a, b) => {
                 const aTime = a.created_at ? Date.parse(a.created_at) : 0;
                 const bTime = b.created_at ? Date.parse(b.created_at) : 0;

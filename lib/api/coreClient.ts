@@ -488,7 +488,8 @@ export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
 }
 
 export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
-    return coreGet(`/v1/nodes/${nodeId}/relations`);
+    const result = await coreGet(`/v1/nodes/${nodeId}/relations`, { isOptional: true });
+    return normalizeList<any>(result, ['relations', 'nodes']);
 }
 
 // ─── Folder context (breadcrumb path) ────────────────────────────────────────
@@ -565,7 +566,7 @@ export async function fetchAdminUsers(includeInactive = true): Promise<AdminUser
         `/v3/team/admin/users?include_inactive=${includeInactive}`,
         { isOptional: true }
     );
-    return result || [];
+    return normalizeList<AdminUser>(result, ['users', 'members']);
 }
 
 export async function patchAdminUser(userId: string, patch: AdminUserPatch): Promise<AdminUser | null> {
@@ -582,7 +583,7 @@ export type TreeApiResponse = {
 
 // Map backend tree response (departments + spaces + folders + nodes) into the UI-friendly CoreTreeNode shape
 export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[] {
-    if (!response || !response.departments) return [];
+    if (!response) return [];
 
     const mapNode = (node: any): CoreTreeNode => ({
         id: node.id,
@@ -624,7 +625,7 @@ export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[
         children: (dept.spaces || []).map(mapSpace),
     });
 
-    return (response.departments || []).map(mapDepartment);
+    return normalizeList<any>(response.departments, ['departments']).map(mapDepartment);
 }
 
 export async function fetchTree(tenantId?: string, companyId?: string): Promise<CoreTreeNode[]> {
@@ -645,12 +646,13 @@ export async function fetchTreeData(tenantId?: string, companyId?: string): Prom
 }
 
 export async function fetchNodeChildren(nodeId: string, type: 'department' | 'space' | 'folder'): Promise<CoreTreeNode[]> {
-    const children = await coreGet(`/v1/tree/${nodeId}/children?type=${type}`);
+    const children = await coreGet(`/v1/tree/${nodeId}/children?type=${type}`, { isOptional: true });
+    const safeChildren = normalizeList<any>(children, ['children', 'items', 'nodes']);
     // Map raw response to CoreTreeNode if necessary, but the backend returns Tree* models which usually match.
     // However, we should ensure the type mapping is correct for the UI.
 
     // Helper to map backend shape to frontend CoreTreeNode
-    return (children || []).map((c: any) => {
+    return safeChildren.map((c: any) => {
         // Backend returns mixed types. We need to normalize.
         // If it looks like a folder (has 'space_id' or 'parent_folder_id' or 'folder-type')
         // For now, let's assume the backend TreeFolder model matches CoreTreeNode loosely.
@@ -896,7 +898,8 @@ export async function recordAwarenessSignal(signalType: string, payload: any = {
 
 // Intelligence / Resonance
 export async function getSemanticallySimilarNodes(nodeId: string): Promise<CoreNode[]> {
-    return coreGet(`/v1/nodes/${nodeId}/similar?limit=3&threshold=0.6`);
+    const result = await coreGet(`/v1/nodes/${nodeId}/similar?limit=3&threshold=0.6`, { isOptional: true });
+    return normalizeList<CoreNode>(result, ['results', 'nodes', 'similar']);
 }
 
 // AI Actions
@@ -913,7 +916,9 @@ export async function getNodeActions(nodeId: string): Promise<AIAction[]> {
             method: 'POST',
             body: { node_id: nodeId }
         });
-        return response.actions || [];
+        if (!response) return [];
+        if (Array.isArray(response)) return response as AIAction[];
+        return normalizeList<AIAction>(response.actions, ['actions', 'items']);
     } catch (e) {
         console.error("AI Actions fetch failed", e);
         return [];
@@ -962,7 +967,7 @@ export async function searchMemory(query: string, limit: number = 10, companyId:
     // v3: envelope unwrap handled transparently in coreRequest().
     // Awaited explicitly so the || [] fallback applies to the resolved value, not the Promise.
     const result = await coreGet(`/v3/memory/search?q=${encodeURIComponent(query)}&limit=${limit}${companyQuery}`, { isOptional: true });
-    return result || [];
+    return normalizeList<any>(result, ['results', 'items', 'memories', 'data']);
 }
 
 // GET /v3/memory/pending - Review Queue laden
@@ -972,7 +977,7 @@ export async function getMemoryPending(companyId: string): Promise<any[]> {
     // v3: envelope unwrap handled transparently in coreRequest().
     // Awaited explicitly so the || [] fallback applies to the resolved value, not the Promise.
     const result = await coreGet(`/v3/memory/pending${companyQuery}`, { isOptional: true });
-    return result || [];
+    return normalizeList<any>(result, ['pending', 'items', 'queue', 'data']);
 }
 
 // POST /v3/memory/approve/{id} - Review Item bestaetigen

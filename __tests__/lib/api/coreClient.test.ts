@@ -237,6 +237,14 @@ describe('searchMemory', () => {
         const result = await searchMemory('q', 5, 'co');
         expect(result).toEqual([]);
     });
+
+    it('normalizes object payloads with results[] to array', async () => {
+        mockFetchRaw({ results: [{ id: 'm-1', summary: 'x' }], total: 1 });
+        const result = await searchMemory('q', 5, 'co');
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ id: 'm-1' });
+    });
 });
 
 describe('getMemoryPending', () => {
@@ -254,6 +262,14 @@ describe('getMemoryPending', () => {
 
     it('throws when company_id is empty', async () => {
         await expect(getMemoryPending('')).rejects.toThrow('Memory API requires company_id');
+    });
+
+    it('normalizes object payloads with pending[] to array', async () => {
+        mockFetchRaw({ pending: [{ id: 'p-1' }] });
+        const result = await getMemoryPending('co-1');
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ id: 'p-1' });
     });
 });
 
@@ -423,6 +439,14 @@ describe('fetchAdminUsers', () => {
         mockFetchError(403);
         const result = await fetchAdminUsers();
         expect(result).toEqual([]);
+    });
+
+    it('normalizes object payloads with users[] to array', async () => {
+        mockFetchRaw({ users: [{ user_id: 'u-1', email: 'x@test.dev', role: 'member', is_active: true }] });
+        const result = await fetchAdminUsers();
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({ user_id: 'u-1' });
     });
 });
 
