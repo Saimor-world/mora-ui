@@ -94,6 +94,8 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
     const animationFrameRef = useRef<number>();
     const timeRef = useRef(0);
     const noiseRef = useRef<SimplexNoise>(new SimplexNoise());
+    const lastRenderRef = useRef(0);
+    const isPageVisibleRef = useRef(true);
 
     // Parse color to RGB
     const baseColor = useMemo(() => {
@@ -136,7 +138,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
         }
 
         // Set canvas size (HiDPI support)
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         canvas.width = size * dpr;
         canvas.height = size * dpr;
         canvas.style.width = `${size}px`;
@@ -149,7 +151,19 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
 
         const noise = noiseRef.current;
 
-        const render = () => {
+        const MAX_FPS = 30;
+        const MIN_FRAME_MS = 1000 / MAX_FPS;
+
+        const render = (ts: number) => {
+            if (!isPageVisibleRef.current) {
+                animationFrameRef.current = requestAnimationFrame(render);
+                return;
+            }
+            if (lastRenderRef.current && ts - lastRenderRef.current < MIN_FRAME_MS) {
+                animationFrameRef.current = requestAnimationFrame(render);
+                return;
+            }
+            lastRenderRef.current = ts;
             timeRef.current += 0.008 * params.speed;  // Smoother time step
 
             // Breathing effect - smooth sinusoidal scale
@@ -312,9 +326,15 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             animationFrameRef.current = requestAnimationFrame(render);
         };
 
-        render();
+        const onVisibility = () => {
+            isPageVisibleRef.current = !document.hidden;
+        };
+        document.addEventListener("visibilitychange", onVisibility);
+
+        animationFrameRef.current = requestAnimationFrame(render);
 
         return () => {
+            document.removeEventListener("visibilitychange", onVisibility);
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
             }

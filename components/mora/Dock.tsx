@@ -9,7 +9,7 @@ import {
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SearchPopup } from './SearchPopup';
-import { useMemory } from '@/lib/hooks/useMemory';
+import { useMemoryPendingCount } from '@/lib/hooks/useMemoryPendingCount';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
@@ -139,7 +139,7 @@ export const Dock = () => {
     const restorePane = usePaneStore((s) => s.restorePane);
     const openPane = usePaneStore((s) => s.openPane);
     const minimizedPanes = useMemo(() => panes.filter(p => p.minimized), [panes]);
-    const { pendingCount } = useMemory();
+    const pendingCount = useMemoryPendingCount();
     const mod = usePlatformModifier();
     // Register keyboard shortcut for Focus Mode
     useFocusModeShortcut();

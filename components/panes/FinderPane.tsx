@@ -1524,7 +1524,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 return (
                                                     <motion.div
                                                         key={folder.id}
-                                                        layoutId={`item-${folder.id}`}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
                                                         className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
@@ -1565,12 +1564,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                                         {/* Simple selection indicator */}
                                                         {isSelected && (
-                                                            <motion.div
-                                                                layoutId="selection-ring"
-                                                                className="absolute inset-0 border-2 border-emerald-500/40 rounded-2xl pointer-events-none"
-                                                                initial={false}
-                                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                                            />
+                                                            <div className="absolute inset-0 border-2 border-emerald-500/40 rounded-2xl pointer-events-none" />
                                                         )}
                                                     </motion.div>
                                                 );
@@ -1585,7 +1579,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 return (
                                                     <motion.div
                                                         key={file.id}
-                                                        layoutId={`item-${file.id}`}
                                                         onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
                                                         onDoubleClick={(e: React.MouseEvent) => {
@@ -1647,12 +1640,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                                         {/* Simple selection indicator */}
                                                         {isSelected && (
-                                                            <motion.div
-                                                                layoutId="selection-ring"
-                                                                className="absolute inset-0 border-2 border-emerald-500/40 rounded-2xl pointer-events-none"
-                                                                initial={false}
-                                                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                                            />
+                                                            <div className="absolute inset-0 border-2 border-emerald-500/40 rounded-2xl pointer-events-none" />
                                                         )}
                                                     </motion.div>
                                                 );

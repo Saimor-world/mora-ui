@@ -20,6 +20,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
 import { coreGet } from '@/lib/api/coreClient';
+import { useUiPerfMetrics } from '@/lib/hooks/useUiPerfMetrics';
 
 type SignalSource = 'sse_chat' | 'mindloop' | 'pulse' | 'store_action' | 'unknown';
 
@@ -59,6 +60,7 @@ function relativeTime(ts: number): string {
 
 export function IntelligenceDiagnostics() {
     const [visible, setVisible] = useState(false);
+    const perf = useUiPerfMetrics(visible);
     const orbState = useMoraStore((s) => s.orbState);
     const lastChatScope = useMoraStore((s) => s.lastChatScope);
     const prevOrbRef = useRef<OrbState>(orbState);
@@ -244,6 +246,30 @@ export function IntelligenceDiagnostics() {
                                 : "—"
                         }
                         color="rgba(255,255,255,0.35)"
+                    />
+
+                    <Divider />
+
+                    {/* UI Performance (live) */}
+                    <Row
+                        label="FPS avg"
+                        value={perf.fpsAvg ? perf.fpsAvg.toFixed(1) : "…"}
+                        color={perf.fpsAvg >= 50 ? "#10B981" : perf.fpsAvg >= 35 ? "#F59E0B" : "#EF4444"}
+                    />
+                    <Row
+                        label="Frame p95"
+                        value={perf.frameP95Ms ? `${perf.frameP95Ms.toFixed(1)}ms` : "…"}
+                        color={perf.frameP95Ms <= 20 ? "#10B981" : perf.frameP95Ms <= 28 ? "#F59E0B" : "#EF4444"}
+                    />
+                    <Row
+                        label="Input p95"
+                        value={perf.inputDelayP95Ms ? `${perf.inputDelayP95Ms.toFixed(1)}ms` : "…"}
+                        color={perf.inputDelayP95Ms <= 100 ? "#10B981" : perf.inputDelayP95Ms <= 180 ? "#F59E0B" : "#EF4444"}
+                    />
+                    <Row
+                        label="LongTasks"
+                        value={`${perf.longTaskCount} / max ${perf.longTaskMaxMs.toFixed(0)}ms`}
+                        color={perf.longTaskMaxMs <= 50 ? "#10B981" : perf.longTaskMaxMs <= 150 ? "#F59E0B" : "#EF4444"}
                     />
                 </div>
             )}
