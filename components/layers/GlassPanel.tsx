@@ -104,7 +104,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     showCloseButton = false,
     showBackButton = false,
     showMinimizeButton = false,
-    showMaximizeButton = false,
+    showMaximizeButton,
     draggable = false,
     resizable = false,
     tabs = [],
@@ -132,6 +132,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     // Use global standard mode from store, fallback to prop
     const globalStandardMode = useMoraStore(state => state.isStandardMode);
     const isStandardMode = isStandardModeProp || globalStandardMode;
+    const allowMaximize = showMaximizeButton ?? (showCloseButton || showMinimizeButton);
 
     // UPGRADE C1: Drag and resize state
     const dragControls = useDragControls();
@@ -306,12 +307,20 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && onClose && isActive) {
                 onClose();
+                return;
+            }
+            // Native-style maximize toggle for active pane
+            if (isActive && (e.key === 'F11' || ((e.ctrlKey || e.metaKey) && e.key === 'ArrowUp'))) {
+                e.preventDefault();
+                if (allowMaximize) {
+                    toggleMaximize();
+                }
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, isActive]);
+    }, [allowMaximize, isActive, onClose, toggleMaximize]);
 
     // Border radius mapping
     const radiusMap = {
@@ -432,14 +441,20 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
                 )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
-                {(title || showBackButton || showCloseButton || showMinimizeButton || showMaximizeButton || tabs.length > 0) && (
+                {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize || tabs.length > 0) && (
                     <div className="shrink-0 border-b" style={{ borderColor: 'var(--mora-glass-border)' }}>
                         {/* Title Bar */}
-                        {(title || showBackButton || showCloseButton || showMinimizeButton || showMaximizeButton) && (
+                        {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize) && (
                             <div
                                 className="flex items-center justify-between pointer-events-auto"
-                                style={{ padding: paddingValue, cursor: draggable && !isMaximized ? 'grab' : 'default' }}
+                                style={{ padding: paddingValue, cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
                                 onPointerDown={(e) => draggable && !isMaximized && dragControls.start(e)}
+                                onDoubleClick={(e) => {
+                                    if (!allowMaximize) return;
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleMaximize();
+                                }}
                             >
                                 {/* Back Button */}
                                 {showBackButton && onBack && (
@@ -479,7 +494,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                             <Minus className="w-4 h-4" />
                                         </button>
                                     )}
-                                    {showMaximizeButton && (
+                                    {allowMaximize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
                                             className="p-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-emerald-100/60 hover:text-cyan-300 transition-all"
