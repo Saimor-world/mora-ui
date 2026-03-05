@@ -61,7 +61,9 @@ interface MemorySearchProps {
 export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, companyId }) => {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<MemoryEntry[]>([]);
+    const [recent, setRecent] = useState<MemoryEntry[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [isLoadingRecent, setIsLoadingRecent] = useState(false);
 
     const runMemorySearch = useCallback(async () => {
         if (!companyId) {
@@ -89,6 +91,27 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
         }
     }, [query, companyId]);
 
+    const loadRecent = useCallback(async () => {
+        if (!companyId) {
+            setRecent([]);
+            return;
+        }
+        setIsLoadingRecent(true);
+        try {
+            const data = await searchMemoryApi("", 10, companyId);
+            setRecent(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error("[MemorySearch] Recent load error:", err);
+            setRecent([]);
+        } finally {
+            setIsLoadingRecent(false);
+        }
+    }, [companyId]);
+
+    useEffect(() => {
+        void loadRecent();
+    }, [loadRecent]);
+
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -98,6 +121,9 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
         }, 300);
         return () => clearTimeout(timer);
     }, [query, runMemorySearch]);
+
+    const shownEntries = query.length >= 2 ? results : recent;
+    const isShowingSearch = query.length >= 2;
 
     return (
         <div className="space-y-2">
@@ -117,9 +143,15 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
             </div>
 
             {/* Results */}
-            {results.length > 0 && (
+            {!isShowingSearch && (
+                <div className="flex items-center justify-between px-0.5">
+                    <span className="text-[10px] uppercase tracking-wider text-white/30">Kuerzlich gelernt</span>
+                    {isLoadingRecent && <RefreshCw className="h-3 w-3 text-emerald-400 animate-spin" />}
+                </div>
+            )}
+            {shownEntries.length > 0 && (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                    {results.map((entry) => {
+                    {shownEntries.map((entry) => {
                         const Icon = getCategoryIcon(entry.category || "default");
                         return (
                             <div
@@ -144,9 +176,14 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
                 </div>
             )}
 
-            {query.length >= 2 && results.length === 0 && !isSearching && (
+            {isShowingSearch && results.length === 0 && !isSearching && (
                 <div className="text-center py-4 text-white/30 text-xs">
                     Keine Erinnerungen gefunden
+                </div>
+            )}
+            {!isShowingSearch && !isLoadingRecent && recent.length === 0 && (
+                <div className="text-center py-4 text-white/30 text-xs">
+                    Noch keine Eintraege im aktuellen Scope
                 </div>
             )}
         </div>
