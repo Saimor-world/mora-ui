@@ -33,6 +33,7 @@ import {
     type UpdateFolderPayload
 } from "@/lib/api/coreClient";
 import { useAccountStore } from "@/lib/auth/useAccount";
+import { usePaneStore } from "@/lib/store/paneStore";
 import { toast } from "@/lib/toast";
 
 import { mindLoop } from "@/lib/intelligence/mindLoop"; // Phase 8.1 Integration
@@ -261,7 +262,7 @@ interface MoraState {
     navigateToCore: () => void;
     navigateToDepartment: (deptId: string) => void;
     navigateToSpace: (spaceId: string) => void;
-    navigateToFolder: (folderId: string) => void;
+    navigateToFolder: (folderId: string | null) => void;
 
     // Phase 8: Intelligence
     initializeMindLoop: () => void;
@@ -1344,13 +1345,35 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     },
 
     navigateToFolder: (folderId) => {
+        const state = get();
+        const nextViewLevel: ViewLevel = state.activeSpaceId
+            ? 'space'
+            : state.activeDepartmentId
+                ? 'department'
+                : 'core';
+
         set({
-            viewLevel: 'folder',
+            viewLevel: nextViewLevel,
             activeFolderId: folderId,
-            orbState: 'thinking' // Analyzing folder content
+            orbState: 'thinking'
         });
-        // Auto-load nodes for this folder
-        get().loadNodesForFolder(folderId);
+
+        if (folderId) {
+            get().loadNodesForFolder(folderId);
+        }
+
+        usePaneStore.getState().openPane({
+            id: 'finder-main',
+            type: 'finder',
+            title: 'Finder',
+            size: { width: 1280, height: 820 },
+            data: {
+                folderId: folderId || undefined,
+                spaceId: state.activeSpaceId || undefined,
+                departmentId: state.activeDepartmentId || undefined,
+                companyId: state.activeCompanyId || undefined,
+            }
+        });
     },
 
     // Window Management
