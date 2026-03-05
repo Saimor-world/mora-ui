@@ -309,7 +309,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
         if (resolvedDepartmentId) setActiveDepartment(resolvedDepartmentId);
         if (resolvedSpaceId) setActiveSpace(resolvedSpaceId);
-        setActiveFolder(folderId);
+        // Keep Universe in L2/L3 layers. Finder owns folder navigation locally.
+        setActiveFolder(null);
         setViewLevel(resolvedSpaceId ? 'space' : (resolvedDepartmentId ? 'department' : 'core'));
         if (resolvedSpaceId) {
             void loadFoldersForSpace(resolvedSpaceId);
@@ -2001,7 +2002,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         <ExternalLink size={14} /> Open
                                     </button>
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
-                                        <Globe size={14} /> Im Universe Ã¶ffnen
+                                        <Globe size={14} /> Im Universe oeffnen
                                     </button>
                                     <button onClick={handleRename} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
                                         <Edit size={14} /> Rename
