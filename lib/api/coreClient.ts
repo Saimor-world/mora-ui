@@ -505,6 +505,11 @@ export async function fetchFolderContext(folderId: string): Promise<FolderContex
 // Returns {resolved:false} for unknown ids (no 404), so safe to call speculatively.
 export interface EntityContext {
     resolved: boolean;
+    reason?: string;
+    context_lookup?: {
+        resolved: boolean;
+        reason?: string;
+    };
     entity_type?: 'folder' | 'space' | 'department' | 'company' | string;
     entity_id?: string;
     path?: FolderContextPath;
@@ -515,7 +520,6 @@ export async function getEntityContext(entityId: string): Promise<EntityContext 
     if (!entityId) return null;
     return coreGet(`/v3/${entityId}/context`, { isOptional: true });
 }
-
 // ─── Admin user management (v3) ──────────────────────────────────────────────
 
 export interface AdminUser {

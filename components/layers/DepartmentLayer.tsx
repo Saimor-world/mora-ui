@@ -27,7 +27,6 @@ export const DepartmentLayer: React.FC = () => {
     const departments = useMoraStore(s => s.departments);
     const spacesByDepartment = useMoraStore(s => s.spacesByDepartment);
     const foldersBySpace = useMoraStore(s => s.foldersBySpace);
-    const orbState = useMoraStore(s => s.orbState);
     const isLoadingSpaces = useMoraStore(s => s.isLoadingSpaces);
     const treeData = useMoraStore(s => s.treeData);
     const loadSpacesForDepartment = useMoraStore(s => s.loadSpacesForDepartment);
@@ -45,12 +44,6 @@ export const DepartmentLayer: React.FC = () => {
     );
     const deptTitle = currentDepartment?.name || '';
     const deptColor = currentDepartment?.color || '#10b981';
-    const nebulaIntensity = useMemo(() => {
-        if (orbState === 'alert') return 1.1;
-        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 1.0;
-        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.92;
-        return 0.85;
-    }, [orbState]);
 
     const departmentDocs = useMemo(() => {
         if (!activeDepartmentId || !treeData) return [];
@@ -366,7 +359,7 @@ export const DepartmentLayer: React.FC = () => {
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
-                    opacity: nebulaIntensity,
+                    opacity: 0.85,
                     background: `
                         radial-gradient(1400px 720px at 52% 54%, ${g}38 0%, transparent 66%),
                         radial-gradient(1050px 540px at 18% 25%, ${g}22 0%, transparent 62%),

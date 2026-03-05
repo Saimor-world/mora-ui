@@ -27,20 +27,46 @@ const RING_SPEEDS = [0.032, 0.020, 0.013];
 const RING_RADII_X = [Math.max(240, 220), Math.max(370, 350), Math.max(490, 470)];
 const RING_RADII_Y = [Math.max(175, 155), Math.max(265, 245), Math.max(345, 325)];
 
+const SpaceAtmosphere = React.memo(() => {
+    const orbState = useMoraStore(s => s.orbState);
+    const atmosphereIntensity = React.useMemo(() => {
+        if (orbState === 'alert') return 0.95;
+        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 0.9;
+        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.85;
+        return 0.75;
+    }, [orbState]);
+
+    return (
+        <div
+            className="absolute inset-0 z-[-1] pointer-events-none transition-opacity duration-1000"
+            style={{
+                opacity: atmosphereIntensity,
+                background: `
+                    radial-gradient(1100px 520px at 55% 58%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
+                    radial-gradient(850px 400px at 25% 35%, rgba(6, 182, 212, 0.16) 0%, transparent 60%),
+                    radial-gradient(700px 340px at 80% 40%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
+                    radial-gradient(580px 300px at 72% 80%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
+                    radial-gradient(500px 360px at 8% 60%, rgba(139, 92, 246, 0.10) 0%, transparent 50%)
+                `
+            }}
+        />
+    );
+});
+
 export const SpaceLayer: React.FC = () => {
     // Granular store selectors — prevents rerender on unrelated store mutations
-    const activeSpaceId         = useMoraStore(s => s.activeSpaceId);
-    const activeDepartmentId    = useMoraStore(s => s.activeDepartmentId);
-    const activeCompanyId       = useMoraStore(s => s.activeCompanyId);
-    const departments           = useMoraStore(s => s.departments);
-    const spacesByDepartment    = useMoraStore(s => s.spacesByDepartment);
-    const foldersBySpace        = useMoraStore(s => s.foldersBySpace);
-    const orbState              = useMoraStore(s => s.orbState);
-    const isLoadingFolders      = useMoraStore(s => s.isLoadingFolders);
-    const viewLevel             = useMoraStore(s => s.viewLevel);
-    const navigateToDepartment  = useMoraStore(s => s.navigateToDepartment);
-    const loadFoldersForSpace   = useMoraStore(s => s.loadFoldersForSpace);
-    const addFolder             = useMoraStore(s => s.addFolder);
+    const activeSpaceId = useMoraStore(s => s.activeSpaceId);
+    const activeDepartmentId = useMoraStore(s => s.activeDepartmentId);
+    const activeCompanyId = useMoraStore(s => s.activeCompanyId);
+    const departments = useMoraStore(s => s.departments);
+    const spacesByDepartment = useMoraStore(s => s.spacesByDepartment);
+    const foldersBySpace = useMoraStore(s => s.foldersBySpace);
+    const orbState = useMoraStore(s => s.orbState);
+    const isLoadingFolders = useMoraStore(s => s.isLoadingFolders);
+    const viewLevel = useMoraStore(s => s.viewLevel);
+    const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
+    const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
+    const addFolder = useMoraStore(s => s.addFolder);
     const { openPane } = usePaneStore();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

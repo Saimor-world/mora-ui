@@ -58,7 +58,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     : 'text-white/20 cursor-not-allowed'
                 : item.action === 'memory'
                     ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
-                : isStandardMode
+                    : isStandardMode
                         ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
                         : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
                 }`}
@@ -79,7 +79,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             )}
 
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-none pointer-events-none z-[200]">
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-100 ease-out pointer-events-none z-[200]">
                 <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
                     ? 'bg-gray-800 border border-gray-700'
                     : 'bg-black/95 backdrop-blur-xl border border-white/10'
@@ -111,6 +111,20 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
 };
 // ─── End MagneticDockIcon (memoized to prevent spurious re-renders) ───────────────────────
 const MagneticDockIconMemo = React.memo(MagneticDockIcon);
+
+const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
+    finder: FolderOpen,
+    chat: MessageCircle,
+    team: Users,
+    mail: Mail,
+    calendar: Calendar,
+    terminal: Terminal,
+    search: Search,
+    notes: FileText,
+    settings: Settings,
+    apps: Sparkles,
+    'mora-hub': Brain
+};
 
 export const Dock = () => {
     const setViewLevel = useMoraStore((s) => s.setViewLevel);
@@ -190,20 +204,6 @@ export const Dock = () => {
         [dockItems]
     );
 
-    const minimizedIconMap: Record<string, React.ComponentType<any>> = {
-        finder: FolderOpen,
-        chat: MessageCircle,
-        team: Users,
-        mail: Mail,
-        calendar: Calendar,
-        terminal: Terminal,
-        search: Search,
-        notes: FileText,
-        settings: Settings,
-        apps: Sparkles,
-        'mora-hub': Brain
-    };
-
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
             {/* MINIMIZED PANES - Floating above dock */}
@@ -216,7 +216,7 @@ export const Dock = () => {
                         className="flex gap-2 mb-3 pointer-events-auto"
                     >
                         {minimizedPanes.map(pane => {
-                            const Icon = minimizedIconMap[pane.type] || Minus;
+                            const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
                             return (
                                 <motion.button
                                     key={pane.id}
@@ -262,11 +262,9 @@ export const Dock = () => {
                     {/* TOP GLOW LINE - Premium animated */}
                     {!isStandardMode && (
                         <>
-                            <motion.div
-                                className="absolute inset-x-0 top-0 h-[2px] rounded-full"
+                            <div
+                                className="dock-glow-line absolute inset-x-0 top-0 h-[2px] rounded-full"
                                 style={{ background: `linear-gradient(90deg, transparent 10%, ${accent}70, transparent 90%)` }}
-                                animate={{ opacity: [0.4, 0.8, 0.4] }}
-                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                             />
                             {/* Corner accents */}
                             <div className="absolute top-0 left-6 w-12 h-[2px] bg-gradient-to-r from-emerald-400/60 to-transparent rounded-full" />

@@ -758,8 +758,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             path: ec.path,
                             counts: { nodes: 0, subfolders: 0 },
                         }, null);
-                    } else if (ec && !ec.resolved) {
-                        storeCache(null, 'Kontext-ID nicht aufloesbar, Inhalte bleiben verfuegbar.');
+                    } else if (ec && (!ec.resolved || (ec.context_lookup && !ec.context_lookup.resolved))) {
+                        const hintReason = ec.reason || ec.context_lookup?.reason || 'Kontext-ID nicht aufloesbar';
+                        storeCache(null, `${hintReason}, Inhalte bleiben verfuegbar.`);
                     } else {
                         storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
                     }
