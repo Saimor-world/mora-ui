@@ -1,0 +1,138 @@
+{
+  "collected_at_utc": "2026-03-05T09:46:34.562Z",
+  "base_url": "https://api.saimor.world",
+  "auth": {
+    "email": "demo@saimor.io",
+    "role": "owner",
+    "scope": "client",
+    "tenant_id": "tenant-demo"
+  },
+  "health": {
+    "build_git": "10bddaf",
+    "awareness_status": "recording",
+    "environment": "production"
+  },
+  "critical_flow_gate": {
+    "pass": true,
+    "violations": [],
+    "window_seconds": 900,
+    "total_events": 78,
+    "legacy_v1_critical_calls": {
+      "count": 0,
+      "routes": {}
+    },
+    "context_routes": {
+      "count": 0,
+      "status_4xx": 0,
+      "status_5xx": 0,
+      "avg_ms": 0,
+      "p95_ms": 0
+    },
+    "v3_list_routes": {
+      "count": 0,
+      "unbounded_count": 0,
+      "unbounded_unscoped_count": 0,
+      "unbounded_by_route": {}
+    }
+  },
+  "caches": {
+    "entity_context": {
+      "ttl_seconds": 8,
+      "entries": 0,
+      "active_entries": 0,
+      "stats": {
+        "hits": 0,
+        "misses": 0,
+        "evictions": 0,
+        "sets": 0,
+        "invalidations": 0
+      }
+    },
+    "folder_context": {
+      "ttl_seconds": 8,
+      "entries": 0,
+      "active_entries": 0,
+      "stats": {
+        "hits": 0,
+        "misses": 0,
+        "evictions": 0,
+        "sets": 0,
+        "invalidations": 0
+      }
+    },
+    "memory_debug_scope": {
+      "ttl_seconds": 8,
+      "entries": 1,
+      "active_entries": 0,
+      "stats": {
+        "hits": 0,
+        "misses": 3,
+        "evictions": 2,
+        "sets": 3,
+        "invalidations": 0
+      }
+    },
+    "default_company_scope": {
+      "ttl_seconds": 60,
+      "entries": 1,
+      "active_entries": 0,
+      "stats": {
+        "hits": 1,
+        "misses": 2,
+        "evictions": 1,
+        "sets": 2,
+        "invalidations": 0
+      }
+    },
+    "learning_brain": {
+      "search_ttl_seconds": 2,
+      "metrics_ttl_seconds": 5,
+      "search_entries": 0,
+      "metrics_entries": 0,
+      "stats": {
+        "search_hits": 0,
+        "search_misses": 0,
+        "search_evictions": 0,
+        "search_sets": 0,
+        "metrics_hits": 0,
+        "metrics_misses": 0,
+        "metrics_evictions": 0,
+        "metrics_sets": 0,
+        "scope_invalidations": 0
+      }
+    }
+  },
+  "memory_debug_scope": {
+    "diagnostics": {
+      "query_time_ms": 2.21,
+      "cached": false
+    },
+    "hints": [
+      "LearningBrain has entries while legacy memories table is empty; UI must read /v3/memory/*."
+    ],
+    "errors_count": 0,
+    "counts": {
+      "mem_episodic_total": 22,
+      "mem_episodic_user": 22,
+      "mem_facts_total": 3,
+      "mem_facts_user": 3,
+      "mem_review_total": 0,
+      "mem_review_pending_total": 0,
+      "mem_review_pending_user": 0,
+      "memories_total": 0,
+      "memories_owned_by_user": 0,
+      "memories_global": 0,
+      "memories_visible_to_user": 0
+    },
+    "scope": {
+      "token_tenant_id": "tenant-demo",
+      "effective_tenant_id": "tenant-demo",
+      "token_company_id": "d3aec2b4-3814-4184-a07e-15a5c9d8e81d",
+      "requested_company_id": null,
+      "effective_company_id": "d3aec2b4-3814-4184-a07e-15a5c9d8e81d",
+      "user_id": "214c3ab6-f207-499a-8d54-3f403f23699f",
+      "role": "owner",
+      "is_system_owner": false
+    }
+  }
+}
