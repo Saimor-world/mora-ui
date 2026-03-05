@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -221,19 +221,55 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setContextMenu(null);
     };
 
-    const handleOpenInUniverse = useCallback(() => {
+    const handleOpenInUniverse = useCallback(async () => {
         if (!contextMenu?.item) return;
 
         const item = contextMenu.item as any;
         const itemType = (item.type || (contextMenu.type === 'file' ? 'node' : 'folder')) as string;
-        const departmentIdFromItem = item.department_id ?? null;
-        const spaceIdFromItem = item.space_id ?? null;
-        const folderIdFromItem = itemType === 'folder' ? item.id : (item.folder_id ?? null);
+
+        let resolvedDepartmentId = item.department_id ?? null;
+        let resolvedSpaceId = item.space_id ?? null;
+        let resolvedFolderId = itemType === 'folder' ? item.id : (item.folder_id ?? null);
+
+        // Resolve context using v3 generic resolver when item metadata is incomplete.
+        // This avoids accidental jumps into legacy FolderLayer.
+        if (!resolvedDepartmentId || !resolvedSpaceId || (itemType !== 'department' && itemType !== 'space' && !resolvedFolderId)) {
+            const probeIds = Array.from(
+                new Set(
+                    [item.id, item.folder_id, currentFolderIdRef.current]
+                        .filter((probe): probe is string => typeof probe === 'string' && UUID_RE.test(probe))
+                )
+            );
+
+            for (const probeId of probeIds) {
+                try {
+                    const ec = await getEntityContext(probeId);
+                    if (!ec?.resolved) continue;
+
+                    if (!resolvedDepartmentId) {
+                        resolvedDepartmentId = ec.path?.department?.id ?? null;
+                    }
+                    if (!resolvedSpaceId) {
+                        resolvedSpaceId = ec.path?.space?.id ?? null;
+                    }
+                    if (!resolvedFolderId) {
+                        const tail = ec.path?.breadcrumbs?.[ec.path.breadcrumbs.length - 1]?.id ?? null;
+                        resolvedFolderId = (ec.entity_type === 'folder' ? ec.entity_id ?? null : null) ?? tail ?? null;
+                    }
+
+                    if (resolvedDepartmentId || resolvedSpaceId || resolvedFolderId) {
+                        break;
+                    }
+                } catch {
+                    // Non-blocking: keep best effort from local context.
+                }
+            }
+        }
 
         if (itemType === 'department') {
-            const departmentId = item.id ?? departmentIdFromItem;
+            const departmentId = item.id ?? resolvedDepartmentId;
             if (!departmentId) {
-                toast.error('Department konnte nicht im Universe geöffnet werden');
+                toast.error('Department konnte nicht im Universe geoeffnet werden');
                 setContextMenu(null);
                 return;
             }
@@ -242,55 +278,75 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setActiveFolder(null);
             setViewLevel('department');
             void loadSpacesForDepartment(departmentId);
-            toast.success('Department im Universe geöffnet');
+            toast.success('Department im Universe geoeffnet');
             setContextMenu(null);
             return;
         }
 
         if (itemType === 'space') {
-            const spaceId = item.id ?? spaceIdFromItem;
+            const spaceId = item.id ?? resolvedSpaceId;
             if (!spaceId) {
-                toast.error('Space konnte nicht im Universe geöffnet werden');
+                toast.error('Space konnte nicht im Universe geoeffnet werden');
                 setContextMenu(null);
                 return;
             }
-            if (departmentIdFromItem) setActiveDepartment(departmentIdFromItem);
+            if (resolvedDepartmentId) setActiveDepartment(resolvedDepartmentId);
             setActiveSpace(spaceId);
             setActiveFolder(null);
             setViewLevel('space');
             void loadFoldersForSpace(spaceId);
-            toast.success('Space im Universe geöffnet');
+            toast.success('Space im Universe geoeffnet');
             setContextMenu(null);
             return;
         }
 
-        const fallbackCurrent = currentFolderIdRef.current;
-        const folderId = folderIdFromItem ?? fallbackCurrent;
+        const folderId = resolvedFolderId ?? currentFolderIdRef.current;
         if (!folderId) {
-            toast.error('Kein Ordnerkontext für Universe-Navigation verfügbar');
+            toast.error('Kein Ordnerkontext fuer Universe-Navigation verfuegbar');
             setContextMenu(null);
             return;
         }
 
-        if (departmentIdFromItem) setActiveDepartment(departmentIdFromItem);
-        if (spaceIdFromItem) setActiveSpace(spaceIdFromItem);
+        if (resolvedDepartmentId) setActiveDepartment(resolvedDepartmentId);
+        if (resolvedSpaceId) setActiveSpace(resolvedSpaceId);
         setActiveFolder(folderId);
-        setViewLevel('folder');
+        setViewLevel(resolvedSpaceId ? 'space' : (resolvedDepartmentId ? 'department' : 'core'));
+        if (resolvedSpaceId) {
+            void loadFoldersForSpace(resolvedSpaceId);
+        } else if (resolvedDepartmentId) {
+            void loadSpacesForDepartment(resolvedDepartmentId);
+        }
         void loadNodesForFolder(folderId);
-        toast.success(itemType === 'folder' ? 'Ordner im Universe geöffnet' : 'Dateikontext im Universe geöffnet');
+
+        openPane({
+            id: 'finder-main',
+            type: 'finder',
+            title: 'Finder',
+            size: { width: 1280, height: 820 },
+            data: {
+                folderId,
+                spaceId: resolvedSpaceId ?? undefined,
+                departmentId: resolvedDepartmentId ?? undefined,
+                companyId: activeCompanyId ?? paneCompanyId ?? undefined
+            }
+        });
+
+        toast.success(itemType === 'folder' ? 'Ordner im Universe geoeffnet' : 'Dateikontext im Universe geoeffnet');
         setContextMenu(null);
     }, [
         contextMenu,
         loadFoldersForSpace,
         loadNodesForFolder,
         loadSpacesForDepartment,
+        openPane,
+        activeCompanyId,
+        paneCompanyId,
         setActiveDepartment,
         setActiveFolder,
         setActiveSpace,
         setViewLevel,
     ]);
 
-    // UNIFIED FINDER: View modes (like SpacePane had) + Graph view for semantic network
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
     const [graphZoom, setGraphZoom] = useState(0.85);
     const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
@@ -444,7 +500,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
      * Click-race guard for folder navigation.
      * Framer Motion's gesture system can absorb native `dblclick` on animated elements.
      * Instead we track two rapid clicks ourselves: first click selects, second click
-     * within DOUBLE_CLICK_MS navigates forward — deterministic in all view modes.
+     * within DOUBLE_CLICK_MS navigates forward â€” deterministic in all view modes.
      */
     const DOUBLE_CLICK_MS = 300;
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -456,13 +512,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             lastClickedFolderRef.current === folderId &&
             clickTimerRef.current !== null
         ) {
-            // Second click within window → navigate forward
+            // Second click within window â†’ navigate forward
             clearTimeout(clickTimerRef.current);
             clickTimerRef.current = null;
             lastClickedFolderRef.current = null;
             navigateToFolder(folderId);
         } else {
-            // First click → select only; arm timer
+            // First click â†’ select only; arm timer
             if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
             setSelectedNodeId(folderId);
             lastClickedFolderRef.current = folderId;
@@ -879,7 +935,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setIsUploading(true);
         setUploadProgress({ current: 0, total: fileList.length, filename: fileList[0]?.name || 'file' });
 
-        // P6: Orb reacts - thinking (lila) während Upload/Analyse
+        // P6: Orb reacts - thinking (lila) wÃ¤hrend Upload/Analyse
         setThinking();
 
         // P6: Timeline event - intake started (P2-Pattern)
@@ -963,7 +1019,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     resolvedFolderId = nodeStatus.folder_id;
                                 }
                             } catch {
-                                // best-effort — silently ignore if endpoint unavailable
+                                // best-effort â€” silently ignore if endpoint unavailable
                             }
                         }
 
@@ -975,7 +1031,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             await loadNodesForFolder(resolvedFolderId);
                             navigateToFolder(resolvedFolderId);
                             // Override the generic end-of-loop toast with a precise one
-                            toast.success(`${file.name} → ${folderName}`);
+                            toast.success(`${file.name} â†’ ${folderName}`);
                             successCount = 0; // suppress duplicate success toast below
                         }
 
@@ -1223,7 +1279,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
                     <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 md:px-6 py-2 md:py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
-                        {/* nav-group: exactly one Back/Forward/Up set — do not duplicate */}
+                        {/* nav-group: exactly one Back/Forward/Up set â€” do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
                                 onClick={navigateBack}
@@ -1892,7 +1948,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     }
                                 }}
                                 onDismiss={() => {
-                                    // P6: "Später" - dismiss UI without policy reject
+                                    // P6: "SpÃ¤ter" - dismiss UI without policy reject
                                     // Pending stays pending (token still valid for 5 min)
                                     setPendingAction(null);
                                     setIdle();
@@ -1945,7 +2001,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         <ExternalLink size={14} /> Open
                                     </button>
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
-                                        <Globe size={14} /> Im Universe öffnen
+                                        <Globe size={14} /> Im Universe Ã¶ffnen
                                     </button>
                                     <button onClick={handleRename} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
                                         <Edit size={14} /> Rename
