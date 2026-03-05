@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Mail, Calendar, Building2, ChevronUp,
     Home, Sparkles, MessageCircle, Brain, FolderOpen, Users, FileText, Terminal, Settings
@@ -47,8 +47,6 @@ interface MagneticDockIconProps {
 }
 
 const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMode, onAction }) => {
-    const prefersReducedMotion = useReducedMotion();
-
     return (
         <button
             aria-label={item.label}
@@ -207,43 +205,29 @@ export const Dock = () => {
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
             {/* MINIMIZED PANES - Floating above dock */}
-            <AnimatePresence>
-                {minimizedPanes.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="flex gap-2 mb-3 pointer-events-auto"
-                    >
-                        {minimizedPanes.map(pane => {
-                            const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
-                            return (
-                                <motion.button
-                                    key={pane.id}
-                                    onClick={() => restorePane(pane.id)}
-                                    title={pane.title}
-                                    className={`w-12 h-12 flex items-center justify-center transition-colors shadow-lg ${isStandardMode
-                                        ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
-                                        : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
-                                        }`}
-                                    whileHover={{ scale: 1.02, transition: { type: 'tween', duration: 0.03 } }}
-                                    whileTap={{ scale: 0.98, transition: { type: 'tween', duration: 0.03 } }}
-                                >
-                                    <Icon size={18} />
-                                </motion.button>
-                            );
-                        })}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {minimizedPanes.length > 0 && (
+                <div className="flex gap-2 mb-3 pointer-events-auto transition-all duration-100 ease-out">
+                    {minimizedPanes.map(pane => {
+                        const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
+                        return (
+                            <button
+                                key={pane.id}
+                                onClick={() => restorePane(pane.id)}
+                                title={pane.title}
+                                className={`w-12 h-12 flex items-center justify-center transition-all duration-75 ease-out active:scale-[0.98] shadow-lg ${isStandardMode
+                                    ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
+                                    : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
+                                    }`}
+                            >
+                                <Icon size={18} />
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* MAIN DOCK BAR */}
-            <motion.div
-                className="w-[calc(100vw-32px)] max-w-none mx-auto mb-4 px-3 pointer-events-auto"
-                initial={{ y: 100, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 100 }}
-            >
+            <div className="w-[calc(100vw-32px)] max-w-none mx-auto mb-4 px-3 pointer-events-auto">
                 <div
                     className={`relative flex items-center gap-4 px-5 py-4 ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
@@ -370,14 +354,13 @@ export const Dock = () => {
 
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
                     <div className="relative">
-                        <motion.button
+                        <button
                             className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all group ${isStandardMode
                                 ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
                                 : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
                                 }`}
                             onClick={() => setShowCompanySwitcher(!showCompanySwitcher)}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
+                            type="button"
                         >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isStandardMode ? 'bg-[#0078D4]/10' : 'bg-emerald-500/20'
                                 }`}>
@@ -397,7 +380,7 @@ export const Dock = () => {
                                 size={14}
                                 className={`text-white/40 transition-transform ${showCompanySwitcher ? '' : 'rotate-180'}`}
                             />
-                        </motion.button>
+                        </button>
 
                         {/* COMPANY SWITCHER POPUP */}
                         <AnimatePresence>
@@ -449,12 +432,7 @@ export const Dock = () => {
                         }`} />
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
-                    <motion.div
-                        className="flex items-center gap-4 pl-2"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
-                    >
+                    <div className="flex items-center gap-4 pl-2">
                         <button
                             onClick={() => handleDockClick('mora-hub')}
                             className={`relative w-16 h-16 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
@@ -503,9 +481,9 @@ export const Dock = () => {
                                 </span>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
-            </motion.div>
+            </div>
 
             {/* SEARCH POPUP */}
             <SearchPopup
