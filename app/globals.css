@@ -1259,3 +1259,11 @@
     filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.45));
   }
 }
+.dock-glow-line {
+  animation: dockGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes dockGlowPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}

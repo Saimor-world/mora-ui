@@ -693,7 +693,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [currentFolderId, rawTree, buildBreadcrumbs]);
 
-        // Fetch server-side full path context for persistent breadcrumb bar.
+    // Fetch server-side full path context for persistent breadcrumb bar.
     // PRIMARY: /v3/folders/{id}/context - strict folder paths only.
     // FALLBACK: /v3/{id}/context - generic entity resolver, safe for any id.
     //   Returns {resolved:false} instead of 404 if id is unknown.
@@ -1420,7 +1420,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {/* Content Container with Animation */}
                     <div className="flex-1 overflow-y-auto p-6 bg-black/40 relative" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
-                        <AnimatePresence mode="wait">
+                        <AnimatePresence mode="popLayout">
                             {/* Loading State */}
                             {(isLoading || isLoadingTree) && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
                                 <motion.div

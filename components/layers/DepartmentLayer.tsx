@@ -22,20 +22,20 @@ const ORBIT_STEP_SECONDS = 1 / 24; // Cap visual updates to ~24 FPS to reduce re
  */
 export const DepartmentLayer: React.FC = () => {
     // Granular store selectors — prevents rerender on unrelated store mutations
-    const activeDepartmentId      = useMoraStore(s => s.activeDepartmentId);
-    const activeCompanyId         = useMoraStore(s => s.activeCompanyId);
-    const departments             = useMoraStore(s => s.departments);
-    const spacesByDepartment      = useMoraStore(s => s.spacesByDepartment);
-    const foldersBySpace          = useMoraStore(s => s.foldersBySpace);
-    const orbState                = useMoraStore(s => s.orbState);
-    const isLoadingSpaces         = useMoraStore(s => s.isLoadingSpaces);
-    const treeData                = useMoraStore(s => s.treeData);
+    const activeDepartmentId = useMoraStore(s => s.activeDepartmentId);
+    const activeCompanyId = useMoraStore(s => s.activeCompanyId);
+    const departments = useMoraStore(s => s.departments);
+    const spacesByDepartment = useMoraStore(s => s.spacesByDepartment);
+    const foldersBySpace = useMoraStore(s => s.foldersBySpace);
+    const orbState = useMoraStore(s => s.orbState);
+    const isLoadingSpaces = useMoraStore(s => s.isLoadingSpaces);
+    const treeData = useMoraStore(s => s.treeData);
     const loadSpacesForDepartment = useMoraStore(s => s.loadSpacesForDepartment);
-    const loadFoldersForSpace     = useMoraStore(s => s.loadFoldersForSpace);
-    const navigateToCore          = useMoraStore(s => s.navigateToCore);
-    const navigateToSpace         = useMoraStore(s => s.navigateToSpace);
-    const addSpace                = useMoraStore(s => s.addSpace);
-    const setActiveSpace          = useMoraStore(s => s.setActiveSpace);
+    const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
+    const navigateToCore = useMoraStore(s => s.navigateToCore);
+    const navigateToSpace = useMoraStore(s => s.navigateToSpace);
+    const addSpace = useMoraStore(s => s.addSpace);
+    const setActiveSpace = useMoraStore(s => s.setActiveSpace);
     const { openPane } = usePaneStore();
 
     // Memoized — was running raw find() on every RAF tick (30fps)
@@ -170,7 +170,7 @@ export const DepartmentLayer: React.FC = () => {
             hoveredSpaceIdRef.current = null;
             setHoveredSpaceId(null);
             setHoveredSpaceAnchor(null);
-        }, 600);
+        }, 50);
     }, [clearHoverTimeout]);
 
     useEffect(() => () => clearHoverTimeout(), [clearHoverTimeout]);
