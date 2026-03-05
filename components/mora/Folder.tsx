@@ -89,7 +89,7 @@ export const Folder: React.FC<FolderProps> = ({
         const isRightSide = rect.right > window.innerWidth - 250;
         setPortalPos({
             x: isRightSide ? rect.left - 12 : rect.right + 12,
-            y: rect.top + rect.height / 2,
+            y: Math.max(120, Math.min(window.innerHeight - 120, rect.top + rect.height / 2)),
             isRightSide
         });
         setShowPortal(true);
@@ -100,7 +100,7 @@ export const Folder: React.FC<FolderProps> = ({
             setIsHovered(false);
             onHover?.(false);
             setShowPortal(false);
-        }, 300); // 300ms — screenshot-stable, matches Planet.tsx dwell
+        }, 80); // short dwell to avoid hover flicker on fast crossing
     };
 
     const svgSize = diameter + ring * 2;

@@ -735,7 +735,7 @@ Was kann ich fuer dich tun?`,
             </AnimatePresence>
 
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isFullscreen ? 'text-base leading-7' : ''}`}>
+            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
                 <AnimatePresence>
                     {messages.map((msg) => (
                         <motion.div
@@ -745,7 +745,7 @@ Was kann ich fuer dich tun?`,
                             exit={{ opacity: 0, y: -10 }}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            <div className={`max-w-[80%] px-4 py-3 ${isStandardMode
+                            <div className={`max-w-[80%] ${isFullscreen ? 'px-6 py-4' : 'px-4 py-3'} ${isStandardMode
                                 ? msg.role === 'user'
                                     ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
                                     : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
@@ -759,7 +759,7 @@ Was kann ich fuer dich tun?`,
                                             }`} />
                                     )}
                                     <div
-                                        className={`text-sm leading-relaxed prose prose-sm max-w-none ${isStandardMode ? '' : 'prose-invert'
+                                        className={`${isFullscreen ? 'text-base leading-relaxed' : 'text-sm leading-relaxed'} prose ${isFullscreen ? 'prose-base' : 'prose-sm'} max-w-none ${isStandardMode ? '' : 'prose-invert'
                                             }`}
                                         dangerouslySetInnerHTML={{
                                             __html: msg.content
@@ -848,25 +848,36 @@ Was kann ich fuer dich tun?`,
                     )}
                 </AnimatePresence>
 
-                <div className="flex gap-2">
+                <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && !isStreaming && sendMessage()}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !isStreaming) sendMessage();
+                            if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
+                        }}
                         placeholder="Schreib Mora... (z.B. 'Merke dir...')"
+                        autoFocus={isFullscreen}
                         disabled={isStreaming}
-                        className="flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50"
+                        className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
                     />
                     <button
                         onClick={sendMessage}
                         disabled={!input.trim() || isLoading || isStreaming}
-                        className="px-4 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2"
+                        className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                     >
                         {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                        {isFullscreen && <span>Senden</span>}
                     </button>
                 </div>
-                <ChatSuggestions onSelect={setInput} />
+                {isFullscreen ? (
+                    <div className="max-w-4xl mx-auto w-full">
+                        <ChatSuggestions onSelect={setInput} />
+                    </div>
+                ) : (
+                    <ChatSuggestions onSelect={setInput} />
+                )}
             </div>
         </div>
     );

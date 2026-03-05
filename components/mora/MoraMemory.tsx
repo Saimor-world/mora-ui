@@ -20,43 +20,15 @@ import {
 import {
     searchMemory as searchMemoryApi,
     getMemoryPending,
-    getMemoryMetrics,
-    approveMemoryItem,
-    rejectMemoryItem,
 } from "@/lib/api/coreClient";
 import { toast } from "sonner";
 import { useMoraStore } from "@/lib/store/moraState";
-
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════════════════
-interface MemoryEntry {
-    id: string;
-    summary: string;
-    tags: string[];
-    timestamp: string;
-    source: string;
-    score?: number;
-    category?: string;
-}
-
-interface ReviewItem {
-    id: string;
-    insight: string;
-    category: string;
-    risk_level: string;
-    status: string;
-    created_at: string;
-}
-
-interface MemoryMetrics {
-    episodic_memories: Record<string, number>;
-    structured_facts: number;
-    pending_reviews: number;
-    recent_learns_7d: number;
-    memory_ttl_days: number;
-}
-
+import { useMemory } from "@/lib/hooks/useMemory";
+import type {
+    MemorySearchResult as MemoryEntry,
+    ReviewItem,
+    MemoryMetrics
+} from "@/lib/types/memory";
 // ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY ICONS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -191,59 +163,20 @@ interface ReviewQueueProps {
 }
 
 export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, companyId, onUpdate }) => {
-    const [items, setItems] = useState<ReviewItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { pendingItems: items, isLoading, approve, reject } = useMemory(companyId);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
-    const loadQueue = useCallback(async () => {
-        if (!companyId) {
-            setItems([]);
-            setIsLoading(false);
-            return;
-        }
-        try {
-            const data = await getMemoryPending(companyId);
-            if (data && Array.isArray(data)) {
-                setItems(data);
-            }
-        } catch (err) {
-            console.error("[ReviewQueue] Error:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [companyId]);
-
-    useEffect(() => {
-        loadQueue();
-    }, [loadQueue]);
-
     const handleApprove = async (id: string) => {
-        if (!companyId) return;
         setProcessingId(id);
-        try {
-            await approveMemoryItem(id, companyId);
-            toast.success("Insight gelernt und gespeichert");
-            setItems((prev) => prev.filter((item) => item.id !== id));
-            onUpdate?.();
-        } catch (err) {
-            toast.error("Fehler beim Speichern");
-        } finally {
-            setProcessingId(null);
-        }
+        const success = await approve(id);
+        if (success) onUpdate?.();
+        setProcessingId(null);
     };
 
     const handleReject = async (id: string) => {
-        if (!companyId) return;
         setProcessingId(id);
-        try {
-            await rejectMemoryItem(id, companyId);
-            toast.info("Insight abgelehnt");
-            setItems((prev) => prev.filter((item) => item.id !== id));
-        } catch (err) {
-            toast.error("Fehler beim Ablehnen");
-        } finally {
-            setProcessingId(null);
-        }
+        await reject(id);
+        setProcessingId(null);
     };
 
     if (isLoading) {
@@ -280,9 +213,8 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
                     return (
                         <div
                             key={item.id}
-                            className={`p-2.5 rounded-lg border ${colorClass} transition-all ${
-                                isProcessing ? "opacity-50" : ""
-                            }`}
+                            className={`p-2.5 rounded-lg border ${colorClass} transition-all ${isProcessing ? "opacity-50" : ""
+                                }`}
                         >
                             <div className="flex items-start gap-2">
                                 <Icon className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
@@ -335,32 +267,7 @@ interface MemoryStatsProps {
 }
 
 export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, companyId }) => {
-    const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const loadMetrics = async () => {
-            if (!companyId) {
-                setMetrics(null);
-                setIsLoading(false);
-                return;
-            }
-            try {
-                const data = await getMemoryMetrics(companyId);
-                if (data && !data.error) {
-                    setMetrics(data);
-                }
-            } catch (err) {
-                console.error("[MemoryStats] Error:", err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadMetrics();
-        const interval = setInterval(loadMetrics, 60000); // Refresh every minute
-        return () => clearInterval(interval);
-    }, [companyId]);
+    const { metrics, isLoading } = useMemory(companyId);
 
     if (!companyId) {
         return (
@@ -387,7 +294,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
         );
     }
 
-    const totalEpisodic = Object.values(metrics.episodic_memories).reduce((a, b) => a + b, 0);
+    const totalEpisodic = Object.values(metrics.episodic_memories).reduce((a, b: number) => a + b, 0);
 
     const stats = [
         { label: "Erinnerungen", value: totalEpisodic, color: "emerald" },
@@ -468,11 +375,10 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-colors ${
-                                    activeTab === tab.id
-                                        ? "bg-violet-500/20 text-violet-300"
-                                        : "text-white/40 hover:text-white/60"
-                                }`}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] transition-colors ${activeTab === tab.id
+                                    ? "bg-violet-500/20 text-violet-300"
+                                    : "text-white/40 hover:text-white/60"
+                                    }`}
                             >
                                 <Icon className="h-3 w-3" />
                                 {!compact && tab.label}

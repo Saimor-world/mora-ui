@@ -92,7 +92,7 @@ export const Star: React.FC<StarProps> = ({
         const isRightSide = rect.right > window.innerWidth - 250;
         setPortalPos({
             x: isRightSide ? rect.left - 14 : rect.right + 14,
-            y: rect.top + rect.height / 2,
+            y: Math.max(120, Math.min(window.innerHeight - 120, rect.top + rect.height / 2)),
             isRightSide
         });
         setShowPortal(true);
@@ -103,7 +103,7 @@ export const Star: React.FC<StarProps> = ({
             setIsHovered(false);
             onHover?.(false);
             setShowPortal(false);
-        }, 300);
+        }, 80);
     };
 
     // SVG canvas is diameter + 2*ring on each side

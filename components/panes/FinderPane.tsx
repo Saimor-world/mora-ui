@@ -1470,9 +1470,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         layoutId={`item-${folder.id}`}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        whileHover={{ y: -2 }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        className={`p-4 rounded-2xl border transition-all flex flex-col gap-3 cursor-pointer group relative ${isSelected
+                                                        className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
                                                             : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10'
                                                             }`}
@@ -1544,9 +1542,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
                                                             });
                                                         }}
-                                                        whileHover={{ y: -2 }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        className={`p-4 rounded-2xl border transition-all flex flex-col gap-3 cursor-pointer group relative ${isSelected
+                                                        className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
                                                             : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10'
                                                             }`}

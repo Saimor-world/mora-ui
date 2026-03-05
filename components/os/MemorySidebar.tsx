@@ -7,7 +7,17 @@ import { create } from 'zustand';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { useMoraStore } from '@/lib/store/moraState';
-import { searchMemory, learnInsight, reconcileMemory, getCachePerformance, type MemoryReconcileResult, type CachePerformance, type CacheBucket } from '@/lib/api/coreClient';
+import {
+    searchMemory,
+    learnInsight,
+    reconcileMemory,
+    getCachePerformance,
+    getCriticalFlowPerformance,
+    type MemoryReconcileResult,
+    type CachePerformance,
+    type CacheBucket,
+    type CriticalFlowPerformance
+} from '@/lib/api/coreClient';
 import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
 
 /**
@@ -253,15 +263,20 @@ const DiagnosticsPanel: React.FC<{
     const [result, setResult] = useState<MemoryReconcileResult | null>(null);
     const [reconcileError, setReconcileError] = useState<string | null>(null);
     const [cachePerf, setCachePerf] = useState<CachePerformance | null>(null);
+    const [criticalFlows, setCriticalFlows] = useState<CriticalFlowPerformance | null>(null);
     const isOwner = userRole === 'owner' || userRole === 'admin';
 
-    // Poll cache performance every 8 s while diagnostics tab is visible
+    // Poll cache + critical-flow performance every 8s while diagnostics tab is visible
     useEffect(() => {
         if (!isVisible) return;
         let cancelled = false;
         const poll = async () => {
-            const data = await getCachePerformance();
-            if (!cancelled && data) setCachePerf(data);
+            const [cacheData, criticalData] = await Promise.all([
+                getCachePerformance(),
+                getCriticalFlowPerformance(),
+            ]);
+            if (!cancelled && cacheData) setCachePerf(cacheData);
+            if (!cancelled && criticalData) setCriticalFlows(criticalData);
         };
         poll();
         const id = setInterval(poll, 8000);
@@ -320,6 +335,18 @@ const DiagnosticsPanel: React.FC<{
                         <span className="text-[10px] text-white/40 font-mono truncate max-w-[160px]">{debugScope.scope.company_id}</span>
                     )}
                 </div>
+                {debugScope.diagnostics && (
+                    <div className="flex items-center gap-3 pt-1 border-t border-white/5">
+                        <div className="flex items-center gap-1.5">
+                            <Clock size={10} className="text-white/30" />
+                            <span className="text-[10px] text-white/50">{debugScope.diagnostics.query_time_ms.toFixed(1)}ms</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${debugScope.diagnostics.cached ? 'bg-emerald-400' : 'bg-amber-400/50'}`} />
+                            <span className="text-[10px] text-white/50">{debugScope.diagnostics.cached ? 'Cached' : 'Live'}</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Counts grid */}
@@ -394,6 +421,53 @@ const DiagnosticsPanel: React.FC<{
                                 <div className="border-t border-white/5" />
                                 <CacheBucketRow label="default_company_scope" bucket={cachePerf.default_company_scope} />
                             </>
+                        )}
+                        {cachePerf.memory_debug_scope && (
+                            <>
+                                <div className="border-t border-white/5" />
+                                <CacheBucketRow label="memory_debug_scope" bucket={cachePerf.memory_debug_scope} />
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Critical flow gate */}
+            {criticalFlows && (
+                <div className="space-y-2">
+                    <div className="text-[9px] uppercase tracking-wider text-white/30">Critical Flow Gate</div>
+                    <div className={`rounded-lg border p-2 space-y-2 ${criticalFlows.gate.pass
+                        ? 'border-emerald-500/25 bg-emerald-500/10'
+                        : 'border-red-500/25 bg-red-500/10'
+                        }`}>
+                        <div className="flex items-center justify-between">
+                            <div className="text-[10px] font-semibold">
+                                {criticalFlows.gate.pass ? 'PASS' : 'FAIL'}
+                            </div>
+                            <div className="text-[10px] text-white/50">window {criticalFlows.window_seconds}s</div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                            <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
+                                <div className="text-[8px] text-white/35 uppercase">Legacy v1</div>
+                                <div className="text-[11px] text-red-300">{criticalFlows.legacy_v1_critical_calls.count}</div>
+                            </div>
+                            <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
+                                <div className="text-[8px] text-white/35 uppercase">Context 5xx</div>
+                                <div className="text-[11px] text-red-300">{criticalFlows.context_routes.status_5xx}</div>
+                            </div>
+                            <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
+                                <div className="text-[8px] text-white/35 uppercase">Unbounded</div>
+                                <div className="text-[11px] text-amber-300">{criticalFlows.v3_list_routes.unbounded_unscoped_count}</div>
+                            </div>
+                        </div>
+                        {!criticalFlows.gate.pass && criticalFlows.gate.violations.length > 0 && (
+                            <div className="space-y-1">
+                                {criticalFlows.gate.violations.map((v) => (
+                                    <div key={v} className="text-[10px] text-red-300/90">
+                                        • {v}
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>

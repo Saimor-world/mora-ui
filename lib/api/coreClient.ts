@@ -996,6 +996,10 @@ export interface MemoryDebugScope {
     hints: string[];
     errors: string[];
     samples?: any[];
+    diagnostics?: {
+        cached: boolean;
+        query_time_ms: number;
+    };
 }
 
 export async function getMemoryDebugScope(
@@ -1049,9 +1053,43 @@ export interface CachePerformance {
     folder_context: CacheBucket;
     entity_context?: CacheBucket;         // core 3161388
     default_company_scope?: CacheBucket;  // core 65fc157
+    memory_debug_scope?: CacheBucket;     // core 41d8acb
     [key: string]: CacheBucket | { search: CacheBucket; metrics: CacheBucket } | undefined;
 }
 
 export async function getCachePerformance(): Promise<CachePerformance | null> {
     return coreGet('/v3/system/performance/caches', { isOptional: true });
+}
+
+// GET /v3/system/performance/critical-flows - Deploy/runtime guardrail summary
+export interface CriticalFlowPerformance {
+    window_seconds: number;
+    generated_at: string;
+    total_events: number;
+    legacy_v1_critical_calls: {
+        count: number;
+        routes: Record<string, number>;
+    };
+    context_routes: {
+        count: number;
+        status_4xx: number;
+        status_5xx: number;
+        avg_ms: number;
+        p95_ms: number;
+    };
+    v3_list_routes: {
+        count: number;
+        unbounded_count: number;
+        unbounded_unscoped_count: number;
+        unbounded_by_route: Record<string, number>;
+    };
+    gate: {
+        pass: boolean;
+        violations: string[];
+    };
+}
+
+export async function getCriticalFlowPerformance(windowSeconds: number = 900): Promise<CriticalFlowPerformance | null> {
+    const clamped = Math.max(60, Math.min(3600, Math.floor(windowSeconds)));
+    return coreGet(`/v3/system/performance/critical-flows?window_seconds=${clamped}`, { isOptional: true });
 }

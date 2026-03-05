@@ -163,7 +163,7 @@ export const DepartmentLayer: React.FC = () => {
             hoveredSpaceIdRef.current = null;
             setHoveredSpaceId(null);
             setHoveredSpaceAnchor(null);
-        }, 50);
+        }, 80); // Debounce exit to prevent flicker
     }, [clearHoverTimeout]);
 
     useEffect(() => () => clearHoverTimeout(), [clearHoverTimeout]);
@@ -446,7 +446,7 @@ export const DepartmentLayer: React.FC = () => {
                     <LoadingState message="Scanning Sector..." />
                 ) : (
                     <div ref={orbitContainerRef} className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25 z-0">
                             {moonPositions.map(({ space, radiusX, radiusY }) => (
                                 <ellipse
                                     key={`orbit-${space.id}`}
@@ -546,7 +546,7 @@ export const DepartmentLayer: React.FC = () => {
                                         left: `calc(50% + ${x}px)`,
                                         top: `calc(50% + ${y}px)`,
                                         transform: 'translate(-50%, -50%)',
-                                        zIndex: hoveredSpaceId === space.id ? 30 : 10
+                                        zIndex: hoveredSpaceId === space.id ? 30 : (y > 0 ? 25 : 10)
                                     }}
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}

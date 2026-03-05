@@ -1259,11 +1259,79 @@
     filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.45));
   }
 }
+
 .dock-glow-line {
   animation: dockGlowPulse 3s ease-in-out infinite;
 }
 
 @keyframes dockGlowPulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.dock-ring-pulse {
+  animation: dockRingPulse 3s ease-in-out infinite;
+}
+
+@keyframes dockRingPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.6;
+  }
+}
+
+.dock-dot-pulse {
+  animation: dockDotPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dockDotPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+@keyframes onlinePulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes avatarAura {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.35;
+  }
 }

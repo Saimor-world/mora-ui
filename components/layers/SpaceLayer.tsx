@@ -105,6 +105,24 @@ export const SpaceLayer: React.FC = () => {
     const lastTimeRef = useRef<number>(0);
     const orbitAccumulatorRef = useRef<number>(0);
 
+    const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
+
+    const clearHoverTimeout = useCallback(() => {
+        if (hoverClearRef.current) {
+            clearTimeout(hoverClearRef.current);
+            hoverClearRef.current = null;
+        }
+    }, []);
+
+    const scheduleHoverClear = useCallback(() => {
+        clearHoverTimeout();
+        hoverClearRef.current = setTimeout(() => {
+            isAnyHoveredRef.current = false;
+        }, 80); // Debounce exit to prevent flicker
+    }, [clearHoverTimeout]);
+
+    useEffect(() => () => clearHoverTimeout(), [clearHoverTimeout]);
+
     useEffect(() => {
         // Respect prefers-reduced-motion: skip the animation loop entirely.
         if (prefersReducedMotion) return;
@@ -112,7 +130,7 @@ export const SpaceLayer: React.FC = () => {
             if (lastTimeRef.current === 0) lastTimeRef.current = currentTime;
             const delta = (currentTime - lastTimeRef.current) / 1000;
             lastTimeRef.current = currentTime;
-            // Pause orbit when hovering Ã¢â‚¬â€ folders freeze in place
+            // Pause orbit when hovering Ã¢â‚¬â€  folders freeze in place
             if (!isAnyHoveredRef.current) {
                 orbitAccumulatorRef.current += delta;
                 if (orbitAccumulatorRef.current >= ORBIT_STEP_SECONDS) {
@@ -473,7 +491,7 @@ export const SpaceLayer: React.FC = () => {
                                     left: `calc(50% + ${x}px)`,
                                     top: `calc(50% + ${y}px)`,
                                     transform: 'translate(-50%, -50%)',
-                                    zIndex: 30,
+                                    zIndex: y > 0 ? 30 : 10,
                                 }}
                             >
                                 <FolderStar
@@ -490,7 +508,12 @@ export const SpaceLayer: React.FC = () => {
                                     isPromoted={isPromoted}
                                     delay={delay}
                                     onHover={(hovered) => {
-                                        isAnyHoveredRef.current = hovered;
+                                        if (hovered) {
+                                            clearHoverTimeout();
+                                            isAnyHoveredRef.current = true;
+                                        } else {
+                                            scheduleHoverClear();
+                                        }
                                     }}
                                     onClick={() => {
                                         openPane({

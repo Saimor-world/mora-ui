@@ -29,7 +29,7 @@ interface MemoryMetrics {
     memory_ttl_days: number;
 }
 
-export function useMemory() {
+export function useMemory(manualCompanyId?: string | null) {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const companies = useMoraStore((s) => s.companies);
     const [pendingItems, setPendingItems] = useState<ReviewItem[]>([]);
@@ -38,7 +38,7 @@ export function useMemory() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const scopedCompanyId = activeCompanyId || companies[0]?.id || null;
+    const scopedCompanyId = manualCompanyId || activeCompanyId || companies[0]?.id || null;
 
     // Load pending review items
     const loadPending = useCallback(async () => {

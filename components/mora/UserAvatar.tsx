@@ -52,21 +52,13 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         >
             {/* Subtle Aura (optional, very subtle) */}
             {showAura && (
-                <motion.div
+                <div
                     className="absolute rounded-full pointer-events-none"
                     style={{
                         width: size + 12,
                         height: size + 12,
                         background: `radial-gradient(circle, ${colors.glow} 0%, transparent 70%)`,
-                    }}
-                    animate={{
-                        scale: [1, 1.1, 1],
-                        opacity: [0.2, 0.35, 0.2]
-                    }}
-                    transition={{
-                        duration: 4,
-                        repeat: Infinity,
-                        ease: "easeInOut"
+                        animation: 'avatarAura 4s ease-in-out infinite'
                     }}
                 />
             )}
@@ -109,7 +101,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
             </div>
 
             {/* Online indicator (small dot) */}
-            <motion.div
+            <div
                 className="absolute rounded-full"
                 style={{
                     width: size * 0.2,
@@ -118,15 +110,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                     right: 0,
                     backgroundColor: colors.core,
                     border: '1.5px solid rgba(0, 0, 0, 0.8)',
-                    boxShadow: `0 0 6px ${colors.core}`
-                }}
-                animate={{
-                    scale: [1, 1.15, 1],
-                }}
-                transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
+                    boxShadow: `0 0 6px ${colors.core}`,
+                    animation: 'onlinePulse 2s ease-in-out infinite'
                 }}
             />
         </div>

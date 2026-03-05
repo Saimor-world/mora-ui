@@ -50,20 +50,18 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
     const prefersReducedMotion = useReducedMotion();
 
     return (
-        <motion.button
+        <button
             aria-label={item.label}
-            className={`w-[54px] h-[54px] flex items-center justify-center rounded-2xl transition-colors relative group ${item.disabled
+            className={`w-[54px] h-[54px] flex items-center justify-center rounded-2xl transition-all relative group duration-75 ease-out will-change-transform ${item.disabled
                 ? isStandardMode
                     ? 'text-gray-300 cursor-not-allowed'
                     : 'text-white/20 cursor-not-allowed'
                 : item.action === 'memory'
-                    ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15'
+                    ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15 hover:scale-110 active:scale-95'
                     : isStandardMode
-                        ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100'
-                        : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10'
+                        ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100 hover:scale-110 active:scale-95'
+                        : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10 hover:scale-110 active:scale-95'
                 }`}
-            whileHover={item.disabled || prefersReducedMotion ? {} : { scale: 1.04, transition: { type: 'tween', duration: 0.03 } }}
-            whileTap={item.disabled || prefersReducedMotion ? {} : { scale: 0.96, transition: { type: 'tween', duration: 0.03 } }}
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
         >
@@ -79,7 +77,9 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             )}
 
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-100 ease-out pointer-events-none z-[200]">
+            {/* Bridge element to allow pointer crossing without dropout */}
+            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent z-50 pointer-events-auto opacity-0 hidden group-hover:block" />
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 ease-out pointer-events-none z-[9999]">
                 <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
                     ? 'bg-gray-800 border border-gray-700'
                     : 'bg-black/95 backdrop-blur-xl border border-white/10'
@@ -106,7 +106,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     : 'bg-emerald-400/0 group-hover:bg-emerald-400'
                     }`} />
             )}
-        </motion.button>
+        </button>
     );
 };
 // ─── End MagneticDockIcon (memoized to prevent spurious re-renders) ───────────────────────
@@ -455,29 +455,20 @@ export const Dock = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 }}
                     >
-                        <motion.button
+                        <button
                             onClick={() => handleDockClick('mora-hub')}
-                            whileHover={{ scale: 1.08 }}
-                            whileTap={{ scale: 0.95 }}
-                            className={`relative w-16 h-16 rounded-full overflow-visible transition-all group ${isStandardMode
-                                ? 'bg-white'
+                            className={`relative w-16 h-16 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
+                                ? 'bg-white shadow-lg'
                                 : 'bg-transparent'
                                 }`}
                             title="Mora Nexus oeffnen"
                             style={!isStandardMode ? {
-                                filter: 'drop-shadow(0 0 30px rgba(16, 185, 129, 0.4))'
+                                filter: `drop-shadow(0 0 30px ${accent}40)`
                             } : {}}
                         >
                             {/* Outer glow ring */}
                             {!isStandardMode && (
-                                <motion.div
-                                    className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/30"
-                                    animate={{
-                                        scale: [1, 1.1, 1],
-                                        opacity: [0.3, 0.6, 0.3]
-                                    }}
-                                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                />
+                                <div className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/30 dock-ring-pulse" />
                             )}
                             {/* Inner border */}
                             <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/50'
@@ -487,7 +478,7 @@ export const Dock = () => {
                                 state={orbState as any}
                                 size={60}
                             />
-                        </motion.button>
+                        </button>
                         <div className="hidden lg:flex flex-col items-start leading-tight">
                             <span className={`text-sm font-bold tracking-wide ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
                                 }`}>
@@ -499,13 +490,11 @@ export const Dock = () => {
                             </span>
                             {/* Status indicator */}
                             <div className="flex items-center gap-1.5 mt-1">
-                                <motion.div
-                                    className={`w-2 h-2 rounded-full ${orbState === 'thinking' ? 'bg-blue-400' :
+                                <div
+                                    className={`w-2 h-2 rounded-full dock-dot-pulse ${orbState === 'thinking' ? 'bg-blue-400' :
                                         orbState === 'alert' ? 'bg-red-400' :
                                             'bg-emerald-400'
                                         }`}
-                                    animate={{ scale: [1, 1.3, 1] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
                                 />
                                 <span className="text-[10px] text-white/40">
                                     {orbState === 'thinking' ? 'Denkt...' :
