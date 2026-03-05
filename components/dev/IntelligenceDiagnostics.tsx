@@ -113,7 +113,12 @@ export function IntelligenceDiagnostics() {
             const data = await coreGet('/v1/chat/providers', { isOptional: true });
             if (data && typeof data === 'object') {
                 const raw = (data as any).providers ?? (Array.isArray(data) ? data : []);
-                setState((prev) => ({ ...prev, providers: raw, providersError: null }));
+                const normalized = Array.isArray(raw)
+                    ? raw
+                    : (raw && typeof raw === 'object' ? Object.values(raw) : []);
+                setState((prev) => ({ ...prev, providers: normalized as any, providersError: null }));
+            } else {
+                setState((prev) => ({ ...prev, providers: [], providersError: null }));
             }
         } catch (e: any) {
             setState((prev) => ({ ...prev, providersError: e?.message ?? 'fetch failed' }));
@@ -143,7 +148,8 @@ export function IntelligenceDiagnostics() {
     if (!visible) return null;
 
     const { isMinimised } = state;
-    const activeProvider = state.providers?.find((p) => p.active) ?? state.providers?.[0];
+    const safeProviders = Array.isArray(state.providers) ? state.providers : [];
+    const activeProvider = safeProviders.find((p) => p?.active) ?? safeProviders[0];
 
     return (
         <div
