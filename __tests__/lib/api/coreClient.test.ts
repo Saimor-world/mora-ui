@@ -135,15 +135,13 @@ describe('v3 envelope unwrap (coreRequest central logic)', () => {
         expect(lastFetchUrl()).toContain('/v3/departments');
     });
 
-    it('does NOT unwrap objects that happen to have a "data" key but no v3 meta', async () => {
-        // e.g. a hypothetical v1 response { data: [...], total: 5 } without api_version
+    it('normalizes object list payloads with a data key to arrays for list endpoints', async () => {
+        // e.g. legacy shape { data: [...], total: 5 } without api_version
         mockFetchRaw({ data: [{ id: 'x' }], total: 1 });
-        // fetchDepartments returns result || [] — if it were unwrapped to an array the
-        // test below would catch a shape change.
         const result = await fetchDepartments('co');
-        // Should return the object intact, not just the .data array
-        expect(Array.isArray(result)).toBe(false);
-        expect(result).toHaveProperty('data');
+        expect(Array.isArray(result)).toBe(true);
+        expect(result).toHaveLength(1);
+        expect((result as any[])[0]).toHaveProperty('id', 'x');
     });
 });
 

@@ -198,6 +198,21 @@ export async function coreDelete(path: string): Promise<void> {
     await coreRequest(path, { method: 'DELETE' });
 }
 
+function normalizeList<T>(value: any, keys: string[] = []): T[] {
+    if (Array.isArray(value)) return value as T[];
+    if (value && typeof value === 'object') {
+        for (const key of keys) {
+            const candidate = (value as Record<string, any>)[key];
+            if (Array.isArray(candidate)) return candidate as T[];
+        }
+        const items = (value as Record<string, any>).items;
+        if (Array.isArray(items)) return items as T[];
+        const data = (value as Record<string, any>).data;
+        if (Array.isArray(data)) return data as T[];
+    }
+    return [];
+}
+
 export interface CompanyUpdatePayload {
     name?: string;
     description?: string | null;
@@ -326,7 +341,7 @@ export async function fetchDepartmentStats(companyId?: string): Promise<Departme
         const query = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
         // v3: envelope unwrap handled transparently in coreRequest()
         const result = await coreGet(`/v3/stats/departments${query}`, { isOptional: true });
-        return result?.departments || [];
+        return normalizeList<DepartmentStats>(result, ['departments']);
     } catch (error) {
         console.warn('[coreClient] fetchDepartmentStats failed:', error);
         return [];
@@ -351,7 +366,8 @@ export async function fetchSingleDepartmentStats(departmentId: string): Promise<
 export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]> {
     try {
         const query = includeDemo ? '?include_demo=true' : '';
-        return await coreGet(`/v1/companies${query}`);
+        const result = await coreGet(`/v1/companies${query}`);
+        return normalizeList<CoreCompany>(result, ['companies']);
     } catch (error: any) {
         // Silent fallback for auth errors - return empty array
         if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
@@ -419,28 +435,28 @@ export async function fetchDepartments(companyId?: string): Promise<CoreDepartme
     const query = companyId ? `?company_id=${companyId}` : '';
     // v3: envelope unwrap handled transparently in coreRequest()
     const result = await coreGet(`/v3/departments${query}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreDepartment>(result, ['departments']);
 }
 
 export async function fetchSpaces(departmentId?: string): Promise<CoreSpace[]> {
     const query = departmentId ? `?department_id=${departmentId}` : '';
     const result = await coreGet(`/v3/spaces${query}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreSpace>(result, ['spaces']);
 }
 
 export async function fetchSpacesByCompany(companyId: string): Promise<CoreSpace[]> {
     const result = await coreGet(`/v3/spaces?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreSpace>(result, ['spaces']);
 }
 
 export async function fetchFolders(spaceId: string): Promise<CoreFolder[]> {
     const result = await coreGet(`/v3/folders?space_id=${spaceId}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreFolder>(result, ['folders']);
 }
 
 export async function fetchFoldersByCompany(companyId: string): Promise<CoreFolder[]> {
     const result = await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreFolder>(result, ['folders']);
 }
 
 export async function fetchNodes(
@@ -453,7 +469,7 @@ export async function fetchNodes(
     if (options?.limit != null) query += `&limit=${options.limit}`;
     if (options?.offset != null) query += `&offset=${options.offset}`;
     const result = await coreGet(`/v3/nodes${query}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreNode>(result, ['nodes']);
 }
 
 export async function fetchNodesByCompany(
@@ -464,7 +480,7 @@ export async function fetchNodesByCompany(
     if (options?.limit != null) query += `&limit=${options.limit}`;
     if (options?.offset != null) query += `&offset=${options.offset}`;
     const result = await coreGet(`/v3/nodes${query}`, { isOptional: true });
-    return result || [];
+    return normalizeList<CoreNode>(result, ['nodes']);
 }
 
 export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
