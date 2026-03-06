@@ -81,6 +81,7 @@ export interface ScopeContract {
     enforced?: boolean;
     dropped_fields?: string[];
     ui_scope_hints?: UiScopeHints;
+    scope_reason?: string;  // P1 backend dep — reason scope was narrowed
 }
 
 export interface LastChatScopeState {

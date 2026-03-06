@@ -31,7 +31,7 @@ export interface MoraContextSnapshot {
 
     // Freshness
     lastScopeUpdateAt: string | null;
-    lastScopeSource: 'stream' | 'local' | null;
+    lastScopeSource: 'stream' | null;  // 'local' reserved for future non-stream scope updates
 
     // Answer provenance — null until backend sends answer_source in StreamFrame
     lastAnswerSource: 'memory' | 'context' | 'inference' | null;
@@ -118,7 +118,7 @@ export function useMoraContext(): MoraContextSnapshot {
         const scopeEnforced = lastChatScope?.scope_enforced ?? false;
         // scope_reason: populated by backend in scope_contract (P1 dep).
         // Falls back to generic label when enforced but reason absent.
-        const rawReason = (contract as Record<string, unknown> | undefined)?.scope_reason as string | undefined;
+        const rawReason = contract?.scope_reason;
         const scopeReason = rawReason ?? (scopeEnforced ? 'Scope eingeschränkt' : null);
 
         const scopeDroppedFields = contract?.dropped_fields ?? [];
@@ -128,7 +128,9 @@ export function useMoraContext(): MoraContextSnapshot {
         const lastScopeSource: MoraContextSnapshot['lastScopeSource'] =
             lastChatScope ? 'stream' : null;
 
-        // Answer provenance — backend dep (P0). Graceful null until StreamFrame ships these fields.
+        // TODO(MR18-P0): Wire answer_source + answer_scope_label from StreamFrame when Codex ships it.
+        // See: docs/plans/2026-03-06-mr18-intelligence-ux-unification-design.md §Backend Dependencies
+        // Until then, both are null — consumers must degrade gracefully (show "—" not blank).
         const lastAnswerSource: MoraContextSnapshot['lastAnswerSource'] = null;
         const lastAnswerScopeLabel: string | null = null;
 
