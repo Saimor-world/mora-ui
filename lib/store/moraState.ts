@@ -199,6 +199,10 @@ interface MoraState {
     // v3/chat: Last resolved scope from backend (scope enforcement signal)
     lastChatScope: LastChatScopeState | null;
 
+    // Answer provenance — populated by useMoraStream from SSE preamble (MR18)
+    lastAnswerSource: 'memory' | 'context' | 'inference' | null;
+    lastAnswerScopeLabel: string | null;
+
     // Visual State
     isStandardMode: boolean;
     setIsStandardMode: (active: boolean) => void;
@@ -217,6 +221,7 @@ interface MoraState {
     setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
     clearSpeculativeState: () => void;
     setLastChatScope: (scope: LastChatScopeState | null) => void;
+    setAnswerProvenance: (source: 'memory' | 'context' | 'inference' | null, label: string | null) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
@@ -313,6 +318,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     isLoggingOut: false,
     hilEnabled: true,
     lastChatScope: null,
+    lastAnswerSource: null,
+    lastAnswerScopeLabel: null,
 
     // User & Permissions (Phase 6.3) - Default to demo role
     user: null,
@@ -445,6 +452,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     setLastChatScope: (scope) => set({
         lastChatScope: scope ? { ...scope, updatedAt: new Date().toISOString() } : null
     }),
+    setAnswerProvenance: (source, label) => set({
+        lastAnswerSource: source,
+        lastAnswerScopeLabel: label,
+    }),
     addOrbNotification: (notification) => set((state) => ({
         orbNotifications: [...state.orbNotifications, notification]
     })),
@@ -574,7 +585,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             coreError: null,
             orbState: 'idle',
             hasBooted: false,
-            isLoggingOut: false
+            isLoggingOut: false,
+            lastChatScope: null,
+            lastAnswerSource: null,
+            lastAnswerScopeLabel: null,
         });
     },
 

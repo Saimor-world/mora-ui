@@ -58,6 +58,11 @@ type StreamFrame = {
     scope_contract?: ScopeContract;
     uiScopeHints?: UiScopeHints;
     ui_scope_hints?: UiScopeHints;
+    // Answer provenance — MR18: live in backend /v3/chat/stream preamble
+    answerSource?: string;
+    answer_source?: string;
+    answerScopeLabel?: string;
+    answer_scope_label?: string;
 };
 
 function readCookie(name: string): string | null {
@@ -251,8 +256,20 @@ export function useMoraStream(): UseMoraStreamReturn {
                                         : null
                                 );
                                 setScopeEnforced(scopeUpdate.scope_enforced);
-                                continue;
                             }
+
+                            // MR18: Extract answer provenance from same preamble frame.
+                            const rawSource = json.answerSource ?? json.answer_source;
+                            const rawLabel = json.answerScopeLabel ?? json.answer_scope_label;
+                            if (rawSource !== undefined || rawLabel !== undefined) {
+                                const VALID_SOURCES = new Set(['memory', 'context', 'inference']);
+                                const validSource = VALID_SOURCES.has(rawSource ?? '')
+                                    ? (rawSource as 'memory' | 'context' | 'inference')
+                                    : null;
+                                useMoraStore.getState().setAnswerProvenance(validSource, rawLabel ?? null);
+                            }
+
+                            if (scopeUpdate) continue;
 
                             if (json.token) {
                                 accumulated += json.token;

@@ -78,6 +78,10 @@ export function useMoraContext(): MoraContextSnapshot {
     const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
     const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
 
+    // Answer provenance — wired from store (MR18 backend now live)
+    const storeAnswerSource = useMoraStore((s) => s.lastAnswerSource);
+    const storeAnswerScopeLabel = useMoraStore((s) => s.lastAnswerScopeLabel);
+
     const memoryPendingCount = useMemoryPendingCount();
 
     return useMemo((): MoraContextSnapshot => {
@@ -128,11 +132,9 @@ export function useMoraContext(): MoraContextSnapshot {
         const lastScopeSource: MoraContextSnapshot['lastScopeSource'] =
             lastChatScope ? 'stream' : null;
 
-        // TODO(MR18-P0): Wire answer_source + answer_scope_label from StreamFrame when Codex ships it.
-        // See: docs/plans/2026-03-06-mr18-intelligence-ux-unification-design.md §Backend Dependencies
-        // Until then, both are null — consumers must degrade gracefully (show "—" not blank).
-        const lastAnswerSource: MoraContextSnapshot['lastAnswerSource'] = null;
-        const lastAnswerScopeLabel: string | null = null;
+        // Answer provenance — wired from store, populated by useMoraStream SSE preamble (MR18)
+        const lastAnswerSource = storeAnswerSource;
+        const lastAnswerScopeLabel = storeAnswerScopeLabel;
 
         return {
             scopeLevel,
@@ -155,5 +157,6 @@ export function useMoraContext(): MoraContextSnapshot {
         activeDepartmentId, activeSpaceId, activeFolderId,
         departments, spacesByDepartment, foldersBySpace,
         memoryPendingCount,
+        storeAnswerSource, storeAnswerScopeLabel,
     ]);
 }
