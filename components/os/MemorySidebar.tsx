@@ -13,10 +13,12 @@ import {
     reconcileMemory,
     getCachePerformance,
     getCriticalFlowPerformance,
+    getApiVersionPerformance,
     type MemoryReconcileResult,
     type CachePerformance,
     type CacheBucket,
-    type CriticalFlowPerformance
+    type CriticalFlowPerformance,
+    type ApiVersionPerformance
 } from '@/lib/api/coreClient';
 import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
@@ -266,6 +268,7 @@ const DiagnosticsPanel: React.FC<{
     const [reconcileError, setReconcileError] = useState<string | null>(null);
     const [cachePerf, setCachePerf] = useState<CachePerformance | null>(null);
     const [criticalFlows, setCriticalFlows] = useState<CriticalFlowPerformance | null>(null);
+    const [apiVersions, setApiVersions] = useState<ApiVersionPerformance | null>(null);
     const isOwner = userRole === 'owner' || userRole === 'admin';
 
     // Poll cache + critical-flow performance every 8s while diagnostics tab is visible
@@ -273,12 +276,14 @@ const DiagnosticsPanel: React.FC<{
         if (!isVisible) return;
         let cancelled = false;
         const poll = async () => {
-            const [cacheData, criticalData] = await Promise.all([
+            const [cacheData, criticalData, apiVersionData] = await Promise.all([
                 getCachePerformance(),
                 getCriticalFlowPerformance(),
+                getApiVersionPerformance(900, 5),
             ]);
             if (!cancelled && cacheData) setCachePerf(cacheData);
             if (!cancelled && criticalData) setCriticalFlows(criticalData);
+            if (!cancelled && apiVersionData) setApiVersions(apiVersionData);
         };
         poll();
         const id = setInterval(poll, 8000);
@@ -429,6 +434,45 @@ const DiagnosticsPanel: React.FC<{
                                 <div className="border-t border-white/5" />
                                 <CacheBucketRow label="memory_debug_scope" bucket={cachePerf.memory_debug_scope} />
                             </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* API Version Cutover */} 
+            {apiVersions && (
+                <div className="space-y-2">
+                    <div className="text-[9px] uppercase tracking-wider text-white/30">API Cutover</div>
+                    <div className={`rounded-lg border p-2 space-y-2 ${apiVersions.phaseout_gate.pass
+                        ? 'border-emerald-500/25 bg-emerald-500/10'
+                        : 'border-amber-500/25 bg-amber-500/10'
+                        }`}>
+                        <div className="grid grid-cols-3 gap-1.5">
+                            <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
+                                <div className="text-[8px] text-white/35 uppercase">v3</div>
+                                <div className="text-[11px] text-emerald-300">{apiVersions.versions.v3.count}</div>
+                            </div>
+                            <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
+                                <div className="text-[8px] text-white/35 uppercase">v1</div>
+                                <div className="text-[11px] text-amber-300">{apiVersions.versions.v1.count}</div>
+                            </div>
+                            <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
+                                <div className="text-[8px] text-white/35 uppercase">Legacy Crit</div>
+                                <div className={`text-[11px] ${apiVersions.critical_legacy_routes.count === 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                                    {apiVersions.critical_legacy_routes.count}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/40">Gate</span>
+                            <span className={apiVersions.phaseout_gate.pass ? 'text-emerald-300' : 'text-amber-300'}>
+                                {apiVersions.phaseout_gate.pass ? 'pass' : 'violations'}
+                            </span>
+                        </div>
+                        {apiVersions.legacy_routes_top?.[0] && (
+                            <div className="text-[10px] text-white/45 truncate">
+                                Top legacy: <span className="text-white/65 font-mono">{apiVersions.legacy_routes_top[0].route}</span>
+                            </div>
                         )}
                     </div>
                 </div>
