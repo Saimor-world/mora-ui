@@ -89,6 +89,7 @@ export interface LastChatScopeState {
     scope_enforced: boolean;
     scope_contract?: ScopeContract;
     ui_scope_hints?: UiScopeHints;
+    updatedAt?: string;  // ISO timestamp — set by setLastChatScope, not by backend
 }
 
 /** Module-level guard: tracks the last company ID for which departments were fully loaded.
@@ -440,7 +441,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             // let the next poll (or manual setIdle) handle it naturally.
         });
     },
-    setLastChatScope: (scope) => set({ lastChatScope: scope }),
+    setLastChatScope: (scope) => set({
+        lastChatScope: scope ? { ...scope, updatedAt: new Date().toISOString() } : null
+    }),
     addOrbNotification: (notification) => set((state) => ({
         orbNotifications: [...state.orbNotifications, notification]
     })),
