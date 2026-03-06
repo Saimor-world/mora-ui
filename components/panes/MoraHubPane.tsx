@@ -7,6 +7,8 @@ import { useMoraStore } from "@/lib/store/moraState";
 import MoraPlayground from "@/components/mora/MoraPlayground";
 import { MoraMemory, MemoryStats } from "@/components/mora/MoraMemory";
 import { Sparkles, Brain, BarChart3 } from "lucide-react";
+import { useMoraContext } from '@/lib/mora/useMoraContext';
+import { MoraContextChip } from '@/components/mora/MoraContextChip';
 
 type HubSection = "overview" | "memory" | "stats";
 
@@ -41,6 +43,8 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const companies = useMoraStore((s) => s.companies);
     const safeCompanies = Array.isArray(companies) ? companies : [];
     const resolvedCompanyId = activeCompanyId || safeCompanies[0]?.id || null;
+
+    const ctx = useMoraContext();
 
     // Tab state - respects data.activeSection if provided
     const [activeSection, setActiveSection] = useState<HubSection>(
@@ -83,10 +87,16 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                 return (
                     <div className="h-full p-4 overflow-y-auto">
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 mb-4">
+                            <div className="flex items-center gap-2 mb-1">
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
                                 <span className="text-xs font-medium text-white/80">Mora Statistics (Live)</span>
                             </div>
+                            {/* MR18: scope freshness — honest about staleness */}
+                            {ctx.lastScopeUpdateAt && (
+                                <p className="text-[10px] text-white/25 mb-4">
+                                    Scope aktualisiert: {new Date(ctx.lastScopeUpdateAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </p>
+                            )}
                             <MemoryStats compact={isCompact} companyId={resolvedCompanyId} />
                         </div>
                     </div>
@@ -94,12 +104,20 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             case "overview":
             default:
                 return (
-                    <MoraPlayground
-                        scope={viewLevel === "department" ? "department" : "company"}
-                        title=""
-                        className="h-full"
-                        compact={isCompact}
-                    />
+                    <div className="h-full flex flex-col">
+                        {/* MR18: Mora context — always visible when scope is known */}
+                        <div className="px-4 pt-3 pb-2 border-b border-white/5 shrink-0">
+                            <MoraContextChip variant="hub" snapshot={ctx} />
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <MoraPlayground
+                                scope={viewLevel === "department" ? "department" : "company"}
+                                title=""
+                                className="h-full"
+                                compact={isCompact}
+                            />
+                        </div>
+                    </div>
                 );
         }
     };
