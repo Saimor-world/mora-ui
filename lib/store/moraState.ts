@@ -199,8 +199,9 @@ interface MoraState {
     // v3/chat: Last resolved scope from backend (scope enforcement signal)
     lastChatScope: LastChatScopeState | null;
 
-    // Answer provenance — populated by useMoraStream from SSE preamble (MR18)
+    // Answer provenance — populated by useMoraStream from SSE preamble (MR18/MR19)
     lastAnswerSource: 'memory' | 'context' | 'inference' | null;
+    lastAnswerSourceMode: string | null;   // e.g. 'retrieval' | 'synthesis' | 'hybrid'
     lastAnswerScopeLabel: string | null;
 
     // Visual State
@@ -221,7 +222,11 @@ interface MoraState {
     setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
     clearSpeculativeState: () => void;
     setLastChatScope: (scope: LastChatScopeState | null) => void;
-    setAnswerProvenance: (source: 'memory' | 'context' | 'inference' | null, label: string | null) => void;
+    setAnswerProvenance: (
+        source: 'memory' | 'context' | 'inference' | null,
+        mode: string | null,
+        label: string | null,
+    ) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
     setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
@@ -319,6 +324,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     hilEnabled: true,
     lastChatScope: null,
     lastAnswerSource: null,
+    lastAnswerSourceMode: null,
     lastAnswerScopeLabel: null,
 
     // User & Permissions (Phase 6.3) - Default to demo role
@@ -452,8 +458,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     setLastChatScope: (scope) => set({
         lastChatScope: scope ? { ...scope, updatedAt: new Date().toISOString() } : null
     }),
-    setAnswerProvenance: (source, label) => set({
+    setAnswerProvenance: (source, mode, label) => set({
         lastAnswerSource: source,
+        lastAnswerSourceMode: mode,
         lastAnswerScopeLabel: label,
     }),
     addOrbNotification: (notification) => set((state) => ({
@@ -588,6 +595,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             isLoggingOut: false,
             lastChatScope: null,
             lastAnswerSource: null,
+            lastAnswerSourceMode: null,
             lastAnswerScopeLabel: null,
         });
     },
