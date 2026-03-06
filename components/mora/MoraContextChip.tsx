@@ -79,6 +79,13 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
             className={`flex items-center gap-1.5 flex-wrap ${className}`}
             aria-label="Mora Kontext"
         >
+            {/* Hub-variant label */}
+            {variant === 'hub' && hasScopeInfo && (
+                <span className="text-[9px] uppercase tracking-[0.15em] text-white/30 mr-1">
+                    Kontext
+                </span>
+            )}
+
             {/* Scope breadcrumb */}
             {breadcrumb && (
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 transition-colors duration-150">
@@ -94,7 +101,7 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                 <div
                     className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 transition-colors duration-150 cursor-default"
                     title={scopeReason ?? 'Scope eingeschränkt'}
-                    aria-label={`Scope eingeschränkt: ${scopeReason ?? ''}`}
+                    aria-label={scopeReason ? `Scope eingeschränkt: ${scopeReason}` : 'Scope eingeschränkt'}
                 >
                     <Lock size={9} className="text-amber-400/80 shrink-0" />
                     {variant === 'hub' && (
@@ -119,15 +126,19 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
             )}
 
             {/* Answer source pill */}
-            {hasSource ? (
-                <div
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] leading-none transition-colors duration-150 ${SOURCE_CONFIG[lastAnswerSource!].className}`}
-                    title={`Antwortquelle: ${SOURCE_CONFIG[lastAnswerSource!].label}`}
-                >
-                    <ArrowRight size={9} className="shrink-0" />
-                    {SOURCE_CONFIG[lastAnswerSource!].label}
-                </div>
-            ) : (
+            {hasSource ? (() => {
+                const cfg = lastAnswerSource !== null ? SOURCE_CONFIG[lastAnswerSource] : undefined;
+                if (!cfg) return null;
+                return (
+                    <div
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] leading-none transition-colors duration-150 ${cfg.className}`}
+                        title={`Antwortquelle: ${cfg.label}`}
+                    >
+                        <ArrowRight size={9} className="shrink-0" />
+                        {cfg.label}
+                    </div>
+                );
+            })() : (
                 // Graceful degradation: source unknown, show neutral dash
                 <div
                     className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/25 leading-none"
