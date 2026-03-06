@@ -38,7 +38,7 @@ export const MoraThoughtStream: React.FC = () => {
 
         const fetchThoughts = async () => {
             try {
-                const res = await coreGet("/v1/agency/thoughts?limit=5", { isOptional: true });
+                const res = await coreGet("/v3/agency/thoughts?limit=5", { isOptional: true });
                 if (res?.thoughts && res.thoughts.length > 0) {
                     const latestTS = res.thoughts[0].ts;
 

@@ -27,7 +27,7 @@ export function useIntelFeed() {
             }
             setIsLoading(true);
             try {
-                const res = await coreGet(`/v1/intel/node/${activeNode.id}/context`, { isOptional: true });
+                const res = await coreGet(`/v3/nodes/${activeNode.id}/context`, { isOptional: true });
                 if (!cancelled) {
                     setHint(res || null);
                 }

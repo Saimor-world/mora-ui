@@ -10,5 +10,5 @@ export interface AgentAction {
 }
 
 export async function askMora(intent: string, context: any): Promise<AgentAction> {
-    return corePost('/v1/agency/think', { intent, context });
+    return corePost('/v3/agency/think', { intent, context });
 }

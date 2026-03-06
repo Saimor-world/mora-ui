@@ -110,7 +110,7 @@ export const ResonanceRoom: React.FC<Props> = ({
 
         const fetchThoughts = async () => {
             try {
-                const res = await coreGet("/v1/agency/thoughts?limit=3", { isOptional: true });
+                const res = await coreGet("/v3/agency/thoughts?limit=3", { isOptional: true });
                 if (res?.thoughts?.length > 0) {
                     const latest = res.thoughts[0];
                     if (latest.thought !== latestThought) {
