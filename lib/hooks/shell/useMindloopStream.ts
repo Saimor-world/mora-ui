@@ -1,7 +1,7 @@
 /**
  * useMindloopStream - Global Mind Loop SSE wiring
  *
- * Subscribes to `/v1/mindloop/stream` and maps intelligence events
+ * Subscribes to `/v3/mindloop/stream` and maps intelligence events
  * to visible Orb states so Mora feels alive outside the chat stream.
  */
 
@@ -127,7 +127,7 @@ export function useMindloopStream(enabled: boolean) {
 
         const connect = async () => {
             try {
-                const response = await fetch(`${getCoreBaseUrl()}/v1/mindloop/stream`, {
+                const response = await fetch(`${getCoreBaseUrl()}/v3/mindloop/stream`, {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -177,4 +177,3 @@ export function useMindloopStream(enabled: boolean) {
         };
     }, [enabled]);
 }
-

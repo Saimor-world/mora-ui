@@ -15,7 +15,6 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 import { ActionTray } from '@/components/os/ActionTray';
 import { PlasmaOrb } from './PlasmaOrb';
-import { UserAvatar } from './UserAvatar';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -165,6 +164,27 @@ export const Dock = () => {
         }
     }, [orbState]);
 
+    const userAccent = useMemo(() => {
+        switch (user?.role) {
+            case 'owner':
+            case 'system_owner':
+                return '#D4AF37';
+            case 'admin':
+                return '#10B981';
+            case 'member':
+                return '#06B6D4';
+            default:
+                return '#10B981';
+        }
+    }, [user?.role]);
+
+    const userInitials = useMemo(() => {
+        const raw = (user?.name || 'D').trim();
+        const parts = raw.split(/\s+/).filter(Boolean);
+        if (parts.length === 0) return 'D';
+        return parts.slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('') || 'D';
+    }, [user?.name]);
+
     const handleDockClick = useCallback((action: string) => {
         const defaultSize = { width: 900, height: 640 };
         switch (action) {
@@ -259,12 +279,48 @@ export const Dock = () => {
 
                     {/* LEFT: AVATAR - Premium Design */}
                     <div className={`flex items-center gap-4 pr-4 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
-                        <UserAvatar
-                            size={56}
-                            role={user?.role}
-                            name={user?.name}
-                            showAura={true}
-                        />
+                        <div
+                            className="relative w-14 h-14 rounded-full shrink-0"
+                            title={user?.name || 'Benutzer'}
+                            style={!isStandardMode ? { filter: `drop-shadow(0 0 18px ${userAccent}35)` } : {}}
+                        >
+                            {!isStandardMode && (
+                                <div
+                                    className="absolute inset-[-3px] rounded-full border"
+                                    style={{ borderColor: `${userAccent}55` }}
+                                />
+                            )}
+                            <div
+                                className={`absolute inset-0 rounded-full ${isStandardMode ? 'border border-[#0078D4]/30 bg-white' : 'border border-white/10 bg-black/20'}`}
+                            />
+                            <div className="absolute inset-[3px] rounded-full overflow-hidden">
+                                <PlasmaOrb
+                                    color={userAccent}
+                                    state={orbState as any}
+                                    size={50}
+                                />
+                            </div>
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span className="text-white/90 text-sm font-semibold tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
+                                    {userInitials}
+                                </span>
+                            </div>
+                            <div
+                                className="absolute right-0 bottom-0 w-3 h-3 rounded-full border border-black/70"
+                                style={{
+                                    backgroundColor: orbState === 'alert'
+                                        ? '#F87171'
+                                        : orbState === 'thinking'
+                                            ? '#60A5FA'
+                                            : '#34D399',
+                                    boxShadow: `0 0 8px ${orbState === 'alert'
+                                        ? '#F87171'
+                                        : orbState === 'thinking'
+                                            ? '#60A5FA'
+                                            : '#34D399'}`
+                                }}
+                            />
+                        </div>
                         <div className="hidden sm:flex flex-col">
                             <span className={`text-sm font-semibold truncate max-w-[120px] ${isStandardMode ? 'text-gray-800' : 'text-white/90'
                                 }`}>

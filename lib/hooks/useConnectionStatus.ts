@@ -5,6 +5,9 @@
  * - Online/Offline status
  * - Last successful connection time
  * - Retry mechanism
+ *
+ * Startup is intentionally tolerant: one transient cold-start failure should
+ * not flash an offline banner before the second probe confirms the issue.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -19,8 +22,8 @@ interface ConnectionState {
     retryCount: number;
 }
 
-const HEALTH_CHECK_INTERVAL = 60000; // Check every 60 seconds
-const MAX_RETRIES = 3;
+const HEALTH_CHECK_INTERVAL = 60000;
+const INITIAL_RETRY_DELAY_MS = 1200;
 
 export function useConnectionStatus() {
     const [state, setState] = useState<ConnectionState>({
@@ -30,12 +33,35 @@ export function useConnectionStatus() {
         retryCount: 0
     });
 
-    const checkHealth = useCallback(async () => {
+    const hasEverConnectedRef = useRef(false);
+    const statusRef = useRef<ConnectionStatus>('connecting');
+    const retryCountRef = useRef(0);
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    statusRef.current = state.status;
+    retryCountRef.current = state.retryCount;
+
+    const clearWarmRetry = () => {
+        if (retryTimerRef.current) {
+            clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = null;
+        }
+    };
+
+    const checkHealth = useCallback(async (): Promise<boolean> => {
+        const scheduleWarmRetry = () => {
+            clearWarmRetry();
+            retryTimerRef.current = setTimeout(() => {
+                void checkHealth();
+            }, INITIAL_RETRY_DELAY_MS);
+        };
+
         try {
-            // Health should be reachable without auth; otherwise an unauthenticated UI would falsely show "offline".
             const response = await coreGet('/v1/health', { isOptional: true, skipAuth: true });
 
-            if (response && response.status === 'healthy') {
+            if (response && (response.status === 'healthy' || response.status === 'ok')) {
+                clearWarmRetry();
+                hasEverConnectedRef.current = true;
                 setState({
                     status: 'connected',
                     lastConnected: new Date(),
@@ -43,20 +69,44 @@ export function useConnectionStatus() {
                     retryCount: 0
                 });
                 return true;
-            } else {
+            }
+
+            if (!hasEverConnectedRef.current && retryCountRef.current === 0) {
                 setState(prev => ({
                     ...prev,
-                    status: 'error',
-                    errorMessage: 'Backend unhealthy',
-                    retryCount: prev.retryCount + 1
+                    status: 'connecting',
+                    errorMessage: null,
+                    retryCount: 1
                 }));
+                scheduleWarmRetry();
                 return false;
             }
+
+            clearWarmRetry();
+            setState(prev => ({
+                ...prev,
+                status: 'error',
+                errorMessage: 'Backend unhealthy',
+                retryCount: prev.retryCount + 1
+            }));
+            return false;
         } catch (error: any) {
+            if (!hasEverConnectedRef.current && retryCountRef.current === 0) {
+                setState(prev => ({
+                    ...prev,
+                    status: 'connecting',
+                    errorMessage: null,
+                    retryCount: 1
+                }));
+                scheduleWarmRetry();
+                return false;
+            }
+
+            clearWarmRetry();
             setState(prev => ({
                 ...prev,
                 status: 'offline',
-                errorMessage: error.message || 'Connection failed',
+                errorMessage: error?.message || 'Connection failed',
                 retryCount: prev.retryCount + 1
             }));
             return false;
@@ -64,36 +114,31 @@ export function useConnectionStatus() {
     }, []);
 
     const retry = useCallback(() => {
+        clearWarmRetry();
         setState(prev => ({ ...prev, status: 'connecting', retryCount: 0 }));
-        checkHealth();
+        void checkHealth();
     }, [checkHealth]);
 
-    // Keep a ref so the focus handler can read the latest status without
-    // being listed as an effect dependency (which would restart the interval
-    // and register a new focus listener on every status transition).
-    const statusRef = useRef(state.status);
-    statusRef.current = state.status;
-
     useEffect(() => {
-        // Initial check
-        checkHealth();
+        void checkHealth();
 
-        // Periodic health checks
-        const interval = setInterval(checkHealth, HEALTH_CHECK_INTERVAL);
+        const interval = setInterval(() => {
+            void checkHealth();
+        }, HEALTH_CHECK_INTERVAL);
 
-        // Also check on window focus (user returns to tab)
         const handleFocus = () => {
             if (statusRef.current === 'offline' || statusRef.current === 'error') {
-                checkHealth();
+                void checkHealth();
             }
         };
         window.addEventListener('focus', handleFocus);
 
         return () => {
             clearInterval(interval);
+            clearWarmRetry();
             window.removeEventListener('focus', handleFocus);
         };
-    }, [checkHealth]); // statusRef is a stable ref — no need to re-register on status change
+    }, [checkHealth]);
 
     return {
         ...state,
