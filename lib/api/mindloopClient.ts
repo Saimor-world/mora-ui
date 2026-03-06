@@ -66,7 +66,7 @@ export async function fetchSynthesis(): Promise<SynthesisResponse> {
     };
 
     try {
-        const data = await coreGet('/v1/mindloop/synthesis');
+        const data = await coreGet('/v3/mindloop/synthesis');
         // null = auth failed silently
         if (!data) {
             return emptyResponse;
@@ -98,7 +98,7 @@ export async function fetchEvents(options: EventsQueryOptions = {}): Promise<Min
         if (options.since) params.append('since', options.since);
 
         const queryString = params.toString();
-        const endpoint = `/v1/mindloop/events${queryString ? `?${queryString}` : ''}`;
+        const endpoint = `/v3/mindloop/events${queryString ? `?${queryString}` : ''}`;
 
         const data = await coreGet(endpoint);
         if (!data) return []; // null = auth failed
@@ -118,7 +118,7 @@ export async function fetchEvents(options: EventsQueryOptions = {}): Promise<Min
  */
 export async function fetchClusters(): Promise<MindloopCluster[]> {
     try {
-        const data = await coreGet('/v1/mindloop/clusters');
+        const data = await corePost('/v3/mindloop/clusters', {});
         if (!data) return []; // null = auth failed
         return data.clusters || [];
     } catch (error: any) {
@@ -176,5 +176,5 @@ export async function runScan(folderId?: string): Promise<any> {
     // I'll assume corePost is available or I need to add it to imports.
     // Wait, I viewed mindloopClient.ts earlier and it had: import { coreGet } from './coreClient';
     // So I need to update the import line too.
-    return corePost('/v1/mindloop/scan', { folder_id: folderId });
+    return corePost('/v3/mindloop/scan', { folder_id: folderId });
 }

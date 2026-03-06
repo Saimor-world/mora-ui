@@ -57,7 +57,7 @@ export const useIntelligencePulse = () => {
 
             try {
                 // Use coreGet to ensure Auth headers are attached!
-                const jsonData = await coreGet('/v1/mindloop/synthesis', { isOptional: true });
+                const jsonData = await coreGet('/v3/mindloop/synthesis', { isOptional: true });
 
                 if (isMounted) {
                     if (jsonData) {

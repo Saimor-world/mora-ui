@@ -3,15 +3,15 @@
 /**
  * useMindLoopInsights
  *
- * Polls GET /v1/mindloop/events for new insight-class events
+ * Polls GET /v3/mindloop/events for new insight-class events
  * (semantic, context_shift, potential_risk, related_objects_cluster)
  * and surfaces the latest unseen event as a MoraInsight for the InsightPopup.
  *
  * Key design decision: tracks `lastSeenId` in a ref so the popup fires only ONCE
  * per truly new event — not every 30s poll interval.
  *
- * Backend endpoint: GET /v1/mindloop/events?limit=12
- * Confirm endpoint: POST /v1/mindloop/insight/{id}/confirm
+ * Backend endpoint: GET /v3/mindloop/events?limit=12
+ * Confirm endpoint: POST /v3/mindloop/insight/{id}/confirm
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -89,7 +89,7 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
         const poll = async () => {
             try {
                 // Fetch most recent insight-class events (newest first)
-                const data = await coreGet('/v1/mindloop/events?limit=12', {
+                const data = await coreGet('/v3/mindloop/events?limit=12', {
                     isOptional: true,
                 }) as { events?: MindLoopEvent[] } | MindLoopEvent[] | null;
 
@@ -133,7 +133,7 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
     const confirmInsight = useCallback(async (id: string) => {
         setCurrentInsight(null);
         try {
-            await corePost(`/v1/mindloop/insight/${id}/confirm`, {});
+            await corePost(`/v3/mindloop/insight/${id}/confirm`, {});
         } catch {
             // Confirmation is best-effort — UI already dismissed the popup
         }

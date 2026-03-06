@@ -141,7 +141,7 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
             if (scope === "department" && contextDepartmentId) {
                 params.set("department_id", contextDepartmentId);
             }
-            const res: MindLoopResponse = await coreGet(`/v1/mindloop/events?${params.toString()}`);
+            const res: MindLoopResponse = await coreGet(`/v3/mindloop/events?${params.toString()}`);
             setEvents(res?.events || []);
         } catch (err: any) {
             setError(err?.message || "Failed to fetch updates");

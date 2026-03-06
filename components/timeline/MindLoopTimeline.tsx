@@ -183,7 +183,7 @@ export function MindLoopTimeline({
     const fetchEvents = useCallback(async () => {
         try {
             const data = await coreGet(
-                `/v1/mindloop/events?limit=${limit}&order=desc`
+                `/v3/mindloop/events?limit=${limit}&order=desc`
             );
             if (data?.events) {
                 setEvents(data.events as TimelineEvent[]);
