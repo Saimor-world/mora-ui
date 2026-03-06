@@ -998,7 +998,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             confirmation_token: response.confirmation_token,
                             action_id: response.action_id || `file_${uploaded.id}`,
                             file_id: uploaded.id,
-                            confirm_endpoint: `/v1/files/${uploaded.id}/confirm-node`,
+                            confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
                             confirm_payload: { confirmation_token: response.confirmation_token },
                             // P6: Pass intake_context to ConfirmationCard
                             intake_context: response.intake_context

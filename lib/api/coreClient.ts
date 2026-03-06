@@ -221,7 +221,7 @@ export interface CompanyUpdatePayload {
 }
 
 export async function updateCompany(companyId: string, payload: CompanyUpdatePayload): Promise<CoreCompany> {
-    return corePatch(`/v1/companies/${companyId}`, payload);
+    return corePatch(`/v3/companies/${companyId}`, payload);
 }
 
 
@@ -366,7 +366,7 @@ export async function fetchSingleDepartmentStats(departmentId: string): Promise<
 export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]> {
     try {
         const query = includeDemo ? '?include_demo=true' : '';
-        const result = await coreGet(`/v1/companies${query}`);
+        const result = await coreGet(`/v3/companies${query}`);
         return normalizeList<CoreCompany>(result, ['companies']);
     } catch (error: any) {
         // Silent fallback for auth errors - return empty array
@@ -378,7 +378,7 @@ export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]
 }
 
 export async function getCompany(id: string): Promise<CoreCompany> {
-    return coreGet(`/v1/companies/${id}`);
+    return coreGet(`/v3/companies/${id}`);
 }
 
 export interface CreateCompanyPayload {
@@ -389,7 +389,7 @@ export interface CreateCompanyPayload {
 }
 
 export async function createCompany(payload: CreateCompanyPayload): Promise<CoreCompany> {
-    return corePost('/v1/companies', payload);
+    return corePost('/v3/companies', payload);
 }
 
 // ========== COMPANY HEALTH (OWNER VIEW - METRICS ONLY) ==========
@@ -419,7 +419,7 @@ export interface CompaniesHealthResponse {
  */
 export async function fetchCompaniesHealth(): Promise<CompaniesHealthResponse> {
     try {
-        return await coreGet('/v1/companies/health');
+        return await coreGet('/v3/companies/health');
     } catch (error: any) {
         if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
             return { companies: [], total: 0 };
@@ -484,7 +484,7 @@ export async function fetchNodesByCompany(
 }
 
 export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
-    return coreGet(`/v1/nodes/${nodeId}`);
+    return coreGet(`/v3/nodes/${nodeId}`);
 }
 
 export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
@@ -695,7 +695,7 @@ export interface CreateSpacePayload {
 }
 
 export async function createSpace(payload: CreateSpacePayload): Promise<CoreSpace> {
-    return corePost('/v1/spaces', payload);
+    return corePost('/v3/spaces', payload);
 }
 
 export interface CreateFolderPayload {
@@ -706,7 +706,7 @@ export interface CreateFolderPayload {
 }
 
 export async function createFolder(payload: CreateFolderPayload): Promise<CoreFolder> {
-    return corePost('/v1/folders', payload);
+    return corePost('/v3/folders', payload);
 }
 
 export interface CreateNodePayload {
@@ -720,7 +720,7 @@ export interface CreateNodePayload {
 }
 
 export async function createNode(payload: CreateNodePayload): Promise<CoreNode> {
-    return corePost('/v1/nodes', payload);
+    return corePost('/v3/nodes', payload);
 }
 
 export interface UpdateNodePayload {
@@ -733,11 +733,11 @@ export interface UpdateNodePayload {
 }
 
 export async function updateNode(id: string, payload: UpdateNodePayload): Promise<CoreNode> {
-    return corePatch(`/v1/nodes/${id}`, payload);
+    return corePatch(`/v3/nodes/${id}`, payload);
 }
 
 export async function deleteNode(id: string): Promise<void> {
-    return coreDelete(`/v1/nodes/${id}`);
+    return coreDelete(`/v3/nodes/${id}`);
 }
 
 // Department helpers (Tag 10+)
@@ -753,7 +753,7 @@ export interface CreateDepartmentPayload {
 export const createDepartment = async (payload: CreateDepartmentPayload) => {
     // Auto-generate slug from name if not provided
     const slug = payload.slug || payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return corePost('/v1/departments', { ...payload, slug });
+    return corePost('/v3/departments', { ...payload, slug });
 };
 
 export const createSimpleDepartment = async (name: string) => {
@@ -771,11 +771,11 @@ export interface UpdateDepartmentPayload {
 }
 
 export async function updateDepartment(id: string, payload: UpdateDepartmentPayload): Promise<CoreDepartment> {
-    return corePatch(`/v1/departments/${id}`, payload);
+    return corePatch(`/v3/departments/${id}`, payload);
 }
 
 export async function deleteDepartment(id: string): Promise<void> {
-    return coreDelete(`/v1/departments/${id}`);
+    return coreDelete(`/v3/departments/${id}`);
 }
 
 export interface UpdateSpacePayload {
@@ -786,11 +786,11 @@ export interface UpdateSpacePayload {
 }
 
 export async function updateSpace(id: string, payload: UpdateSpacePayload): Promise<CoreSpace> {
-    return corePatch(`/v1/spaces/${id}`, payload);
+    return corePatch(`/v3/spaces/${id}`, payload);
 }
 
 export async function deleteSpace(id: string): Promise<void> {
-    return coreDelete(`/v1/spaces/${id}`);
+    return coreDelete(`/v3/spaces/${id}`);
 }
 
 export interface UpdateFolderPayload {
@@ -800,11 +800,11 @@ export interface UpdateFolderPayload {
 }
 
 export async function updateFolder(id: string, payload: UpdateFolderPayload): Promise<CoreFolder> {
-    return corePatch(`/v1/folders/${id}`, payload);
+    return corePatch(`/v3/folders/${id}`, payload);
 }
 
 export async function deleteFolder(id: string): Promise<void> {
-    return coreDelete(`/v1/folders/${id}`);
+    return coreDelete(`/v3/folders/${id}`);
 }
 
 // ========== UPLOAD FUNCTION ==========

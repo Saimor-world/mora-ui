@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { corePost, corePut, coreDelete, fetchNodesByCompany } from '@/lib/api/coreClient';
+import { corePost, corePatch, coreDelete, fetchNodesByCompany } from '@/lib/api/coreClient';
 import { Search, Plus, Trash2, Save, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,7 +34,7 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
             if (!activeCompanyId) return;
             try {
                 // Find or Create 'Notes' folder
-                const folders = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v1/folders?company_id=${activeCompanyId}`));
+                const folders = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v3/folders?company_id=${activeCompanyId}`));
                 let targetId = null;
                 if (folders && Array.isArray(folders)) {
                     const existing = folders.find((f: any) => f.name === 'Notes');
@@ -42,9 +42,9 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
                 }
 
                 if (!targetId) {
-                const spaces = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v1/spaces?company_id=${activeCompanyId}`));
+                const spaces = await import('@/lib/api/coreClient').then(m => m.coreGet(`/v3/spaces?company_id=${activeCompanyId}`));
                     if (spaces && spaces.length > 0) {
-                        const newFolder = await import('@/lib/api/coreClient').then(m => m.corePost('/v1/folders', {
+                        const newFolder = await import('@/lib/api/coreClient').then(m => m.corePost('/v3/folders', {
                             name: 'Notes', space_id: spaces[0].id, description: 'Personal Notes', icon: 'file-text'
                         }));
                         if (newFolder) targetId = newFolder.id;
@@ -95,7 +95,7 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
             if (!selectedNote.id.startsWith('temp-')) {
                 setIsSaving(true);
                 try {
-                    await corePut(`/v1/nodes/${selectedNote.id}`, {
+                    await corePatch(`/v3/nodes/${selectedNote.id}`, {
                         name: selectedNote.title,
                         content: selectedNote.content
                     });
@@ -118,7 +118,7 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
                 content: ''
             };
 
-            const created = await corePost('/v1/nodes', newNodeInfo);
+            const created = await corePost('/v3/nodes', newNodeInfo);
             if (created) {
                 const newNote: Note = {
                     id: created.id,
@@ -147,7 +147,7 @@ export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
 
     const deleteNote = async (noteId: string) => {
         try {
-            await coreDelete(`/v1/nodes/${noteId}`);
+            await coreDelete(`/v3/nodes/${noteId}`);
             const updated = notes.filter(n => n.id !== noteId);
             setNotes(updated);
             if (selectedNote?.id === noteId) {

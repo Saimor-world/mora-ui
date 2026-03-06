@@ -46,7 +46,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
 
         setIsDeleting(true);
         try {
-            await coreDelete(`/v1/companies/${companyId}`);
+            await coreDelete(`/v3/companies/${companyId}`);
             toast.success(`Deleted "${company?.name}"`);
             await loadCompanies();
             removePane(id);

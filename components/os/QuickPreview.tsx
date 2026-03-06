@@ -205,7 +205,7 @@ const FolderPreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
         const loadChildren = async () => {
             setLoading(true);
             try {
-                const data = await coreGet(`/v1/nodes?parent_id=${item.id}&limit=20`, { isOptional: true });
+                const data = await coreGet(`/v3/nodes?parent_id=${item.id}&limit=20`, { isOptional: true });
                 if (data && Array.isArray(data)) {
                     setChildren(data);
                 }

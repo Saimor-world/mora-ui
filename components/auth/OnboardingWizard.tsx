@@ -137,7 +137,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             const validDepartments = departments.filter(d => d.name.trim());
             for (const dept of validDepartments) {
                 try {
-                    await corePost('/v1/departments', {
+                    await corePost('/v3/departments', {
                         name: dept.name.trim(),
                         slug: dept.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                         color: dept.color,

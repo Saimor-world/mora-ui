@@ -48,24 +48,24 @@ function getAuthToken(): string | null {
 }
 
 export const getFilePreview = async (nodeId: string): Promise<FilePreview> => {
-    return coreGet(`/v1/files/${nodeId}/preview`) as Promise<FilePreview>;
+    return coreGet(`/v3/files/${nodeId}/preview`) as Promise<FilePreview>;
 };
 
 export const getDownloadUrl = (nodeId: string): string => {
-    return `${getCoreBaseUrl()}/v1/files/${nodeId}/download`;
+    return `${getCoreBaseUrl()}/v3/files/${nodeId}`;
 };
 
 export const getCompanyFileUrl = (fileId: string): string => {
-    return `${getCoreBaseUrl()}/v1/files/${fileId}`;
+    return `${getCoreBaseUrl()}/v3/files/${fileId}`;
 };
 
 /** URL for files uploaded with visibility='public'. No auth required. */
 export const getPublicFileUrl = (fileId: string): string => {
-    return `${getCoreBaseUrl()}/v1/files/public/${fileId}`;
+    return `${getCoreBaseUrl()}/v3/files/public/${fileId}`;
 };
 
 export const listCompanyFiles = async (companyId: string): Promise<CompanyFileRecord[]> => {
-    const response = await coreGet(`/v1/files?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
+    const response = await coreGet(`/v3/files?company_id=${encodeURIComponent(companyId)}`, { isOptional: true });
     return Array.isArray(response) ? response : [];
 };
 
@@ -90,7 +90,7 @@ export const uploadCompanyFile = async (
 
     // CRITICAL: We do NOT set Content-Type header. 
     // Browser must set it with the correct boundary for multipart/form-data.
-    const response = await fetch(`${getCoreBaseUrl()}/v1/files/upload`, {
+    const response = await fetch(`${getCoreBaseUrl()}/v3/files/upload`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -117,14 +117,25 @@ export const uploadCompanyFile = async (
         throw new CoreError(message, response.status);
     }
 
-    return response.json();
+    const json = await response.json();
+    if (
+        json &&
+        typeof json === 'object' &&
+        !Array.isArray(json) &&
+        'data' in json &&
+        'meta' in json &&
+        json.meta?.api_version === 'v3'
+    ) {
+        return json.data as CompanyFileRecord;
+    }
+    return json as CompanyFileRecord;
 };
 
 export const downloadCompanyFile = async (fileId: string, filename: string): Promise<void> => {
     const token = getAuthToken();
     if (!token) throw new CoreError('Unauthorized', 401);
 
-    const response = await fetch(`${getCoreBaseUrl()}/v1/files/${fileId}`, {
+    const response = await fetch(`${getCoreBaseUrl()}/v3/files/${fileId}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`
@@ -155,18 +166,18 @@ export const requestCreateNodeFromFile = async (
     fileId: string,
     options?: { autoExecute?: boolean; folderId?: string }
 ): Promise<any> => {
-    return corePost(`/v1/files/${fileId}/create-node`, {
+    return corePost(`/v3/files/${fileId}/create-node`, {
         auto_execute: options?.autoExecute ?? true,
         folder_id: options?.folderId
     });
 };
 
 export const confirmCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {
-    return corePost(`/v1/files/${fileId}/confirm-node`, { confirmation_token: confirmationToken });
+    return corePost(`/v3/files/${fileId}/confirm-node`, { confirmation_token: confirmationToken });
 };
 
 export const rejectCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {
-    return corePost(`/v1/files/${fileId}/reject-node`, { confirmation_token: confirmationToken });
+    return corePost(`/v3/files/${fileId}/reject-node`, { confirmation_token: confirmationToken });
 };
 
 export interface FileNodeStatus {
@@ -178,5 +189,5 @@ export interface FileNodeStatus {
 
 /** Query where a file's node ended up — use as fallback if create-node response lacks folder_id */
 export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {
-    return coreGet(`/v1/files/${fileId}/node`) as Promise<FileNodeStatus>;
+    return coreGet(`/v3/files/${fileId}/node`) as Promise<FileNodeStatus>;
 };
