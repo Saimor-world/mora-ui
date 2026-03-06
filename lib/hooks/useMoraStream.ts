@@ -58,9 +58,11 @@ type StreamFrame = {
     scope_contract?: ScopeContract;
     uiScopeHints?: UiScopeHints;
     ui_scope_hints?: UiScopeHints;
-    // Answer provenance — MR18: live in backend /v3/chat/stream preamble
+    // Answer provenance — MR18/MR19: live in backend /v3/chat/stream preamble
     answerSource?: string;
     answer_source?: string;
+    answerSourceMode?: string;
+    answer_source_mode?: string;
     answerScopeLabel?: string;
     answer_scope_label?: string;
 };
@@ -258,15 +260,20 @@ export function useMoraStream(): UseMoraStreamReturn {
                                 setScopeEnforced(scopeUpdate.scope_enforced);
                             }
 
-                            // MR18: Extract answer provenance from same preamble frame.
+                            // MR18/MR19: Extract answer provenance from same preamble frame.
                             const rawSource = json.answerSource ?? json.answer_source;
+                            const rawMode = json.answerSourceMode ?? json.answer_source_mode ?? null;
                             const rawLabel = json.answerScopeLabel ?? json.answer_scope_label;
-                            if (rawSource !== undefined || rawLabel !== undefined) {
+                            if (rawSource !== undefined || rawLabel !== undefined || rawMode !== null) {
                                 const VALID_SOURCES = new Set(['memory', 'context', 'inference']);
                                 const validSource = VALID_SOURCES.has(rawSource ?? '')
                                     ? (rawSource as 'memory' | 'context' | 'inference')
                                     : null;
-                                useMoraStore.getState().setAnswerProvenance(validSource, rawLabel ?? null);
+                                useMoraStore.getState().setAnswerProvenance(
+                                    validSource,
+                                    rawMode,
+                                    rawLabel ?? null,
+                                );
                             }
 
                             if (scopeUpdate) continue;

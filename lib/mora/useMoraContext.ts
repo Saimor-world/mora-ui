@@ -4,6 +4,7 @@
 import { useMemo } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { useMemoryPendingCount } from '@/lib/hooks/useMemoryPendingCount';
+import { useMemoryOverview } from '@/lib/hooks/useMemoryOverview';
 import type { OrbState } from '@/lib/api/awarenessClient';
 
 // ─── Contract ───────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ export interface MoraContextSnapshot {
 
     // Answer provenance — null until backend sends answer_source in StreamFrame
     lastAnswerSource: 'memory' | 'context' | 'inference' | null;
+    lastAnswerSourceMode: string | null;   // e.g. 'retrieval' | 'synthesis' | 'hybrid'
     lastAnswerScopeLabel: string | null;
 }
 
@@ -56,8 +58,9 @@ function deriveScopeLevel(
 /**
  * useMoraContext
  *
- * Normalization-only hook. Reads moraState + useMemoryPendingCount.
- * No fetches. No mutations. Safe to call in any surface.
+ * Normalization hook. Reads moraState + sub-hooks (useMemoryPendingCount,
+ * useMemoryOverview). useMemoryOverview polls /v3/memory/overview every 60s.
+ * No mutations. Safe to call in any surface.
  *
  * NOTE: The store tracks active entities by ID only (activeDepartmentId,
  * activeSpaceId, activeFolderId). Names are resolved by joining against
@@ -78,11 +81,13 @@ export function useMoraContext(): MoraContextSnapshot {
     const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
     const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
 
-    // Answer provenance — wired from store (MR18 backend now live)
+    // Answer provenance — wired from store (MR18/MR19 backend now live)
     const storeAnswerSource = useMoraStore((s) => s.lastAnswerSource);
+    const storeAnswerSourceMode = useMoraStore((s) => s.lastAnswerSourceMode);
     const storeAnswerScopeLabel = useMoraStore((s) => s.lastAnswerScopeLabel);
 
     const memoryPendingCount = useMemoryPendingCount();
+    const memoryOverview = useMemoryOverview();
 
     return useMemo((): MoraContextSnapshot => {
         const resolved = lastChatScope?.resolved_scope;
@@ -132,8 +137,9 @@ export function useMoraContext(): MoraContextSnapshot {
         const lastScopeSource: MoraContextSnapshot['lastScopeSource'] =
             lastChatScope ? 'stream' : null;
 
-        // Answer provenance — wired from store, populated by useMoraStream SSE preamble (MR18)
+        // Answer provenance — wired from store, populated by useMoraStream SSE preamble (MR18/MR19)
         const lastAnswerSource = storeAnswerSource;
+        const lastAnswerSourceMode = storeAnswerSourceMode;
         const lastAnswerScopeLabel = storeAnswerScopeLabel;
 
         return {
@@ -145,10 +151,11 @@ export function useMoraContext(): MoraContextSnapshot {
             orbState,
             isOffline: coreError !== null,
             memoryPendingCount,
-            memoryFactCount: 0, // extend when metrics are in store
+            memoryFactCount: memoryOverview.structuredFacts,
             lastScopeUpdateAt,
             lastScopeSource,
             lastAnswerSource,
+            lastAnswerSourceMode,
             lastAnswerScopeLabel,
         };
     }, [
@@ -157,6 +164,7 @@ export function useMoraContext(): MoraContextSnapshot {
         activeDepartmentId, activeSpaceId, activeFolderId,
         departments, spacesByDepartment, foldersBySpace,
         memoryPendingCount,
-        storeAnswerSource, storeAnswerScopeLabel,
+        storeAnswerSource, storeAnswerSourceMode, storeAnswerScopeLabel,
+        memoryOverview,
     ]);
 }
