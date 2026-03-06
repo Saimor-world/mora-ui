@@ -173,18 +173,19 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     const { hilEnabled, setHilEnabled } = useHilToggle();
     const { openPane, getPane, minimizePane } = usePaneStore();
     const [showMemory, setShowMemory] = useState(false);
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     const orbConfig = getOrbConfig(orbState, viewMode);
     const StatusIcon = orbConfig.icon;
 
     // Dynamic context line
     const contextLine = useMemo(() => {
-        const dept = departments.find((d) => d.id === activeDepartmentId);
+        const dept = safeDepartments.find((d) => d.id === activeDepartmentId);
         if (viewLevel === "folder") return dept ? `${dept.name} › Deep Dive` : "Deep Dive";
         if (viewLevel === "space") return dept ? `${dept.name} › Sektor` : "Sektor";
         if (viewLevel === "department") return dept?.name || "Department";
         return viewMode === "demo" ? "Sandbox" : "Universe";
-    }, [viewLevel, viewMode, departments, activeDepartmentId]);
+    }, [viewLevel, viewMode, safeDepartments, activeDepartmentId]);
 
     // Cursor Agent status
     const agentStatus = useMemo(() => {

@@ -39,7 +39,8 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const viewLevel = useMoraStore((s) => s.viewLevel);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const companies = useMoraStore((s) => s.companies);
-    const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
+    const safeCompanies = Array.isArray(companies) ? companies : [];
+    const resolvedCompanyId = activeCompanyId || safeCompanies[0]?.id || null;
 
     // Tab state - respects data.activeSection if provided
     const [activeSection, setActiveSection] = useState<HubSection>(

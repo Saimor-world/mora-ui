@@ -170,7 +170,8 @@ export function useAuthBootstrapper() {
                             store.setActiveCompany(selectedCompanyId);
                             localStorage.setItem('last_company_id', selectedCompanyId);
                             // IMPORTANT: Load tree for THIS company context
-                            const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+                            const safeCompanies = Array.isArray(companies) ? companies : [];
+                            const selectedCompany = safeCompanies.find(c => c.id === selectedCompanyId);
                             const targetTenant = selectedCompany?.tenant_id || tenantId;
                             await Promise.all([
                                 store.loadTree(targetTenant, selectedCompanyId).catch((err) => console.log('Tree load fail', err)),

@@ -16,13 +16,15 @@ export const MemberFocusPane = () => {
     const { openPane } = usePaneStore();
     const { activeCompanyId, companies, nodesByCompany, departments, activeDepartmentId } = useMoraStore();
     const [isOpen, setIsOpen] = React.useState(false);
+    const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const safeDepartments = React.useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
-    const activeCompany = companies.find(c => c.id === activeCompanyId);
-    const activeDepartment = departments.find(d => d.id === activeDepartmentId);
+    const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
+    const activeDepartment = safeDepartments.find(d => d.id === activeDepartmentId);
     const companyNodes = activeCompanyId ? nodesByCompany[activeCompanyId] || [] : [];
 
     const docCount = companyNodes.length;
-    const deptCount = departments.length;
+    const deptCount = safeDepartments.length;
 
     const stats = [
         { label: 'ELEMENTE', value: docCount, sub: 'im Workspace' },

@@ -32,13 +32,14 @@ interface MemoryMetrics {
 export function useMemory(manualCompanyId?: string | null) {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const companies = useMoraStore((s) => s.companies);
+    const safeCompanies = Array.isArray(companies) ? companies : [];
     const [pendingItems, setPendingItems] = useState<ReviewItem[]>([]);
     const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
     const [debugScope, setDebugScope] = useState<MemoryDebugScope | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const scopedCompanyId = manualCompanyId || activeCompanyId || companies[0]?.id || null;
+    const scopedCompanyId = manualCompanyId || activeCompanyId || safeCompanies[0]?.id || null;
 
     // Load pending review items
     const loadPending = useCallback(async () => {
@@ -64,8 +65,10 @@ export function useMemory(manualCompanyId?: string | null) {
         }
         try {
             const data = await getMemoryMetrics(scopedCompanyId);
-            if (data && !data.error) {
-                setMetrics(data);
+            if (data && typeof data === 'object' && !Array.isArray(data) && !(data as any).error) {
+                setMetrics(data as MemoryMetrics);
+            } else {
+                setMetrics(null);
             }
         } catch (err) {
             console.error('[useMemory] Load metrics error:', err);

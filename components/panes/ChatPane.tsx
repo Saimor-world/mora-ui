@@ -257,9 +257,10 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
     const departments = useMoraStore((s) => s.departments);
     const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
     const orbState = useMoraStore((s) => s.orbState);
+    const safeDepartments = React.useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     const suggestions = React.useMemo(() => {
-        const dept = departments.find(d => d.id === activeDepartmentId);
+        const dept = safeDepartments.find(d => d.id === activeDepartmentId);
 
         if (viewLevel === 'folder' || viewLevel === 'space') {
             return [
@@ -283,13 +284,13 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
             ];
         }
         // Default / Core level
-        const firstDept = departments[0]?.name;
+        const firstDept = safeDepartments[0]?.name;
         return [
             firstDept ? `Zeig mir ${firstDept}` : 'Zeig mir die Abteilungen',
             'Was gibt es Neues?',
             'Hilf mir beim Organisieren',
         ];
-    }, [viewLevel, departments, activeDepartmentId, orbState]);
+    }, [viewLevel, safeDepartments, activeDepartmentId, orbState]);
 
     return (
         <div className="flex gap-2 mt-2 flex-wrap">
@@ -322,6 +323,18 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         activeFolderId
     } = useMoraStore();
     const pane = getPane(id);
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const safeSpaces = useMemo(() => {
+        if (!activeDepartmentId) return [];
+        const value = spacesByDepartment[activeDepartmentId];
+        return Array.isArray(value) ? value : [];
+    }, [spacesByDepartment, activeDepartmentId]);
+    const safeFolders = useMemo(() => {
+        if (!activeSpaceId) return [];
+        const value = foldersBySpace[activeSpaceId];
+        return Array.isArray(value) ? value : [];
+    }, [foldersBySpace, activeSpaceId]);
 
     // Streaming hook — real AI, token-by-token
     const {
@@ -362,21 +375,21 @@ Was kann ich fuer dich tun?`,
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const activeCompany = useMemo(
-        () => companies.find((c) => c.id === activeCompanyId) || null,
-        [companies, activeCompanyId]
+        () => safeCompanies.find((c) => c.id === activeCompanyId) || null,
+        [safeCompanies, activeCompanyId]
     );
     const activeDepartment = useMemo(
-        () => departments.find((d) => d.id === activeDepartmentId) || null,
-        [departments, activeDepartmentId]
+        () => safeDepartments.find((d) => d.id === activeDepartmentId) || null,
+        [safeDepartments, activeDepartmentId]
     );
     const activeSpace = useMemo(() => {
         if (!activeDepartmentId || !activeSpaceId) return null;
-        return (spacesByDepartment[activeDepartmentId] || []).find((s) => s.id === activeSpaceId) || null;
-    }, [spacesByDepartment, activeDepartmentId, activeSpaceId]);
+        return safeSpaces.find((s) => s.id === activeSpaceId) || null;
+    }, [safeSpaces, activeDepartmentId, activeSpaceId]);
     const activeFolder = useMemo(() => {
         if (!activeSpaceId || !activeFolderId) return null;
-        return (foldersBySpace[activeSpaceId] || []).find((f) => f.id === activeFolderId) || null;
-    }, [foldersBySpace, activeSpaceId, activeFolderId]);
+        return safeFolders.find((f) => f.id === activeFolderId) || null;
+    }, [safeFolders, activeSpaceId, activeFolderId]);
     const { lastChatScope } = useMoraStore();
     const scopeBoundaryLevel = lastChatScope?.scope_contract?.boundary_level;
     const droppedScopeFields = lastChatScope?.scope_contract?.dropped_fields ?? [];
@@ -528,7 +541,7 @@ Was kann ich fuer dich tun?`,
 
     // Execute navigation
     const executeNavigation = (deptId: string) => {
-        const dept = departments.find(d => d.id === deptId);
+        const dept = safeDepartments.find(d => d.id === deptId);
         if (dept) {
             // Dispatch event for cursor to move
             window.dispatchEvent(new CustomEvent('mora:navigate', {

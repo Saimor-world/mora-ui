@@ -36,18 +36,20 @@ export const DepartmentLayer: React.FC = () => {
     const addSpace = useMoraStore(s => s.addSpace);
     const setActiveSpace = useMoraStore(s => s.setActiveSpace);
     const { openPane } = usePaneStore();
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
 
     // Memoized — was running raw find() on every RAF tick (30fps)
     const currentDepartment = useMemo(
-        () => departments.find((d) => d.id === activeDepartmentId),
-        [departments, activeDepartmentId]
+        () => safeDepartments.find((d) => d.id === activeDepartmentId),
+        [safeDepartments, activeDepartmentId]
     );
     const deptTitle = currentDepartment?.name || '';
     const deptColor = currentDepartment?.color || '#10b981';
 
     const departmentDocs = useMemo(() => {
-        if (!activeDepartmentId || !treeData) return [];
-        const root = treeData.find((n) => n.id === activeDepartmentId);
+        if (!activeDepartmentId || safeTreeData.length === 0) return [];
+        const root = safeTreeData.find((n) => n.id === activeDepartmentId);
         if (!root) return [];
 
         const docs: any[] = [];
@@ -58,11 +60,12 @@ export const DepartmentLayer: React.FC = () => {
         };
         walk(root);
         return docs;
-    }, [activeDepartmentId, treeData]);
+    }, [activeDepartmentId, safeTreeData]);
 
     const spaces = useMemo(() => {
         if (!activeDepartmentId) return [];
-        return spacesByDepartment[activeDepartmentId] || [];
+        const value = spacesByDepartment[activeDepartmentId];
+        return Array.isArray(value) ? value : [];
     }, [activeDepartmentId, spacesByDepartment]);
 
     const prefersReducedMotion = useReducedMotion();

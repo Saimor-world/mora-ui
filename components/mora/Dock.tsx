@@ -148,10 +148,11 @@ export const Dock = () => {
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const activeCompany = useMemo(
-        () => companies.find(c => c.id === activeCompanyId),
-        [companies, activeCompanyId]
+        () => safeCompanies.find(c => c.id === activeCompanyId),
+        [safeCompanies, activeCompanyId]
     );
 
     const accent = useMemo(() => {
@@ -397,7 +398,7 @@ export const Dock = () => {
                                         </span>
                                     </div>
                                     <div className="p-1">
-                                        {companies.map(company => (
+                                        {safeCompanies.map(company => (
                                             <button
                                                 key={company.id}
                                                 onClick={() => {

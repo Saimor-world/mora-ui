@@ -107,8 +107,10 @@ export function useLocalAI(): UseLocalAIReturn {
         setIsLoading(true);
         setError(null);
 
-        const deptNames = departments.map(d => d.name);
-        const company = companies.find(c => c.id === activeCompanyId);
+        const safeDepartments = Array.isArray(departments) ? departments : [];
+        const safeCompanies = Array.isArray(companies) ? companies : [];
+        const deptNames = safeDepartments.map(d => d.name);
+        const company = safeCompanies.find(c => c.id === activeCompanyId);
 
         // Create context for analysis
         const context = {

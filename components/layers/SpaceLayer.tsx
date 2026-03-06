@@ -68,6 +68,12 @@ export const SpaceLayer: React.FC = () => {
     const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
     const addFolder = useMoraStore(s => s.addFolder);
     const { openPane } = usePaneStore();
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const safeSpaces = useMemo(() => {
+        if (!activeDepartmentId) return [];
+        const value = spacesByDepartment[activeDepartmentId];
+        return Array.isArray(value) ? value : [];
+    }, [spacesByDepartment, activeDepartmentId]);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
@@ -150,17 +156,18 @@ export const SpaceLayer: React.FC = () => {
     }, [prefersReducedMotion]);
 
     const currentDepartment = useMemo(() => {
-        return departments.find(d => d.id === activeDepartmentId);
-    }, [departments, activeDepartmentId]);
+        return safeDepartments.find(d => d.id === activeDepartmentId);
+    }, [safeDepartments, activeDepartmentId]);
 
     const currentSpace = useMemo(() => {
         if (!activeDepartmentId || !activeSpaceId) return null;
-        return spacesByDepartment[activeDepartmentId]?.find(s => s.id === activeSpaceId);
-    }, [activeDepartmentId, activeSpaceId, spacesByDepartment]);
+        return safeSpaces.find(s => s.id === activeSpaceId);
+    }, [activeDepartmentId, activeSpaceId, safeSpaces]);
 
     const folders = useMemo(() => {
         if (!activeSpaceId) return [];
-        return foldersBySpace[activeSpaceId] || [];
+        const value = foldersBySpace[activeSpaceId];
+        return Array.isArray(value) ? value : [];
     }, [activeSpaceId, foldersBySpace]);
 
     const foldersWithContent = useMemo(() => {

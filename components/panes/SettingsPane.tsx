@@ -33,12 +33,13 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const [language, setLanguage] = useState('en');
     const [reducedMotion, setReducedMotion] = useState(false);
     const [interfaceScale, setInterfaceScale] = useState(1);
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const [brandingName, setBrandingName] = useState('');
     const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
     const [brandingSaving, setBrandingSaving] = useState(false);
 
-        const activeCompany = useMemo(() => companies.find(c => c.id === activeCompanyId) || null, [companies, activeCompanyId]);
+        const activeCompany = useMemo(() => safeCompanies.find(c => c.id === activeCompanyId) || null, [safeCompanies, activeCompanyId]);
 
 // Phase 6.3: Role-based Tab Visibility
     // Owner & Admin & Demo get full access

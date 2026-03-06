@@ -23,6 +23,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { companies, loadCompanies } = useMoraStore();
     const pane = getPane(id);
+    const safeCompanies = Array.isArray(companies) ? companies : [];
 
     const [activeTab, setActiveTab] = useState<'overview' | 'danger'>('overview');
     const [isDeleting, setIsDeleting] = useState(false);
@@ -30,7 +31,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
 
     if (!pane || !companyId) return null;
 
-    const company = companies.find(c => c.id === companyId);
+    const company = safeCompanies.find(c => c.id === companyId);
 
     const tabs = [
         { id: 'overview', label: 'Overview', icon: Building2 },

@@ -62,9 +62,10 @@ export const ContextRail: React.FC = () => {
 
         // RESET Active Company to User's Company (Fix for "No Data after Demo")
         const { companies, setActiveCompany, loadDepartments, loadNodesForCompany } = useMoraStore.getState();
+        const safeCompanies = Array.isArray(companies) ? companies : [];
 
         // P1 Fix: Safe access with explicit null check
-        const userCompany = companies.find(c => c.tenant_id === tenantId) ?? companies[0] ?? null;
+        const userCompany = safeCompanies.find(c => c.tenant_id === tenantId) ?? safeCompanies[0] ?? null;
 
         if (userCompany) {
             setActiveCompany(userCompany.id);

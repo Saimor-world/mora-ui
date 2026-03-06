@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
     Brain,
     Search,
@@ -331,7 +331,11 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
         );
     }
 
-    const totalEpisodic = Object.values(metrics.episodic_memories).reduce((a, b: number) => a + b, 0);
+    const episodicMemories =
+        metrics?.episodic_memories && typeof metrics.episodic_memories === 'object'
+            ? metrics.episodic_memories
+            : {};
+    const totalEpisodic = Object.values(episodicMemories).reduce((a, b: number) => a + b, 0);
 
     const stats = [
         { label: "Erinnerungen", value: totalEpisodic, color: "emerald" },
@@ -387,7 +391,8 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
 }) => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const companies = useMoraStore((s) => s.companies);
-    const resolvedCompanyId = companyId || activeCompanyId || companies[0]?.id || null;
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const resolvedCompanyId = companyId || activeCompanyId || safeCompanies[0]?.id || null;
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
 

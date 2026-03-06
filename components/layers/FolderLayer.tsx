@@ -65,6 +65,7 @@ export const FolderLayer: React.FC = () => {
         deleteFolder,
     } = useMoraStore();
     const { openPane } = usePaneStore();
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     // ... (Keep state) ...
     const [viewMode, setViewMode] = useState<'mycelium' | 'grid' | 'list'>('list');
@@ -111,11 +112,12 @@ export const FolderLayer: React.FC = () => {
     // ... (Keep context data) ...
     const currentFolder = useMemo(() => {
         if (!activeSpaceId || !activeFolderId) return null;
-        return foldersBySpace[activeSpaceId]?.find(f => f.id === activeFolderId);
+        const spaceFolders = foldersBySpace[activeSpaceId];
+        return (Array.isArray(spaceFolders) ? spaceFolders : []).find(f => f.id === activeFolderId);
     }, [activeSpaceId, activeFolderId, foldersBySpace]);
 
-    const currentDepartment = departments.find(d => d.id === activeDepartmentId);
-    const currentSpace = spacesByDepartment[activeDepartmentId || '']?.find(s => s.id === activeSpaceId);
+    const currentDepartment = safeDepartments.find(d => d.id === activeDepartmentId);
+    const currentSpace = (Array.isArray(spacesByDepartment[activeDepartmentId || '']) ? spacesByDepartment[activeDepartmentId || ''] : []).find(s => s.id === activeSpaceId);
 
     const nodes = activeFolderId ? (nodesByFolder[activeFolderId] || []) : [];
 
