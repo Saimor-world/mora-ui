@@ -342,7 +342,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
 
         // Align active company to the selected mode (prevents HQ/Demo mismatch)
-        const { companies, user, activeCompanyId } = get();
+        const { user, activeCompanyId } = get();
+        const companies = asArray<CoreCompany>(get().companies);
         if (!companies.length) return;
 
         const tenantId = user?.tenant_id;
@@ -630,8 +631,10 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 nextActive = stillValid ? currentActive : (userCompany?.id || data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null);
             }
 
+            const normalizedData = asArray<any>(data);
+
             set({
-                companies: data,
+                companies: normalizedData,
                 activeCompanyId: nextActive,
                 isStandardMode: readStandardMode(nextActive),
                 isLoadingCompanies: false

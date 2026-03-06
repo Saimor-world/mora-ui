@@ -119,7 +119,8 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
     const { activeCompanyId, activeDepartmentId, activeSpaceId, companies, departments, spacesByDepartment, lastChatScope } = useMoraStore();
     const safeCompanies = Array.isArray(companies) ? companies : [];
     const safeDepartments = Array.isArray(departments) ? departments : [];
-    const allSpaces = Object.values(spacesByDepartment || {})
+    const safeSpacesByDepartment = spacesByDepartment && typeof spacesByDepartment === 'object' ? spacesByDepartment : {};
+    const allSpaces = Object.values(safeSpacesByDepartment)
         .filter((value): value is any[] => Array.isArray(value))
         .flat();
     const company = safeCompanies.find(c => c.id === activeCompanyId);

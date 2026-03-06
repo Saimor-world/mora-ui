@@ -36,6 +36,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
 
     // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
     useEffect(() => {
@@ -43,7 +44,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
         const loadStats = async () => {
             try {
-                const stats = await fetchDepartmentStats(activeCompanyId);
+                const statsRaw = await fetchDepartmentStats(activeCompanyId);
+                const stats = Array.isArray(statsRaw) ? statsRaw : [];
                 const map: Record<string, DepartmentStats> = {};
                 for (const s of stats) {
                     map[s.department_id] = s;
@@ -75,7 +77,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         }
 
         // Fallback: compute from treeData (less accurate)
-        if (!treeData?.length) return metrics;
+        if (!safeTreeData.length) return metrics;
 
         const countChildren = (children: any[]): { nodes: number; folders: number } => {
             let nodes = 0, folders = 0;
@@ -94,17 +96,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             return { nodes, folders };
         };
 
-        for (const dept of treeData) {
+        for (const dept of safeTreeData) {
             if (dept.type === 'department') {
-                const counts = countChildren(dept.children || []);
-                const spaces = spacesByDepartment[dept.id]?.length || (dept.children?.filter((c: any) => c.type === 'space')?.length || 0);
+                const counts = countChildren(Array.isArray(dept.children) ? dept.children : []);
+                const deptSpaces = Array.isArray(spacesByDepartment?.[dept.id]) ? spacesByDepartment[dept.id] : [];
+                const spaces = deptSpaces.length || ((Array.isArray(dept.children) ? dept.children : []).filter((c: any) => c.type === 'space')?.length || 0);
                 // Calculate health based on content
                 const health = Math.min(100, (spaces > 0 ? 30 : 0) + (counts.folders > 0 ? 30 : 0) + (counts.nodes > 0 ? 40 : 0));
                 metrics[dept.id] = { nodes: counts.nodes, spaces, folders: counts.folders, health };
             }
         }
         return metrics;
-    }, [statsMap, treeData, spacesByDepartment]);
+    }, [statsMap, safeTreeData, spacesByDepartment]);
 
     // Normalize metrics to percentages
     const maxNodes = useMemo(() => Math.max(1, ...Object.values(departmentMetrics).map(m => m.nodes)), [departmentMetrics]);

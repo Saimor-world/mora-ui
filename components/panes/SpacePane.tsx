@@ -83,6 +83,10 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
 
     const targetSpaceId = pane?.data?.spaceId || activeSpaceId;
     const targetDepartmentId = pane?.data?.departmentId || activeDepartmentId;
+    const safeSpacesByDepartment = useMemo(
+        () => (spacesByDepartment && typeof spacesByDepartment === 'object' ? spacesByDepartment : {}),
+        [spacesByDepartment]
+    );
 
     // FIX: Search for space across ALL departments, not just activeDepartmentId
     // This fixes the bug where SpacePane opened via Pane couldn't find its data
@@ -90,19 +94,19 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
         if (!targetSpaceId) return null;
 
         // First try the pane-provided department (best path)
-        if (targetDepartmentId && spacesByDepartment[targetDepartmentId]) {
-            const found = spacesByDepartment[targetDepartmentId].find(s => s.id === targetSpaceId);
+        if (targetDepartmentId && Array.isArray(safeSpacesByDepartment[targetDepartmentId])) {
+            const found = safeSpacesByDepartment[targetDepartmentId].find(s => s.id === targetSpaceId);
             if (found) return found;
         }
 
         // Fallback: Search across all departments
-        for (const deptId of Object.keys(spacesByDepartment)) {
-            const found = spacesByDepartment[deptId]?.find(s => s.id === targetSpaceId);
+        for (const deptId of Object.keys(safeSpacesByDepartment)) {
+            const found = (Array.isArray(safeSpacesByDepartment[deptId]) ? safeSpacesByDepartment[deptId] : []).find(s => s.id === targetSpaceId);
             if (found) return found;
         }
 
         return null;
-    }, [targetDepartmentId, targetSpaceId, spacesByDepartment]);
+    }, [targetDepartmentId, targetSpaceId, safeSpacesByDepartment]);
 
 
 
