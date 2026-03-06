@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { coreGet, corePost } from '@/lib/api/coreClient';
+import { searchGlobal, corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 
 interface SearchResult {
@@ -91,7 +91,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
             setIsSearching(true);
             try {
                 // Server-side search
-                const response = await coreGet(`/v1/search?q=${encodeURIComponent(searchQuery)}&limit=10`);
+                const response = await searchGlobal(searchQuery);
                 if (response?.results) {
                     setSearchResults(response.results.map((r: any) => ({
                         id: r.id,
@@ -169,7 +169,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         setOrbState('thinking');
 
         try {
-            const response = await corePost('/v1/chat', {
+            const response = await corePost('/v3/chat', {
                 message: message,
                 context: buildChatContext({ session_id: 'search_popup' })
             }) as { reply?: string; response?: string; message?: string };

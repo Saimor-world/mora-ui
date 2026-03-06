@@ -80,10 +80,9 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                     setInvites([]);
                 } else {
                     // v1 member path: active members + pending invites
-                    const membersV3Res = await coreGet("/v3/team/members?include_inactive=false", { isOptional: true });
                     const [membersRes, invitesRes] = await Promise.all([
-                        Array.isArray(membersV3Res) ? Promise.resolve(membersV3Res) : coreGet("/v1/team/members", { isOptional: true }),
-                        coreGet("/v1/team/invites", { isOptional: true })
+                        coreGet("/v3/team/members?include_inactive=false", { isOptional: true }),
+                        coreGet("/v3/team/invites", { isOptional: true })
                     ]);
 
                     if (Array.isArray(membersRes)) {
@@ -139,7 +138,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
         if (!inviteEmail) return;
 
         try {
-            const res = await corePost(`/v1/team/invite`, {
+            const res = await corePost(`/v3/team/invite`, {
                 email: inviteEmail,
                 role: inviteRole
             });

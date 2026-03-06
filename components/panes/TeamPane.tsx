@@ -63,7 +63,7 @@ interface Props {
  * TEAM PANE - Microsoft Teams-like Collaboration
  * 
  * Real-time team presence, messaging, and activity feed.
- * Connects to /v1/team/* endpoints.
+ * Connects to /v3/team/* endpoints.
  * Live presence, direct messages, and team activity feed.
  */
 export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
@@ -119,7 +119,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
 
         setIsLoadingChat(true);
         // UPGRADE: Use new /user-chat/history endpoint
-        coreGet(`/v1/user-chat/history?recipient_id=${showChat}`).then((msgs: ChatMessage[] | null) => {
+        coreGet(`/v3/user-chat/history?recipient_id=${showChat}`).then((msgs: ChatMessage[] | null) => {
             if (msgs) setChatHistory(msgs);
             setIsLoadingChat(false);
         });
@@ -157,7 +157,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     useEffect(() => {
         if (activeTab !== "room") return;
         setIsLoadingRoom(true);
-        coreGet("/v1/user-chat/history?channel_id=team-room", { isOptional: true }).then((msgs: ChatMessage[] | null) => {
+        coreGet("/v3/user-chat/history?channel_id=team-room", { isOptional: true }).then((msgs: ChatMessage[] | null) => {
             if (msgs) setRoomHistory(msgs);
             setIsLoadingRoom(false);
         });
@@ -213,7 +213,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         const isMoraChat = showChat === "mora";
         if (isMoraChat) {
             try {
-                const response = await corePost("/v1/chat", {
+                const response = await corePost("/v3/chat", {
                     message: sentMessage,
                     context: buildChatContext({ session_id: "team_pane" })
                 });
@@ -237,7 +237,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         }
 
         try {
-            await corePost("/v1/user-chat/send", {
+            await corePost("/v3/user-chat/send", {
                 recipient_id: showChat,
                 content: sentMessage
             });
@@ -264,7 +264,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         setRoomMessage("");
 
         try {
-            await corePost("/v1/user-chat/send", {
+            await corePost("/v3/user-chat/send", {
                 channel_id: "team-room",
                 content: trimmed
             });
@@ -280,12 +280,10 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         try {
             const [membersV3Res, activityRes] = await Promise.all([
                 coreGet("/v3/team/members?include_inactive=false", { isOptional: true }),
-                coreGet("/v1/team/activity?limit=10", { isOptional: true })
+                coreGet("/v3/team/activity?limit=10", { isOptional: true })
             ]);
-            const membersRes = Array.isArray(membersV3Res)
-                ? membersV3Res
-                : await coreGet("/v1/team/members", { isOptional: true });
-            setMemberSource(Array.isArray(membersV3Res) ? 'v3' : Array.isArray(membersRes) ? 'v1' : 'none');
+            const membersRes = Array.isArray(membersV3Res) ? membersV3Res : [];
+            setMemberSource(Array.isArray(membersV3Res) ? 'v3' : 'none');
 
             const realMembers: TeamMember[] = Array.isArray(membersRes)
                 ? membersRes.map((u: any) => ({
@@ -316,7 +314,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
 
         // Update presence every 30 seconds
         const presenceInterval = setInterval(() => {
-            coreGet("/v1/team/presence", { isOptional: true });
+            coreGet("/v3/team/presence", { isOptional: true });
         }, 30000);
 
         // Refresh members every minute
@@ -333,7 +331,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         if (!inviteEmail.trim()) return;
 
         try {
-            const res = await corePost("/v1/team/invite", {
+            const res = await corePost("/v3/team/invite", {
                 email: inviteEmail,
                 role: inviteRole
             });

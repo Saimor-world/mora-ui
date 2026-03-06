@@ -95,7 +95,7 @@ Session Start: ${new Date().toLocaleTimeString('de-DE')}
         description: "Verfuegbare AI Provider anzeigen",
         handler: async () => {
             try {
-                const data = await coreGet("/v1/chat/providers", { isOptional: true });
+                const data = await coreGet("/v3/chat/providers", { isOptional: true });
                 if (!data || !data.providers) {
                     return "No provider info available.";
                 }
@@ -197,7 +197,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 } else {
                     addLine("mora", "MORA denkt nach...");
                     try {
-                        const response = await corePost("/v1/chat", {
+                        const response = await corePost("/v3/chat", {
                             message: question,
                             context: buildChatContext({ session_id: "terminal" }),
                             include_synthesis: true
@@ -220,7 +220,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 } else {
                     addLine("system", "Sende an Ollama...");
                     try {
-                        const response = await corePost("/v1/chat", {
+                        const response = await corePost("/v3/chat", {
                             message: prompt,
                             provider_preference: "ollama",
                             context: buildChatContext({ session_id: "terminal_ollama" })
@@ -252,7 +252,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                     addLine("system", `Suche nach "${query}"...`);
                     try {
                         // Use Hybrid search (Semantic + Keyword)
-                        const response = await corePost(`/v1/search/hybrid?query=${encodeURIComponent(query)}`, {}, { isOptional: true });
+                        const response = await corePost(`/v3/search/hybrid?query=${encodeURIComponent(query)}`, {}, { isOptional: true });
                         if (response?.results?.length > 0) {
                             addLine("output", `${response.results.length} Ergebnisse:`);
                             response.results.slice(0, 5).forEach((r: any) => {

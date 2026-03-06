@@ -937,7 +937,23 @@ export interface SearchResult {
 export async function searchGlobal(query: string, companyId?: string): Promise<SearchResult> {
     const q = encodeURIComponent(query);
     const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
-    return coreGet(`/v1/search?q=${q}${c}`);
+    const result = await corePost(`/v3/search/keyword?query=${q}${c}`, {}, { isOptional: true });
+    if (result && typeof result === 'object') {
+        return {
+            query,
+            results: normalizeList<any>(result, ['results', 'items', 'matches', 'data']),
+            total: typeof (result as any).total === 'number'
+                ? (result as any).total
+                : normalizeList<any>(result, ['results', 'items', 'matches', 'data']).length,
+            search_type: (result as any).search_type || 'keyword',
+        };
+    }
+    return {
+        query,
+        results: [],
+        total: 0,
+        search_type: 'keyword',
+    };
 }
 
 // ========== MEMORY / LEARNING BRAIN API ==========
@@ -1132,4 +1148,45 @@ export interface CriticalFlowPerformance {
 export async function getCriticalFlowPerformance(windowSeconds: number = 900): Promise<CriticalFlowPerformance | null> {
     const clamped = Math.max(60, Math.min(3600, Math.floor(windowSeconds)));
     return coreGet(`/v3/system/performance/critical-flows?window_seconds=${clamped}`, { isOptional: true });
+}
+
+export interface ApiVersionShare {
+    count: number;
+    share: number;
+}
+
+export interface ApiVersionPerformance {
+    window_seconds: number;
+    generated_at: string;
+    total_events: number;
+    versions: {
+        v1: ApiVersionShare;
+        v2: ApiVersionShare;
+        v3: ApiVersionShare;
+        other: ApiVersionShare;
+    };
+    legacy_routes_top: Array<{
+        route: string;
+        count: number;
+    }>;
+    critical_legacy_routes: {
+        count: number;
+        routes: Record<string, number>;
+    };
+    phaseout_gate: {
+        pass: boolean;
+        violations: string[];
+    };
+}
+
+export async function getApiVersionPerformance(
+    windowSeconds: number = 900,
+    top: number = 10
+): Promise<ApiVersionPerformance | null> {
+    const clampedWindow = Math.max(60, Math.min(3600, Math.floor(windowSeconds)));
+    const clampedTop = Math.max(1, Math.min(25, Math.floor(top)));
+    return coreGet(
+        `/v3/system/performance/api-versions?window_seconds=${clampedWindow}&top=${clampedTop}`,
+        { isOptional: true }
+    );
 }

@@ -52,7 +52,7 @@ export const useActionEventStore = create<ActionEventState>((set, get) => ({
     loadHistoricalEvents: async () => {
         set({ isLoading: true, error: null });
         try {
-            const res = await coreGet('/v1/actions/events?limit=50', { isOptional: true });
+            const res = await coreGet('/v3/actions/events?limit=50', { isOptional: true });
             if (Array.isArray(res?.events)) {
                 // Ensure unique and latest events per action_id
                 const latestEvents = new Map<string, ActionEvent>();

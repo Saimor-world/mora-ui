@@ -21,6 +21,8 @@ import {
     getMemoryPending,
     getMemoryMetrics,
     getMemoryOverview,
+    searchGlobal,
+    getApiVersionPerformance,
     learnInsight,
     approveMemoryItem,
     rejectMemoryItem,
@@ -507,5 +509,62 @@ describe('getMemoryOverview', () => {
 
     it('throws when company_id is empty', async () => {
         await expect(getMemoryOverview('')).rejects.toThrow('Memory API requires company_id');
+    });
+});
+
+describe('searchGlobal', () => {
+    it('routes to /v3/search/keyword and preserves company_id', async () => {
+        mockFetchV3({
+            results: [{ id: 'dep-1', title: 'Marketing & Brand' }],
+            total: 1,
+            search_type: 'keyword',
+        });
+
+        const result = await searchGlobal('marketing', 'co-123');
+
+        expect(lastFetchUrl()).toContain('/v3/search/keyword?query=marketing&company_id=co-123');
+        expect(lastFetchInit().method).toBe('POST');
+        expect(result.results).toHaveLength(1);
+        expect(result.total).toBe(1);
+        expect(result.search_type).toBe('keyword');
+    });
+
+    it('normalizes empty optional results safely', async () => {
+        mockFetchRaw(null);
+        const result = await searchGlobal('empty');
+        expect(result.results).toEqual([]);
+        expect(result.total).toBe(0);
+        expect(result.search_type).toBe('keyword');
+    });
+});
+
+describe('getApiVersionPerformance', () => {
+    it('routes to /v3/system/performance/api-versions with clamped params', async () => {
+        mockFetchV3({
+            window_seconds: 900,
+            generated_at: '2026-03-06T12:00:00Z',
+            total_events: 42,
+            versions: {
+                v1: { count: 3, share: 0.0714 },
+                v2: { count: 0, share: 0 },
+                v3: { count: 39, share: 0.9286 },
+                other: { count: 0, share: 0 },
+            },
+            legacy_routes_top: [{ route: 'GET /v1/search', count: 2 }],
+            critical_legacy_routes: { count: 1, routes: { 'GET /v1/search': 1 } },
+            phaseout_gate: { pass: false, violations: ['critical_v1_routes_detected'] },
+        });
+
+        const result = await getApiVersionPerformance(12, 99);
+
+        expect(lastFetchUrl()).toContain('/v3/system/performance/api-versions?window_seconds=60&top=25');
+        expect(result?.versions.v3.count).toBe(39);
+        expect(result?.phaseout_gate.pass).toBe(false);
+    });
+
+    it('returns null on optional error', async () => {
+        mockFetchError(500);
+        const result = await getApiVersionPerformance();
+        expect(result).toBeNull();
     });
 });

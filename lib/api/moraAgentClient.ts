@@ -93,7 +93,7 @@ export function buildChatContext(overrides?: ChatContext): ChatContext | undefin
     );
 }
 
-// Client Class - Uses actual backend /v1/chat endpoint
+// Client Class - Uses actual backend /v3/chat endpoint
 export const m = {
     chat: async (request: AgentChatRequest): Promise<AgentChatResponse> => {
         // Transform to match backend ChatRequest schema
@@ -112,7 +112,7 @@ export const m = {
             temperature: 0.7
         };
 
-        const response = await corePost('/v1/chat', backendRequest) as ChatApiResponse;
+        const response = await corePost('/v3/chat', backendRequest) as ChatApiResponse;
 
         // Transform response to match AgentChatResponse schema
         return {

@@ -12,14 +12,15 @@
  *  - Current orbState and how long ago it changed
  *  - Awareness pulse state (from /v1/awareness/pulse)
  *  - Source of last orbState update (sse | mindloop | pulse | store | unknown)
- *  - Selected AI provider/profile (from /v1/chat/providers)
+ *  - Selected AI provider/profile (from /v3/chat/providers)
+ *  - API version cutover telemetry (/v3/system/performance/api-versions)
  *  - MindLoop SSE connection status
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
-import { coreGet } from '@/lib/api/coreClient';
+import { coreGet, getApiVersionPerformance, type ApiVersionPerformance } from '@/lib/api/coreClient';
 import { useUiPerfMetrics } from '@/lib/hooks/useUiPerfMetrics';
 
 type SignalSource = 'sse_chat' | 'mindloop' | 'pulse' | 'store_action' | 'unknown';
@@ -32,6 +33,7 @@ interface DiagnosticsState {
     pulseLastFetchedAt: number | null;
     providers: Array<{ id: string; name: string; active?: boolean; profile?: string }> | null;
     providersError: string | null;
+    apiVersions: ApiVersionPerformance | null;
     isMinimised: boolean;
 }
 
@@ -72,6 +74,7 @@ export function IntelligenceDiagnostics() {
         pulseLastFetchedAt: null,
         providers: null,
         providersError: null,
+        apiVersions: null,
         isMinimised: false,
     });
     const tickRef = useRef<ReturnType<typeof setInterval>>();
@@ -110,7 +113,7 @@ export function IntelligenceDiagnostics() {
     // Fetch providers once on mount
     const fetchProviders = useCallback(async () => {
         try {
-            const data = await coreGet('/v1/chat/providers', { isOptional: true });
+            const data = await coreGet('/v3/chat/providers', { isOptional: true });
             if (data && typeof data === 'object') {
                 const raw = (data as any).providers ?? (Array.isArray(data) ? data : []);
                 const normalized = Array.isArray(raw)
@@ -125,6 +128,15 @@ export function IntelligenceDiagnostics() {
         }
     }, []);
 
+    const fetchApiVersions = useCallback(async () => {
+        try {
+            const data = await getApiVersionPerformance(900, 5);
+            setState((prev) => ({ ...prev, apiVersions: data }));
+        } catch {
+            // diagnostics only
+        }
+    }, []);
+
     useEffect(() => {
         // Show if dev mode or ?diagnostics=1
         const isDev = process.env.NODE_ENV === 'development';
@@ -136,14 +148,17 @@ export function IntelligenceDiagnostics() {
         if (!visible) return;
         void fetchPulse();
         void fetchProviders();
+        void fetchApiVersions();
         const pulseInterval = setInterval(fetchPulse, 20_000);
+        const versionsInterval = setInterval(fetchApiVersions, 20_000);
         // Re-render every second to keep relative timestamps fresh
         tickRef.current = setInterval(() => setState((prev) => ({ ...prev })), 1000);
         return () => {
             clearInterval(pulseInterval);
+            clearInterval(versionsInterval);
             clearInterval(tickRef.current);
         };
-    }, [visible, fetchPulse, fetchProviders]);
+    }, [visible, fetchPulse, fetchProviders, fetchApiVersions]);
 
     if (!visible) return null;
 
@@ -219,6 +234,37 @@ export function IntelligenceDiagnostics() {
                         </>
                     ) : (
                         <Row label="Providers" value="loading…" color="rgba(255,255,255,0.3)" />
+                    )}
+
+                    <Divider />
+
+                    {/* API Version Phaseout */}
+                    <Row
+                        label="API v3"
+                        value={`${state.apiVersions?.versions?.v3?.count ?? 0} (${Math.round((state.apiVersions?.versions?.v3?.share ?? 0) * 100)}%)`}
+                        color="#10B981"
+                    />
+                    <Row
+                        label="API v1"
+                        value={`${state.apiVersions?.versions?.v1?.count ?? 0} (${Math.round((state.apiVersions?.versions?.v1?.share ?? 0) * 100)}%)`}
+                        color={(state.apiVersions?.versions?.v1?.count ?? 0) === 0 ? "#10B981" : "#F59E0B"}
+                    />
+                    <Row
+                        label="Legacy Crit"
+                        value={String(state.apiVersions?.critical_legacy_routes?.count ?? 0)}
+                        color={(state.apiVersions?.critical_legacy_routes?.count ?? 0) === 0 ? "#10B981" : "#EF4444"}
+                    />
+                    <Row
+                        label="Gate"
+                        value={(state.apiVersions?.phaseout_gate?.pass ?? false) ? "pass" : "violations"}
+                        color={(state.apiVersions?.phaseout_gate?.pass ?? false) ? "#10B981" : "#EF4444"}
+                    />
+                    {state.apiVersions?.legacy_routes_top?.[0] && (
+                        <Row
+                            label="Top Legacy"
+                            value={state.apiVersions.legacy_routes_top[0].route}
+                            color="rgba(255,255,255,0.45)"
+                        />
                     )}
 
                     <Divider />
