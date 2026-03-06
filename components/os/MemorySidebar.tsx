@@ -19,6 +19,8 @@ import {
     type CriticalFlowPerformance
 } from '@/lib/api/coreClient';
 import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
+import { useMoraContext } from '@/lib/mora/useMoraContext';
+import { MoraContextChip } from '@/components/mora/MoraContextChip';
 
 /**
  * MEMORY SIDEBAR
@@ -557,6 +559,7 @@ export const MemorySidebar: React.FC = () => {
     const mod = usePlatformModifier();
     const { isOpen, isCollapsed, setOpen, setCollapsed } = useMemorySidebarStore();
     const { pendingCount, pendingItems, refresh, approve, reject, debugScope } = useMemory();
+    const ctx = useMoraContext();
     const [activeTab, setActiveTab] = useState<'memories' | 'diagnostics'>('memories');
 
     const [searchQuery, setSearchQuery] = useState('');
@@ -727,6 +730,10 @@ export const MemorySidebar: React.FC = () => {
                                     ) : (<>
 
                                         {/* Quick Input */}
+                                        {/* MR18: Mora context header — same scope as Intel Bar */}
+                                        <div className="px-3 py-2 border-b border-white/5">
+                                            <MoraContextChip variant="sidebar" snapshot={ctx} />
+                                        </div>
                                         <QuickMemoryInputInline onSuccess={refresh} companyId={activeCompanyId} />
 
                                         {!activeCompanyId && (
