@@ -49,6 +49,14 @@ const SOURCE_CONFIG: Record<
     },
 };
 
+// ─── Answer source mode labels ────────────────────────────────────────────────
+
+const MODE_LABELS: Record<string, string> = {
+    retrieval: 'direkt',
+    synthesis: 'synthese',
+    hybrid: 'hybrid',   // same in German
+};
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const MoraContextChip: React.FC<MoraContextChipProps> = ({
@@ -63,6 +71,7 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
         scopeReason,
         memoryPendingCount,
         lastAnswerSource,
+        lastAnswerSourceMode,
     } = snapshot;
 
     // Don't render if there is genuinely nothing to show
@@ -131,11 +140,16 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                 if (!cfg) return null;
                 return (
                     <div
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] leading-none transition-colors duration-150 ${cfg.className}`}
-                        title={`Antwortquelle: ${cfg.label}`}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full border leading-none transition-colors duration-150 ${cfg.className}`}
+                        title={`Antwortquelle: ${cfg.label}${lastAnswerSourceMode && MODE_LABELS[lastAnswerSourceMode] ? ` · ${MODE_LABELS[lastAnswerSourceMode]}` : ''}`}
                     >
                         <ArrowRight size={9} className="shrink-0" />
-                        {cfg.label}
+                        <span className="text-[10px]">{cfg.label}</span>
+                        {lastAnswerSourceMode && MODE_LABELS[lastAnswerSourceMode] && (
+                            <span className="text-[9px] opacity-60 italic">
+                                · {MODE_LABELS[lastAnswerSourceMode]}
+                            </span>
+                        )}
                     </div>
                 );
             })() : (
