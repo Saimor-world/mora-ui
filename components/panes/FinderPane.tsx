@@ -102,6 +102,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; filename: string } | null>(null);
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     // Context Menu & Clipboard
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: any; type: 'folder' | 'file' | 'background' } | null>(null);
@@ -536,9 +537,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const resolvedCompanyId = useMemo(() => {
         if (activeCompanyId) return activeCompanyId;
         if (paneCompanyId) return paneCompanyId;
-        if (companies.length === 1) return companies[0].id;
+        if (safeCompanies.length === 1) return safeCompanies[0].id;
         return null;
-    }, [activeCompanyId, paneCompanyId, companies]);
+    }, [activeCompanyId, paneCompanyId, safeCompanies]);
 
     useEffect(() => {
         contextCacheRef.current.clear();
