@@ -69,7 +69,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await coreGet("/v1/calendar/events", { isOptional: true });
+            const data = await coreGet("/v3/calendar/events", { isOptional: true });
             if (data && Array.isArray(data)) {
                 setEvents(data.map(mapEvent));
             } else {
@@ -177,7 +177,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
                 color: newEvent.color
             };
 
-            const created = await corePost("/v1/calendar/events", payload);
+            const created = await corePost("/v3/calendar/events", payload);
             if (created) {
                 // Replace temp event with real one
                 setEvents(prev => prev.map(e => e.id === tempId ? mapEvent(created) : e));

@@ -23,7 +23,7 @@ export const GoogleConnect: React.FC<{ onConnect?: () => void, compact?: boolean
     const checkStatus = async () => {
         setIsLoading(true);
         try {
-            const data = await coreGet('/v1/integrations/mail', { isOptional: true });
+            const data = await coreGet('/v3/integrations/mail', { isOptional: true });
 
             setServices(prev => prev.map(s => {
                 if (s.id === 'gmail') {

@@ -20,7 +20,7 @@ export const CalendarIntegration: React.FC = () => {
 
     const loadStatus = async () => {
         try {
-            const data = await coreGet('/v1/integrations/calendar');
+            const data = await coreGet('/v3/integrations/calendar');
             setStatus(data);
         } catch (e) {
             console.error('Failed to load calendar status:', e);
@@ -36,7 +36,7 @@ export const CalendarIntegration: React.FC = () => {
     const handleConnect = async () => {
         setIsConnecting(true);
         try {
-            const res = await corePost('/v1/integrations/calendar/connect', {});
+            const res = await corePost('/v3/integrations/calendar/connect', {});
             if (res?.auth_url) {
                 window.open(res.auth_url, '_blank', 'noopener,noreferrer');
             } else {

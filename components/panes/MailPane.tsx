@@ -69,7 +69,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         setLoading(true);
         setError(null);
         try {
-            const response = await coreGet('/v1/mail/messages');
+            const response = await coreGet('/v3/mail/messages');
             let fetchedMails: MailObject[] = [];
             if (response && Array.isArray(response)) {
                 fetchedMails = response;
@@ -103,7 +103,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const saveMail = async (mail: MailObject) => {
         setSaving(mail.id);
         try {
-            await corePost('/v1/mail/commit', {
+            await corePost('/v3/mail/commit', {
                 message_id: mail.message_id || mail.id,
                 mail_id: mail.id,
                 subject: mail.subject,
@@ -126,8 +126,8 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         setSelectedMail(mail);
 
         try {
-            // FIXED: Use /v1/mail/commit to create node + event (not /v1/agency/propose)
-            const result = await corePost('/v1/mail/commit', {
+            // FIXED: Use /v3/mail/commit to create node + event (not /v1/agency/propose)
+            const result = await corePost('/v3/mail/commit', {
                 message_id: mail.message_id || mail.id,
                 mail_id: mail.id,
                 subject: mail.subject,
@@ -424,7 +424,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                     onClick={async () => {
                                         setSending(true);
                                         try {
-                                            await corePost('/v1/mail/send', {
+                                            await corePost('/v3/mail/send', {
                                                 to_email: composeTo,
                                                 subject: composeSubject,
                                                 content: composeBody,

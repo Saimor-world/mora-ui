@@ -40,7 +40,7 @@ export const EmailIntegration: React.FC = () => {
 
     const loadStatus = async () => {
         try {
-            const data = await coreGet('/v1/integrations/mail');
+            const data = await coreGet('/v3/integrations/mail');
             setStatus(data);
             if (data?.configured) {
                 setEmail(data.email || '');
@@ -61,7 +61,7 @@ export const EmailIntegration: React.FC = () => {
 
         setIsSaving(true);
         try {
-            await corePost('/v1/integrations/mail', {
+            await corePost('/v3/integrations/mail', {
                 provider,
                 email,
                 app_password: appPassword,
@@ -82,7 +82,7 @@ export const EmailIntegration: React.FC = () => {
     const handleTest = async () => {
         setIsTesting(true);
         try {
-            const result = await corePost('/v1/integrations/mail/test', {});
+            const result = await corePost('/v3/integrations/mail/test', {});
             if (result?.success) {
                 toast.success(`Connection ok (${result.inbox_count || 0} messages)`);
             } else {
@@ -102,7 +102,7 @@ export const EmailIntegration: React.FC = () => {
         }
 
         try {
-            await coreDelete('/v1/integrations/mail');
+            await coreDelete('/v3/integrations/mail');
             toast.success('Mail integration removed');
             setEmail('');
             setAppPassword('');
