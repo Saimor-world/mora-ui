@@ -3,10 +3,11 @@
 import React, { useMemo } from "react";
 import { useMoraStore } from "@/lib/store/moraState";
 import { useUser } from "@/lib/hooks/useUser";
-import { useIntelFeed } from "@/lib/mora/useIntelFeed";
 import { usePlatformModifier } from "@/lib/hooks/usePlatformModifier";
-import { Sparkles, Activity, AlertTriangle, Command } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, AlertTriangle, Command } from "lucide-react";
+import { motion } from "framer-motion";
+import { useMoraContext } from '@/lib/mora/useMoraContext';
+import { MoraContextChip } from './MoraContextChip';
 
 interface Props {
     onOpenIntelligence?: () => void;
@@ -19,7 +20,7 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
     const orbState = useMoraStore((s) => s.orbState);
     const viewMode = useMoraStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
-    const { hint } = useIntelFeed();
+    const ctx = useMoraContext();
 
     const statusText = useMemo(() => {
         if (coreError) return "OFFLINE";
@@ -28,9 +29,6 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
         if (viewMode === "demo") return "DEMO";
         return "READY";
     }, [orbState, coreError, viewMode]);
-
-    // Only show real context, no fake placeholder text
-    const intelText = hint?.summary || hint?.title || null;
 
     return (
         <div className="fixed bottom-4 left-6 z-40 w-full max-w-sm pointer-events-none">
@@ -58,18 +56,14 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
                     </div>
 
                     {/* Context & Status Area */}
-                    <div className="flex-1 flex flex-col justify-center min-w-0 cursor-pointer" onClick={onOpenIntelligence}>
+                    <div className="flex-1 flex flex-col justify-center min-w-0 gap-0.5 cursor-pointer" onClick={onOpenIntelligence}>
                         <div className="flex items-center gap-2">
                             <span className={`text-[10px] font-semibold tracking-[0.15em] uppercase ${coreError ? 'text-red-400' : 'text-emerald-400'}`}>
                                 Mora • {statusText}
                             </span>
                             {coreError && <AlertTriangle size={10} className="text-red-400 animate-pulse" />}
                         </div>
-                        {intelText && (
-                            <div className="text-xs text-white/60 font-light truncate mt-0.5">
-                                {intelText}
-                            </div>
-                        )}
+                        <MoraContextChip variant="bar" snapshot={ctx} />
                     </div>
 
                     {/* Actions / Indicators */}
@@ -93,19 +87,6 @@ export const MoraIntelligenceBar: React.FC<Props> = ({ onOpenIntelligence, isOpe
                     <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                 </motion.div>
 
-                {/* Floating Hints (Optional, can be expanded later) */}
-                <AnimatePresence>
-                    {hint && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md border border-emerald-500/20 px-3 py-1.5 rounded-full text-xs text-emerald-200/80 whitespace-nowrap pointer-events-none"
-                        >
-                            New insight available
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </div>
         </div>
     );
