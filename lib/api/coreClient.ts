@@ -1004,6 +1004,25 @@ export async function getMemoryMetrics(companyId: string): Promise<any> {
     return coreGet(`/v3/memory/metrics${companyQuery}`, { isOptional: true });
 }
 
+// GET /v3/memory/overview - Aggregated memory surface (MR19)
+export interface MemoryOverviewMetrics {
+    structured_facts: number;
+    pending_reviews: number;
+    episodic_total: number;
+    episodic_memories?: Record<string, number>;
+}
+
+export interface MemoryOverview {
+    metrics: MemoryOverviewMetrics;
+}
+
+export async function getMemoryOverview(companyId: string): Promise<MemoryOverview | null> {
+    const resolvedCompanyId = requireMemoryCompanyId(companyId);
+    const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
+    // v3: envelope unwrap handled transparently in coreRequest()
+    return coreGet(`/v3/memory/overview${companyQuery}`, { isOptional: true });
+}
+
 // GET /v3/memory/debug/scope - Diagnostics endpoint (dev mode or ?diagnostics=1)
 export interface MemoryDebugScope {
     scope: { type: string; tenant_id?: string; company_id?: string; user_id?: string };

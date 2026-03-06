@@ -4,7 +4,7 @@
  * Focused regression suite for the v3 API migration.
  * Validates:
  *   1. Central v3 envelope unwrap in coreRequest() — callers receive payload, not envelope.
- *   2. All 9 migrated memory endpoints route to /v3/ (6 reads + 3 writes).
+ *   2. All 10 migrated memory endpoints route to /v3/ (7 reads + 3 writes).
  *   3. System stats + department stats endpoints route to /v3/.
  *   4. Auth + already-migrated list paths behave correctly.
  *   5. Error/optional paths return null/[] without throwing.
@@ -20,6 +20,7 @@ import {
     searchMemory,
     getMemoryPending,
     getMemoryMetrics,
+    getMemoryOverview,
     learnInsight,
     approveMemoryItem,
     rejectMemoryItem,
@@ -479,5 +480,32 @@ describe('patchUserCompanyBinding', () => {
         await patchUserCompanyBinding('u3', 'my-company');
         const body = JSON.parse(lastFetchInit().body as string);
         expect(body).toMatchObject({ default_company_id: 'my-company' });
+    });
+});
+
+describe('getMemoryOverview', () => {
+    it('routes to /v3/memory/overview with company_id', async () => {
+        mockFetchV3({ metrics: { structured_facts: 12, pending_reviews: 3, episodic_total: 8 } });
+        await getMemoryOverview('co-123');
+        expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/v3/memory/overview?company_id=co-123'),
+            expect.any(Object)
+        );
+    });
+
+    it('returns metrics.structured_facts from v3 envelope', async () => {
+        mockFetchV3({ metrics: { structured_facts: 42, pending_reviews: 5, episodic_total: 20 } });
+        const result = await getMemoryOverview('co-abc');
+        expect(result?.metrics.structured_facts).toBe(42);
+    });
+
+    it('returns null on error (isOptional)', async () => {
+        mockFetchError(500);
+        const result = await getMemoryOverview('co-err');
+        expect(result).toBeNull();
+    });
+
+    it('throws when company_id is empty', async () => {
+        await expect(getMemoryOverview('')).rejects.toThrow('Memory API requires company_id');
     });
 });
