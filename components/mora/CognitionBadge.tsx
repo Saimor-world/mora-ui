@@ -25,7 +25,7 @@ interface CognitionBadgeProps {
  * CognitionBadge - Shows current cognition/intelligence mode
  *
  * Displays: NULL | ACTIVE | EXTERNAL | LOCAL
- * Based on /v1/operator/status endpoint
+ * Based on /v3/operator/status endpoint
  *
  * Click opens the Mora Hub with Stats section
  */
@@ -38,7 +38,7 @@ export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
     useEffect(() => {
         const fetchStatus = async () => {
             try {
-                const res = await coreGet("/v1/operator/status", { isOptional: true });
+                const res = await coreGet("/v3/operator/status", { isOptional: true });
                 if (res) {
                     setStatus(res);
                     // Determine mode based on embedding status

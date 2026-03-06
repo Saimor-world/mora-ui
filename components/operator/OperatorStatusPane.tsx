@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getCoreApiUrl } from "@/lib/config";
+import { coreGet } from "@/lib/api/coreClient";
 import { Activity, Database, Brain, Zap, Shield, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -51,12 +51,8 @@ export const OperatorStatusPane: React.FC = () => {
     const fetchStatus = async () => {
         setLoading(true);
         try {
-            const url = `${getCoreApiUrl()}/v1/operator/status`;
-            const res = await fetch(url, {
-                signal: AbortSignal.timeout(5000) // 5s timeout
-            });
-            if (res.ok) {
-                const json = await res.json();
+            const json = await coreGet("/v3/operator/status", { isOptional: true });
+            if (json) {
                 setData(json);
                 setIsVisible(true);
             } else {
