@@ -83,7 +83,7 @@ async function main() {
   const headers = { Cookie: cookie };
 
   const [healthRaw, cachesRaw, criticalRaw, memoryRaw] = await Promise.all([
-    reqJson(`${baseUrl}/v1/health`),
+    reqJson(`${baseUrl}/v3/health`),
     reqJson(`${baseUrl}/v3/system/performance/caches`, { headers }),
     reqJson(`${baseUrl}/v3/system/performance/critical-flows`, { headers }),
     reqJson(`${baseUrl}/v3/memory/debug/scope`, { headers }),
