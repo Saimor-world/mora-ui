@@ -65,10 +65,10 @@ export function useAuthBootstrapper() {
 
                     // Check core availability first to avoid auth redirect loops.
                     // Retry once to tolerate transient startup delays (e.g. cold container).
-                    let health = await coreGet('/v1/health', { skipAuth: true, isOptional: true });
+                    let health = await coreGet('/v3/health', { skipAuth: true, isOptional: true });
                     if (!health) {
                         await new Promise(r => setTimeout(r, 2000));
-                        health = await coreGet('/v1/health', { skipAuth: true, isOptional: true });
+                        health = await coreGet('/v3/health', { skipAuth: true, isOptional: true });
                     }
                     if (!health) {
                         const apiUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || 'the API server';

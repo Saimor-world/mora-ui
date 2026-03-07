@@ -60,7 +60,7 @@ export function useConnectionStatus() {
         const withinStartupGrace = !hasEverConnectedRef.current && (Date.now() - startedAtRef.current) < STARTUP_GRACE_MS;
 
         try {
-            const response = await coreGet('/v1/health', { isOptional: true, skipAuth: true });
+            const response = await coreGet('/v3/health', { isOptional: true, skipAuth: true });
 
             if (response && (response.status === 'healthy' || response.status === 'ok')) {
                 clearWarmRetry();
