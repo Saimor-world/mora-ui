@@ -10,6 +10,9 @@ type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | '
  * - Some envs mistakenly include /v1; normalize that away to avoid /v1/v1.
  */
 export function getCoreBaseUrl(): string {
+    if (typeof window !== 'undefined') {
+        return '/api/core';
+    }
     const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '').trim();
     let base = raw.length > 0 ? raw : '/api/core';
     base = base.replace(/\/+$/, '');
@@ -18,6 +21,7 @@ export function getCoreBaseUrl(): string {
 }
 
 const AUTH_COOKIE = "mora_auth_token";
+const SESSION_COOKIE = "mora_session";
 
 function isLocalhost(): boolean {
     if (typeof window === 'undefined') return false;
@@ -76,6 +80,7 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
 
     if (!options.skipAuth) {
         const token = readCookie(AUTH_COOKIE);
+        const sessionCookie = readCookie(SESSION_COOKIE);
         // Only use devToken if NO cookie is present - gives priority to fresh sessions
         const devToken = !token && isLocalhost() ? localStorage.getItem('saimor_dev_token') : null;
         const finalToken = token || devToken;
@@ -91,6 +96,8 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
                 return null;
             }
             headers['Authorization'] = `Bearer ${finalToken}`;
+            hasValidToken = true;
+        } else if (sessionCookie) {
             hasValidToken = true;
         } else {
             // NO TOKEN = Skip API call entirely, return null silently

@@ -27,7 +27,7 @@ function resolveBackendBase(slug: string): string {
 }
 
 function buildBackendUrl(slug: string): string {
-  const path = slug.startsWith('v1/') ? slug : `v1/${slug}`;
+  const path = /^(v1|v2|v3)\//.test(slug) ? slug : `v1/${slug}`;
   const base = resolveBackendBase(slug).replace(/\/+$/, '');
   return `${base}/${path}`;
 }

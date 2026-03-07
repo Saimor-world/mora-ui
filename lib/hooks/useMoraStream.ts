@@ -38,6 +38,7 @@ export interface UseMoraStreamReturn {
 }
 
 const AUTH_COOKIE = "mora_auth_token";
+const SESSION_COOKIE = "mora_session";
 
 type ScopePolicyPayload = {
     policy?: string;
@@ -100,6 +101,10 @@ function resolveToken(session: any): string {
     }
 
     return "";
+}
+
+function hasCoreSession(): boolean {
+    return !!readCookie(SESSION_COOKIE);
 }
 
 function parseScopePolicy(scopePolicy: string | ScopePolicyPayload | undefined): { policy: string; enforcedFromPolicy?: boolean } {
@@ -169,7 +174,8 @@ export function useMoraStream(): UseMoraStreamReturn {
             setError(null);
 
             const token = resolveToken(session as any);
-            if (!token) {
+            const hasSession = hasCoreSession();
+            if (!token && !hasSession) {
                 setIsStreaming(false);
                 setError("Nicht angemeldet. Bitte neu einloggen.");
                 return "";
@@ -200,7 +206,7 @@ export function useMoraStream(): UseMoraStreamReturn {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     },
                     credentials: "include",
                     body,

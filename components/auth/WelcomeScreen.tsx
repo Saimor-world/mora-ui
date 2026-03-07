@@ -57,6 +57,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     useEffect(() => {
         const checkSession = () => {
             const authToken = readCookie('saimor_auth');
+            const coreSession = readCookie('mora_session');
             const isLocalhost =
                 typeof window !== 'undefined' &&
                 ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -67,7 +68,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null;
             const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
 
-            if (authToken || devToken) {
+            if (authToken || coreSession || devToken) {
                 setSessionInfo({
                     lastWorkspace: lastWorkspace || undefined,
                     lastActivity: lastActivity || undefined,
@@ -174,7 +175,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
 
 
-    const saveAuthState = (token: string, role: string, email: string, tenantId: string) => {
+    const saveAuthState = (role: string, email: string, tenantId: string, token?: string | null) => {
         // SECURITY: Clear ALL auth state first to prevent role pollution
         const keysToRemove = [
             'saimor_dev_token', 'saimor_mode', 'saimor_role', 'saimor_tenant',
@@ -183,9 +184,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         keysToRemove.forEach(key => localStorage.removeItem(key));
 
         // Now save clean state
-        writeCookie('saimor_auth', token, 7); // 7 days
+        if (token) {
+            writeCookie('saimor_auth', token, 7); // legacy/dev bridge only
+        } else {
+            writeCookie('saimor_auth', '', -1);
+        }
         // Dev convenience only; production should not persist bearer tokens in localStorage.
-        if (typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+        if (token && typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
             localStorage.setItem('saimor_dev_token', token);
         }
         localStorage.setItem('saimor_mode', role === 'owner' ? 'owner' : role === 'demo' ? 'demo' : 'user');
@@ -204,7 +209,28 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
         setIsLoading(true);
         try {
-            // NextAuth Login Call
+            const attemptCoreLogin = async (passwordToTry: string) => {
+                const response = await fetch('/api/auth/core-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email.toLowerCase() === 'demo' ? 'demo@saimor.io' : email,
+                        password: passwordToTry
+                    })
+                });
+                const data = await response.json().catch(() => null);
+                return { response, data };
+            };
+
+            let { response, data } = await attemptCoreLogin(password);
+            const isDemoLogin = email.toLowerCase().startsWith('demo') || email.toLowerCase().includes('demo');
+            if ((!response.ok || !data?.success) && isDemoLogin && password === 'demo') {
+                ({ response, data } = await attemptCoreLogin('demo123'));
+            }
+            if (!response.ok || !data?.success) {
+                throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
+            }
+
             const result = await signIn("credentials", {
                 redirect: false,
                 username: email,
@@ -219,11 +245,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
             if (result?.ok) {
-                // Pre-set some store values to avoid flicker, though session will take over
-                toast.success(`Willkommen, ${email.split('@')[0]}!`);
+                saveAuthState(data.role || 'member', data.email || email, data.tenant_id, null);
+                toast.success(`Willkommen, ${(data.email || email).split('@')[0]}!`);
 
-                // Special handling for Demo User (supports demo@saimor.io + demo aliases)
-                const isDemoLogin = email.toLowerCase().startsWith('demo') || email.toLowerCase().includes('demo');
                 if (isDemoLogin) {
                     setViewMode('demo');
                 } else {
@@ -273,7 +297,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         const toastId = toast.loading("Account wird erstellt...");
 
         try {
-            const response = await fetch(`${getCoreUrl()}/v1/auth/register`, {
+            const response = await fetch('/api/auth/core-register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -294,7 +318,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const data = await response.json();
             const role = data.role || selectedRole;
 
-            saveAuthState(data.token, role, email, data.tenant_id);
+            const syncResult = await signIn("credentials", {
+                redirect: false,
+                username: email,
+                password: password
+            });
+            if (syncResult?.error) {
+                throw new Error(syncResult.error);
+            }
+
+            saveAuthState(role, email, data.tenant_id, null);
 
             // Fix: Clear onboarding and session flags
             localStorage.setItem('mora_session', 'active');

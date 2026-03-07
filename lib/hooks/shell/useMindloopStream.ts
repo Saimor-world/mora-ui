@@ -17,6 +17,7 @@ type StreamEvent = {
 };
 
 const AUTH_COOKIE = "mora_auth_token";
+const SESSION_COOKIE = "mora_session";
 
 function readCookie(name: string): string | null {
     if (typeof document === "undefined") return null;
@@ -50,6 +51,10 @@ function resolveToken(): string | null {
         process.env.NEXT_PUBLIC_API_TOKEN ||
         null
     );
+}
+
+function hasCoreSession(): boolean {
+    return !!readCookie(SESSION_COOKIE);
 }
 
 function normalizeAwarenessState(raw: unknown): OrbState | null {
@@ -103,7 +108,8 @@ export function useMindloopStream(enabled: boolean) {
         if (!enabled) return;
 
         const token = resolveToken();
-        if (!token) return;
+        const hasSession = hasCoreSession();
+        if (!token && !hasSession) return;
 
         const controller = new AbortController();
         const decoder = new TextDecoder();
@@ -129,9 +135,9 @@ export function useMindloopStream(enabled: boolean) {
             try {
                 const response = await fetch(`${getCoreBaseUrl()}/v3/mindloop/stream`, {
                     method: "GET",
-                    headers: {
+                    headers: token ? {
                         Authorization: `Bearer ${token}`,
-                    },
+                    } : undefined,
                     credentials: "include",
                     signal: controller.signal,
                 });

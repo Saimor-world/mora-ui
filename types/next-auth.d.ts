@@ -10,7 +10,8 @@ declare module "next-auth" {
             id: string;
             role: string;
             tenant_id: string;
-            accessToken: string;
+            accessToken?: string;
+            authType?: string;
         } & DefaultSession["user"];
     }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
         role: string;
         tenant_id: string;
         accessToken?: string;
+        authType?: string;
     }
 }
 
@@ -27,6 +29,7 @@ declare module "next-auth/jwt" {
         role: string;
         tenant_id: string;
         id: string;
-        accessToken: string;
+        accessToken?: string;
+        authType?: string;
     }
 }
