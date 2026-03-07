@@ -6,6 +6,7 @@ import { Search, X, FileText, Folder, Building2, Clock, ArrowRight, Sparkles } f
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { searchSemantic } from '@/lib/api/semanticClient';
 
 /**
  * SearchPane - Universal Search Interface
@@ -23,6 +24,8 @@ interface SearchResult {
     title: string;
     subtitle?: string;
     icon: typeof FileText;
+    source?: 'local' | 'mora';
+    score?: number;
 }
 
 export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) => {
@@ -32,9 +35,12 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [searchMode, setSearchMode] = useState<'local' | 'mora' | null>(null);
+    const [searchHint, setSearchHint] = useState<string | null>(null);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
+    const searchRequestRef = useRef(0);
 
     const {
         departments,
@@ -65,20 +71,10 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         }
     }, []);
 
-    // Search logic
-    useEffect(() => {
-        if (!query.trim()) {
-            setResults([]);
-            return;
-        }
-
-        setIsSearching(true);
-        const lowerQuery = query.toLowerCase();
-
-        // Search across all data sources
+    const buildLocalResults = React.useCallback((rawQuery: string): SearchResult[] => {
+        const lowerQuery = rawQuery.toLowerCase();
         const searchResults: SearchResult[] = [];
 
-        // Search departments
         departments.forEach(dept => {
             if (dept.name.toLowerCase().includes(lowerQuery)) {
                 searchResults.push({
@@ -86,12 +82,12 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     type: 'department',
                     title: dept.name,
                     subtitle: 'Department',
-                    icon: Building2
+                    icon: Building2,
+                    source: 'local'
                 });
             }
         });
 
-        // Search spaces
         allSpaces.forEach(space => {
             if (space.name.toLowerCase().includes(lowerQuery)) {
                 searchResults.push({
@@ -99,12 +95,12 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     type: 'space',
                     title: space.name,
                     subtitle: 'Space',
-                    icon: Folder
+                    icon: Folder,
+                    source: 'local'
                 });
             }
         });
 
-        // Search nodes
         allNodes.forEach(node => {
             if (node.title?.toLowerCase().includes(lowerQuery) ||
                 node.content?.toLowerCase().includes(lowerQuery)) {
@@ -113,15 +109,74 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     type: 'node',
                     title: node.title || 'Untitled',
                     subtitle: node.content?.substring(0, 50) || 'Element',
-                    icon: FileText
+                    icon: FileText,
+                    source: 'local'
                 });
             }
         });
 
-        setResults(searchResults.slice(0, 10));
-        setIsSearching(false);
+        return searchResults.slice(0, 10);
+    }, [departments, allSpaces, allNodes]);
+
+    // Search logic
+    useEffect(() => {
+        if (!query.trim()) {
+            setResults([]);
+            setSearchMode(null);
+            setSearchHint(null);
+            setIsSearching(false);
+            return;
+        }
+
+        const localResults = buildLocalResults(query.trim());
+        setResults(localResults);
+        setSearchMode('local');
+        setSearchHint(localResults.length > 0 ? 'Lokal' : null);
         setSelectedIndex(0);
-    }, [query, departments, allSpaces, allNodes]);
+
+        if (!activeCompanyId || query.trim().length < 2) {
+            setIsSearching(false);
+            return;
+        }
+
+        const requestId = ++searchRequestRef.current;
+        setIsSearching(true);
+        const timeoutId = setTimeout(async () => {
+            try {
+                const semanticResults = await searchSemantic(query.trim(), activeCompanyId, 10, 0.55);
+                if (requestId !== searchRequestRef.current) return;
+
+                const mapped: SearchResult[] = semanticResults.map((result) => ({
+                    id: result.node_id,
+                    type: 'node',
+                    title: result.metadata?.title || 'Untitled',
+                    subtitle: result.content?.substring(0, 80) || result.metadata?.type || 'Semantic result',
+                    icon: FileText,
+                    source: 'mora',
+                    score: result.score,
+                }));
+
+                if (mapped.length > 0) {
+                    setResults(mapped);
+                    setSearchMode('mora');
+                    setSearchHint('Mora');
+                } else {
+                    setSearchHint(localResults.length > 0 ? 'Lokal' : null);
+                }
+            } catch {
+                if (requestId !== searchRequestRef.current) return;
+                setSearchHint(localResults.length > 0 ? 'Lokal · Semantic offline' : 'Semantic offline');
+            } finally {
+                if (requestId === searchRequestRef.current) {
+                    setIsSearching(false);
+                }
+            }
+        }, 200);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [query, activeCompanyId, buildLocalResults]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         switch (e.key) {
@@ -173,7 +228,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
 
     return (
         <GlassPanel
-            title="Search (Local)"
+            title={searchMode === 'mora' ? 'Search (Mora)' : 'Search'}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -214,6 +269,22 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             </button>
                         )}
                     </div>
+                    {(searchHint || isSearching) && (
+                        <div className="mt-2 flex items-center gap-2 text-[11px]">
+                            {searchHint && (
+                                <span className={`px-2 py-0.5 rounded-full border ${
+                                    searchMode === 'mora'
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                                        : 'border-white/10 bg-white/5 text-white/55'
+                                }`}>
+                                    {searchHint}
+                                </span>
+                            )}
+                            {isSearching && (
+                                <span className="text-white/35">Semantic Suche läuft…</span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Results / Recent */}
@@ -253,6 +324,11 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                                 <div className="text-sm font-medium text-white/90">{result.title}</div>
                                                 {result.subtitle && (
                                                     <div className="text-xs text-white/40 truncate">{result.subtitle}</div>
+                                                )}
+                                                {typeof result.score === 'number' && result.source === 'mora' && (
+                                                    <div className="text-[10px] text-emerald-300/70 mt-0.5">
+                                                        Relevanz {Math.round(result.score * 100)}%
+                                                    </div>
                                                 )}
                                             </div>
                                             <ArrowRight size={14} className="text-white/20" />
@@ -295,7 +371,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 <div className="p-3 border-t border-white/10">
                     <div className="flex items-center gap-2 text-xs text-white/30">
                         <Search size={12} className="text-emerald-400" />
-                        <span>Local search only</span>
+                        <span>{searchMode === 'mora' ? 'Local-first + Mora semantic' : 'Local-first search'}</span>
                     </div>
                 </div>
             </div>

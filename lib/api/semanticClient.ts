@@ -3,7 +3,7 @@
  * Connects to saimor-core Semantic Search endpoints
  */
 
-import { coreGet } from './coreClient';
+import { corePost } from './coreClient';
 
 export interface SearchResult {
     node_id: string;
@@ -78,18 +78,22 @@ function generateMockResults(query: string, limit: number): SearchResult[] {
  */
 export async function searchSemantic(
     query: string,
+    companyId?: string | null,
     limit = 10,
     threshold = 0.7
 ): Promise<SearchResult[]> {
     try {
         const params = new URLSearchParams({
-            q: query,
+            query,
             limit: limit.toString(),
             threshold: threshold.toString()
         });
+        if (companyId) {
+            params.set('company_id', companyId);
+        }
 
-        const data = await coreGet(`/v1/semantic/search?${params.toString()}`);
-        return data.results || [];
+        const data = await corePost(`/v3/search/semantic?${params.toString()}`, {});
+        return Array.isArray(data?.results) ? data.results : [];
     } catch (error: any) {
         // V12: Fallback to mock results for demo/offline mode
         console.warn('[SemanticSearch] Backend unavailable, using mock results');

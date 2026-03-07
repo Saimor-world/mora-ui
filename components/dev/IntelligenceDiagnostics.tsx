@@ -10,7 +10,7 @@
  *
  * Tracks:
  *  - Current orbState and how long ago it changed
- *  - Awareness pulse state (from /v1/awareness/pulse)
+ *  - Awareness pulse state (from /v3/awareness/pulse)
  *  - Source of last orbState update (sse | mindloop | pulse | store | unknown)
  *  - Selected AI provider/profile (from /v3/chat/providers)
  *  - API version cutover telemetry (/v3/system/performance/api-versions)
@@ -96,7 +96,7 @@ export function IntelligenceDiagnostics() {
         }
     }, [orbState]);
 
-    // Poll /v1/awareness/pulse every 20s for the diagnostics view
+    // Poll /v3/awareness/pulse every 20s for the diagnostics view
     const fetchPulse = useCallback(async () => {
         try {
             const result = await fetchAwarenessPulse();

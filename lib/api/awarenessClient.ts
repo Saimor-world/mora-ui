@@ -35,7 +35,7 @@ export interface AwarenessPulseResponse {
  */
 export async function fetchAwarenessState(): Promise<AwarenessStateResponse> {
     try {
-        const data = await coreGet('/v1/awareness/state', { isOptional: true });
+        const data = await coreGet('/v3/awareness/state', { isOptional: true });
         // null = auth failed silently
         if (!data) {
             return {
@@ -70,7 +70,7 @@ export async function fetchAwarenessState(): Promise<AwarenessStateResponse> {
  */
 export async function fetchAwarenessPulse(): Promise<AwarenessPulseResponse> {
     try {
-        const data = await coreGet('/v1/awareness/pulse', { isOptional: true });
+        const data = await coreGet('/v3/awareness/pulse', { isOptional: true });
         // null = auth failed silently, use fallback
         if (!data) {
             return { state: 'demo', pulse: 'slow' };

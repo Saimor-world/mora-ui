@@ -267,7 +267,7 @@ export interface UserProfile {
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {
-    return coreGet('/v1/auth/me');
+    return coreGet('/v3/auth/session');
 }
 
 // ========== DEMO FLOW ==========
