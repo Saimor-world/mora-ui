@@ -77,7 +77,7 @@ export function useAuthBootstrapper() {
                     }
 
                     // Verify token validity with Backend
-                    const result = await coreGet('/v1/auth/me', { isOptional: true });
+                    const result = await coreGet('/v3/auth/session', { isOptional: true });
 
                     if (result && result.user_id) {
                         // Auth is valid! Now load data
