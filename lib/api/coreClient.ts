@@ -961,8 +961,8 @@ export interface SemanticSearchResult {
     score: number;
     content: string;
     metadata?: {
-        title: string;
-        type: string;
+        title?: string;
+        type?: string;
         space_id?: string;
         folder_id?: string;
     };
@@ -978,7 +978,7 @@ export async function searchSemantic(
     const q = encodeURIComponent(query);
     const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
     const result = await coreGet(
-        `/v3/search/semantic?q=${q}&limit=${limit}&threshold=${threshold}${c}`,
+        `/v3/search/semantic?q=${q}&limit=${String(limit)}&threshold=${String(threshold)}${c}`,
         { isOptional: true },
     );
     return normalizeList<SemanticSearchResult>(result, ['results', 'items', 'matches', 'data']);
