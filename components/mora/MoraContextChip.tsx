@@ -134,9 +134,9 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                 </div>
             )}
 
-            {/* Answer source pill */}
-            {hasSource ? (() => {
-                const cfg = lastAnswerSource !== null ? SOURCE_CONFIG[lastAnswerSource] : undefined;
+            {/* Answer source pill — only rendered once an answer has been received */}
+            {hasSource && (() => {
+                const cfg = SOURCE_CONFIG[lastAnswerSource!];
                 if (!cfg) return null;
                 return (
                     <div
@@ -152,15 +152,7 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                         )}
                     </div>
                 );
-            })() : (
-                // Graceful degradation: source unknown, show neutral dash
-                <div
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/25 leading-none"
-                    title="Antwortquelle nicht verfügbar (Backend-Abhängigkeit)"
-                >
-                    —
-                </div>
-            )}
+            })()}
         </div>
     );
 };
