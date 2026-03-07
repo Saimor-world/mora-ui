@@ -445,7 +445,7 @@ const DiagnosticsPanel: React.FC<{
                     <div className="text-[9px] uppercase tracking-wider text-white/30">API Cutover</div>
                     <div className={`rounded-lg border p-2 space-y-2 ${apiVersions.phaseout_gate.pass
                         ? 'border-emerald-500/25 bg-emerald-500/10'
-                        : 'border-amber-500/25 bg-amber-500/10'
+                        : 'border-red-500/25 bg-red-500/10'
                         }`}>
                         <div className="grid grid-cols-3 gap-1.5">
                             <div className="rounded border border-white/10 bg-white/[0.03] px-2 py-1">
@@ -465,14 +465,16 @@ const DiagnosticsPanel: React.FC<{
                         </div>
                         <div className="flex items-center justify-between text-[10px]">
                             <span className="text-white/40">Gate</span>
-                            <span className={apiVersions.phaseout_gate.pass ? 'text-emerald-300' : 'text-amber-300'}>
-                                {apiVersions.phaseout_gate.pass ? 'pass' : 'violations'}
+                            <span className={`font-semibold ${apiVersions.phaseout_gate.pass ? 'text-emerald-300' : 'text-red-300'}`}>
+                                {apiVersions.phaseout_gate.pass ? 'PASS' : 'FAIL'}
                             </span>
                         </div>
-                        {apiVersions.legacy_routes_top?.[0] && (
+                        {apiVersions.legacy_routes_top?.length > 0 ? (
                             <div className="text-[10px] text-white/45 truncate">
                                 Top legacy: <span className="text-white/65 font-mono">{apiVersions.legacy_routes_top[0].route}</span>
                             </div>
+                        ) : (
+                            <div className="text-[10px] text-white/30 italic">No legacy routes</div>
                         )}
                     </div>
                 </div>
