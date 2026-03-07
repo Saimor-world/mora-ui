@@ -43,7 +43,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     const handleConfirm = async () => {
         setIsProcessing(true);
         try {
-            const endpoint = action.confirm_endpoint || "/v1/actions/execute";
+            const endpoint = action.confirm_endpoint || "/v3/actions/execute";
             const payload = action.confirm_payload || {
                 tool_name: action.tool_name,
                 params: action.params,

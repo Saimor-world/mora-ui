@@ -882,7 +882,7 @@ export async function recordAwarenessSignal(signalType: string, payload: any = {
             ? localStorage.getItem('saimor_tenant') || 'tenant-default'
             : 'tenant-default';
 
-        await corePost('/v1/system/awareness', {
+        await corePost('/v3/system/awareness', {
             signal_type: signalType,
             payload: {
                 ...payload,
