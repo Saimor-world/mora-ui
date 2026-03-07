@@ -246,16 +246,20 @@ export interface AuthSession {
     email?: string;
     role: AccountRole;
     tenant_id: string;
-    token: string;
+    token?: string | null;
+    auth_type?: string;
+    success?: boolean;
+    scope?: string;
+    message?: string;
 }
 
 export async function authRegister(payload: AuthPayload): Promise<AuthSession> {
-    return corePost('/v1/auth/register', payload, { skipAuth: true });
+    return corePost('/v3/auth/register', payload, { skipAuth: true });
 }
 
 export async function authLogin(payload: AuthPayload): Promise<AuthSession> {
     try {
-        return await corePost('/v1/auth/login', payload, { skipAuth: true });
+        return await corePost('/v3/auth/login', payload, { skipAuth: true });
     } catch (err: any) {
         // REAL SYSTEM: No dev-token bypass.
         // If login fails, throw error to UI.

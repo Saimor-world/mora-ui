@@ -8,7 +8,7 @@ export interface Account {
     role: AccountRole;
     tenantId: string;
     scope?: string;
-    token: string;
+    token?: string | null;
 }
 
 interface AccountState {
@@ -21,6 +21,7 @@ interface AccountState {
 }
 
 const AUTH_COOKIE = 'mora_auth_token';
+const SESSION_COOKIE = 'mora_session';
 const TENANT_COOKIE = 'mora_tenant_id';
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 1 day
 
@@ -46,14 +47,20 @@ function readCookie(name: string): string | null {
     }
 }
 
+function hasSessionCookie(): boolean {
+    return !!readCookie(SESSION_COOKIE);
+}
+
 export const useAccountStore = create<AccountState>((set, get) => ({
     currentAccount: null,
     sessionToken: null,
 
     login: (account: Account) => {
-        writeCookie(AUTH_COOKIE, account.token);
+        if (account.token) {
+            writeCookie(AUTH_COOKIE, account.token);
+        }
         writeCookie(TENANT_COOKIE, account.tenantId);
-        set({ currentAccount: account, sessionToken: account.token });
+        set({ currentAccount: account, sessionToken: account.token || null });
     },
 
     logout: () => {
@@ -75,11 +82,14 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     },
 
     setFromProfile: (profile, token) => {
-        const sessionToken = token || get().sessionToken || readCookie(AUTH_COOKIE);
-        if (!sessionToken) {
+        const sessionToken = token || get().sessionToken || readCookie(AUTH_COOKIE) || null;
+        const hasSession = !!sessionToken || hasSessionCookie();
+        if (!hasSession) {
             return;
         }
-        writeCookie(AUTH_COOKIE, sessionToken);
+        if (sessionToken) {
+            writeCookie(AUTH_COOKIE, sessionToken);
+        }
         writeCookie(TENANT_COOKIE, profile.tenant_id);
         set({
             currentAccount: {

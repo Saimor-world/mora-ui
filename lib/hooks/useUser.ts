@@ -7,9 +7,8 @@ export type UserRole = AccountRole;
 // Module-level flag to prevent duplicate loads
 let _hasLoaded = false;
 
-// Helper to get token from any source
-function getAuthToken(): string | null {
-    if (typeof window === 'undefined') return null;
+function hasAuthSession(): boolean {
+    if (typeof window === 'undefined') return false;
     const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 
     // Prefer cookies (production). Use dev token only for localhost/dev flows.
@@ -17,14 +16,17 @@ function getAuthToken(): string | null {
     for (const cookie of cookies) {
         const [name, value] = cookie.split('=');
         if (name === 'mora_auth_token' || name === 'saimor_auth') {
-            try { return decodeURIComponent(value); } catch { return value; }
+            return true;
+        }
+        if (name === 'mora_session') {
+            return true;
         }
     }
     if (isLocalhost) {
         const devToken = localStorage.getItem('saimor_dev_token');
-        if (devToken) return devToken;
+        if (devToken) return true;
     }
-    return null;
+    return false;
 }
 
 export function useUser() {
@@ -43,8 +45,8 @@ export function useUser() {
         setIsLoading(true);
         setError(null);
         try {
-            const token = getAuthToken();
-            if (!token) {
+            const hasSession = hasAuthSession();
+            if (!hasSession) {
                 setProfile(null);
                 setIsLoading(false);
                 return;
@@ -52,7 +54,7 @@ export function useUser() {
             _hasLoaded = true;
             const backendProfile = await fetchUserProfile();
             setProfile(backendProfile);
-            setFromProfile(backendProfile, token);
+            setFromProfile(backendProfile);
         } catch (err: any) {
             setProfile(null);
             _hasLoaded = false;

@@ -57,23 +57,38 @@ async function reqJson(url, init = {}) {
   return json;
 }
 
+async function loginWithSession(baseUrl, email, password) {
+  const res = await fetch(`${baseUrl}/v3/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const text = await res.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = { raw: text };
+  }
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} ${baseUrl}/v3/auth/login :: ${JSON.stringify(json)}`);
+  }
+  const cookie = res.headers.get('set-cookie');
+  if (!cookie || !json?.success) {
+    throw new Error('Session login cookie missing');
+  }
+  return { cookie };
+}
+
 async function loadCriticalFromApi() {
   const baseUrl = (argValue('--base-url') || process.env.SAIMOR_BASE_URL || 'https://api.saimor.world').replace(/\/+$/, '');
   const email = argValue('--email') || process.env.SAIMOR_SMOKE_EMAIL || 'demo@saimor.io';
   const password = argValue('--password') || process.env.SAIMOR_SMOKE_PASSWORD || 'demo123';
 
-  const login = await reqJson(`${baseUrl}/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (!login?.token) {
-    throw new Error('Login token missing');
-  }
+  const { cookie } = await loginWithSession(baseUrl, email, password);
 
   const criticalRaw = await reqJson(`${baseUrl}/v3/system/performance/critical-flows`, {
-    headers: { Authorization: `Bearer ${login.token}` },
+    headers: { Cookie: cookie },
   });
   return unwrapV3Envelope(criticalRaw);
 }

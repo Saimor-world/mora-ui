@@ -30,6 +30,7 @@ import {
     fetchDepartments,
     fetchSpaces,
     authLogin,
+    authRegister,
     fetchFolderContext,
     fetchAdminUsers,
     patchAdminUser,
@@ -366,10 +367,16 @@ describe('rejectMemoryItem', () => {
 // ─── 6. v1 paths that must NOT change ────────────────────────────────────────
 
 describe('v1 paths unchanged — auth, CRUD, tree', () => {
-    it('authLogin uses /v1/auth/login (skipAuth = no token needed)', async () => {
-        mockFetchRaw({ token: 'tok', user_id: 'u1', role: 'member', tenant_id: 't1' });
+    it('authLogin uses /v3/auth/login (skipAuth = no token needed)', async () => {
+        mockFetchRaw({ success: true, user_id: 'u1', role: 'member', tenant_id: 't1' });
         await authLogin({ email: 'x@x.com', password: 'pw' });
-        expect(lastFetchUrl()).toContain('/v1/auth/login');
+        expect(lastFetchUrl()).toContain('/v3/auth/login');
+    });
+
+    it('authRegister uses /v3/auth/register (skipAuth = no token needed)', async () => {
+        mockFetchRaw({ success: true, user_id: 'u1', role: 'owner', tenant_id: 't1' });
+        await authRegister({ email: 'x@x.com', password: 'pw' });
+        expect(lastFetchUrl()).toContain('/v3/auth/register');
     });
 });
 

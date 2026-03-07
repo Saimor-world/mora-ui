@@ -31,9 +31,6 @@ export const authOptions: NextAuthOptions = {
                 let email = rawUsername;
                 if (normalizedUsername === 'demo') email = 'demo@saimor.io';
 
-                const isDemoAlias = normalizedUsername === 'demo' || normalizedUsername === 'demo@saimor.io';
-                const primaryPassword = credentials.password;
-
                 // Prefer the docker-internal Core URL in production to avoid relying on public routing for auth.
                 const coreBaseUrl =
                     process.env.SAIMOR_CORE_URL ||
@@ -41,7 +38,6 @@ export const authOptions: NextAuthOptions = {
                     process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ||
                     "http://127.0.0.1:8081";
                 const sessionUrl = new URL("/v3/auth/session", coreBaseUrl).toString();
-                const loginUrl = new URL("/v1/auth/login", coreBaseUrl).toString();
                 const cookieHeader = extractCookieHeader(req);
 
                 if (cookieHeader.includes("mora_session=")) {
@@ -68,61 +64,9 @@ export const authOptions: NextAuthOptions = {
                         console.error("Session Sync Exception:", error);
                     }
                 }
-
-                const attemptLogin = async (passwordToTry: string) => {
-                    // Timeout signal to prevent hanging
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-                    try {
-                        const res = await fetch(loginUrl, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                email,
-                                password: passwordToTry
-                            }),
-                            headers: { "Content-Type": "application/json" },
-                            signal: controller.signal
-                        });
-
-                        let data: any = null;
-                        try {
-                            data = await res.json();
-                        } catch {
-                            data = null;
-                        }
-
-                        return { res, data };
-                    } finally {
-                        clearTimeout(timeoutId);
-                    }
-                };
-
-                try {
-                    let { res, data } = await attemptLogin(primaryPassword);
-
-                    // Friendly demo fallback: allow "demo" to map to demo123
-                    if ((!res.ok || !data?.token) && isDemoAlias && primaryPassword === 'demo') {
-                        ({ res, data } = await attemptLogin('demo123'));
-                    }
-
-                    if (res.ok && data?.token) {
-                        return {
-                            id: data.user_id,
-                            name: data.email.split('@')[0],
-                            email: data.email,
-                            role: data.role,
-                            tenant_id: data.tenant_id,
-                            accessToken: data.token,
-                            authType: "bearer"
-                        };
-                    }
-
-                    console.error("Backend Auth Failed:", data);
-                    return null;
-                } catch (error) {
-                    console.error("Auth Exception:", error);
-                    return null;
-                }
+                // Session-first auth: browser must establish mora_session via /api/auth/core-login
+                // or /api/auth/core-register before NextAuth syncs the user into its own session.
+                return null;
             }
         })
     ],
