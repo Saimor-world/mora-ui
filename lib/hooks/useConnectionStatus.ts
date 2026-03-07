@@ -24,6 +24,7 @@ interface ConnectionState {
 
 const HEALTH_CHECK_INTERVAL = 60000;
 const INITIAL_RETRY_DELAY_MS = 1200;
+const STARTUP_GRACE_MS = 3500;
 
 export function useConnectionStatus() {
     const [state, setState] = useState<ConnectionState>({
@@ -34,6 +35,7 @@ export function useConnectionStatus() {
     });
 
     const hasEverConnectedRef = useRef(false);
+    const startedAtRef = useRef(Date.now());
     const statusRef = useRef<ConnectionStatus>('connecting');
     const retryCountRef = useRef(0);
     const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,6 +57,7 @@ export function useConnectionStatus() {
                 void checkHealth();
             }, INITIAL_RETRY_DELAY_MS);
         };
+        const withinStartupGrace = !hasEverConnectedRef.current && (Date.now() - startedAtRef.current) < STARTUP_GRACE_MS;
 
         try {
             const response = await coreGet('/v1/health', { isOptional: true, skipAuth: true });
@@ -71,12 +74,12 @@ export function useConnectionStatus() {
                 return true;
             }
 
-            if (!hasEverConnectedRef.current && retryCountRef.current === 0) {
+            if (withinStartupGrace) {
                 setState(prev => ({
                     ...prev,
                     status: 'connecting',
                     errorMessage: null,
-                    retryCount: 1
+                    retryCount: Math.max(prev.retryCount, 1)
                 }));
                 scheduleWarmRetry();
                 return false;
@@ -91,12 +94,12 @@ export function useConnectionStatus() {
             }));
             return false;
         } catch (error: any) {
-            if (!hasEverConnectedRef.current && retryCountRef.current === 0) {
+            if (withinStartupGrace) {
                 setState(prev => ({
                     ...prev,
                     status: 'connecting',
                     errorMessage: null,
-                    retryCount: 1
+                    retryCount: Math.max(prev.retryCount, 1)
                 }));
                 scheduleWarmRetry();
                 return false;
