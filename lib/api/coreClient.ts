@@ -956,6 +956,34 @@ export async function searchGlobal(query: string, companyId?: string): Promise<S
     };
 }
 
+export interface SemanticSearchResult {
+    node_id: string;
+    score: number;
+    content: string;
+    metadata?: {
+        title: string;
+        type: string;
+        space_id?: string;
+        folder_id?: string;
+    };
+}
+
+// GET /v3/search/semantic — vector similarity search, ranked by relevance score
+export async function searchSemantic(
+    query: string,
+    companyId: string | null,
+    limit = 10,
+    threshold = 0.55,
+): Promise<SemanticSearchResult[]> {
+    const q = encodeURIComponent(query);
+    const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
+    const result = await coreGet(
+        `/v3/search/semantic?q=${q}&limit=${limit}&threshold=${threshold}${c}`,
+        { isOptional: true },
+    );
+    return normalizeList<SemanticSearchResult>(result, ['results', 'items', 'matches', 'data']);
+}
+
 // ========== MEMORY / LEARNING BRAIN API ==========
 
 function requireMemoryCompanyId(companyId?: string): string {

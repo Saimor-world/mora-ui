@@ -22,6 +22,7 @@ import {
     getMemoryMetrics,
     getMemoryOverview,
     searchGlobal,
+    searchSemantic,
     getApiVersionPerformance,
     learnInsight,
     approveMemoryItem,
@@ -535,6 +536,39 @@ describe('searchGlobal', () => {
         expect(result.results).toEqual([]);
         expect(result.total).toBe(0);
         expect(result.search_type).toBe('keyword');
+    });
+});
+
+describe('searchSemantic', () => {
+    it('routes to GET /v3/search/semantic with query params', async () => {
+        mockFetchV3({
+            results: [
+                { node_id: 'n-1', score: 0.87, content: 'Quarterly sales report', metadata: { title: 'Q4 Report', type: 'report' } },
+            ],
+        });
+
+        const results = await searchSemantic('quarterly', 'co-abc', 5, 0.55);
+
+        expect(lastFetchUrl()).toContain('/v3/search/semantic');
+        expect(lastFetchUrl()).toContain('q=quarterly');
+        expect(lastFetchUrl()).toContain('company_id=co-abc');
+        expect(lastFetchUrl()).toContain('limit=5');
+        expect(lastFetchInit().method).toBe('GET');
+        expect(results).toHaveLength(1);
+        expect(results[0].node_id).toBe('n-1');
+        expect(results[0].score).toBe(0.87);
+    });
+
+    it('returns [] when response is null or error', async () => {
+        mockFetchRaw(null);
+        const results = await searchSemantic('anything', 'co-abc');
+        expect(results).toEqual([]);
+    });
+
+    it('omits company_id param when companyId is null', async () => {
+        mockFetchV3({ results: [] });
+        await searchSemantic('test', null);
+        expect(lastFetchUrl()).not.toContain('company_id');
     });
 });
 
