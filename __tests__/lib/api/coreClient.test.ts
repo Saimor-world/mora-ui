@@ -4,7 +4,7 @@
  * Focused regression suite for the v3 API migration.
  * Validates:
  *   1. Central v3 envelope unwrap in coreRequest() — callers receive payload, not envelope.
- *   2. All 10 migrated memory endpoints route to /v3/ (7 reads + 3 writes).
+ *   2. All migrated endpoints route to /v3/ (memory, search, system).
  *   3. System stats + department stats endpoints route to /v3/.
  *   4. Auth + already-migrated list paths behave correctly.
  *   5. Error/optional paths return null/[] without throwing.
@@ -553,6 +553,7 @@ describe('searchSemantic', () => {
         expect(lastFetchUrl()).toContain('q=quarterly');
         expect(lastFetchUrl()).toContain('company_id=co-abc');
         expect(lastFetchUrl()).toContain('limit=5');
+        expect(lastFetchUrl()).toContain('threshold=0.55');
         expect(lastFetchInit().method).toBe('GET');
         expect(results).toHaveLength(1);
         expect(results[0].node_id).toBe('n-1');
