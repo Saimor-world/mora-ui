@@ -6,6 +6,9 @@ import { useSession, signOut } from 'next-auth/react';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { writeCookie } from '@/lib/auth/cookies';
 
+const BOOTSTRAP_HEALTH_ATTEMPTS = 4;
+const BOOTSTRAP_HEALTH_RETRY_MS = 1200;
+
 /**
  * useAuthBootstrapper
  * 
@@ -26,6 +29,18 @@ export function useAuthBootstrapper() {
         if (status === 'loading') return;
 
         const bootstrap = async () => {
+            const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+            const probeCoreHealth = async () => {
+                for (let attempt = 0; attempt < BOOTSTRAP_HEALTH_ATTEMPTS; attempt += 1) {
+                    const health = await coreGet('/v3/health', { skipAuth: true, isOptional: true });
+                    if (health) return health;
+                    if (attempt < BOOTSTRAP_HEALTH_ATTEMPTS - 1) {
+                        await wait(BOOTSTRAP_HEALTH_RETRY_MS);
+                    }
+                }
+                return null;
+            };
+
             // Purge legacy branding artifacts (e.g. "Foerderlogiken"/encoding artifacts) from localStorage.
             // Older builds could persist a stale "default workspace" name which causes cross-browser drift.
             try {
@@ -64,17 +79,14 @@ export function useAuthBootstrapper() {
                     }
 
                     // Check core availability first to avoid auth redirect loops.
-                    // Retry once to tolerate transient startup delays (e.g. cold container).
-                    let health = await coreGet('/v3/health', { skipAuth: true, isOptional: true });
-                    if (!health) {
-                        await new Promise(r => setTimeout(r, 2000));
-                        health = await coreGet('/v3/health', { skipAuth: true, isOptional: true });
-                    }
+                    // Use a short startup retry window so a cold probe does not flash an error screen.
+                    const health = await probeCoreHealth();
                     if (!health) {
                         const apiUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || 'the API server';
                         setAuthError(`Core unavailable. Check connection to ${apiUrl}.`);
                         return;
                     }
+                    setAuthError(null);
 
                     // Verify token validity with Backend
                     const result = await coreGet('/v3/auth/session', { isOptional: true });
