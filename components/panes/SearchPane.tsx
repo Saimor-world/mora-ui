@@ -6,7 +6,7 @@ import { Search, X, FileText, Folder, Building2, Clock, ArrowRight, Sparkles } f
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { searchSemantic } from '@/lib/api/semanticClient';
+import { searchSemantic } from '@/lib/api/coreClient';
 
 /**
  * SearchPane - Universal Search Interface
