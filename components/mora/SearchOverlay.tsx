@@ -90,7 +90,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
             id: 'mora-chat', // Reuse singleton chat ID
             type: 'chat', // Should map to a Chat Pane
             title: 'Môra Intelligence',
-            size: { width: 1080, height: 820 },
+            size: { width: 860, height: 680 },
             data: { initialMessage: cleanQuery }
         });
         onClose();

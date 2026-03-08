@@ -201,7 +201,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
 
     // ─── Pane Openers ───
     const openChat = () => {
-        openPane({ id: "chat-main", type: "chat", title: "Mora", size: { width: 1080, height: 820 } });
+        openPane({ id: "chat-main", type: "chat", title: "Mora", size: { width: 860, height: 680 } });
     };
 
     const openFinder = (showUpload?: boolean) => {
