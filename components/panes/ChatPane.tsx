@@ -23,7 +23,9 @@ import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
-import { Send, Sparkles, Loader2, Bot, User, Wand2, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2 } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2 } from 'lucide-react';
+import { useMoraContext } from '@/lib/mora/useMoraContext';
+import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 
 interface Message {
@@ -312,29 +314,13 @@ const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const {
-        companies,
         departments,
-        spacesByDepartment,
-        foldersBySpace,
         isStandardMode,
         activeCompanyId,
         activeDepartmentId,
-        activeSpaceId,
-        activeFolderId
     } = useMoraStore();
     const pane = getPane(id);
-    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
-    const safeSpaces = useMemo(() => {
-        if (!activeDepartmentId) return [];
-        const value = spacesByDepartment[activeDepartmentId];
-        return Array.isArray(value) ? value : [];
-    }, [spacesByDepartment, activeDepartmentId]);
-    const safeFolders = useMemo(() => {
-        if (!activeSpaceId) return [];
-        const value = foldersBySpace[activeSpaceId];
-        return Array.isArray(value) ? value : [];
-    }, [foldersBySpace, activeSpaceId]);
 
     // Streaming hook — real AI, token-by-token
     const {
@@ -344,7 +330,6 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         error: streamError,
         messages: streamHistory,
         clearHistory,
-        scopeEnforced,
     } = useMoraStream();
 
     const [messages, setMessages] = useState<Message[]>([
@@ -374,47 +359,7 @@ Was kann ich fuer dich tun?`,
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const activeCompany = useMemo(
-        () => safeCompanies.find((c) => c.id === activeCompanyId) || null,
-        [safeCompanies, activeCompanyId]
-    );
-    const activeDepartment = useMemo(
-        () => safeDepartments.find((d) => d.id === activeDepartmentId) || null,
-        [safeDepartments, activeDepartmentId]
-    );
-    const activeSpace = useMemo(() => {
-        if (!activeDepartmentId || !activeSpaceId) return null;
-        return safeSpaces.find((s) => s.id === activeSpaceId) || null;
-    }, [safeSpaces, activeDepartmentId, activeSpaceId]);
-    const activeFolder = useMemo(() => {
-        if (!activeSpaceId || !activeFolderId) return null;
-        return safeFolders.find((f) => f.id === activeFolderId) || null;
-    }, [safeFolders, activeSpaceId, activeFolderId]);
-    const { lastChatScope } = useMoraStore();
-    const scopeBoundaryLevel = lastChatScope?.scope_contract?.boundary_level;
-    const droppedScopeFields = lastChatScope?.scope_contract?.dropped_fields ?? [];
-    const chatScopeLabel = useMemo(() => {
-        if (activeFolder) return 'Folder Scope';
-        if (activeSpace) return 'Space Scope';
-        if (activeDepartment) return 'Department Scope';
-        if (activeCompany) return 'Company Scope';
-        return 'Global Scope';
-    }, [activeCompany, activeDepartment, activeSpace, activeFolder]);
-    const chatScopePath = useMemo(() => {
-        // Prefer real API-resolved scope names when available
-        if (lastChatScope?.resolved_scope) {
-            const rs = lastChatScope.resolved_scope;
-            const segments = [rs.company_name, rs.department_name, rs.space_name, rs.folder_name].filter(Boolean) as string[];
-            if (segments.length > 0) return segments.join(' / ');
-        }
-        const segments = [
-            activeCompany?.name,
-            activeDepartment?.name,
-            activeSpace?.name,
-            activeFolder?.name
-        ].filter(Boolean) as string[];
-        return segments.length > 0 ? segments.join(' / ') : 'Keine Kontextgrenze aktiv';
-    }, [activeCompany, activeDepartment, activeSpace, activeFolder, lastChatScope]);
+    const moraCtx = useMoraContext();
 
     // Search for relevant memories based on user query
     const fetchRelevantMemories = useCallback(async (query: string) => {
@@ -700,17 +645,9 @@ Was kann ich fuer dich tun?`,
                         }`}>Môra</h3>
                     <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
                         }`}>Deine KI-Begleiterin</p>
-                    <p className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/50'}`}>
-                        Scope: {chatScopePath}
-                    </p>
                 </div>
-                <div className={`ml-auto flex items-center gap-2 text-xs ${isStandardMode ? 'text-gray-400' : 'text-white/40'
-                    }`}>
-                    <Wand2 size={12} />
-                    <span>{chatScopeLabel}</span>
-                    {scopeBoundaryLevel && (
-                        <span className="text-[10px] text-white/35">• {scopeBoundaryLevel}</span>
-                    )}
+                <div className="ml-auto flex items-center gap-2">
+                    <MoraContextChip variant="compact" snapshot={moraCtx} />
                     {/* Fullscreen toggle */}
                     <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
@@ -721,22 +658,6 @@ Was kann ich fuer dich tun?`,
                     </button>
                 </div>
             </div>
-            {/* scope_enforced: subtle warning strip when backend narrowed the context */}
-            {scopeEnforced && (
-                <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/8 border-b border-amber-500/15 text-[10px] text-amber-300/70">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                    Kontext angepasst - Scope wurde vom System eingeschränkt
-                    {scopeBoundaryLevel && (
-                        <span className="ml-1 text-amber-200/80">({scopeBoundaryLevel})</span>
-                    )}
-                    {droppedScopeFields.length > 0 && (
-                        <span className="ml-auto text-amber-200/70">
-                            dropped: {droppedScopeFields.join(', ')}
-                        </span>
-                    )}
-                </div>
-            )}
-
             {/* Relevant Memories Context */}
             <AnimatePresence>
                 {showMemories && relevantMemories.length > 0 && (
