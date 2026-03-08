@@ -40,8 +40,8 @@ export const useSemanticConstellation = () => {
             const { coreGet } = await import('@/lib/api/coreClient');
 
             // Fetch real semantic relations from backend
-            // Using /v1/relations/preview which returns heuristic & semantic connections
-            const relations = await coreGet('/v1/relations/preview?limit=50', { isOptional: true }) as any[];
+            // Using /v3/relations/preview which returns heuristic & semantic connections
+            const relations = await coreGet('/v3/relations/preview?limit=50', { isOptional: true }) as any[];
 
             if (!Array.isArray(relations)) return;
 
