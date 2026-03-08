@@ -499,7 +499,7 @@ export async function fetchNodeDetails(nodeId: string): Promise<CoreNode> {
 }
 
 export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
-    const result = await coreGet(`/v1/nodes/${nodeId}/relations`, { isOptional: true });
+    const result = await coreGet(`/v3/nodes/${nodeId}/relations`, { isOptional: true });
     return normalizeList<any>(result, ['relations', 'nodes']);
 }
 
@@ -909,7 +909,7 @@ export async function recordAwarenessSignal(signalType: string, payload: any = {
 
 // Intelligence / Resonance
 export async function getSemanticallySimilarNodes(nodeId: string): Promise<CoreNode[]> {
-    const result = await coreGet(`/v1/nodes/${nodeId}/similar?limit=3&threshold=0.6`, { isOptional: true });
+    const result = await coreGet(`/v3/nodes/${nodeId}/similar?limit=3&threshold=0.6`, { isOptional: true });
     return normalizeList<CoreNode>(result, ['results', 'nodes', 'similar']);
 }
 

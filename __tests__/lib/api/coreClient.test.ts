@@ -35,6 +35,8 @@ import {
     fetchAdminUsers,
     patchAdminUser,
     patchUserCompanyBinding,
+    fetchNodeRelations,
+    getSemanticallySimilarNodes,
 } from '@/lib/api/coreClient';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -608,5 +610,23 @@ describe('getApiVersionPerformance', () => {
         mockFetchError(500);
         const result = await getApiVersionPerformance();
         expect(result).toBeNull();
+    });
+});
+
+describe('fetchNodeRelations', () => {
+    it('routes to GET /v3/nodes/{id}/relations', async () => {
+        mockFetchV3({ relations: [{ id: 'r1' }] });
+        await fetchNodeRelations('nd-abc');
+        expect(lastFetchUrl()).toContain('/v3/nodes/nd-abc/relations');
+        expect(lastFetchUrl()).not.toContain('/v1/');
+    });
+});
+
+describe('getSemanticallySimilarNodes', () => {
+    it('routes to GET /v3/nodes/{id}/similar', async () => {
+        mockFetchV3({ results: [{ id: 'nd-x', title: 'Related' }] });
+        await getSemanticallySimilarNodes('nd-abc');
+        expect(lastFetchUrl()).toContain('/v3/nodes/nd-abc/similar');
+        expect(lastFetchUrl()).not.toContain('/v1/');
     });
 });
