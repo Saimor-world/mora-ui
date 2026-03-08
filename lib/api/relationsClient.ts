@@ -17,11 +17,11 @@ export interface SpaceRelationsResponse {
 }
 
 export const getRelationsForSpace = async (spaceId: string): Promise<SpaceRelationsResponse> => {
-  return coreGet(`/v1/relations/space/${spaceId}`) as Promise<SpaceRelationsResponse>;
+  return coreGet(`/v3/relations/space/${spaceId}`) as Promise<SpaceRelationsResponse>;
 };
 
 export const getRelationsForNode = async (nodeId: string): Promise<RelationEdge[]> => {
-  return coreGet(`/v1/relations/node/${nodeId}`) as Promise<RelationEdge[]>;
+  return coreGet(`/v3/relations/node/${nodeId}`) as Promise<RelationEdge[]>;
 };
 
 // Legacy exports expected by DocumentViewer (no design changes)
@@ -34,9 +34,9 @@ export interface CreateRelationPayload {
 }
 
 export const createRelation = async (payload: CreateRelationPayload): Promise<RelationEdge> => {
-  return corePost('/v1/relations', payload) as Promise<RelationEdge>;
+  return corePost('/v3/relations', payload) as Promise<RelationEdge>;
 };
 
 export const deleteRelation = async (relationId: string): Promise<void> => {
-  return coreDelete(`/v1/relations/${relationId}`);
+  return coreDelete(`/v3/relations/${relationId}`);
 };
