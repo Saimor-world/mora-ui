@@ -9,8 +9,9 @@ export interface MoraContextChipProps {
     snapshot: MoraContextSnapshot;
     /** bar = compact single-line (Intel Bar)
      *  sidebar = slightly wider, same line
-     *  hub = full row with more label space */
-    variant?: 'bar' | 'sidebar' | 'hub';
+     *  hub = full row with more label space
+     *  compact = minimal, no memory badge, icon + mode only */
+    variant?: 'bar' | 'sidebar' | 'hub' | 'compact';
     className?: string;
 }
 
@@ -81,7 +82,7 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
     if (!hasScopeInfo && !hasMemory && !hasSource) return null;
 
     const breadcrumb = hasScopeInfo ? buildBreadcrumb(scopeLabels) : null;
-    const maxChars = variant === 'hub' ? 36 : variant === 'sidebar' ? 28 : 22;
+    const maxChars = variant === 'hub' ? 36 : variant === 'sidebar' ? 28 : variant === 'compact' ? 16 : 22;
 
     return (
         <div
@@ -122,7 +123,7 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
             )}
 
             {/* Memory pending badge */}
-            {hasMemory && (
+            {hasMemory && variant !== 'compact' && (
                 <div
                     className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 transition-colors duration-150"
                     title={`${memoryPendingCount} Einträge warten auf Überprüfung`}
@@ -144,10 +145,12 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                         title={`Antwortquelle: ${cfg.label}${lastAnswerSourceMode && MODE_LABELS[lastAnswerSourceMode] ? ` · ${MODE_LABELS[lastAnswerSourceMode]}` : ''}`}
                     >
                         <ArrowRight size={9} className="shrink-0" />
-                        <span className="text-[10px]">{cfg.label}</span>
+                        {variant !== 'compact' && (
+                            <span className="text-[10px]">{cfg.label}</span>
+                        )}
                         {lastAnswerSourceMode && MODE_LABELS[lastAnswerSourceMode] && (
                             <span className="text-[9px] opacity-60 italic">
-                                · {MODE_LABELS[lastAnswerSourceMode]}
+                                {variant === 'compact' ? MODE_LABELS[lastAnswerSourceMode] : `· ${MODE_LABELS[lastAnswerSourceMode]}`}
                             </span>
                         )}
                     </div>
