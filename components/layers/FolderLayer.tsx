@@ -250,7 +250,8 @@ export const FolderLayer: React.FC = () => {
         try {
             const result = await triggerFolderScan(activeFolderId);
             await loadNodesForFolder(activeFolderId);
-            const reportNode = nodes.find(n => (n as any).id === result.report_id);
+            // CORRECT — report_node_id is the ID of the created report node in the knowledge graph
+            const reportNode = nodes.find(n => (n as any).id === result.report_node_id);
             if (reportNode) handleNodeClick(reportNode);
         } catch (error) {
             console.error('Scan failed:', error);

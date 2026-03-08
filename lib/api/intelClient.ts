@@ -1,45 +1,29 @@
 /**
  * Intel Client - Mora Intelligence Scan API
- * Sprint Tag 3-5: Trigger Intel-Report generation
+ * Migrated to v3 in MR21 — uses corePost pattern (no devToken).
  */
-import { getCoreBaseUrl } from '@/lib/api/coreClient';
+import { corePost } from '@/lib/api/coreClient';
 
 export interface IntelScanRequest {
     folder_id: string;
 }
 
 export interface IntelScanResponse {
-    node_id: string;
-    title: string;
-    type: string;
-    content: string;
+    report_id: string;
+    report_node_id: string;
+    summary: string;
+    stats: {
+        nodes_analyzed: number;
+        relations_found: number;
+        insights_generated: number;
+    };
     folder_id: string;
 }
 
 /**
  * Trigger Mora Intelligence Scan for a folder
- * Creates an intel_report node with Mindloop synthesis data
+ * POST /v3/intel/scan
  */
 export async function triggerMoraScan(folderId: string): Promise<IntelScanResponse> {
-    const CORE_API_URL = getCoreBaseUrl();
-
-    // Use devToken for authentication
-    const { getDevToken } = await import('@/lib/api/devToken');
-    const token = await getDevToken();
-
-    const response = await fetch(`${CORE_API_URL}/v1/intel/scan`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ folder_id: folderId })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
-        throw new Error(`Intel scan failed: ${response.status} - ${errorData.detail || 'Unknown error'}`);
-    }
-
-    return response.json();
+    return corePost('/v3/intel/scan', { folder_id: folderId }) as Promise<IntelScanResponse>;
 }
