@@ -411,15 +411,25 @@ Was kann ich fuer dich tun?`,
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
 
-    // Fullscreen: toggle dock visibility via body class
+    // Fullscreen: sync body class + fire event bus for MoraShell
     useEffect(() => {
-        if (isFullscreen) {
-            document.body.classList.add('chat-fullscreen');
-        } else {
+        document.body.classList.toggle('chat-fullscreen', isFullscreen);
+        window.dispatchEvent(new CustomEvent('mora-pane-fullscreen-change', {
+            detail: { paneId: id, isFullscreen }
+        }));
+    }, [isFullscreen, id]);
+
+    // Fullscreen: cleanup on unmount (or id change) — signal MoraShell to remove this pane from fullscreen set.
+    // Always dispatches isFullscreen: false — intentional stale closure; [id] dep only.
+    useEffect(() => {
+        return () => {
             document.body.classList.remove('chat-fullscreen');
-        }
-        return () => { document.body.classList.remove('chat-fullscreen'); };
-    }, [isFullscreen]);
+            window.dispatchEvent(new CustomEvent('mora-pane-fullscreen-change', {
+                detail: { paneId: id, isFullscreen: false }
+            }));
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id]);
 
     // Fullscreen: ESC to exit
     useEffect(() => {
@@ -823,7 +833,7 @@ Was kann ich fuer dich tun?`,
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[500] flex flex-col bg-black/95 backdrop-blur-xl"
+                className="fixed inset-0 z-[9000] flex flex-col bg-black/95 backdrop-blur-xl"
                 style={{ paddingBottom: '0' }}
             >
                 {chatInner}
