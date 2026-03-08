@@ -661,9 +661,6 @@ export const MemorySidebar: React.FC = () => {
         return () => clearTimeout(timer);
     }, [resolvedCompanyId, searchQuery]);
 
-    // Register shortcut
-    useMemorySidebarShortcut();
-
     // Calculate sidebar width
     const sidebarWidth = isCollapsed ? 48 : 280;
 

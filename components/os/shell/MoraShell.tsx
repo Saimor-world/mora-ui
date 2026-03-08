@@ -79,7 +79,7 @@ import { SystemStats } from '@/components/ui/SystemStats';
 // V13: OS Features - Notification Center, Focus Mode, Quick Preview, Window Snapping, Memory Sidebar
 import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
-import { MemorySidebar } from '@/components/os/MemorySidebar';
+import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
 
 // Naming Conflict Modal (409 UX)
@@ -398,6 +398,10 @@ export const MoraShell: React.FC = () => {
         onShowShortcuts: useCallback(() => setIsShortcutsOpen(prev => !prev), []),
     });
 
+    // Lift memory sidebar shortcut here so it stays active even when
+    // MemorySidebar is conditionally unmounted (e.g. during fullscreen pane mode)
+    useMemorySidebarShortcut();
+
     // Handlers
     const handleUnlock = () => setIsSleeping(false);
 
@@ -557,7 +561,7 @@ export const MoraShell: React.FC = () => {
             <SnapPreview zone={activeSnapZone} visible={activeSnapZone !== null} />
 
             {/* Memory Sidebar (Cmd+Shift+M) */}
-            <MemorySidebar />
+            {!hasFullscreenPane && <MemorySidebar />}
 
             {/* ═══ PREMIUM INTELLIGENCE LAYER ═══ */}
             {/*
