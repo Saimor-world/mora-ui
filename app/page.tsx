@@ -7,6 +7,7 @@ import { LockScreen } from '@/components/auth/LockScreen';
 import { useMoraStore } from '@/lib/store/moraState';
 import { Suspense } from 'react';
 import { useSession } from "next-auth/react";
+import { readCookie, deleteCookie } from '@/lib/auth/cookies';
 
 function RootPageContent() {
     const router = useRouter();
@@ -19,8 +20,9 @@ function RootPageContent() {
         if (status === 'loading') return;
 
         const sleepMode = searchParams.get('sleep') === 'true';
+        const hasCoreSession = !!readCookie('mora_session');
 
-        if (status === 'authenticated') {
+        if (status === 'authenticated' || hasCoreSession) {
             if (sleepMode) {
                 setShowLockScreen(true);
             } else {
@@ -62,6 +64,8 @@ function RootPageContent() {
                         localStorage.removeItem('last_user_name');
                         localStorage.removeItem('saimor_mode');
                         localStorage.removeItem('saimor_role');
+                        deleteCookie('mora_session');
+                        deleteCookie('mora_auth_token');
                         setShowLockScreen(false);
                         window.location.reload();
                     }}

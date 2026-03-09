@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
-import { writeCookie, readCookie } from '@/lib/auth/cookies';
+import { writeCookie, readCookie, deleteCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
 import { getCoreBaseUrl } from '@/lib/api/coreClient';
@@ -127,6 +127,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         store.setViewMode('workspace');
         writeCookie('saimor_auth', '', -1);
         writeCookie('mora_auth_token', '', -1);
+        deleteCookie('mora_session');
+        deleteCookie('mora_auth_token');
         setSessionInfo(null);
         setShowSessionCard(false);
         toast.info("Sitzung wurde vollständig bereinigt");
@@ -238,13 +240,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             });
 
             if (result?.error) {
-                if (result.error === "CredentialsSignin") {
-                    throw new Error("Ungültige Zugangsdaten");
-                }
-                throw new Error(result.error);
+                console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
             }
 
-            if (result?.ok) {
+            if (response.ok && data?.success) {
                 saveAuthState(data.role || 'member', data.email || email, data.tenant_id, null);
                 toast.success(`Willkommen, ${(data.email || email).split('@')[0]}!`);
 
@@ -254,8 +253,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     setViewMode('workspace');
                 }
 
-                // Force a full page navigation to ensure NextAuth session is properly loaded.
-                // router.push() doesn't trigger a full session refresh after signIn().
+                // Force a full page navigation so the home bootstrap can pick up the core session cookie.
                 window.location.href = '/home';
                 return;
             }
@@ -324,7 +322,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 password: password
             });
             if (syncResult?.error) {
-                throw new Error(syncResult.error);
+                console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
             }
 
             saveAuthState(role, email, data.tenant_id, null);
@@ -904,3 +902,4 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         </motion.div>
     );
 };
+

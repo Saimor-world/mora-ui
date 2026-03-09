@@ -4,7 +4,7 @@ import { coreGet } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { useSession, signOut } from 'next-auth/react';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
-import { writeCookie } from '@/lib/auth/cookies';
+import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 
 const BOOTSTRAP_HEALTH_ATTEMPTS = 4;
 const BOOTSTRAP_HEALTH_RETRY_MS = 1200;
@@ -63,8 +63,9 @@ export function useAuthBootstrapper() {
             const hasNextAuth = status === 'authenticated';
             const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
+            const hasCoreSession = !!readCookie('mora_session');
 
-            if (hasNextAuth || hasLegacyToken) {
+            if (hasNextAuth || hasLegacyToken || hasCoreSession) {
                 try {
                     // SYNC: If NextAuth is authenticated, ensure the token is in localStorage for coreClient
                     const currentToken = hasNextAuth ? (session?.user as any)?.accessToken : hasLegacyToken;
@@ -211,6 +212,8 @@ export function useAuthBootstrapper() {
                 if (pathname !== '/') {
                     localStorage.removeItem('saimor_dev_token');
                     localStorage.removeItem('mora_session');
+                    deleteCookie('mora_session');
+                    deleteCookie('mora_auth_token');
                     router.push('/');
                 }
             } else if (status === 'unauthenticated' || status === 'loading') {
