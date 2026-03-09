@@ -1,5 +1,7 @@
 "use client";
 
+import { coreGet, corePost } from '@/lib/api/coreClient';
+
 const AUTH_COOKIE = "mora_auth_token";
 
 type EventHandler = (data: any) => void;
@@ -15,6 +17,49 @@ const globalWin = (): Window & { __mora_ws_lock?: boolean } | null =>
     typeof window !== 'undefined' ? (window as any) : null;
 const wsLocked = () => globalWin()?.__mora_ws_lock === true;
 const setWsLock = (v: boolean) => { const w = globalWin(); if (w) w.__mora_ws_lock = v; };
+
+export interface BuildWsUrlOptions {
+    /** Explicit WS base URL (e.g. wss://api.example.com). Overrides all derivation. */
+    coreWsUrl?: string;
+    /** HTTP API base URL. Used when coreWsUrl is absent. Defaults to NEXT_PUBLIC_CORE_API_URL. */
+    coreApiUrl?: string;
+    /** window.location.hostname override for testing. */
+    hostname?: string;
+    /** window.location.host override for testing. */
+    host?: string;
+    /** window.location.protocol override for testing. */
+    protocol?: string;
+}
+
+/**
+ * Build the WebSocket URL for /v3/realtime/subscribe.
+ * Extracted from connect() to be testable without a live WebSocket engine.
+ */
+export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
+    const coreApiUrl = opts?.coreApiUrl ?? process.env.NEXT_PUBLIC_CORE_API_URL ?? '/api/core';
+    const coreWsUrl = opts?.coreWsUrl ?? process.env.NEXT_PUBLIC_CORE_WS_URL;
+    const hostname = opts?.hostname ?? (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
+    const host = opts?.host ?? (typeof window !== 'undefined' ? window.location.host : 'localhost');
+    const protocol = opts?.protocol ?? (typeof window !== 'undefined'
+        ? (window.location.protocol === 'https:' ? 'wss:' : 'ws:')
+        : 'ws:');
+
+    if (coreWsUrl) {
+        return `${coreWsUrl}/v3/realtime/subscribe?token=${token}&event_types=all`;
+    }
+
+    if (coreApiUrl.startsWith('/')) {
+        const apiHost = host.startsWith('hq.') ? host.replace(/^hq\./, 'api.') : 'api.saimor.world';
+
+        if (['localhost', '127.0.0.1', '::1'].includes(hostname)) {
+            return `ws://localhost:8081/v3/realtime/subscribe?token=${token}&event_types=all`;
+        }
+        return `${protocol}//${apiHost}/v3/realtime/subscribe?token=${token}&event_types=all`;
+    }
+
+    const wsHost = coreApiUrl.replace(/^http/, 'ws');
+    return `${wsHost}/v3/realtime/subscribe?token=${token}&event_types=all`;
+}
 
 class RealtimeClient {
     private ws: WebSocket | null = null;
@@ -64,35 +109,7 @@ class RealtimeClient {
 
         this.isConnecting = true;
 
-        // P1.5: Reliable WebSocket URL resolution (prod-safe)
-        // Prefer explicit NEXT_PUBLIC_CORE_WS_URL. Otherwise derive a sensible default.
-        const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || '/api/core';
-        const CORE_WS_URL = process.env.NEXT_PUBLIC_CORE_WS_URL;
-
-        // If we have an explicit WS URL, use it
-        let wsUrl = "";
-        if (CORE_WS_URL) {
-            wsUrl = `${CORE_WS_URL}/v1/realtime/subscribe?token=${token}&event_types=all`;
-        } else {
-            // Handle relative paths (for Next.js proxy) vs absolute URLs
-            if (CORE_API_URL.startsWith('/')) {
-                // In production, we assume relative path works via the same host
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                // WebSockets are not reliably proxied through Next.js in all deployments.
-                // Use direct API host in production.
-                const host = window.location.host;
-                const apiHost = host.startsWith('hq.') ? host.replace(/^hq\./, 'api.') : 'api.saimor.world';
-                wsUrl = `${protocol}//${apiHost}/v1/realtime/subscribe?token=${token}&event_types=all`;
-
-                // LOCAL DEV FALLBACK: Next.js doesn't proxy WebSockets by default. Connect to 8081 directly.
-                if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
-                    wsUrl = `ws://localhost:8081/v1/realtime/subscribe?token=${token}&event_types=all`;
-                }
-            } else {
-                const wsHost = CORE_API_URL.replace(/^http/, 'ws');
-                wsUrl = `${wsHost}/v1/realtime/subscribe?token=${token}&event_types=all`;
-            }
-        }
+        const wsUrl = buildWsUrl(token);
 
         try {
             this.ws = new WebSocket(wsUrl);
@@ -180,6 +197,33 @@ class RealtimeClient {
     private emit(event: string, data: any) {
         this.listeners.get(event)?.forEach(handler => handler(data));
     }
+}
+
+// ─── HTTP helpers (v3) ────────────────────────────────────────────────────────
+
+export interface RealtimeStats {
+    connections: number;
+    uptime: number;
+    [key: string]: unknown;
+}
+
+/**
+ * GET /v3/realtime/stats
+ * Returns current WebSocket server statistics.
+ */
+export async function fetchRealtimeStats(): Promise<RealtimeStats> {
+    return coreGet('/v3/realtime/stats') as Promise<RealtimeStats>;
+}
+
+/**
+ * POST /v3/realtime/broadcast/{event_type}
+ * Broadcasts a custom event to all connected clients.
+ */
+export async function broadcastRealtimeEvent(
+    eventType: string,
+    data: Record<string, unknown>
+): Promise<{ sent: boolean }> {
+    return corePost(`/v3/realtime/broadcast/${eventType}`, data) as Promise<{ sent: boolean }>;
 }
 
 export const realtime = new RealtimeClient();
