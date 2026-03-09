@@ -105,18 +105,31 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             default:
                 return (
                     <div className="h-full flex flex-col">
-                        {/* MR18: Mora context — always visible when scope is known */}
-                        <div className="px-4 pt-3 pb-2 border-b border-white/5 shrink-0">
-                            <MoraContextChip variant="hub" snapshot={ctx} />
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <MoraPlayground
-                                scope={viewLevel === "department" ? "department" : "company"}
-                                title=""
-                                className="h-full"
-                                compact={isCompact}
-                            />
-                        </div>
+                        {ctx.isOperational ? (
+                            <>
+                                {/* MR18: Mora context — always visible when scope is known */}
+                                <div className="px-4 pt-3 pb-2 border-b border-white/5 shrink-0">
+                                    <MoraContextChip variant="hub" snapshot={ctx} />
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <MoraPlayground
+                                        scope={viewLevel === "department" ? "department" : "company"}
+                                        title=""
+                                        className="h-full"
+                                        compact={isCompact}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
+                                <p className="text-sm font-medium text-foreground/70">
+                                    Noch nicht operativ
+                                </p>
+                                <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
+                                    Richte einen Workspace ein, damit Mora operativ wird.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 );
         }
