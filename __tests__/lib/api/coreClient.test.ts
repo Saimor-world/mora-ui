@@ -40,6 +40,7 @@ import {
     fetchTree,
     fetchTreeData,
     fetchNodeChildren,
+    createSimpleDepartment,
 } from '@/lib/api/coreClient';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -631,6 +632,17 @@ describe('getSemanticallySimilarNodes', () => {
         await getSemanticallySimilarNodes('nd-abc');
         expect(lastFetchUrl()).toContain('/v3/nodes/nd-abc/similar');
         expect(lastFetchUrl()).not.toContain('/v1/');
+    });
+});
+
+describe('createSimpleDepartment', () => {
+    it('routes to POST /v3/departments/create-simple', async () => {
+        mockFetchV3({ id: 'dep-1', name: 'Simple Ops' });
+        const result = await createSimpleDepartment('Simple Ops');
+        expect(lastFetchUrl()).toContain('/v3/departments/create-simple');
+        expect(lastFetchInit().method).toBe('POST');
+        expect((lastFetchInit().body as string)).toContain('"name":"Simple Ops"');
+        expect(result?.name).toBe('Simple Ops');
     });
 });
 

@@ -28,6 +28,33 @@ describe('buildWsUrl', () => {
         });
         expect(url).toContain('token=mytoken');
     });
+
+    it('Branch B localhost: uses ws://localhost:8081', () => {
+        const url = buildWsUrl('tok', {
+            coreApiUrl: '/api/core',
+            hostname: 'localhost',
+            host: 'localhost:3000',
+            protocol: 'ws:',
+        });
+        expect(url).toBe('ws://localhost:8081/v3/realtime/subscribe?token=tok&event_types=all');
+    });
+
+    it('Branch B non-localhost: rewrites hq. host to api. with protocol', () => {
+        const url = buildWsUrl('tok', {
+            coreApiUrl: '/api/core',
+            hostname: 'hq.saimor.world',
+            host: 'hq.saimor.world',
+            protocol: 'wss:',
+        });
+        expect(url).toBe('wss://api.saimor.world/v3/realtime/subscribe?token=tok&event_types=all');
+    });
+
+    it('Branch C absolute coreApiUrl: http replaced with ws', () => {
+        const url = buildWsUrl('tok', {
+            coreApiUrl: 'https://api.example.com',
+        });
+        expect(url).toBe('wss://api.example.com/v3/realtime/subscribe?token=tok&event_types=all');
+    });
 });
 
 describe('fetchRealtimeStats', () => {

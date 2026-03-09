@@ -769,7 +769,7 @@ export const createDepartment = async (payload: CreateDepartmentPayload) => {
 
 export const createSimpleDepartment = async (name: string) => {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return corePost('/v1/departments/create-simple', { name, slug });
+    return corePost('/v3/departments/create-simple', { name, slug });
 };
 
 // ========== UPDATE & DELETE FUNCTIONS ==========
