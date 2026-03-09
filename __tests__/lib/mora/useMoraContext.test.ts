@@ -119,6 +119,14 @@ describe('scopeLabels.company priority', () => {
     });
 });
 
+describe('isOperational — loading state', () => {
+    it('is null when user is null and no company context (bootstrap window)', () => {
+        mockStore({ user: null, activeCompanyId: null, lastChatScope: null });
+        const { result } = renderHook(() => useMoraContext());
+        expect(result.current.isOperational).toBeNull();
+    });
+});
+
 describe('scopeSource', () => {
     it('returns scope_source from resolved_scope when present', () => {
         mockStore({

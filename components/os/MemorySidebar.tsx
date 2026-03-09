@@ -772,7 +772,7 @@ export const MemorySidebar: React.FC = () => {
                                         />
                                     ) : (<>
 
-                                        {ctx.isOperational ? (
+                                        {ctx.isOperational === null ? null : ctx.isOperational ? (
                                             <>
                                                 {/* Quick Input */}
                                                 {/* MR18: Mora context header — same scope as Intel Bar */}

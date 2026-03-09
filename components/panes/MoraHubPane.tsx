@@ -105,7 +105,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             default:
                 return (
                     <div className="h-full flex flex-col">
-                        {ctx.isOperational ? (
+                        {ctx.isOperational === null ? null : ctx.isOperational ? (
                             <>
                                 {/* MR18: Mora context — always visible when scope is known */}
                                 <div className="px-4 pt-3 pb-2 border-b border-white/5 shrink-0">

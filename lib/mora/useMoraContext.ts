@@ -39,8 +39,8 @@ export interface MoraContextSnapshot {
     lastAnswerSourceMode: string | null;   // e.g. 'retrieval' | 'synthesis' | 'hybrid'
     lastAnswerScopeLabel: string | null;
 
-    /** true = concrete company context available; false = setup-required state */
-    isOperational: boolean;
+    /** true = operational, false = setup-required, null = bootstrap in progress (no-render) */
+    isOperational: boolean | null;
     /** Raw backend scope_source value. Admin/diagnostics only — do not expose in main UX. */
     scopeSource: string | null;
 }
@@ -159,10 +159,13 @@ export function useMoraContext(): MoraContextSnapshot {
 
         // isOperational: backend session truth first, heuristic fallback for pre-session window
         const resolvedCompanyId = lastChatScope?.resolved_scope?.company_id;
-        const isOperational: boolean =
-            user?.operational_state != null
-                ? user.operational_state === 'operational'
-                : !!(resolvedCompanyId ?? activeCompanyId);
+        // null = session not yet bootstrapped; surfaces should show nothing (no flash)
+        const isOperational: boolean | null =
+            user === null && !activeCompanyId && !resolvedCompanyId
+                ? null
+                : user?.operational_state != null
+                    ? user.operational_state === 'operational'
+                    : !!(resolvedCompanyId ?? activeCompanyId);
 
         const scopeSource = lastChatScope?.resolved_scope?.scope_source ?? null;
 
