@@ -1,7 +1,7 @@
 /**
  * Autonomous Cognition Client - Frontend Integration for Mora's Proactive Intelligence
  * 
- * This client connects to the new /v1/autonomous/* endpoints and exposes
+ * This client connects to the new /v3/autonomous/* endpoints and exposes
  * Mora's proactive intelligence capabilities to the frontend.
  */
 
@@ -52,7 +52,7 @@ export interface CognitionStatus {
  */
 export async function getProactiveSuggestions(): Promise<ProactiveSuggestion[]> {
     try {
-        const response = await coreGet('/v1/autonomous/suggestions', { isOptional: true });
+        const response = await coreGet('/v3/autonomous/suggestions', { isOptional: true });
         if (response?.suggestions) {
             return response.suggestions;
         }
@@ -68,7 +68,7 @@ export async function getProactiveSuggestions(): Promise<ProactiveSuggestion[]> 
  */
 export async function triggerWorkspaceAnalysis(deep: boolean = false): Promise<any> {
     try {
-        const response = await corePost('/v1/autonomous/analyze', { deep });
+        const response = await corePost('/v3/autonomous/analyze', { deep });
         return response;
     } catch (error) {
         console.warn('[Cognition] Analysis failed:', error);
@@ -85,7 +85,7 @@ export async function enrichContent(
     content: string
 ): Promise<EnrichmentResult> {
     try {
-        const response = await corePost('/v1/autonomous/enrich', {
+        const response = await corePost('/v3/autonomous/enrich', {
             node_id: nodeId,
             title,
             content
@@ -103,7 +103,7 @@ export async function enrichContent(
  */
 export async function synthesizeContext(nodeId: string): Promise<SynthesisResult> {
     try {
-        const response = await corePost('/v1/autonomous/synthesize', {
+        const response = await corePost('/v3/autonomous/synthesize', {
             node_id: nodeId
         });
         return response;
@@ -170,7 +170,7 @@ export async function executeAgenticLoop(
 ): Promise<AgentResponse> {
     try {
         const allowToolExecution = process.env.NEXT_PUBLIC_ALLOW_TOOL_EXECUTION !== 'false';
-        const response = await corePost('/v1/cognition/agent', {
+        const response = await corePost('/v3/cognition/agent', {
             intent,
             view_level: viewContext?.level,
             active_entity_id: viewContext?.entityId,
@@ -189,7 +189,7 @@ export async function executeAgenticLoop(
  */
 export async function getCognitionStatus(): Promise<CognitionStatus | null> {
     try {
-        const response = await coreGet('/v1/autonomous/status', { isOptional: true });
+        const response = await coreGet('/v3/autonomous/status', { isOptional: true });
         return response;
     } catch (error) {
         console.warn('[Cognition] Status check failed:', error);
