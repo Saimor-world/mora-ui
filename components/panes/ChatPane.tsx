@@ -253,6 +253,33 @@ const RelevantMemories: React.FC<{
     );
 };
 
+// ─── SetupRequiredCard ────────────────────────────────────────────────────────
+
+interface SetupRequiredCardProps {
+    onOpenSettings?: () => void;
+}
+
+function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
+    return (
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
+            <p className="text-sm font-medium text-foreground/80">
+                Kein Workspace konfiguriert
+            </p>
+            <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
+                Richte eine Firma oder einen Workspace ein, um Mora nutzen zu können.
+            </p>
+            {onOpenSettings && (
+                <button
+                    onClick={onOpenSettings}
+                    className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
+                >
+                    Einstellungen öffnen
+                </button>
+            )}
+        </div>
+    );
+}
+
 // ─── Context-Aware Chat Suggestions ───
 const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
     const viewLevel = useMoraStore((s) => s.viewLevel);
@@ -781,48 +808,56 @@ Was kann ich fuer dich tun?`,
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t border-white/10 space-y-2">
-                {/* Memory Hint - shown when user types "merke dir..." etc. */}
-                <AnimatePresence>
-                    {memoryHint.show && (
-                        <MemoryHint
-                            onConfirm={handleMemoryConfirm}
-                            onDismiss={() => setMemoryHint({ show: false, content: '' })}
-                        />
-                    )}
-                </AnimatePresence>
+            {moraCtx.isOperational ? (
+                <div className="p-4 border-t border-white/10 space-y-2">
+                    {/* Memory Hint - shown when user types "merke dir..." etc. */}
+                    <AnimatePresence>
+                        {memoryHint.show && (
+                            <MemoryHint
+                                onConfirm={handleMemoryConfirm}
+                                onDismiss={() => setMemoryHint({ show: false, content: '' })}
+                            />
+                        )}
+                    </AnimatePresence>
 
-                <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
-                    <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !isStreaming) sendMessage();
-                            if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
-                        }}
-                        placeholder="Schreib Mora... (z.B. 'Merke dir...')"
-                        autoFocus={isFullscreen}
-                        disabled={isStreaming}
-                        className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
-                    />
-                    <button
-                        onClick={sendMessage}
-                        disabled={!input.trim() || isLoading || isStreaming}
-                        className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
-                    >
-                        {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                        {isFullscreen && <span>Senden</span>}
-                    </button>
-                </div>
-                {isFullscreen ? (
-                    <div className="max-w-4xl mx-auto w-full">
-                        <ChatSuggestions onSelect={setInput} />
+                    <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !isStreaming) sendMessage();
+                                if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
+                            }}
+                            placeholder="Schreib Mora... (z.B. 'Merke dir...')"
+                            autoFocus={isFullscreen}
+                            disabled={isStreaming}
+                            className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
+                        />
+                        <button
+                            onClick={sendMessage}
+                            disabled={!input.trim() || isLoading || isStreaming}
+                            className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                        >
+                            {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                            {isFullscreen && <span>Senden</span>}
+                        </button>
                     </div>
-                ) : (
-                    <ChatSuggestions onSelect={setInput} />
-                )}
-            </div>
+                    {isFullscreen ? (
+                        <div className="max-w-4xl mx-auto w-full">
+                            <ChatSuggestions onSelect={setInput} />
+                        </div>
+                    ) : (
+                        <ChatSuggestions onSelect={setInput} />
+                    )}
+                </div>
+            ) : (
+                <SetupRequiredCard
+                    onOpenSettings={() => {
+                        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                    }}
+                />
+            )}
         </div>
     );
 
