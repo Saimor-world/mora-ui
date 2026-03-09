@@ -131,7 +131,7 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
     const scopeParts = apiScope
         ? [apiScope.company_name, apiScope.department_name, apiScope.space_name].filter(Boolean)
         : [company?.name, dept?.name, space?.name].filter(Boolean);
-    const scopeLabel = scopeParts.length > 0 ? scopeParts.join(' › ') : 'Gesamter Workspace';
+    const scopeLabel = scopeParts.join(' › ');
     const hasScopeContext = !!activeDepartmentId;
     const scopeEnforced = lastChatScope?.scope_enforced ?? false;
     const scopeBoundaryLevel = lastChatScope?.scope_contract?.boundary_level;
