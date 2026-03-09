@@ -38,6 +38,11 @@ export interface MoraContextSnapshot {
     lastAnswerSource: 'memory' | 'context' | 'inference' | null;
     lastAnswerSourceMode: string | null;   // e.g. 'retrieval' | 'synthesis' | 'hybrid'
     lastAnswerScopeLabel: string | null;
+
+    /** true = concrete company context available; false = setup-required state */
+    isOperational: boolean;
+    /** Raw backend scope_source value. Admin/diagnostics only — do not expose in main UX. */
+    scopeSource: string | null;
 }
 
 // ─── Scope level derivation ─────────────────────────────────────────────────
@@ -86,6 +91,9 @@ export function useMoraContext(): MoraContextSnapshot {
     const storeAnswerSourceMode = useMoraStore((s) => s.lastAnswerSourceMode);
     const storeAnswerScopeLabel = useMoraStore((s) => s.lastAnswerScopeLabel);
 
+    // Session user — for isOperational derivation and pre-chat company label
+    const user = useMoraStore((s) => s.user);
+
     const memoryPendingCount = useMemoryPendingCount();
     const memoryOverview = useMemoryOverview();
 
@@ -110,8 +118,15 @@ export function useMoraContext(): MoraContextSnapshot {
 
         // Scope labels — prefer store entity names, fall back to resolved_scope IDs.
         const scopeLabels: MoraContextSnapshot['scopeLabels'] = {};
-        if (resolved?.company_id || activeCompanyId) {
-            scopeLabels.company = activeCompany?.name ?? resolved?.company_id ?? undefined;
+        if (resolved?.company_id || activeCompanyId || user?.active_company_name) {
+            const resolvedCompanyName = resolved?.company_id
+                ? (activeCompany?.name ?? resolved?.company_id)
+                : undefined;
+            scopeLabels.company =
+                resolvedCompanyName           // from lastChatScope resolved_scope (highest priority)
+                ?? activeCompany?.name        // from store entity
+                ?? user?.active_company_name  // from session bootstrap (pre-chat)
+                ?? undefined;
         }
         if (resolved?.department_id || activeDepartmentId) {
             scopeLabels.department = activeDepartment?.name ?? resolved?.department_id ?? undefined;
@@ -142,6 +157,15 @@ export function useMoraContext(): MoraContextSnapshot {
         const lastAnswerSourceMode = storeAnswerSourceMode;
         const lastAnswerScopeLabel = storeAnswerScopeLabel;
 
+        // isOperational: backend session truth first, heuristic fallback for pre-session window
+        const resolvedCompanyId = lastChatScope?.resolved_scope?.company_id;
+        const isOperational: boolean =
+            user?.operational_state != null
+                ? user.operational_state === 'operational'
+                : !!(resolvedCompanyId ?? activeCompanyId);
+
+        const scopeSource = lastChatScope?.resolved_scope?.scope_source ?? null;
+
         return {
             scopeLevel,
             scopeLabels,
@@ -157,6 +181,8 @@ export function useMoraContext(): MoraContextSnapshot {
             lastAnswerSource,
             lastAnswerSourceMode,
             lastAnswerScopeLabel,
+            isOperational,
+            scopeSource,
         };
     }, [
         orbState, coreError, lastChatScope,
@@ -166,5 +192,6 @@ export function useMoraContext(): MoraContextSnapshot {
         memoryPendingCount,
         storeAnswerSource, storeAnswerSourceMode, storeAnswerScopeLabel,
         memoryOverview,
+        user,
     ]);
 }
