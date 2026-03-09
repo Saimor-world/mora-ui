@@ -104,7 +104,12 @@ export function useAuthBootstrapper() {
                             name: result.name || result.email?.split('@')[0] || session?.user?.name || 'User',
                             role: result.role || 'member',
                             settings: result.settings || {},
-                            tenant_id: tenantId
+                            tenant_id: tenantId,
+                            operational_state: result.operational_state,
+                            setup_required:    result.setup_required,
+                            active_company_id: result.active_company_id,
+                            active_company_name: result.active_company_name,
+                            company_count:     result.company_count,
                         });
 
                         // Normalize view mode for demo tenants to avoid cross-browser drift

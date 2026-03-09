@@ -1,4 +1,5 @@
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
+import type { OperationalState } from '@/lib/store/moraState';
 
 type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
 
@@ -275,6 +276,13 @@ export interface UserProfile {
     tenant_id: string;
     scope?: string;
     demo_mode?: boolean;
+    // Session operational contract (Core e2fa9d1+)
+    operational_state?: OperationalState;
+    setup_required?: boolean;
+    active_company_id?: string;
+    active_company_name?: string;
+    company_count?: number;
+    scope_source?: string;
 }
 
 export async function fetchUserProfile(): Promise<UserProfile> {

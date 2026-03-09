@@ -84,8 +84,17 @@ export interface ScopeContract {
     scope_reason?: string;  // P1 backend dep — reason scope was narrowed
 }
 
+export interface ResolvedScope {
+    company_id?: string;
+    department_id?: string;
+    space_id?: string;
+    folder_id?: string;
+    scope_source?: string;
+    [key: string]: string | undefined;
+}
+
 export interface LastChatScopeState {
-    resolved_scope: Record<string, string | undefined>;
+    resolved_scope: ResolvedScope;
     scope_policy: string;
     scope_enforced: boolean;
     scope_contract?: ScopeContract;
@@ -108,6 +117,7 @@ export interface NameConflictState {
 // ROLE-BASED ACCESS CONTROL - Phase 6.3
 // ═══════════════════════════════════════════════════════════════════════════
 export type UserRole = 'owner' | 'admin' | 'system_owner' | 'manager' | 'member' | 'demo';
+export type OperationalState = 'operational' | 'setup_required';
 
 export interface User {
     id: string;
@@ -117,6 +127,12 @@ export interface User {
     role: UserRole;
     settings?: Record<string, any>;
     tenant_id?: string;
+    // Session operational contract (Core e2fa9d1+)
+    operational_state?: OperationalState;
+    setup_required?: boolean;
+    active_company_id?: string;
+    active_company_name?: string;
+    company_count?: number;
 }
 
 export interface Permissions {

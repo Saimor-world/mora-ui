@@ -50,7 +50,11 @@ export function useV2Auth(): UseV2AuthReturn {
             const userData = await v2GetMe();
             setUser(userData);
 
-            // Sync with Mora store
+            // NOTE: useV2Auth is a legacy auth path. The v2 session response does not carry
+            // the operational contract fields (operational_state, setup_required, active_company_id,
+            // active_company_name, company_count). Users authenticating via this path will have
+            // these fields as undefined in the store. Prefer useAuthBootstrapper (v3 path) for
+            // full operational state support.
             moraSetUser({
                 id: userData.user_id,
                 name: userData.email.split("@")[0],
@@ -78,7 +82,11 @@ export function useV2Auth(): UseV2AuthReturn {
                 const userData = await v2GetMe();
                 setUser(userData);
 
-                // Sync with Mora store
+                // NOTE: useV2Auth is a legacy auth path. The v2 session response does not carry
+                // the operational contract fields (operational_state, setup_required, active_company_id,
+                // active_company_name, company_count). Users authenticating via this path will have
+                // these fields as undefined in the store. Prefer useAuthBootstrapper (v3 path) for
+                // full operational state support.
                 moraSetUser({
                     id: userData.user_id,
                     name: userData.email.split("@")[0],
