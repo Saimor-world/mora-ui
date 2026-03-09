@@ -644,7 +644,7 @@ export async function fetchTree(tenantId?: string, companyId?: string): Promise<
     if (companyId) {
         query += query ? `&company_id=${encodeURIComponent(companyId)}` : `?company_id=${encodeURIComponent(companyId)}`;
     }
-    const response = await coreGet(`/v1/tree${query}`) as TreeApiResponse;
+    const response = await coreGet(`/v3/tree${query}`) as TreeApiResponse;
     return mapTreeResponseToNodes(response);
 }
 
@@ -653,11 +653,11 @@ export async function fetchTreeData(tenantId?: string, companyId?: string): Prom
     if (companyId) {
         query += query ? `&company_id=${encodeURIComponent(companyId)}` : `?company_id=${encodeURIComponent(companyId)}`;
     }
-    return coreGet(`/v1/tree${query}`);
+    return coreGet(`/v3/tree${query}`);
 }
 
 export async function fetchNodeChildren(nodeId: string, type: 'department' | 'space' | 'folder'): Promise<CoreTreeNode[]> {
-    const children = await coreGet(`/v1/tree/${nodeId}/children?type=${type}`, { isOptional: true });
+    const children = await coreGet(`/v3/tree/${nodeId}/children?type=${type}`, { isOptional: true });
     const safeChildren = normalizeList<any>(children, ['children', 'items', 'nodes']);
     // Map raw response to CoreTreeNode if necessary, but the backend returns Tree* models which usually match.
     // However, we should ensure the type mapping is correct for the UI.

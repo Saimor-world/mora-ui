@@ -37,6 +37,9 @@ import {
     patchUserCompanyBinding,
     fetchNodeRelations,
     getSemanticallySimilarNodes,
+    fetchTree,
+    fetchTreeData,
+    fetchNodeChildren,
 } from '@/lib/api/coreClient';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -627,6 +630,33 @@ describe('getSemanticallySimilarNodes', () => {
         mockFetchV3({ results: [{ id: 'nd-x', title: 'Related' }] });
         await getSemanticallySimilarNodes('nd-abc');
         expect(lastFetchUrl()).toContain('/v3/nodes/nd-abc/similar');
+        expect(lastFetchUrl()).not.toContain('/v1/');
+    });
+});
+
+describe('fetchTree', () => {
+    it('routes to GET /v3/tree not /v1/', async () => {
+        mockFetchV3({ departments: [] });
+        await fetchTree();
+        expect(lastFetchUrl()).toContain('/v3/tree');
+        expect(lastFetchUrl()).not.toContain('/v1/');
+    });
+});
+
+describe('fetchTreeData', () => {
+    it('routes to GET /v3/tree not /v1/', async () => {
+        mockFetchV3({ departments: [] });
+        await fetchTreeData();
+        expect(lastFetchUrl()).toContain('/v3/tree');
+        expect(lastFetchUrl()).not.toContain('/v1/');
+    });
+});
+
+describe('fetchNodeChildren', () => {
+    it('routes to GET /v3/tree/{id}/children not /v1/', async () => {
+        mockFetchV3({ children: [] });
+        await fetchNodeChildren('dept-1', 'department');
+        expect(lastFetchUrl()).toContain('/v3/tree/dept-1/children');
         expect(lastFetchUrl()).not.toContain('/v1/');
     });
 });
