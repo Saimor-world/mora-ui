@@ -182,8 +182,9 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
                 </div>
             )}
             {!isShowingSearch && !isLoadingRecent && recent.length === 0 && (
-                <div className="text-center py-4 text-white/30 text-xs">
-                    Noch keine Eintraege im aktuellen Scope
+                <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+                    <Brain className="w-5 h-5 text-white/15" />
+                    <span className="text-xs text-white/30">Noch keine Erkenntnisse gespeichert</span>
                 </div>
             )}
         </div>
