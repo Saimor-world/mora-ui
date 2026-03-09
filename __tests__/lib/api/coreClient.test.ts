@@ -41,6 +41,7 @@ import {
     fetchTreeData,
     fetchNodeChildren,
     createSimpleDepartment,
+    importCompanyStructure,
 } from '@/lib/api/coreClient';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -643,6 +644,18 @@ describe('createSimpleDepartment', () => {
         expect(lastFetchInit().method).toBe('POST');
         expect((lastFetchInit().body as string)).toContain('"name":"Simple Ops"');
         expect(result?.name).toBe('Simple Ops');
+    });
+});
+
+describe('importCompanyStructure', () => {
+    it('routes to POST /v3/companies/import and unwraps v3 envelope', async () => {
+        mockFetchV3({ message: 'Structure imported successfully' });
+        const file = new File([JSON.stringify({ departments: [] })], 'structure.json', { type: 'application/json' });
+        const result = await importCompanyStructure(file);
+        expect(lastFetchUrl()).toContain('/v3/companies/import');
+        expect(lastFetchInit().method).toBe('POST');
+        expect((lastFetchInit().headers as Record<string, string>).Authorization).toMatch(/^Bearer /);
+        expect(result?.message).toBe('Structure imported successfully');
     });
 });
 

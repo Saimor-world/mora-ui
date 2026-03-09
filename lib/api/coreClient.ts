@@ -864,7 +864,7 @@ export async function importCompanyStructure(file: File): Promise<any> {
 
     if (!token) throw new CoreError('Unauthorized', 401);
 
-    const response = await fetch(`${getCoreBaseUrl()}/v1/companies/import`, {
+    const response = await fetch(`${getCoreBaseUrl()}/v3/companies/import`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${token}`
@@ -881,7 +881,11 @@ export async function importCompanyStructure(file: File): Promise<any> {
         throw new CoreError(message, response.status);
     }
 
-    return response.json();
+    const json = await response.json();
+    if (json && !Array.isArray(json) && 'data' in json && 'meta' in json && json.meta?.api_version === 'v3') {
+        return json.data;
+    }
+    return json;
 }
 
 // ========== AWARENESS / CORE SIGNALS ==========
