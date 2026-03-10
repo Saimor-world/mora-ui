@@ -122,6 +122,7 @@ export function useAuthBootstrapper() {
                             active_company_id: result.active_company_id,
                             active_company_name: result.active_company_name,
                             company_count:     result.company_count,
+                            scope_source:      result.scope_source,
                         });
 
                         // Normalize view mode for demo tenants to avoid cross-browser drift

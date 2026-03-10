@@ -28,6 +28,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
+import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
 import { resetUserState } from '@/lib/hooks/useUser';
 import type { OrbState } from '@/lib/api/awarenessClient';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
@@ -369,6 +370,7 @@ export const MoraShell: React.FC = () => {
     });
 
     useRealtime(isBootstrapped);
+    useOperationalFlip();
 
     useKeyboardShortcuts({
         onToggleSpotlight: useCallback(() => setIsSpotlightOpen(prev => !prev), []),

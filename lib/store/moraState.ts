@@ -133,7 +133,13 @@ export interface User {
     active_company_id?: string;
     active_company_name?: string;
     company_count?: number;
+    scope_source?: string;
 }
+
+export type OperationalSessionPatch = Partial<Pick<
+    User,
+    'operational_state' | 'setup_required' | 'active_company_id' | 'active_company_name' | 'company_count' | 'scope_source'
+>>;
 
 export interface Permissions {
     canCreate: boolean;
@@ -253,6 +259,7 @@ interface MoraState {
     restoreNode: (nodeId: string) => void;
     closeNode: (nodeId: string) => void;
     setUser: (user: User | null) => void; // Phase 6.3: Set user with role
+    patchOperationalSession: (patch: OperationalSessionPatch) => void;
     updateUserSettings: (settings: Record<string, any>) => void;
     resetStore: () => void; // System: Clear all state on logout
 
@@ -535,6 +542,17 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 permissions: ROLE_PERMISSIONS.demo
             });
         }
+    },
+    patchOperationalSession: (patch) => {
+        set((state) => {
+            if (!state.user) return state;
+            return {
+                user: {
+                    ...state.user,
+                    ...patch,
+                },
+            };
+        });
     },
 
     updateUserSettings: (settings) => {
