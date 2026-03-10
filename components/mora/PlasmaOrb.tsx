@@ -1,8 +1,8 @@
 /**
  * PlasmaOrb - Jupiter/Sun-like liquid hot orb
  * 
- * Canvas 2D implementation with plasma noise effect.
- * NO CSS fallback - forces proper canvas rendering.
+ * Canvas 2D implementation with plasma noise effect for large hero usage.
+ * Small/medium always-visible orbs use a lighter GPU-friendly CSS render path.
  * 
  * Inspired by:
  * - Jupiter's swirling atmosphere
@@ -106,6 +106,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             b: parseInt(hex.substr(4, 2), 16)
         };
     }, [color]);
+    const useStaticOrb = size <= 92;
 
     // State-based parameters - POLISHED for smoother animations
     const params = useMemo(() => {
@@ -128,6 +129,8 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
     }, [state]);
 
     useEffect(() => {
+        if (useStaticOrb) return;
+
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -138,7 +141,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
         }
 
         // Set canvas size (HiDPI support)
-        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
         canvas.width = size * dpr;
         canvas.height = size * dpr;
         canvas.style.width = `${size}px`;
@@ -151,7 +154,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
 
         const noise = noiseRef.current;
 
-        const MAX_FPS = 30;
+        const MAX_FPS = 20;
         const MIN_FRAME_MS = 1000 / MAX_FPS;
 
         const render = (ts: number) => {
@@ -233,8 +236,9 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                     // IMPERIAL MILK: More white for that molten sun look
                     const milk = 180 * Math.pow(falloff, 1.2);
 
-                    // ADD TACTILE NOISE (Grain)
-                    const grain = (Math.random() - 0.5) * 8 * (1 - falloff * 0.5);
+                    // Deterministic grain keeps texture without per-frame Math.random cost.
+                    const grainSeed = ((x * 17 + y * 31) % 23) / 23 - 0.5;
+                    const grain = grainSeed * 8 * (1 - falloff * 0.5);
 
                     data[idx] = Math.min(255, baseColor.r * brightness * colorVariation + milk + grain);
                     data[idx + 1] = Math.min(255, baseColor.g * brightness * colorVariation + milk + grain);
@@ -339,7 +343,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 cancelAnimationFrame(animationFrameRef.current);
             }
         };
-    }, [size, baseColor, params, color, state]);
+    }, [size, baseColor, params, color, state, useStaticOrb]);
 
     // Determine animation durations based on state
     const pulseDuration = state === 'thinking' ? '1.5s'
@@ -347,6 +351,81 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             : state === 'curious' ? '1.2s'
                 : state === 'insight' ? '0.6s'
                     : '3s';
+
+    if (useStaticOrb) {
+        return (
+            <div
+                className="relative cursor-pointer"
+                style={{ width: size, height: size }}
+                onClick={onClick}
+            >
+                <div
+                    className="absolute inset-[-30%] rounded-full pointer-events-none"
+                    style={{
+                        background: `radial-gradient(circle at center, ${color}55 0%, ${color}22 42%, transparent 74%)`,
+                        filter: 'blur(22px)',
+                        animation: `pulse ${pulseDuration} ease-in-out infinite`,
+                    }}
+                />
+                <div
+                    className="absolute inset-[-12%] rounded-full pointer-events-none animate-spin"
+                    style={{
+                        background: `conic-gradient(from 0deg,
+                            transparent 0%,
+                            ${color}22 9%,
+                            transparent 18%,
+                            transparent 38%,
+                            ${color}18 48%,
+                            transparent 58%,
+                            transparent 78%,
+                            ${color}20 88%,
+                            transparent 100%
+                        )`,
+                        filter: 'blur(10px)',
+                        animationDuration: '26s',
+                    }}
+                />
+                <div
+                    className="absolute inset-0 rounded-full overflow-hidden"
+                    style={{
+                        background: `radial-gradient(145% 145% at 28% 24%, rgba(255,255,255,0.30) 0%, ${color}EE 44%, rgba(0,0,0,0.26) 100%)`,
+                        boxShadow: `0 0 ${Math.round(size * 0.45)}px ${color}80, 0 0 ${Math.round(size * 0.9)}px ${color}30, inset 2px 2px 8px rgba(255,255,255,0.26)`,
+                        border: `1px solid ${color}88`,
+                    }}
+                >
+                    <div
+                        className="absolute inset-[8%] rounded-full pointer-events-none"
+                        style={{
+                            background: `conic-gradient(from 0deg,
+                                ${color}00 0%,
+                                ${color}55 20%,
+                                ${color}18 42%,
+                                ${color}66 62%,
+                                ${color}00 100%
+                            )`,
+                            mixBlendMode: 'screen',
+                            filter: 'blur(6px)',
+                            opacity: 0.7,
+                            animation: 'spin 18s linear infinite',
+                        }}
+                    />
+                    <div
+                        className="absolute inset-[20%] rounded-full pointer-events-none"
+                        style={{
+                            background: `radial-gradient(circle at 42% 38%, rgba(255,255,255,0.9) 0%, ${color}88 30%, transparent 65%)`,
+                            filter: 'blur(6px)',
+                            opacity: 0.45,
+                            animation: `pulse ${pulseDuration} ease-in-out infinite`,
+                        }}
+                    />
+                    <div
+                        className="absolute top-[15%] left-[16%] w-[20%] h-[10%] rounded-full bg-white/75 pointer-events-none"
+                        style={{ transform: 'rotate(-45deg)', filter: 'blur(0.8px)' }}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div

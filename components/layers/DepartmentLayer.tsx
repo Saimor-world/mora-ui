@@ -501,18 +501,14 @@ export const DepartmentLayer: React.FC = () => {
                             transition={{ duration: 0.9, ease: 'easeOut' }}
                         >
                             {/* Outer amber aura */}
-                            <motion.div
-                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 360, height: 360, background: `radial-gradient(circle, ${deptColor}33 0%, transparent 70%)` }}
-                                animate={prefersReducedMotion ? { scale: 1, opacity: 0.35 } : { scale: [1, 1.35, 1], opacity: [0.55, 0.15, 0.55] }}
-                                transition={{ duration: 5.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+                            <div
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                style={{ width: 360, height: 360, background: `radial-gradient(circle, ${deptColor}30 0%, transparent 70%)`, opacity: 0.28 }}
                             />
                             {/* Mid amber aura */}
-                            <motion.div
-                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 230, height: 230, background: `radial-gradient(circle, ${deptColor}44 0%, transparent 70%)` }}
-                                animate={prefersReducedMotion ? { scale: 1, opacity: 0.28 } : { scale: [1, 1.55, 1], opacity: [0.45, 0.10, 0.45] }}
-                                transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut', delay: 0.8 }}
+                            <div
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                style={{ width: 230, height: 230, background: `radial-gradient(circle, ${deptColor}38 0%, transparent 70%)`, opacity: 0.24 }}
                             />
                             {/* Golden sun core â€” 176px, warm gradient */}
                             <div
@@ -526,11 +522,9 @@ export const DepartmentLayer: React.FC = () => {
                                 {/* Specular */}
                                 <div className="absolute top-[16%] left-[18%] w-[20%] h-[10%] rounded-full bg-white/80 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />
                                 {/* Inner corona */}
-                                <motion.div
-                                    className="absolute inset-[18%] rounded-full mix-blend-overlay blur-md"
-                                    style={{ background: `radial-gradient(circle, ${deptColor} 0%, transparent 70%)` }}
-                                    animate={prefersReducedMotion ? { opacity: 0.7, scale: 1 } : { opacity: [0.5, 1, 0.5], scale: [0.85, 1.15, 0.85] }}
-                                    transition={{ duration: 3.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+                                <div
+                                    className="absolute inset-[18%] rounded-full mix-blend-overlay blur-md pointer-events-none"
+                                    style={{ background: `radial-gradient(circle, ${deptColor} 0%, transparent 70%)`, opacity: 0.62 }}
                                 />
                                 <span className="relative z-10 text-[11px] text-white/95 uppercase tracking-[0.15em] text-center px-3 leading-tight font-light">
                                     {deptTitle.length > 20 ? deptTitle.substring(0, 18) + 'â€¦' : deptTitle}

@@ -147,14 +147,12 @@ export const Star: React.FC<StarProps> = ({
                     transition={{ duration: 0.3 }}
                 />
                 {/* Activity dashed ring — slow rotation */}
-                <motion.circle
+                <circle
                     cx={cx} cy={cy} r={actR}
                     fill="none" stroke={coreColor}
                     strokeWidth="0.7"
                     strokeDasharray="2 7"
                     opacity={isHovered ? 0.55 : 0.25}
-                    animate={prefersReducedMotion ? {} : { rotate: 360 }}
-                    transition={{ duration: 28, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
                     style={{ transformOrigin: `${cx}px ${cy}px` }}
                 />
             </svg>
@@ -177,11 +175,9 @@ export const Star: React.FC<StarProps> = ({
 
             {/* Promoted pulse ring */}
             {isPromoted && (
-                <motion.div
+                <div
                     className="absolute rounded-full border border-amber-400/50"
-                    style={{ inset: -(ring * 0.4) }}
-                    animate={prefersReducedMotion ? { scale: 1, opacity: 0.55 } : { scale: [1, 1.2, 1], opacity: [0.4, 0.75, 0.4] }}
-                    transition={{ duration: 3.2, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+                    style={{ inset: -(ring * 0.4), opacity: 0.55 }}
                 />
             )}
 
@@ -207,11 +203,9 @@ export const Star: React.FC<StarProps> = ({
                     style={{ transform: 'rotate(-45deg)', filter: 'blur(0.8px)' }}
                 />
                 {/* Inner luminous heart */}
-                <motion.div
+                <div
                     className="absolute inset-[22%] rounded-full mix-blend-overlay"
-                    style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(6px)' }}
-                    animate={prefersReducedMotion ? { opacity: 0.8, scale: 1 } : { opacity: [0.65, 1.0, 0.65], scale: [0.88, 1.12, 0.88] }}
-                    transition={{ duration: 3.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+                    style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(6px)', opacity: 0.8 }}
                 />
                 {/* Glass caustic */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_26%,rgba(255,255,255,0.20)_0%,transparent_52%)] pointer-events-none" />

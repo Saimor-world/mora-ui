@@ -438,18 +438,14 @@ export const SpaceLayer: React.FC = () => {
                             transition={{ duration: 0.9, ease: "easeOut" }}
                         >
                             {/* Outer aura Ã¢â‚¬â€ boosted from 28/55% Ã¢â€ â€™ 55/70% */}
-                            <motion.div
-                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2"
-                                style={{ width: 300, height: 300, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}55 0%, transparent 68%)` }}
-                                animate={prefersReducedMotion ? { scale: 1, opacity: 0.45 } : { scale: [1, 1.40, 1], opacity: [0.70, 0.20, 0.70] }}
-                                transition={{ duration: 6, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut" }}
+                            <div
+                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                style={{ width: 300, height: 300, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}50 0%, transparent 68%)`, opacity: 0.30 }}
                             />
                             {/* Mid aura */}
-                            <motion.div
+                            <div
                                 className="absolute top-1/2 left-1/2 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                                style={{ width: 190, height: 190, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}66 0%, transparent 68%)` }}
-                                animate={prefersReducedMotion ? { scale: 1, opacity: 0.35 } : { scale: [1, 1.40, 1], opacity: [0.50, 0.12, 0.50] }}
-                                transition={{ duration: 4.5, repeat: prefersReducedMotion ? 0 : Infinity, ease: "easeInOut", delay: 1 }}
+                                style={{ width: 190, height: 190, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}60 0%, transparent 68%)`, opacity: 0.22 }}
                             />
                             {/* Core orb Ã¢â‚¬â€ 144px Ã¢â‚¬â€ fixed: was ${color}25 (9% alpha) Ã¢â€ â€™ now ${color}AA (67%) */}
                             <div
@@ -475,11 +471,9 @@ export const SpaceLayer: React.FC = () => {
                                 {/* Specular */}
                                 <div className="absolute top-[16%] left-[16%] w-[18%] h-[10%] rounded-full bg-white/70 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />
                                 {/* Inner glow */}
-                                <motion.div
-                                    className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md"
-                                    style={{ background: `radial-gradient(circle, ${currentDepartment?.color || '#10B981'} 0%, transparent 70%)` }}
-                                    animate={prefersReducedMotion ? { opacity: 0.7, scale: 1 } : { opacity: [0.5, 0.9, 0.5], scale: [0.9, 1.1, 0.9] }}
-                                    transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+                                <div
+                                    className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md pointer-events-none"
+                                    style={{ background: `radial-gradient(circle, ${currentDepartment?.color || '#10B981'} 0%, transparent 70%)`, opacity: 0.58 }}
                                 />
                                 <span className="relative z-10 text-[11px] text-white/90 uppercase tracking-[0.14em] text-center px-4 leading-tight font-light">
                                     {spaceName.length > 20 ? spaceName.substring(0, 18) + 'Ã¢â‚¬Â¦' : spaceName}
@@ -555,17 +549,13 @@ export const SpaceLayer: React.FC = () => {
                                 transition={{ delay: 0.5, duration: 0.6 }}
                             >
                                 {/* Icon */}
-                                <motion.div
-                                    className="relative"
-                                    animate={prefersReducedMotion ? {} : { scale: [1, 1.06, 1], opacity: [0.5, 0.8, 0.5] }}
-                                    transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-                                >
+                                <div className="relative">
                                     <div className="w-16 h-16 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-center">
                                         <FolderOpen size={28} className="text-emerald-400/50" />
                                     </div>
                                     {/* Subtle glow ring */}
                                     <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: '0 0 30px rgba(16,185,129,0.12)' }} />
-                                </motion.div>
+                                </div>
 
                                 {/* Label */}
                                 <div className="flex flex-col items-center gap-1.5">

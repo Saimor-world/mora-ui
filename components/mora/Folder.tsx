@@ -123,14 +123,10 @@ export const Folder: React.FC<FolderProps> = ({
             animate={{
                 scale: isHovered ? 1.10 : 1,
                 opacity: 1,
-                x: (orbitActive && !prefersReducedMotion) ? [0, 2, 0, -2, 0] : 0,
-                y: (orbitActive && !prefersReducedMotion) ? [0, -1.2, 0, 1.2, 0] : 0,
             }}
             transition={{
                 delay,
                 type: 'spring', stiffness: 380, damping: 28,
-                x: (orbitActive && !prefersReducedMotion) ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut' } : undefined,
-                y: (orbitActive && !prefersReducedMotion) ? { duration: 3.4, repeat: Infinity, ease: 'easeInOut', delay: 0.4 } : undefined,
             }}
             whileTap={{ scale: 0.88 }}
         >
@@ -159,14 +155,12 @@ export const Folder: React.FC<FolderProps> = ({
                         transition={{ duration: 0.3 }}
                     />
                 )}
-                <motion.circle
+                <circle
                     cx={cx} cy={cy} r={actR}
                     fill="none" stroke={coreColor}
                     strokeWidth="1.2"
                     strokeDasharray="2 8"
                     opacity={isHovered ? 0.70 : 0.40}
-                    animate={prefersReducedMotion ? {} : { rotate: -360 }}
-                    transition={{ duration: 22, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'linear' }}
                     style={{ transformOrigin: `${cx}px ${cy}px` }}
                 />
             </svg>
@@ -189,11 +183,9 @@ export const Folder: React.FC<FolderProps> = ({
 
             {/* Promoted pulse */}
             {isPromoted && (
-                <motion.div
+                <div
                     className="absolute rounded-full border border-amber-400/50"
-                    style={{ inset: -(ring * 0.35) }}
-                    animate={prefersReducedMotion ? { scale: 1, opacity: 0.50 } : { scale: [1, 1.18, 1], opacity: [0.35, 0.68, 0.35] }}
-                    transition={{ duration: 3, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
+                    style={{ inset: -(ring * 0.35), opacity: 0.5 }}
                 />
             )}
 
@@ -212,14 +204,6 @@ export const Folder: React.FC<FolderProps> = ({
                         : `0 0 26px ${coreColor}70, 0 5px 16px rgba(0,0,0,0.26), inset 1px 1px 4px rgba(255,255,255,0.22)`,
                     border: `1.5px solid ${coreColor}88`,
                 }}
-                animate={isActive ? {
-                    boxShadow: [
-                        `0 0 24px ${coreColor}55`,
-                        `0 0 42px ${coreColor}80`,
-                        `0 0 24px ${coreColor}55`,
-                    ],
-                } : {}}
-                transition={{ duration: 2, repeat: isActive ? Infinity : 0, ease: 'easeInOut' }}
             >
                 {/* Specular */}
                 <div
@@ -227,11 +211,9 @@ export const Folder: React.FC<FolderProps> = ({
                     style={{ transform: 'rotate(-45deg)', filter: 'blur(0.7px)' }}
                 />
                 {/* Inner glow */}
-                <motion.div
+                <div
                     className="absolute inset-[24%] rounded-full mix-blend-overlay"
-                    style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(5px)' }}
-                    animate={prefersReducedMotion ? { opacity: 0.7, scale: 1 } : { opacity: [0.55, 0.90, 0.55], scale: [0.88, 1.12, 0.88] }}
-                    transition={{ duration: 4, repeat: prefersReducedMotion ? 0 : Infinity, ease: 'easeInOut', delay }}
+                    style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(5px)', opacity: 0.72 }}
                 />
                 {/* Glass caustic */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_26%,rgba(255,255,255,0.18)_0%,transparent_52%)] pointer-events-none" />
