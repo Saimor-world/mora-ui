@@ -48,7 +48,6 @@ import { ViewPort } from '@/components/layout/ViewPort';
 // Background Layers
 import { StarField } from '@/components/visual/StarField';
 import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
-import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
 import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 
 // UI Components
@@ -281,6 +280,7 @@ export const MoraShell: React.FC = () => {
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
     const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
+    const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
 
     // Window Snapping
@@ -350,6 +350,13 @@ export const MoraShell: React.FC = () => {
 
         window.addEventListener('mora-pane-fullscreen-change', handleFullscreenChange);
         return () => window.removeEventListener('mora-pane-fullscreen-change', handleFullscreenChange);
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const isDev = process.env.NODE_ENV === 'development';
+        const hasParam = window.location.search.includes('diagnostics=1');
+        setDiagnosticsEnabled(isDev || hasParam);
     }, []);
 
     // Hooks
@@ -488,8 +495,7 @@ export const MoraShell: React.FC = () => {
 
             {/* Background Layers */}
             <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
-            <StarField {...({ density: 'medium' } as any)} />
-            <MyceliumOverlay />
+            <StarField {...({ density: 'low' } as any)} />
 
             {/* ================================================================
                 LAYER 2: MAIN CONTENT
@@ -598,7 +604,7 @@ export const MoraShell: React.FC = () => {
             <NameConflictModal />
 
             {/* Dev-only intelligence diagnostics panel — hidden in prod unless ?diagnostics=1 */}
-            <IntelligenceDiagnostics />
+            {diagnosticsEnabled && <IntelligenceDiagnostics />}
 
             {/* Logout Transition Overlay */}
             {

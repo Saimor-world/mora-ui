@@ -71,9 +71,13 @@ export const MoraLivingBackground: React.FC = () => {
 
     React.useEffect(() => { setMounted(true); }, []);
 
+    const isThinking = orbState === 'thinking';
+    const isLayerFocusView = viewLevel === 'department' || viewLevel === 'space' || viewLevel === 'folder';
+
     const stars = useMemo(() => {
         if (!mounted) return [];
-        return Array.from({ length: 500 }).map((_, i) => {
+        const starCount = isLayerFocusView ? 90 : 180;
+        return Array.from({ length: starCount }).map((_, i) => {
             const ci = i % 5;
             const size = sr(i * 1.3) * 2.8 + 0.5;
             return {
@@ -88,11 +92,12 @@ export const MoraLivingBackground: React.FC = () => {
                 opacity: 0.38 + sr(i * 11.1) * 0.52,
             };
         });
-    }, [mounted]);
+    }, [mounted, isLayerFocusView]);
 
     const threads = useMemo(() => {
         if (!mounted) return [];
-        return Array.from({ length: 14 }).map((_, i) => ({
+        const threadCount = isLayerFocusView ? 0 : 6;
+        return Array.from({ length: threadCount }).map((_, i) => ({
             id: i,
             delay: i * 1.5,
             duration: 18 + sr(i * 6.7) * 20,
@@ -101,10 +106,7 @@ export const MoraLivingBackground: React.FC = () => {
             color: THREAD_COLORS[i % 5],
             width: 24 + sr(i * 4.4) * 20,
         }));
-    }, [mounted]);
-
-    const isThinking = orbState === 'thinking';
-    const isLayerFocusView = viewLevel === 'department' || viewLevel === 'space' || viewLevel === 'folder';
+    }, [mounted, isLayerFocusView]);
     const auroraOpacityTrack = isLayerFocusView
         ? [0.12, 0.30, 0.18, 0.28, 0.12]
         : [0.45, 1, 0.65, 1, 0.45];
@@ -162,10 +164,10 @@ export const MoraLivingBackground: React.FC = () => {
                 />
             ))}
 
-            {/* ── 500 TWINKLING STARS ── */}
+            {/* ── STATIC STARS (reduced count for perf) ── */}
             <div className="absolute inset-0">
                 {stars.map((star) => (
-                    <motion.div
+                    <div
                         key={star.id}
                         className="absolute rounded-full"
                         style={{
@@ -175,23 +177,14 @@ export const MoraLivingBackground: React.FC = () => {
                             height:          star.size,
                             backgroundColor: star.color,
                             boxShadow:       `0 0 ${star.size * 2}px ${star.size * 0.8}px ${star.glow}`,
-                        }}
-                        animate={{
-                            opacity: [star.opacity * 0.32, star.opacity, star.opacity * 0.32],
-                            scale:   [1, 1.28, 1],
-                        }}
-                        transition={{
-                            duration: star.duration,
-                            repeat:   Infinity,
-                            delay:    star.delay,
-                            ease:     'easeInOut',
+                            opacity:         star.opacity * (isLayerFocusView ? 0.55 : 1),
                         }}
                     />
                 ))}
             </div>
 
             {/* ── FLOATING SACRED GEOMETRY ── */}
-            {mounted && GEO_SHAPES.map((shape, i) => (
+            {mounted && !isLayerFocusView && GEO_SHAPES.slice(0, 3).map((shape, i) => (
                 <motion.div
                     key={i}
                     className="absolute"

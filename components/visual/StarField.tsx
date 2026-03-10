@@ -51,8 +51,8 @@ export const StarField: React.FC<StarFieldProps> = ({ warp = false, density = 'm
             canvas.width = width;
             canvas.height = height;
 
-            const densityMap = { low: 800, medium: 2000, high: 3400 };
-            const STAR_COUNT = densityMap[density] || 1800;
+            const densityMap = { low: 260, medium: 700, high: 1200 };
+            const STAR_COUNT = densityMap[density] || 700;
             const colors = [
                 '#FFFFFF', // White
                 '#FFFFFF',
@@ -118,25 +118,27 @@ export const StarField: React.FC<StarFieldProps> = ({ warp = false, density = 'm
             ctx.shadowBlur = 0;
             ctx.shadowColor = "transparent";
 
-            Object.values(clusters).forEach(clusterStars => {
-                if (clusterStars.length < 3) return; // Need at least 3 for a shape
+            if (density !== 'low') {
+                Object.values(clusters).forEach(clusterStars => {
+                    if (clusterStars.length < 3) return; // Need at least 3 for a shape
 
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'; // Softer constellation lines
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'; // Softer constellation lines
 
-                // Draw lines between stars in cluster with distance check
-                ctx.moveTo(clusterStars[0].x, clusterStars[0].y);
-                for (let i = 1; i < clusterStars.length; i++) {
-                    const dx = clusterStars[i].x - clusterStars[i - 1].x;
-                    const dy = clusterStars[i].y - clusterStars[i - 1].y;
-                    if ((dx * dx + dy * dy) < 80000) { // Increased distance slightly
-                        ctx.lineTo(clusterStars[i].x, clusterStars[i].y);
-                    } else {
-                        ctx.moveTo(clusterStars[i].x, clusterStars[i].y);
+                    // Draw lines between stars in cluster with distance check
+                    ctx.moveTo(clusterStars[0].x, clusterStars[0].y);
+                    for (let i = 1; i < clusterStars.length; i++) {
+                        const dx = clusterStars[i].x - clusterStars[i - 1].x;
+                        const dy = clusterStars[i].y - clusterStars[i - 1].y;
+                        if ((dx * dx + dy * dy) < 80000) { // Increased distance slightly
+                            ctx.lineTo(clusterStars[i].x, clusterStars[i].y);
+                        } else {
+                            ctx.moveTo(clusterStars[i].x, clusterStars[i].y);
+                        }
                     }
-                }
-                ctx.stroke();
-            });
+                    ctx.stroke();
+                });
+            }
 
             ctx.shadowBlur = 0; // Reset shadow for stars
             ctx.setLineDash([]);
