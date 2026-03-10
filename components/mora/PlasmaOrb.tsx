@@ -360,67 +360,84 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 onClick={onClick}
             >
                 <div
-                    className="absolute inset-[-30%] rounded-full pointer-events-none"
+                    className="absolute inset-[-34%] rounded-full pointer-events-none"
                     style={{
-                        background: `radial-gradient(circle at center, ${color}55 0%, ${color}22 42%, transparent 74%)`,
-                        filter: 'blur(22px)',
-                        animation: `pulse ${pulseDuration} ease-in-out infinite`,
+                        background: `radial-gradient(circle at center, ${color}65 0%, ${color}26 40%, transparent 76%)`,
+                        filter: 'blur(24px)',
                     }}
                 />
                 <div
-                    className="absolute inset-[-12%] rounded-full pointer-events-none animate-spin"
+                    className="absolute inset-[-14%] rounded-full pointer-events-none"
                     style={{
                         background: `conic-gradient(from 0deg,
                             transparent 0%,
-                            ${color}22 9%,
-                            transparent 18%,
-                            transparent 38%,
-                            ${color}18 48%,
+                            ${color}22 8%,
+                            transparent 17%,
+                            rgba(255,255,255,0.08) 24%,
+                            transparent 31%,
+                            ${color}16 47%,
                             transparent 58%,
-                            transparent 78%,
-                            ${color}20 88%,
+                            rgba(255,255,255,0.06) 72%,
+                            transparent 80%,
+                            ${color}20 92%,
                             transparent 100%
                         )`,
-                        filter: 'blur(10px)',
-                        animationDuration: '26s',
+                        filter: 'blur(9px)',
+                        transform: 'rotate(18deg)',
                     }}
                 />
                 <div
                     className="absolute inset-0 rounded-full overflow-hidden"
                     style={{
-                        background: `radial-gradient(145% 145% at 28% 24%, rgba(255,255,255,0.30) 0%, ${color}EE 44%, rgba(0,0,0,0.26) 100%)`,
-                        boxShadow: `0 0 ${Math.round(size * 0.45)}px ${color}80, 0 0 ${Math.round(size * 0.9)}px ${color}30, inset 2px 2px 8px rgba(255,255,255,0.26)`,
-                        border: `1px solid ${color}88`,
+                        background: `
+                            radial-gradient(160% 150% at 28% 22%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.18) 12%, transparent 22%),
+                            radial-gradient(120% 120% at 68% 78%, rgba(0,0,0,0.40) 0%, transparent 34%),
+                            radial-gradient(105% 110% at 38% 36%, ${color}F2 0%, ${color}D6 38%, rgba(0,0,0,0.22) 100%)
+                        `,
+                        boxShadow: `0 0 ${Math.round(size * 0.45)}px ${color}70, 0 0 ${Math.round(size * 0.95)}px ${color}28, inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -8px 18px rgba(0,0,0,0.22)`,
+                        border: `1px solid ${color}99`,
                     }}
                 >
                     <div
-                        className="absolute inset-[8%] rounded-full pointer-events-none"
+                        className="absolute inset-[7%] rounded-full pointer-events-none"
                         style={{
-                            background: `conic-gradient(from 0deg,
-                                ${color}00 0%,
-                                ${color}55 20%,
-                                ${color}18 42%,
-                                ${color}66 62%,
-                                ${color}00 100%
+                            background: `conic-gradient(from 220deg,
+                                transparent 0%,
+                                rgba(255,255,255,0.12) 9%,
+                                transparent 18%,
+                                ${color}55 33%,
+                                ${color}14 52%,
+                                ${color}68 71%,
+                                transparent 100%
                             )`,
                             mixBlendMode: 'screen',
-                            filter: 'blur(6px)',
-                            opacity: 0.7,
-                            animation: 'spin 18s linear infinite',
+                            filter: 'blur(7px)',
+                            opacity: 0.78,
+                            transform: 'rotate(-12deg)',
                         }}
                     />
                     <div
-                        className="absolute inset-[20%] rounded-full pointer-events-none"
+                        className="absolute inset-[18%] rounded-full pointer-events-none"
                         style={{
-                            background: `radial-gradient(circle at 42% 38%, rgba(255,255,255,0.9) 0%, ${color}88 30%, transparent 65%)`,
-                            filter: 'blur(6px)',
-                            opacity: 0.45,
-                            animation: `pulse ${pulseDuration} ease-in-out infinite`,
+                            background: `radial-gradient(circle at 42% 38%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.20) 16%, ${color}88 34%, transparent 68%)`,
+                            filter: 'blur(7px)',
+                            opacity: 0.5,
+                        }}
+                    />
+                    <div
+                        className="absolute inset-[11%] rounded-full pointer-events-none"
+                        style={{
+                            background: `radial-gradient(90% 70% at 58% 62%, rgba(0,0,0,0.22) 0%, transparent 65%)`,
+                            mixBlendMode: 'multiply',
                         }}
                     />
                     <div
                         className="absolute top-[15%] left-[16%] w-[20%] h-[10%] rounded-full bg-white/75 pointer-events-none"
                         style={{ transform: 'rotate(-45deg)', filter: 'blur(0.8px)' }}
+                    />
+                    <div
+                        className="absolute top-[24%] left-[28%] w-[11%] h-[6%] rounded-full bg-white/35 pointer-events-none"
+                        style={{ transform: 'rotate(-28deg)', filter: 'blur(1px)' }}
                     />
                 </div>
             </div>

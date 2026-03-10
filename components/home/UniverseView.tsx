@@ -241,22 +241,26 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* Galaxy wash */}
             <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
                 background: `
-                    radial-gradient(1200px 600px at 60% 60%, rgba(30, 120, 180, 0.35) 0%, transparent 65%),
-                    radial-gradient(900px 420px at 20% 25%, rgba(34, 197, 94, 0.22) 0%, transparent 60%),
-                    radial-gradient(820px 420px at 80% 35%, rgba(99, 102, 241, 0.25) 0%, transparent 55%),
-                    radial-gradient(1000px 520px at 40% 80%, rgba(9, 60, 90, 0.25) 0%, transparent 60%)
+                    radial-gradient(1240px 620px at 60% 60%, rgba(34, 160, 220, 0.42) 0%, transparent 65%),
+                    radial-gradient(960px 440px at 20% 25%, rgba(34, 197, 94, 0.28) 0%, transparent 60%),
+                    radial-gradient(860px 440px at 80% 35%, rgba(99, 102, 241, 0.30) 0%, transparent 55%),
+                    radial-gradient(1040px 560px at 40% 80%, rgba(12, 74, 110, 0.28) 0%, transparent 60%)
                 `
             }} />
             {/* Deep space gradient */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#041c1a] via-[#071422] to-[#0a2b2a] opacity-85 z-[-8] pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#072522] via-[#0b1b2d] to-[#103636] opacity-80 z-[-8] pointer-events-none" />
             {/* Galaxy band */}
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "linear-gradient(120deg, rgba(16,185,129,0.06) 0%, rgba(6,182,212,0.12) 45%, rgba(99,102,241,0.1) 70%, transparent 100%)",
+                background: "linear-gradient(120deg, rgba(16,185,129,0.10) 0%, rgba(6,182,212,0.17) 45%, rgba(99,102,241,0.13) 70%, transparent 100%)",
+                mixBlendMode: "screen"
+            }} />
+            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
+                background: "radial-gradient(760px 280px at 52% 48%, rgba(255,255,255,0.05) 0%, rgba(34,211,238,0.05) 22%, transparent 70%)",
                 mixBlendMode: "screen"
             }} />
             {/* Subtle vignette */}
             <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
-                background: "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.8) 100%)"
+                background: "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.42) 78%, rgba(0,0,0,0.68) 100%)"
             }} />
 
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}

@@ -293,6 +293,24 @@ export const Dock = () => {
                             <div
                                 className={`absolute inset-0 rounded-full ${isStandardMode ? 'border border-[#0078D4]/30 bg-white' : 'border border-white/10 bg-black/20'}`}
                             />
+                            {!isStandardMode && (
+                                <>
+                                    <div
+                                        className="absolute inset-[-6px] rounded-full pointer-events-none"
+                                        style={{
+                                            background: `radial-gradient(circle at 32% 28%, ${userAccent}35 0%, transparent 58%)`,
+                                            filter: 'blur(14px)',
+                                        }}
+                                    />
+                                    <div
+                                        className="absolute inset-[1px] rounded-full pointer-events-none"
+                                        style={{
+                                            border: `1px solid ${userAccent}33`,
+                                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -8px 16px rgba(0,0,0,0.22)`,
+                                        }}
+                                    />
+                                </>
+                            )}
                             <div className="absolute inset-[3px] rounded-full overflow-hidden">
                                 <PlasmaOrb
                                     color={userAccent}
@@ -503,11 +521,26 @@ export const Dock = () => {
                         >
                             {/* Outer glow ring */}
                             {!isStandardMode && (
-                                <div className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/30 dock-ring-pulse" />
+                                <>
+                                    <div className="absolute inset-[-8px] rounded-full pointer-events-none" style={{
+                                        background: `radial-gradient(circle at 35% 30%, ${accent}35 0%, transparent 64%)`,
+                                        filter: 'blur(20px)'
+                                    }} />
+                                    <div className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/26 dock-ring-pulse" />
+                                    <div className="absolute inset-[2px] rounded-full border border-white/12 pointer-events-none" />
+                                </>
                             )}
                             {/* Inner border */}
                             <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/50'
                                 }`} />
+                            {!isStandardMode && (
+                                <div
+                                    className="absolute inset-[4px] rounded-full pointer-events-none"
+                                    style={{
+                                        background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.18) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.24) 0%, transparent 35%)'
+                                    }}
+                                />
+                            )}
                             <PlasmaOrb
                                 color={viewMode === 'demo' ? '#0D9488' : '#10B981'}
                                 state={orbState as any}

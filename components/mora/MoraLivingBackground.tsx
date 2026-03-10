@@ -121,25 +121,37 @@ export const MoraLivingBackground: React.FC = () => {
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
 
             {/* Base — Deep Forest Universe */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#1a3830] via-[#0f2922] to-[#091c18]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#23493f] via-[#12332c] to-[#0a201d]" />
 
             {/* Rich 6-layer Nebula */}
             <motion.div
                 animate={{
-                    opacity: isThinking ? 0.42 : 0.30,
+                    opacity: isThinking ? 0.48 : 0.36,
                     scale:   isThinking ? 1.06 : 1.0,
                 }}
                 transition={{ duration: 4, ease: 'easeInOut' }}
                 className="absolute inset-0"
                 style={{
                     background: `
-                        radial-gradient(ellipse 90% 70% at 18% 28%, rgba(16,185,129,0.35) 0%, transparent 60%),
-                        radial-gradient(ellipse 70% 55% at 82% 72%, rgba(6,182,212,0.25) 0%, transparent 55%),
-                        radial-gradient(ellipse 55% 55% at 50% 50%, rgba(212,175,55,0.18) 0%, transparent 45%),
-                        radial-gradient(ellipse 50% 60% at 75% 15%, rgba(139,92,246,0.22) 0%, transparent 50%),
-                        radial-gradient(ellipse 45% 45% at 10% 80%, rgba(244,63,94,0.14) 0%, transparent 48%),
-                        radial-gradient(ellipse 40% 50% at 93% 40%, rgba(251,191,36,0.12) 0%, transparent 45%)
+                        radial-gradient(ellipse 90% 70% at 18% 28%, rgba(16,185,129,0.42) 0%, transparent 60%),
+                        radial-gradient(ellipse 70% 55% at 82% 72%, rgba(6,182,212,0.30) 0%, transparent 55%),
+                        radial-gradient(ellipse 55% 55% at 50% 50%, rgba(212,175,55,0.22) 0%, transparent 45%),
+                        radial-gradient(ellipse 50% 60% at 75% 15%, rgba(139,92,246,0.25) 0%, transparent 50%),
+                        radial-gradient(ellipse 45% 45% at 10% 80%, rgba(244,63,94,0.16) 0%, transparent 48%),
+                        radial-gradient(ellipse 40% 50% at 93% 40%, rgba(251,191,36,0.15) 0%, transparent 45%)
                     `,
+                }}
+            />
+
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                    background: `
+                        radial-gradient(1400px 520px at 50% 46%, rgba(34,211,238,0.08) 0%, transparent 62%),
+                        radial-gradient(900px 340px at 50% 58%, rgba(16,185,129,0.07) 0%, transparent 58%),
+                        linear-gradient(112deg, transparent 0%, rgba(255,255,255,0.03) 46%, transparent 58%)
+                    `,
+                    mixBlendMode: 'screen',
                 }}
             />
 
@@ -177,7 +189,7 @@ export const MoraLivingBackground: React.FC = () => {
                             height:          star.size,
                             backgroundColor: star.color,
                             boxShadow:       `0 0 ${star.size * 2}px ${star.size * 0.8}px ${star.glow}`,
-                            opacity:         star.opacity * (isLayerFocusView ? 0.55 : 1),
+                            opacity:         star.opacity * (isLayerFocusView ? 0.62 : 1.08),
                         }}
                     />
                 ))}
@@ -269,7 +281,7 @@ export const MoraLivingBackground: React.FC = () => {
             )}
 
             {/* Vignette */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_45%,_rgba(0,0,0,0.20)_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_42%,_rgba(0,0,0,0.14)_100%)]" />
 
             {/* Subtle Grid */}
             <div
