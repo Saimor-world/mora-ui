@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
 
 /**
  * CURSOR TRAIL EFFECT (The Firefly)
@@ -28,6 +27,8 @@ export const CursorTrailEffect: React.FC = () => {
     const mousePos = useRef({ x: -100, y: -100 });
     const lastMousePos = useRef({ x: -100, y: -100 });
     const isAgencyActive = useRef(false);
+    const isRunning = useRef(false);
+    const fadeFrameRef = useRef(0);
 
     // Color palette - Emerald to Gold
     const colors = [
@@ -38,34 +39,19 @@ export const CursorTrailEffect: React.FC = () => {
 
     // Listen for Mouse Movement
     useEffect(() => {
-        /* const handleMouseMove = (e: MouseEvent) => {
-            if (!isAgencyActive.current) {
-                mousePos.current = { x: e.clientX, y: e.clientY };
-            }
-        }; */
-
-        // Listen for Agency Cursor Movement
         const handleAgencyMove = (e: CustomEvent<{ x: number, y: number }>) => {
             isAgencyActive.current = true;
             mousePos.current = { x: e.detail.x, y: e.detail.y };
-
-            // Auto-release agency control after delay if no updates
-            // (Optional simplified logic)
         };
 
-        // Listen for Agency STOP
         const handleAgencyStop = () => {
             isAgencyActive.current = false;
-        }
-
-        // Mouse tracking disabled (User requested AI-only trail)
-        // window.addEventListener('mousemove', handleMouseMove);
+        };
 
         window.addEventListener('agency:cursor_move', handleAgencyMove as EventListener); // Custom event from AgencyCursor
         window.addEventListener('agency:stop', handleAgencyStop);
 
         return () => {
-            // window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('agency:cursor_move', handleAgencyMove as EventListener);
             window.removeEventListener('agency:stop', handleAgencyStop);
         };
@@ -86,11 +72,18 @@ export const CursorTrailEffect: React.FC = () => {
         window.addEventListener('resize', resize);
         resize();
 
-        // Animation Loop
+        const stop = () => {
+            isRunning.current = false;
+            if (animationFrame.current) {
+                cancelAnimationFrame(animationFrame.current);
+            }
+            animationFrame.current = 0;
+        };
+
         const render = () => {
             // Fade out effect
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.globalCompositeOperation = 'lighter';
@@ -100,9 +93,9 @@ export const CursorTrailEffect: React.FC = () => {
             const dy = mousePos.current.y - lastMousePos.current.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist > 1) {
+            if (dist > 1 && isAgencyActive.current) {
                 // Number of particles based on speed
-                const count = Math.min(5, Math.floor(dist));
+                const count = Math.min(4, Math.max(1, Math.floor(dist / 2)));
 
                 for (let i = 0; i < count; i++) {
                     const life = 0.5 + Math.random() * 0.5;
@@ -125,7 +118,7 @@ export const CursorTrailEffect: React.FC = () => {
                 const p = particles.current[i];
                 p.x += p.vx;
                 p.y += p.vy;
-                p.life -= 0.02;
+                p.life -= 0.028;
 
                 if (p.life <= 0) {
                     particles.current.splice(i, 1);
@@ -138,14 +131,43 @@ export const CursorTrailEffect: React.FC = () => {
                 ctx.fill();
             }
 
+            const hasWork = isAgencyActive.current || particles.current.length > 0;
+            if (!hasWork) {
+                fadeFrameRef.current += 1;
+                if (fadeFrameRef.current > 8) {
+                    stop();
+                    return;
+                }
+            } else {
+                fadeFrameRef.current = 0;
+            }
+
             animationFrame.current = requestAnimationFrame(render);
         };
 
-        render();
+        const start = () => {
+            if (isRunning.current) return;
+            isRunning.current = true;
+            fadeFrameRef.current = 0;
+            animationFrame.current = requestAnimationFrame(render);
+        };
+
+        const handleAgencyMove = () => start();
+        const handleAgencyStop = () => {
+            isAgencyActive.current = false;
+            start();
+        };
+
+        window.addEventListener('agency:cursor_move', handleAgencyMove as EventListener);
+        window.addEventListener('agency:stop', handleAgencyStop);
+
+        start();
 
         return () => {
             window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animationFrame.current);
+            window.removeEventListener('agency:cursor_move', handleAgencyMove as EventListener);
+            window.removeEventListener('agency:stop', handleAgencyStop);
+            stop();
         };
     }, []);
 

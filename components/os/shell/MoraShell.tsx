@@ -67,6 +67,7 @@ import { CursorAgent } from '@/components/mora/CursorAgent';
 import { AgencyCursor } from '@/components/agency/AgencyCursor';
 import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { UserCursor } from '@/components/layout/UserCursor';
+import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
 
 // V12: Connection Status, Quick Tips, Greeting & Stats
@@ -594,6 +595,7 @@ export const MoraShell: React.FC = () => {
                         />
 
                         <AgencyCursor />
+                        <CursorTrailEffect />
                         <GhostOverlay />
                         <UserCursor enabled={true} />
                     </>
