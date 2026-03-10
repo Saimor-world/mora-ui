@@ -148,6 +148,7 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
     const config = getVisualConfig();
     const orbPos = getOrbPosition();
     const tetherOpacity = agentState === 'pointing' ? 0.8 : agentState === 'returning' ? 0.35 : 0.55;
+    const animateTether = agentState === 'pointing' || agentState === 'returning' || agentState === 'emerging';
 
     return (
         <AnimatePresence>
@@ -175,8 +176,8 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                         stroke="url(#mora-tether-gradient)"
                         strokeWidth={1.5}
                         strokeDasharray={agentState === 'pointing' ? '0' : '6 10'}
-                        animate={{ strokeDashoffset: [0, 16] }}
-                        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                        animate={{ strokeDashoffset: animateTether ? [0, 16] : 0 }}
+                        transition={animateTether ? { duration: 2.5, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
                     />
                 </motion.svg>
 
@@ -199,13 +200,13 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                 >
                     {/* Floating Animation handled purely by CSS/Motion to avoid React State depth errors */}
                     <motion.div
-                        animate={agentState === 'active' ? {
+                        animate={agentState === 'pointing' ? {
                             y: [0, -10, 0],
                             x: [0, 5, 0]
                         } : {}}
                         transition={{
                             duration: 4,
-                            repeat: Infinity,
+                            repeat: agentState === 'pointing' ? Infinity : 0,
                             ease: "easeInOut"
                         }}
                     >

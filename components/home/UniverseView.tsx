@@ -210,6 +210,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         if (planetPositions.length === 0) return '';
         return planetPositions.map((p) => `M 50 50 L ${p.x} ${p.y}`).join(' ');
     }, [planetPositions]);
+    const animateOrbitThreads = !!hoverPlanetId;
 
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
@@ -382,12 +383,14 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={{
                         pathLength: 1,
-                        opacity: hoverPlanetId ? 0.45 : 0.18,
-                        strokeDashoffset: [0, -50]
+                        opacity: hoverPlanetId ? 0.45 : 0.2,
+                        strokeDashoffset: animateOrbitThreads ? [0, -36] : 0
                     }}
                     transition={{
                         pathLength: { duration: 3, ease: "easeInOut" },
-                        strokeDashoffset: { duration: 30, repeat: Infinity, ease: "linear" }
+                        strokeDashoffset: animateOrbitThreads
+                            ? { duration: 22, repeat: Infinity, ease: "linear" }
+                            : { duration: 0.4, ease: "easeOut" }
                     }}
                     filter="url(#silkGlow)"
                 />
