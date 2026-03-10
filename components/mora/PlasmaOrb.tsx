@@ -154,7 +154,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
 
         const noise = noiseRef.current;
 
-        const MAX_FPS = 20;
+        const MAX_FPS = state === 'thinking' || state === 'alert' ? 16 : 14;
         const MIN_FRAME_MS = 1000 / MAX_FPS;
 
         const render = (ts: number) => {

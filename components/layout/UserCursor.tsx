@@ -148,7 +148,7 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
     const config = getVisualConfig();
     const orbPos = getOrbPosition();
     const tetherOpacity = agentState === 'pointing' ? 0.8 : agentState === 'returning' ? 0.35 : 0.55;
-    const animateTether = agentState === 'pointing' || agentState === 'returning' || agentState === 'emerging';
+    const animateTether = agentState === 'returning' || agentState === 'emerging';
 
     return (
         <AnimatePresence>
@@ -201,12 +201,12 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                     {/* Floating Animation handled purely by CSS/Motion to avoid React State depth errors */}
                     <motion.div
                         animate={agentState === 'pointing' ? {
-                            y: [0, -10, 0],
-                            x: [0, 5, 0]
+                            y: [0, -6, 0],
+                            x: [0, 3, 0]
                         } : {}}
                         transition={{
-                            duration: 4,
-                            repeat: agentState === 'pointing' ? Infinity : 0,
+                            duration: 1.8,
+                            repeat: agentState === 'pointing' ? 2 : 0,
                             ease: "easeInOut"
                         }}
                     >
@@ -247,7 +247,7 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                                 className="absolute inset-0 rounded-full border-2"
                                 style={{ borderColor: config.color }}
                                 animate={{ scale: [1, 2], opacity: [1, 0] }}
-                                transition={{ duration: 1, repeat: Infinity }}
+                                transition={{ duration: 0.9, repeat: 2 }}
                             />
                         </motion.div>
                     )}

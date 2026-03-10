@@ -108,7 +108,7 @@ export function AgencyCursor() {
                     >
                         {/* Cursor ring */}
                         <div className="relative w-8 h-8">
-                            <div className="absolute inset-0 rounded-full bg-emerald-500/30 animate-ping" />
+                            <div className="absolute inset-[-4px] rounded-full bg-emerald-500/12 blur-[6px]" />
                             <div className="absolute inset-1 rounded-full bg-emerald-500/50 backdrop-blur-sm border border-emerald-400/50" />
                             <div className="absolute inset-2 rounded-full bg-emerald-400" />
                         </div>
