@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { NodeViewer } from '@/components/content/NodeViewer';
 import { useMoraStore } from '@/lib/store/moraState';
-import { getCoreBaseUrl } from '@/lib/api/coreClient';
+import { getDownloadUrl } from '@/lib/api/filesClient';
 import { FileText, Link as LinkIcon, File, Calendar, Tag, Download } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 
@@ -48,17 +48,8 @@ export const NodeDetailPanel: React.FC = () => {
 
 
     const nodeTitle = activeNode ? ((activeNode as any).title || (activeNode as any).name || 'Untitled') : 'Untitled';
-    const coreBase = getCoreBaseUrl();
     const filePath = (activeNode as any)?.metadata?.file_path as string | undefined;
-    const fileDownloadUrl = useMemo(() => {
-        if (!filePath) return null;
-        // file_path shape: "uploads/<tenant>/<filename>"
-        const parts = filePath.split('/');
-        const tenant = parts.length >= 2 ? parts[1] : null;
-        const filename = parts.length >= 3 ? parts[2] : parts.at(-1);
-        if (!tenant || !filename) return null;
-        return `${coreBase}/v1/upload/file/${tenant}/${filename}`;
-    }, [filePath, coreBase]);
+    const fileDownloadUrl = activeNode?.id && filePath ? getDownloadUrl(activeNode.id) : null;
 
     if (!activeNode) return null;
     const Icon = activeNode.type === 'link' ? LinkIcon : (activeNode.type === 'note' ? FileText : File);
