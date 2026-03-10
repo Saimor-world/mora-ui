@@ -12,7 +12,7 @@ import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
-const ORBIT_STEP_SECONDS = 1 / 24; // Cap visual updates to ~24 FPS to reduce rerender load.
+const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
 
 /**
  * DEPARTMENT LAYER (L2)

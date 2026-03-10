@@ -18,7 +18,7 @@ const FOLDER_COLORS = [
     { name: 'Rose', value: '#f43f5e' },
     { name: 'Cyan', value: '#06b6d4' },
 ];
-const ORBIT_STEP_SECONDS = 1 / 24; // Cap visual updates to ~24 FPS to reduce rerender load.
+const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
 
 // Orbit speeds per ring: inner faster, outer slower â€” slow planetary drift.
 const RING_SPEEDS = [0.032, 0.020, 0.013];

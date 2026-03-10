@@ -85,22 +85,23 @@ export const SemanticConstellation: React.FC<SemanticConstellationProps> = ({
                         transition={{ duration: 1, delay: i * 0.1 }}
                     />
 
-                    {/* Active Pulse Line - Very subtle */}
+                    {/* Active energy line - subtle, but not a perpetual animation loop */}
                     <motion.path
                         d={conn.path}
                         stroke="url(#energyLink)"
                         strokeWidth={0.3 + conn.weight * 0.5}
-                        strokeOpacity="0.15"
+                        strokeOpacity={0.08 + conn.weight * 0.08}
                         fill="none"
                         strokeDasharray="5 15"
                         initial={{ strokeDashoffset: 0, opacity: 0 }}
                         animate={{
-                            strokeDashoffset: -50,
-                            opacity: [0.05, 0.1, 0.05]
+                            strokeDashoffset: 0,
+                            opacity: 0.08 + conn.weight * 0.08
                         }}
                         transition={{
-                            strokeDashoffset: { duration: 5, repeat: Infinity, ease: "linear" },
-                            opacity: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }
+                            duration: 0.9,
+                            delay: i * 0.08,
+                            ease: "easeOut"
                         }}
                     />
                 </g>

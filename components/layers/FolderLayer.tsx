@@ -465,8 +465,8 @@ export const FolderLayer: React.FC = () => {
                                                             strokeWidth={isActive ? 0.9 : 0.5}
                                                             opacity={isActive ? 0.55 : 0.18}
                                                             initial={{ opacity: 0 }}
-                                                            animate={{ opacity: isActive ? [0.4, 0.8, 0.4] : [0.12, 0.3, 0.12] }}
-                                                            transition={{ duration: 4, repeat: Infinity, delay: index * 0.08 }}
+                                                            animate={{ opacity: isActive ? 0.52 : 0.18 }}
+                                                            transition={{ duration: 0.25, delay: index * 0.02, ease: 'easeOut' }}
                                                         />
                                                     );
                                                 })}
