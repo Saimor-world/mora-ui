@@ -79,36 +79,25 @@ export function MoraOrb({
             onClick={onClick}
         >
             {/* V10 CORONA RESONANCE */}
-            <motion.div
+            <div
                 className="absolute inset-[-60%] rounded-full mix-blend-screen pointer-events-none"
-                animate={{
-                    scale: [1, 1.4, 1],
-                    opacity: [0.15, 0.35, 0.15]
-                }}
-                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                 style={{
                     background: `radial-gradient(circle, ${color}40 0%, transparent 70%)`,
                     filter: 'blur(60px)',
+                    opacity: isHovered ? 0.3 : 0.18,
+                    transform: `scale(${isHovered ? 1.15 : 1})`,
+                    transition: 'opacity 180ms ease, transform 180ms ease',
                 }}
             />
 
             {/* V10 STEAM DECK GLASS BORDER - THE HUB */}
                 <motion.div
                     className="relative w-28 h-28 flex items-center justify-center p-2 rounded-full border border-white/10 backdrop-blur-[40px] cursor-pointer"
-                    style={{
+                style={{
                         background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,20,15,0.8) 100%)',
                         boxShadow: `0 20px 60px rgba(0,0,0,0.8), 0 0 50px ${color}60, inset 0 0 30px ${color}30`,
                 }}
-                animate={{
-                    borderRadius: [
-                        '48% 52% 50% 50% / 52% 48% 50% 50%',
-                        '52% 48% 46% 54% / 50% 52% 48% 50%',
-                        '48% 52% 50% 50% / 52% 48% 50% 50%'
-                    ]
-                }}
-                transition={{
-                    borderRadius: { duration: 6, repeat: Infinity, ease: "easeInOut" }
-                }}
+                animate={{ borderRadius: '48% 52% 50% 50% / 52% 48% 50% 50%' }}
                 whileHover={{ scale: 1.1, boxShadow: `0 20px 80px rgba(0,0,0,0.9), 0 0 70px ${color}90, inset 0 0 40px ${color}40` }}
                 whileTap={{ scale: 0.95 }}
             >
@@ -127,9 +116,9 @@ export function MoraOrb({
                         <motion.div
                             className="absolute inset-[-16px] rounded-full border border-emerald-300/40 pointer-events-none"
                             initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.06, 1] }}
+                            animate={{ opacity: 0.65, scale: 1.03 }}
                             exit={{ opacity: 0, scale: 1.1 }}
-                            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
                         />
                     )}
                 </AnimatePresence>
@@ -174,11 +163,10 @@ export function MoraOrb({
                         animate={{
                             opacity: 0.4,
                             scale: 1,
-                            rotate: 360,
                             borderColor: `${color}40`
                         }}
                         exit={{ opacity: 0, scale: 1.2 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         style={{ filter: 'blur(1px)' }}
                     />
                 )}

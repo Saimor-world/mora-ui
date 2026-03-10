@@ -131,8 +131,8 @@ export const Planet: React.FC<PlanetProps> = ({
                         strokeWidth="0.8"
                         strokeDasharray="2 8"
                         opacity="0.4"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                        animate={{ opacity: isHovered || isActive ? 0.55 : 0.25 }}
+                        transition={{ duration: 0.2 }}
                     />
 
                     {/* 3. CINEMATIC LABEL CONNECTOR */}
@@ -189,14 +189,14 @@ export const Planet: React.FC<PlanetProps> = ({
                 />
 
                 {/* Internal Luminous Heart (Breathing Core) */}
-                <motion.div
+                <div
                     className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md"
-                    style={{ background: `radial-gradient(circle, ${style.border} 0%, transparent 70%)` }}
-                    animate={{
-                        opacity: [0.6, 1, 0.6],
-                        scale: [0.9, 1.1, 0.9]
+                    style={{
+                        background: `radial-gradient(circle, ${style.border} 0%, transparent 70%)`,
+                        opacity: isHovered || isActive ? 0.95 : 0.65,
+                        transform: `scale(${isHovered ? 1.04 : 1})`,
+                        transition: 'opacity 180ms ease, transform 180ms ease',
                     }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 />
 
                 {/* Glass Caustics */}

@@ -135,14 +135,13 @@ export const NodeStar: React.FC<NodeStarProps> = ({
             }}
             initial={{ scale: 0, opacity: 0 }}
             animate={{
-                scale: isImportant ? [1, 1.06, 1] : isPromoted ? [1, 1.04, 1] : [1, 1.02, 1],
+                scale: isHovered ? 1.06 : 1,
                 opacity: isImportant ? 1 : isPromoted ? 0.92 : 0.82,
             }}
             transition={{
                 delay,
-                duration: pulseDuration,
-                repeat: Infinity,
-                ease: 'easeInOut',
+                duration: 0.18,
+                ease: 'easeOut',
             }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -181,8 +180,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                             top: '50%',
                             transform: 'translate(-50%, -50%)',
                         }}
-                        animate={{ opacity: [0.3, 0.7, 0.3], scaleX: [0.8, 1.1, 0.8] }}
-                        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                        animate={{ opacity: isHovered ? 0.6 : 0.35, scaleX: isHovered ? 1.05 : 1 }}
+                        transition={{ duration: 0.2 }}
                     />
                     {/* Vertical bar */}
                     <motion.div
@@ -195,8 +194,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                             top: '50%',
                             transform: 'translate(-50%, -50%)',
                         }}
-                        animate={{ opacity: [0.3, 0.7, 0.3], scaleY: [0.8, 1.1, 0.8] }}
-                        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                        animate={{ opacity: isHovered ? 0.6 : 0.35, scaleY: isHovered ? 1.05 : 1 }}
+                        transition={{ duration: 0.2 }}
                     />
                 </>
             )}
@@ -213,8 +212,8 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                         top: '50%',
                         transform: 'translate(-50%, -50%)',
                     }}
-                    animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
-                    transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}
+                    animate={{ scale: isHovered ? 1.22 : 1.08, opacity: isHovered ? 0.45 : 0.22 }}
+                    transition={{ duration: 0.2 }}
                 />
             )}
 
@@ -274,7 +273,7 @@ export const NodeStar: React.FC<NodeStarProps> = ({
                                 opacity: [0, 0.9, 0],
                                 scale: [0, 1.5, 0],
                             }}
-                            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
+                            transition={{ duration: 0.7, delay: i * 0.08 }}
                         />
                     ))}
                 </div>
