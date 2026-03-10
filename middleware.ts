@@ -74,9 +74,11 @@ export async function middleware(request: NextRequest) {
         req: request,
         secret: process.env.NEXTAUTH_SECRET || "dev_secret_key_change_me_in_prod",
     });
-    // Security: require a NextAuth token for protected routes.
-    // We intentionally do NOT accept legacy "mora_session" storage here.
-    if (!token) {
+    const hasCoreSession = !!request.cookies.get("mora_session")?.value;
+    // Session-first auth bridge:
+    // protected routes are valid if either NextAuth JWT exists
+    // or the backend-issued mora_session cookie exists.
+    if (!token && !hasCoreSession) {
         const loginUrl = new URL("/", request.url);
 
         // Original URL als Redirect-Parameter speichern
