@@ -63,9 +63,16 @@ export function useAuthBootstrapper() {
             const hasNextAuth = status === 'authenticated';
             const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
+            // readCookie uses document.cookie — cannot detect HttpOnly cookies set by Core.
+            // hasCoreSession is intentionally kept for non-HttpOnly fallback paths.
             const hasCoreSession = !!readCookie('mora_session');
+            // mora_session from Core is HttpOnly — browser sends it automatically but JS
+            // cannot read it. If we are on a protected route and NextAuth has settled to
+            // unauthenticated, still probe /v3/auth/session so the cookie gets validated
+            // server-side. This prevents HttpOnly sessions from being silently rejected.
+            const mayHaveHttpOnlySession = status === 'unauthenticated' && pathname !== '/';
 
-            if (hasNextAuth || hasLegacyToken || hasCoreSession) {
+            if (hasNextAuth || hasLegacyToken || hasCoreSession || mayHaveHttpOnlySession) {
                 try {
                     // SYNC: If NextAuth is authenticated, ensure the token is in localStorage for coreClient
                     const currentToken = hasNextAuth ? (session?.user as any)?.accessToken : hasLegacyToken;
@@ -89,8 +96,13 @@ export function useAuthBootstrapper() {
                     }
                     setAuthError(null);
 
-                    // Verify token validity with Backend
-                    const result = await coreGet('/v3/auth/session', { isOptional: true });
+                    // Verify token validity with Backend.
+                    // skipAuth: true — mora_session is HttpOnly and invisible to coreRequest's
+                    // token guard. credentials:'include' (set inside coreRequest) forwards all
+                    // cookies including HttpOnly, so the Core can validate via mora_session.
+                    // Bearer token paths (NextAuth, legacy devToken) still work because those
+                    // tokens are set as readable cookies (mora_auth_token) which are also forwarded.
+                    const result = await coreGet('/v3/auth/session', { isOptional: true, skipAuth: true });
 
                     if (result && result.user_id) {
                         // Auth is valid! Now load data

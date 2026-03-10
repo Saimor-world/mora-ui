@@ -62,12 +62,15 @@ function readCookie(name: string): string | null {
 }
 
 function isTokenExpired(token: string): boolean {
+    // Opaque session tokens issued by Core login (sess_...) carry server-side TTL.
+    // The server validates them on each request — no client-side expiry check needed.
+    if (token.startsWith('sess_')) return false;
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const exp = payload.exp * 1000; // Convert to milliseconds
         return Date.now() >= exp;
     } catch {
-        return true; // If we can't parse, assume expired
+        return true; // If we can't parse as JWT, assume expired
     }
 }
 

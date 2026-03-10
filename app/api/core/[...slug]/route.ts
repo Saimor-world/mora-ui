@@ -77,6 +77,11 @@ async function proxy(request: NextRequest, context: { params: Promise<{ slug: st
   const responseHeaders = new Headers(upstream.headers);
   // Avoid caching surprises for auth'd JSON.
   responseHeaders.set('cache-control', 'no-store');
+  // Node.js fetch (undici) auto-decompresses gzip/br responses — the body we stream
+  // is already decoded. Forwarding content-encoding would cause the browser to try
+  // to decompress again, silently producing "Failed to fetch" for larger responses.
+  responseHeaders.delete('content-encoding');
+  responseHeaders.delete('content-length'); // length is no longer valid after decompression
 
   return new NextResponse(upstream.body, {
     status: upstream.status,
