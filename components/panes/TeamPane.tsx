@@ -23,6 +23,7 @@ import { realtime } from "@/lib/api/realtimeClient";
 import { toast } from "sonner";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useMoraStore } from "@/lib/store/moraState";
+import { useMoraContext } from "@/lib/mora/useMoraContext";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 
 interface ChatMessage {
@@ -72,6 +73,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     const pane = getPane(id);
     const isActive = usePaneStore(state => state.activePaneId === id);
     const { user } = useMoraStore();
+    const ctx = useMoraContext();
 
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [memberSource, setMemberSource] = useState<'v3' | 'v1' | 'none'>('none');
@@ -107,6 +109,11 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
 
     // Fetch Chat History & Subscribe
     useEffect(() => {
+        // Operational gate — do not call user-chat endpoints unless workspace is set up
+        if (ctx.isOperational !== true) {
+            setChatHistory([]);
+            return;
+        }
         if (!showChat) {
             setChatHistory([]);
             return;
@@ -308,8 +315,10 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     }, []);
 
 
-    // Poll for updates
+    // Poll for updates — only when workspace is operational
     useEffect(() => {
+        if (ctx.isOperational !== true) return;
+
         fetchTeamData();
 
         // Update presence every 30 seconds
@@ -324,7 +333,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
             clearInterval(presenceInterval);
             clearInterval(refreshInterval);
         };
-    }, [fetchTeamData]);
+    }, [fetchTeamData, ctx.isOperational]);
 
     // Send invite
     const handleInvite = async () => {
@@ -371,6 +380,9 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     };
 
     if (!pane) return null;
+
+    // Bootstrap guard: session not yet loaded — render nothing (no flash)
+    if (ctx.isOperational === null) return null;
 
     return (
         <GlassPanel
@@ -453,8 +465,18 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Content — gated on operational state */}
                 <div className="flex-1 overflow-y-auto p-4">
+                    {!ctx.isOperational ? (
+                        <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center h-full">
+                            <p className="text-sm font-medium text-foreground/80">
+                                Kein Workspace konfiguriert
+                            </p>
+                            <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
+                                Richte eine Firma oder einen Workspace ein, um das Team nutzen zu können.
+                            </p>
+                        </div>
+                    ) : (
                     <AnimatePresence mode="wait">
                         {/* Members Tab */}
                         {activeTab === "members" && (
@@ -838,6 +860,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                             </motion.div>
                         )}
                     </AnimatePresence>
+                    )}
                 </div>
             </div>
         </GlassPanel>
