@@ -58,7 +58,7 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
                 targetId: 'mora-insight-popup',
                 message: 'Insight verfügbar'
             });
-        }, 100);
+        }, 500);
 
         // Auto-dismiss countdown
         const startTime = Date.now();
