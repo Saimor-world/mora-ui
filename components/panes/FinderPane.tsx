@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -12,6 +12,7 @@ import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
 import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -1013,12 +1014,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         // Fall back to pre-computed targetFolderId, then poll GET /node as last resort.
                         let resolvedFolderId: string | undefined =
                             response.folder_id || targetFolderId || undefined;
+                        let resolvedNodeId: string | undefined = response.node_id;
 
-                        if (!resolvedFolderId) {
+                        if (!resolvedFolderId || !resolvedNodeId) {
                             try {
                                 const nodeStatus = await getFileNode(uploaded.id);
-                                if (nodeStatus.status === 'linked' && nodeStatus.folder_id) {
-                                    resolvedFolderId = nodeStatus.folder_id;
+                                if (nodeStatus.status === 'linked') {
+                                    if (!resolvedFolderId && nodeStatus.folder_id) {
+                                        resolvedFolderId = nodeStatus.folder_id;
+                                    }
+                                    if (!resolvedNodeId && nodeStatus.node_id) {
+                                        resolvedNodeId = nodeStatus.node_id;
+                                    }
                                 }
                             } catch {
                                 // best-effort â€” silently ignore if endpoint unavailable
@@ -1035,6 +1042,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             // Override the generic end-of-loop toast with a precise one
                             toast.success(`${file.name} â†’ ${folderName}`);
                             successCount = 0; // suppress duplicate success toast below
+
+                            if (resolvedNodeId) {
+                                setTimeout(() => {
+                                    dispatchMoraPresence({
+                                        action: 'highlight',
+                                        targetId: `file-node-${resolvedNodeId}`,
+                                        message: `Neu: ${file.name}`
+                                    });
+                                }, 300);
+                            }
                         }
 
                         // P6: Auto-executed, return to idle
@@ -1580,6 +1597,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 return (
                                                     <motion.div
                                                         key={file.id}
+                                                        id={`file-node-${file.id}`}
                                                         onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
                                                         onDoubleClick={(e: React.MouseEvent) => {
@@ -1874,6 +1892,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 return (
                                                     <div
                                                         key={file.id}
+                                                        id={`file-node-${file.id}`}
                                                         onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
                                                         onDoubleClick={(e: React.MouseEvent) => {

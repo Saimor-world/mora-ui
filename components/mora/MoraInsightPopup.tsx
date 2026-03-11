@@ -17,6 +17,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Check, Brain } from 'lucide-react';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 
 export interface MoraInsight {
     id: string;
@@ -50,6 +51,14 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
         }
         setIsVisible(true);
         setProgress(100);
+
+        setTimeout(() => {
+            dispatchMoraPresence({
+                action: 'point',
+                targetId: 'mora-insight-popup',
+                message: 'Insight verfügbar'
+            });
+        }, 100);
 
         // Auto-dismiss countdown
         const startTime = Date.now();
@@ -90,6 +99,7 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
             {isVisible && insight && (
                 <motion.div
                     key={insight.id}
+                    id="mora-insight-popup"
                     className="fixed bottom-28 right-6 z-[8000] pointer-events-auto"
                     initial={{ opacity: 0, y: 24, scale: 0.92, filter: 'blur(4px)' }}
                     animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
