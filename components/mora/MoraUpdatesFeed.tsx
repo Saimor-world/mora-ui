@@ -349,44 +349,52 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
 
     const executeAction = async (action: FeedAction) => {
         try {
-            if (action.departmentId) {
+            const primaryPresenceTarget = action.folderId
+                ? {
+                    targetId: action.folderId,
+                    targetType: 'folder' as const,
+                    message: action.folderName ? `Navigiere zu ${action.folderName}` : 'Navigiere zum Ordner',
+                }
+                : action.spaceId
+                    ? {
+                        targetId: action.spaceId,
+                        targetType: 'space' as const,
+                        message: action.spaceName ? `Navigiere zu ${action.spaceName}` : 'Navigiere zum Space',
+                    }
+                    : action.departmentId
+                        ? {
+                            targetId: action.departmentId,
+                            targetType: 'department' as const,
+                            message: action.departmentName ? `Navigiere zu ${action.departmentName}` : 'Navigiere zum Bereich',
+                        }
+                        : action.type === "navigate_company" && action.companyId
+                            ? {
+                                targetId: action.companyId,
+                                targetType: 'company' as const,
+                                message: action.companyName ? `Navigiere zu ${action.companyName}` : 'Navigiere zur Firma',
+                            }
+                            : null;
+
+            if (primaryPresenceTarget) {
                 dispatchMoraPresence({
                     action: 'navigate',
-                    targetId: action.departmentId,
-                    targetType: 'department',
-                    message: action.departmentName ? `Navigiere zu ${action.departmentName}` : 'Navigiere zum Bereich',
+                    targetId: primaryPresenceTarget.targetId,
+                    targetType: primaryPresenceTarget.targetType,
+                    message: primaryPresenceTarget.message,
                     source: 'system'
                 });
+            }
+
+            if (action.departmentId) {
                 navigateToDepartment(action.departmentId);
             }
             if (action.spaceId) {
-                dispatchMoraPresence({
-                    action: 'navigate',
-                    targetId: action.spaceId,
-                    targetType: 'space',
-                    message: action.spaceName ? `Navigiere zu ${action.spaceName}` : 'Navigiere zum Space',
-                    source: 'system'
-                });
                 navigateToSpace(action.spaceId);
             }
             if (action.folderId) {
-                dispatchMoraPresence({
-                    action: 'navigate',
-                    targetId: action.folderId,
-                    targetType: 'folder',
-                    message: action.folderName ? `Navigiere zu ${action.folderName}` : 'Navigiere zum Ordner',
-                    source: 'system'
-                });
                 navigateToFolder(action.folderId);
             }
             if (action.type === "navigate_company") {
-                dispatchMoraPresence({
-                    action: 'navigate',
-                    targetId: action.companyId,
-                    targetType: 'company',
-                    message: action.companyName ? `Navigiere zu ${action.companyName}` : 'Navigiere zur Firma',
-                    source: 'system'
-                });
                 navigateToCore();
             }
             if (action.type === "open_node" && action.nodeId) {
