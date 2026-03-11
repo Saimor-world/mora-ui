@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion, useAnimation, useReducedMotion } from 'framer-motion';
 
 interface CursorAgentProps {
     /** Whether the agent is active */
@@ -29,13 +29,23 @@ export function CursorAgent({
     awareness = 'idle'
 }: CursorAgentProps & { awareness?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' | 'curious' | 'learning' | 'watching' }) {
     const controls = useAnimation();
+    const prefersReducedMotion = useReducedMotion();
     // Start in center of viewport
     const [currentPosition, setCurrentPosition] = useState(() => ({
         x: typeof window !== 'undefined' ? window.innerWidth / 2 : 500,
         y: typeof window !== 'undefined' ? window.innerHeight / 2 : 400
     }));
     const [isMoving, setIsMoving] = useState(false);
+    const [isDocumentVisible, setIsDocumentVisible] = useState(true);
     const agentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const syncVisibility = () => setIsDocumentVisible(!document.hidden);
+        syncVisibility();
+        document.addEventListener('visibilitychange', syncVisibility);
+        return () => document.removeEventListener('visibilitychange', syncVisibility);
+    }, []);
 
     // Phase 8.3: Awareness Visuals
     const getVisuals = () => {
@@ -50,6 +60,10 @@ export function CursorAgent({
     };
 
     const visuals = getVisuals();
+    const animateAmbient =
+        !prefersReducedMotion &&
+        isDocumentVisible &&
+        (isMoving || action === 'point' || awareness === 'thinking' || awareness === 'alert' || awareness === 'insight');
 
     // UPGRADE D1: Bezier curve movement engine
     const moveToTarget = async (start: { x: number, y: number }, end: { x: number, y: number }) => {
@@ -187,30 +201,37 @@ export function CursorAgent({
                         `,
                         filter: 'blur(12px)'
                     }}
-                    animate={{
-                        scale: isMoving ? [1, 1.4, 1] : [1, 1.2, 1],
-                        opacity: isMoving ? [0.5, 0.8, 0.5] : [0.3, 0.5, 0.3],
+                    animate={animateAmbient ? {
+                        scale: isMoving ? [1, 1.35, 1] : [1, 1.14, 1],
+                        opacity: isMoving ? [0.5, 0.78, 0.5] : [0.32, 0.46, 0.32],
                         rotate: [0, 180, 360]
+                    } : {
+                        scale: 1.05,
+                        opacity: 0.36,
+                        rotate: 0
                     }}
-                    transition={{
-                        duration: isMoving ? 1.5 : 6,
+                    transition={animateAmbient ? {
+                        duration: isMoving ? 1.4 : 6.5,
                         repeat: Infinity,
                         ease: "easeInOut"
-                    }}
+                    } : { duration: 0.35 }}
                 />
 
                 {/* LICHTFEE: Wing-like light extensions - HIGH FIDELITY */}
                 <motion.div
                     className="absolute -inset-4"
-                    animate={{
-                        scale: [1, 1.15, 1],
-                        opacity: [0.6, 0.9, 0.6]
+                    animate={animateAmbient ? {
+                        scale: [1, 1.12, 1],
+                        opacity: [0.58, 0.84, 0.58]
+                    } : {
+                        scale: 1.04,
+                        opacity: 0.68
                     }}
-                    transition={{
-                        duration: 1.5,
+                    transition={animateAmbient ? {
+                        duration: isMoving ? 0.9 : 1.8,
                         repeat: Infinity,
                         ease: "easeInOut"
-                    }}
+                    } : { duration: 0.3 }}
                 >
                     {/* Left Wing (Upper) */}
                     <motion.div
@@ -219,11 +240,14 @@ export function CursorAgent({
                             background: `radial-gradient(ellipse at center, ${visuals.color}80 0%, transparent 80%)`,
                             borderRadius: '100% 10% 80% 80%',
                         }}
-                        animate={{
-                            rotate: isMoving ? [-30, 30, -30] : [-10, 10, -10],
-                            scaleY: isMoving ? [1, 1.4, 1] : [1, 1.1, 1]
+                        animate={animateAmbient ? {
+                            rotate: isMoving ? [-28, 28, -28] : [-8, 8, -8],
+                            scaleY: isMoving ? [1, 1.32, 1] : [1, 1.08, 1]
+                        } : {
+                            rotate: -6,
+                            scaleY: 1.02
                         }}
-                        transition={{ duration: isMoving ? 0.2 : 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        transition={animateAmbient ? { duration: isMoving ? 0.22 : 1.7, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
                     />
                     {/* Right Wing (Upper) */}
                     <motion.div
@@ -232,11 +256,14 @@ export function CursorAgent({
                             background: `radial-gradient(ellipse at center, ${visuals.color}80 0%, transparent 80%)`,
                             borderRadius: '10% 100% 80% 80%',
                         }}
-                        animate={{
-                            rotate: isMoving ? [30, -30, 30] : [10, -10, 10],
-                            scaleY: isMoving ? [1, 1.4, 1] : [1, 1.1, 1]
+                        animate={animateAmbient ? {
+                            rotate: isMoving ? [28, -28, 28] : [8, -8, 8],
+                            scaleY: isMoving ? [1, 1.32, 1] : [1, 1.08, 1]
+                        } : {
+                            rotate: 6,
+                            scaleY: 1.02
                         }}
-                        transition={{ duration: isMoving ? 0.2 : 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        transition={animateAmbient ? { duration: isMoving ? 0.22 : 1.7, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
                     />
                 </motion.div>
 
@@ -251,11 +278,15 @@ export function CursorAgent({
                             inset 0 0 10px white
                         `
                     }}
-                    animate={{
-                        scale: action === 'highlight' ? [1, 1.4, 1] : [1, 1.1, 1],
+                    animate={animateAmbient || action === 'highlight' ? {
+                        scale: action === 'highlight' ? [1, 1.35, 1] : [1, 1.08, 1],
+                    } : {
+                        scale: 1
                     }}
                     transition={{
-                        scale: { duration: action === 'highlight' ? 0.3 : 2, repeat: Infinity, ease: "easeInOut" }
+                        scale: animateAmbient || action === 'highlight'
+                            ? { duration: action === 'highlight' ? 0.3 : 2.2, repeat: Infinity, ease: "easeInOut" }
+                            : { duration: 0.25 }
                     }}
                 >
                     {/* Core Soul Spark - CRYSTAL */}
@@ -265,16 +296,20 @@ export function CursorAgent({
                             background: 'white',
                             boxShadow: `0 0 15px white, 0 0 25px ${visuals.color}`
                         }}
-                        animate={{
-                            scale: [0.8, 1.5, 0.8],
+                        animate={animateAmbient ? {
+                            scale: [0.85, 1.45, 0.85],
                             opacity: [0.9, 1, 0.9],
-                            filter: ['brightness(1)', 'brightness(2)', 'brightness(1)']
+                            filter: ['brightness(1)', 'brightness(1.8)', 'brightness(1)']
+                        } : {
+                            scale: 1,
+                            opacity: 0.96,
+                            filter: 'brightness(1.15)'
                         }}
-                        transition={{
-                            duration: 0.8,
+                        transition={animateAmbient ? {
+                            duration: 0.9,
                             repeat: Infinity,
                             ease: "easeInOut"
-                        }}
+                        } : { duration: 0.25 }}
                     />
                 </motion.div>
 
@@ -300,15 +335,18 @@ export function CursorAgent({
                                 backgroundColor: 'white',
                                 boxShadow: `0 0 8px ${visuals.color}, 0 0 16px white`
                             }}
-                            animate={{
-                                scale: [1, 1.5, 1],
-                                opacity: [0.8, 1, 0.8]
+                            animate={animateAmbient ? {
+                                scale: [1, 1.45, 1],
+                                opacity: [0.82, 1, 0.82]
+                            } : {
+                                scale: 1.12,
+                                opacity: 0.92
                             }}
-                            transition={{
-                                duration: 0.6,
+                            transition={animateAmbient ? {
+                                duration: 0.65,
                                 repeat: Infinity,
                                 ease: "easeInOut"
-                            }}
+                            } : { duration: 0.2 }}
                         />
                     </motion.div>
                 )}
@@ -336,16 +374,15 @@ export function CursorAgent({
                             y: (Math.random() - 0.5) * 30
                         }}
                         transition={{
-                            duration: 0.6 + i * 0.1,
+                            duration: 0.55 + i * 0.08,
                             ease: "easeOut",
-                            repeat: Infinity,
-                            delay: i * 0.08
+                            delay: i * 0.06
                         }}
                     />
                 ))}
 
                 {/* Ambient floating sparkles when idle */}
-                {!isMoving && Array.from({ length: 4 }).map((_, i) => (
+                {animateAmbient && !isMoving && Array.from({ length: 3 }).map((_, i) => (
                     <motion.div
                         key={`sparkle-${i}`}
                         className="absolute rounded-full"
@@ -362,10 +399,10 @@ export function CursorAgent({
                             scale: [0.5, 1, 0.5]
                         }}
                         transition={{
-                            duration: 3 + i,
+                            duration: 3.2 + i,
                             repeat: Infinity,
                             ease: "easeInOut",
-                            delay: i * 0.5
+                            delay: i * 0.6
                         }}
                     />
                 ))}

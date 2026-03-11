@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
 
 /**
@@ -22,12 +22,22 @@ type AgentState = 'dormant' | 'emerging' | 'active' | 'pointing' | 'returning';
 
 export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) => {
     const orbState = useMoraStore(s => s.orbState);
+    const prefersReducedMotion = useReducedMotion();
 
     // Agent state
     const [agentState, setAgentState] = useState<AgentState>('dormant');
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [targetElement, setTargetElement] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [isDocumentVisible, setIsDocumentVisible] = useState(true);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const syncVisibility = () => setIsDocumentVisible(!document.hidden);
+        syncVisibility();
+        document.addEventListener('visibilitychange', syncVisibility);
+        return () => document.removeEventListener('visibilitychange', syncVisibility);
+    }, []);
 
     // Calculate Orb position (bottom-right, matching MoraShell)
     const getOrbPosition = useCallback(() => {
@@ -148,7 +158,8 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
     const config = getVisualConfig();
     const orbPos = getOrbPosition();
     const tetherOpacity = agentState === 'pointing' ? 0.8 : agentState === 'returning' ? 0.35 : 0.55;
-    const animateTether = agentState === 'returning' || agentState === 'emerging';
+    const animateTether = !prefersReducedMotion && isDocumentVisible && (agentState === 'returning' || agentState === 'emerging');
+    const animatePointingFloat = !prefersReducedMotion && isDocumentVisible && agentState === 'pointing';
 
     return (
         <AnimatePresence>
@@ -177,7 +188,7 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                         strokeWidth={1.5}
                         strokeDasharray={agentState === 'pointing' ? '0' : '6 10'}
                         animate={{ strokeDashoffset: animateTether ? [0, 16] : 0 }}
-                        transition={animateTether ? { duration: 2.5, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
+                        transition={animateTether ? { duration: 2.8, repeat: Infinity, ease: "linear" } : { duration: 0.2 }}
                     />
                 </motion.svg>
 
@@ -200,13 +211,13 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                 >
                     {/* Floating Animation handled purely by CSS/Motion to avoid React State depth errors */}
                     <motion.div
-                        animate={agentState === 'pointing' ? {
+                        animate={animatePointingFloat ? {
                             y: [0, -6, 0],
                             x: [0, 3, 0]
                         } : {}}
                         transition={{
                             duration: 1.8,
-                            repeat: agentState === 'pointing' ? 2 : 0,
+                            repeat: animatePointingFloat ? 2 : 0,
                             ease: "easeInOut"
                         }}
                     >
@@ -246,8 +257,8 @@ export const UserCursor: React.FC<MoraCursorAgentProps> = ({ enabled = true }) =
                             <motion.div
                                 className="absolute inset-0 rounded-full border-2"
                                 style={{ borderColor: config.color }}
-                                animate={{ scale: [1, 2], opacity: [1, 0] }}
-                                transition={{ duration: 0.9, repeat: 2 }}
+                                animate={animatePointingFloat ? { scale: [1, 2], opacity: [1, 0] } : { scale: 1.2, opacity: 0.7 }}
+                                transition={animatePointingFloat ? { duration: 0.9, repeat: 2 } : { duration: 0.2 }}
                             />
                         </motion.div>
                     )}
