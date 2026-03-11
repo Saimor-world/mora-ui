@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, AlertTriangle, ShieldAlert, FileCheck } from 'lucide-react';
 import { corePost } from '@/lib/api/coreClient';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { toast } from 'sonner';
 
 interface IntakeContext {
@@ -35,10 +36,33 @@ interface Props {
 
 export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejected, onDismiss, variant }) => {
     const [isProcessing, setIsProcessing] = useState(false);
+    const hasDispatchedPresenceRef = useRef<string | null>(null);
 
     // P6: Auto-detect intake variant if intake_context is present
     const isIntake = variant === 'intake' || !!action.intake_context;
     const intake = action.intake_context;
+    const cardTargetId = useMemo(() => `confirmation-card-${action.action_id}`, [action.action_id]);
+
+    useEffect(() => {
+        if (!action.action_id || hasDispatchedPresenceRef.current === action.action_id) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            if (!document.getElementById(cardTargetId)) return;
+
+            dispatchMoraPresence({
+                action: 'point',
+                targetId: cardTargetId,
+                message: isIntake ? 'Bitte Einordnung prüfen' : 'Bestätigung erforderlich',
+                duration: 2600,
+                source: 'system',
+            });
+            hasDispatchedPresenceRef.current = action.action_id;
+        }, 550);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [action.action_id, cardTargetId, isIntake]);
 
     const handleConfirm = async () => {
         setIsProcessing(true);
@@ -99,6 +123,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     if (isIntake && intake) {
         return (
             <motion.div
+                id={cardTargetId}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-3 bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden"
@@ -160,6 +185,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     // Default variant - Original security warning style
     return (
         <motion.div
+            id={cardTargetId}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-3 bg-red-500/10 border border-red-500/20 rounded-xl overflow-hidden"
