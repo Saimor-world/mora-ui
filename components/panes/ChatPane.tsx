@@ -271,6 +271,8 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
             </p>
             {onOpenSettings && (
                 <button
+                    id="chat-setup-settings"
+                    data-agency-id="chat-setup-settings"
                     onClick={onOpenSettings}
                     className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
                 >
@@ -381,6 +383,7 @@ Was kann ich fuer dich tun?`,
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialMessageProcessed = useRef(false);
+    const hasPromptedSetupRef = useRef(false);
 
     // Memory Integration State
     const [memoryHint, setMemoryHint] = useState<{ show: boolean; content: string }>({ show: false, content: '' });
@@ -438,6 +441,27 @@ Was kann ich fuer dich tun?`,
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
+
+    useEffect(() => {
+        if (moraCtx.isOperational !== false) {
+            hasPromptedSetupRef.current = false;
+            return;
+        }
+        if (hasPromptedSetupRef.current) return;
+
+        const timer = window.setTimeout(() => {
+            dispatchMoraPresence({
+                action: 'point',
+                targetId: 'chat-setup-settings',
+                message: 'Hier Workspace einrichten',
+                source: 'system',
+                duration: 3200,
+            });
+            hasPromptedSetupRef.current = true;
+        }, 1800);
+
+        return () => window.clearTimeout(timer);
+    }, [moraCtx.isOperational]);
 
     // Fullscreen: sync body class + fire event bus for MoraShell
     useEffect(() => {
@@ -526,10 +550,14 @@ Was kann ich fuer dich tun?`,
     const executeNavigation = (deptId: string) => {
         const dept = safeDepartments.find(d => d.id === deptId);
         if (dept) {
-            // Dispatch event for cursor to move
-            window.dispatchEvent(new CustomEvent('mora:navigate', {
-                detail: { departmentId: deptId, departmentName: dept.name }
-            }));
+            dispatchMoraPresence({
+                action: 'navigate',
+                targetId: deptId,
+                targetType: 'department',
+                message: `Navigiere zu ${dept.name}`,
+                source: 'ai',
+            });
+            useMoraStore.getState().navigateToDepartment(deptId);
 
             return `✨ Ich navigiere zu **${dept.name}**! Schau auf die Planeten links.`;
         }
