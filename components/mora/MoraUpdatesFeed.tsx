@@ -32,10 +32,15 @@ type FeedAction = {
     type: "open_node" | "navigate_department" | "navigate_space" | "navigate_folder" | "navigate_company";
     label: string;
     nodeId?: string;
+    nodeName?: string;
     folderId?: string;
+    folderName?: string;
     spaceId?: string;
+    spaceName?: string;
     departmentId?: string;
+    departmentName?: string;
     companyId?: string;
+    companyName?: string;
 };
 
 interface MoraUpdatesFeedProps {
@@ -269,20 +274,30 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
         const entityId = pickPayloadValue(payload, "entity_id", "entityId");
 
         const nodeId = extractNodeId(payload) || (entityType === "node" ? entityId : undefined);
+        const nodeName = pickPayloadValue(payload, "node_name", "nodeName", "title", "name", "summary");
         const folderId = pickPayloadValue(payload, "folder_id", "folderId") || (entityType === "folder" ? entityId : undefined);
+        const folderName = pickPayloadValue(payload, "folder_name", "folderName", "title", "name");
         const spaceId = pickPayloadValue(payload, "space_id", "spaceId") || (entityType === "space" ? entityId : undefined);
+        const spaceName = pickPayloadValue(payload, "space_name", "spaceName", "title", "name");
         const departmentId = pickPayloadValue(payload, "department_id", "departmentId") || (entityType === "department" ? entityId : undefined);
+        const departmentName = pickPayloadValue(payload, "department_name", "departmentName", "title", "name");
         const companyId = pickPayloadValue(payload, "company_id", "companyId") || (entityType === "company" ? entityId : undefined);
+        const companyName = pickPayloadValue(payload, "company_name", "companyName", "title", "name");
 
         if (nodeId) {
             return {
                 type: "open_node",
                 label: "Navigate + Open",
                 nodeId,
+                nodeName,
                 folderId,
+                folderName,
                 spaceId,
+                spaceName,
                 departmentId,
+                departmentName,
                 companyId,
+                companyName,
             };
         }
         if (folderId) {
@@ -290,9 +305,13 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                 type: "navigate_folder",
                 label: "Navigate",
                 folderId,
+                folderName,
                 spaceId,
+                spaceName,
                 departmentId,
+                departmentName,
                 companyId,
+                companyName,
             };
         }
         if (spaceId) {
@@ -300,8 +319,11 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                 type: "navigate_space",
                 label: "Navigate",
                 spaceId,
+                spaceName,
                 departmentId,
+                departmentName,
                 companyId,
+                companyName,
             };
         }
         if (departmentId) {
@@ -309,7 +331,9 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                 type: "navigate_department",
                 label: "Navigate",
                 departmentId,
+                departmentName,
                 companyId,
+                companyName,
             };
         }
         if (companyId) {
@@ -317,6 +341,7 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                 type: "navigate_company",
                 label: "Navigate",
                 companyId,
+                companyName,
             };
         }
         return null;
@@ -325,18 +350,43 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
     const executeAction = async (action: FeedAction) => {
         try {
             if (action.departmentId) {
-                dispatchMoraPresence({ action: 'navigate', targetId: action.departmentId, targetType: 'department', message: 'Navigiere zum Bereich', source: 'system' });
+                dispatchMoraPresence({
+                    action: 'navigate',
+                    targetId: action.departmentId,
+                    targetType: 'department',
+                    message: action.departmentName ? `Navigiere zu ${action.departmentName}` : 'Navigiere zum Bereich',
+                    source: 'system'
+                });
                 navigateToDepartment(action.departmentId);
             }
             if (action.spaceId) {
-                dispatchMoraPresence({ action: 'navigate', targetId: action.spaceId, targetType: 'space', message: 'Navigiere zum Space', source: 'system' });
+                dispatchMoraPresence({
+                    action: 'navigate',
+                    targetId: action.spaceId,
+                    targetType: 'space',
+                    message: action.spaceName ? `Navigiere zu ${action.spaceName}` : 'Navigiere zum Space',
+                    source: 'system'
+                });
                 navigateToSpace(action.spaceId);
             }
             if (action.folderId) {
-                dispatchMoraPresence({ action: 'navigate', targetId: action.folderId, targetType: 'folder', message: 'Navigiere zum Ordner', source: 'system' });
+                dispatchMoraPresence({
+                    action: 'navigate',
+                    targetId: action.folderId,
+                    targetType: 'folder',
+                    message: action.folderName ? `Navigiere zu ${action.folderName}` : 'Navigiere zum Ordner',
+                    source: 'system'
+                });
                 navigateToFolder(action.folderId);
             }
             if (action.type === "navigate_company") {
+                dispatchMoraPresence({
+                    action: 'navigate',
+                    targetId: action.companyId,
+                    targetType: 'company',
+                    message: action.companyName ? `Navigiere zu ${action.companyName}` : 'Navigiere zur Firma',
+                    source: 'system'
+                });
                 navigateToCore();
             }
             if (action.type === "open_node" && action.nodeId) {
