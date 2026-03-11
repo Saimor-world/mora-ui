@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
+import { realtime } from "@/lib/api/realtimeClient";
 import { useMoraStore } from "@/lib/store/moraState";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
@@ -159,6 +160,36 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
         const interval = setInterval(fetchEvents, 15000);
         return () => clearInterval(interval);
     }, [fetchEvents]);
+
+    useEffect(() => {
+        if (!contextCompanyId) return;
+
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        const scheduleRefresh = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                void fetchEvents();
+            }, 250);
+        };
+
+        const handleMindloopEvent = (event: MindLoopEvent) => {
+            const payload = typeof event?.payload === "object" ? event.payload : undefined;
+            const eventCompanyId = pickPayloadValue(payload, "company_id", "companyId");
+            const eventDepartmentId = pickPayloadValue(payload, "department_id", "departmentId");
+
+            if (eventCompanyId && eventCompanyId !== contextCompanyId) return;
+            if (scope === "department" && contextDepartmentId && eventDepartmentId && eventDepartmentId !== contextDepartmentId) return;
+            if (!eventCompanyId && scope === "department" && contextDepartmentId && !eventDepartmentId) return;
+
+            scheduleRefresh();
+        };
+
+        realtime.on("mindloop_event", handleMindloopEvent);
+        return () => {
+            realtime.off("mindloop_event", handleMindloopEvent);
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [contextCompanyId, contextDepartmentId, scope, fetchEvents]);
 
     const visibleEvents = useMemo(() => {
         if (scope !== "department" || !contextDepartmentId) return events;
