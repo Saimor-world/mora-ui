@@ -593,8 +593,13 @@ export const MoraShell: React.FC = () => {
                             active={cursorAgent.active}
                             action={cursorAgent.action}
                             target={cursorAgent.target}
+                            message={cursorAgent.message}
                             awareness={finalOrbState}
-                            onActionComplete={() => setCursorAgent({ active: false, action: 'idle' })}
+                            onActionComplete={(completedAction) => {
+                                if (completedAction === 'return') {
+                                    setCursorAgent({ active: false, action: 'idle', target: undefined, message: null });
+                                }
+                            }}
                         />
 
                         <AgencyCursor />

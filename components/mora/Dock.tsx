@@ -510,6 +510,7 @@ export const Dock = () => {
                     <div className="flex items-center gap-4 pl-2">
                         <button
                             onClick={() => handleDockClick('mora-hub')}
+                            data-mora-home="true"
                             className={`relative w-16 h-16 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
                                 ? 'bg-white shadow-lg'
                                 : 'bg-transparent'

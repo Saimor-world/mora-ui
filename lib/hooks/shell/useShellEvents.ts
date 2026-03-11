@@ -138,8 +138,13 @@ export function useShellEvents({ onOpenResonance }: UseShellEventsOptions) {
                         ? 'idle'
                         : rawAction;
 
-            if (action === 'deactivate' || action === 'return' || action === 'idle') {
-                setCursorAgent({ active: false, action: 'idle', target: undefined });
+            if (action === 'deactivate' || action === 'return') {
+                setCursorAgent({ active: true, action: 'return', target: undefined, message: null });
+                return;
+            }
+
+            if (action === 'idle') {
+                setCursorAgent({ active: false, action: 'idle', target: undefined, message: null });
                 return;
             }
 
@@ -149,12 +154,13 @@ export function useShellEvents({ onOpenResonance }: UseShellEventsOptions) {
             setCursorAgent({
                 active: true,
                 action,
-                target: targetPos
+                target: targetPos,
+                message: typeof detail.message === 'string' && detail.message.length > 0 ? detail.message : null
             });
 
             const timeoutMs = typeof detail.duration === 'number' ? detail.duration : 2500;
             window.setTimeout(() => {
-                setCursorAgent({ active: false, action: 'idle', target: undefined });
+                setCursorAgent({ active: true, action: 'return', target: undefined, message: null });
             }, timeoutMs);
         };
 

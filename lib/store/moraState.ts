@@ -207,8 +207,9 @@ interface MoraState {
     orbNotifications: Array<{ id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }>;
     cursorAgent: {
         active: boolean;
-        action: 'idle' | 'highlight' | 'point' | 'roam';
+        action: 'idle' | 'highlight' | 'point' | 'navigate' | 'return' | 'roam';
         target?: { x: number, y: number };
+        message?: string | null;
     };
     hasBooted: boolean;
     isLoggingOut: boolean;
@@ -251,7 +252,7 @@ interface MoraState {
     ) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
-    setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number } }>) => void;
+    setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number }; message?: string | null }>) => void;
     setHasBooted: (hasBooted: boolean) => void;
     setIsLoggingOut: (isLoggingOut: boolean) => void;
     setHilEnabled: (enabled: boolean) => void;
@@ -340,7 +341,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     cursorAgent: {
         active: false,
         action: 'idle',
-        target: undefined
+        target: undefined,
+        message: null
     },
     hasBooted: false,
     isLoggingOut: false,

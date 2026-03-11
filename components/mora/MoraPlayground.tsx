@@ -194,6 +194,8 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
             idle: "Standby",
             highlight: "Markiert Ziel",
             point: "Zeigt Kontext",
+            navigate: "Fuehrt dich hin",
+            return: "Kehrt zurueck",
             roam: "Scannt Umgebung",
         };
         return labels[cursorAgent.action] || "Aktiv";
