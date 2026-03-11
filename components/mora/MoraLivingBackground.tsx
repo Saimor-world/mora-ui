@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useMoraStore } from "@/lib/store/moraState";
 
 /**
@@ -68,11 +68,31 @@ export const MoraLivingBackground: React.FC = () => {
     const orbState = useMoraStore((s) => s.orbState);
     const viewLevel = useMoraStore((s) => s.viewLevel);
     const [mounted, setMounted] = React.useState(false);
+    const prefersReducedMotion = useReducedMotion();
+    const [isDocumentVisible, setIsDocumentVisible] = useState(
+        typeof document === 'undefined' ? true : !document.hidden
+    );
 
     React.useEffect(() => { setMounted(true); }, []);
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        const handleVisibilityChange = () => {
+            setIsDocumentVisible(!document.hidden);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const isThinking = orbState === 'thinking';
     const isLayerFocusView = viewLevel === 'department' || viewLevel === 'space' || viewLevel === 'folder';
+    const animateAmbient =
+        !prefersReducedMotion &&
+        isDocumentVisible &&
+        (isThinking || orbState === 'focus' || orbState === 'insight' || orbState === 'learning');
 
     const stars = useMemo(() => {
         if (!mounted) return [];
@@ -165,14 +185,16 @@ export const MoraLivingBackground: React.FC = () => {
                     animate={
                         isLayerFocusView
                             ? { opacity: 0, x: 0, scaleX: 1 } // Stop animating entirely when occluded
-                            : { opacity: auroraOpacityTrack, x: auroraXTrack, scaleX: auroraScaleTrack }
+                            : animateAmbient
+                                ? { opacity: auroraOpacityTrack, x: auroraXTrack, scaleX: auroraScaleTrack }
+                                : { opacity: 0.55, x: 0, scaleX: 1 }
                     }
                     transition={{
                         duration: band.duration,
-                        repeat: isLayerFocusView ? 0 : Infinity,
+                        repeat: isLayerFocusView || !animateAmbient ? 0 : Infinity,
                         delay: band.delay,
                         ease: 'easeInOut',
-                        times: isLayerFocusView ? undefined : [0, 0.25, 0.5, 0.75, 1],
+                        times: isLayerFocusView || !animateAmbient ? undefined : [0, 0.25, 0.5, 0.75, 1],
                     }}
                 />
             ))}
@@ -202,18 +224,23 @@ export const MoraLivingBackground: React.FC = () => {
                     key={i}
                     className="absolute"
                     style={{ left: `${shape.x}%`, top: `${shape.y}%` }}
-                    animate={{
+                    animate={animateAmbient ? {
                         y:       [0, -22, -9, -26, 0],
                         x:       [0, 11, -6, 13, 0],
                         rotate:  shape.type === 'hex' ? [0, 18, 6, 22, 0] : [45, 78, 58, 74, 45],
                         opacity: [shape.opacity * 0.45, shape.opacity, shape.opacity * 0.70, shape.opacity, shape.opacity * 0.45],
+                    } : {
+                        y: 0,
+                        x: 0,
+                        rotate: shape.type === 'hex' ? 0 : 45,
+                        opacity: shape.opacity * 0.72,
                     }}
                     transition={{
                         duration: shape.duration,
-                        repeat:   Infinity,
+                        repeat:   animateAmbient ? Infinity : 0,
                         delay:    shape.delay,
                         ease:     'easeInOut',
-                        times:    [0, 0.25, 0.5, 0.75, 1],
+                        times:    animateAmbient ? [0, 0.25, 0.5, 0.75, 1] : undefined,
                     }}
                 >
                     {shape.type === 'hex' ? (
@@ -246,13 +273,16 @@ export const MoraLivingBackground: React.FC = () => {
                     <motion.div
                         key={t.id}
                         initial={{ x: '-100%', opacity: 0 }}
-                        animate={{
+                        animate={animateAmbient ? {
                             x:       '210%',
                             opacity: [0, t.opacity, t.opacity * 1.5, t.opacity, 0],
+                        } : {
+                            x: '0%',
+                            opacity: t.opacity * 0.6,
                         }}
                         transition={{
                             duration: isThinking ? t.duration * 0.55 : t.duration,
-                            repeat:   Infinity,
+                            repeat:   animateAmbient ? Infinity : 0,
                             delay:    t.delay,
                             ease:     'linear',
                         }}
@@ -276,8 +306,8 @@ export const MoraLivingBackground: React.FC = () => {
                         height: '2px',
                         background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.09) 38%, rgba(6,182,212,0.07) 62%, transparent 100%)',
                     }}
-                    animate={{ top: ['-2px', '100vh'], opacity: [0.5, 0.9, 0.5] }}
-                    transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+                    animate={animateAmbient ? { top: ['-2px', '100vh'], opacity: [0.5, 0.9, 0.5] } : { top: '-2px', opacity: 0.16 }}
+                    transition={animateAmbient ? { duration: 14, repeat: Infinity, ease: 'linear' } : { duration: 0.4 }}
                 />
             )}
 
