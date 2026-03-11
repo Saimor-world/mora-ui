@@ -152,55 +152,44 @@ export const Planet: React.FC<PlanetProps> = ({
                 </svg>
             </div>
 
-            {/* 0. ATMOSPHERIC HALO (Contrast Booster) */}
+            {/* 0. ATMOSPHERIC HALO (Premium Depth) */}
             <motion.div
-                className="absolute inset-[-20%] rounded-full blur-[25px] z-[-1]"
-                style={{
-                    background: `radial-gradient(circle, ${style.glow} 0%, transparent 70%)`,
-                }}
+                className="orb-glass-halo"
+                style={{ '--orb-glow': style.glow } as React.CSSProperties}
                 animate={{
-                    opacity: isActive ? 0.3 : isHovered ? 0.2 : 0.08,
-                    scale: isHovered ? 1.1 : 1
+                    opacity: isActive ? 0.35 : isHovered ? 0.25 : 0.14,
+                    scale: isHovered ? 1.12 : 1
                 }}
             />
 
-            {/* ═ THE PLANET SPHERE (V11 Ultra-Clean Glass) ═ */}
+            {/* ═ THE PLANET SPHERE (V12 Premium Glass) ═ */}
             <motion.div
-                className="relative rounded-full flex items-center justify-center overflow-hidden backdrop-blur-[6px]"
+                className="orb-glass flex items-center justify-center"
                 style={{
                     width: planetSize.diameter,
                     height: planetSize.diameter,
-                    background: `radial-gradient(150% 150% at 30% 30%, rgba(255,255,255,0.05) 0%, ${style.glow}08 50%, rgba(0,0,0,0.3) 100%)`,
-
-                    // Subtle Rim + Glass Edge
+                    '--orb-glow': `${style.glow}08`,
+                    '--orb-border': `${style.border}30`,
                     boxShadow: isActive || isHovered
                         ? `0 0 60px ${style.glow}40, inset 0 0 30px ${style.glow}20, inset 2px 2px 8px rgba(255,255,255,0.3)`
                         : `0 15px 40px rgba(0,0,0,0.4), inset 0 0 15px ${style.glow}10, inset 1px 1px 2px rgba(255,255,255,0.15)`,
-
-                    border: `1.5px solid ${style.border}30` // More defined border
-                }}
+                } as React.CSSProperties}
                 whileHover={{ scale: 1.08 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 22 }}
             >
-                {/* Specular Point (Tiny crisp reflection) */}
+                {/* Subsurface scattering core */}
                 <div
-                    className="absolute top-[18%] left-[18%] w-[15%] h-[8%] rounded-[100%] bg-white blur-[1px] opacity-70"
-                    style={{ transform: 'rotate(-45deg)' }}
-                />
-
-                {/* Internal Luminous Heart (Breathing Core) */}
-                <div
-                    className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md"
+                    className="orb-glass-core"
                     style={{
-                        background: `radial-gradient(circle, ${style.border} 0%, transparent 70%)`,
+                        '--orb-glow': style.border,
                         opacity: isHovered || isActive ? 0.95 : 0.65,
                         transform: `scale(${isHovered ? 1.04 : 1})`,
                         transition: 'opacity 180ms ease, transform 180ms ease',
-                    }}
+                    } as React.CSSProperties}
                 />
 
-                {/* Glass Caustics */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2)_0%,transparent_50%)] pointer-events-none" />
+                {/* Glass caustic refraction */}
+                <div className="orb-glass-caustic" />
 
                 {/* Icon */}
                 <div className="relative z-10">

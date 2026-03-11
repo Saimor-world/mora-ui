@@ -418,6 +418,97 @@
     border-radius: 12px;
   }
 
+  /* ═══ SHARED ORB GLASS MATERIAL SYSTEM ═══
+   * Premium glass sphere recipe for Planet, Star, and L2/L3 center orbs.
+   * Set --orb-color and --orb-glow via inline style to customize per-instance.
+   */
+  .orb-glass {
+    position: relative;
+    border-radius: 9999px;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+    background:
+      radial-gradient(150% 150% at 30% 28%,
+        rgba(255,255,255,0.08) 0%,
+        var(--orb-glow, rgba(16,185,129,0.03)) 50%,
+        rgba(0,0,0,0.32) 100%);
+    border: 1.5px solid var(--orb-border, rgba(255,255,255,0.12));
+  }
+
+  /* Specular catch-light (top-left) */
+  .orb-glass::before {
+    content: '';
+    position: absolute;
+    top: 14%;
+    left: 16%;
+    width: 22%;
+    height: 11%;
+    border-radius: 100%;
+    background: white;
+    opacity: 0.75;
+    filter: blur(1px);
+    transform: rotate(-45deg);
+    pointer-events: none;
+  }
+
+  /* Secondary rim light (bottom-right, adds 3D roundness) */
+  .orb-glass::after {
+    content: '';
+    position: absolute;
+    bottom: 10%;
+    right: 12%;
+    width: 16%;
+    height: 8%;
+    border-radius: 100%;
+    background: white;
+    opacity: 0.12;
+    filter: blur(2px);
+    transform: rotate(35deg);
+    pointer-events: none;
+  }
+
+  /* Atmospheric halo behind orb */
+  .orb-glass-halo {
+    position: absolute;
+    inset: -20%;
+    border-radius: 9999px;
+    background: radial-gradient(circle, var(--orb-glow, rgba(16,185,129,0.5)) 0%, transparent 70%);
+    filter: blur(25px);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.14;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .orb-glass-halo[data-active="true"],
+  .orb-glass:hover + .orb-glass-halo {
+    opacity: 0.3;
+    transform: scale(1.1);
+  }
+
+  /* Inner luminous subsurface core */
+  .orb-glass-core {
+    position: absolute;
+    inset: 20%;
+    border-radius: 9999px;
+    background: radial-gradient(circle, var(--orb-glow, rgba(16,185,129,0.8)) 0%, transparent 70%);
+    mix-blend-mode: overlay;
+    filter: blur(8px);
+    opacity: 0.7;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+
+  /* Glass caustic refraction overlay */
+  .orb-glass-caustic {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: radial-gradient(circle at 28% 26%, rgba(255,255,255,0.20) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+
   :root {
     /* Goldenes Sonnenlicht - warm, sanft */
     --primary: 42 88% 52%;

@@ -173,6 +173,33 @@ export const Star: React.FC<StarProps> = ({
                 transition={{ duration: 0.35 }}
             />
 
+            {/* Premium glass sphere core */}
+            <motion.div
+                className="orb-glass flex items-center justify-center"
+                style={{
+                    width: diameter,
+                    height: diameter,
+                    '--orb-glow': `${coreColor}22`,
+                    '--orb-border': `${coreColor}88`,
+                    boxShadow: isActive || isHovered
+                        ? `0 0 42px ${coreColor}70, inset 0 0 18px ${coreColor}30, inset 2px 2px 6px rgba(255,255,255,0.28)`
+                        : `0 0 24px ${coreColor}50, 0 6px 18px rgba(0,0,0,0.28), inset 1px 1px 4px rgba(255,255,255,0.2)`,
+                } as React.CSSProperties}
+                transition={{ type: 'spring', stiffness: 250, damping: 20 }}
+            >
+                <div
+                    className="orb-glass-core"
+                    style={{
+                        '--orb-glow': coreColor,
+                        opacity: isHovered || isActive ? 0.92 : 0.72,
+                        transform: `scale(${isHovered ? 1.05 : 1})`,
+                        transition: 'opacity 180ms ease, transform 180ms ease',
+                    } as React.CSSProperties}
+                />
+                <div className="orb-glass-caustic" />
+                <Icon size={iconSize} className="relative z-10 text-white/90" strokeWidth={1.2} />
+            </motion.div>
+
             {/* Promoted pulse ring */}
             {isPromoted && (
                 <div
@@ -181,43 +208,9 @@ export const Star: React.FC<StarProps> = ({
                 />
             )}
 
-            {/* Glass sphere core — centred within SVG canvas */}
-            <motion.div
-                className="absolute rounded-full flex items-center justify-center overflow-hidden backdrop-blur-[6px]"
-                style={{
-                    width: diameter, height: diameter,
-                    left: '50%', top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    // Key fix: ${coreColor}CC = 80% alpha (was 40 = 25%)
-                    background: `radial-gradient(145% 145% at 28% 26%, rgba(255,255,255,0.26) 0%, ${coreColor}CC 42%, rgba(0,0,0,0.28) 100%)`,
-                    boxShadow: isActive || isHovered
-                        ? `0 0 55px ${coreColor}90, inset 0 0 26px ${coreColor}55, inset 2px 2px 8px rgba(255,255,255,0.38)`
-                        : `0 0 30px ${coreColor}72, 0 6px 18px rgba(0,0,0,0.28), inset 1px 1px 4px rgba(255,255,255,0.24)`,
-                    border: `1.5px solid ${coreColor}99`,
-                }}
-                transition={{ type: 'spring', stiffness: 250, damping: 20 }}
-            >
-                {/* Specular point */}
-                <div
-                    className="absolute top-[15%] left-[15%] w-[20%] h-[11%] rounded-[100%] bg-white opacity-80"
-                    style={{ transform: 'rotate(-45deg)', filter: 'blur(0.8px)' }}
-                />
-                {/* Inner luminous heart */}
-                <div
-                    className="absolute inset-[22%] rounded-full mix-blend-overlay"
-                    style={{ background: `radial-gradient(circle, ${coreColor} 0%, transparent 70%)`, filter: 'blur(6px)', opacity: 0.8 }}
-                />
-                {/* Glass caustic */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_26%,rgba(255,255,255,0.20)_0%,transparent_52%)] pointer-events-none" />
-
-                <Icon size={iconSize} className="relative z-10 text-white" strokeWidth={1.2} />
-            </motion.div>
-
-            {/* Portal hover card */}
-            {isMounted && showPortal && createPortal(
+            {showPortal && isMounted && createPortal(
                 <AnimatePresence>
                     <motion.div
-                        key={`star-portal-${space.id}`}
                         initial={{ opacity: 0, x: -8, scale: 0.94 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -8, scale: 0.94 }}

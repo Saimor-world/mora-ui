@@ -870,7 +870,7 @@ Was kann ich fuer dich tun?`,
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9000] flex flex-col bg-black/95 backdrop-blur-xl"
+                className="fixed inset-0 z-[9000] flex flex-col glass-panel border-none rounded-none"
                 style={{ paddingBottom: '0' }}
             >
                 {chatInner}

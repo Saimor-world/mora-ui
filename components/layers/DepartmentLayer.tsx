@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -21,7 +21,7 @@ const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce re
  * (via getDeptStyle) so HR looks pink, Tech looks cyan, Management green, etc.
  */
 export const DepartmentLayer: React.FC = () => {
-    // Granular store selectors — prevents rerender on unrelated store mutations
+    // Granular store selectors â€” prevents rerender on unrelated store mutations
     const activeDepartmentId = useMoraStore(s => s.activeDepartmentId);
     const activeCompanyId = useMoraStore(s => s.activeCompanyId);
     const departments = useMoraStore(s => s.departments);
@@ -39,7 +39,7 @@ export const DepartmentLayer: React.FC = () => {
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
 
-    // Memoized — was running raw find() on every RAF tick (30fps)
+    // Memoized â€” was running raw find() on every RAF tick (30fps)
     const currentDepartment = useMemo(
         () => safeDepartments.find((d) => d.id === activeDepartmentId),
         [safeDepartments, activeDepartmentId]
@@ -86,10 +86,10 @@ export const DepartmentLayer: React.FC = () => {
     const isMobileViewport = viewportWidth < 600;
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
     /**
-     * Ref mirror of hoveredSpaceId — read by the rAF animation loop to freeze the orbit.
+     * Ref mirror of hoveredSpaceId â€” read by the rAF animation loop to freeze the orbit.
      * Must be updated synchronously (before any React setState) so the loop sees it on the
      * very next frame without waiting for an effect restart.
-     * Pattern mirrors SpaceLayer's isAnyHoveredRef — do not change to state.
+     * Pattern mirrors SpaceLayer's isAnyHoveredRef â€” do not change to state.
      */
     const hoveredSpaceIdRef = useRef<string | null>(null);
 
@@ -140,7 +140,7 @@ export const DepartmentLayer: React.FC = () => {
     const moonPositionsRef = useRef<{ space: { id: string }; x: number; y: number }[]>([]);
 
     const setHoverSpace = useCallback((spaceId: string | null, anchor?: { id: string; x: number; y: number } | null) => {
-        // Update ref FIRST — rAF loop reads this synchronously, before React re-renders.
+        // Update ref FIRST â€” rAF loop reads this synchronously, before React re-renders.
         hoveredSpaceIdRef.current = spaceId ?? null;
         clearHoverTimeout();
         if (!spaceId) {
@@ -209,7 +209,7 @@ export const DepartmentLayer: React.FC = () => {
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
-    }, [prefersReducedMotion]); // hoveredSpaceId intentionally omitted — ref handles it
+    }, [prefersReducedMotion]); // hoveredSpaceId intentionally omitted â€” ref handles it
 
     const normalized = useCallback((value: string) => value.toLowerCase().trim(), []);
 
@@ -352,13 +352,13 @@ export const DepartmentLayer: React.FC = () => {
         );
     }
 
-    // Dept-specific nebula colours â€” same semantic mapping as Planet.tsx (via getDeptStyle)
+    // Dept-specific nebula colours Ã¢â‚¬â€ same semantic mapping as Planet.tsx (via getDeptStyle)
     const deptStyle = getDeptStyle(deptTitle, deptColor || undefined);
     const g = deptStyle.glow; // primary accent, e.g. "#EC4899" for HR
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
-            {/* Dept-coloured nebula â€” shifts hue per department */}
+            {/* Dept-coloured nebula Ã¢â‚¬â€ shifts hue per department */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
@@ -420,7 +420,7 @@ export const DepartmentLayer: React.FC = () => {
             </motion.button>
 
             <motion.div
-                className="absolute top-32 left-8 z-40 rounded-2xl border border-emerald-400/20 bg-black/45 backdrop-blur-xl px-4 py-3 min-w-[220px]"
+                className="absolute top-32 left-8 z-40 glass-panel border-emerald-400/20 px-4 py-3 min-w-[220px]"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
@@ -493,7 +493,7 @@ export const DepartmentLayer: React.FC = () => {
                             </defs>
                         </svg>
 
-                        {/* L2 Center Orb â€” Golden Sun (not the same as L1 planet glass spheres) */}
+                        {/* L2 Center Orb Ã¢â‚¬â€ Golden Sun (not the same as L1 planet glass spheres) */}
                         <motion.div
                             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
                             initial={{ scale: 0, opacity: 0 }}
@@ -510,9 +510,9 @@ export const DepartmentLayer: React.FC = () => {
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                                 style={{ width: 230, height: 230, background: `radial-gradient(circle, ${deptColor}38 0%, transparent 70%)`, opacity: 0.24 }}
                             />
-                            {/* Golden sun core â€” 176px, warm gradient */}
+                            {/* Golden sun core Ã¢â‚¬â€ 176px, warm gradient */}
                             <div
-                                className="relative w-44 h-44 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm"
+                                className="relative w-44 h-44 rounded-full flex items-center justify-center orb-glass pointer-events-auto shadow-2xl"
                                 style={{
                                     background: `radial-gradient(140% 140% at 30% 28%, rgba(255,255,255,0.16) 0%, ${deptColor}55 45%, rgba(0,0,0,0.28) 100%)`,
                                     border: `1.5px solid ${deptColor}AA`,
@@ -527,7 +527,7 @@ export const DepartmentLayer: React.FC = () => {
                                     style={{ background: `radial-gradient(circle, ${deptColor} 0%, transparent 70%)`, opacity: 0.62 }}
                                 />
                                 <span className="relative z-10 text-[11px] text-white/95 uppercase tracking-[0.15em] text-center px-3 leading-tight font-light">
-                                    {deptTitle.length > 20 ? deptTitle.substring(0, 18) + 'â€¦' : deptTitle}
+                                    {deptTitle.length > 20 ? deptTitle.substring(0, 18) + 'Ã¢â‚¬Â¦' : deptTitle}
                                 </span>
                             </div>
                         </motion.div>
@@ -590,7 +590,7 @@ export const DepartmentLayer: React.FC = () => {
                                             }
                                         }}
                                     />
-                                    {/* Clean minimal label below â€” no icon duplication, no 'Layer 3' text */}
+                                    {/* Clean minimal label below Ã¢â‚¬â€ no icon duplication, no 'Layer 3' text */}
                                     {/* Side-adaptive label: right-half moons show label left, left-half show right */}
                                     {(() => {
                                         const isRightHalf = x > 0;
@@ -769,5 +769,6 @@ export const DepartmentLayer: React.FC = () => {
         </div>
     );
 };
+
 
 

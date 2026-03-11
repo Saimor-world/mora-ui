@@ -107,26 +107,27 @@ export const MoraLivingBackground: React.FC = () => {
             width: 24 + sr(i * 4.4) * 20,
         }));
     }, [mounted, isLayerFocusView]);
+
     const auroraOpacityTrack = isLayerFocusView
-        ? [0.12, 0.30, 0.18, 0.28, 0.12]
+        ? [0, 0, 0, 0, 0] // Paused/hidden state
         : [0.45, 1, 0.65, 1, 0.45];
     const auroraXTrack = isLayerFocusView
-        ? ['-2%', '2%', '-1%', '2%', '-2%']
+        ? ['-4%', '-4%', '-4%', '-4%', '-4%']
         : ['-6%', '4%', '-2%', '5%', '-6%'];
     const auroraScaleTrack = isLayerFocusView
-        ? [0.96, 1.02, 0.99, 1.02, 0.96]
+        ? [1, 1, 1, 1, 1] // Paused scale
         : [0.90, 1.08, 0.97, 1.05, 0.90];
 
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
 
-            {/* Base — Deep Forest Universe */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#23493f] via-[#12332c] to-[#0a201d]" />
+            {/* Base — Deep Cinematic Universe (Stronger depth gradient) */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0f2924] via-[#091d19] to-[#061412]" />
 
-            {/* Rich 6-layer Nebula */}
+            {/* Rich 6-layer Nebula (Reduced baseline opacity to let orbs pop) */}
             <motion.div
                 animate={{
-                    opacity: isThinking ? 0.48 : 0.36,
+                    opacity: isThinking ? 0.40 : 0.28,
                     scale:   isThinking ? 1.06 : 1.0,
                 }}
                 transition={{ duration: 4, ease: 'easeInOut' }}
@@ -155,23 +156,23 @@ export const MoraLivingBackground: React.FC = () => {
                 }}
             />
 
-            {/* ── AURORA CURTAIN ── */}
-            {AURORA_BANDS.map((band, i) => (
+            {/* ── AURORA CURTAIN (Contextual & Trimmed to 2 bands) ── */}
+            {AURORA_BANDS.slice(0, 2).map((band, i) => (
                 <motion.div
                     key={i}
                     className="absolute w-full"
                     style={{ top: band.top, height: band.height, background: band.gradient }}
-                    animate={{
-                        opacity: auroraOpacityTrack,
-                        x:       auroraXTrack,
-                        scaleX:  auroraScaleTrack,
-                    }}
+                    animate={
+                        isLayerFocusView
+                            ? { opacity: 0, x: 0, scaleX: 1 } // Stop animating entirely when occluded
+                            : { opacity: auroraOpacityTrack, x: auroraXTrack, scaleX: auroraScaleTrack }
+                    }
                     transition={{
                         duration: band.duration,
-                        repeat: Infinity,
+                        repeat: isLayerFocusView ? 0 : Infinity,
                         delay: band.delay,
                         ease: 'easeInOut',
-                        times: [0, 0.25, 0.5, 0.75, 1],
+                        times: isLayerFocusView ? undefined : [0, 0.25, 0.5, 0.75, 1],
                     }}
                 />
             ))}

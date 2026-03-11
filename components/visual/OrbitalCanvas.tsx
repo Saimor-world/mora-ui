@@ -27,7 +27,7 @@ interface OrbitalCanvasProps {
  * 
  * Uses requestAnimationFrame with throttled state updates.
  * All positions are calculated in a single animation loop.
- * CSS transforms with GPU acceleration.
+ * CSS transforms with GPU acceleration (no layout thrashing).
  */
 export const OrbitalCanvas: React.FC<OrbitalCanvasProps> = ({
     bodies,
@@ -47,12 +47,17 @@ export const OrbitalCanvas: React.FC<OrbitalCanvasProps> = ({
         return map;
     }, [bodies]);
 
-    // Animation loop - runs at 60fps but only updates DOM when needed
+    // Track computed positions for parent lookups
+    const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+
+    // Animation loop - uses transform instead of left/top (no layout thrashing)
     const animate = useCallback((timestamp: number) => {
+        if (!bodies.length) return;
+
         const deltaTime = (timestamp - lastTimeRef.current) / 1000;
         lastTimeRef.current = timestamp;
 
-        // Update each body's position
+        // Update each body's position via CSS transform
         bodies.forEach(body => {
             const el = bodyRefs.current.get(body.id);
             if (!el) return;
@@ -64,18 +69,11 @@ export const OrbitalCanvas: React.FC<OrbitalCanvasProps> = ({
             if (body.orbitRadius && body.orbitSpeed) {
                 const angle = (timestamp / 1000) * body.orbitSpeed;
 
-                // If has parent, orbit around parent
                 if (body.parentId) {
-                    const parent = bodyHierarchy.get(body.parentId);
-                    if (parent) {
-                        const parentEl = bodyRefs.current.get(parent.id);
-                        if (parentEl) {
-                            // Get parent's current position
-                            const parentX = parseFloat(parentEl.style.left) || parent.baseX;
-                            const parentY = parseFloat(parentEl.style.top) || parent.baseY;
-                            x = parentX + Math.cos(angle) * (body.orbitRadius / window.innerWidth * 100);
-                            y = parentY + Math.sin(angle) * (body.orbitRadius / window.innerHeight * 100);
-                        }
+                    const parentPos = positionsRef.current.get(body.parentId);
+                    if (parentPos) {
+                        x = parentPos.x + Math.cos(angle) * (body.orbitRadius / window.innerWidth * 100);
+                        y = parentPos.y + Math.sin(angle) * (body.orbitRadius / window.innerHeight * 100);
                     }
                 } else {
                     x += Math.cos(angle) * (body.orbitRadius / window.innerWidth * 100);
@@ -83,23 +81,25 @@ export const OrbitalCanvas: React.FC<OrbitalCanvasProps> = ({
                 }
             }
 
-            // Apply position via CSS transform (GPU accelerated)
-            el.style.left = `${x}vw`;
-            el.style.top = `${y}vh`;
+            positionsRef.current.set(body.id, { x, y });
+
+            // Use transform for GPU-composited positioning (no layout thrashing)
+            el.style.transform = `translate(calc(${x}vw - 50%), calc(${y}vh - 50%))`;
         });
 
         animationRef.current = requestAnimationFrame(animate);
     }, [bodies, bodyHierarchy]);
 
-    // Start/stop animation
+    // Start/stop animation — only runs when bodies are present
     useEffect(() => {
+        if (bodies.length === 0) return;
         animationRef.current = requestAnimationFrame(animate);
         return () => {
             if (animationRef.current) {
                 cancelAnimationFrame(animationRef.current);
             }
         };
-    }, [animate]);
+    }, [animate, bodies.length]);
 
     // Register body refs
     const setBodyRef = useCallback((id: string, el: HTMLDivElement | null) => {
@@ -121,15 +121,13 @@ export const OrbitalCanvas: React.FC<OrbitalCanvasProps> = ({
                     ref={(el) => setBodyRef(body.id, el)}
                     className="absolute pointer-events-auto cursor-pointer"
                     style={{
-                        left: `${body.baseX}vw`,
-                        top: `${body.baseY}vh`,
+                        left: 0,
+                        top: 0,
                         width: body.size,
                         height: body.size,
-                        transform: 'translate(-50%, -50%)',
-                        willChange: 'left, top',
-                        // GPU acceleration
+                        transform: `translate(calc(${body.baseX}vw - 50%), calc(${body.baseY}vh - 50%))`,
+                        willChange: 'transform',
                         backfaceVisibility: 'hidden',
-                        perspective: 1000,
                     }}
                     onClick={() => onBodyClick?.(body.id)}
                     onMouseEnter={() => onBodyHover?.(body.id)}

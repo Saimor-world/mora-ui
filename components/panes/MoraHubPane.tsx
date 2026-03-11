@@ -121,11 +121,11 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 </div>
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
-                                <p className="text-sm font-medium text-foreground/70">
-                                    Noch nicht operativ
+                            <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 mx-6 mt-8 border border-amber-500/20 bg-amber-500/5 rounded-2xl text-center">
+                                <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-amber-400/80">
+                                    Setup Erforderlich
                                 </p>
-                                <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
+                                <p className="text-xs text-amber-200/50 max-w-[260px] leading-relaxed">
                                     Richte einen Workspace ein, damit Mora operativ wird.
                                 </p>
                             </div>

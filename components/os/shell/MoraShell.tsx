@@ -284,6 +284,7 @@ export const MoraShell: React.FC = () => {
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
     const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
+    const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen;
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
@@ -498,7 +499,7 @@ export const MoraShell: React.FC = () => {
 
             {/* Background Layers */}
             <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
-            <StarField {...({ density: 'low' } as any)} />
+            <StarField density="low" paused={pauseHeavyBackground} />
 
             {/* ================================================================
                 LAYER 2: MAIN CONTENT
