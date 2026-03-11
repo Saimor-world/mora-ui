@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { OrbState } from '@/lib/api/awarenessClient';
 
 interface ForestLightCanopyProps {
@@ -24,6 +24,32 @@ const stateColors: Record<OrbState, { core: string; glow: string; secondary: str
 
 export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, demoMode }) => {
     const palette = useMemo(() => stateColors[orbState] || stateColors.idle, [orbState]);
+    const prefersReducedMotion = useReducedMotion();
+    const [isDocumentVisible, setIsDocumentVisible] = useState(
+        typeof document === 'undefined' ? true : !document.hidden
+    );
+    const animateAmbient =
+        !prefersReducedMotion &&
+        isDocumentVisible &&
+        (demoMode ||
+            orbState === 'thinking' ||
+            orbState === 'focus' ||
+            orbState === 'insight' ||
+            orbState === 'learning' ||
+            orbState === 'alert');
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        const handleVisibilityChange = () => {
+            setIsDocumentVisible(!document.hidden);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     return (
         <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden bg-[#000102]">
@@ -36,7 +62,10 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.4)_1.5px,transparent_1px)] bg-[length:250px_250px]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.3)_1.5px,transparent_1px)] bg-[length:350px_350px]" />
                 {/* Bright Pilot Stars */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,230,200,0.8)_2px,rgba(255,255,255,0)_4px)] bg-[length:600px_600px] animate-pulse" style={{ animationDuration: '8s' }} />
+                <div
+                    className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,230,200,0.8)_2px,rgba(255,255,255,0)_4px)] bg-[length:600px_600px] ${animateAmbient ? 'animate-pulse' : ''}`}
+                    style={animateAmbient ? { animationDuration: '8s' } : undefined}
+                />
             </div>
 
             {/* 1.5 CONSTELLATIONS (Sternbilder - Enhanced with Green Glow) */}
@@ -49,26 +78,47 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 </svg>
                 <svg className="w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="none">
                     {/* Slow floating constellation lines */}
-                    <motion.path
-                        d="M 100 100 L 300 250 L 500 150"
-                        stroke="rgba(255,255,255,0.8)"
-                        strokeWidth="1"
-                        fill="none"
-                        filter="url(#greenGlow)"
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 1, x: [0, 50, 0], y: [0, 30, 0] }}
-                        transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
-                    />
-                    <motion.path
-                        d="M 800 200 L 700 400 L 850 600 L 900 300 Z"
-                        stroke="rgba(255,255,255,0.8)"
-                        strokeWidth="1"
-                        fill="none"
-                        filter="url(#greenGlow)"
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 0.8, rotate: [0, 10, 0] }}
-                        transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
-                    />
+                    {animateAmbient ? (
+                        <>
+                            <motion.path
+                                d="M 100 100 L 300 250 L 500 150"
+                                stroke="rgba(255,255,255,0.8)"
+                                strokeWidth="1"
+                                fill="none"
+                                filter="url(#greenGlow)"
+                                initial={{ pathLength: 0, opacity: 0 }}
+                                animate={{ pathLength: 1, opacity: 1, x: [0, 50, 0], y: [0, 30, 0] }}
+                                transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+                            />
+                            <motion.path
+                                d="M 800 200 L 700 400 L 850 600 L 900 300 Z"
+                                stroke="rgba(255,255,255,0.8)"
+                                strokeWidth="1"
+                                fill="none"
+                                filter="url(#greenGlow)"
+                                initial={{ pathLength: 0, opacity: 0 }}
+                                animate={{ pathLength: 1, opacity: 0.8, rotate: [0, 10, 0] }}
+                                transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <path
+                                d="M 100 100 L 300 250 L 500 150"
+                                stroke="rgba(255,255,255,0.28)"
+                                strokeWidth="1"
+                                fill="none"
+                                filter="url(#greenGlow)"
+                            />
+                            <path
+                                d="M 800 200 L 700 400 L 850 600 L 900 300 Z"
+                                stroke="rgba(255,255,255,0.24)"
+                                strokeWidth="1"
+                                fill="none"
+                                filter="url(#greenGlow)"
+                            />
+                        </>
+                    )}
                 </svg>
             </div>
 
@@ -79,15 +129,15 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 <motion.div
                     className="absolute bottom-[-20%] left-[10%] w-[60vw] h-[80vh] rounded-full blur-[100px]"
                     style={{ background: 'conic-gradient(from 180deg, #7c2d12, #ea580c, transparent)' }}
-                    animate={{ rotate: [0, 10, 0], scale: [1, 1.1, 1], opacity: [0.1, 0.3, 0.1] }}
-                    transition={{ duration: 60, repeat: Infinity, ease: "easeInOut" }}
+                    animate={animateAmbient ? { rotate: [0, 10, 0], scale: [1, 1.1, 1], opacity: [0.1, 0.3, 0.1] } : { opacity: 0.18, scale: 1, rotate: 0 }}
+                    transition={animateAmbient ? { duration: 60, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
                 />
                 {/* Pillar 2: Deep Indigo/Cyan (Less Green) */}
                 <motion.div
                     className="absolute top-[-10%] right-[10%] w-[70vw] h-[70vh] rounded-full blur-[120px]"
                     style={{ background: 'radial-gradient(circle, #1e3a8a, #4338ca, transparent)' }}
-                    animate={{ x: [-20, 20, -20], opacity: [0.1, 0.3, 0.1] }}
-                    transition={{ duration: 50, repeat: Infinity, ease: "easeInOut" }}
+                    animate={animateAmbient ? { x: [-20, 20, -20], opacity: [0.1, 0.3, 0.1] } : { opacity: 0.16, x: 0 }}
+                    transition={animateAmbient ? { duration: 50, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
                 />
             </div>
 
@@ -98,12 +148,12 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                     background: 'linear-gradient(90deg, transparent 0%, #1e40af 20%, #7c3aed 50%, #0891b2 80%, transparent 100%)',
                     filter: 'blur(120px)',
                 }}
-                animate={{
+                animate={animateAmbient ? {
                     opacity: [0.15, 0.25, 0.15],
                     scaleY: [0.98, 1.02, 0.98],
                     rotate: [0, 0.5, 0]
-                }}
-                transition={{ duration: 45, repeat: Infinity, ease: "easeInOut" }}
+                } : { opacity: 0.16, scaleY: 1, rotate: 0 }}
+                transition={animateAmbient ? { duration: 45, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
             />
 
             {/* 4. CHROMATIC CLOUDS (Weightlessness - Deep) */}
@@ -113,11 +163,11 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                     background: 'radial-gradient(circle, #1e3a8a 0%, transparent 70%)',
                     filter: 'blur(180px)',
                 }}
-                animate={{
+                animate={animateAmbient ? {
                     x: [-20, 20, -20],
                     y: [-20, 20, -20],
-                }}
-                transition={{ duration: 90, repeat: Infinity, ease: "easeInOut" }}
+                } : { x: 0, y: 0, opacity: 0.08 }}
+                transition={animateAmbient ? { duration: 90, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
             />
 
             {/* 5. GHOST GALAXY CLUSTERS (Very faint) */}
@@ -125,8 +175,8 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 <motion.div
                     className="absolute top-[20%] left-[30%] w-64 h-32 rounded-full border border-white/5 blur-xl rotate-[15deg]"
                     style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 80%)' }}
-                    animate={{ opacity: [0.2, 0.4, 0.2] }}
-                    transition={{ duration: 40, repeat: Infinity }}
+                    animate={animateAmbient ? { opacity: [0.2, 0.4, 0.2] } : { opacity: 0.22 }}
+                    transition={animateAmbient ? { duration: 40, repeat: Infinity } : { duration: 0.4 }}
                 />
             </div>
 

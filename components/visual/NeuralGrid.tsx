@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface NeuralGridProps {
     active?: boolean;
@@ -18,6 +18,30 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
     active = true,
     state = 'idle'
 }) => {
+    const prefersReducedMotion = useReducedMotion();
+    const [isDocumentVisible, setIsDocumentVisible] = useState(
+        typeof document === 'undefined' ? true : !document.hidden
+    );
+    const animateGrid =
+        active &&
+        !prefersReducedMotion &&
+        isDocumentVisible &&
+        (state === 'thinking' || state === 'focus' || state === 'alert');
+    const showScanLine = animateGrid && state === 'thinking';
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        const handleVisibilityChange = () => {
+            setIsDocumentVisible(!document.hidden);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
     return (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
             {/* Primary Grid Lines */}
@@ -47,7 +71,7 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
             />
 
             {/* Neural Pulse Effect */}
-            {active && (
+            {animateGrid && (
                 <motion.div
                     className="absolute inset-0 bg-gradient-to-t from-emerald-500/[0.02] to-transparent"
                     animate={{
@@ -69,7 +93,7 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
             <div className="absolute bottom-8 right-8 w-16 h-16 border-b border-r border-white/5 opacity-40" />
 
             {/* Scanning Line (only when thinking) */}
-            {state === 'thinking' && (
+            {showScanLine && (
                 <motion.div
                     className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent"
                     animate={{ top: ['0%', '100%'] }}

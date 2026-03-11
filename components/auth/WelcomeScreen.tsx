@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
@@ -49,9 +49,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [showSessionCard, setShowSessionCard] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
+    const prefersReducedMotion = useReducedMotion();
+    const [isDocumentVisible, setIsDocumentVisible] = useState(
+        typeof document === 'undefined' ? true : !document.hidden
+    );
 
     const { setViewMode, setViewLevel, setUser } = useMoraStore();
     const hasInvite = inviteCode.trim().length > 0;
+    const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
 
     // Check for existing session on mount
     useEffect(() => {
@@ -90,6 +95,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setInviteCode('');
         setCompanyName('');
     }, [mode]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+
+        const handleVisibilityChange = () => {
+            setIsDocumentVisible(!document.hidden);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
     const handleLogout = () => {
         // SECURITY HARDENING: Complete localStorage purge
         const keysToRemove = [
@@ -397,41 +416,41 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         >
             {/* Layered Ambient Background - Breathing Effect */}
             <motion.div
-                animate={{
+                animate={ambientMotionEnabled ? {
                     scale: [1, 1.2, 1],
                     opacity: [0.3, 0.5, 0.3],
-                }}
-                transition={{
+                } : { scale: 1, opacity: 0.28 }}
+                transition={ambientMotionEnabled ? {
                     duration: 8,
                     repeat: Infinity,
                     ease: "easeInOut"
-                }}
+                } : { duration: 0.4 }}
                 className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-emerald-500/20 rounded-full blur-[150px] pointer-events-none"
             />
             <motion.div
-                animate={{
+                animate={ambientMotionEnabled ? {
                     scale: [1.2, 1, 1.2],
                     opacity: [0.2, 0.4, 0.2],
-                }}
-                transition={{
+                } : { scale: 1.06, opacity: 0.2 }}
+                transition={ambientMotionEnabled ? {
                     duration: 10,
                     repeat: Infinity,
                     ease: "easeInOut",
                     delay: 1
-                }}
+                } : { duration: 0.4 }}
                 className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-mora-gold/20 rounded-full blur-[120px] pointer-events-none"
             />
             <motion.div
-                animate={{
+                animate={ambientMotionEnabled ? {
                     scale: [1, 1.3, 1],
                     opacity: [0.15, 0.25, 0.15],
-                }}
-                transition={{
+                } : { scale: 1, opacity: 0.14 }}
+                transition={ambientMotionEnabled ? {
                     duration: 12,
                     repeat: Infinity,
                     ease: "easeInOut",
                     delay: 2
-                }}
+                } : { duration: 0.4 }}
                 className="absolute top-1/2 right-1/4 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-[100px] pointer-events-none"
             />
 
@@ -456,28 +475,28 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             {/* Orb with Pulsing Rings - Decorative only, no MoraOrb component */}
                             <div className="relative w-20 h-20">
                                 <motion.div
-                                    animate={{
+                                    animate={ambientMotionEnabled ? {
                                         scale: [1, 1.3, 1],
                                         opacity: [0.3, 0, 0.3],
-                                    }}
-                                    transition={{
+                                    } : { scale: 1, opacity: 0.18 }}
+                                    transition={ambientMotionEnabled ? {
                                         duration: 4,
                                         repeat: Infinity,
                                         ease: "easeInOut"
-                                    }}
+                                    } : { duration: 0.4 }}
                                     className="absolute inset-0 w-32 h-32 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 rounded-full border border-emerald-500/30"
                                 />
                                 <motion.div
-                                    animate={{
+                                    animate={ambientMotionEnabled ? {
                                         scale: [1, 1.5, 1],
                                         opacity: [0.2, 0, 0.2],
-                                    }}
-                                    transition={{
+                                    } : { scale: 1, opacity: 0.12 }}
+                                    transition={ambientMotionEnabled ? {
                                         duration: 5,
                                         repeat: Infinity,
                                         ease: "easeInOut",
                                         delay: 0.5
-                                    }}
+                                    } : { duration: 0.4 }}
                                     className="absolute inset-0 w-40 h-40 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 rounded-full border border-mora-gold/20"
                                 />
                                 {/* Decorative orb sphere - simpler version without full MoraOrb component */}
@@ -487,15 +506,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     style={{
                                         background: 'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 25%), radial-gradient(circle at 50% 50%, #10B981 0%, rgba(16,185,129,0.6) 50%, rgba(16,185,129,0.2) 80%, transparent 100%)'
                                     }}
-                                    animate={{
+                                    animate={ambientMotionEnabled ? {
                                         scale: [1, 1.05, 1],
                                         opacity: [0.8, 1, 0.8]
-                                    }}
-                                    transition={{
+                                    } : { scale: 1, opacity: 0.9 }}
+                                    transition={ambientMotionEnabled ? {
                                         duration: 4,
                                         repeat: Infinity,
                                         ease: "easeInOut"
-                                    }}
+                                    } : { duration: 0.4 }}
                                 />
                             </div>
 
@@ -552,8 +571,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <div className="flex items-start justify-between mb-5">
                                             <div className="flex items-center gap-3">
                                                 <motion.div
-                                                    animate={{ rotate: [0, 360] }}
-                                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                                    animate={ambientMotionEnabled ? { rotate: [0, 360] } : { rotate: 0 }}
+                                                    transition={ambientMotionEnabled ? { duration: 20, repeat: Infinity, ease: "linear" } : { duration: 0.4 }}
                                                     className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
                                                 >
                                                     <Clock className="w-5 h-5 text-emerald-400" />
