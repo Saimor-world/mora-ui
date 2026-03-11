@@ -884,6 +884,17 @@
     animation: glow-pulse 4s ease-in-out infinite;
   }
 
+  .glass-panel-runtime {
+    contain: layout paint style;
+    isolation: isolate;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+  }
+
+  .glass-panel-runtime[data-active='false'] {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
   /* GLASS CARD - Nano Banana Enhanced with deeper emerald tones */
   .glass-card {
     background: linear-gradient(135deg,

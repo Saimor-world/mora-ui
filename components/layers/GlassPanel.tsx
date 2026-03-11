@@ -334,6 +334,15 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const panelWidth = width === 'full' ? '100%' : `${width}px`;
     const panelHeight = height === 'full' ? '100%' : (height === 'auto' ? 'auto' : `${height}px`);
     const paddingValue = `calc(var(--mora-space-md) * ${padding})`;
+    const effectiveBlur = isStandardMode ? 0 : Math.min(blurIntensity, isActive ? 16 : 8);
+    const panelBackgroundColor = isStandardMode
+        ? 'var(--mora-glass-bg, #FFFFFF)'
+        : isActive
+            ? `rgba(4, 13, 10, ${Math.max(0.74, opacity - 0.05)})`
+            : 'rgba(3, 10, 8, 0.84)';
+    const panelBoxShadow = isActive
+        ? '0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+        : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
 
     // Safe Portal Rendering (Client-side only)
     const [mounted, setMounted] = useState(false);
@@ -389,11 +398,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     x: panelPosition.x,
                     y: panelPosition.y,
                     width: panelSize.width,
-                    height: panelSize.height,
-                    // Use CSS classes for base shadows, augment for active state
-                    boxShadow: isActive
-                        ? '0 24px 80px rgba(0, 0, 0, 0.7), -15px 0 50px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
-                        : '0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                    height: panelSize.height
                 }}
                 exit={disableAnimations ? undefined : {
                     opacity: 0,
@@ -404,11 +409,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     transition: { duration: 0.5, ease: [0.4, 0, 1, 1] }
                 }}
                 transition={{
-                    duration: 0.6,
+                    duration: 0.35,
                     ease: [0.23, 1, 0.32, 1] // Custom organic cubic-bezier for "releasing" feel
                 }}
-                // UPGRADE: Added glass-card and glow-pulse (when active)
-                className={`fixed flex flex-col glass-card ${isActive ? 'glow-pulse' : ''} ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
+                className={`fixed flex flex-col glass-card glass-panel-runtime ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
+                data-active={isActive ? 'true' : 'false'}
                 style={{
                     zIndex: zIndex, // Use store-managed z-index directly
                     left: 0,
@@ -418,26 +423,23 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     maxWidth: isMaximized ? '100vw' : 'calc(100vw - 32px)',
                     // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
                     maxHeight: isMaximized ? '100vh' : 'calc(100vh - 160px)',
-                    // Standard mode: solid (CSS handles light/dark), Transparent: glass effect
-                    // Note: .standard-mode CSS class overrides to white/light colors
-                    backgroundColor: isStandardMode
-                        ? 'var(--mora-glass-bg, #FFFFFF)'
-                        : `rgba(4, 13, 10, ${opacity - 0.05})`,
-                    backdropFilter: isStandardMode ? 'none' : `blur(${blurIntensity}px)`,
-                    WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${blurIntensity}px)`,
+                    backgroundColor: panelBackgroundColor,
+                    backdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${isActive ? 118 : 102}%)`,
+                    WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${isActive ? 118 : 102}%)`,
+                    boxShadow: panelBoxShadow,
                     borderRadius: isStandardMode ? '4px' : '24px',
                     overflow: 'hidden'
                     // borderRadius is now set conditionally above based on isStandardMode
                 }}
             >
                 {/* UPGRADE A1: Noise Texture Overlay - only in transparent mode */}
-                {!isStandardMode && (
-                    <div className="absolute inset-0 bg-noise pointer-events-none opacity-30 mix-blend-overlay" />
+                {!isStandardMode && isActive && (
+                    <div className="absolute inset-0 bg-noise pointer-events-none opacity-18 mix-blend-overlay" />
                 )}
 
                 {/* UPGRADE A1: Elegant Borders - reduced in standard mode */}
                 <div className={`absolute inset-0 pointer-events-none border ${isStandardMode ? 'rounded-[4px] border-[#E1E1E1]' : 'rounded-[24px] border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
-                {!isStandardMode && (
+                {!isStandardMode && isActive && (
                     <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
                 )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
