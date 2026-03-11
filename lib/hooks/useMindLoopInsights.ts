@@ -7,19 +7,20 @@
  * (semantic, context_shift, potential_risk, related_objects_cluster)
  * and surfaces the latest unseen event as a MoraInsight for the InsightPopup.
  *
- * Key design decision: tracks `lastSeenId` in a ref so the popup fires only ONCE
- * per truly new event — not every 30s poll interval.
- *
- * Backend endpoint: GET /v3/mindloop/events?limit=12
- * Confirm endpoint: POST /v3/mindloop/insight/{id}/confirm
+ * Also listens to realtime `mindloop_event` messages when available,
+ * using polling as the fallback/backstop path.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { coreGet, corePost } from '@/lib/api/coreClient';
+import { realtime } from '@/lib/api/realtimeClient';
 import type { MoraInsight } from '@/components/mora/MoraInsightPopup';
 
-const POLL_INTERVAL_MS = 30_000; // 30 seconds
+const POLL_INTERVAL_MS = 30_000;
+const INITIAL_DELAY_MS = 5_000;
 const INSIGHT_TYPES = ['semantic', 'context_shift', 'potential_risk', 'related_objects_cluster'] as const;
+
+type InsightType = (typeof INSIGHT_TYPES)[number];
 
 interface MindLoopEvent {
     id: string;
@@ -35,20 +36,20 @@ interface MindLoopEvent {
 }
 
 interface UseMindLoopInsightsReturn {
-    /** The current insight to show in the popup (null = nothing to show) */
     currentInsight: MoraInsight | null;
-    /** Call when user confirms the insight */
     confirmInsight: (id: string) => Promise<void>;
-    /** Call when user dismisses without confirming */
     dismissInsight: (id: string) => void;
 }
+
+const isInsightType = (eventType: string): eventType is InsightType =>
+    INSIGHT_TYPES.includes(eventType as InsightType);
 
 export function useMindLoopInsights(): UseMindLoopInsightsReturn {
     const [currentInsight, setCurrentInsight] = useState<MoraInsight | null>(null);
     const lastSeenIdRef = useRef<string | null>(null);
     const isMountedRef = useRef(true);
 
-    const parseInsight = (event: MindLoopEvent): MoraInsight => {
+    const parseInsight = useCallback((event: MindLoopEvent): MoraInsight => {
         const payload = event.payload || {};
         const text =
             event.summary ||
@@ -80,40 +81,41 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
             timestamp: event.timestamp,
             confirmed: false,
         };
-    };
+    }, []);
+
+    const maybeSurfaceInsight = useCallback((event: MindLoopEvent | null | undefined) => {
+        if (!event || !isInsightType(event.event_type)) return;
+        if (event.id === lastSeenIdRef.current) return;
+
+        lastSeenIdRef.current = event.id;
+        setCurrentInsight(parseInsight(event));
+    }, [parseInsight]);
 
     useEffect(() => {
         isMountedRef.current = true;
         let timeoutId: NodeJS.Timeout;
 
+        const handleMindloopEvent = (data: MindLoopEvent) => {
+            if (!isMountedRef.current) return;
+            maybeSurfaceInsight(data);
+        };
+
         const poll = async () => {
             try {
-                // Fetch most recent insight-class events (newest first)
                 const data = await coreGet('/v3/mindloop/events?limit=12', {
                     isOptional: true,
                 }) as { events?: MindLoopEvent[] } | MindLoopEvent[] | null;
 
                 if (!isMountedRef.current || !data) return;
 
-                // Backend returns {events: [...]} or directly [...]
                 const events: MindLoopEvent[] = Array.isArray(data)
                     ? data
                     : (data as { events?: MindLoopEvent[] }).events ?? [];
 
-                const insightEvents = events.filter((event) =>
-                    INSIGHT_TYPES.includes(event.event_type as (typeof INSIGHT_TYPES)[number])
-                );
-                if (insightEvents.length === 0) return;
-
-                const latest = insightEvents[0]; // newest first (reverse-chron)
-
-                // Only fire popup if this is genuinely new
-                if (latest.id !== lastSeenIdRef.current) {
-                    lastSeenIdRef.current = latest.id;
-                    setCurrentInsight(parseInsight(latest));
-                }
+                const latest = events.find((event) => isInsightType(event.event_type));
+                maybeSurfaceInsight(latest);
             } catch {
-                // Backend might be unavailable — fail silently, try again next poll
+                // best-effort: keep polling fallback silent
             }
 
             if (isMountedRef.current) {
@@ -121,21 +123,22 @@ export function useMindLoopInsights(): UseMindLoopInsightsReturn {
             }
         };
 
-        // Start after a short delay (don't compete with page load)
-        timeoutId = setTimeout(poll, 5000);
+        realtime.on('mindloop_event', handleMindloopEvent);
+        timeoutId = setTimeout(poll, INITIAL_DELAY_MS);
 
         return () => {
             isMountedRef.current = false;
             clearTimeout(timeoutId);
+            realtime.off('mindloop_event', handleMindloopEvent);
         };
-    }, []);
+    }, [maybeSurfaceInsight]);
 
     const confirmInsight = useCallback(async (id: string) => {
         setCurrentInsight(null);
         try {
             await corePost(`/v3/mindloop/insight/${id}/confirm`, {});
         } catch {
-            // Confirmation is best-effort — UI already dismissed the popup
+            // Confirmation is best-effort.
         }
     }, []);
 
