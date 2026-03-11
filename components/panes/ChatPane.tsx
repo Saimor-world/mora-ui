@@ -26,6 +26,7 @@ import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2 } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 
 interface Message {
@@ -905,3 +906,4 @@ Was kann ich fuer dich tun?`,
         </GlassPanel>
     );
 }
+

@@ -22,6 +22,7 @@ import {
     Brain,
 } from "lucide-react";
 import { useMoraStore } from "@/lib/store/moraState";
+import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { moraAgentClient } from "@/lib/api/moraAgentClient";
 import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
@@ -330,6 +331,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 category: "entity",
                 keywords: ["department", "planet", dept.name.toLowerCase()],
                 onSelect: () => {
+                    dispatchMoraPresence({ action: 'navigate', targetId: dept.id, targetType: 'department', message: "Navigiere zu ", source: 'system' });
                     navigateToDepartment(dept.id);
                     onClose();
                 }
@@ -346,6 +348,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                     category: "entity",
                     keywords: ["space", "moon", space.name.toLowerCase(), dept.name.toLowerCase()],
                     onSelect: () => {
+                        dispatchMoraPresence({ action: 'navigate', targetId: space.id, targetType: 'space', message: "Navigiere zu ", source: 'system' });
                         navigateToSpace(space.id);
                         onClose();
                     }
@@ -699,3 +702,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         </AnimatePresence>
     );
 };
+
+
+
+

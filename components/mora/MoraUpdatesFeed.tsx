@@ -7,6 +7,7 @@ import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
 import { Activity, RefreshCw, Check, Info, ChevronRight, Clock } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 
 interface MindLoopEvent {
     id: string | number;
@@ -293,12 +294,15 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
     const executeAction = async (action: FeedAction) => {
         try {
             if (action.departmentId) {
+                dispatchMoraPresence({ action: 'navigate', targetId: action.departmentId, targetType: 'department', message: 'Navigiere zum Bereich', source: 'system' });
                 navigateToDepartment(action.departmentId);
             }
             if (action.spaceId) {
+                dispatchMoraPresence({ action: 'navigate', targetId: action.spaceId, targetType: 'space', message: 'Navigiere zum Space', source: 'system' });
                 navigateToSpace(action.spaceId);
             }
             if (action.folderId) {
+                dispatchMoraPresence({ action: 'navigate', targetId: action.folderId, targetType: 'folder', message: 'Navigiere zum Ordner', source: 'system' });
                 navigateToFolder(action.folderId);
             }
             if (action.type === "navigate_company") {
@@ -494,3 +498,7 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
 };
 
 export default MoraUpdatesFeed;
+
+
+
+

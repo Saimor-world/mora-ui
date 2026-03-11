@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Sparkles, Command, X, ArrowRight, Zap, FileText, Folder, Globe, Map } from 'lucide-react';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { CoreNode, CoreSpace, CoreFolder, CoreDepartment } from '@/lib/types/core';
 
 interface SearchOverlayProps {
@@ -114,13 +115,22 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
 
         switch (type) {
             case 'department':
-                if (hit.id) navigateToDepartment(hit.id);
+                if (hit.id) {
+                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'department', message: "Navigiere zu ", source: 'system' });
+                    navigateToDepartment(hit.id);
+                }
                 break;
             case 'space':
-                if (hit.id) navigateToSpace(hit.id);
+                if (hit.id) {
+                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'space', message: "Navigiere zu ", source: 'system' });
+                    navigateToSpace(hit.id);
+                }
                 break;
             case 'folder':
-                if (hit.id) navigateToFolder(hit.id);
+                if (hit.id) {
+                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'folder', message: "Navigiere zu ", source: 'system' });
+                    navigateToFolder(hit.id);
+                }
                 break;
             default:
                 // Node/File
@@ -280,3 +290,4 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
         </AnimatePresence>
     );
 };
+

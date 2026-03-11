@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { searchGlobal, corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 
@@ -123,9 +124,11 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
         switch (result.type) {
             case 'department':
+                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'department', message: "Navigiere zu ", source: 'system' });
                 navigateToDepartment(result.id);
                 break;
             case 'space':
+                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'space', message: "Navigiere zu ", source: 'system' });
                 navigateToSpace(result.id);
                 break;
             case 'folder':
@@ -146,6 +149,8 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
     // Handle department quick access
     const handleDepartmentClick = (deptId: string) => {
+        const dept = departments.find(d => d.id === deptId);
+        dispatchMoraPresence({ action: 'navigate', targetId: deptId, targetType: 'department', message: dept ? "Navigiere zu " : 'Navigiere zum Bereich', source: 'system' });
         navigateToDepartment(deptId);
         setOrbState('focus');
         onClose();
@@ -567,3 +572,5 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         </AnimatePresence>
     );
 };
+
+
