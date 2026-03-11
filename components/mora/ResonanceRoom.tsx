@@ -7,6 +7,7 @@ import { useUser } from "@/lib/hooks/useUser";
 import { coreGet, learnInsight } from "@/lib/api/coreClient";
 import { executeAgenticLoop } from "@/lib/api/cognitionClient";
 import { hasMemoryTrigger, extractInsight, guessCategory } from "@/lib/memory";
+import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { MoraOrb } from "./MoraOrb";
 import { ConfirmationCard } from "./ConfirmationCard";
 import {
@@ -246,9 +247,6 @@ export const ResonanceRoom: React.FC<Props> = ({
 
                             console.log(`[MORA] Navigation: ${target_type} -> ${target_name} (${target_id})`);
 
-                            // Activate cursor agent for visual feedback
-                            store.setCursorAgent({ active: true, action: 'point' });
-
                             switch (target_type) {
                                 case 'department':
                                     store.navigateToDepartment(target_id);
@@ -264,15 +262,13 @@ export const ResonanceRoom: React.FC<Props> = ({
                                     break;
                             }
 
-                            // Emit cursor movement event
-                            window.dispatchEvent(new CustomEvent('mora:cursor', {
-                                detail: {
-                                    action: 'navigate',
-                                    targetId: target_id,
-                                    targetType: target_type,
-                                    message: `Navigiere zu ${target_name}`
-                                }
-                            }));
+                            dispatchMoraPresence({
+                                action: 'navigate',
+                                targetId: target_id,
+                                targetType: target_type,
+                                message: `Navigiere zu ${target_name}`,
+                                source: 'resonance'
+                            });
                         }
 
                         // POINT_AT TOOL - Move cursor to element (visual only)
@@ -281,22 +277,14 @@ export const ResonanceRoom: React.FC<Props> = ({
 
                             console.log(`[MORA] Point: ${target_type}:${target_id} - "${reason}"`);
 
-                            // Activate cursor with pointing action
-                            store.setCursorAgent({ active: true, action: 'point' });
-
-                            // Emit cursor movement event with position hint
-                            window.dispatchEvent(new CustomEvent('mora:presence-update', {
-                                detail: {
-                                    active: true,
-                                    x: cursor_hint?.x || 50,
-                                    y: cursor_hint?.y || 50,
-                                    mode: 'observing',
-                                    targetType: target_type,
-                                    targetId: target_id,
-                                    message: reason,
-                                    pulse: should_pulse
-                                }
-                            }));
+                            dispatchMoraPresence({
+                                action: 'point',
+                                targetId: target_id,
+                                targetType: target_type,
+                                targetPosition: cursor_hint ? { x: cursor_hint.x, y: cursor_hint.y } : undefined,
+                                message: reason,
+                                source: 'resonance'
+                            });
 
                             // Also emit highlight event if element should pulse
                             if (should_pulse) {

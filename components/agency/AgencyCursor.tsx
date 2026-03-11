@@ -1,178 +1,38 @@
 'use client';
 
 /**
- * AgencyCursor - Guided Agency Day 1
- * 
- * Visual cursor that MORA controls.
- * Separate from user's mouse cursor.
- * 
- * Features:
- * - Animated movement to target elements
- * - Visual indicator of MORA's focus
- * - Abort button always visible during execution
+ * [DEPRECATED] AgencyCursor - Legacy visual wrapper
+ *
+ * Visual duties have been moved to components/mora/CursorAgent.tsx.
+ * This file remains solely to render the AgencyActionOverlay and 
+ * forward legacy `agency:move_cursor` events to the unified system.
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { abortExecution, subscribe } from '@/lib/agency/actionRegistry';
-import type { AgencyAction } from '@/lib/agency/actionRegistry';
-
-interface CursorPosition {
-    x: number;
-    y: number;
-}
+import React, { useEffect } from 'react';
+import { AgencyActionOverlay } from './AgencyActionOverlay';
 
 export function AgencyCursor() {
-    const [position, setPosition] = useState<CursorPosition>({ x: -100, y: -100 });
-    const [isVisible, setIsVisible] = useState(false);
-    const [currentAction, setCurrentAction] = useState<AgencyAction | null>(null);
-    const [isExecuting, setIsExecuting] = useState(false);
-
-    // Handle move_cursor events
-    const handleMoveCursor = useCallback((event: CustomEvent<{ targetId: string }>) => {
-        const { targetId } = event.detail;
-
-        // Find target element
-        const element = document.getElementById(targetId) ||
-            document.querySelector(`[data-agency-id="${targetId}"]`);
-
-        if (element) {
-            const rect = element.getBoundingClientRect();
-            const targetX = rect.left + rect.width / 2;
-            const targetY = rect.top + rect.height / 2;
-
-            setPosition({
-                x: targetX,
-                y: targetY
-            });
-            setIsVisible(true);
-
-            // Dispatch event for CursorTrailEffect
-            window.dispatchEvent(new CustomEvent('agency:cursor_move', {
-                detail: { x: targetX, y: targetY }
+    // Forward legacy agency:move_cursor events to the unified cursor agent
+    useEffect(() => {
+        const handleLegacyMove = (event: CustomEvent<{ targetId: string }>) => {
+            window.dispatchEvent(new CustomEvent('mora:cursor', {
+                detail: {
+                    action: 'point',
+                    targetId: event.detail.targetId,
+                    message: null
+                }
             }));
-        } else {
-            console.warn(`[AgencyCursor] Target not found: ${targetId}`);
-        }
-    }, []);
-
-    // Subscribe to action registry state
-    useEffect(() => {
-        const unsubscribe = subscribe((state) => {
-            setIsExecuting(state.isExecuting);
-            setCurrentAction(state.currentAction);
-
-            if (!state.isExecuting) {
-                window.dispatchEvent(new CustomEvent('agency:stop'));
-                // Hide cursor after execution
-                setTimeout(() => setIsVisible(false), 1000);
-            }
-        });
-
-        return unsubscribe;
-    }, []);
-
-    // Listen for cursor move events
-    useEffect(() => {
-        window.addEventListener('agency:move_cursor', handleMoveCursor as EventListener);
-        return () => {
-            window.removeEventListener('agency:move_cursor', handleMoveCursor as EventListener);
         };
-    }, [handleMoveCursor]);
 
-    const handleAbort = () => {
-        abortExecution();
-        window.dispatchEvent(new CustomEvent('agency:stop'));
-        setIsVisible(false);
-    };
+        window.addEventListener('agency:move_cursor', handleLegacyMove as EventListener);
+        
+        return () => {
+            window.removeEventListener('agency:move_cursor', handleLegacyMove as EventListener);
+        };
+    }, []);
 
-    return (
-        <>
-            {/* MORA Cursor */}
-            <AnimatePresence>
-                {isVisible && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            x: position.x - 16,
-                            y: position.y - 16
-                        }}
-                        exit={{ opacity: 0, scale: 0.5 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 200,
-                            damping: 20
-                        }}
-                        className={`fixed z-[9999] pointer-events-none ${!isExecuting ? 'opacity-0' : 'opacity-100'}`}  // Hide unless executing
-                        style={{ left: 0, top: 0 }}
-                    >
-                        {/* Cursor ring */}
-                        <div className="relative w-8 h-8">
-                            <div className="absolute inset-[-4px] rounded-full bg-emerald-500/12 blur-[6px]" />
-                            <div className="absolute inset-1 rounded-full bg-emerald-500/50 backdrop-blur-sm border border-emerald-400/50" />
-                            <div className="absolute inset-2 rounded-full bg-emerald-400" />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Abort Button - Always visible during execution */}
-            <AnimatePresence>
-                {isExecuting && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9998]"
-                    >
-                        <button
-                            onClick={handleAbort}
-                            className="
-                px-6 py-3 
-                bg-red-500/90 hover:bg-red-600 
-                text-white font-medium
-                rounded-full shadow-lg
-                backdrop-blur-sm
-                border border-red-400/50
-                flex items-center gap-2
-                transition-colors
-              "
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            MORA Stoppen
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Current Action Reason Display */}
-            <AnimatePresence>
-                {currentAction && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="
-              fixed bottom-8 left-1/2 -translate-x-1/2 z-[9997]
-              px-4 py-2
-              bg-black/80 backdrop-blur-md
-              border border-white/10
-              rounded-lg shadow-xl
-              text-white/90 text-sm
-              max-w-md text-center
-            "
-                    >
-                        <span className="text-emerald-400">MORA:</span>{' '}
-                        {currentAction.reason}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
-    );
+    // The visual abort button / execution state is now handled here
+    return <AgencyActionOverlay />;
 }
 
 export default AgencyCursor;

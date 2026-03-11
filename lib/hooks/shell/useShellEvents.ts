@@ -11,6 +11,7 @@
 import { useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import type { MoraPresenceDetail } from '@/lib/mora/presenceEvents';
 
 interface UseShellEventsOptions {
     onOpenResonance: () => void;
@@ -101,13 +102,12 @@ export function useShellEvents({ onOpenResonance }: UseShellEventsOptions) {
         return () => window.removeEventListener('open-node-detail', handler as EventListener);
     }, [openPane]);
 
-    // AI Action handler (highlight)
+    // Unified Mora presence handler.
+    // Canonical event is `mora:cursor`; legacy `mora-ai-action` remains supported during transition.
     useEffect(() => {
-        const handleAIAction = (e: CustomEvent) => {
-            const { type, targetId, targetSelector, position, duration } = e.detail || {};
-            if (type !== 'highlight' && type !== 'point') return;
-
-            let targetPos = position as { x: number; y: number } | undefined;
+        const resolveTargetPosition = (detail: Record<string, any>) => {
+            const { targetId, targetSelector, targetPosition, position } = detail;
+            let targetPos = (targetPosition || position) as { x: number; y: number } | undefined;
             if (!targetPos) {
                 let el: Element | null = null;
                 if (typeof targetSelector === 'string' && targetSelector.length > 0) {
@@ -124,21 +124,48 @@ export function useShellEvents({ onOpenResonance }: UseShellEventsOptions) {
                     targetPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
                 }
             }
+            return targetPos;
+        };
 
-            if (!targetPos) return;
+        const activateCursor = (detail: MoraPresenceDetail | Record<string, any>, fallbackType?: 'highlight' | 'point') => {
+            const rawType = (detail as Record<string, any>).type;
+            const rawAction = detail.action || rawType || fallbackType;
+            const action = rawAction === 'highlight'
+                ? 'highlight'
+                : rawAction === 'point' || rawAction === 'navigate'
+                    ? 'point'
+                    : rawAction === 'activate'
+                        ? 'idle'
+                        : rawAction;
+
+            if (action === 'deactivate' || action === 'return' || action === 'idle') {
+                setCursorAgent({ active: false, action: 'idle', target: undefined });
+                return;
+            }
+
+            const targetPos = resolveTargetPosition(detail);
+            if (action !== 'idle' && !targetPos) return;
 
             setCursorAgent({
                 active: true,
-                action: type === 'point' ? 'point' : 'highlight',
+                action,
                 target: targetPos
             });
 
-            const timeoutMs = typeof duration === 'number' ? duration : 2500;
+            const timeoutMs = typeof detail.duration === 'number' ? detail.duration : 2500;
             window.setTimeout(() => {
                 setCursorAgent({ active: false, action: 'idle', target: undefined });
             }, timeoutMs);
         };
-        window.addEventListener('mora-ai-action' as any, handleAIAction as any);
-        return () => window.removeEventListener('mora-ai-action' as any, handleAIAction as any);
+
+        const handlePresenceAction = (e: CustomEvent<MoraPresenceDetail>) => activateCursor(e.detail);
+        const handleLegacyAIAction = (e: CustomEvent) => activateCursor(e.detail);
+
+        window.addEventListener('mora:cursor' as any, handlePresenceAction as any);
+        window.addEventListener('mora-ai-action' as any, handleLegacyAIAction as any);
+        return () => {
+            window.removeEventListener('mora:cursor' as any, handlePresenceAction as any);
+            window.removeEventListener('mora-ai-action' as any, handleLegacyAIAction as any);
+        };
     }, [setCursorAgent]);
 }

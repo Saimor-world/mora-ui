@@ -10,6 +10,8 @@
  * ```
  */
 
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
+
 export interface CursorCommand {
     type: 'highlight' | 'point' | 'navigate' | 'pulse' | 'idle' | 'pane';
     target?: string; // CSS selector or element ID
@@ -59,12 +61,14 @@ export function executeCursorCommands(commands: CursorCommand[]): void {
 
     const moraAI = (window as any).moraAI;
     const dispatchCursorAction = (type: 'highlight' | 'point', cmd: CursorCommand) => {
-        const detail: Record<string, any> = { type };
-        if (cmd.target) detail.targetSelector = cmd.target;
-        if (cmd.position) detail.position = cmd.position;
-        if (cmd.duration) detail.duration = cmd.duration;
-        if (cmd.message) detail.message = cmd.message;
-        window.dispatchEvent(new CustomEvent('mora-ai-action', { detail }));
+        dispatchMoraPresence({
+            action: type,
+            targetSelector: cmd.target,
+            targetPosition: cmd.position,
+            duration: cmd.duration,
+            message: cmd.message,
+            source: 'ai'
+        });
     };
 
     commands.forEach((cmd, index) => {
@@ -105,10 +109,13 @@ export function executeCursorCommands(commands: CursorCommand[]): void {
 
                 case 'navigate':
                     if (cmd.target) {
-                        const navEvent = new CustomEvent('mora-navigate', {
-                            detail: { targetId: cmd.target }
+                        dispatchMoraPresence({
+                            action: 'navigate',
+                            targetId: cmd.target,
+                            message: cmd.message,
+                            duration: cmd.duration,
+                            source: 'ai'
                         });
-                        window.dispatchEvent(navEvent);
 
                         const pulseEvent = new CustomEvent('mora-orb-pulse', {
                             detail: { intensity: 'low', color: 'emerald' }

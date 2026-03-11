@@ -14,6 +14,7 @@
  */
 import { setFocus, setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getActionIntent, getProposalIntent, getStatusMessage } from './intentMicrocopy';
+import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 
 // ============================================
 // Types
@@ -270,14 +271,12 @@ export function subscribe(listener: StateListener): () => void {
 // ============================================
 
 async function moveCursor(targetId: string): Promise<void> {
-    // ATTENTIONAL HANDSHAKE: Dispatch event immediately (non-blocking).
-    // Animation timing is handled by AgencyCursor component's spring physics.
-    // This decouples ATTENTION (cursor) from EXECUTION (navigation).
-    const event = new CustomEvent('agency:move_cursor', {
-        detail: { targetId }
+    // Canonical Mora presence signal: all new flows should use mora:cursor.
+    dispatchMoraPresence({
+        action: 'point',
+        targetId,
+        source: 'agency'
     });
-    window.dispatchEvent(event);
-    // No blocking sleep. Cursor movement is declarative, not blocking.
 }
 
 async function highlightElement(targetId: string, durationMs: number): Promise<void> {
