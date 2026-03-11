@@ -29,6 +29,7 @@ export const CursorTrailEffect: React.FC = () => {
     const isAgencyActive = useRef(false);
     const isRunning = useRef(false);
     const fadeFrameRef = useRef(0);
+    const isDocumentVisible = useRef(true);
 
     // Color palette - Emerald to Gold
     const colors = [
@@ -81,6 +82,11 @@ export const CursorTrailEffect: React.FC = () => {
         };
 
         const render = () => {
+            if (!isDocumentVisible.current) {
+                stop();
+                return;
+            }
+
             // Fade out effect
             ctx.globalCompositeOperation = 'destination-out';
             ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
@@ -146,7 +152,7 @@ export const CursorTrailEffect: React.FC = () => {
         };
 
         const start = () => {
-            if (isRunning.current) return;
+            if (isRunning.current || !isDocumentVisible.current) return;
             isRunning.current = true;
             fadeFrameRef.current = 0;
             animationFrame.current = requestAnimationFrame(render);
@@ -157,16 +163,26 @@ export const CursorTrailEffect: React.FC = () => {
             isAgencyActive.current = false;
             start();
         };
+        const handleVisibilityChange = () => {
+            isDocumentVisible.current = !document.hidden;
+            if (document.hidden) {
+                stop();
+                return;
+            }
+            if (isAgencyActive.current || particles.current.length > 0) {
+                start();
+            }
+        };
 
         window.addEventListener('agency:cursor_move', handleAgencyMove as EventListener);
         window.addEventListener('agency:stop', handleAgencyStop);
-
-        start();
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             window.removeEventListener('resize', resize);
             window.removeEventListener('agency:cursor_move', handleAgencyMove as EventListener);
             window.removeEventListener('agency:stop', handleAgencyStop);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
             stop();
         };
     }, []);

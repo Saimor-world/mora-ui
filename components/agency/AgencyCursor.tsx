@@ -63,6 +63,7 @@ export function AgencyCursor() {
             setCurrentAction(state.currentAction);
 
             if (!state.isExecuting) {
+                window.dispatchEvent(new CustomEvent('agency:stop'));
                 // Hide cursor after execution
                 setTimeout(() => setIsVisible(false), 1000);
             }
@@ -81,6 +82,7 @@ export function AgencyCursor() {
 
     const handleAbort = () => {
         abortExecution();
+        window.dispatchEvent(new CustomEvent('agency:stop'));
         setIsVisible(false);
     };
 
