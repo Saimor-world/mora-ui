@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion';
 import { X, ChevronLeft, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 
 interface GlassPanelProps {
     /** Child content to render inside the panel */
@@ -133,6 +134,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const globalStandardMode = useMoraStore(state => state.isStandardMode);
     const isStandardMode = isStandardModeProp || globalStandardMode;
     const allowMaximize = showMaximizeButton ?? (showCloseButton || showMinimizeButton);
+    const activePaneId = usePaneStore((state) => state.activePaneId);
+    const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
+    const effectiveIsActive = paneId ? activePaneId === paneId : isActive;
+    const hasPaneStack = visiblePaneCount > 1;
+    const hasDensePaneStack = visiblePaneCount > 2;
 
     // UPGRADE C1: Drag and resize state
     const dragControls = useDragControls();
@@ -305,12 +311,12 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     // Handle keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && onClose && isActive) {
+            if (e.key === 'Escape' && onClose && effectiveIsActive) {
                 onClose();
                 return;
             }
             // Native-style maximize toggle for active pane
-            if (isActive && (e.key === 'F11' || ((e.ctrlKey || e.metaKey) && e.key === 'ArrowUp'))) {
+            if (effectiveIsActive && (e.key === 'F11' || ((e.ctrlKey || e.metaKey) && e.key === 'ArrowUp'))) {
                 e.preventDefault();
                 if (allowMaximize) {
                     toggleMaximize();
@@ -320,7 +326,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [allowMaximize, isActive, onClose, toggleMaximize]);
+    }, [allowMaximize, effectiveIsActive, onClose, toggleMaximize]);
 
     // Border radius mapping
     const radiusMap = {
@@ -334,15 +340,27 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const panelWidth = width === 'full' ? '100%' : `${width}px`;
     const panelHeight = height === 'full' ? '100%' : (height === 'auto' ? 'auto' : `${height}px`);
     const paddingValue = `calc(var(--mora-space-md) * ${padding})`;
-    const effectiveBlur = isStandardMode ? 0 : Math.min(blurIntensity, isActive ? 16 : 8);
+    const effectiveBlur = isStandardMode
+        ? 0
+        : effectiveIsActive
+            ? Math.min(blurIntensity, hasDensePaneStack ? 12 : 16)
+            : hasDensePaneStack
+                ? 3
+                : 5;
     const panelBackgroundColor = isStandardMode
         ? 'var(--mora-glass-bg, #FFFFFF)'
-        : isActive
-            ? `rgba(4, 13, 10, ${Math.max(0.74, opacity - 0.05)})`
-            : 'rgba(3, 10, 8, 0.84)';
-    const panelBoxShadow = isActive
-        ? '0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-        : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
+        : effectiveIsActive
+            ? `rgba(4, 13, 10, ${Math.max(hasDensePaneStack ? 0.7 : 0.74, opacity - 0.05)})`
+            : hasDensePaneStack
+                ? 'rgba(2, 8, 6, 0.9)'
+                : 'rgba(3, 10, 8, 0.84)';
+    const panelBoxShadow = effectiveIsActive
+        ? hasDensePaneStack
+            ? '0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+            : '0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+        : hasPaneStack
+            ? '0 6px 18px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.035)'
+            : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
 
     // Safe Portal Rendering (Client-side only)
     const [mounted, setMounted] = useState(false);
@@ -413,7 +431,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     ease: [0.23, 1, 0.32, 1] // Custom organic cubic-bezier for "releasing" feel
                 }}
                 className={`fixed flex flex-col glass-card glass-panel-runtime ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
-                data-active={isActive ? 'true' : 'false'}
+                data-active={effectiveIsActive ? 'true' : 'false'}
+                data-pane-stack={hasPaneStack ? 'true' : 'false'}
+                data-pane-density={hasDensePaneStack ? 'dense' : 'normal'}
                 style={{
                     zIndex: zIndex, // Use store-managed z-index directly
                     left: 0,
@@ -424,8 +444,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
                     maxHeight: isMaximized ? '100vh' : 'calc(100vh - 160px)',
                     backgroundColor: panelBackgroundColor,
-                    backdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${isActive ? 118 : 102}%)`,
-                    WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${isActive ? 118 : 102}%)`,
+                    backdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveIsActive ? 118 : 102}%)`,
+                    WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveIsActive ? 118 : 102}%)`,
                     boxShadow: panelBoxShadow,
                     borderRadius: isStandardMode ? '4px' : '24px',
                     overflow: 'hidden'
@@ -433,13 +453,13 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 }}
             >
                 {/* UPGRADE A1: Noise Texture Overlay - only in transparent mode */}
-                {!isStandardMode && isActive && (
+                {!isStandardMode && effectiveIsActive && !hasDensePaneStack && (
                     <div className="absolute inset-0 bg-noise pointer-events-none opacity-18 mix-blend-overlay" />
                 )}
 
                 {/* UPGRADE A1: Elegant Borders - reduced in standard mode */}
                 <div className={`absolute inset-0 pointer-events-none border ${isStandardMode ? 'rounded-[4px] border-[#E1E1E1]' : 'rounded-[24px] border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
-                {!isStandardMode && isActive && (
+                {!isStandardMode && effectiveIsActive && (
                     <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
                 )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
