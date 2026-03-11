@@ -124,11 +124,11 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
         switch (result.type) {
             case 'department':
-                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'department', message: "Navigiere zu ", source: 'system' });
+                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'department', message: `Navigiere zu ${result.title}`, source: 'system' });
                 navigateToDepartment(result.id);
                 break;
             case 'space':
-                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'space', message: "Navigiere zu ", source: 'system' });
+                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'space', message: `Navigiere zu ${result.title}`, source: 'system' });
                 navigateToSpace(result.id);
                 break;
             case 'folder':
@@ -150,7 +150,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     // Handle department quick access
     const handleDepartmentClick = (deptId: string) => {
         const dept = departments.find(d => d.id === deptId);
-        dispatchMoraPresence({ action: 'navigate', targetId: deptId, targetType: 'department', message: dept ? "Navigiere zu " : 'Navigiere zum Bereich', source: 'system' });
+        dispatchMoraPresence({ action: 'navigate', targetId: deptId, targetType: 'department', message: dept ? `Navigiere zu ${dept.name}` : 'Navigiere zum Bereich', source: 'system' });
         navigateToDepartment(deptId);
         setOrbState('focus');
         onClose();

@@ -116,19 +116,19 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
         switch (type) {
             case 'department':
                 if (hit.id) {
-                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'department', message: "Navigiere zu ", source: 'system' });
+                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'department', message: `Navigiere zu ${hit.title || 'dem Bereich'}`, source: 'system' });
                     navigateToDepartment(hit.id);
                 }
                 break;
             case 'space':
                 if (hit.id) {
-                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'space', message: "Navigiere zu ", source: 'system' });
+                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'space', message: `Navigiere zu ${hit.title || 'dem Space'}`, source: 'system' });
                     navigateToSpace(hit.id);
                 }
                 break;
             case 'folder':
                 if (hit.id) {
-                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'folder', message: "Navigiere zu ", source: 'system' });
+                    dispatchMoraPresence({ action: 'navigate', targetId: hit.id, targetType: 'folder', message: `Navigiere zu ${hit.title || 'dem Ordner'}`, source: 'system' });
                     navigateToFolder(hit.id);
                 }
                 break;

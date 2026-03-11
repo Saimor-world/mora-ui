@@ -331,7 +331,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 category: "entity",
                 keywords: ["department", "planet", dept.name.toLowerCase()],
                 onSelect: () => {
-                    dispatchMoraPresence({ action: 'navigate', targetId: dept.id, targetType: 'department', message: "Navigiere zu ", source: 'system' });
+                    dispatchMoraPresence({ action: 'navigate', targetId: dept.id, targetType: 'department', message: `Navigiere zu ${dept.name}`, source: 'system' });
                     navigateToDepartment(dept.id);
                     onClose();
                 }
@@ -348,7 +348,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                     category: "entity",
                     keywords: ["space", "moon", space.name.toLowerCase(), dept.name.toLowerCase()],
                     onSelect: () => {
-                        dispatchMoraPresence({ action: 'navigate', targetId: space.id, targetType: 'space', message: "Navigiere zu ", source: 'system' });
+                        dispatchMoraPresence({ action: 'navigate', targetId: space.id, targetType: 'space', message: `Navigiere zu ${space.name}`, source: 'system' });
                         navigateToSpace(space.id);
                         onClose();
                     }
