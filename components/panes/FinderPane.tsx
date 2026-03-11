@@ -13,6 +13,7 @@ import { SemanticItem } from '@/components/organic/SemanticItem';
 import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
+import { realtime } from '@/lib/api/realtimeClient';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -927,6 +928,57 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [initialQuery]);
 
+    // Realtime node updates handler
+    useEffect(() => { currentFolderIdRef.current = currentFolderId; }, [currentFolderId]);
+    const realtimeBatchRef = useRef<any[]>([]);
+    const realtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        const handleNodeUpdate = (data: any) => {
+            if (data.event_type !== 'created' && data.event_type !== 'updated') return;
+            
+            realtimeBatchRef.current.push(data);
+            if (realtimeTimeoutRef.current) clearTimeout(realtimeTimeoutRef.current);
+            
+            realtimeTimeoutRef.current = setTimeout(() => {
+                const batch = realtimeBatchRef.current;
+                realtimeBatchRef.current = [];
+                realtimeTimeoutRef.current = null;
+
+                const relevantNodes = batch.filter(b => 
+                    b.payload?.folder_id === currentFolderIdRef.current ||
+                    b.payload?.space_id === currentFolderIdRef.current
+                ).map(b => b.payload);
+
+                if (relevantNodes.length === 1) {
+                    const node = relevantNodes[0];
+                    window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                    loadContent();
+                    
+                    if (node.id) {
+                        setTimeout(() => {
+                            dispatchMoraPresence({
+                                action: 'highlight',
+                                targetId: `file-node-${node.id}`,
+                                message: `Neu: ${node.name || node.title || 'Datei'}`
+                            });
+                        }, 400);
+                    }
+                } else if (relevantNodes.length > 1) {
+                    // Bulk update -> silently reload without highlighting
+                    window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                    loadContent();
+                }
+            }, 300);
+        };
+        
+        realtime.on('node_update', handleNodeUpdate);
+        return () => {
+            realtime.off('node_update', handleNodeUpdate);
+            if (realtimeTimeoutRef.current) clearTimeout(realtimeTimeoutRef.current);
+        };
+    }, [loadContent]);
+
     const handleUpload = useCallback(async (fileList: File[]) => {
         if (!resolvedCompanyId) {
             toast.error('Select a company first.');
@@ -1042,16 +1094,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             // Override the generic end-of-loop toast with a precise one
                             toast.success(`${file.name} â†’ ${folderName}`);
                             successCount = 0; // suppress duplicate success toast below
-
-                            if (resolvedNodeId) {
-                                setTimeout(() => {
-                                    dispatchMoraPresence({
-                                        action: 'highlight',
-                                        targetId: `file-node-${resolvedNodeId}`,
-                                        message: `Neu: ${file.name}`
-                                    });
-                                }, 300);
-                            }
                         }
 
                         // P6: Auto-executed, return to idle
