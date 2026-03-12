@@ -23,11 +23,21 @@ import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
+import { executeAgenticLoop } from '@/lib/api/cognitionClient';
+import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2 } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
+
+interface PendingAction {
+    tool_name: string;
+    params: Record<string, any>;
+    risk_level: string;
+    confirmation_token: string;
+    action_id: string;
+}
 
 interface Message {
     id: string;
@@ -36,6 +46,7 @@ interface Message {
     timestamp: Date;
     isTyping?: boolean;
     savedAsInsight?: boolean; // Track if message was saved as insight
+    pendingAction?: PendingAction;
 }
 
 // Memory keywords that trigger save hint (German)
@@ -100,6 +111,14 @@ function normalizeAgentResponse(input: unknown): string {
         }
     }
     return decodeEscapedUnicode(input);
+}
+
+function isLikelyFileOperationIntent(text: string): boolean {
+    const lower = text.toLowerCase();
+    return [
+        /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(ordner|folder)\b/,
+        /\b(verschiebe|move)\b.*\b(datei|dateien|dokument|dokumente|node|nodes|file|files|ordner|folder)\b/,
+    ].some((pattern) => pattern.test(lower));
 }
 
 // ─── Memory: Save Insight Button ───
@@ -348,6 +367,9 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         isStandardMode,
         activeCompanyId,
         activeDepartmentId,
+        activeSpaceId,
+        activeFolderId,
+        viewLevel,
     } = useMoraStore();
     const pane = getPane(id);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
@@ -628,7 +650,56 @@ Was kann ich fuer dich tun?`,
                 setIsLoading(false);
                 return;
             } else {
-                // ── STREAMING AI RESPONSE ──────────────────────────────────
+                if (isLikelyFileOperationIntent(content) && activeCompanyId) {
+                    const activeContext = activeFolderId
+                        ? { entityId: activeFolderId, entityType: 'folder' as const }
+                        : activeSpaceId
+                            ? { entityId: activeSpaceId, entityType: 'space' as const }
+                            : activeDepartmentId
+                                ? { entityId: activeDepartmentId, entityType: 'department' as const }
+                                : { entityId: undefined, entityType: undefined };
+
+                    const agentResponse = await executeAgenticLoop(content, {
+                        level: viewLevel,
+                        entityId: activeContext.entityId,
+                        entityType: activeContext.entityType,
+                        companyId: activeCompanyId || undefined,
+                    });
+
+                    if (agentResponse?.final_state === 'S4_CONFIRM') {
+                        const confirm = agentResponse.pending_confirmations[0];
+                        if (confirm) {
+                            setMessages(prev => [...prev, {
+                                id: crypto.randomUUID(),
+                                role: 'assistant',
+                                content: agentResponse.final_message || `Ich habe einen Aktionsplan fuer ${confirm.tool_name} vorbereitet. Bitte bestaetige ihn.`,
+                                timestamp: new Date(),
+                                pendingAction: {
+                                    tool_name: confirm.tool_name,
+                                    params: confirm.tool_params,
+                                    risk_level: confirm.risk_level,
+                                    confirmation_token: confirm.confirmation_token || "",
+                                    action_id: confirm.action_id || `trace-${Date.now()}`,
+                                }
+                            }]);
+                            setIsLoading(false);
+                            return;
+                        }
+                    }
+
+                    if (agentResponse?.final_message) {
+                        setMessages(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            role: 'assistant',
+                            content: agentResponse.final_message,
+                            timestamp: new Date(),
+                        }]);
+                        setIsLoading(false);
+                        return;
+                    }
+                }
+
+                // ?? STREAMING AI RESPONSE ??????????????????????????????????
                 setIsLoading(false); // spinner off — streaming indicator takes over
                 const historyForStream = messages
                     .filter(m => m.id !== 'welcome')
@@ -785,6 +856,30 @@ Was kann ich fuer dich tun?`,
                                         />
                                     )}
                                 </div>
+                                {msg.pendingAction && (
+                                    <div className="mt-3">
+                                        <ConfirmationCard
+                                            action={msg.pendingAction}
+                                            onConfirmed={(result) => {
+                                                const summary = result?.summary || result?.result?.summary || `${msg.pendingAction?.tool_name} erfolgreich ausgefuehrt.`;
+                                                setMessages(prev => [...prev, {
+                                                    id: crypto.randomUUID(),
+                                                    role: 'assistant',
+                                                    content: summary,
+                                                    timestamp: new Date(),
+                                                }]);
+                                            }}
+                                            onRejected={() => {
+                                                setMessages(prev => [...prev, {
+                                                    id: crypto.randomUUID(),
+                                                    role: 'assistant',
+                                                    content: 'Aktion verworfen.',
+                                                    timestamp: new Date(),
+                                                }]);
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     ))}
