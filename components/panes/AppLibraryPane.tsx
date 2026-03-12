@@ -41,6 +41,7 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
             calendar: { width: 840, height: 620 },
             notes: { width: 860, height: 620 },
             terminal: { width: 860, height: 560 },
+            actions: { width: 920, height: 680 },
             scanner: { width: 840, height: 600 },
             integrations: { width: 760, height: 560 },
             grid: { width: 900, height: 640 }
@@ -71,6 +72,7 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
         { name: 'Mail', type: 'mail', icon: Mail, color: 'text-red-400', category: 'collaboration' },
         { name: 'Calendar', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'collaboration' },
         { name: 'Terminal', type: 'terminal', icon: Terminal, color: 'text-mora-gold', category: 'system' },
+        { name: 'Actions', type: 'actions', icon: Activity, color: 'text-cyan-300', category: 'system' },
         { name: 'Integrations', type: 'integrations', icon: Wrench, color: 'text-blue-300', category: 'system' },
         // { name: 'Timeline', type: 'timeline', icon: Activity, color: 'text-emerald-400', category: 'system' },
         { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'system' },

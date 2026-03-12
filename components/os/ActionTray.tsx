@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, ShieldAlert, XCircle } from 'lucide-react';
 import { useActionEvents, type ActionStatus } from '@/lib/hooks/useActionEvents';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 
 const statusIconMap: Record<ActionStatus, React.ReactNode> = {
     proposed: <Clock3 size={14} className="text-blue-400" />,
@@ -100,6 +101,7 @@ function formatActionMessage(evt: ActionEventLike): string | null {
 
 export const ActionTray: React.FC = () => {
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
+    const openPane = usePaneStore((s) => s.openPane);
     const [isOpen, setIsOpen] = useState(false);
     const [filter, setFilter] = useState<TrayFilter>('all');
     const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
@@ -311,6 +313,27 @@ export const ActionTray: React.FC = () => {
                                         )})}
                                     </div>
                                 )}
+                            </div>
+                            <div className={`border-t px-3 py-2 ${isStandardMode ? 'border-gray-200 bg-gray-50' : 'border-white/10 bg-white/[0.02]'}`}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        openPane({
+                                            id: 'actions-main',
+                                            type: 'actions',
+                                            title: 'Action Center',
+                                            size: { width: 920, height: 680 }
+                                        });
+                                        setIsOpen(false);
+                                    }}
+                                    className={`w-full rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                                        isStandardMode
+                                            ? 'border-gray-200 text-[#0078D4] hover:border-[#0078D4]/40 hover:bg-white'
+                                            : 'border-white/10 text-cyan-300 hover:border-cyan-400/40 hover:bg-white/[0.04]'
+                                    }`}
+                                >
+                                    Im Action Center oeffnen
+                                </button>
                             </div>
                         </motion.div>
                     </>

@@ -1,10 +1,16 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ActionTray } from '@/components/os/ActionTray';
+const openPane = jest.fn();
 
 jest.mock('@/lib/store/moraState', () => ({
   useMoraStore: (selector: (state: { isStandardMode: boolean }) => unknown) =>
     selector({ isStandardMode: false }),
+}));
+
+jest.mock('@/lib/store/paneStore', () => ({
+  usePaneStore: (selector: (state: { openPane: typeof openPane }) => unknown) =>
+    selector({ openPane }),
 }));
 
 jest.mock('@/lib/hooks/useActionEvents', () => ({
@@ -116,5 +122,24 @@ describe('ActionTray', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
     expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
+  });
+
+  it('opens the action center pane from the tray footer', () => {
+    useActionEvents.mockReturnValue({
+      events: [],
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActionTray />);
+    fireEvent.click(screen.getByTitle('Action tray'));
+    fireEvent.click(screen.getByRole('button', { name: 'Im Action Center oeffnen' }));
+
+    expect(openPane).toHaveBeenCalledWith({
+      id: 'actions-main',
+      type: 'actions',
+      title: 'Action Center',
+      size: { width: 920, height: 680 }
+    });
   });
 });
