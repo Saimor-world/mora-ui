@@ -1577,7 +1577,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
+                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 lg:gap-4">
                                             {/* Folders */}
                                             {filteredFolders.map(folder => {
                                                 const isSelected = selectedNodeId === folder.id;
@@ -1586,7 +1586,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
+                                                        className={`p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-200 flex flex-col gap-2.5 md:gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
                                                             : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10'
                                                             }`}
@@ -1616,7 +1616,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <span className={`text-sm truncate font-medium block ${isSelected ? 'text-white' : 'text-white/80'}`}>{folder.name}</span>
+                                                            <span className={`text-sm font-medium line-clamp-2 leading-snug break-words ${isSelected ? 'text-white' : 'text-white/80'}`} title={folder.name}>{folder.name}</span>
                                                             {folder.type === 'folder' && (
                                                                 <span className="text-[10px] text-white/30 uppercase tracking-[0.1em]">Shared Folder</span>
                                                             )}
@@ -1653,7 +1653,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
                                                             });
                                                         }}
-                                                        className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
+                                                        className={`p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-200 flex flex-col gap-2.5 md:gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
                                                             : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10'
                                                             }`}
@@ -1672,7 +1672,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <span className={`text-sm truncate block ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={file.name}>
+                                                            <span className={`text-sm line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={file.name}>
                                                                 {file.name}
                                                                 {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
                                                                     <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
