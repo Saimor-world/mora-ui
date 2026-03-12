@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 
 interface NeuralGridProps {
     active?: boolean;
@@ -72,16 +72,12 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
 
             {/* Neural Pulse Effect */}
             {animateGrid && (
-                <motion.div
-                    className="absolute inset-0 bg-gradient-to-t from-emerald-500/[0.02] to-transparent"
-                    animate={{
-                        opacity: state === 'thinking' ? [0.2, 0.4, 0.2] : [0.05, 0.1, 0.05],
-                        y: ['-10%', '10%', '-10%']
-                    }}
-                    transition={{
-                        duration: state === 'thinking' ? 4 : 8,
-                        repeat: Infinity,
-                        ease: "easeInOut"
+                <div
+                    className={`absolute inset-0 bg-gradient-to-t from-emerald-500/[0.02] to-transparent ${
+                        state === 'thinking' ? 'neural-grid-pulse-fast' : 'neural-grid-pulse-slow'
+                    }`}
+                    style={{
+                        willChange: 'transform, opacity',
                     }}
                 />
             )}
@@ -94,10 +90,11 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
 
             {/* Scanning Line (only when thinking) */}
             {showScanLine && (
-                <motion.div
-                    className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent"
-                    animate={{ top: ['0%', '100%'] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                <div
+                    className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent neural-grid-scanline"
+                    style={{
+                        willChange: 'transform, opacity',
+                    }}
                 />
             )}
         </div>

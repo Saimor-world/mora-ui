@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import type { OrbState } from '@/lib/api/awarenessClient';
 
 interface ForestLightCanopyProps {
@@ -80,25 +80,21 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                     {/* Slow floating constellation lines */}
                     {animateAmbient ? (
                         <>
-                            <motion.path
+                            <path
                                 d="M 100 100 L 300 250 L 500 150"
                                 stroke="rgba(255,255,255,0.8)"
                                 strokeWidth="1"
                                 fill="none"
                                 filter="url(#greenGlow)"
-                                initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{ pathLength: 1, opacity: 1, x: [0, 50, 0], y: [0, 30, 0] }}
-                                transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+                                className="forest-canopy-constellation forest-canopy-constellation-a"
                             />
-                            <motion.path
+                            <path
                                 d="M 800 200 L 700 400 L 850 600 L 900 300 Z"
                                 stroke="rgba(255,255,255,0.8)"
                                 strokeWidth="1"
                                 fill="none"
                                 filter="url(#greenGlow)"
-                                initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{ pathLength: 1, opacity: 0.8, rotate: [0, 10, 0] }}
-                                transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
+                                className="forest-canopy-constellation forest-canopy-constellation-b"
                             />
                         </>
                     ) : (
@@ -126,57 +122,52 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
             {/* Reduced Green, More Deep Space/Void Blue/Indigo */}
             <div className="absolute inset-0 opacity-20 mix-blend-screen">
                 {/* Pillar 1: Golden/Red Cosmic Dust (Warmer contrast) */}
-                <motion.div
-                    className="absolute bottom-[-20%] left-[10%] w-[60vw] h-[80vh] rounded-full blur-[100px]"
-                    style={{ background: 'conic-gradient(from 180deg, #7c2d12, #ea580c, transparent)' }}
-                    animate={animateAmbient ? { rotate: [0, 10, 0], scale: [1, 1.1, 1], opacity: [0.1, 0.3, 0.1] } : { opacity: 0.18, scale: 1, rotate: 0 }}
-                    transition={animateAmbient ? { duration: 60, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                <div
+                    className={`absolute bottom-[-20%] left-[10%] w-[60vw] h-[80vh] rounded-full blur-[100px] ${
+                        animateAmbient ? 'forest-canopy-nebula-a' : ''
+                    }`}
+                    style={{ background: 'conic-gradient(from 180deg, #7c2d12, #ea580c, transparent)', opacity: animateAmbient ? undefined : 0.18 }}
                 />
                 {/* Pillar 2: Deep Indigo/Cyan (Less Green) */}
-                <motion.div
-                    className="absolute top-[-10%] right-[10%] w-[70vw] h-[70vh] rounded-full blur-[120px]"
-                    style={{ background: 'radial-gradient(circle, #1e3a8a, #4338ca, transparent)' }}
-                    animate={animateAmbient ? { x: [-20, 20, -20], opacity: [0.1, 0.3, 0.1] } : { opacity: 0.16, x: 0 }}
-                    transition={animateAmbient ? { duration: 50, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+                <div
+                    className={`absolute top-[-10%] right-[10%] w-[70vw] h-[70vh] rounded-full blur-[120px] ${
+                        animateAmbient ? 'forest-canopy-nebula-b' : ''
+                    }`}
+                    style={{ background: 'radial-gradient(circle, #1e3a8a, #4338ca, transparent)', opacity: animateAmbient ? undefined : 0.16 }}
                 />
             </div>
 
             {/* 3. MORA FLOW (Silk Currents - Calmed & Bluer) */}
-            <motion.div
-                className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[60vh] opacity-15 mix-blend-screen"
+            <div
+                className={`absolute inset-x-0 top-1/2 -translate-y-1/2 h-[60vh] opacity-15 mix-blend-screen ${
+                    animateAmbient ? 'forest-canopy-flow' : ''
+                }`}
                 style={{
                     background: 'linear-gradient(90deg, transparent 0%, #1e40af 20%, #7c3aed 50%, #0891b2 80%, transparent 100%)',
                     filter: 'blur(120px)',
+                    opacity: animateAmbient ? undefined : 0.16,
                 }}
-                animate={animateAmbient ? {
-                    opacity: [0.15, 0.25, 0.15],
-                    scaleY: [0.98, 1.02, 0.98],
-                    rotate: [0, 0.5, 0]
-                } : { opacity: 0.16, scaleY: 1, rotate: 0 }}
-                transition={animateAmbient ? { duration: 45, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
             />
 
             {/* 4. CHROMATIC CLOUDS (Weightlessness - Deep) */}
-            <motion.div
-                className="absolute -left-[10%] top-[10%] w-[80vw] h-[80vw] rounded-full opacity-10 mix-blend-color-dodge"
+            <div
+                className={`absolute -left-[10%] top-[10%] w-[80vw] h-[80vw] rounded-full opacity-10 mix-blend-color-dodge ${
+                    animateAmbient ? 'forest-canopy-cloud' : ''
+                }`}
                 style={{
                     background: 'radial-gradient(circle, #1e3a8a 0%, transparent 70%)',
                     filter: 'blur(180px)',
+                    opacity: animateAmbient ? undefined : 0.08,
                 }}
-                animate={animateAmbient ? {
-                    x: [-20, 20, -20],
-                    y: [-20, 20, -20],
-                } : { x: 0, y: 0, opacity: 0.08 }}
-                transition={animateAmbient ? { duration: 90, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
             />
 
             {/* 5. GHOST GALAXY CLUSTERS (Very faint) */}
             <div className="absolute inset-0 pointer-events-none opacity-20">
-                <motion.div
-                    className="absolute top-[20%] left-[30%] w-64 h-32 rounded-full border border-white/5 blur-xl rotate-[15deg]"
-                    style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 80%)' }}
-                    animate={animateAmbient ? { opacity: [0.2, 0.4, 0.2] } : { opacity: 0.22 }}
-                    transition={animateAmbient ? { duration: 40, repeat: Infinity } : { duration: 0.4 }}
+                <div
+                    className={`absolute top-[20%] left-[30%] w-64 h-32 rounded-full border border-white/5 blur-xl rotate-[15deg] ${
+                        animateAmbient ? 'forest-canopy-ghost' : ''
+                    }`}
+                    style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 80%)', opacity: animateAmbient ? undefined : 0.22 }}
                 />
             </div>
 
