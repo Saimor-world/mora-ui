@@ -70,6 +70,7 @@ import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { UserCursor } from '@/components/layout/UserCursor';
 import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
+import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 
 // V12: Connection Status, Quick Tips, Greeting & Stats
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner';
@@ -209,6 +210,13 @@ const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
 export const MoraShell: React.FC = () => {
     const router = useRouter();
 
+    type MyceliumDropVisualFile = {
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+    };
+
     // Auth
     const { isBootstrapped, authError } = useAuthBootstrapper();
 
@@ -286,6 +294,10 @@ export const MoraShell: React.FC = () => {
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
     const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
     const [isShellDropActive, setIsShellDropActive] = useState(false);
+    const [myceliumDropBatch, setMyceliumDropBatch] = useState<{
+        batchId: string;
+        files: MyceliumDropVisualFile[];
+    } | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
@@ -465,6 +477,15 @@ export const MoraShell: React.FC = () => {
         if (files.length === 0) return;
 
         const batchId = `mycelium-${Date.now()}`;
+        setMyceliumDropBatch({
+            batchId,
+            files: files.map((file) => ({
+                id: `${batchId}-${file.name}-${file.size}`,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+            })),
+        });
         openPane({
             id: 'scanner-main',
             type: 'scanner',
@@ -677,6 +698,12 @@ export const MoraShell: React.FC = () => {
                     </>
                 )
             }
+
+            <MyceliumDropfield
+                active={!!myceliumDropBatch}
+                files={myceliumDropBatch?.files || []}
+                onComplete={() => setMyceliumDropBatch(null)}
+            />
 
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />
