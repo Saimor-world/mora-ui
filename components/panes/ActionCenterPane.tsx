@@ -126,16 +126,32 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                                 : type === 'rename_node'
                                     ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} -> ${op.new_name || node?.title || node?.name || '-'}`
                                     : type.replace(/_/g, ' ');
-                    const subline =
+                    const details =
                         type === 'move_node'
-                            ? `Zielordner: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`
+                            ? [
+                                  `Quelle: ${op.source_folder_name || op.source_folder_id || '-'}`,
+                                  `Ziel: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`,
+                              ]
                             : type === 'create_folder'
-                                ? `Parent: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`
-                                : null;
+                                ? [`Parent: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`]
+                                : type === 'rename_node'
+                                    ? [
+                                          `Vorher: ${op.old_name || op.node_name || '-'}`,
+                                          `Nachher: ${op.new_name || node?.title || node?.name || '-'}`,
+                                      ]
+                                    : [];
                     return (
                         <div key={`${actionId}-${heading}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                             <div className="text-[11px] font-medium text-white/80">{line}</div>
-                            {subline && <div className="mt-1 text-[11px] text-white/50">{subline}</div>}
+                            {details.length > 0 && (
+                                <div className="mt-1 space-y-1">
+                                    {details.map((detail) => (
+                                        <div key={detail} className="text-[11px] text-white/50">
+                                            {detail}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 })}

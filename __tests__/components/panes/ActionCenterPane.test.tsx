@@ -122,6 +122,59 @@ describe('ActionCenterPane', () => {
     expect(screen.getByText('Ergebnis')).toBeInTheDocument();
     expect(screen.getByText('Altname.pdf -> Neuname-final.pdf')).toBeInTheDocument();
     expect(screen.getByText('Altname.pdf -> Neuname.pdf')).toBeInTheDocument();
+    expect(screen.getAllByText('Vorher: Altname.pdf')).toHaveLength(2);
+    expect(screen.getByText('Nachher: Neuname-final.pdf')).toBeInTheDocument();
+    expect(screen.getByText('Nachher: Neuname.pdf')).toBeInTheDocument();
+  });
+
+  it('renders move plan and result details with source and target folders', async () => {
+    coreGet.mockResolvedValue({
+      events: [
+        {
+          action_id: 'act_move_1',
+          status: 'done',
+          intent: 'move_node',
+          actor_role: 'owner',
+          session_id: 'sess-move-1',
+          message: 'Datei wurde verschoben',
+          error: null,
+          payload: {
+            summary: 'Datei wurde verschoben',
+            tool_name: 'move_node',
+            operations: [
+              {
+                type: 'move_node',
+                node_name: 'Budgetplanung.pdf',
+                source_folder_name: 'Inbox',
+                target_folder_name: 'Q4 Planning',
+              },
+            ],
+            result: {
+              operations_executed: [
+                {
+                  type: 'move_node',
+                  node_name: 'Budgetplanung.pdf',
+                  source_folder_name: 'Inbox',
+                  target_folder_name: 'Q4 Planning',
+                },
+              ],
+            },
+          },
+          timestamp: '2026-03-12T16:02:00.000Z',
+        },
+      ],
+    });
+
+    render(<ActionCenterPane id="actions-main" />);
+
+    expect(await screen.findByText('Datei verschieben', { selector: 'div' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
+
+    expect(screen.getByText('Plan')).toBeInTheDocument();
+    expect(screen.getByText('Ergebnis')).toBeInTheDocument();
+    expect(screen.getAllByText('Node: Budgetplanung.pdf')).toHaveLength(2);
+    expect(screen.getAllByText('Quelle: Inbox')).toHaveLength(2);
+    expect(screen.getAllByText('Ziel: Q4 Planning')).toHaveLength(2);
   });
 
   it('reloads history when action realtime events arrive', async () => {
