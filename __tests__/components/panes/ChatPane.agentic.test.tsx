@@ -159,6 +159,42 @@ describe('ChatPane agentic file ops', () => {
     expect(screen.getByText('Ordner Q4 Marketing wird erstellt')).toBeInTheDocument();
   });
 
+  test('routes rename intent into pending confirmation instead of streaming', async () => {
+    mockExecuteAgenticLoop.mockResolvedValue({
+      final_state: 'S4_CONFIRM',
+      final_message: 'Ich habe einen Umbenennungsplan vorbereitet.',
+      pending_confirmations: [{
+        tool_name: 'rename_node',
+        tool_params: {
+          summary: 'Datei Budget 2026.pdf wird in Budget 2027.pdf umbenannt',
+          operations: [{ type: 'rename_node', node_id: 'node-1', node_name: 'Budget 2026.pdf', new_name: 'Budget 2027.pdf' }],
+        },
+        risk_level: 'write',
+        confirmation_token: 'tok-rename',
+        action_id: 'act-rename',
+      }],
+    });
+
+    render(<ChatPane id="chat-main" />);
+
+    fireEvent.change(screen.getByPlaceholderText(/Schreib Mora/i), {
+      target: { value: 'Benenne diese Datei in Budget 2027.pdf um' },
+    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/Schreib Mora/i), { key: 'Enter', code: 'Enter' });
+
+    await waitFor(() => {
+      expect(mockExecuteAgenticLoop).toHaveBeenCalledWith('Benenne diese Datei in Budget 2027.pdf um', expect.objectContaining({
+        level: 'space',
+        entityId: 'space-1',
+        entityType: 'space',
+        companyId: 'company-1',
+      }));
+    });
+
+    expect(mockStreamSend).not.toHaveBeenCalled();
+    expect(await screen.findByText('Datei Budget 2026.pdf wird in Budget 2027.pdf umbenannt')).toBeInTheDocument();
+  });
+
   test('routes non-file prompts through streaming chat', async () => {
     mockStreamSend.mockResolvedValue('Hier ist ein Statusupdate.');
 

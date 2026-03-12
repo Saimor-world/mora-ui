@@ -33,10 +33,11 @@ interface PendingAction {
 }
 
 interface FileActionOperation {
-    type: 'create_folder' | 'move_node' | string;
+    type: 'create_folder' | 'move_node' | 'rename_node' | string;
     name?: string;
     node_id?: string;
     node_name?: string;
+    new_name?: string;
     target_folder_id?: string;
     target_folder_name?: string;
     parent_folder_id?: string | null;
@@ -76,7 +77,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     const hasDispatchedPresenceRef = useRef<string | null>(null);
 
     const isIntake = variant === 'intake' || !!action.intake_context;
-    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node';
+    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node' || action.tool_name === 'rename_node';
     const intake = action.intake_context;
     const cardTargetId = useMemo(() => `confirmation-card-${action.action_id}`, [action.action_id]);
     const fileOperations = useMemo(() => getFileOperations(action.params), [action.params]);
@@ -86,6 +87,10 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     );
     const moveNodeOps = useMemo(
         () => fileOperations.filter((operation) => operation.type === 'move_node'),
+        [fileOperations]
+    );
+    const renameNodeOps = useMemo(
+        () => fileOperations.filter((operation) => operation.type === 'rename_node'),
         [fileOperations]
     );
     const filePlanSummary = useMemo(() => {
@@ -99,8 +104,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         if (moveNodeOps.length > 0) {
             parts.push(`${moveNodeOps.length} Datei${moveNodeOps.length === 1 ? '' : 'en'} verschieben`);
         }
+        if (renameNodeOps.length > 0) {
+            parts.push(`${renameNodeOps.length} Datei${renameNodeOps.length === 1 ? '' : 'en'} umbenennen`);
+        }
         return parts.length > 0 ? parts.join(' und ') : 'Dateioperation pruefen';
-    }, [action.params, createFolderOps, moveNodeOps]);
+    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps]);
 
     useEffect(() => {
         if (!action.action_id || hasDispatchedPresenceRef.current === action.action_id) {
@@ -218,6 +226,12 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 {moveNodeOps.length} Datei{moveNodeOps.length === 1 ? '' : 'en'} verschieben
                             </span>
                         )}
+                        {renameNodeOps.length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-100">
+                                <FileCheck size={12} />
+                                {renameNodeOps.length} Datei{renameNodeOps.length === 1 ? '' : 'en'} umbenennen
+                            </span>
+                        )}
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60">
                             <ShieldAlert size={12} />
                             Risiko {action.risk_level}
@@ -271,6 +285,29 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                         <span className="text-white/45">Zielordner</span>
                                         <span className="text-right text-white/75 break-words">
                                             {formatTargetLabel(operation.target_folder_name, operation.target_folder_id, 'Zielordner')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {renameNodeOps.map((operation, index) => (
+                            <div key={`rename-node-${index}`} className="rounded-lg border border-violet-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-violet-200/70 mb-2">
+                                    <FileCheck size={14} />
+                                    <span>Datei umbenennen</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Element</span>
+                                        <span className="text-right text-white/90 break-words">
+                                            {formatTargetLabel(operation.node_name, operation.node_id, 'Datei / Node')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Neuer Name</span>
+                                        <span className="text-right text-white/75 break-words">
+                                            {operation.new_name || 'Unbenannt'}
                                         </span>
                                     </div>
                                 </div>

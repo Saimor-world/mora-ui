@@ -123,6 +123,36 @@ describe('ConfirmationCard presence trigger', () => {
     expect(screen.getByRole('button', { name: 'Ausfuehren' })).toBeInTheDocument();
   });
 
+  it('renders readable rename operation details', () => {
+    render(
+      <ConfirmationCard
+        action={{
+          ...baseAction,
+          tool_name: 'rename_node',
+          action_id: 'action-rename',
+          params: {
+            summary: '1 Datei wird umbenannt',
+            operations: [
+              {
+                type: 'rename_node',
+                node_id: 'node-2',
+                node_name: 'Budget 2026.pdf',
+                new_name: 'Budget 2027.pdf',
+              },
+            ],
+            session_id: 'sess-rename',
+          },
+        }}
+        onConfirmed={jest.fn()}
+        onRejected={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('1 Datei wird umbenannt')).toBeInTheDocument();
+    expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
+    expect(screen.getByText('Budget 2027.pdf')).toBeInTheDocument();
+  });
+
   it('uses the file-op confirm endpoint by default', async () => {
     mockCorePost.mockResolvedValue({ confirmed: true, result: { ok: true } } as any);
     const onConfirmed = jest.fn();
