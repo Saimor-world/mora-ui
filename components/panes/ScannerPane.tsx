@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -7,9 +7,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
-import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
+import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
 
-
+interface IntakeContext {
+    suggested_category?: string;
+    suggested_location?: string;
+    route_mode?: string;
+    route_reason?: string;
+    target_company_name?: string;
+    target_department_name?: string;
+    target_space_name?: string;
+    target_folder_name?: string;
+}
 
 interface PendingAction {
     tool_name: string;
@@ -21,6 +30,7 @@ interface PendingAction {
     file_name?: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
+    intake_context?: IntakeContext;
 }
 
 interface ScannedFile {
@@ -32,6 +42,7 @@ interface ScannedFile {
     result?: string;
     nativeFile?: File;
     fileRecordId?: string;
+    reviewOutcome?: 'confirmed' | 'rejected';
 }
 
 interface IntakeSeedPayload {
@@ -128,6 +139,34 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         });
     };
 
+    const buildRoutePath = (intake?: IntakeContext | null) =>
+        [
+            intake?.target_department_name,
+            intake?.target_space_name,
+            intake?.target_folder_name,
+        ].filter(Boolean).join(' > ') || intake?.suggested_location || 'Unklare Route';
+
+    const markFileOutcome = useCallback((fileId: string, outcome: 'confirmed' | 'rejected', result: string) => {
+        setFiles(prev => prev.map(f =>
+            f.fileRecordId === fileId
+                ? { ...f, status: 'done', reviewOutcome: outcome, result }
+                : f
+        ));
+    }, []);
+
+    const confirmPendingAction = useCallback(async (active: PendingAction) => {
+        await confirmCreateNodeFromFile(active.file_id, active.confirmation_token);
+        markFileOutcome(active.file_id, 'confirmed', 'Node created');
+        window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+        return active;
+    }, [markFileOutcome]);
+
+    const rejectPendingAction = useCallback(async (active: PendingAction) => {
+        await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
+        markFileOutcome(active.file_id, 'rejected', 'Node creation rejected');
+        return active;
+    }, [markFileOutcome]);
+
     const processFile = async (fileId: string, fileObject?: File) => {
         setFiles(prev => prev.map(f =>
             f.id === fileId ? { ...f, status: 'uploading' } : f
@@ -167,7 +206,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     file_id: uploaded.id,
                     file_name: uploaded.filename,
                     confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
-                    confirm_payload: { confirmation_token: response.confirmation_token }
+                    confirm_payload: { confirmation_token: response.confirmation_token },
+                    intake_context: response.intake_context,
                 }]);
                 return;
             }
@@ -222,7 +262,58 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const isActive = usePaneStore(state => state.activePaneId === id);
     const pendingCount = files.filter(f => f.status === 'pending').length;
     const reviewCount = files.filter(f => f.status === 'review').length;
+    const confirmedCount = files.filter(f => f.reviewOutcome === 'confirmed').length;
+    const rejectedCount = files.filter(f => f.reviewOutcome === 'rejected').length;
     const activePendingAction = pendingActions[0] || null;
+    const routeSummary = useMemo(() => {
+        const buckets = new Map<string, { count: number; category?: string }>();
+        pendingActions.forEach((action) => {
+            const label = buildRoutePath(action.intake_context);
+            const current = buckets.get(label) || { count: 0, category: action.intake_context?.suggested_category };
+            current.count += 1;
+            if (!current.category && action.intake_context?.suggested_category) {
+                current.category = action.intake_context.suggested_category;
+            }
+            buckets.set(label, current);
+        });
+        return Array.from(buckets.entries()).map(([path, meta]) => ({ path, ...meta }));
+    }, [pendingActions]);
+
+    const bulkConfirm = async () => {
+        if (pendingActions.length === 0) return;
+        setIsBatchProcessing(true);
+        try {
+            const snapshot = [...pendingActions];
+            for (const action of snapshot) {
+                await confirmPendingAction(action);
+            }
+            setPendingActions([]);
+            toast.success(snapshot.length === 1 ? 'Datei eingeordnet' : `${snapshot.length} Dateien eingeordnet`);
+        } catch (error) {
+            console.error('Bulk confirm failed', error);
+            toast.error('Batch konnte nicht vollstaendig eingeordnet werden.');
+        } finally {
+            setIsBatchProcessing(false);
+        }
+    };
+
+    const bulkReject = async () => {
+        if (pendingActions.length === 0) return;
+        setIsBatchProcessing(true);
+        try {
+            const snapshot = [...pendingActions];
+            for (const action of snapshot) {
+                await rejectPendingAction(action);
+            }
+            setPendingActions([]);
+            toast.info(snapshot.length === 1 ? 'Datei verworfen' : `${snapshot.length} Dateien verworfen`);
+        } catch (error) {
+            console.error('Bulk reject failed', error);
+            toast.error('Batch konnte nicht vollstaendig verworfen werden.');
+        } finally {
+            setIsBatchProcessing(false);
+        }
+    };
 
     if (!pane) return null;
 
@@ -322,6 +413,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             {files.length} file{files.length !== 1 ? 's' : ''}
                             {pendingCount > 0 && ` ${pendingCount} pending`}
                             {reviewCount > 0 && ` ${reviewCount} in review`}
+                            {confirmedCount > 0 && ` ${confirmedCount} done`}
+                            {rejectedCount > 0 && ` ${rejectedCount} rejected`}
                         </span>
                         {pendingCount > 0 && (
                             <button
@@ -349,6 +442,44 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                         ? '1 Datei wartet auf Freigabe vor der Ablage in den Dateibaum.'
                                         : `${pendingActions.length} Dateien warten auf Freigabe. Mora arbeitet den Stapel nach Ihrer Entscheidung einzeln ab.`}
                                 </p>
+                                {routeSummary.length > 0 && (
+                                    <div className="mt-3 space-y-2">
+                                        {routeSummary.map((route) => (
+                                            <div
+                                                key={route.path}
+                                                className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/15 px-3 py-2"
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className="text-sm text-white/80 truncate">{route.path}</div>
+                                                    {route.category && (
+                                                        <div className="text-[11px] text-white/40 truncate">{route.category}</div>
+                                                    )}
+                                                </div>
+                                                <div className="shrink-0 rounded-full border border-amber-400/15 bg-amber-400/10 px-2.5 py-1 text-[11px] text-amber-100">
+                                                    {route.count}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {pendingActions.length > 1 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <button
+                                            onClick={bulkReject}
+                                            disabled={isBatchProcessing}
+                                            className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-medium transition-colors"
+                                        >
+                                            Alle verwerfen
+                                        </button>
+                                        <button
+                                            onClick={bulkConfirm}
+                                            disabled={isBatchProcessing}
+                                            className="px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-100 text-xs font-medium transition-colors"
+                                        >
+                                            Alle einordnen
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -440,15 +571,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                         <ConfirmationCard
                             action={activePendingAction}
+                            variant="intake"
                         onConfirmed={() => {
                             const active = activePendingAction;
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
-                                setFiles(prev => prev.map(f =>
-                                    f.fileRecordId === active.file_id
-                                        ? { ...f, status: 'done', result: 'Node created' }
-                                        : f
-                                ));
+                                markFileOutcome(active.file_id, 'confirmed', 'Node created');
                             }
                             toast.success('Node created');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
@@ -458,12 +586,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
                                 try {
-                                    await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
-                                    setFiles(prev => prev.map(f =>
-                                        f.fileRecordId === active.file_id
-                                            ? { ...f, status: 'done', result: 'Node creation rejected' }
-                                            : f
-                                    ));
+                                    await rejectPendingAction(active);
                                     toast.info('Node creation rejected');
                                 } catch (err) {
                                     console.error('Reject failed', err);

@@ -12,6 +12,7 @@ const mockToastError = jest.fn();
 const mockToastInfo = jest.fn();
 const mockUploadCompanyFile = jest.fn();
 const mockRequestCreateNodeFromFile = jest.fn();
+const mockConfirmCreateNodeFromFile = jest.fn();
 const mockRejectCreateNodeFromFile = jest.fn();
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -75,6 +76,7 @@ jest.mock('@/lib/toast', () => ({
 jest.mock('@/lib/api/filesClient', () => ({
     uploadCompanyFile: (...args: any[]) => mockUploadCompanyFile(...args),
     requestCreateNodeFromFile: (...args: any[]) => mockRequestCreateNodeFromFile(...args),
+    confirmCreateNodeFromFile: (...args: any[]) => mockConfirmCreateNodeFromFile(...args),
     rejectCreateNodeFromFile: (...args: any[]) => mockRejectCreateNodeFromFile(...args),
 }));
 
@@ -92,6 +94,7 @@ import { ScannerPane } from '@/components/panes/ScannerPane';
 
 beforeEach(() => {
     jest.clearAllMocks();
+    mockConfirmCreateNodeFromFile.mockResolvedValue({ status: 'executed' });
     mockUploadCompanyFile
         .mockResolvedValueOnce({ id: 'file-1', company_id: 'company-1', filename: 'brief-one.pdf' })
         .mockResolvedValueOnce({ id: 'file-2', company_id: 'company-1', filename: 'brief-two.pdf' });
@@ -102,6 +105,12 @@ beforeEach(() => {
             risk_level: 'mutation',
             confirmation_token: 'token-1',
             action_id: 'action-1',
+            intake_context: {
+                suggested_category: 'briefing',
+                suggested_location: 'Marketing > Kampagnen',
+                target_department_name: 'Marketing',
+                target_space_name: 'Kampagnen',
+            },
         })
         .mockResolvedValueOnce({
             status: 'pending_confirmation',
@@ -109,6 +118,12 @@ beforeEach(() => {
             risk_level: 'mutation',
             confirmation_token: 'token-2',
             action_id: 'action-2',
+            intake_context: {
+                suggested_category: 'briefing',
+                suggested_location: 'Marketing > Kampagnen',
+                target_department_name: 'Marketing',
+                target_space_name: 'Kampagnen',
+            },
         });
 });
 
@@ -126,6 +141,9 @@ describe('ScannerPane batch review', () => {
         });
 
         expect(await screen.findByText(/2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
+        expect(screen.getByText('Marketing > Kampagnen')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Alle einordnen/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Alle verwerfen/i })).toBeInTheDocument();
         expect(screen.getAllByText('brief-one.pdf').length).toBeGreaterThan(0);
 
         fireEvent.click(screen.getByRole('button', { name: 'confirm' }));
@@ -144,5 +162,22 @@ describe('ScannerPane batch review', () => {
         expect(mockRejectCreateNodeFromFile).toHaveBeenCalledWith('file-2', 'token-2');
         expect(screen.getByText(/Node created/i)).toBeInTheDocument();
         expect(screen.getByText(/Node creation rejected/i)).toBeInTheDocument();
+    });
+
+    test('bulk confirm processes the whole review queue', async () => {
+        render(<ScannerPane id="scanner-main" />);
+
+        fireEvent.click(screen.getByRole('button', { name: /Upload All/i }));
+
+        expect(await screen.findByText(/2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('confirmation-card')).not.toBeInTheDocument();
+        });
+
+        expect(mockConfirmCreateNodeFromFile).toHaveBeenCalledTimes(2);
+        expect(screen.getAllByText(/Node created/i).length).toBeGreaterThanOrEqual(2);
     });
 });
