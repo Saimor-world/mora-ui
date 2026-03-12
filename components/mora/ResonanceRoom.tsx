@@ -235,11 +235,15 @@ export const ResonanceRoom: React.FC<Props> = ({
                     });
 
 // ---
-                    // MORA CURSOR INTELLIGENCE - The Extended Arm
-                    // When MORA uses tools, her cursor shows what she's doing
+                    // MORA CURSOR INTELLIGENCE
+                    // Navigation state changes happen per tool, but presence is
+                    // dispatched ONCE per response. point_at beats navigate.
 // ---
+                    const store = useMoraStore.getState();
+                    let presenceNavigate: Parameters<typeof dispatchMoraPresence>[0] | null = null;
+                    let presencePoint: Parameters<typeof dispatchMoraPresence>[0] | null = null;
+
                     for (const tool of response.tools_executed) {
-                        const store = useMoraStore.getState();
 
                         // NAVIGATE TOOL - Move to entity and change view
                         if (tool.tool === 'navigate' && tool.success && tool.result) {
@@ -261,14 +265,14 @@ export const ResonanceRoom: React.FC<Props> = ({
                                     await store.loadNodeDetails(target_id);
                                     break;
                             }
-
-                            dispatchMoraPresence({
+                            // Collect — last navigate wins if multiple fire
+                            presenceNavigate = {
                                 action: 'navigate',
                                 targetId: target_id,
                                 targetType: target_type,
                                 message: `Navigiere zu ${target_name}`,
                                 source: 'resonance'
-                            });
+                            };
                         }
 
                         // POINT_AT TOOL - Move cursor to element (visual only)
@@ -276,17 +280,17 @@ export const ResonanceRoom: React.FC<Props> = ({
                             const { target_type, target_id, reason, cursor_hint, should_pulse } = tool.result;
 
                             console.log(`[MORA] Point: ${target_type}:${target_id} - "${reason}"`);
-
-                            dispatchMoraPresence({
+                            // Collect — point_at always overrides navigate as the single presence gesture
+                            presencePoint = {
                                 action: 'point',
                                 targetId: target_id,
                                 targetType: target_type,
                                 targetPosition: cursor_hint ? { x: cursor_hint.x, y: cursor_hint.y } : undefined,
                                 message: reason,
                                 source: 'resonance'
-                            });
+                            };
 
-                            // Also emit highlight event if element should pulse
+                            // Pulse side-effect fires immediately (not presence)
                             if (should_pulse) {
                                 window.dispatchEvent(new CustomEvent('mora:highlight', {
                                     detail: {
@@ -315,6 +319,10 @@ export const ResonanceRoom: React.FC<Props> = ({
                             }));
                         }
                     }
+
+                    // One gesture per response: point_at beats navigate
+                    const primaryPresence = presencePoint ?? presenceNavigate;
+                    if (primaryPresence) dispatchMoraPresence(primaryPresence);
                 }
             }
         } catch (e) {
