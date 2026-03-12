@@ -2,7 +2,14 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, X, AlertTriangle, ShieldAlert, FileCheck } from 'lucide-react';
+import {
+    Check,
+    ShieldAlert,
+    FileCheck,
+    FolderPlus,
+    ArrowRightLeft,
+    AlertTriangle,
+} from 'lucide-react';
 import { corePost } from '@/lib/api/coreClient';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { toast } from 'sonner';
@@ -22,26 +29,78 @@ interface PendingAction {
     action_id: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
-    // P6: Guided Intake
     intake_context?: IntakeContext;
+}
+
+interface FileActionOperation {
+    type: 'create_folder' | 'move_node' | string;
+    name?: string;
+    node_id?: string;
+    node_name?: string;
+    target_folder_id?: string;
+    target_folder_name?: string;
+    parent_folder_id?: string | null;
+    parent_folder_name?: string | null;
+    space_id?: string;
+    space_name?: string;
+    company_id?: string;
 }
 
 interface Props {
     action: PendingAction;
     onConfirmed: (result: any) => void;
     onRejected: () => void;
-    onDismiss?: () => void;  // P6: "Später" dismisses UI without policy reject
-    variant?: 'default' | 'intake';  // P6: Guided Intake variant
+    onDismiss?: () => void;
+    variant?: 'default' | 'intake';
 }
+
+const shortenId = (value?: string | null) => {
+    if (!value) return null;
+    if (value.length <= 12) return value;
+    return `${value.slice(0, 8)}...`;
+};
+
+const formatTargetLabel = (label?: string | null, id?: string | null, fallback = 'Unbekannt') => {
+    return label || shortenId(id) || fallback;
+};
+
+const getFileOperations = (params: Record<string, any>): FileActionOperation[] => {
+    if (!Array.isArray(params?.operations)) return [];
+    return params.operations.filter((operation: unknown): operation is FileActionOperation => {
+        return typeof operation === 'object' && operation !== null && typeof (operation as FileActionOperation).type === 'string';
+    });
+};
 
 export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejected, onDismiss, variant }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const hasDispatchedPresenceRef = useRef<string | null>(null);
 
-    // P6: Auto-detect intake variant if intake_context is present
     const isIntake = variant === 'intake' || !!action.intake_context;
+    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node';
     const intake = action.intake_context;
     const cardTargetId = useMemo(() => `confirmation-card-${action.action_id}`, [action.action_id]);
+    const fileOperations = useMemo(() => getFileOperations(action.params), [action.params]);
+    const createFolderOps = useMemo(
+        () => fileOperations.filter((operation) => operation.type === 'create_folder'),
+        [fileOperations]
+    );
+    const moveNodeOps = useMemo(
+        () => fileOperations.filter((operation) => operation.type === 'move_node'),
+        [fileOperations]
+    );
+    const filePlanSummary = useMemo(() => {
+        const explicitSummary = typeof action.params?.summary === 'string' ? action.params.summary : null;
+        if (explicitSummary) return explicitSummary;
+
+        const parts: string[] = [];
+        if (createFolderOps.length > 0) {
+            parts.push(`${createFolderOps.length} Ordner`);
+        }
+        if (moveNodeOps.length > 0) {
+            parts.push(`${moveNodeOps.length} Datei${moveNodeOps.length === 1 ? '' : 'en'} verschieben`);
+        }
+        return parts.length > 0 ? parts.join(' und ') : 'Dateioperation pruefen';
+    }, [action.params, createFolderOps, moveNodeOps]);
 
     useEffect(() => {
         if (!action.action_id || hasDispatchedPresenceRef.current === action.action_id) {
@@ -54,7 +113,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             dispatchMoraPresence({
                 action: 'point',
                 targetId: cardTargetId,
-                message: isIntake ? 'Bitte Einordnung prüfen' : 'Bestätigung erforderlich',
+                message: isIntake
+                    ? 'Bitte Einordnung pruefen'
+                    : isFileOp
+                        ? 'Aktionsausfuehrung bestaetigen'
+                        : 'Bestaetigung erforderlich',
                 duration: 2600,
                 source: 'system',
             });
@@ -62,18 +125,23 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         }, 550);
 
         return () => window.clearTimeout(timeoutId);
-    }, [action.action_id, cardTargetId, isIntake]);
+    }, [action.action_id, cardTargetId, isIntake, isFileOp]);
 
     const handleConfirm = async () => {
         setIsProcessing(true);
         try {
-            const endpoint = action.confirm_endpoint || "/v3/actions/execute";
-            const payload = action.confirm_payload || {
-                tool_name: action.tool_name,
-                params: action.params,
-                confirmation_token: action.confirmation_token,
-                trace_id: action.action_id
-            };
+            const endpoint = action.confirm_endpoint || (isFileOp ? '/v3/actions/confirm' : '/v3/actions/execute');
+            const payload = action.confirm_payload || (isFileOp
+                ? {
+                    confirm_token: action.confirmation_token,
+                    session_id: action.params?.session_id || action.params?.trace_id || action.action_id,
+                }
+                : {
+                    tool_name: action.tool_name,
+                    params: action.params,
+                    confirmation_token: action.confirmation_token,
+                    trace_id: action.action_id,
+                });
 
             const res = await corePost(endpoint, payload);
             const success =
@@ -83,43 +151,163 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 res?.result;
 
             if (success) {
-                toast.success(isIntake ? "Eingeordnet" : "Action approved.");
+                toast.success(isIntake ? 'Eingeordnet' : isFileOp ? 'Aktion ausgefuehrt' : 'Action approved.');
                 if (typeof window !== 'undefined' && action.tool_name === 'create_node_from_file') {
                     window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
-                    // P6: Timeline event for intake completion
                     window.dispatchEvent(new CustomEvent('mora:agency-update', {
                         detail: {
                             type: 'action',
                             status: 'complete',
                             intent: 'intake',
-                            message: intake?.business_summary || 'Erfolgreich eingeordnet'
-                        }
+                            message: intake?.business_summary || 'Erfolgreich eingeordnet',
+                        },
                     }));
                 }
                 onConfirmed(res?.data || res?.result || res);
             } else {
-                toast.error("Action failed. Nothing was created.");
-                console.error("Confirmation failed:", res);
+                toast.error(isFileOp ? 'Aktion konnte nicht ausgefuehrt werden.' : 'Action failed. Nothing was created.');
+                console.error('Confirmation failed:', res);
             }
         } catch (e) {
-            console.error("Confirmation failed", e);
-            toast.error("Action failed. Nothing was created.");
+            console.error('Confirmation failed', e);
+            toast.error(isFileOp ? 'Aktion konnte nicht ausgefuehrt werden.' : 'Action failed. Nothing was created.');
         } finally {
             setIsProcessing(false);
         }
     };
 
-    // P6: Handle "Später" - dismiss UI without policy reject
     const handleDismiss = () => {
         if (onDismiss) {
             onDismiss();
         } else {
-            // Fallback: just clear the UI, pending stays pending
             onRejected();
         }
     };
 
-    // P6: Intake Variant - Calm Competence design
+    if (isFileOp) {
+        return (
+            <motion.div
+                id={cardTargetId}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl overflow-hidden"
+            >
+                <div className="bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+                    <AlertTriangle className="text-amber-300 shrink-0 mt-0.5" size={18} />
+                    <div className="min-w-0">
+                        <h4 className="text-amber-100 text-sm font-medium">Aktionsplan pruefen</h4>
+                        <p className="text-[10px] text-amber-200/60 uppercase tracking-widest mt-0.5">
+                            Dateibaum-Aenderung - Bestaetigung erforderlich
+                        </p>
+                    </div>
+                </div>
+
+                <div className="p-4 space-y-4">
+                    <div className="text-sm text-white/85 leading-relaxed">{filePlanSummary}</div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {createFolderOps.length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-200">
+                                <FolderPlus size={12} />
+                                {createFolderOps.length} Ordner
+                            </span>
+                        )}
+                        {moveNodeOps.length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[11px] text-cyan-100">
+                                <ArrowRightLeft size={12} />
+                                {moveNodeOps.length} Datei{moveNodeOps.length === 1 ? '' : 'en'} verschieben
+                            </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60">
+                            <ShieldAlert size={12} />
+                            Risiko {action.risk_level}
+                        </span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {createFolderOps.map((operation, index) => (
+                            <div key={`create-folder-${index}`} className="rounded-lg border border-emerald-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-emerald-300/70 mb-2">
+                                    <FolderPlus size={14} />
+                                    <span>Ordner erstellen</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Name</span>
+                                        <span className="text-right text-white/90 break-words">{operation.name || 'Unbenannt'}</span>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Ziel</span>
+                                        <span className="text-right text-white/75">
+                                            {operation.parent_folder_name
+                                                ? `Ordner ${operation.parent_folder_name}`
+                                                : operation.space_name
+                                                    ? `Space ${operation.space_name}`
+                                                    : operation.parent_folder_id
+                                                        ? `Ordner ${shortenId(operation.parent_folder_id)}`
+                                                        : operation.space_id
+                                                            ? `Space ${shortenId(operation.space_id)}`
+                                                            : 'Aktueller Kontext'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {moveNodeOps.map((operation, index) => (
+                            <div key={`move-node-${index}`} className="rounded-lg border border-cyan-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-cyan-200/70 mb-2">
+                                    <ArrowRightLeft size={14} />
+                                    <span>Datei verschieben</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Element</span>
+                                        <span className="text-right text-white/90 break-words">
+                                            {formatTargetLabel(operation.node_name, operation.node_id, 'Datei / Node')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Zielordner</span>
+                                        <span className="text-right text-white/75 break-words">
+                                            {formatTargetLabel(operation.target_folder_name, operation.target_folder_id, 'Zielordner')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="text-xs text-white/55 italic leading-relaxed">
+                        MORA fuehrt diese Aenderung erst nach Ihrer Bestaetigung aus. Der aktuelle Firmenkontext bleibt dabei verbindlich.
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-3 bg-black/20 border-t border-white/5">
+                    <button
+                        onClick={onRejected}
+                        disabled={isProcessing}
+                        className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs font-medium"
+                    >
+                        Abbrechen
+                    </button>
+                    <button
+                        onClick={handleConfirm}
+                        disabled={isProcessing}
+                        className="flex-1 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-100 transition-colors text-xs font-medium flex items-center justify-center gap-2"
+                    >
+                        {isProcessing ? (
+                            <span className="w-3 h-3 border-2 border-amber-200/30 border-t-amber-100 rounded-full animate-spin" />
+                        ) : (
+                            <Check size={14} />
+                        )}
+                        Ausfuehren
+                    </button>
+                </div>
+            </motion.div>
+        );
+    }
+
     if (isIntake && intake) {
         return (
             <motion.div
@@ -128,16 +316,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-3 bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden"
             >
-                {/* Header - Neutral, not alarming */}
                 <div className="px-4 py-3 flex items-start gap-3">
                     <FileCheck className="text-white/60 shrink-0 mt-0.5" size={18} />
                     <div className="flex-1">
-                        <p className="text-white font-medium text-sm">
-                            {intake.business_summary}
-                        </p>
-                        <p className="text-white/50 text-xs mt-1">
-                            Vorschlag: {intake.suggested_location}
-                        </p>
+                        <p className="text-white font-medium text-sm">{intake.business_summary}</p>
+                        <p className="text-white/50 text-xs mt-1">Vorschlag: {intake.suggested_location}</p>
                         {intake.detected_patterns && intake.detected_patterns.length > 0 && (
                             <div className="flex gap-1.5 mt-2 flex-wrap">
                                 {intake.detected_patterns.map((pattern, i) => (
@@ -153,18 +336,15 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     </div>
                 </div>
 
-                {/* Actions - Neutral styling */}
                 <div className="flex items-center gap-2 p-3 border-t border-white/5">
-                    {/* Später = UI dismiss, NOT Policy-Reject */}
                     <button
                         onClick={handleDismiss}
                         disabled={isProcessing}
                         className="text-white/40 hover:text-white/60 text-xs font-medium transition-colors px-3 py-2"
                     >
-                        Später
+                        Spaeter
                     </button>
                     <div className="flex-1" />
-                    {/* Primary action - dezent, nicht grün */}
                     <button
                         onClick={handleConfirm}
                         disabled={isProcessing}
@@ -182,7 +362,6 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         );
     }
 
-    // Default variant - Original security warning style
     return (
         <motion.div
             id={cardTargetId}
@@ -190,7 +369,6 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             animate={{ opacity: 1, y: 0 }}
             className="mt-3 bg-red-500/10 border border-red-500/20 rounded-xl overflow-hidden"
         >
-            {/* Header */}
             <div className="bg-red-500/10 px-4 py-3 flex items-start gap-3">
                 <ShieldAlert className="text-red-400 shrink-0 mt-0.5" size={18} />
                 <div>
@@ -201,7 +379,6 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 </div>
             </div>
 
-            {/* Details */}
             <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between text-xs text-emerald-500/60">
                     <span className="uppercase tracking-wide">Aktion</span>
@@ -220,7 +397,6 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 </div>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-2 p-3 bg-black/20 border-t border-white/5">
                 <button
                     onClick={onRejected}
@@ -245,4 +421,3 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         </motion.div>
     );
 };
-
