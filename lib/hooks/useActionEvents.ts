@@ -3,7 +3,14 @@ import { create } from 'zustand';
 import { realtime } from '@/lib/api/realtimeClient';
 import { coreGet } from '@/lib/api/coreClient';
 
-export type ActionStatus = 'proposed' | 'running' | 'pending_confirmation' | 'done' | 'failed';
+export type ActionStatus =
+    | 'proposed'
+    | 'running'
+    | 'pending_confirmation'
+    | 'done'
+    | 'failed'
+    | 'rejected'
+    | 'expired';
 
 export interface ActionEvent {
     event_id?: string;

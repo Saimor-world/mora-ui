@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, CheckCircle2, Clock3, Loader2, PlayCircle, XCircle } from 'lucide-react';
+import { Activity, CheckCircle2, Clock3, Loader2, PlayCircle, ShieldAlert, XCircle } from 'lucide-react';
 import { useActionEvents, type ActionStatus } from '@/lib/hooks/useActionEvents';
 import { useMoraStore } from '@/lib/store/moraState';
 
@@ -10,6 +10,26 @@ const statusIconMap: Record<ActionStatus, React.ReactNode> = {
     pending_confirmation: <Clock3 size={14} className="text-amber-400" />,
     done: <CheckCircle2 size={14} className="text-emerald-500" />,
     failed: <XCircle size={14} className="text-red-400" />,
+    rejected: <ShieldAlert size={14} className="text-slate-300" />,
+    expired: <Clock3 size={14} className="text-slate-400" />,
+};
+
+const statusLabelMap: Record<ActionStatus, string> = {
+    proposed: 'Vorgeschlagen',
+    running: 'Laeuft',
+    pending_confirmation: 'Wartet auf Bestaetigung',
+    done: 'Abgeschlossen',
+    failed: 'Fehlgeschlagen',
+    rejected: 'Verworfen',
+    expired: 'Abgelaufen',
+};
+
+const intentLabelMap: Record<string, string> = {
+    create_folder: 'Ordner erstellen',
+    move_node: 'Datei verschieben',
+    rename_node: 'Datei umbenennen',
+    confirm_action: 'Aktion bestaetigen',
+    undo: 'Aktion rueckgaengig machen',
 };
 
 const formatTime = (ts?: string): string => {
@@ -18,6 +38,45 @@ const formatTime = (ts?: string): string => {
     if (Number.isNaN(d.getTime())) return '--:--';
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
+
+type ActionEventLike = {
+    status: ActionStatus;
+    intent?: string;
+    message: string | null;
+    error: string | null;
+    payload: Record<string, unknown>;
+};
+
+function extractPayloadString(payload: Record<string, unknown>, key: string): string | null {
+    const value = payload?.[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function formatActionTitle(evt: ActionEventLike): string {
+    const payloadTool = extractPayloadString(evt.payload, 'tool_name');
+    const intent = payloadTool || evt.intent || 'system_action';
+    return intentLabelMap[intent] || intent.replace(/_/g, ' ');
+}
+
+function formatActionMessage(evt: ActionEventLike): string | null {
+    if (evt.error) return evt.error;
+    if (evt.message) return evt.message;
+
+    const payloadSummary = extractPayloadString(evt.payload, 'summary');
+    if (payloadSummary) {
+        if (evt.status === 'done') return `${statusLabelMap.done}: ${payloadSummary}`;
+        if (evt.status === 'rejected') return `${statusLabelMap.rejected}: ${payloadSummary}`;
+        return payloadSummary;
+    }
+
+    const result = evt.payload?.result;
+    if (result && typeof result === 'object' && result !== null) {
+        const resultSummary = extractPayloadString(result as Record<string, unknown>, 'summary');
+        if (resultSummary) return resultSummary;
+    }
+
+    return statusLabelMap[evt.status] || null;
+}
 
 export const ActionTray: React.FC = () => {
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
@@ -28,7 +87,9 @@ export const ActionTray: React.FC = () => {
         () => [...events].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
         [events]
     );
-    const activeCount = sortedEvents.filter((e) => e.status !== 'done' && e.status !== 'failed').length;
+    const activeCount = sortedEvents.filter((e) => !['done', 'failed', 'rejected', 'expired'].includes(e.status)).length;
+    const renderStatusIcon = (status: ActionStatus) =>
+        statusIconMap[status] ?? <Clock3 size={14} className="text-slate-400" />;
 
     return (
         <div className="relative z-[250]">
@@ -123,19 +184,22 @@ export const ActionTray: React.FC = () => {
                                                     : 'hover:bg-white/[0.04] border-transparent hover:border-white/[0.05]'
                                                     }`}
                                             >
-                                                <div className="mt-0.5">{statusIconMap[evt.status]}</div>
+                                                <div className="mt-0.5">{renderStatusIcon(evt.status)}</div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex justify-between items-start mb-1">
                                                         <div className={`text-xs font-medium truncate mr-2 ${isStandardMode ? 'text-gray-800' : 'text-white/90'}`}>
-                                                            {evt.intent || 'system_action'}
+                                                            {formatActionTitle(evt)}
                                                         </div>
                                                         <div className={`text-[9px] whitespace-nowrap ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
                                                             {formatTime(evt.timestamp)}
                                                         </div>
                                                     </div>
-                                                    {evt.message && (
+                                                    <div className={`text-[9px] uppercase tracking-wider mb-1 ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                                                        {statusLabelMap[evt.status] || evt.status}
+                                                    </div>
+                                                    {formatActionMessage(evt) && (
                                                         <div className={`text-[10px] leading-tight ${isStandardMode ? 'text-gray-600' : 'text-white/60'}`}>
-                                                            {evt.message}
+                                                            {formatActionMessage(evt)}
                                                         </div>
                                                     )}
                                                     {evt.error && (
