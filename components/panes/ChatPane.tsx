@@ -862,6 +862,11 @@ Was kann ich fuer dich tun?`,
                                         <ConfirmationCard
                                             action={msg.pendingAction}
                                             onConfirmed={(result) => {
+                                                setMessages(prev => prev.map((entry) => (
+                                                    entry.id === msg.id
+                                                        ? { ...entry, pendingAction: undefined }
+                                                        : entry
+                                                )));
                                                 const summary = result?.summary || result?.result?.summary || `${msg.pendingAction?.tool_name} erfolgreich ausgefuehrt.`;
                                                 setMessages(prev => [...prev, {
                                                     id: crypto.randomUUID(),
@@ -871,6 +876,11 @@ Was kann ich fuer dich tun?`,
                                                 }]);
                                             }}
                                             onRejected={() => {
+                                                setMessages(prev => prev.map((entry) => (
+                                                    entry.id === msg.id
+                                                        ? { ...entry, pendingAction: undefined }
+                                                        : entry
+                                                )));
                                                 setMessages(prev => [...prev, {
                                                     id: crypto.randomUUID(),
                                                     role: 'assistant',

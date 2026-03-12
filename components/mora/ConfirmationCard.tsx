@@ -184,11 +184,38 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         }
     };
 
+    const handleReject = async () => {
+        if (!isFileOp) {
+            onRejected();
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const res = await corePost('/v3/actions/reject', {
+                confirmation_token: action.confirmation_token,
+                session_id: action.params?.session_id || action.params?.trace_id || action.action_id,
+            });
+            const success = res?.rejected === true || res?.data?.rejected === true || res?.result?.status === 'rejected';
+            if (success) {
+                toast.success('Aktion verworfen');
+                onRejected();
+            } else {
+                toast.error('Aktion konnte nicht verworfen werden.');
+            }
+        } catch (e) {
+            console.error('Reject failed', e);
+            toast.error('Aktion konnte nicht verworfen werden.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const handleDismiss = () => {
         if (onDismiss) {
             onDismiss();
         } else {
-            onRejected();
+            void handleReject();
         }
     };
 
@@ -322,7 +349,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
 
                 <div className="flex items-center gap-2 p-3 bg-black/20 border-t border-white/5">
                     <button
-                        onClick={onRejected}
+                        onClick={() => { void handleReject(); }}
                         disabled={isProcessing}
                         className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs font-medium"
                     >
@@ -436,7 +463,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
 
             <div className="flex items-center gap-2 p-3 bg-black/20 border-t border-white/5">
                 <button
-                    onClick={onRejected}
+                    onClick={() => { void handleReject(); }}
                     disabled={isProcessing}
                     className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs font-medium"
                 >

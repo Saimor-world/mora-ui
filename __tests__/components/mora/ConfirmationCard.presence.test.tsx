@@ -175,4 +175,27 @@ describe('ConfirmationCard presence trigger', () => {
     });
     expect(onConfirmed).toHaveBeenCalledWith({ ok: true });
   });
+
+  it('uses the file-op reject endpoint by default', async () => {
+    mockCorePost.mockResolvedValue({ rejected: true, result: { status: 'rejected' } } as any);
+    const onRejected = jest.fn();
+
+    render(
+      <ConfirmationCard
+        action={baseAction}
+        onConfirmed={jest.fn()}
+        onRejected={onRejected}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    });
+
+    expect(mockCorePost).toHaveBeenCalledWith('/v3/actions/reject', {
+      confirmation_token: 'token-1',
+      session_id: 'sess-1',
+    });
+    expect(onRejected).toHaveBeenCalled();
+  });
 });
