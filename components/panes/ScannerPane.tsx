@@ -18,6 +18,7 @@ interface PendingAction {
     confirmation_token: string;
     action_id: string;
     file_id: string;
+    file_name?: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
 }
@@ -27,7 +28,7 @@ interface ScannedFile {
     name: string;
     type: string;
     size: number;
-    status: 'pending' | 'uploading' | 'done' | 'error';
+    status: 'pending' | 'uploading' | 'review' | 'done' | 'error';
     result?: string;
     nativeFile?: File;
     fileRecordId?: string;
@@ -47,7 +48,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const [files, setFiles] = useState<ScannedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [stats, setStats] = useState<SystemStats | null>(null);
-    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+    const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
+    const [isBatchProcessing, setIsBatchProcessing] = useState(false);
     const seededBatchIdsRef = React.useRef<Set<string>>(new Set());
     const intakeSeed = (pane?.data || {}) as IntakeSeedPayload;
 
@@ -151,8 +153,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             const autoExecute = user?.settings?.autoExecuteActions ?? true;
             const response = await requestCreateNodeFromFile(uploaded.id, { autoExecute });
             if (response?.status === 'pending_confirmation') {
-                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Awaiting confirmation' } : f));
-                setPendingAction({
+                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'review', result: 'Wartet auf Einordnung' } : f));
+                setPendingActions(prev => [...prev, {
                     tool_name: response.tool_name || 'create_node_from_file',
                     params: {
                         file_id: uploaded.id,
@@ -163,9 +165,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     confirmation_token: response.confirmation_token,
                     action_id: response.action_id || `file_${uploaded.id}`,
                     file_id: uploaded.id,
+                    file_name: uploaded.filename,
                     confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
                     confirm_payload: { confirmation_token: response.confirmation_token }
-                });
+                }]);
                 return;
             }
 
@@ -187,9 +190,15 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
     const processAllPending = async () => {
         const pending = files.filter(f => f.status === 'pending');
-        for (const file of pending) {
-            if (pendingAction) break;
-            await processFile(file.id, file.nativeFile);
+        if (pending.length === 0) return;
+
+        setIsBatchProcessing(true);
+        try {
+            for (const file of pending) {
+                await processFile(file.id, file.nativeFile);
+            }
+        } finally {
+            setIsBatchProcessing(false);
         }
     };
 
@@ -212,6 +221,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     // Hook must be called before any returns
     const isActive = usePaneStore(state => state.activePaneId === id);
     const pendingCount = files.filter(f => f.status === 'pending').length;
+    const reviewCount = files.filter(f => f.status === 'review').length;
+    const activePendingAction = pendingActions[0] || null;
 
     if (!pane) return null;
 
@@ -310,16 +321,36 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         <span className="text-sm text-white/50">
                             {files.length} file{files.length !== 1 ? 's' : ''}
                             {pendingCount > 0 && ` ${pendingCount} pending`}
+                            {reviewCount > 0 && ` ${reviewCount} in review`}
                         </span>
                         {pendingCount > 0 && (
                             <button
                                 onClick={processAllPending}
+                                disabled={isBatchProcessing}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors"
                             >
-                                <Sparkles size={16} />
-                                <span className="text-sm">Upload All</span>
+                                {isBatchProcessing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                <span className="text-sm">{isBatchProcessing ? 'Verarbeite...' : 'Upload All'}</span>
                             </button>
                         )}
+                    </div>
+                )}
+
+                {pendingActions.length > 0 && (
+                    <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                            <Activity size={16} className="text-amber-300 mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                                <div className="text-xs uppercase tracking-[0.2em] text-amber-300/70 font-bold">
+                                    Batch Review
+                                </div>
+                                <p className="text-sm text-white/75 mt-1 leading-relaxed">
+                                    {pendingActions.length === 1
+                                        ? '1 Datei wartet auf Freigabe vor der Ablage in den Dateibaum.'
+                                        : `${pendingActions.length} Dateien warten auf Freigabe. Mora arbeitet den Stapel nach Ihrer Entscheidung einzeln ab.`}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -363,6 +394,13 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             )}
 
+                                            {file.status === 'review' && file.result && (
+                                                <div className="flex items-start gap-2 mt-2 text-xs text-amber-300">
+                                                    <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                                                    <span>{file.result}</span>
+                                                </div>
+                                            )}
+
                                             {file.status === 'error' && (
                                                 <div className="flex items-center gap-2 mt-2 text-xs text-red-400">
                                                     <AlertCircle size={12} />
@@ -390,12 +428,21 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
                 </div>
-                {pendingAction && (
-                    <ConfirmationCard
-                        action={pendingAction}
+                {activePendingAction && (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/35 px-1">
+                            <span>Freigabe {pendingActions.length > 1 ? `1 / ${pendingActions.length}` : 'bereit'}</span>
+                            {activePendingAction.file_name && (
+                                <span className="max-w-[60%] truncate text-right normal-case tracking-normal text-white/50">
+                                    {activePendingAction.file_name}
+                                </span>
+                            )}
+                        </div>
+                        <ConfirmationCard
+                            action={activePendingAction}
                         onConfirmed={() => {
-                            const active = pendingAction;
-                            setPendingAction(null);
+                            const active = activePendingAction;
+                            setPendingActions(prev => prev.slice(1));
                             if (active) {
                                 setFiles(prev => prev.map(f =>
                                     f.fileRecordId === active.file_id
@@ -407,8 +454,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                         }}
                         onRejected={async () => {
-                            const active = pendingAction;
-                            setPendingAction(null);
+                            const active = activePendingAction;
+                            setPendingActions(prev => prev.slice(1));
                             if (active) {
                                 try {
                                     await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
@@ -424,6 +471,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             }
                         }}
                     />
+                    </div>
                 )}
 
 
