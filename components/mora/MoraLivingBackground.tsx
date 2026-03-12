@@ -268,34 +268,43 @@ export const MoraLivingBackground: React.FC = () => {
             ))}
 
             {/* ── NEURAL THREADS (Conscious Stream) ── */}
+            {/* When animateAmbient, run Framer infinite loops. When idle, render plain */}
+            {/* static divs — eliminates 6 Framer rAF timelines from Universe idle state. */}
             <div className="absolute inset-0">
-                {threads.map((t) => (
-                    <motion.div
-                        key={t.id}
-                        initial={{ x: '-100%', opacity: 0 }}
-                        animate={animateAmbient ? {
-                            x:       '210%',
-                            opacity: [0, t.opacity, t.opacity * 1.5, t.opacity, 0],
-                        } : {
-                            x: '0%',
-                            opacity: t.opacity * 0.6,
-                        }}
-                        transition={{
-                            duration: isThinking ? t.duration * 0.55 : t.duration,
-                            repeat:   animateAmbient ? Infinity : 0,
-                            delay:    t.delay,
-                            ease:     'linear',
-                        }}
-                        style={{ top: `${t.y}%`, width: `${t.width}%` }}
-                        className={`absolute h-[1px] bg-gradient-to-r from-transparent ${
-                            t.color === 'cyan-400'   ? 'via-cyan-400/45'
-                          : t.color === 'amber-400'  ? 'via-amber-400/40'
-                          : t.color === 'violet-400' ? 'via-violet-400/40'
-                          : t.color === 'rose-400'   ? 'via-rose-400/35'
-                          : 'via-emerald-400/50'
-                        } to-transparent blur-[0.5px]`}
-                    />
-                ))}
+                {threads.map((t) => {
+                    const colorClass =
+                        t.color === 'cyan-400'   ? 'via-cyan-400/45'
+                      : t.color === 'amber-400'  ? 'via-amber-400/40'
+                      : t.color === 'violet-400' ? 'via-violet-400/40'
+                      : t.color === 'rose-400'   ? 'via-rose-400/35'
+                      : 'via-emerald-400/50';
+                    const baseClass = `absolute h-[1px] bg-gradient-to-r from-transparent ${colorClass} to-transparent blur-[0.5px]`;
+
+                    if (!animateAmbient) {
+                        return (
+                            <div
+                                key={t.id}
+                                style={{ top: `${t.y}%`, width: `${t.width}%`, opacity: t.opacity * 0.6 }}
+                                className={baseClass}
+                            />
+                        );
+                    }
+                    return (
+                        <motion.div
+                            key={t.id}
+                            initial={{ x: '-100%', opacity: 0 }}
+                            animate={{ x: '210%', opacity: [0, t.opacity, t.opacity * 1.5, t.opacity, 0] }}
+                            transition={{
+                                duration: isThinking ? t.duration * 0.55 : t.duration,
+                                repeat:   Infinity,
+                                delay:    t.delay,
+                                ease:     'linear',
+                            }}
+                            style={{ top: `${t.y}%`, width: `${t.width}%` }}
+                            className={baseClass}
+                        />
+                    );
+                })}
             </div>
 
             {/* ── SCANLINE SWEEP ── */}
