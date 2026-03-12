@@ -343,10 +343,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const effectiveBlur = isStandardMode
         ? 0
         : effectiveIsActive
-            ? Math.min(blurIntensity, hasDensePaneStack ? 12 : 16)
-            : hasDensePaneStack
-                ? 3
-                : 5;
+            ? Math.min(blurIntensity, hasDensePaneStack ? 10 : hasPaneStack ? 12 : 16)
+            : hasPaneStack
+                ? 0
+                : 4;
+    const effectiveSaturation = isStandardMode ? 100 : (effectiveIsActive ? (hasPaneStack ? 112 : 118) : 100);
     const panelBackgroundColor = isStandardMode
         ? 'var(--mora-glass-bg, #FFFFFF)'
         : effectiveIsActive
@@ -444,8 +445,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
                     maxHeight: isMaximized ? '100vh' : 'calc(100vh - 160px)',
                     backgroundColor: panelBackgroundColor,
-                    backdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveIsActive ? 118 : 102}%)`,
-                    WebkitBackdropFilter: isStandardMode ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveIsActive ? 118 : 102}%)`,
+                    backdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
+                    WebkitBackdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     boxShadow: panelBoxShadow,
                     borderRadius: isStandardMode ? '4px' : '24px',
                     overflow: 'hidden'

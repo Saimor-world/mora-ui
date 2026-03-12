@@ -227,6 +227,7 @@ export const MoraShell: React.FC = () => {
     } = useMoraStore();
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
+    const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
     const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
@@ -284,7 +285,7 @@ export const MoraShell: React.FC = () => {
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
     const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
-    const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen;
+    const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
