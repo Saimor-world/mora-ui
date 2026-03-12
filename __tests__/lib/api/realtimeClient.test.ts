@@ -39,6 +39,22 @@ describe('buildWsUrl', () => {
         expect(url).toBe('ws://localhost:8081/v3/realtime/subscribe?token=tok&event_types=all');
     });
 
+    it('uses explicit event_types when provided', () => {
+        const url = buildWsUrl('tok', {
+            coreWsUrl: 'wss://api.example.com',
+            eventTypes: ['mindloop_event', 'node_update', 'mindloop_event'],
+        });
+        expect(url).toBe('wss://api.example.com/v3/realtime/subscribe?token=tok&event_types=mindloop_event,node_update');
+    });
+
+    it('filters internal lifecycle events from explicit event_types', () => {
+        const url = buildWsUrl('tok', {
+            coreWsUrl: 'wss://api.example.com',
+            eventTypes: ['connected', 'mindloop_event', 'disconnected'],
+        });
+        expect(url).toBe('wss://api.example.com/v3/realtime/subscribe?token=tok&event_types=mindloop_event');
+    });
+
     it('Branch B non-localhost: rewrites hq. host to api. with protocol', () => {
         const url = buildWsUrl('tok', {
             coreApiUrl: '/api/core',

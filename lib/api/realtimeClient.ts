@@ -29,6 +29,18 @@ export interface BuildWsUrlOptions {
     host?: string;
     /** window.location.protocol override for testing. */
     protocol?: string;
+    /** Explicit list of event types to subscribe to. Defaults to `all`. */
+    eventTypes?: string[];
+}
+
+const INTERNAL_EVENTS = new Set(['connected', 'disconnected']);
+
+function serializeEventTypes(eventTypes?: string[]): string {
+    const normalized = Array.from(
+        new Set((eventTypes ?? []).filter((eventType) => !!eventType && !INTERNAL_EVENTS.has(eventType)))
+    ).sort();
+
+    return normalized.length > 0 ? normalized.join(',') : 'all';
 }
 
 /**
@@ -43,32 +55,68 @@ export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
     const protocol = opts?.protocol ?? (typeof window !== 'undefined'
         ? (window.location.protocol === 'https:' ? 'wss:' : 'ws:')
         : 'ws:');
+    const eventTypes = serializeEventTypes(opts?.eventTypes);
 
     if (coreWsUrl) {
-        return `${coreWsUrl}/v3/realtime/subscribe?token=${token}&event_types=all`;
+        return `${coreWsUrl}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
     }
 
     if (coreApiUrl.startsWith('/')) {
         const apiHost = host.startsWith('hq.') ? host.replace(/^hq\./, 'api.') : 'api.saimor.world';
 
         if (['localhost', '127.0.0.1', '::1'].includes(hostname)) {
-            return `ws://localhost:8081/v3/realtime/subscribe?token=${token}&event_types=all`;
+            return `ws://localhost:8081/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
         }
-        return `${protocol}//${apiHost}/v3/realtime/subscribe?token=${token}&event_types=all`;
+        return `${protocol}//${apiHost}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
     }
 
     const wsHost = coreApiUrl.replace(/^http/, 'ws');
-    return `${wsHost}/v3/realtime/subscribe?token=${token}&event_types=all`;
+    return `${wsHost}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
 }
 
 class RealtimeClient {
     private ws: WebSocket | null = null;
     private listeners: Map<string, Set<EventHandler>> = new Map();
     private reconnectTimer: NodeJS.Timeout | null = null;
+    private resubscribeTimer: NodeJS.Timeout | null = null;
     private isConnecting: boolean = false;
     private connectionId: string | null = null;
+    private subscribedEventTypesKey: string = 'all';
 
     constructor() {}
+
+    private getDesiredEventTypes(): string[] {
+        return Array.from(this.listeners.keys()).filter((eventType) => !INTERNAL_EVENTS.has(eventType));
+    }
+
+    private getDesiredEventTypesKey(): string {
+        return serializeEventTypes(this.getDesiredEventTypes());
+    }
+
+    private scheduleResubscribe() {
+        const desiredKey = this.getDesiredEventTypesKey();
+        if (desiredKey === this.subscribedEventTypesKey) return;
+        const wsState = this.ws?.readyState;
+        if (wsState !== WebSocket.OPEN && wsState !== WebSocket.CONNECTING) return;
+        if (this.resubscribeTimer) clearTimeout(this.resubscribeTimer);
+
+        this.resubscribeTimer = setTimeout(() => {
+            this.resubscribeTimer = null;
+            const latestDesiredKey = this.getDesiredEventTypesKey();
+            if (latestDesiredKey === this.subscribedEventTypesKey) return;
+
+            this.subscribedEventTypesKey = latestDesiredKey;
+            if (this.ws) {
+                this.ws.onclose = null;
+                this.ws.onerror = null;
+                this.ws.close();
+                this.ws = null;
+            }
+            this.isConnecting = false;
+            setWsLock(false);
+            this.connect();
+        }, 75);
+    }
 
     private getToken(): string | null {
         if (typeof document === 'undefined') return null;
@@ -108,8 +156,9 @@ class RealtimeClient {
         }
 
         this.isConnecting = true;
+        this.subscribedEventTypesKey = this.getDesiredEventTypesKey();
 
-        const wsUrl = buildWsUrl(token);
+        const wsUrl = buildWsUrl(token, { eventTypes: this.getDesiredEventTypes() });
 
         try {
             this.ws = new WebSocket(wsUrl);
@@ -173,6 +222,7 @@ class RealtimeClient {
 
     public disconnect() {
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+        if (this.resubscribeTimer) clearTimeout(this.resubscribeTimer);
         if (this.ws) {
             this.ws.onclose = null; // prevent onclose from scheduling a reconnect
             this.ws.onerror = null;
@@ -180,6 +230,7 @@ class RealtimeClient {
             this.ws = null;
         }
         this.isConnecting = false;
+        this.subscribedEventTypesKey = 'all';
         setWsLock(false); // release global lock so future connect() calls can proceed
     }
 
@@ -188,10 +239,15 @@ class RealtimeClient {
             this.listeners.set(event, new Set());
         }
         this.listeners.get(event)?.add(handler);
+        this.scheduleResubscribe();
     }
 
     public off(event: string, handler: EventHandler) {
-        this.listeners.get(event)?.delete(handler);
+        const handlers = this.listeners.get(event);
+        handlers?.delete(handler);
+        if (handlers && handlers.size === 0) {
+            this.listeners.delete(event);
+        }
     }
 
     private emit(event: string, data: any) {
