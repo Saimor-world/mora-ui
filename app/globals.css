@@ -1007,6 +1007,40 @@
   }
 
   /* GLASS PANEL - Enhanced for deep view */
+  @keyframes department-cluster-ring {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.55;
+    }
+
+    50% {
+      transform: scale(1.08);
+      opacity: 0.9;
+    }
+  }
+
+  .department-cluster-active-ring {
+    animation: department-cluster-ring 3.2s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  @keyframes deep-space-node-drift {
+    0%, 100% {
+      opacity: 0.62;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+      opacity: 0.88;
+      transform: translate(-50%, -50%) scale(1.06);
+    }
+  }
+
+  .deep-space-node {
+    animation: deep-space-node-drift 6s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
   .glass-panel {
     background: rgba(3, 12, 8, 0.88);
     backdrop-filter: blur(20px);

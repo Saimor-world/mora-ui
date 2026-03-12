@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { Building2 } from "lucide-react";
 import type { CoreDepartment, CoreFolder, CoreSpace } from "@/lib/types/core";
 
@@ -25,6 +25,7 @@ export const DepartmentCluster: React.FC<Props> = ({
     radius = 280,
     onDepartmentClick,
 }) => {
+    const prefersReducedMotion = useReducedMotion();
     const positions = useMemo(() => {
         const count = Math.max(departments.length, 1);
         const step = (2 * Math.PI) / count;
@@ -48,15 +49,13 @@ export const DepartmentCluster: React.FC<Props> = ({
                 const badgeColor = getBadgeColor(dept.color);
 
                 return (
-                    <motion.button
+                    <button
                         key={dept.id}
-                        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+                        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto transition-transform duration-200 ease-out hover:scale-[1.08] active:scale-[0.97]"
                         style={{
                             left: `calc(${orbPosition.x}% + ${pos.dx}px)`,
                             top: `calc(${orbPosition.y}% + ${pos.dy}px)`,
                         }}
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.97 }}
                         onClick={(e) => {
                             e.stopPropagation();
                             onDepartmentClick?.(dept.id);
@@ -73,10 +72,8 @@ export const DepartmentCluster: React.FC<Props> = ({
                         >
                             {/* Active ring */}
                             {isActive && (
-                                <motion.div
-                                    className="absolute inset-[-6px] rounded-full border border-white/15"
-                                    animate={{ scale: [1, 1.1, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                <div
+                                    className={`absolute inset-[-6px] rounded-full border border-white/15 ${prefersReducedMotion ? 'opacity-70' : 'department-cluster-active-ring'}`}
                                 />
                             )}
 
@@ -95,7 +92,7 @@ export const DepartmentCluster: React.FC<Props> = ({
                                 {dept.name}
                             </div>
                         </div>
-                    </motion.button>
+                    </button>
                 );
             })}
         </div>
