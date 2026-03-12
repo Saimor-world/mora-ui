@@ -81,6 +81,9 @@ export const ResonanceRoom: React.FC<Props> = ({
     const viewMode = useMoraStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useMoraStore((s) => s.activeSpaceId);
+    const activeFolderId = useMoraStore((s) => s.activeFolderId);
 
 
 
@@ -187,9 +190,18 @@ export const ResonanceRoom: React.FC<Props> = ({
 
         try {
             // Send to MORA's Agentic Loop - full multi-turn intelligence
+            const activeContext = activeFolderId
+                ? { entityId: activeFolderId, entityType: 'folder' as const }
+                : activeSpaceId
+                    ? { entityId: activeSpaceId, entityType: 'space' as const }
+                    : activeDepartmentId
+                        ? { entityId: activeDepartmentId, entityType: 'department' as const }
+                        : { entityId: undefined, entityType: undefined };
             const response = await executeAgenticLoop(userMessage.content, {
                 level: viewMode,
-                entityId: undefined
+                entityId: activeContext.entityId,
+                entityType: activeContext.entityType,
+                companyId: activeCompanyId || undefined,
             });
 
             if (response) {

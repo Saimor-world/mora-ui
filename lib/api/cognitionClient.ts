@@ -166,7 +166,7 @@ export interface AgentResponse {
  */
 export async function executeAgenticLoop(
     intent: string,
-    viewContext?: { level: string; entityId?: string }
+    viewContext?: { level: string; entityId?: string; entityType?: string; companyId?: string }
 ): Promise<AgentResponse> {
     try {
         const allowToolExecution = process.env.NEXT_PUBLIC_ALLOW_TOOL_EXECUTION !== 'false';
@@ -174,6 +174,8 @@ export async function executeAgenticLoop(
             intent,
             view_level: viewContext?.level,
             active_entity_id: viewContext?.entityId,
+            active_entity_type: viewContext?.entityType,
+            company_id: viewContext?.companyId,
             allow_tool_execution: allowToolExecution,
             max_iterations: 10
         });
