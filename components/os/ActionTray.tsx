@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, CheckCircle2, Clock3, Loader2, PlayCircle, ShieldAlert, XCircle } from 'lucide-react';
+import { Activity, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, ShieldAlert, XCircle } from 'lucide-react';
 import { useActionEvents, type ActionStatus } from '@/lib/hooks/useActionEvents';
 import { useMoraStore } from '@/lib/store/moraState';
 
@@ -46,12 +46,26 @@ function formatActionTraceId(actionId?: string): string | null {
 }
 
 type ActionEventLike = {
+    action_id?: string;
     status: ActionStatus;
     intent?: string;
+    actor_id?: string;
+    actor_role?: string;
+    session_id?: string;
+    timestamp?: string;
     message: string | null;
     error: string | null;
     payload: Record<string, unknown>;
 };
+
+const trayFilters = [
+    { key: 'all', label: 'Alle' },
+    { key: 'active', label: 'Aktiv' },
+    { key: 'done', label: 'Erledigt' },
+    { key: 'rejected', label: 'Verworfen' },
+    { key: 'failed', label: 'Fehler' },
+] as const;
+type TrayFilter = (typeof trayFilters)[number]['key'];
 
 function extractPayloadString(payload: Record<string, unknown>, key: string): string | null {
     const value = payload?.[key];
@@ -87,12 +101,21 @@ function formatActionMessage(evt: ActionEventLike): string | null {
 export const ActionTray: React.FC = () => {
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
     const [isOpen, setIsOpen] = useState(false);
+    const [filter, setFilter] = useState<TrayFilter>('all');
+    const [expandedActionId, setExpandedActionId] = useState<string | null>(null);
     const { events, isLoading } = useActionEvents(true);
 
     const sortedEvents = useMemo(
         () => [...events].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
         [events]
     );
+    const filteredEvents = useMemo(() => {
+        if (filter === 'all') return sortedEvents;
+        if (filter === 'active') {
+            return sortedEvents.filter((e) => !['done', 'failed', 'rejected', 'expired'].includes(e.status));
+        }
+        return sortedEvents.filter((e) => e.status === filter);
+    }, [filter, sortedEvents]);
     const activeCount = sortedEvents.filter((e) => !['done', 'failed', 'rejected', 'expired'].includes(e.status)).length;
     const renderStatusIcon = (status: ActionStatus) =>
         statusIconMap[status] ?? <Clock3 size={14} className="text-slate-400" />;
@@ -159,6 +182,28 @@ export const ActionTray: React.FC = () => {
                             </div>
 
                             <div className="max-h-[300px] overflow-y-auto p-2">
+                                {!isLoading && sortedEvents.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 px-2 pb-2">
+                                        {trayFilters.map((item) => (
+                                            <button
+                                                key={item.key}
+                                                type="button"
+                                                onClick={() => setFilter(item.key)}
+                                                className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                                                    filter === item.key
+                                                        ? isStandardMode
+                                                            ? 'bg-[#0078D4]/10 text-[#0078D4] border-[#0078D4]/30'
+                                                            : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                                        : isStandardMode
+                                                            ? 'text-gray-500 border-gray-200 hover:border-gray-300'
+                                                            : 'text-white/50 border-white/10 hover:border-white/20'
+                                                }`}
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                                 {isLoading && (
                                     <div className="py-6 px-4 text-center">
                                         <Loader2 size={18} className="mx-auto animate-spin mb-2 text-blue-400" />
@@ -168,21 +213,23 @@ export const ActionTray: React.FC = () => {
                                     </div>
                                 )}
 
-                                {!isLoading && sortedEvents.length === 0 && (
+                                {!isLoading && filteredEvents.length === 0 && (
                                     <div className="py-8 px-4 text-center">
                                         <Activity size={24} className={`mx-auto mb-2 ${isStandardMode ? 'text-gray-300' : 'text-white/20'}`} />
                                         <div className={`text-sm ${isStandardMode ? 'text-gray-500' : 'text-white/50'}`}>
-                                            No active actions
+                                            Keine passenden Aktionen
                                         </div>
                                         <div className={`text-[10px] mt-1 ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`}>
-                                            Mora is currently idle
+                                            Passe den Filter an oder warte auf neue Aktivitaet
                                         </div>
                                     </div>
                                 )}
 
-                                {!isLoading && sortedEvents.length > 0 && (
+                                {!isLoading && filteredEvents.length > 0 && (
                                     <div className="space-y-1">
-                                        {sortedEvents.map((evt) => (
+                                        {filteredEvents.map((evt) => {
+                                            const isExpanded = expandedActionId === evt.action_id;
+                                            return (
                                             <div
                                                 key={`${evt.action_id}:${evt.timestamp}`}
                                                 className={`flex items-start gap-3 p-3 rounded-xl transition-colors border ${isStandardMode
@@ -192,12 +239,25 @@ export const ActionTray: React.FC = () => {
                                             >
                                                 <div className="mt-0.5">{renderStatusIcon(evt.status)}</div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex justify-between items-start mb-1">
+                                                    <div className="flex justify-between items-start mb-1 gap-2">
                                                         <div className={`text-xs font-medium truncate mr-2 ${isStandardMode ? 'text-gray-800' : 'text-white/90'}`}>
                                                             {formatActionTitle(evt)}
                                                         </div>
-                                                        <div className={`text-[9px] whitespace-nowrap ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                                                            {formatTime(evt.timestamp)}
+                                                        <div className="flex items-center gap-1 shrink-0">
+                                                            <div className={`text-[9px] whitespace-nowrap ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
+                                                                {formatTime(evt.timestamp)}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setExpandedActionId(isExpanded ? null : evt.action_id)}
+                                                                className={`p-1 rounded ${isStandardMode ? 'text-gray-400 hover:bg-gray-100' : 'text-white/40 hover:bg-white/[0.05]'}`}
+                                                                aria-label="Action details"
+                                                            >
+                                                                <ChevronDown
+                                                                    size={12}
+                                                                    className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                                />
+                                                            </button>
                                                         </div>
                                                     </div>
                                                     <div className={`text-[9px] uppercase tracking-wider mb-1 ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
@@ -213,6 +273,34 @@ export const ActionTray: React.FC = () => {
                                                             {formatActionMessage(evt)}
                                                         </div>
                                                     )}
+                                                    {isExpanded && (
+                                                        <div className={`mt-2 rounded-lg border p-2 text-[10px] space-y-1 ${
+                                                            isStandardMode ? 'border-gray-200 bg-gray-50 text-gray-600' : 'border-white/10 bg-white/[0.03] text-white/55'
+                                                        }`}>
+                                                            <div className="flex justify-between gap-3">
+                                                                <span className="uppercase tracking-wider text-[9px] opacity-70">Aktion</span>
+                                                                <span className="font-mono break-all">{evt.action_id}</span>
+                                                            </div>
+                                                            {evt.actor_role && (
+                                                                <div className="flex justify-between gap-3">
+                                                                    <span className="uppercase tracking-wider text-[9px] opacity-70">Rolle</span>
+                                                                    <span>{evt.actor_role}</span>
+                                                                </div>
+                                                            )}
+                                                            {evt.session_id && (
+                                                                <div className="flex justify-between gap-3">
+                                                                    <span className="uppercase tracking-wider text-[9px] opacity-70">Session</span>
+                                                                    <span className="font-mono break-all">{evt.session_id}</span>
+                                                                </div>
+                                                            )}
+                                                            {evt.intent && (
+                                                                <div className="flex justify-between gap-3">
+                                                                    <span className="uppercase tracking-wider text-[9px] opacity-70">Intent</span>
+                                                                    <span>{evt.intent}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {evt.error && (
                                                         <div className="text-[10px] text-red-500 leading-tight mt-1">
                                                             {evt.error}
@@ -220,7 +308,7 @@ export const ActionTray: React.FC = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                        ))}
+                                        )})}
                                     </div>
                                 )}
                             </div>

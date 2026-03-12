@@ -76,8 +76,45 @@ describe('ActionTray', () => {
     fireEvent.click(screen.getByTitle('Action tray'));
 
     expect(screen.getByText('Datei verschieben')).toBeInTheDocument();
-    expect(screen.getByText('Verworfen')).toBeInTheDocument();
+    expect(screen.getAllByText('Verworfen').length).toBeGreaterThan(0);
     expect(screen.getByText("Verworfen: Datei/Node 'Budget 2026.pdf' wird verschoben")).toBeInTheDocument();
     expect(screen.getByText('#2')).toBeInTheDocument();
+  });
+
+  it('renders expandable action details and filters', () => {
+    useActionEvents.mockReturnValue({
+      events: [
+        {
+          action_id: 'act_abc1234567',
+          status: 'done',
+          intent: 'rename_node',
+          actor_role: 'owner',
+          session_id: 'sess-demo',
+          message: "Abgeschlossen: Datei wurde umbenannt",
+          error: null,
+          payload: {
+            tool_name: 'rename_node',
+            summary: "Datei wurde umbenannt",
+          },
+          timestamp: '2026-03-12T14:43:00.000Z',
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ActionTray />);
+    fireEvent.click(screen.getByTitle('Action tray'));
+    fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
+
+    expect(screen.getByText('Aktion')).toBeInTheDocument();
+    expect(screen.getByText('act_abc1234567')).toBeInTheDocument();
+    expect(screen.getByText('Rolle')).toBeInTheDocument();
+    expect(screen.getByText('owner')).toBeInTheDocument();
+    expect(screen.getByText('Session')).toBeInTheDocument();
+    expect(screen.getByText('sess-demo')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
+    expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
   });
 });
