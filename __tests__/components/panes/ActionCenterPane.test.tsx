@@ -79,7 +79,19 @@ describe('ActionCenterPane', () => {
           session_id: 'sess-2',
           message: 'Datei wurde umbenannt',
           error: null,
-          payload: { summary: 'Datei wurde umbenannt', tool_name: 'rename_node' },
+          payload: {
+            summary: 'Datei wurde umbenannt',
+            tool_name: 'rename_node',
+            result: {
+              operations_executed: [
+                {
+                  type: 'rename_node',
+                  node_name: 'Altname.pdf',
+                  new_name: 'Neuname.pdf',
+                },
+              ],
+            },
+          },
           timestamp: '2026-03-12T16:01:00.000Z',
         },
       ],
@@ -88,17 +100,19 @@ describe('ActionCenterPane', () => {
     render(<ActionCenterPane id="actions-main" />);
 
     expect(await screen.findByText('Action Center')).toBeInTheDocument();
-    expect(await screen.findByText('Ordner erstellen')).toBeInTheDocument();
-    expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
+    expect(await screen.findByText('Ordner erstellen', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Datei umbenennen', { selector: 'div' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
-    expect(screen.queryByText('Ordner erstellen')).not.toBeInTheDocument();
-    expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
+    expect(screen.queryByText('Ordner erstellen', { selector: 'div' })).not.toBeInTheDocument();
+    expect(screen.getByText('Datei umbenennen', { selector: 'div' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
     expect(screen.getByText('Aktion')).toBeInTheDocument();
     expect(screen.getByText('act_2')).toBeInTheDocument();
     expect(screen.getByText('Rolle')).toBeInTheDocument();
+    expect(screen.getByText('Ergebnis')).toBeInTheDocument();
+    expect(screen.getByText('Altname.pdf -> Neuname.pdf')).toBeInTheDocument();
   });
 
   it('reloads history when action realtime events arrive', async () => {
@@ -115,5 +129,25 @@ describe('ActionCenterPane', () => {
     });
 
     await waitFor(() => expect(coreGet).toHaveBeenCalledTimes(2));
+  });
+
+  it('passes intent and session filters to the backend query', async () => {
+    coreGet.mockResolvedValue({ events: [] });
+
+    render(<ActionCenterPane id="actions-main" />);
+
+    await waitFor(() => expect(coreGet).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByDisplayValue('Alle Aktionen'), { target: { value: 'rename_node' } });
+    await waitFor(() => expect(coreGet).toHaveBeenLastCalledWith(
+      expect.stringContaining('intent=rename_node'),
+      { isOptional: true }
+    ));
+
+    fireEvent.change(screen.getByPlaceholderText('Session-ID'), { target: { value: 'sess-2' } });
+    await waitFor(() => expect(coreGet).toHaveBeenLastCalledWith(
+      expect.stringContaining('session_id=sess-2'),
+      { isOptional: true }
+    ));
   });
 });

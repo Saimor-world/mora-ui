@@ -10,6 +10,7 @@ import type { ActionEvent, ActionStatus } from '@/lib/hooks/useActionEvents';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
+type IntentFilter = 'all' | 'create_folder' | 'move_node' | 'rename_node' | 'confirm_action' | 'undo';
 
 const statusIconMap: Record<ActionStatus, React.ReactNode> = {
     proposed: <Clock3 size={14} className="text-blue-400" />,
@@ -55,6 +56,15 @@ const roleFilters: { key: RoleFilter; label: string }[] = [
     { key: 'system', label: 'System' },
 ];
 
+const intentFilters: { key: IntentFilter; label: string }[] = [
+    { key: 'all', label: 'Alle Aktionen' },
+    { key: 'create_folder', label: 'Ordner erstellen' },
+    { key: 'move_node', label: 'Datei verschieben' },
+    { key: 'rename_node', label: 'Datei umbenennen' },
+    { key: 'confirm_action', label: 'Bestaetigen' },
+    { key: 'undo', label: 'Rueckgaengig' },
+];
+
 const statusFilters: { key: ActionFilter; label: string }[] = [
     { key: 'all', label: 'Alle' },
     { key: 'active', label: 'Aktiv' },
@@ -95,6 +105,54 @@ function formatRole(role?: string | null): string {
     return role === 'system_owner' ? 'system' : role;
 }
 
+function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
+    const result = evt.payload?.result;
+    const operationsExecuted = Array.isArray((result as Record<string, unknown> | undefined)?.operations_executed)
+        ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
+        : [];
+    const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
+    const items = operationsExecuted.length > 0 ? operationsExecuted : operations;
+
+    if (items.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="md:col-span-2">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+                {operationsExecuted.length > 0 ? 'Ergebnis' : 'Geplante Operationen'}
+            </div>
+            <div className="mt-2 space-y-2">
+                {items.map((op, index) => {
+                    const type = typeof op.type === 'string' ? op.type : 'operation';
+                    const folder = typeof op.folder === 'object' && op.folder ? (op.folder as Record<string, unknown>) : null;
+                    const node = typeof op.node === 'object' && op.node ? (op.node as Record<string, unknown>) : null;
+                    const line =
+                        type === 'create_folder'
+                            ? `Ordner: ${folder?.name || op.name || '-'}`
+                            : type === 'move_node'
+                                ? `Node: ${node?.title || node?.name || op.node_name || op.node_id || '-'}`
+                                : type === 'rename_node'
+                                    ? `${op.node_name || node?.title || node?.name || op.node_id || '-'} -> ${op.new_name || node?.title || node?.name || '-'}`
+                                    : type.replace(/_/g, ' ');
+                    const subline =
+                        type === 'move_node'
+                            ? `Zielordner: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`
+                            : type === 'create_folder'
+                                ? `Parent: ${op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`
+                                : null;
+                    return (
+                        <div key={`${evt.action_id}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                            <div className="text-[11px] font-medium text-white/80">{line}</div>
+                            {subline && <div className="mt-1 text-[11px] text-white/50">{subline}</div>}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
@@ -105,6 +163,8 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<ActionFilter>('all');
     const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+    const [intentFilter, setIntentFilter] = useState<IntentFilter>('all');
+    const [sessionFilter, setSessionFilter] = useState('');
     const [query, setQuery] = useState('');
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -116,6 +176,12 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
             if (roleFilter !== 'all') {
                 queryParts.push(`actor_role=${encodeURIComponent(roleFilter === 'system' ? 'system_owner' : roleFilter)}`);
             }
+            if (intentFilter !== 'all') {
+                queryParts.push(`intent=${encodeURIComponent(intentFilter)}`);
+            }
+            if (sessionFilter.trim()) {
+                queryParts.push(`session_id=${encodeURIComponent(sessionFilter.trim())}`);
+            }
             const res = await coreGet(`/v3/actions/events?${queryParts.join('&')}`, { isOptional: true });
             const nextEvents = Array.isArray(res?.events) ? res.events as ActionEvent[] : [];
             setEvents(nextEvents);
@@ -124,7 +190,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
         } finally {
             if (!opts?.silent) setIsLoading(false);
         }
-    }, [roleFilter]);
+    }, [intentFilter, roleFilter, sessionFilter]);
 
     useEffect(() => {
         loadEvents();
@@ -263,6 +329,24 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                 ))}
                             </select>
                         </div>
+                        <select
+                            value={intentFilter}
+                            onChange={(e) => setIntentFilter(e.target.value as IntentFilter)}
+                            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 focus:border-cyan-400/40 focus:outline-none"
+                        >
+                            {intentFilters.map((item) => (
+                                <option key={item.key} value={item.key}>
+                                    {item.label}
+                                </option>
+                            ))}
+                        </select>
+                        <input
+                            type="text"
+                            value={sessionFilter}
+                            onChange={(e) => setSessionFilter(e.target.value)}
+                            placeholder="Session-ID"
+                            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
+                        />
                     </div>
                 </div>
 
@@ -338,6 +422,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Session</div>
                                                             <div className="mt-1 break-all font-mono text-white/75">{evt.session_id || '-'}</div>
                                                         </div>
+                                                        {renderActionResultDetails(evt)}
                                                         {Object.keys(evt.payload || {}).length > 0 && (
                                                             <div className="md:col-span-2">
                                                                 <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Payload</div>
