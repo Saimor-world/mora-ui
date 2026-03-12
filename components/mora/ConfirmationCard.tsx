@@ -19,6 +19,12 @@ interface IntakeContext {
     suggested_location?: string;
     detected_patterns?: string[];
     business_summary?: string;
+    route_mode?: string;
+    route_reason?: string;
+    target_company_name?: string;
+    target_department_name?: string;
+    target_space_name?: string;
+    target_folder_name?: string;
 }
 
 interface PendingAction {
@@ -373,6 +379,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     }
 
     if (isIntake && intake) {
+        const routePath = [
+            intake.target_department_name,
+            intake.target_space_name,
+            intake.target_folder_name,
+        ].filter(Boolean).join(' > ') || intake.suggested_location;
         return (
             <motion.div
                 id={cardTargetId}
@@ -384,7 +395,22 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     <FileCheck className="text-white/60 shrink-0 mt-0.5" size={18} />
                     <div className="flex-1">
                         <p className="text-white font-medium text-sm">{intake.business_summary}</p>
-                        <p className="text-white/50 text-xs mt-1">Vorschlag: {intake.suggested_location}</p>
+                        <div className="mt-2 rounded-lg border border-emerald-500/15 bg-black/20 p-3 space-y-1.5">
+                            <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.18em] text-emerald-300/60">
+                                <span>Mycelium Routing</span>
+                                {intake.suggested_category && (
+                                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 normal-case tracking-normal text-white/60">
+                                        {intake.suggested_category}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-white/80">
+                                Ziel: <span className="text-emerald-100">{routePath}</span>
+                            </p>
+                            {intake.route_reason && (
+                                <p className="text-[11px] text-white/50 leading-relaxed">{intake.route_reason}</p>
+                            )}
+                        </div>
                         {intake.detected_patterns && intake.detected_patterns.length > 0 && (
                             <div className="flex gap-1.5 mt-2 flex-wrap">
                                 {intake.detected_patterns.map((pattern, i) => (

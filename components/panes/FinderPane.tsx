@@ -1317,6 +1317,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 />
 
                 <div
+                    data-file-drop-zone="local"
                     className="flex flex-col h-full relative"
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}

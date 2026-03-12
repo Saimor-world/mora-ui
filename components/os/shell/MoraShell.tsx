@@ -82,6 +82,7 @@ import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
 import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
+import { Upload, Sparkles } from 'lucide-react';
 
 // Naming Conflict Modal (409 UX)
 import NameConflictModal from '@/components/ui/NameConflictModal';
@@ -284,6 +285,8 @@ export const MoraShell: React.FC = () => {
     const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
     const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
+    const [isShellDropActive, setIsShellDropActive] = useState(false);
+    const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
 
@@ -417,6 +420,64 @@ export const MoraShell: React.FC = () => {
     // Handlers
     const handleUnlock = () => setIsSleeping(false);
 
+    const isFileDragEvent = useCallback((event: React.DragEvent | DragEvent) => {
+        const types = Array.from(event.dataTransfer?.types || []);
+        return types.includes('Files');
+    }, []);
+
+    const isLocalFileDropTarget = useCallback((target: EventTarget | null) => {
+        return target instanceof Element && !!target.closest('[data-file-drop-zone="local"]');
+    }, []);
+
+    const resetShellDrop = useCallback(() => {
+        shellDropDepthRef.current = 0;
+        setIsShellDropActive(false);
+    }, []);
+
+    const handleShellDragEnter = useCallback((event: React.DragEvent) => {
+        if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
+        event.preventDefault();
+        shellDropDepthRef.current += 1;
+        setIsShellDropActive(true);
+    }, [isFileDragEvent, isLocalFileDropTarget]);
+
+    const handleShellDragOver = useCallback((event: React.DragEvent) => {
+        if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        if (!isShellDropActive) setIsShellDropActive(true);
+    }, [isFileDragEvent, isLocalFileDropTarget, isShellDropActive]);
+
+    const handleShellDragLeave = useCallback((event: React.DragEvent) => {
+        if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
+        event.preventDefault();
+        shellDropDepthRef.current = Math.max(0, shellDropDepthRef.current - 1);
+        if (shellDropDepthRef.current === 0) {
+            setIsShellDropActive(false);
+        }
+    }, [isFileDragEvent, isLocalFileDropTarget]);
+
+    const handleShellDrop = useCallback((event: React.DragEvent) => {
+        if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
+        event.preventDefault();
+        const files = Array.from(event.dataTransfer.files || []);
+        resetShellDrop();
+        if (files.length === 0) return;
+
+        const batchId = `mycelium-${Date.now()}`;
+        openPane({
+            id: 'scanner-main',
+            type: 'scanner',
+            title: 'Mycelium Intake',
+            size: { width: 920, height: 640 },
+            data: {
+                source: 'mycelium',
+                batchId,
+                initialFiles: files,
+            },
+        });
+    }, [isFileDragEvent, isLocalFileDropTarget, openPane, resetShellDrop]);
+
     const handleLogout = () => {
         setIsSleeping(false);
         localStorage.removeItem('saimor_dev_token');
@@ -482,7 +543,13 @@ export const MoraShell: React.FC = () => {
 
     // Main Shell
     return (
-        <div className="relative w-full h-full overflow-hidden text-white select-none">
+        <div
+            className="relative w-full h-full overflow-hidden text-white select-none"
+            onDragEnter={handleShellDragEnter}
+            onDragOver={handleShellDragOver}
+            onDragLeave={handleShellDragLeave}
+            onDrop={handleShellDrop}
+        >
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
@@ -616,6 +683,30 @@ export const MoraShell: React.FC = () => {
 
             {/* Dev-only intelligence diagnostics panel — hidden in prod unless ?diagnostics=1 */}
             {diagnosticsEnabled && <IntelligenceDiagnostics />}
+
+            {isShellDropActive && (
+                <div className="fixed inset-0 z-[950] pointer-events-none">
+                    <div className="absolute inset-8 rounded-[28px] border border-emerald-400/30 bg-emerald-500/[0.06] backdrop-blur-sm shadow-[0_0_80px_rgba(16,185,129,0.12)]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="max-w-xl mx-auto px-8 py-7 rounded-[28px] border border-emerald-400/25 bg-black/65 backdrop-blur-xl shadow-2xl text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-300/25 bg-emerald-500/15">
+                                <Upload className="h-8 w-8 text-emerald-300" />
+                            </div>
+                            <div className="flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.28em] text-emerald-300/70 font-bold">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                <span>Mycelium Intake</span>
+                            </div>
+                            <h2 className="mt-3 text-2xl font-light tracking-[0.08em] text-white">
+                                Dateien hier fallen lassen
+                            </h2>
+                            <p className="mt-2 text-sm leading-relaxed text-white/65">
+                                Mora nimmt die Dateien im Universe auf, bereitet Einordnungsvorschlaege vor
+                                und fuehrt die bestaetigte Ablage spaeter im Dateibaum aus.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Logout Transition Overlay */}
             {

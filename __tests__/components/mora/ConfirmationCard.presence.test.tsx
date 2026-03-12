@@ -106,6 +106,35 @@ describe('ConfirmationCard presence trigger', () => {
     });
   });
 
+  it('renders route suggestion details for intake cards', () => {
+    render(
+      <ConfirmationCard
+        action={{
+          ...baseAction,
+          tool_name: 'create_node_from_file',
+          action_id: 'action-intake-route',
+          intake_context: {
+            business_summary: 'Neue Rechnung erkannt',
+            suggested_category: 'PDF-Dokument',
+            suggested_location: 'Finance > Eingaenge > Inbox',
+            route_reason: 'Standard-Eingang fuer neue Dateien in dieser Firma',
+            target_department_name: 'Finance',
+            target_space_name: 'Eingaenge',
+            target_folder_name: 'Inbox',
+          },
+        }}
+        onConfirmed={jest.fn()}
+        onRejected={jest.fn()}
+        variant="intake"
+      />
+    );
+
+    expect(screen.getByText('Mycelium Routing')).toBeInTheDocument();
+    expect(screen.getByText('PDF-Dokument')).toBeInTheDocument();
+    expect(screen.getByText('Finance > Eingaenge > Inbox')).toBeInTheDocument();
+    expect(screen.getByText('Standard-Eingang fuer neue Dateien in dieser Firma')).toBeInTheDocument();
+  });
+
   it('renders readable file operation details', () => {
     render(
       <ConfirmationCard

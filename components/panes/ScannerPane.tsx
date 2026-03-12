@@ -33,6 +33,11 @@ interface ScannedFile {
     fileRecordId?: string;
 }
 
+interface IntakeSeedPayload {
+    batchId?: string;
+    source?: 'mycelium' | 'scanner';
+    initialFiles?: File[];
+}
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -43,6 +48,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [stats, setStats] = useState<SystemStats | null>(null);
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+    const seededBatchIdsRef = React.useRef<Set<string>>(new Set());
+    const intakeSeed = (pane?.data || {}) as IntakeSeedPayload;
 
     // Fetch system telemetry for "Godmode" grounding
     React.useEffect(() => {
@@ -58,6 +65,30 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         const interval = setInterval(fetchStats, 5000); // Update every 5s
         return () => clearInterval(interval);
     }, []);
+
+    React.useEffect(() => {
+        const batchId = intakeSeed.batchId;
+        const initialFiles = Array.isArray(intakeSeed.initialFiles) ? intakeSeed.initialFiles : [];
+        if (!batchId || initialFiles.length === 0 || seededBatchIdsRef.current.has(batchId)) {
+            return;
+        }
+
+        const seededFiles: ScannedFile[] = initialFiles.map((file) => ({
+            id: `seed-${batchId}-${file.name}-${file.size}`,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            status: 'pending',
+            nativeFile: file,
+        }));
+
+        setFiles((prev) => {
+            const unique = new Map<string, ScannedFile>();
+            [...prev, ...seededFiles].forEach((file) => unique.set(`${file.name}:${file.size}`, file));
+            return Array.from(unique.values());
+        });
+        seededBatchIdsRef.current.add(batchId);
+    }, [intakeSeed.batchId, intakeSeed.initialFiles]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -230,6 +261,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
                 {/* Drop Zone */}
                 <div
+                    data-file-drop-zone="local"
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
@@ -254,6 +286,23 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     </div>
                 </div>
+
+                {intakeSeed.source === 'mycelium' && files.length > 0 && (
+                    <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                            <Sparkles size={16} className="text-emerald-300 mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                                <div className="text-xs uppercase tracking-[0.2em] text-emerald-300/70 font-bold">
+                                    Mycelium Intake
+                                </div>
+                                <p className="text-sm text-white/75 mt-1 leading-relaxed">
+                                    Dateien wurden im Universe aufgenommen. Mora bereitet jetzt Einordnungsvorschlaege vor und fuehrt die
+                                    bestaetigte Ablage in den Dateibaum aus.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Action Bar */}
                 {files.length > 0 && (
