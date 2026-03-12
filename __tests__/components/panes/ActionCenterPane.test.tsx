@@ -82,11 +82,18 @@ describe('ActionCenterPane', () => {
           payload: {
             summary: 'Datei wurde umbenannt',
             tool_name: 'rename_node',
+            operations: [
+              {
+                type: 'rename_node',
+                node_name: 'Altname.pdf',
+                new_name: 'Neuname-final.pdf',
+              },
+            ],
             result: {
               operations_executed: [
                 {
                   type: 'rename_node',
-                  node_name: 'Altname.pdf',
+                  old_name: 'Altname.pdf',
                   new_name: 'Neuname.pdf',
                 },
               ],
@@ -111,7 +118,9 @@ describe('ActionCenterPane', () => {
     expect(screen.getByText('Aktion')).toBeInTheDocument();
     expect(screen.getByText('act_2')).toBeInTheDocument();
     expect(screen.getByText('Rolle')).toBeInTheDocument();
+    expect(screen.getByText('Plan')).toBeInTheDocument();
     expect(screen.getByText('Ergebnis')).toBeInTheDocument();
+    expect(screen.getByText('Altname.pdf -> Neuname-final.pdf')).toBeInTheDocument();
     expect(screen.getByText('Altname.pdf -> Neuname.pdf')).toBeInTheDocument();
   });
 

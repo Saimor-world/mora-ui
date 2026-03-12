@@ -105,23 +105,14 @@ function formatRole(role?: string | null): string {
     return role === 'system_owner' ? 'system' : role;
 }
 
-function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
-    const result = evt.payload?.result;
-    const operationsExecuted = Array.isArray((result as Record<string, unknown> | undefined)?.operations_executed)
-        ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
-        : [];
-    const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
-    const items = operationsExecuted.length > 0 ? operationsExecuted : operations;
-
+function renderOperationCards(items: Record<string, unknown>[], heading: string, actionId: string): React.ReactNode {
     if (items.length === 0) {
         return null;
     }
 
     return (
         <div className="md:col-span-2">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">
-                {operationsExecuted.length > 0 ? 'Ergebnis' : 'Geplante Operationen'}
-            </div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{heading}</div>
             <div className="mt-2 space-y-2">
                 {items.map((op, index) => {
                     const type = typeof op.type === 'string' ? op.type : 'operation';
@@ -133,16 +124,16 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
                             : type === 'move_node'
                                 ? `Node: ${node?.title || node?.name || op.node_name || op.node_id || '-'}`
                                 : type === 'rename_node'
-                                    ? `${op.node_name || node?.title || node?.name || op.node_id || '-'} -> ${op.new_name || node?.title || node?.name || '-'}`
+                                    ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} -> ${op.new_name || node?.title || node?.name || '-'}`
                                     : type.replace(/_/g, ' ');
                     const subline =
                         type === 'move_node'
                             ? `Zielordner: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`
                             : type === 'create_folder'
-                                ? `Parent: ${op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`
+                                ? `Parent: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`
                                 : null;
                     return (
-                        <div key={`${evt.action_id}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+                        <div key={`${actionId}-${heading}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                             <div className="text-[11px] font-medium text-white/80">{line}</div>
                             {subline && <div className="mt-1 text-[11px] text-white/50">{subline}</div>}
                         </div>
@@ -150,6 +141,25 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
                 })}
             </div>
         </div>
+    );
+}
+
+function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
+    const result = evt.payload?.result;
+    const operationsExecuted = Array.isArray((result as Record<string, unknown> | undefined)?.operations_executed)
+        ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
+        : [];
+    const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
+
+    if (operations.length === 0 && operationsExecuted.length === 0) {
+        return null;
+    }
+
+    return (
+        <>
+            {renderOperationCards(operations, 'Plan', evt.action_id)}
+            {renderOperationCards(operationsExecuted, 'Ergebnis', evt.action_id)}
+        </>
     );
 }
 
