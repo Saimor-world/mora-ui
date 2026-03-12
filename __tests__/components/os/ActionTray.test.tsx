@@ -44,9 +44,11 @@ describe('ActionTray', () => {
 
     fireEvent.click(screen.getByTitle('Action tray'));
 
+    expect(screen.getByText('Aktionsverlauf')).toBeInTheDocument();
     expect(screen.getByText('Ordner erstellen')).toBeInTheDocument();
     expect(screen.getByText('Wartet auf Bestaetigung')).toBeInTheDocument();
     expect(screen.getByText("Ordner 'Q4 Marketing' wird erstellt")).toBeInTheDocument();
+    expect(screen.getByText('#1')).toBeInTheDocument();
   });
 
   it('renders rejected actions as user-readable audit items', () => {
@@ -76,5 +78,6 @@ describe('ActionTray', () => {
     expect(screen.getByText('Datei verschieben')).toBeInTheDocument();
     expect(screen.getByText('Verworfen')).toBeInTheDocument();
     expect(screen.getByText("Verworfen: Datei/Node 'Budget 2026.pdf' wird verschoben")).toBeInTheDocument();
+    expect(screen.getByText('#2')).toBeInTheDocument();
   });
 });

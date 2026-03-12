@@ -39,6 +39,12 @@ const formatTime = (ts?: string): string => {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
+function formatActionTraceId(actionId?: string): string | null {
+    if (!actionId) return null;
+    const compact = actionId.replace(/^act[_-]?/i, '');
+    return compact.length > 10 ? compact.slice(0, 10) : compact;
+}
+
 type ActionEventLike = {
     status: ActionStatus;
     intent?: string;
@@ -143,7 +149,7 @@ export const ActionTray: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Activity size={16} className={isStandardMode ? 'text-[#0078D4]' : 'text-blue-400'} />
                                     <h3 className={`text-sm font-semibold ${isStandardMode ? 'text-gray-800' : 'text-white/90'}`}>
-                                        Actions
+                                        Aktionsverlauf
                                     </h3>
                                 </div>
                                 <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ${isStandardMode ? 'text-gray-600 bg-gray-200' : 'text-white/40 bg-white/[0.05]'
@@ -197,6 +203,11 @@ export const ActionTray: React.FC = () => {
                                                     <div className={`text-[9px] uppercase tracking-wider mb-1 ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
                                                         {statusLabelMap[evt.status] || evt.status}
                                                     </div>
+                                                    {formatActionTraceId(evt.action_id) && (
+                                                        <div className={`text-[9px] mb-1 font-mono ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`}>
+                                                            #{formatActionTraceId(evt.action_id)}
+                                                        </div>
+                                                    )}
                                                     {formatActionMessage(evt) && (
                                                         <div className={`text-[10px] leading-tight ${isStandardMode ? 'text-gray-600' : 'text-white/60'}`}>
                                                             {formatActionMessage(evt)}
