@@ -491,23 +491,26 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     </button>
                                 )}
 
-                                {!showBackButton && <div />}
+                                {!showBackButton && <div className="min-w-[40px] md:min-w-[80px]" />}
 
                                 {/* Title */}
                                 {title && (
                                     typeof title === 'string' ? (
-                                        <h2 className="text-lg font-medium tracking-wide text-emerald-50 uppercase">
+                                        <h2 
+                                            className="text-lg font-medium tracking-wide text-emerald-50 uppercase truncate flex-1 px-3 md:px-6 text-center"
+                                            title={title}
+                                        >
                                             {title}
                                         </h2>
                                     ) : (
-                                        <div className="text-lg font-medium tracking-wide text-emerald-50 uppercase">
+                                        <div className="text-lg font-medium tracking-wide text-emerald-50 uppercase truncate flex-1 px-3 md:px-6 flex justify-center">
                                             {title}
                                         </div>
                                     )
                                 )}
 
                                 {/* Action Buttons */}
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 justify-end min-w-[40px] md:min-w-[80px]">
                                     {showMinimizeButton && onMinimize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onMinimize(); }}

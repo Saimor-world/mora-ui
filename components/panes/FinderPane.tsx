@@ -1756,7 +1756,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 {filteredFolders.map((folder, i) => {
                                                     const count = Math.max(filteredFolders.length, 1);
                                                     const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-                                                    const radius = 150 + (i % 3) * 42;
+                                                    const layerIdx = Math.floor(i / 10);
+                                                    const radius = 160 + (i % 3) * 35 + layerIdx * 90;
                                                     const x = Math.cos(angle) * radius;
                                                     const y = Math.sin(angle) * radius;
                                                     const isSelected = selectedNodeId === folder.id;
