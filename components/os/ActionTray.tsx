@@ -210,7 +210,7 @@ export const ActionTray: React.FC = () => {
                                     <div className="py-6 px-4 text-center">
                                         <Loader2 size={18} className="mx-auto animate-spin mb-2 text-blue-400" />
                                         <div className={`text-xs ${isStandardMode ? 'text-gray-500' : 'text-white/50'}`}>
-                                            Loading actions...
+                                            Aktionen werden geladen…
                                         </div>
                                     </div>
                                 )}
@@ -265,11 +265,6 @@ export const ActionTray: React.FC = () => {
                                                     <div className={`text-[9px] uppercase tracking-wider mb-1 ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
                                                         {statusLabelMap[evt.status] || evt.status}
                                                     </div>
-                                                    {formatActionTraceId(evt.action_id) && (
-                                                        <div className={`text-[9px] mb-1 font-mono ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`}>
-                                                            #{formatActionTraceId(evt.action_id)}
-                                                        </div>
-                                                    )}
                                                     {formatActionMessage(evt) && (
                                                         <div className={`text-[10px] leading-tight ${isStandardMode ? 'text-gray-600' : 'text-white/60'}`}>
                                                             {formatActionMessage(evt)}
@@ -279,26 +274,16 @@ export const ActionTray: React.FC = () => {
                                                         <div className={`mt-2 rounded-lg border p-2 text-[10px] space-y-1 ${
                                                             isStandardMode ? 'border-gray-200 bg-gray-50 text-gray-600' : 'border-white/10 bg-white/[0.03] text-white/55'
                                                         }`}>
-                                                            <div className="flex justify-between gap-3">
-                                                                <span className="uppercase tracking-wider text-[9px] opacity-70">Aktion</span>
-                                                                <span className="font-mono break-all">{evt.action_id}</span>
-                                                            </div>
                                                             {evt.actor_role && (
                                                                 <div className="flex justify-between gap-3">
                                                                     <span className="uppercase tracking-wider text-[9px] opacity-70">Rolle</span>
                                                                     <span>{evt.actor_role}</span>
                                                                 </div>
                                                             )}
-                                                            {evt.session_id && (
+                                                            {evt.timestamp && (
                                                                 <div className="flex justify-between gap-3">
-                                                                    <span className="uppercase tracking-wider text-[9px] opacity-70">Session</span>
-                                                                    <span className="font-mono break-all">{evt.session_id}</span>
-                                                                </div>
-                                                            )}
-                                                            {evt.intent && (
-                                                                <div className="flex justify-between gap-3">
-                                                                    <span className="uppercase tracking-wider text-[9px] opacity-70">Intent</span>
-                                                                    <span>{evt.intent}</span>
+                                                                    <span className="uppercase tracking-wider text-[9px] opacity-70">Zeit</span>
+                                                                    <span>{formatTime(evt.timestamp)}</span>
                                                                 </div>
                                                             )}
                                                         </div>

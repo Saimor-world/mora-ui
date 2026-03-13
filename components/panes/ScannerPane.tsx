@@ -148,7 +148,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             intake?.target_department_name,
             intake?.target_space_name,
             intake?.target_folder_name,
-        ].filter(Boolean).join(' > ') || intake?.suggested_location || 'Unklare Route';
+        ].filter(Boolean).join(' > ') || intake?.suggested_location || 'Ziel nicht erkannt';
 
     const buildConfidenceWeight = (intake?: IntakeContext | null) => {
         if (typeof intake?.route_confidence_score === 'number') return intake.route_confidence_score;
@@ -176,14 +176,14 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
     const confirmPendingAction = useCallback(async (active: PendingAction) => {
         await confirmCreateNodeFromFile(active.file_id, active.confirmation_token);
-        markFileOutcome(active.file_id, 'confirmed', 'Node created');
+        markFileOutcome(active.file_id, 'confirmed', 'Eingeordnet');
         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
         return active;
     }, [markFileOutcome]);
 
     const rejectPendingAction = useCallback(async (active: PendingAction) => {
         await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
-        markFileOutcome(active.file_id, 'rejected', 'Node creation rejected');
+        markFileOutcome(active.file_id, 'rejected', 'Verworfen');
         return active;
     }, [markFileOutcome]);
 
@@ -193,13 +193,13 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         ));
 
         if (!activeCompanyId) {
-            toast.error('Select a company first.');
+            toast.error('Bitte zuerst ein Unternehmen auswählen.');
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'pending' } : f));
             return;
         }
 
         if (!fileObject) {
-            toast.error('File missing');
+            toast.error('Datei nicht gefunden.');
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'error' } : f));
             return;
         }
@@ -242,18 +242,18 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             }
 
             if (response?.status === 'executed') {
-                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Node created' } : f));
+                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Eingeordnet' } : f));
                 window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
-                toast.success(`Uploaded: ${fileObject.name}`);
+                toast.success(`Eingeordnet: ${fileObject.name}`);
                 return;
             }
 
-            setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Uploaded to Files' } : f));
-            toast.success(`Uploaded: ${fileObject.name}`);
+            setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Hochgeladen' } : f));
+            toast.success(`Hochgeladen: ${fileObject.name}`);
         } catch (e) {
             console.error(e);
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'error' } : f));
-            toast.error('Upload failed');
+            toast.error('Hochladen fehlgeschlagen.');
         }
     };
 
@@ -447,8 +447,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             <Upload size={32} className="text-purple-400" />
                         </div>
                         <div>
-                            <p className="text-white/70 font-medium">Drop files here or click to upload</p>
-                            <p className="text-xs text-white/30 mt-1">PDFs, images, documents - uploaded to Files</p>
+                            <p className="text-white/70 font-medium">Dateien ablegen oder klicken zum Hochladen</p>
+                            <p className="text-xs text-white/30 mt-1">PDFs, Bilder, Dokumente – werden in den Dateibaum eingeordnet</p>
                         </div>
                     </div>
                 </div>
@@ -474,11 +474,11 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 {files.length > 0 && (
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-white/50">
-                            {files.length} file{files.length !== 1 ? 's' : ''}
-                            {pendingCount > 0 && ` ${pendingCount} pending`}
-                            {reviewCount > 0 && ` ${reviewCount} in review`}
-                            {confirmedCount > 0 && ` ${confirmedCount} done`}
-                            {rejectedCount > 0 && ` ${rejectedCount} rejected`}
+                            {files.length} {files.length === 1 ? 'Datei' : 'Dateien'}
+                            {pendingCount > 0 && <span className="ml-2 text-white/35">· {pendingCount} wartend</span>}
+                            {reviewCount > 0 && <span className="ml-2 text-amber-300/60">· {reviewCount} zur Freigabe</span>}
+                            {confirmedCount > 0 && <span className="ml-2 text-emerald-400/60">· {confirmedCount} eingeordnet</span>}
+                            {rejectedCount > 0 && <span className="ml-2 text-white/30">· {rejectedCount} verworfen</span>}
                         </span>
                         {pendingCount > 0 && (
                             <button
@@ -487,7 +487,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors"
                             >
                                 {isBatchProcessing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                                <span className="text-sm">{isBatchProcessing ? 'Verarbeite...' : 'Upload All'}</span>
+                                <span className="text-sm">{isBatchProcessing ? 'Verarbeite...' : 'Alle hochladen'}</span>
                             </button>
                         )}
                     </div>
@@ -499,7 +499,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             <Activity size={16} className="text-amber-300 mt-0.5 shrink-0" />
                             <div className="min-w-0">
                                 <div className="text-xs uppercase tracking-[0.2em] text-amber-300/70 font-bold">
-                                    Batch Review
+                                    Einordnung prüfen
                                 </div>
                                 <p className="text-sm text-white/75 mt-1 leading-relaxed">
                                     {pendingActions.length === 1
@@ -625,7 +625,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                     onClick={() => processFile(file.id, file.nativeFile)}
                                                     className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
                                                 >
-                                                    Click to upload
+                                                    Hochladen
                                                 </button>
                                             )}
 
@@ -666,7 +666,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     {files.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-48 gap-3">
                             <Zap size={32} className="text-purple-400/50" />
-                            <p className="text-sm text-white/30">No files uploaded yet</p>
+                            <p className="text-sm text-white/30">Noch keine Dateien</p>
                         </div>
                     )}
                 </div>
@@ -692,9 +692,9 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             const active = activePendingAction;
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
-                                markFileOutcome(active.file_id, 'confirmed', 'Node created');
+                                markFileOutcome(active.file_id, 'confirmed', 'Eingeordnet');
                             }
-                            toast.success('Node created');
+                            toast.success('Datei eingeordnet');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                         }}
                         onRejected={async () => {
@@ -703,7 +703,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             if (active) {
                                 try {
                                     await rejectPendingAction(active);
-                                    toast.info('Node creation rejected');
+                                    toast.info('Einordnung verworfen.');
                                 } catch (err) {
                                     console.error('Reject failed', err);
                                 }

@@ -314,7 +314,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Nach Aktion, Intent, Session oder ID suchen"
+                                placeholder="Nach Aktion suchen"
                                 className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-9 pr-3 text-sm text-white/85 placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
                             />
                         </div>
@@ -411,7 +411,6 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                         </div>
                                                         <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
                                                             <span>{statusLabelMap[evt.status]}</span>
-                                                            {shortActionId(evt.action_id) && <span>#{shortActionId(evt.action_id)}</span>}
                                                             {evt.actor_role && <span>{formatRole(evt.actor_role)}</span>}
                                                             <span>{formatTime(evt.timestamp)}</span>
                                                         </div>
@@ -449,14 +448,6 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                             <div className="mt-1 break-all font-mono text-white/75">{evt.session_id || '-'}</div>
                                                         </div>
                                                         {renderActionResultDetails(evt)}
-                                                        {Object.keys(evt.payload || {}).length > 0 && (
-                                                            <div className="md:col-span-2">
-                                                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Payload</div>
-                                                                <pre className="mt-1 overflow-x-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/20 p-2 text-[11px] leading-relaxed text-white/65">
-                                                                    {JSON.stringify(evt.payload, null, 2)}
-                                                                </pre>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 )}
                                             </div>

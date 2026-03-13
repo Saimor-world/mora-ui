@@ -76,6 +76,15 @@ const formatTargetLabel = (label?: string | null, id?: string | null, fallback =
 
 const formatSignal = (signal: string) => signal.replaceAll('_', ' ');
 
+const intentLabelMap: Record<string, string> = {
+    create_folder: 'Ordner erstellen',
+    move_node: 'Datei verschieben',
+    rename_node: 'Datei umbenennen',
+    create_node_from_file: 'Datei einordnen',
+    confirm_action: 'Aktion bestätigen',
+    undo: 'Aktion rückgängig machen',
+};
+
 const getFileOperations = (params: Record<string, any>): FileActionOperation[] => {
     if (!Array.isArray(params?.operations)) return [];
     return params.operations.filter((operation: unknown): operation is FileActionOperation => {
@@ -497,33 +506,26 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             id={cardTargetId}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 bg-red-500/10 border border-red-500/20 rounded-xl overflow-hidden"
+            className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl overflow-hidden"
         >
-            <div className="bg-red-500/10 px-4 py-3 flex items-start gap-3">
-                <ShieldAlert className="text-red-400 shrink-0 mt-0.5" size={18} />
+            <div className="bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+                <ShieldAlert className="text-amber-300 shrink-0 mt-0.5" size={18} />
                 <div>
-                    <h4 className="text-red-200 text-sm font-medium">Sicherheits-Warnung</h4>
-                    <p className="text-[10px] text-red-300/60 uppercase tracking-widest mt-0.5">
-                        Mutation {action.risk_level} - Autorisierung erforderlich
+                    <h4 className="text-amber-100 text-sm font-medium">Freigabe erforderlich</h4>
+                    <p className="text-[10px] text-amber-200/60 uppercase tracking-widest mt-0.5">
+                        {intentLabelMap[action.tool_name] || action.tool_name.replaceAll('_', ' ')} – Aktion bestätigen
                     </p>
                 </div>
             </div>
 
             <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs text-emerald-500/60">
-                    <span className="uppercase tracking-wide">Aktion</span>
-                    <span className="font-mono text-emerald-100">{action.tool_name}</span>
+                <div className="text-sm text-white/75 leading-relaxed">
+                    {typeof action.params?.summary === 'string'
+                        ? action.params.summary
+                        : 'Mora möchte eine Aktion ausführen. Bitte bestätigen oder ablehnen.'}
                 </div>
-
-                <div className="bg-black/20 rounded-lg p-3">
-                    <div className="text-[10px] uppercase text-emerald-500/40 mb-1">Parameter</div>
-                    <pre className="text-xs font-mono text-emerald-500/80 whitespace-pre-wrap">
-                        {JSON.stringify(action.params, null, 2)}
-                    </pre>
-                </div>
-
-                <div className="text-xs text-emerald-200/60 italic leading-relaxed">
-                    Diese Aktion veraendert Daten im System. Bitte bestaetigen Sie, dass Sie dies ausfuehren moechten.
+                <div className="text-xs text-white/40 leading-relaxed">
+                    Diese Aktion wird erst nach Ihrer Bestätigung ausgeführt.
                 </div>
             </div>
 
@@ -533,19 +535,19 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     disabled={isProcessing}
                     className="flex-1 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs font-medium"
                 >
-                    Abbrechen
+                    Ablehnen
                 </button>
                 <button
                     onClick={handleConfirm}
                     disabled={isProcessing}
-                    className="flex-1 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 hover:text-red-200 transition-colors text-xs font-medium flex items-center justify-center gap-2"
+                    className="flex-1 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-100 transition-colors text-xs font-medium flex items-center justify-center gap-2"
                 >
                     {isProcessing ? (
-                        <span className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                        <span className="w-3 h-3 border-2 border-amber-200/30 border-t-amber-100 rounded-full animate-spin" />
                     ) : (
                         <Check size={14} />
                     )}
-                    Genehmigen
+                    Bestätigen
                 </button>
             </div>
         </motion.div>
