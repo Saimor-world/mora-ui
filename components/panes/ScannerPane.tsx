@@ -46,6 +46,7 @@ interface ScannedFile {
     nativeFile?: File;
     fileRecordId?: string;
     reviewOutcome?: 'confirmed' | 'rejected';
+    intakeContext?: IntakeContext;
 }
 
 interface IntakeSeedPayload {
@@ -149,6 +150,22 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             intake?.target_folder_name,
         ].filter(Boolean).join(' > ') || intake?.suggested_location || 'Unklare Route';
 
+    const buildConfidenceWeight = (intake?: IntakeContext | null) => {
+        if (typeof intake?.route_confidence_score === 'number') return intake.route_confidence_score;
+        if (intake?.route_confidence_label === 'niedrig') return 0.35;
+        if (intake?.route_confidence_label === 'hoch') return 0.85;
+        return 0.6;
+    };
+
+    const buildConfidenceText = (intake?: IntakeContext | null) => {
+        const label = intake?.route_confidence_label || 'mittel';
+        const base = label === 'hoch' ? 'Hohe Sicherheit' : label === 'niedrig' ? 'Niedrige Sicherheit' : 'Mittlere Sicherheit';
+        if (typeof intake?.route_confidence_score === 'number') {
+            return `${base} (${Math.round(intake.route_confidence_score * 100)}%)`;
+        }
+        return base;
+    };
+
     const markFileOutcome = useCallback((fileId: string, outcome: 'confirmed' | 'rejected', result: string) => {
         setFiles(prev => prev.map(f =>
             f.fileRecordId === fileId
@@ -195,8 +212,13 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             const autoExecute = user?.settings?.autoExecuteActions ?? true;
             const response = await requestCreateNodeFromFile(uploaded.id, { autoExecute });
             if (response?.status === 'pending_confirmation') {
-                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'review', result: 'Wartet auf Einordnung' } : f));
-                setPendingActions(prev => [...prev, {
+                setFiles(prev => prev.map(f => f.id === fileId ? {
+                    ...f,
+                    status: 'review',
+                    result: 'Wartet auf Einordnung',
+                    intakeContext: response.intake_context,
+                } : f));
+                const nextAction = {
                     tool_name: response.tool_name || 'create_node_from_file',
                     params: {
                         file_id: uploaded.id,
@@ -211,7 +233,11 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
                     confirm_payload: { confirmation_token: response.confirmation_token },
                     intake_context: response.intake_context,
-                }]);
+                };
+                setPendingActions(prev => {
+                    const sorted = [...prev, nextAction].sort((a, b) => buildConfidenceWeight(a.intake_context) - buildConfidenceWeight(b.intake_context));
+                    return sorted;
+                });
                 return;
             }
 
@@ -269,18 +295,53 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const rejectedCount = files.filter(f => f.reviewOutcome === 'rejected').length;
     const activePendingAction = pendingActions[0] || null;
     const routeSummary = useMemo(() => {
-        const buckets = new Map<string, { count: number; category?: string }>();
+        const buckets = new Map<string, { count: number; category?: string; confidenceLabel?: string; confidenceScore?: number }>();
         pendingActions.forEach((action) => {
             const label = buildRoutePath(action.intake_context);
-            const current = buckets.get(label) || { count: 0, category: action.intake_context?.suggested_category };
+            const current = buckets.get(label) || {
+                count: 0,
+                category: action.intake_context?.suggested_category,
+                confidenceLabel: action.intake_context?.route_confidence_label,
+                confidenceScore: action.intake_context?.route_confidence_score,
+            };
             current.count += 1;
             if (!current.category && action.intake_context?.suggested_category) {
                 current.category = action.intake_context.suggested_category;
             }
+            if (!current.confidenceLabel && action.intake_context?.route_confidence_label) {
+                current.confidenceLabel = action.intake_context.route_confidence_label;
+            }
+            if (typeof current.confidenceScore !== 'number' && typeof action.intake_context?.route_confidence_score === 'number') {
+                current.confidenceScore = action.intake_context.route_confidence_score;
+            }
             buckets.set(label, current);
         });
-        return Array.from(buckets.entries()).map(([path, meta]) => ({ path, ...meta }));
+        return Array.from(buckets.entries())
+            .map(([path, meta]) => ({ path, ...meta }))
+            .sort((a, b) => (a.confidenceScore ?? buildConfidenceWeight({ route_confidence_label: a.confidenceLabel })) - (b.confidenceScore ?? buildConfidenceWeight({ route_confidence_label: b.confidenceLabel })));
     }, [pendingActions]);
+
+    const batchResultSummary = useMemo(() => {
+        const reviewed = files.filter((file) => file.reviewOutcome);
+        if (reviewed.length === 0 || pendingActions.length > 0) return null;
+
+        const buckets = new Map<string, { count: number; confirmed: number; rejected: number }>();
+        reviewed.forEach((file) => {
+            const label = buildRoutePath(file.intakeContext);
+            const current = buckets.get(label) || { count: 0, confirmed: 0, rejected: 0 };
+            current.count += 1;
+            if (file.reviewOutcome === 'confirmed') current.confirmed += 1;
+            if (file.reviewOutcome === 'rejected') current.rejected += 1;
+            buckets.set(label, current);
+        });
+
+        return {
+            total: reviewed.length,
+            confirmed: reviewed.filter((file) => file.reviewOutcome === 'confirmed').length,
+            rejected: reviewed.filter((file) => file.reviewOutcome === 'rejected').length,
+            routes: Array.from(buckets.entries()).map(([path, meta]) => ({ path, ...meta })),
+        };
+    }, [files, pendingActions]);
 
     const bulkConfirm = async () => {
         if (pendingActions.length === 0) return;
@@ -454,9 +515,20 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                             >
                                                 <div className="min-w-0">
                                                     <div className="text-sm text-white/80 truncate">{route.path}</div>
-                                                    {route.category && (
-                                                        <div className="text-[11px] text-white/40 truncate">{route.category}</div>
-                                                    )}
+                                                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/40 truncate">
+                                                        {route.category && <span className="truncate">{route.category}</span>}
+                                                        {route.confidenceLabel && (
+                                                            <span className={`rounded-full border px-1.5 py-0.5 ${
+                                                                route.confidenceLabel === 'hoch'
+                                                                    ? 'border-emerald-400/15 bg-emerald-500/10 text-emerald-100/80'
+                                                                    : route.confidenceLabel === 'niedrig'
+                                                                        ? 'border-amber-400/15 bg-amber-500/10 text-amber-100/80'
+                                                                        : 'border-cyan-400/15 bg-cyan-500/10 text-cyan-100/80'
+                                                            }`}>
+                                                                {buildConfidenceText({ route_confidence_label: route.confidenceLabel, route_confidence_score: route.confidenceScore })}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <div className="shrink-0 rounded-full border border-amber-400/15 bg-amber-400/10 px-2.5 py-1 text-[11px] text-amber-100">
                                                     {route.count}
@@ -483,6 +555,42 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                         </button>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {batchResultSummary && (
+                    <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                            <CheckCircle size={16} className="text-emerald-300 mt-0.5 shrink-0" />
+                            <div className="min-w-0 w-full">
+                                <div className="text-xs uppercase tracking-[0.2em] text-emerald-300/70 font-bold">
+                                    Batch abgeschlossen
+                                </div>
+                                <p className="text-sm text-white/75 mt-1 leading-relaxed">
+                                    {batchResultSummary.confirmed} bestaetigt, {batchResultSummary.rejected} verworfen.
+                                    {batchResultSummary.total > 1 ? ` ${batchResultSummary.total} Dateien wurden im Intake-Lauf bearbeitet.` : ' 1 Datei wurde im Intake-Lauf bearbeitet.'}
+                                </p>
+                                <div className="mt-3 space-y-2">
+                                    {batchResultSummary.routes.map((route) => (
+                                        <div key={route.path} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/15 px-3 py-2">
+                                            <div className="min-w-0 text-sm text-white/80 truncate">{route.path}</div>
+                                            <div className="shrink-0 flex items-center gap-2 text-[11px]">
+                                                {route.confirmed > 0 && (
+                                                    <span className="rounded-full border border-emerald-400/15 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">
+                                                        {route.confirmed} ok
+                                                    </span>
+                                                )}
+                                                {route.rejected > 0 && (
+                                                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-white/60">
+                                                        {route.rejected} verworfen
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -565,13 +673,18 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 {activePendingAction && (
                     <div className="space-y-2">
                         <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/35 px-1">
-                            <span>Freigabe {pendingActions.length > 1 ? `1 / ${pendingActions.length}` : 'bereit'}</span>
+                                <span>Freigabe {pendingActions.length > 1 ? `1 / ${pendingActions.length}` : 'bereit'}</span>
                             {activePendingAction.file_name && (
                                 <span className="max-w-[60%] truncate text-right normal-case tracking-normal text-white/50">
                                     {activePendingAction.file_name}
                                 </span>
                             )}
                         </div>
+                        {activePendingAction.intake_context?.route_confidence_label && (
+                            <div className="px-1 text-[11px] text-white/45">
+                                {buildConfidenceText(activePendingAction.intake_context)}
+                            </div>
+                        )}
                         <ConfirmationCard
                             action={activePendingAction}
                             variant="intake"

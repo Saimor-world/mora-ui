@@ -433,6 +433,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             {intake.route_reason && (
                                 <p className="text-[11px] text-white/50 leading-relaxed">{intake.route_reason}</p>
                             )}
+                            {intake.route_confidence_label === 'niedrig' && (
+                                <div className="rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">
+                                    Niedrige Sicherheit: Bitte Ziel und Begruendung besonders sorgfaeltig pruefen, bevor die Datei eingeordnet wird.
+                                </div>
+                            )}
                             {intake.route_signals && intake.route_signals.length > 0 && (
                                 <div className="flex flex-wrap gap-1.5 pt-1">
                                     {intake.route_signals.map((signal) => (

@@ -108,6 +108,8 @@ beforeEach(() => {
             intake_context: {
                 suggested_category: 'briefing',
                 suggested_location: 'Marketing > Kampagnen',
+                route_confidence_label: 'niedrig',
+                route_confidence_score: 0.42,
                 target_department_name: 'Marketing',
                 target_space_name: 'Kampagnen',
             },
@@ -121,6 +123,8 @@ beforeEach(() => {
             intake_context: {
                 suggested_category: 'briefing',
                 suggested_location: 'Marketing > Kampagnen',
+                route_confidence_label: 'hoch',
+                route_confidence_score: 0.91,
                 target_department_name: 'Marketing',
                 target_space_name: 'Kampagnen',
             },
@@ -145,6 +149,7 @@ describe('ScannerPane batch review', () => {
         expect(screen.getByRole('button', { name: /Alle einordnen/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Alle verwerfen/i })).toBeInTheDocument();
         expect(screen.getAllByText('brief-one.pdf').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Niedrige Sicherheit/i).length).toBeGreaterThan(0);
 
         fireEvent.click(screen.getByRole('button', { name: 'confirm' }));
 
@@ -162,6 +167,8 @@ describe('ScannerPane batch review', () => {
         expect(mockRejectCreateNodeFromFile).toHaveBeenCalledWith('file-2', 'token-2');
         expect(screen.getByText(/Node created/i)).toBeInTheDocument();
         expect(screen.getByText(/Node creation rejected/i)).toBeInTheDocument();
+        expect(screen.getByText(/Batch abgeschlossen/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 bestaetigt, 1 verworfen/i)).toBeInTheDocument();
     });
 
     test('bulk confirm processes the whole review queue', async () => {
