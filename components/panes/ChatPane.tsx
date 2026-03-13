@@ -235,39 +235,68 @@ const MemoryHint: React.FC<{
 // ─── Memory: Relevant Memories Display ───
 const RelevantMemories: React.FC<{
     memories: MemorySearchResult[];
+    isMemoryBasis?: boolean;
+    onOpenMemory?: () => void;
     onDismiss: () => void;
-}> = ({ memories, onDismiss }) => {
-    if (memories.length === 0) return null;
+}> = ({ memories, isMemoryBasis = false, onOpenMemory, onDismiss }) => {
+    if (memories.length === 0 && !isMemoryBasis) return null;
 
     return (
         <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-b border-white/5 bg-gradient-to-r from-purple-500/5 to-transparent"
+            className={`border-b border-white/5 ${isMemoryBasis
+                ? 'bg-gradient-to-r from-amber-500/10 via-purple-500/8 to-transparent'
+                : 'bg-gradient-to-r from-purple-500/5 to-transparent'
+                }`}
         >
             <div className="px-4 py-2">
                 <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                    <div className={`flex items-center gap-2 text-xs ${isMemoryBasis ? 'text-amber-200/80' : 'text-purple-300/70'}`}>
                         <Brain size={12} />
-                        <span>Relevante Erinnerungen</span>
+                        <span>{isMemoryBasis ? 'Gedächtnisbasis dieser Antwort' : 'Relevante Erinnerungen'}</span>
                     </div>
-                    <button
-                        onClick={onDismiss}
-                        className="text-white/30 hover:text-white/50 text-xs"
-                    >
-                        Ausblenden
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {onOpenMemory && (
+                            <button
+                                onClick={onOpenMemory}
+                                className="text-[11px] text-emerald-300/80 hover:text-emerald-200 transition-colors"
+                            >
+                                Im Memory öffnen
+                            </button>
+                        )}
+                        <button
+                            onClick={onDismiss}
+                            className="text-white/30 hover:text-white/50 text-xs"
+                        >
+                            Ausblenden
+                        </button>
+                    </div>
                 </div>
+                {isMemoryBasis && (
+                    <p className="mb-2 text-[11px] leading-relaxed text-white/55">
+                        Mora hat diese Antwort auf gespeichertes Wissen gestützt. Hier siehst du die naheliegendsten Gedächtnistreffer im aktuellen Firmenkontext.
+                    </p>
+                )}
                 <div className="space-y-1.5">
                     {memories.slice(0, 3).map((mem) => (
                         <div
                             key={mem.id}
-                            className="text-xs text-white/60 bg-white/5 px-2 py-1.5 rounded border-l-2 border-purple-500/30"
+                            className={`text-xs text-white/70 bg-white/5 px-2 py-1.5 rounded border-l-2 ${isMemoryBasis ? 'border-amber-400/40' : 'border-purple-500/30'}`}
                         >
-                            {mem.summary}
+                            <div className="line-clamp-2">{mem.summary}</div>
+                            <div className="mt-1 flex items-center gap-2 text-[10px] text-white/35">
+                                <span>{mem.category || 'memory'}</span>
+                                {typeof mem.score === 'number' && <span>{Math.round(mem.score * 100)}%</span>}
+                            </div>
                         </div>
                     ))}
+                    {memories.length === 0 && isMemoryBasis && (
+                        <div className="text-xs text-white/45 bg-white/5 px-2 py-1.5 rounded border-l-2 border-amber-400/30">
+                            Kein einzelner Gedächtnistreffer hervorgehoben, aber die Antwort wurde aus gespeichertem Kontext abgeleitet.
+                        </div>
+                    )}
                 </div>
             </div>
         </motion.div>
@@ -436,6 +465,12 @@ Was kann ich fuer dich tun?`,
             setRelevantMemories([]);
         }
     }, [activeCompanyId]);
+
+    useEffect(() => {
+        if (moraCtx.lastAnswerSource === 'memory') {
+            setShowMemories(true);
+        }
+    }, [moraCtx.lastAnswerSource]);
 
     // Mark message as saved
     const markMessageAsSaved = useCallback((messageId: string) => {
@@ -798,12 +833,14 @@ Was kann ich fuer dich tun?`,
             </div>
             {/* Relevant Memories Context */}
             <AnimatePresence>
-                {showMemories && relevantMemories.length > 0 && (
+                {showMemories && (relevantMemories.length > 0 || moraCtx.lastAnswerSource === 'memory') ? (
                     <RelevantMemories
                         memories={relevantMemories}
+                        isMemoryBasis={moraCtx.lastAnswerSource === 'memory'}
+                        onOpenMemory={() => openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } })}
                         onDismiss={() => setShowMemories(false)}
                     />
-                )}
+                ) : null}
             </AnimatePresence>
 
             {/* Messages */}

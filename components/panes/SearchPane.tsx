@@ -6,7 +6,7 @@ import { Search, X, FileText, Folder, Building2, Clock, ArrowRight, Sparkles } f
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { searchSemantic } from '@/lib/api/coreClient';
+import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
 
 /**
  * SearchPane - Universal Search Interface
@@ -20,16 +20,20 @@ import { searchSemantic } from '@/lib/api/coreClient';
 
 interface SearchResult {
     id: string;
-    type: 'node' | 'space' | 'department' | 'user' | 'file';
+    type: 'node' | 'space' | 'department' | 'user' | 'file' | 'folder';
     title: string;
     subtitle?: string;
     icon: typeof FileText;
     source?: 'local' | 'mora';
     score?: number;
+    departmentId?: string;
+    spaceId?: string;
+    folderId?: string;
+    nodeId?: string;
 }
 
 export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
 
     const [query, setQuery] = useState('');
@@ -69,6 +73,50 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         if (saved) {
             setRecentSearches(JSON.parse(saved).slice(0, 5));
         }
+    }, []);
+
+    useEffect(() => {
+        const initialQuery = pane?.data?.query;
+        if (typeof initialQuery === 'string' && initialQuery.trim().length > 0) {
+            setQuery(initialQuery.trim());
+        }
+    }, [pane?.data?.query]);
+
+    const mapKeywordResult = React.useCallback((raw: any): SearchResult | null => {
+        const type = String(raw?.type || raw?.result_type || '').toLowerCase();
+        const normalizedType = (['department', 'space', 'node', 'file', 'folder'].includes(type)
+            ? type
+            : 'node') as SearchResult['type'];
+        const departmentId = raw?.department_id || raw?.departmentId;
+        const spaceId = raw?.space_id || raw?.spaceId;
+        const folderId = raw?.folder_id || raw?.folderId;
+        const nodeId = raw?.node_id || raw?.nodeId || (normalizedType === 'node' || normalizedType === 'file' ? raw?.id : undefined);
+        const id = departmentId || spaceId || folderId || nodeId || raw?.id;
+
+        if (!id) return null;
+
+        const subtitle =
+            raw?.path ||
+            raw?.scope_path ||
+            raw?.content?.substring?.(0, 80) ||
+            (normalizedType === 'department' ? 'Bereich' :
+                normalizedType === 'space' ? 'Space' :
+                    normalizedType === 'folder' ? 'Ordner' :
+                        normalizedType === 'file' ? 'Datei' : 'Treffer');
+
+        return {
+            id,
+            type: normalizedType,
+            title: raw?.title || raw?.name || raw?.filename || 'Unbenannt',
+            subtitle,
+            icon: normalizedType === 'department' ? Building2 :
+                normalizedType === 'space' || normalizedType === 'folder' ? Folder : FileText,
+            source: 'mora',
+            departmentId,
+            spaceId,
+            folderId,
+            nodeId,
+        };
     }, []);
 
     const buildLocalResults = React.useCallback((rawQuery: string): SearchResult[] => {
@@ -128,13 +176,14 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
             return;
         }
 
-        const localResults = buildLocalResults(query.trim());
+        const trimmedQuery = query.trim();
+        const localResults = buildLocalResults(trimmedQuery);
         setResults(localResults);
         setSearchMode('local');
         setSearchHint(localResults.length > 0 ? 'Lokal' : null);
         setSelectedIndex(0);
 
-        if (!activeCompanyId || query.trim().length < 2) {
+        if (!activeCompanyId || trimmedQuery.length < 2) {
             setIsSearching(false);
             return;
         }
@@ -143,7 +192,10 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         setIsSearching(true);
         const timeoutId = setTimeout(async () => {
             try {
-                const semanticResults = await searchSemantic(query.trim(), activeCompanyId, 10, 0.55);
+                const [semanticResults, keywordResponse] = await Promise.all([
+                    searchSemantic(trimmedQuery, activeCompanyId, 10, 0.55),
+                    searchGlobal(trimmedQuery, activeCompanyId),
+                ]);
                 if (requestId !== searchRequestRef.current) return;
 
                 const mapped: SearchResult[] = semanticResults.map((result) => ({
@@ -154,12 +206,32 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     icon: FileText,
                     source: 'mora',
                     score: result.score,
+                    nodeId: result.node_id,
+                    folderId: result.metadata?.folder_id,
+                    spaceId: result.metadata?.space_id,
                 }));
 
-                if (mapped.length > 0) {
-                    setResults(mapped);
-                    setSearchMode('mora');
-                    setSearchHint('Mora');
+                const keywordMapped = (keywordResponse?.results || [])
+                    .map(mapKeywordResult)
+                    .filter((result): result is SearchResult => result !== null);
+
+                const deduped = new Map<string, SearchResult>();
+                [...keywordMapped, ...mapped].forEach((result) => {
+                    const key = `${result.type}:${result.id}`;
+                    if (!deduped.has(key)) deduped.set(key, result);
+                });
+                const merged = Array.from(deduped.values());
+
+                if (merged.length > 0) {
+                    setResults(merged);
+                    setSearchMode(mapped.length > 0 ? 'mora' : 'local');
+                    setSearchHint(
+                        mapped.length > 0 && keywordMapped.length > 0
+                            ? 'Mora + Treffer'
+                            : mapped.length > 0
+                                ? 'Mora'
+                                : 'Treffer'
+                    );
                 } else {
                     setSearchHint(localResults.length > 0 ? 'Lokal' : null);
                 }
@@ -176,7 +248,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         return () => {
             clearTimeout(timeoutId);
         };
-    }, [query, activeCompanyId, buildLocalResults]);
+    }, [query, activeCompanyId, buildLocalResults, mapKeywordResult]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         switch (e.key) {
@@ -208,17 +280,40 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         // Navigate based on type
         switch (result.type) {
             case 'department':
-                setActiveDepartment(result.id);
+                setActiveDepartment(result.departmentId || result.id);
                 setViewLevel('department');
                 removePane(id);
                 break;
             case 'space':
-                setActiveSpace(result.id);
+                setActiveSpace(result.spaceId || result.id);
                 setViewLevel('space');
                 removePane(id);
                 break;
+            case 'folder':
+                openPane({
+                    id: `finder-${result.folderId || result.id}`,
+                    type: 'finder',
+                    title: result.title,
+                    size: { width: 900, height: 640 },
+                    data: { folderId: result.folderId || result.id }
+                });
+                removePane(id);
+                break;
+            case 'file':
             case 'node':
-                window.dispatchEvent(new CustomEvent('open-node-detail', { detail: { nodeId: result.id } }));
+                if (result.folderId) {
+                    openPane({
+                        id: `finder-${result.folderId}`,
+                        type: 'finder',
+                        title: result.title,
+                        size: { width: 900, height: 640 },
+                        data: { folderId: result.folderId }
+                    });
+                }
+                window.dispatchEvent(new CustomEvent('open-node-detail', { detail: { nodeId: result.nodeId || result.id } }));
+                removePane(id);
+                break;
+            default:
                 removePane(id);
                 break;
         }

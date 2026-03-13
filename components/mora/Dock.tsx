@@ -359,6 +359,7 @@ export const Dock = () => {
                             type="text"
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
+                            onClick={() => setSearchPopupOpen(true)}
                             onFocus={() => setSearchPopupOpen(true)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && chatInput.trim()) {

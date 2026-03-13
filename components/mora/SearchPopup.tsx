@@ -40,6 +40,10 @@ interface SearchResult {
     type: 'department' | 'space' | 'folder' | 'file' | 'node';
     icon?: string;
     path?: string;
+    departmentId?: string;
+    spaceId?: string;
+    folderId?: string;
+    nodeId?: string;
 }
 
 interface SearchPopupProps {
@@ -62,7 +66,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     onQueryChange,
     onMoraChat
 }) => {
-    const { departments, navigateToDepartment, navigateToSpace, setOrbState, isStandardMode } = useMoraStore();
+    const { departments, navigateToDepartment, navigateToSpace, setOrbState, isStandardMode, activeCompanyId } = useMoraStore();
     const { openPane } = usePaneStore();
 
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -81,6 +85,32 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         { label: 'Letzte Woche', query: 'created:week' },
     ];
 
+    const mapSearchResult = useCallback((raw: any): SearchResult | null => {
+        const type = String(raw?.type || raw?.result_type || '').toLowerCase();
+        const normalizedType = (['department', 'space', 'folder', 'file', 'node'].includes(type)
+            ? type
+            : 'node') as SearchResult['type'];
+
+        const departmentId = raw?.department_id || raw?.departmentId;
+        const spaceId = raw?.space_id || raw?.spaceId;
+        const folderId = raw?.folder_id || raw?.folderId;
+        const nodeId = raw?.node_id || raw?.nodeId || (normalizedType === 'node' || normalizedType === 'file' ? raw?.id : undefined);
+        const id = departmentId || spaceId || folderId || nodeId || raw?.id;
+
+        if (!id) return null;
+
+        return {
+            id,
+            title: raw?.title || raw?.name || raw?.filename || 'Unbenannt',
+            type: normalizedType,
+            path: raw?.path || raw?.scope_path || undefined,
+            departmentId,
+            spaceId,
+            folderId,
+            nodeId,
+        };
+    }, []);
+
     // Search when query changes
     useEffect(() => {
         if (!searchQuery.trim() || searchQuery.startsWith('@mora')) {
@@ -92,14 +122,13 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
             setIsSearching(true);
             try {
                 // Server-side search
-                const response = await searchGlobal(searchQuery);
+                const response = await searchGlobal(searchQuery, activeCompanyId || undefined);
                 if (response?.results) {
-                    setSearchResults(response.results.map((r: any) => ({
-                        id: r.id,
-                        title: r.title || r.name,
-                        type: r.type,
-                        path: r.spaceId || r.departmentId
-                    })));
+                    setSearchResults(
+                        response.results
+                            .map(mapSearchResult)
+                            .filter((result): result is SearchResult => result !== null)
+                    );
                 }
             } catch (e) {
                 // Fallback: local search in departments
@@ -116,7 +145,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         }, 300);
 
         return () => clearTimeout(searchTimeout);
-    }, [searchQuery, departments]);
+    }, [searchQuery, departments, activeCompanyId, mapSearchResult]);
 
     // Handle result click
     const handleResultClick = (result: SearchResult) => {
@@ -124,23 +153,36 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
         switch (result.type) {
             case 'department':
-                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'department', message: `Navigiere zu ${result.title}`, source: 'system' });
-                navigateToDepartment(result.id);
+                dispatchMoraPresence({ action: 'navigate', targetId: result.departmentId || result.id, targetType: 'department', message: `Navigiere zu ${result.title}`, source: 'system' });
+                navigateToDepartment(result.departmentId || result.id);
                 break;
             case 'space':
-                dispatchMoraPresence({ action: 'navigate', targetId: result.id, targetType: 'space', message: `Navigiere zu ${result.title}`, source: 'system' });
-                navigateToSpace(result.id);
+                dispatchMoraPresence({ action: 'navigate', targetId: result.spaceId || result.id, targetType: 'space', message: `Navigiere zu ${result.title}`, source: 'system' });
+                navigateToSpace(result.spaceId || result.id);
                 break;
             case 'folder':
-            case 'file':
-            case 'node':
                 openPane({
-                    id: `finder-${result.id}`,
+                    id: `finder-${result.folderId || result.id}`,
                     type: 'finder',
                     title: result.title,
                     size: { width: 800, height: 600 },
-                    data: { folderId: result.id }
+                    data: { folderId: result.folderId || result.id }
                 });
+                break;
+            case 'file':
+            case 'node':
+                if (result.folderId) {
+                    openPane({
+                        id: `finder-${result.folderId}`,
+                        type: 'finder',
+                        title: result.title,
+                        size: { width: 900, height: 640 },
+                        data: { folderId: result.folderId }
+                    });
+                }
+                window.dispatchEvent(new CustomEvent('open-node-detail', {
+                    detail: { nodeId: result.nodeId || result.id }
+                }));
                 break;
         }
 
