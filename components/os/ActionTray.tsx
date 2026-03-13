@@ -95,8 +95,11 @@ function formatActionMessage(evt: ActionEventLike): string | null {
 
     const result = evt.payload?.result;
     if (result && typeof result === 'object' && result !== null) {
-        const resultSummary = extractPayloadString(result as Record<string, unknown>, 'summary');
+        const r = result as Record<string, unknown>;
+        const resultSummary = extractPayloadString(r, 'result_summary') || extractPayloadString(r, 'summary');
         if (resultSummary) return resultSummary;
+        const destSummary = extractPayloadString(r, 'destination_summary');
+        if (destSummary) return `Erstellt in ${destSummary}`;
     }
 
     return statusLabelMap[evt.status] || null;
@@ -320,7 +323,7 @@ export const ActionTray: React.FC = () => {
                                             : 'border-white/10 text-cyan-300 hover:border-cyan-400/40 hover:bg-white/[0.04]'
                                     }`}
                                 >
-                                    Im Action Center oeffnen
+                                    Im Action Center öffnen
                                 </button>
                             </div>
                         </motion.div>

@@ -154,7 +154,7 @@ describe('ConfirmationCard presence trigger', () => {
     expect(screen.getByText('Datei verschieben')).toBeInTheDocument();
     expect(screen.getByText('Budget 2026.pdf')).toBeInTheDocument();
     expect(screen.getByText('Winter Marketing')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ausfuehren' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ausführen' })).toBeInTheDocument();
   });
 
   it('renders readable rename operation details', () => {
@@ -246,7 +246,7 @@ describe('ConfirmationCard presence trigger', () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Ausfuehren' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Ausführen' }));
     });
 
     expect(mockCorePost).toHaveBeenCalledWith('/v3/actions/confirm', {

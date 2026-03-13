@@ -127,6 +127,14 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         () => fileOperations.filter((operation) => operation.type === 'create_draft'),
         [fileOperations]
     );
+    const isContentOnlyOp = useMemo(
+        () =>
+            (createNoteOps.length > 0 || createDraftOps.length > 0) &&
+            createFolderOps.length === 0 &&
+            moveNodeOps.length === 0 &&
+            renameNodeOps.length === 0,
+        [createNoteOps, createDraftOps, createFolderOps, moveNodeOps, renameNodeOps]
+    );
     const filePlanSummary = useMemo(() => {
         const explicitSummary = typeof action.params?.summary === 'string' ? action.params.summary : null;
         if (explicitSummary) return explicitSummary;
@@ -141,8 +149,14 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         if (renameNodeOps.length > 0) {
             parts.push(`${renameNodeOps.length} Datei${renameNodeOps.length === 1 ? '' : 'en'} umbenennen`);
         }
+        if (createNoteOps.length > 0) {
+            parts.push(`${createNoteOps.length} Notiz${createNoteOps.length === 1 ? '' : 'en'} erstellen`);
+        }
+        if (createDraftOps.length > 0) {
+            parts.push(`${createDraftOps.length} Entwurf${createDraftOps.length === 1 ? '' : 'e'} erstellen`);
+        }
         return parts.length > 0 ? parts.join(' und ') : 'Dateioperation prüfen';
-    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps]);
+    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps, createNoteOps, createDraftOps]);
 
     useEffect(() => {
         if (!action.action_id || hasDispatchedPresenceRef.current === action.action_id) {
@@ -193,7 +207,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 res?.result;
 
             if (success) {
-                toast.success(isIntake ? 'Eingeordnet' : isFileOp ? 'Aktion ausgefuehrt' : 'Action approved.');
+                toast.success(isIntake ? 'Eingeordnet' : isFileOp ? 'Aktion ausgeführt' : 'Action approved.');
                 if (typeof window !== 'undefined' && action.tool_name === 'create_node_from_file') {
                     window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                     window.dispatchEvent(new CustomEvent('mora:agency-update', {
@@ -266,7 +280,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     <div className="min-w-0">
                         <h4 className="text-amber-100 text-sm font-medium">Aktionsplan prüfen</h4>
                         <p className="text-[10px] text-amber-200/60 uppercase tracking-widest mt-0.5">
-                            Dateibaum-Änderung – Bestätigung erforderlich
+                            {isContentOnlyOp
+                                ? 'Inhalt erstellen – Bestätigung erforderlich'
+                                : 'Dateibaum-Änderung – Bestätigung erforderlich'}
                         </p>
                     </div>
                 </div>
@@ -437,7 +453,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     </div>
 
                     <div className="text-xs text-white/55 italic leading-relaxed">
-                        MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Firmenkontext bleibt dabei verbindlich.
+                        {isContentOnlyOp
+                            ? 'MORA erstellt diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Firmenkontext bleibt dabei verbindlich.'
+                            : 'MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Firmenkontext bleibt dabei verbindlich.'}
                     </div>
                 </div>
 
@@ -459,7 +477,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         ) : (
                             <Check size={14} />
                         )}
-                        Ausfuehren
+                        Ausführen
                     </button>
                 </div>
             </motion.div>

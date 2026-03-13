@@ -906,7 +906,15 @@ Was kann ich fuer dich tun?`,
                                                         ? { ...entry, pendingAction: undefined }
                                                         : entry
                                                 )));
-                                                const summary = result?.summary || result?.result?.summary || `${msg.pendingAction?.tool_name} erfolgreich ausgefuehrt.`;
+                                                const summary =
+                                                    result?.result_summary ||
+                                                    result?.result?.result_summary ||
+                                                    result?.summary ||
+                                                    result?.result?.summary ||
+                                                    (result?.destination_summary
+                                                        ? `Erstellt in ${result.destination_summary}`
+                                                        : null) ||
+                                                    `${msg.pendingAction?.tool_name?.replace(/_/g, ' ')} erfolgreich ausgeführt.`;
                                                 setMessages(prev => [...prev, {
                                                     id: crypto.randomUUID(),
                                                     role: 'assistant',

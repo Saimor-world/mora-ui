@@ -133,7 +133,7 @@ describe('ActionTray', () => {
 
     render(<ActionTray />);
     fireEvent.click(screen.getByTitle('Action tray'));
-    fireEvent.click(screen.getByRole('button', { name: 'Im Action Center oeffnen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Im Action Center öffnen' }));
 
     expect(openPane).toHaveBeenCalledWith({
       id: 'actions-main',

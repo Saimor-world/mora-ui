@@ -236,6 +236,16 @@ function formatActionMessage(evt: ActionEvent): string | null {
     if (evt.message) return evt.message;
     const summary = typeof evt.payload?.summary === 'string' ? evt.payload.summary : null;
     if (summary) return summary;
+    // Agency Step 2: confirmed results carry result_summary / destination_summary
+    const result = evt.payload?.result;
+    if (result && typeof result === 'object' && result !== null) {
+        const r = result as Record<string, unknown>;
+        if (typeof r.result_summary === 'string' && r.result_summary.trim()) return r.result_summary;
+        if (typeof r.summary === 'string' && r.summary.trim()) return r.summary;
+        if (typeof r.destination_summary === 'string' && r.destination_summary.trim()) {
+            return `Erstellt in ${r.destination_summary}`;
+        }
+    }
     return statusLabelMap[evt.status] || null;
 }
 
