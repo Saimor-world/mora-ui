@@ -323,7 +323,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
 
     return (
         <GlassPanel
-            title={searchMode === 'mora' ? 'Search (Mora)' : 'Search'}
+            title={searchMode === 'mora' ? 'Suche (Mora)' : 'Suche'}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -433,7 +433,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             ) : (
                                 <div className="text-center py-8 text-white/40">
                                     <Search size={32} className="mx-auto mb-2 opacity-50" />
-                                    <p>No results for &quot;{query}&quot;</p>
+                                    <p>Keine Ergebnisse für &quot;{query}&quot;</p>
                                 </div>
                             )}
                         </AnimatePresence>
@@ -443,7 +443,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                 <div>
                                     <div className="flex items-center gap-2 px-3 py-2 text-xs text-white/40 uppercase tracking-wider">
                                         <Clock size={12} />
-                                        Recent Searches
+                                        Zuletzt gesucht
                                     </div>
                                     <div className="space-y-1">
                                         {recentSearches.map((search, i) => (
@@ -466,7 +466,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 <div className="p-3 border-t border-white/10">
                     <div className="flex items-center gap-2 text-xs text-white/30">
                         <Search size={12} className="text-emerald-400" />
-                        <span>{searchMode === 'mora' ? 'Local-first + Mora semantic' : 'Local-first search'}</span>
+                        <span>{searchMode === 'mora' ? 'Lokal + Mora-Semantik' : 'Lokale Suche'}</span>
                     </div>
                 </div>
             </div>

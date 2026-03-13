@@ -56,7 +56,7 @@ interface IntakeSeedPayload {
 }
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const { activeCompanyId, user } = useMoraStore();  // Added user for autoExecuteActions
     const pane = getPane(id);
 
@@ -358,7 +358,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             toast.success(snapshot.length === 1 ? 'Datei eingeordnet' : `${snapshot.length} Dateien eingeordnet`);
         } catch (error) {
             console.error('Bulk confirm failed', error);
-            toast.error('Batch konnte nicht vollstaendig eingeordnet werden.');
+            toast.error('Batch konnte nicht vollständig eingeordnet werden.');
         } finally {
             setIsBatchProcessing(false);
         }
@@ -376,7 +376,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             toast.info(snapshot.length === 1 ? 'Datei verworfen' : `${snapshot.length} Dateien verworfen`);
         } catch (error) {
             console.error('Bulk reject failed', error);
-            toast.error('Batch konnte nicht vollstaendig verworfen werden.');
+            toast.error('Batch konnte nicht vollständig verworfen werden.');
         } finally {
             setIsBatchProcessing(false);
         }
@@ -442,8 +442,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     Mycelium Intake
                                 </div>
                                 <p className="text-sm text-white/75 mt-1 leading-relaxed">
-                                    Dateien wurden im Universe aufgenommen. Mora bereitet jetzt Einordnungsvorschlaege vor und fuehrt die
-                                    bestaetigte Ablage in den Dateibaum aus.
+                                    Dateien wurden im Universe aufgenommen. Mora bereitet jetzt Einordnungsvorschläge vor und führt die
+                                    bestätigte Ablage in den Dateibaum aus.
                                 </p>
                             </div>
                         </div>
@@ -545,8 +545,16 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         <div className="flex items-start gap-3">
                             <CheckCircle size={16} className="text-emerald-300 mt-0.5 shrink-0" />
                             <div className="min-w-0 w-full">
-                                <div className="text-xs uppercase tracking-[0.2em] text-emerald-300/70 font-bold">
-                                    Batch abgeschlossen
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-emerald-300/70 font-bold">
+                                        Batch abgeschlossen
+                                    </div>
+                                    <button
+                                        onClick={() => openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } })}
+                                        className="text-[11px] text-emerald-300/70 hover:text-emerald-200 transition-colors shrink-0"
+                                    >
+                                        Finder öffnen →
+                                    </button>
                                 </div>
                                 <p className="text-sm text-white/75 mt-1 leading-relaxed">
                                     {batchResultSummary.confirmed} eingeordnet, {batchResultSummary.rejected} verworfen.
@@ -554,8 +562,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                 </p>
                                 <div className="mt-3 space-y-2">
                                     {batchResultSummary.routes.map((route) => (
-                                        <div key={route.path} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/15 px-3 py-2">
-                                            <div className="min-w-0 text-sm text-white/80 truncate">{route.path}</div>
+                                        <div key={route.path || 'unknown'} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/15 px-3 py-2">
+                                            <div className="min-w-0 text-sm text-white/80 truncate">{route.path || 'Unbekannter Pfad'}</div>
                                             <div className="shrink-0 flex items-center gap-2 text-[11px]">
                                                 {route.confirmed > 0 && (
                                                     <span className="rounded-full border border-emerald-400/15 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">

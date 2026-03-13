@@ -186,6 +186,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                 break;
         }
 
+        onQueryChange('');
         onClose();
     };
 
@@ -195,6 +196,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         dispatchMoraPresence({ action: 'navigate', targetId: deptId, targetType: 'department', message: dept ? `Navigiere zu ${dept.name}` : 'Navigiere zum Bereich', source: 'system' });
         navigateToDepartment(deptId);
         setOrbState('focus');
+        onQueryChange('');
         onClose();
     };
 
@@ -320,7 +322,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 value={searchQuery}
                                 onChange={(e) => onQueryChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Search or @mora to chat..."
+                                placeholder="Suchen oder @mora für Chat..."
                                 className={`w-full border pl-12 pr-4 py-3 text-base focus:outline-none transition-all ${
                                     isStandardMode
                                         ? `bg-gray-50 text-[#1F1F1F] placeholder:text-gray-400 rounded-md ${

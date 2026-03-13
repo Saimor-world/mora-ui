@@ -193,7 +193,7 @@ const SaveInsightButton: React.FC<{
                             >
                                 {cat === 'context' ? 'Kontext' :
                                     cat === 'fact' ? 'Fakt' :
-                                        cat === 'preference' ? 'Praeferenz' :
+                                        cat === 'preference' ? 'Präferenz' :
                                             cat === 'summary' ? 'Zusammenfassung' : cat}
                             </button>
                         ))}
