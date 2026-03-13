@@ -21,6 +21,9 @@ interface IntakeContext {
     business_summary?: string;
     route_mode?: string;
     route_reason?: string;
+    route_confidence_score?: number;
+    route_confidence_label?: string;
+    route_signals?: string[];
     target_company_name?: string;
     target_department_name?: string;
     target_space_name?: string;
@@ -70,6 +73,8 @@ const shortenId = (value?: string | null) => {
 const formatTargetLabel = (label?: string | null, id?: string | null, fallback = 'Unbekannt') => {
     return label || shortenId(id) || fallback;
 };
+
+const formatSignal = (signal: string) => signal.replaceAll('_', ' ');
 
 const getFileOperations = (params: Record<string, any>): FileActionOperation[] => {
     if (!Array.isArray(params?.operations)) return [];
@@ -384,6 +389,12 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             intake.target_space_name,
             intake.target_folder_name,
         ].filter(Boolean).join(' > ') || intake.suggested_location;
+        const confidenceLabel = intake.route_confidence_label || 'mittel';
+        const confidenceTone = confidenceLabel === 'hoch'
+            ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
+            : confidenceLabel === 'niedrig'
+                ? 'border-amber-400/20 bg-amber-500/10 text-amber-100'
+                : 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100';
         return (
             <motion.div
                 id={cardTargetId}
@@ -398,17 +409,41 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         <div className="mt-2 rounded-lg border border-emerald-500/15 bg-black/20 p-3 space-y-1.5">
                             <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.18em] text-emerald-300/60">
                                 <span>Mycelium Routing</span>
-                                {intake.suggested_category && (
+                                <div className="flex flex-wrap items-center justify-end gap-2">
+                                    {intake.route_confidence_label && (
+                                        <span className={`rounded-full border px-2 py-0.5 normal-case tracking-normal ${confidenceTone}`}>
+                                            {confidenceLabel}e Sicherheit
+                                            {typeof intake.route_confidence_score === 'number' && (
+                                                <span className="ml-1 text-white/55">
+                                                    {Math.round(intake.route_confidence_score * 100)}%
+                                                </span>
+                                            )}
+                                        </span>
+                                    )}
+                                    {intake.suggested_category && (
                                     <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 normal-case tracking-normal text-white/60">
                                         {intake.suggested_category}
                                     </span>
-                                )}
+                                    )}
+                                </div>
                             </div>
                             <p className="text-xs text-white/80">
                                 Ziel: <span className="text-emerald-100">{routePath}</span>
                             </p>
                             {intake.route_reason && (
                                 <p className="text-[11px] text-white/50 leading-relaxed">{intake.route_reason}</p>
+                            )}
+                            {intake.route_signals && intake.route_signals.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {intake.route_signals.map((signal) => (
+                                        <span
+                                            key={signal}
+                                            className="px-2 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-100/80 border border-emerald-500/15"
+                                        >
+                                            {formatSignal(signal)}
+                                        </span>
+                                    ))}
+                                </div>
                             )}
                         </div>
                         {intake.detected_patterns && intake.detected_patterns.length > 0 && (

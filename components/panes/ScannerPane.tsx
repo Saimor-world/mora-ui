@@ -14,6 +14,9 @@ interface IntakeContext {
     suggested_location?: string;
     route_mode?: string;
     route_reason?: string;
+    route_confidence_score?: number;
+    route_confidence_label?: string;
+    route_signals?: string[];
     target_company_name?: string;
     target_department_name?: string;
     target_space_name?: string;

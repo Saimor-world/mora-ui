@@ -118,6 +118,9 @@ describe('ConfirmationCard presence trigger', () => {
             suggested_category: 'PDF-Dokument',
             suggested_location: 'Finance > Eingaenge > Inbox',
             route_reason: 'Standard-Eingang fuer neue Dateien in dieser Firma',
+            route_confidence_label: 'hoch',
+            route_confidence_score: 0.86,
+            route_signals: ['firmenweite_inbox', 'neuer_dateieingang'],
             target_department_name: 'Finance',
             target_space_name: 'Eingaenge',
             target_folder_name: 'Inbox',
@@ -133,6 +136,9 @@ describe('ConfirmationCard presence trigger', () => {
     expect(screen.getByText('PDF-Dokument')).toBeInTheDocument();
     expect(screen.getByText('Finance > Eingaenge > Inbox')).toBeInTheDocument();
     expect(screen.getByText('Standard-Eingang fuer neue Dateien in dieser Firma')).toBeInTheDocument();
+    expect(screen.getByText(/hoch/i)).toBeInTheDocument();
+    expect(screen.getByText(/86%/i)).toBeInTheDocument();
+    expect(screen.getByText('firmenweite inbox')).toBeInTheDocument();
   });
 
   it('renders readable file operation details', () => {
