@@ -127,7 +127,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         if (renameNodeOps.length > 0) {
             parts.push(`${renameNodeOps.length} Datei${renameNodeOps.length === 1 ? '' : 'en'} umbenennen`);
         }
-        return parts.length > 0 ? parts.join(' und ') : 'Dateioperation pruefen';
+        return parts.length > 0 ? parts.join(' und ') : 'Dateioperation prüfen';
     }, [action.params, createFolderOps, moveNodeOps, renameNodeOps]);
 
     useEffect(() => {
@@ -193,12 +193,12 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 }
                 onConfirmed(res?.data || res?.result || res);
             } else {
-                toast.error(isFileOp ? 'Aktion konnte nicht ausgefuehrt werden.' : 'Action failed. Nothing was created.');
+                toast.error(isFileOp ? 'Aktion konnte nicht ausgeführt werden.' : 'Action failed. Nothing was created.');
                 console.error('Confirmation failed:', res);
             }
         } catch (e) {
             console.error('Confirmation failed', e);
-            toast.error(isFileOp ? 'Aktion konnte nicht ausgefuehrt werden.' : 'Action failed. Nothing was created.');
+            toast.error(isFileOp ? 'Aktion konnte nicht ausgeführt werden.' : 'Action failed. Nothing was created.');
         } finally {
             setIsProcessing(false);
         }
@@ -250,9 +250,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 <div className="bg-amber-500/10 px-4 py-3 flex items-start gap-3">
                     <AlertTriangle className="text-amber-300 shrink-0 mt-0.5" size={18} />
                     <div className="min-w-0">
-                        <h4 className="text-amber-100 text-sm font-medium">Aktionsplan pruefen</h4>
+                        <h4 className="text-amber-100 text-sm font-medium">Aktionsplan prüfen</h4>
                         <p className="text-[10px] text-amber-200/60 uppercase tracking-widest mt-0.5">
-                            Dateibaum-Aenderung - Bestaetigung erforderlich
+                            Dateibaum-Änderung – Bestätigung erforderlich
                         </p>
                     </div>
                 </div>
@@ -363,7 +363,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     </div>
 
                     <div className="text-xs text-white/55 italic leading-relaxed">
-                        MORA fuehrt diese Aenderung erst nach Ihrer Bestaetigung aus. Der aktuelle Firmenkontext bleibt dabei verbindlich.
+                        MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Firmenkontext bleibt dabei verbindlich.
                     </div>
                 </div>
 
@@ -421,7 +421,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 <div className="flex flex-wrap items-center justify-end gap-2">
                                     {intake.route_confidence_label && (
                                         <span className={`rounded-full border px-2 py-0.5 normal-case tracking-normal ${confidenceTone}`}>
-                                            {confidenceLabel}e Sicherheit
+                                            {confidenceLabel === 'hoch' ? 'Hohe' : confidenceLabel === 'niedrig' ? 'Niedrige' : 'Mittlere'} Sicherheit
                                             {typeof intake.route_confidence_score === 'number' && (
                                                 <span className="ml-1 text-white/55">
                                                     {Math.round(intake.route_confidence_score * 100)}%
@@ -481,7 +481,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         disabled={isProcessing}
                         className="text-white/40 hover:text-white/60 text-xs font-medium transition-colors px-3 py-2"
                     >
-                        Spaeter
+                        Später
                     </button>
                     <div className="flex-1" />
                     <button

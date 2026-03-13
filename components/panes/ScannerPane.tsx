@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity, Cpu, HardDrive } from 'lucide-react';
+import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
@@ -404,29 +404,6 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             resizable
         >
             <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
-                {/* Godmode Telemetry Ribbon */}
-                {stats && (
-                    <div className="flex items-center gap-4 px-3 py-2 bg-purple-500/5 border border-purple-500/10 rounded-lg text-[10px] tracking-tight">
-                        <div className="flex items-center gap-1.5 text-purple-400">
-                            <Activity size={12} />
-                            <span className="uppercase font-bold">Mora Load:</span>
-                            <span className="text-white/60">{(stats.intelligence.mora_load * 100).toFixed(0)}%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-blue-400">
-                            <Cpu size={12} />
-                            <span className="uppercase font-bold">CPU:</span>
-                            <span className="text-white/60">{stats.metrics.cpu.toFixed(0)}%</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-emerald-400">
-                            <HardDrive size={12} />
-                            <span className="uppercase font-bold">MEM:</span>
-                            <span className="text-white/60">{stats.metrics.memory_usage.toFixed(0)}%</span>
-                        </div>
-                        <div className="flex-1 text-right text-white/20 uppercase font-medium">
-                            Status: <span className="text-emerald-500/50">Telemetry live</span>
-                        </div>
-                    </div>
-                )}
 
                 {/* Drop Zone */}
                 <div
@@ -572,7 +549,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     Batch abgeschlossen
                                 </div>
                                 <p className="text-sm text-white/75 mt-1 leading-relaxed">
-                                    {batchResultSummary.confirmed} bestaetigt, {batchResultSummary.rejected} verworfen.
+                                    {batchResultSummary.confirmed} eingeordnet, {batchResultSummary.rejected} verworfen.
                                     {batchResultSummary.total > 1 ? ` ${batchResultSummary.total} Dateien wurden im Intake-Lauf bearbeitet.` : ' 1 Datei wurde im Intake-Lauf bearbeitet.'}
                                 </p>
                                 <div className="mt-3 space-y-2">
@@ -582,7 +559,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                             <div className="shrink-0 flex items-center gap-2 text-[11px]">
                                                 {route.confirmed > 0 && (
                                                     <span className="rounded-full border border-emerald-400/15 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">
-                                                        {route.confirmed} ok
+                                                        {route.confirmed} eingeordnet
                                                     </span>
                                                 )}
                                                 {route.rejected > 0 && (
@@ -649,7 +626,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                             {file.status === 'error' && (
                                                 <div className="flex items-center gap-2 mt-2 text-xs text-red-400">
                                                     <AlertCircle size={12} />
-                                                    <span>Upload failed</span>
+                                                    <span>Hochladen fehlgeschlagen.</span>
                                                 </div>
                                             )}
                                         </div>

@@ -29,8 +29,9 @@ const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
     move_node: 'Datei verschieben',
     rename_node: 'Datei umbenennen',
-    confirm_action: 'Aktion bestaetigen',
-    undo: 'Aktion rueckgaengig machen',
+    create_node_from_file: 'Datei einordnen',
+    confirm_action: 'Aktion bestätigen',
+    undo: 'Aktion rückgängig machen',
 };
 
 const formatTime = (ts?: string): string => {
@@ -222,7 +223,7 @@ export const ActionTray: React.FC = () => {
                                             Keine passenden Aktionen
                                         </div>
                                         <div className={`text-[10px] mt-1 ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`}>
-                                            Passe den Filter an oder warte auf neue Aktivitaet
+                                            Passe den Filter an oder warte auf neue Aktivität
                                         </div>
                                     </div>
                                 )}
