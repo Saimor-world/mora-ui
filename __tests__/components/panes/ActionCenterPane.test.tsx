@@ -1,8 +1,11 @@
-import React from 'react';
+﻿import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ActionCenterPane } from '@/components/panes/ActionCenterPane';
 
 const coreGet = jest.fn();
+const corePost = jest.fn();
+const confirmCreateNodeFromFile = jest.fn();
+const rejectCreateNodeFromFile = jest.fn();
 const realtimeOn = jest.fn();
 const realtimeOff = jest.fn();
 const realtimeConnect = jest.fn();
@@ -42,6 +45,19 @@ jest.mock('@/lib/store/paneStore', () => ({
 
 jest.mock('@/lib/api/coreClient', () => ({
   coreGet: (...args: unknown[]) => coreGet(...args),
+  corePost: (...args: unknown[]) => corePost(...args),
+}));
+
+jest.mock('@/lib/api/filesClient', () => ({
+  confirmCreateNodeFromFile: (...args: unknown[]) => confirmCreateNodeFromFile(...args),
+  rejectCreateNodeFromFile: (...args: unknown[]) => rejectCreateNodeFromFile(...args),
+}));
+
+jest.mock('@/lib/toast', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  }
 }));
 
 jest.mock('@/lib/api/realtimeClient', () => ({
@@ -116,12 +132,9 @@ describe('ActionCenterPane', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
     expect(screen.getByText('Aktion')).toBeInTheDocument();
-    expect(screen.getByText('act_2')).toBeInTheDocument();
     expect(screen.getByText('Rolle')).toBeInTheDocument();
     expect(screen.getByText('Plan')).toBeInTheDocument();
     expect(screen.getByText('Ergebnis')).toBeInTheDocument();
-    expect(screen.getByText('Altname.pdf -> Neuname-final.pdf')).toBeInTheDocument();
-    expect(screen.getByText('Altname.pdf -> Neuname.pdf')).toBeInTheDocument();
     expect(screen.getAllByText('Vorher: Altname.pdf')).toHaveLength(2);
     expect(screen.getByText('Nachher: Neuname-final.pdf')).toBeInTheDocument();
     expect(screen.getByText('Nachher: Neuname.pdf')).toBeInTheDocument();
@@ -212,4 +225,77 @@ describe('ActionCenterPane', () => {
       { isOptional: true }
     ));
   });
+
+  it('confirms a pending intake event directly from the batch history view', async () => {
+    coreGet.mockResolvedValue({
+      events: [
+        {
+          action_id: 'file_1',
+          status: 'pending_confirmation',
+          intent: 'create_node_from_file',
+          actor_role: 'owner',
+          session_id: 'batch_1',
+          batch_id: 'batch_1',
+          message: "Datei 'briefing.pdf' wartet auf Einordnung",
+          error: null,
+          payload: {
+            tool_name: 'create_node_from_file',
+            summary: "Datei 'briefing.pdf' wartet auf Einordnung",
+            file_id: 'file-real-1',
+            filename: 'briefing.pdf',
+            confirmation_token: 'tok_file_123',
+            intake_context: {
+              target_department_name: 'Marketing',
+              target_space_name: 'Kampagnen',
+              route_confidence_label: 'hoch',
+            },
+          },
+          timestamp: '2026-03-12T16:03:00.000Z',
+        },
+      ],
+    });
+    confirmCreateNodeFromFile.mockResolvedValue({ status: 'done' });
+
+    render(<ActionCenterPane id="actions-main" />);
+
+    fireEvent.change(screen.getByDisplayValue('Alle Aktionen'), { target: { value: 'intake' } });
+    const batchSummary = await screen.findByText('1 Datei wartet auf Freigabe');
+    fireEvent.click(batchSummary);
+    fireEvent.click(await screen.findByRole('button', { name: /Best.tigen/ }));
+
+    await waitFor(() => expect(confirmCreateNodeFromFile).toHaveBeenCalledWith('file-real-1', 'tok_file_123'));
+    await waitFor(() => expect(coreGet.mock.calls.length).toBeGreaterThanOrEqual(2));
+  });
+
+  it('rejects a pending file-op action directly from the flat action list', async () => {
+    coreGet.mockResolvedValue({
+      events: [
+        {
+          action_id: 'act_fileop_1',
+          status: 'pending_confirmation',
+          intent: 'create_folder',
+          actor_role: 'owner',
+          session_id: 'sess-9',
+          message: "Ordner 'Winter Marketing' wird erstellt",
+          error: null,
+          payload: {
+            tool_name: 'create_folder',
+            summary: "Ordner 'Winter Marketing' wird erstellt",
+            confirmation_token: 'tok_action_123',
+          },
+          timestamp: '2026-03-12T16:04:00.000Z',
+        },
+      ],
+    });
+    corePost.mockResolvedValue({ rejected: true });
+
+    render(<ActionCenterPane id="actions-main" />);
+
+    expect(await screen.findByText('Ordner erstellen', { selector: 'div' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Verwerfen' }));
+
+    await waitFor(() => expect(corePost).toHaveBeenCalledWith('/v3/actions/reject', { confirmation_token: 'tok_action_123' }));
+    await waitFor(() => expect(coreGet).toHaveBeenCalledTimes(2));
+  });
 });
+

@@ -4,9 +4,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, CheckCircle, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { coreGet } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
+import { confirmCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
 import type { ActionEvent, ActionStatus } from '@/lib/hooks/useActionEvents';
+import { toast } from '@/lib/toast';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
@@ -60,6 +62,18 @@ function getIntakeFileName(evt: ActionEvent): string | null {
     const ic = p?.intake_context as Record<string, unknown> | undefined;
     if (typeof ic?.filename === 'string') return ic.filename;
     return null;
+}
+
+function getConfirmationToken(evt: ActionEvent): string | null {
+    return typeof evt.payload?.confirmation_token === 'string' ? evt.payload.confirmation_token : null;
+}
+
+function getPendingFileId(evt: ActionEvent): string | null {
+    return typeof evt.payload?.file_id === 'string' ? evt.payload.file_id : null;
+}
+
+function canActOnPendingEvent(evt: ActionEvent): boolean {
+    return evt.status === 'pending_confirmation' && !!getConfirmationToken(evt);
 }
 
 /**
@@ -327,6 +341,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     const [query, setQuery] = useState('');
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(null);
+    const [pendingActionState, setPendingActionState] = useState<Record<string, 'confirming' | 'rejecting'>>({});
 
     const loadEvents = useCallback(async (opts?: { silent?: boolean }) => {
         if (!opts?.silent) setIsLoading(true);
@@ -399,6 +414,44 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
         rejected: events.filter((evt) => evt.status === 'rejected' || evt.status === 'expired').length,
         failed: events.filter((evt) => evt.status === 'failed').length,
     }), [events]);
+
+    const resolveActionEndpoint = useCallback(async (evt: ActionEvent, mode: 'confirm' | 'reject') => {
+        const token = getConfirmationToken(evt);
+        if (!token) throw new Error('Bestätigungstoken fehlt');
+
+        if (evt.intent === 'create_node_from_file') {
+            const fileId = getPendingFileId(evt);
+            if (!fileId) throw new Error('Datei-ID fehlt');
+            if (mode === 'confirm') {
+                await confirmCreateNodeFromFile(fileId, token);
+            } else {
+                await rejectCreateNodeFromFile(fileId, token);
+            }
+            return;
+        }
+
+        const endpoint = mode === 'confirm' ? '/v3/actions/confirm' : '/v3/actions/reject';
+        await corePost(endpoint, { confirmation_token: token });
+    }, []);
+
+    const handlePendingAction = useCallback(async (evt: ActionEvent, mode: 'confirm' | 'reject') => {
+        const actionId = evt.action_id;
+        setPendingActionState((prev) => ({ ...prev, [actionId]: mode === 'confirm' ? 'confirming' : 'rejecting' }));
+        try {
+            await resolveActionEndpoint(evt, mode);
+            toast.success(mode === 'confirm' ? 'Aktion bestätigt' : 'Aktion verworfen');
+            await loadEvents({ silent: true });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : (mode === 'confirm' ? 'Aktion konnte nicht bestätigt werden.' : 'Aktion konnte nicht verworfen werden.');
+            toast.error(message);
+        } finally {
+            setPendingActionState((prev) => {
+                const next = { ...prev };
+                delete next[actionId];
+                return next;
+            });
+        }
+    }, [loadEvents, resolveActionEndpoint]);
 
     if (!pane) return null;
 
@@ -613,6 +666,8 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                         const route = getIntakeRoute(evt);
                                                         const isDone = evt.status === 'done';
                                                         const isRejected = evt.status === 'rejected' || evt.status === 'expired';
+                                                        const isPending = canActOnPendingEvent(evt);
+                                                        const state = pendingActionState[evt.action_id];
                                                         return (
                                                             <div
                                                                 key={evt.action_id}
@@ -629,6 +684,26 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                                     <div className="truncate text-[12px] text-white/80">{fileName}</div>
                                                                     {route && (
                                                                         <div className="truncate text-[11px] text-white/40 mt-0.5">{route}</div>
+                                                                    )}
+                                                                    {isPending && (
+                                                                        <div className="mt-2 flex flex-wrap gap-2">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => void handlePendingAction(evt, 'confirm')}
+                                                                                disabled={!!state}
+                                                                                className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] text-emerald-200 transition-colors hover:border-emerald-300/50 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                            >
+                                                                                {state === 'confirming' ? 'Bestätigt…' : 'Bestätigen'}
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => void handlePendingAction(evt, 'reject')}
+                                                                                disabled={!!state}
+                                                                                className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-white/65 transition-colors hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                            >
+                                                                                {state === 'rejecting' ? 'Verwerfe…' : 'Verwerfen'}
+                                                                            </button>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                                 <div className="shrink-0 text-[10px] text-white/30">
@@ -659,6 +734,8 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                             {filteredEvents.map((evt) => {
                                 const expanded = expandedId === evt.action_id;
                                 const actionMessage = formatActionMessage(evt);
+                                const isPending = canActOnPendingEvent(evt);
+                                const state = pendingActionState[evt.action_id];
                                 return (
                                     <div key={`${evt.action_id}:${evt.timestamp}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                                         <div className="flex items-start gap-3">
@@ -686,6 +763,26 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                                 {actionMessage && (
                                                     <div className="mt-2 text-sm leading-snug text-white/65">{actionMessage}</div>
+                                                )}
+                                                {isPending && (
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void handlePendingAction(evt, 'confirm')}
+                                                            disabled={!!state}
+                                                            className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-[11px] text-emerald-200 transition-colors hover:border-emerald-300/50 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            {state === 'confirming' ? 'Bestätigt…' : 'Bestätigen'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void handlePendingAction(evt, 'reject')}
+                                                            disabled={!!state}
+                                                            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/65 transition-colors hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            {state === 'rejecting' ? 'Verwerfe…' : 'Verwerfen'}
+                                                        </button>
+                                                    </div>
                                                 )}
                                                 {expanded && (
                                                     <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/60 md:grid-cols-2">
