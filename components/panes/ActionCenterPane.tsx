@@ -30,12 +30,25 @@ function isIntakeEvent(evt: ActionEvent): boolean {
 }
 
 function getIntakeRoute(evt: ActionEvent): string | null {
+    // payload.intake_context is top-level (confirmed by Codex 2331018)
     const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
-    if (!ic) return null;
-    const path = [ic.target_department_name, ic.target_space_name, ic.target_folder_name]
-        .filter(Boolean)
-        .join(' > ');
-    return path || (typeof ic.suggested_location === 'string' ? ic.suggested_location : null);
+    if (ic) {
+        const path = [ic.target_department_name, ic.target_space_name, ic.target_folder_name]
+            .filter(Boolean)
+            .join(' > ');
+        if (path) return path;
+        if (typeof ic.suggested_location === 'string') return ic.suggested_location;
+    }
+    // Fallback: payload.route_suggestion (also top-level, provided by Codex)
+    const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
+    if (rs) {
+        const path = [rs.department_name, rs.space_name, rs.folder_name]
+            .filter(Boolean)
+            .join(' > ');
+        if (path) return path;
+        if (typeof rs.location === 'string') return rs.location;
+    }
+    return null;
 }
 
 function getIntakeFileName(evt: ActionEvent): string | null {
@@ -48,35 +61,48 @@ function getIntakeFileName(evt: ActionEvent): string | null {
     return null;
 }
 
-/** Groups intake events by shared session_id (primary) or 90s time window (fallback). */
+/**
+ * Groups intake events into batches.
+ * Hierarchy (Codex confirmed batch_id as canonical key, 2331018):
+ *   1. batch_id  — direct, single-file batches are valid (no ≥2 threshold)
+ *   2. session_id — fallback for events pre-dating batch_id field
+ *   3. 90s time window — graceful degradation for historical data
+ */
 function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
     const intake = events.filter(isIntakeEvent);
     const sorted = [...intake].sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Primary: group by session_id — only treat as a real batch if ≥2 share the same id
-    const sessionMap = new Map<string, ActionEvent[]>();
-    const noSession: ActionEvent[] = [];
+    // Primary: group by batch_id (canonical since Codex 379cb8c)
+    const batchMap = new Map<string, ActionEvent[]>();
+    const noBatch: ActionEvent[] = [];
     sorted.forEach((evt) => {
-        if (evt.session_id) {
-            const g = sessionMap.get(evt.session_id) ?? [];
+        const key = evt.batch_id ?? evt.session_id;
+        if (key) {
+            const g = batchMap.get(key) ?? [];
             g.push(evt);
-            sessionMap.set(evt.session_id, g);
+            batchMap.set(key, g);
         } else {
-            noSession.push(evt);
+            noBatch.push(evt);
         }
     });
 
-    const confirmedSessionGroups: ActionEvent[][] = [];
-    const singleSessionEvents: ActionEvent[] = [];
-    sessionMap.forEach((evts) => {
-        if (evts.length > 1) confirmedSessionGroups.push(evts);
-        else singleSessionEvents.push(...evts);
+    const batchedGroups: ActionEvent[][] = [];
+    const unbatchedEvents: ActionEvent[] = [];
+    batchMap.forEach((evts, key) => {
+        // session_id without batch_id: require ≥2 to avoid false groupings from
+        // unrelated actions that happen to share a user session
+        const evtBatchId = evts[0].batch_id;
+        if (evtBatchId || evts.length > 1) {
+            batchedGroups.push(evts);
+        } else {
+            unbatchedEvents.push(...evts);
+        }
     });
 
     // Fallback: group remaining events by 90s proximity
-    const timeWindowCandidates = [...singleSessionEvents, ...noSession].sort(
+    const timeWindowCandidates = [...unbatchedEvents, ...noBatch].sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
     const timeGroups: ActionEvent[][] = [];
@@ -90,7 +116,7 @@ function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
         }
     });
 
-    return [...confirmedSessionGroups, ...timeGroups]
+    return [...batchedGroups, ...timeGroups]
         .map((evts) => {
             const routes: string[] = [];
             evts.forEach((evt) => {
@@ -100,8 +126,9 @@ function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
             const sortedEvts = [...evts].sort(
                 (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
             );
+            const first = sortedEvts[0];
             return {
-                batchKey: sortedEvts[0].session_id ?? sortedEvts[0].action_id,
+                batchKey: first.batch_id ?? first.session_id ?? first.action_id,
                 events: sortedEvts,
                 timestamp: sortedEvts[0].timestamp,
                 confirmed: evts.filter((e) => e.status === 'done').length,
