@@ -21,6 +21,7 @@ export interface ActionEvent {
     actor_id?: string;
     actor_role?: string;
     session_id?: string;
+    batch_id?: string;
     message: string | null;
     error: string | null;
     payload: Record<string, unknown>;

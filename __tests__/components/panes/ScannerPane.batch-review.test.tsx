@@ -137,12 +137,14 @@ describe('ScannerPane batch review', () => {
 
         expect(await screen.findByText(/Mycelium Intake/i)).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: /Upload All/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
 
         await waitFor(() => {
             expect(mockUploadCompanyFile).toHaveBeenCalledTimes(2);
             expect(mockRequestCreateNodeFromFile).toHaveBeenCalledTimes(2);
         });
+        expect(mockRequestCreateNodeFromFile).toHaveBeenNthCalledWith(1, 'file-1', expect.objectContaining({ batchId: 'batch-1' }));
+        expect(mockRequestCreateNodeFromFile).toHaveBeenNthCalledWith(2, 'file-2', expect.objectContaining({ batchId: 'batch-1' }));
 
         expect(await screen.findByText(/2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
         expect(screen.getByText('Marketing > Kampagnen')).toBeInTheDocument();
@@ -165,8 +167,8 @@ describe('ScannerPane batch review', () => {
         });
 
         expect(mockRejectCreateNodeFromFile).toHaveBeenCalledWith('file-2', 'token-2');
-        expect(screen.getByText(/Node created/i)).toBeInTheDocument();
-        expect(screen.getByText(/Node creation rejected/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Eingeordnet/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Verworfen/i).length).toBeGreaterThan(0);
         expect(screen.getByText(/Batch abgeschlossen/i)).toBeInTheDocument();
         expect(screen.getByText(/1 bestaetigt, 1 verworfen/i)).toBeInTheDocument();
     });
@@ -174,7 +176,7 @@ describe('ScannerPane batch review', () => {
     test('bulk confirm processes the whole review queue', async () => {
         render(<ScannerPane id="scanner-main" />);
 
-        fireEvent.click(screen.getByRole('button', { name: /Upload All/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
 
         expect(await screen.findByText(/2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
 
@@ -185,6 +187,6 @@ describe('ScannerPane batch review', () => {
         });
 
         expect(mockConfirmCreateNodeFromFile).toHaveBeenCalledTimes(2);
-        expect(screen.getAllByText(/Node created/i).length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText(/Eingeordnet/i).length).toBeGreaterThanOrEqual(2);
     });
 });

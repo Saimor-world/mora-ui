@@ -173,11 +173,12 @@ export const downloadCompanyFile = async (fileId: string, filename: string): Pro
 
 export const requestCreateNodeFromFile = async (
     fileId: string,
-    options?: { autoExecute?: boolean; folderId?: string }
+    options?: { autoExecute?: boolean; folderId?: string; batchId?: string }
 ): Promise<any> => {
     return corePost(`/v3/files/${fileId}/create-node`, {
         auto_execute: options?.autoExecute ?? true,
-        folder_id: options?.folderId
+        folder_id: options?.folderId,
+        batch_id: options?.batchId,
     });
 };
 

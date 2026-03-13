@@ -210,7 +210,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
             // P6: Data Sovereignty - respect user's auto-execute preference
             const autoExecute = user?.settings?.autoExecuteActions ?? true;
-            const response = await requestCreateNodeFromFile(uploaded.id, { autoExecute });
+            const response = await requestCreateNodeFromFile(uploaded.id, {
+                autoExecute,
+                batchId: intakeSeed.batchId,
+            });
             if (response?.status === 'pending_confirmation') {
                 setFiles(prev => prev.map(f => f.id === fileId ? {
                     ...f,
@@ -718,4 +721,3 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         </GlassPanel>
     );
 };
-
