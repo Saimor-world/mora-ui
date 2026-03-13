@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, Search, ShieldAlert, UserRound, XCircle } from 'lucide-react';
+import { Activity, CheckCircle, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet } from '@/lib/api/coreClient';
@@ -10,7 +10,110 @@ import type { ActionEvent, ActionStatus } from '@/lib/hooks/useActionEvents';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
-type IntentFilter = 'all' | 'create_folder' | 'move_node' | 'rename_node' | 'confirm_action' | 'undo';
+type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'confirm_action' | 'undo';
+
+// ─── Intake batch grouping ────────────────────────────────────────────────────
+
+interface IntakeBatch {
+    batchKey: string;
+    events: ActionEvent[];
+    timestamp: string;
+    confirmed: number;
+    rejected: number;
+    failed: number;
+    routes: string[];
+}
+
+function isIntakeEvent(evt: ActionEvent): boolean {
+    const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
+    return tool === 'create_node_from_file' || evt.intent === 'create_node_from_file';
+}
+
+function getIntakeRoute(evt: ActionEvent): string | null {
+    const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
+    if (!ic) return null;
+    const path = [ic.target_department_name, ic.target_space_name, ic.target_folder_name]
+        .filter(Boolean)
+        .join(' > ');
+    return path || (typeof ic.suggested_location === 'string' ? ic.suggested_location : null);
+}
+
+function getIntakeFileName(evt: ActionEvent): string | null {
+    const p = evt.payload;
+    if (typeof p?.filename === 'string') return p.filename;
+    if (typeof p?.file_name === 'string') return p.file_name;
+    if (typeof p?.name === 'string') return p.name;
+    const ic = p?.intake_context as Record<string, unknown> | undefined;
+    if (typeof ic?.filename === 'string') return ic.filename;
+    return null;
+}
+
+/** Groups intake events by shared session_id (primary) or 90s time window (fallback). */
+function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
+    const intake = events.filter(isIntakeEvent);
+    const sorted = [...intake].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    // Primary: group by session_id — only treat as a real batch if ≥2 share the same id
+    const sessionMap = new Map<string, ActionEvent[]>();
+    const noSession: ActionEvent[] = [];
+    sorted.forEach((evt) => {
+        if (evt.session_id) {
+            const g = sessionMap.get(evt.session_id) ?? [];
+            g.push(evt);
+            sessionMap.set(evt.session_id, g);
+        } else {
+            noSession.push(evt);
+        }
+    });
+
+    const confirmedSessionGroups: ActionEvent[][] = [];
+    const singleSessionEvents: ActionEvent[] = [];
+    sessionMap.forEach((evts) => {
+        if (evts.length > 1) confirmedSessionGroups.push(evts);
+        else singleSessionEvents.push(...evts);
+    });
+
+    // Fallback: group remaining events by 90s proximity
+    const timeWindowCandidates = [...singleSessionEvents, ...noSession].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    const timeGroups: ActionEvent[][] = [];
+    timeWindowCandidates.forEach((evt) => {
+        const ts = new Date(evt.timestamp).getTime();
+        const last = timeGroups[timeGroups.length - 1];
+        if (last && ts - new Date(last[last.length - 1].timestamp).getTime() < 90_000) {
+            last.push(evt);
+        } else {
+            timeGroups.push([evt]);
+        }
+    });
+
+    return [...confirmedSessionGroups, ...timeGroups]
+        .map((evts) => {
+            const routes: string[] = [];
+            evts.forEach((evt) => {
+                const r = getIntakeRoute(evt);
+                if (r && !routes.includes(r)) routes.push(r);
+            });
+            const sortedEvts = [...evts].sort(
+                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+            return {
+                batchKey: sortedEvts[0].session_id ?? sortedEvts[0].action_id,
+                events: sortedEvts,
+                timestamp: sortedEvts[0].timestamp,
+                confirmed: evts.filter((e) => e.status === 'done').length,
+                rejected: evts.filter((e) => e.status === 'rejected' || e.status === 'expired').length,
+                failed: evts.filter((e) => e.status === 'failed').length,
+                routes,
+            };
+        })
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}
+
+// ─── Formatting helpers ───────────────────────────────────────────────────────
 
 const statusIconMap: Record<ActionStatus, React.ReactNode> = {
     proposed: <Clock3 size={14} className="text-blue-400" />,
@@ -24,8 +127,8 @@ const statusIconMap: Record<ActionStatus, React.ReactNode> = {
 
 const statusLabelMap: Record<ActionStatus, string> = {
     proposed: 'Vorgeschlagen',
-    running: 'Laeuft',
-    pending_confirmation: 'Wartet auf Bestaetigung',
+    running: 'Läuft',
+    pending_confirmation: 'Wartet auf Bestätigung',
     done: 'Abgeschlossen',
     failed: 'Fehlgeschlagen',
     rejected: 'Verworfen',
@@ -36,8 +139,9 @@ const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
     move_node: 'Datei verschieben',
     rename_node: 'Datei umbenennen',
-    confirm_action: 'Aktion bestaetigen',
-    undo: 'Aktion rueckgaengig machen',
+    confirm_action: 'Aktion bestätigen',
+    undo: 'Aktion rückgängig machen',
+    create_node_from_file: 'Datei einordnen',
 };
 
 const groupStatusMap: Record<Exclude<ActionFilter, 'all'>, ActionStatus[]> = {
@@ -58,11 +162,12 @@ const roleFilters: { key: RoleFilter; label: string }[] = [
 
 const intentFilters: { key: IntentFilter; label: string }[] = [
     { key: 'all', label: 'Alle Aktionen' },
+    { key: 'intake', label: 'Mycelium Intake' },
     { key: 'create_folder', label: 'Ordner erstellen' },
     { key: 'move_node', label: 'Datei verschieben' },
     { key: 'rename_node', label: 'Datei umbenennen' },
-    { key: 'confirm_action', label: 'Bestaetigen' },
-    { key: 'undo', label: 'Rueckgaengig' },
+    { key: 'confirm_action', label: 'Bestätigen' },
+    { key: 'undo', label: 'Rückgängig' },
 ];
 
 const statusFilters: { key: ActionFilter; label: string }[] = [
@@ -87,17 +192,23 @@ function formatActionMessage(evt: ActionEvent): string | null {
     return statusLabelMap[evt.status] || null;
 }
 
-function shortActionId(actionId?: string): string | null {
-    if (!actionId) return null;
-    const compact = actionId.replace(/^act[_-]?/i, '');
-    return compact.length > 10 ? compact.slice(0, 10) : compact;
-}
-
 function formatTime(ts?: string): string {
     if (!ts) return '--:--';
     const date = new Date(ts);
     if (Number.isNaN(date.getTime())) return '--:--';
     return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function formatBatchTime(ts: string): string {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) return '--';
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    if (d.toDateString() === today.toDateString()) return `Heute · ${timeStr}`;
+    if (d.toDateString() === yesterday.toDateString()) return `Gestern · ${timeStr}`;
+    return `${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} · ${timeStr}`;
 }
 
 function formatRole(role?: string | null): string {
@@ -106,10 +217,7 @@ function formatRole(role?: string | null): string {
 }
 
 function renderOperationCards(items: Record<string, unknown>[], heading: string, actionId: string): React.ReactNode {
-    if (items.length === 0) {
-        return null;
-    }
-
+    if (items.length === 0) return null;
     return (
         <div className="md:col-span-2">
             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">{heading}</div>
@@ -124,21 +232,21 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                             : type === 'move_node'
                                 ? `Node: ${node?.title || node?.name || op.node_name || op.node_id || '-'}`
                                 : type === 'rename_node'
-                                    ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} -> ${op.new_name || node?.title || node?.name || '-'}`
+                                    ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} → ${op.new_name || node?.title || node?.name || '-'}`
                                     : type.replace(/_/g, ' ');
                     const details =
                         type === 'move_node'
                             ? [
-                                  `Quelle: ${op.source_folder_name || op.source_folder_id || '-'}`,
-                                  `Ziel: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`,
-                              ]
+                                `Quelle: ${op.source_folder_name || op.source_folder_id || '-'}`,
+                                `Ziel: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`,
+                            ]
                             : type === 'create_folder'
-                                ? [`Parent: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`]
+                                ? [`Übergeordnet: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`]
                                 : type === 'rename_node'
                                     ? [
-                                          `Vorher: ${op.old_name || op.node_name || '-'}`,
-                                          `Nachher: ${op.new_name || node?.title || node?.name || '-'}`,
-                                      ]
+                                        `Vorher: ${op.old_name || op.node_name || '-'}`,
+                                        `Nachher: ${op.new_name || node?.title || node?.name || '-'}`,
+                                    ]
                                     : [];
                     return (
                         <div key={`${actionId}-${heading}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
@@ -146,9 +254,7 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                             {details.length > 0 && (
                                 <div className="mt-1 space-y-1">
                                     {details.map((detail) => (
-                                        <div key={detail} className="text-[11px] text-white/50">
-                                            {detail}
-                                        </div>
+                                        <div key={detail} className="text-[11px] text-white/50">{detail}</div>
                                     ))}
                                 </div>
                             )}
@@ -166,11 +272,7 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
         ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
         : [];
     const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
-
-    if (operations.length === 0 && operationsExecuted.length === 0) {
-        return null;
-    }
-
+    if (operations.length === 0 && operationsExecuted.length === 0) return null;
     return (
         <>
             {renderOperationCards(operations, 'Plan', evt.action_id)}
@@ -178,6 +280,8 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
         </>
     );
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -193,6 +297,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     const [sessionFilter, setSessionFilter] = useState('');
     const [query, setQuery] = useState('');
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(null);
 
     const loadEvents = useCallback(async (opts?: { silent?: boolean }) => {
         if (!opts?.silent) setIsLoading(true);
@@ -203,7 +308,9 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                 queryParts.push(`actor_role=${encodeURIComponent(roleFilter === 'system' ? 'system_owner' : roleFilter)}`);
             }
             if (intentFilter !== 'all') {
-                queryParts.push(`intent=${encodeURIComponent(intentFilter)}`);
+                // 'intake' is a UI alias — translate to the actual backend intent value
+                const backendIntent = intentFilter === 'intake' ? 'create_node_from_file' : intentFilter;
+                queryParts.push(`intent=${encodeURIComponent(backendIntent)}`);
             }
             if (sessionFilter.trim()) {
                 queryParts.push(`session_id=${encodeURIComponent(sessionFilter.trim())}`);
@@ -212,7 +319,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
             const nextEvents = Array.isArray(res?.events) ? res.events as ActionEvent[] : [];
             setEvents(nextEvents);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Action history could not be loaded');
+            setError(err instanceof Error ? err.message : 'Aktionsverlauf konnte nicht geladen werden.');
         } finally {
             if (!opts?.silent) setIsLoading(false);
         }
@@ -223,42 +330,38 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     }, [loadEvents]);
 
     useEffect(() => {
-        const handleActionStatus = () => {
-            void loadEvents({ silent: true });
-        };
-
+        const handleActionStatus = () => { void loadEvents({ silent: true }); };
         realtime.on('action_status', handleActionStatus);
         realtime.connect();
-        return () => {
-            realtime.off('action_status', handleActionStatus);
-        };
+        return () => { realtime.off('action_status', handleActionStatus); };
     }, [loadEvents]);
 
     const filteredEvents = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
         return events.filter((evt) => {
-            if (statusFilter !== 'all' && !groupStatusMap[statusFilter].includes(evt.status)) {
-                return false;
-            }
+            if (statusFilter !== 'all' && !groupStatusMap[statusFilter].includes(evt.status)) return false;
             if (normalizedQuery) {
                 const haystack = [
-                    evt.action_id,
                     evt.intent,
                     evt.actor_role,
-                    evt.session_id,
                     formatActionTitle(evt),
                     formatActionMessage(evt),
+                    getIntakeRoute(evt),
+                    getIntakeFileName(evt),
                 ]
                     .filter(Boolean)
                     .join(' ')
                     .toLowerCase();
-                if (!haystack.includes(normalizedQuery)) {
-                    return false;
-                }
+                if (!haystack.includes(normalizedQuery)) return false;
             }
             return true;
         });
     }, [events, query, statusFilter]);
+
+    const intakeBatches = useMemo(
+        () => (intentFilter === 'intake' ? groupIntakeBatches(filteredEvents) : []),
+        [intentFilter, filteredEvents]
+    );
 
     const summary = useMemo(() => ({
         total: events.length,
@@ -269,6 +372,8 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
     }), [events]);
 
     if (!pane) return null;
+
+    const showIntakeView = intentFilter === 'intake';
 
     return (
         <GlassPanel
@@ -291,6 +396,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
             paneId={id}
         >
             <div className="flex h-full flex-col gap-4">
+                {/* Summary tiles */}
                 <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
                     {[
                         { label: 'Gesamt', value: summary.total },
@@ -306,6 +412,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                     ))}
                 </div>
 
+                {/* Filter bar */}
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex flex-1 items-center gap-2">
                         <div className="relative flex-1">
@@ -327,66 +434,181 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {statusFilters.map((item) => (
+                        {!showIntakeView && statusFilters.map((item) => (
                             <button
                                 key={item.key}
                                 type="button"
                                 onClick={() => setStatusFilter(item.key)}
-                                className={`rounded-full border px-3 py-1.5 text-[11px] transition-colors ${
-                                    statusFilter === item.key
-                                        ? 'border-cyan-400/40 bg-cyan-500/15 text-cyan-300'
-                                        : 'border-white/10 text-white/55 hover:border-white/20 hover:text-white/75'
-                                }`}
+                                className={`rounded-full border px-3 py-1.5 text-[11px] transition-colors ${statusFilter === item.key
+                                    ? 'border-cyan-400/40 bg-cyan-500/15 text-cyan-300'
+                                    : 'border-white/10 text-white/55 hover:border-white/20 hover:text-white/75'
+                                    }`}
                             >
                                 {item.label}
                             </button>
                         ))}
-                        <div className="relative">
-                            <UserRound size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
-                            <select
-                                value={roleFilter}
-                                onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
-                                className="rounded-full border border-white/10 bg-white/[0.04] py-1.5 pl-8 pr-8 text-[11px] text-white/70 focus:border-cyan-400/40 focus:outline-none"
-                            >
-                                {roleFilters.map((item) => (
-                                    <option key={item.key} value={item.key}>
-                                        {item.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {!showIntakeView && (
+                            <div className="relative">
+                                <UserRound size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+                                <select
+                                    value={roleFilter}
+                                    onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
+                                    className="rounded-full border border-white/10 bg-white/[0.04] py-1.5 pl-8 pr-8 text-[11px] text-white/70 focus:border-cyan-400/40 focus:outline-none"
+                                >
+                                    {roleFilters.map((item) => (
+                                        <option key={item.key} value={item.key}>{item.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <select
                             value={intentFilter}
-                            onChange={(e) => setIntentFilter(e.target.value as IntentFilter)}
+                            onChange={(e) => {
+                                setIntentFilter(e.target.value as IntentFilter);
+                                setExpandedBatchKey(null);
+                            }}
                             className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 focus:border-cyan-400/40 focus:outline-none"
                         >
                             {intentFilters.map((item) => (
-                                <option key={item.key} value={item.key}>
-                                    {item.label}
-                                </option>
+                                <option key={item.key} value={item.key}>{item.label}</option>
                             ))}
                         </select>
-                        <input
-                            type="text"
-                            value={sessionFilter}
-                            onChange={(e) => setSessionFilter(e.target.value)}
-                            placeholder="Session-ID"
-                            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
-                        />
+                        {!showIntakeView && (
+                            <input
+                                type="text"
+                                value={sessionFilter}
+                                onChange={(e) => setSessionFilter(e.target.value)}
+                                placeholder="Session-ID"
+                                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
+                            />
+                        )}
                     </div>
                 </div>
 
+                {/* Event list */}
                 <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-2">
                     {isLoading ? (
                         <div className="flex h-full items-center justify-center text-white/50">
                             <Loader2 size={18} className="mr-2 animate-spin text-cyan-300" />
-                            Lade Aktionsverlauf...
+                            Lade Aktionsverlauf…
                         </div>
                     ) : error ? (
-                        <div className="flex h-full items-center justify-center text-sm text-red-300">
-                            {error}
-                        </div>
+                        <div className="flex h-full items-center justify-center text-sm text-red-300">{error}</div>
+                    ) : showIntakeView ? (
+                        // ── Intake batch view ──────────────────────────────────
+                        intakeBatches.length === 0 ? (
+                            <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-white/45">
+                                <Sparkles size={26} className="text-white/20" />
+                                <div className="text-sm">Noch keine Einordnungs-Batches</div>
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-white/25">
+                                    Dateien über Mycelium oder den Scanner einordnen
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {intakeBatches.map((batch) => {
+                                    const isExpanded = expandedBatchKey === batch.batchKey;
+                                    const allDone = batch.confirmed === batch.events.length;
+                                    const allRejected = batch.rejected === batch.events.length;
+                                    const summaryText = allDone
+                                        ? `${batch.confirmed} ${batch.confirmed === 1 ? 'Datei eingeordnet' : 'Dateien eingeordnet'}`
+                                        : allRejected
+                                            ? `${batch.rejected} ${batch.rejected === 1 ? 'Datei verworfen' : 'Dateien verworfen'}`
+                                            : [
+                                                batch.confirmed > 0 && `${batch.confirmed} eingeordnet`,
+                                                batch.rejected > 0 && `${batch.rejected} verworfen`,
+                                                batch.failed > 0 && `${batch.failed} fehlgeschlagen`,
+                                            ].filter(Boolean).join(' · ');
+
+                                    return (
+                                        <div
+                                            key={batch.batchKey}
+                                            className="rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] overflow-hidden"
+                                        >
+                                            {/* Batch header */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setExpandedBatchKey(isExpanded ? null : batch.batchKey)}
+                                                className="w-full flex items-start gap-3 p-3 text-left hover:bg-white/[0.03] transition-colors"
+                                            >
+                                                <Sparkles size={14} className="text-emerald-300 mt-0.5 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-300/70 font-medium">
+                                                            {formatBatchTime(batch.timestamp)}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] text-white/35">
+                                                                {batch.events.length} {batch.events.length === 1 ? 'Datei' : 'Dateien'}
+                                                            </span>
+                                                            <ChevronDown
+                                                                size={13}
+                                                                className={`text-white/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-1 text-sm text-white/75">{summaryText}</div>
+                                                    {batch.routes.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                                            {batch.routes.slice(0, 3).map((route) => (
+                                                                <span
+                                                                    key={route}
+                                                                    className="rounded-full border border-emerald-500/15 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-100/80"
+                                                                >
+                                                                    {route}
+                                                                </span>
+                                                            ))}
+                                                            {batch.routes.length > 3 && (
+                                                                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/40">
+                                                                    +{batch.routes.length - 3} weitere
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </button>
+
+                                            {/* Expanded: per-file rows */}
+                                            {isExpanded && (
+                                                <div className="border-t border-white/5 divide-y divide-white/5">
+                                                    {batch.events.map((evt) => {
+                                                        const fileName = getIntakeFileName(evt) ?? formatActionTitle(evt);
+                                                        const route = getIntakeRoute(evt);
+                                                        const isDone = evt.status === 'done';
+                                                        const isRejected = evt.status === 'rejected' || evt.status === 'expired';
+                                                        return (
+                                                            <div
+                                                                key={evt.action_id}
+                                                                className="flex items-start gap-3 px-4 py-2.5"
+                                                            >
+                                                                <div className="mt-0.5 shrink-0">
+                                                                    {isDone
+                                                                        ? <CheckCircle size={13} className="text-emerald-400" />
+                                                                        : isRejected
+                                                                            ? <XCircle size={13} className="text-white/30" />
+                                                                            : statusIconMap[evt.status]}
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="truncate text-[12px] text-white/80">{fileName}</div>
+                                                                    {route && (
+                                                                        <div className="truncate text-[11px] text-white/40 mt-0.5">{route}</div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="shrink-0 text-[10px] text-white/30">
+                                                                    {formatTime(evt.timestamp)}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )
                     ) : filteredEvents.length === 0 ? (
+                        // ── Flat list empty state ─────────────────────────────
                         <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-white/45">
                             <Activity size={26} className="text-white/20" />
                             <div className="text-sm">Keine passenden Aktionen gefunden</div>
@@ -395,6 +617,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                     ) : (
+                        // ── Flat list ─────────────────────────────────────────
                         <div className="space-y-2">
                             {filteredEvents.map((evt) => {
                                 const expanded = expandedId === evt.action_id;
@@ -425,19 +648,13 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </button>
                                                 </div>
                                                 {actionMessage && (
-                                                    <div className="mt-2 text-sm leading-snug text-white/65">
-                                                        {actionMessage}
-                                                    </div>
+                                                    <div className="mt-2 text-sm leading-snug text-white/65">{actionMessage}</div>
                                                 )}
                                                 {expanded && (
                                                     <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/60 md:grid-cols-2">
                                                         <div>
                                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Aktion</div>
-                                                            <div className="mt-1 break-all font-mono text-white/75">{evt.action_id}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Intent</div>
-                                                            <div className="mt-1 text-white/75">{evt.intent || '-'}</div>
+                                                            <div className="mt-1 text-white/75">{intentLabelMap[evt.intent ?? ''] || (evt.intent ?? '-')}</div>
                                                         </div>
                                                         <div>
                                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Rolle</div>
