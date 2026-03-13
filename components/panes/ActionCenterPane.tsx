@@ -12,7 +12,7 @@ import { toast } from '@/lib/toast';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
-type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'confirm_action' | 'undo';
+type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'confirm_action' | 'undo';
 
 // ─── Intake batch grouping ────────────────────────────────────────────────────
 
@@ -182,6 +182,8 @@ const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
     move_node: 'Datei verschieben',
     rename_node: 'Datei umbenennen',
+    create_note: 'Notiz erstellen',
+    create_draft: 'Entwurf erstellen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
     create_node_from_file: 'Datei einordnen',
@@ -209,6 +211,8 @@ const intentFilters: { key: IntentFilter; label: string }[] = [
     { key: 'create_folder', label: 'Ordner erstellen' },
     { key: 'move_node', label: 'Datei verschieben' },
     { key: 'rename_node', label: 'Datei umbenennen' },
+    { key: 'create_note', label: 'Notiz erstellen' },
+    { key: 'create_draft', label: 'Entwurf erstellen' },
     { key: 'confirm_action', label: 'Bestätigen' },
     { key: 'undo', label: 'Rückgängig' },
 ];

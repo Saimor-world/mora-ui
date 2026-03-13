@@ -155,8 +155,7 @@ describe('ChatPane agentic file ops', () => {
     });
 
     expect(mockStreamSend).not.toHaveBeenCalled();
-    expect(await screen.findByText('Aktionsplan pruefen')).toBeInTheDocument();
-    expect(screen.getByText('Ordner Q4 Marketing wird erstellt')).toBeInTheDocument();
+        expect(screen.getByText('Ordner Q4 Marketing wird erstellt')).toBeInTheDocument();
   });
 
   test('routes rename intent into pending confirmation instead of streaming', async () => {
@@ -211,4 +210,57 @@ describe('ChatPane agentic file ops', () => {
     expect(mockExecuteAgenticLoop).not.toHaveBeenCalled();
     expect(await screen.findByText(/Hier ist ein Statusupdate./i)).toBeInTheDocument();
   });
+
+  it('routes create_note intents through the agentic loop', async () => {
+    mockExecuteAgenticLoop.mockResolvedValueOnce({
+      final_state: 'S4_CONFIRM',
+      pending_confirmations: [{
+        tool_name: 'create_note',
+        confirmation_token: 'tok-note',
+        action_id: 'act-note',
+        risk_level: 'write',
+        what_will_change: "Notiz 'Launch Briefing' wird erstellt",
+        tool_params: {
+          summary: "Notiz 'Launch Briefing' wird erstellt",
+          operations: [{ type: 'create_note', title: 'Launch Briefing', destination_label: 'Winter Marketing', content_preview: 'Erste Stichpunkte' }],
+        },
+      }],
+    });
+
+    render(<ChatPane id="chat-main" />);
+    const textarea = screen.getByPlaceholderText(/Schreib Mora/i);
+    fireEvent.change(textarea, { target: { value: 'Erstelle eine Notiz Launch Briefing' } });
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, preventDefault: jest.fn() });
+
+    await waitFor(() => expect(mockExecuteAgenticLoop).toHaveBeenCalled());
+    expect(await screen.findByText("Notiz erstellen")).toBeInTheDocument();
+    expect(screen.getByText('Launch Briefing', { selector: 'span' })).toBeInTheDocument();
+  });
+
+  it('routes create_draft intents through the agentic loop', async () => {
+    mockExecuteAgenticLoop.mockResolvedValueOnce({
+      final_state: 'S4_CONFIRM',
+      pending_confirmations: [{
+        tool_name: 'create_draft',
+        confirmation_token: 'tok-draft',
+        action_id: 'act-draft',
+        risk_level: 'write',
+        what_will_change: "Entwurf 'Q4 Launch' wird erstellt",
+        tool_params: {
+          summary: "Entwurf 'Q4 Launch' wird erstellt",
+          operations: [{ type: 'create_draft', title: 'Q4 Launch', destination_label: 'Campaigns', content_preview: 'Erster Entwurf' }],
+        },
+      }],
+    });
+
+    render(<ChatPane id="chat-main" />);
+    const textarea = screen.getByPlaceholderText(/Schreib Mora/i);
+    fireEvent.change(textarea, { target: { value: 'Erstelle einen Entwurf Q4 Launch' } });
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, preventDefault: jest.fn() });
+
+    await waitFor(() => expect(mockExecuteAgenticLoop).toHaveBeenCalled());
+    expect(await screen.findByText("Entwurf erstellen")).toBeInTheDocument();
+    expect(screen.getByText('Q4 Launch', { selector: 'span' })).toBeInTheDocument();
+  });
+
 });

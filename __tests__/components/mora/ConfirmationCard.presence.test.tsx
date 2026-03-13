@@ -136,7 +136,7 @@ describe('ConfirmationCard presence trigger', () => {
     expect(screen.getByText('PDF-Dokument')).toBeInTheDocument();
     expect(screen.getByText('Finance > Eingaenge > Inbox')).toBeInTheDocument();
     expect(screen.getByText('Standard-Eingang fuer neue Dateien in dieser Firma')).toBeInTheDocument();
-    expect(screen.getByText(/hoch/i)).toBeInTheDocument();
+    expect(screen.getByText(/Hohe Sicherheit/i)).toBeInTheDocument();
     expect(screen.getByText(/86%/i)).toBeInTheDocument();
     expect(screen.getByText('firmenweite inbox')).toBeInTheDocument();
   });
@@ -150,7 +150,6 @@ describe('ConfirmationCard presence trigger', () => {
       />
     );
 
-    expect(screen.getByText('Aktionsplan pruefen')).toBeInTheDocument();
     expect(screen.getByText('1 Datei wird verschoben')).toBeInTheDocument();
     expect(screen.getByText('Datei verschieben')).toBeInTheDocument();
     expect(screen.getByText('Budget 2026.pdf')).toBeInTheDocument();
@@ -186,6 +185,52 @@ describe('ConfirmationCard presence trigger', () => {
     expect(screen.getByText('1 Datei wird umbenannt')).toBeInTheDocument();
     expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
     expect(screen.getByText('Budget 2027.pdf')).toBeInTheDocument();
+  });
+
+  it('renders create_note plans in a readable confirmation card', () => {
+    render(
+      <ConfirmationCard
+        action={{
+          tool_name: 'create_note',
+          risk_level: 'write',
+          confirmation_token: 'tok-note',
+          action_id: 'act-note',
+          params: {
+            summary: "Notiz 'Launch Briefing' wird erstellt",
+            operations: [{ type: 'create_note', title: 'Launch Briefing', destination_label: 'Winter Marketing', content_preview: 'Erste Stichpunkte' }],
+          },
+        } as any}
+        onConfirmed={jest.fn()}
+        onRejected={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Launch Briefing', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText(/Winter Marketing/)).toBeInTheDocument();
+    expect(screen.getByText(/Erste Stichpunkte/)).toBeInTheDocument();
+  });
+
+  it('renders create_draft plans in a readable confirmation card', () => {
+    render(
+      <ConfirmationCard
+        action={{
+          tool_name: 'create_draft',
+          risk_level: 'write',
+          confirmation_token: 'tok-draft',
+          action_id: 'act-draft',
+          params: {
+            summary: "Entwurf 'Q4 Launch' wird erstellt",
+            operations: [{ type: 'create_draft', title: 'Q4 Launch', destination_label: 'Campaigns', content_preview: 'Erster Entwurf' }],
+          },
+        } as any}
+        onConfirmed={jest.fn()}
+        onRejected={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Q4 Launch', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText(/Campaigns/)).toBeInTheDocument();
+    expect(screen.getByText(/Erster Entwurf/)).toBeInTheDocument();
   });
 
   it('uses the file-op confirm endpoint by default', async () => {

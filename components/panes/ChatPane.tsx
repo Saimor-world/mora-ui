@@ -119,6 +119,8 @@ function isLikelyFileOperationIntent(text: string): boolean {
         /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(ordner|folder)\b/,
         /\b(verschiebe|move)\b.*\b(datei|dateien|dokument|dokumente|node|nodes|file|files|ordner|folder)\b/,
         /\b(benenne|umbenennen|rename)\b.*\b(datei|dokument|node|file)\b/,
+        /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(notiz|note)\b/,
+        /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(entwurf|draft|briefing)\b/,
     ].some((pattern) => pattern.test(lower));
 }
 

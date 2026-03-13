@@ -42,8 +42,12 @@ interface PendingAction {
 }
 
 interface FileActionOperation {
-    type: 'create_folder' | 'move_node' | 'rename_node' | string;
+    type: 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | string;
     name?: string;
+    title?: string;
+    content?: string;
+    content_preview?: string;
+    destination_label?: string;
     node_id?: string;
     node_name?: string;
     new_name?: string;
@@ -80,6 +84,8 @@ const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
     move_node: 'Datei verschieben',
     rename_node: 'Datei umbenennen',
+    create_note: 'Notiz erstellen',
+    create_draft: 'Entwurf erstellen',
     create_node_from_file: 'Datei einordnen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
@@ -97,7 +103,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     const hasDispatchedPresenceRef = useRef<string | null>(null);
 
     const isIntake = variant === 'intake' || !!action.intake_context;
-    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node' || action.tool_name === 'rename_node';
+    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node' || action.tool_name === 'rename_node' || action.tool_name === 'create_note' || action.tool_name === 'create_draft';
     const intake = action.intake_context;
     const cardTargetId = useMemo(() => `confirmation-card-${action.action_id}`, [action.action_id]);
     const fileOperations = useMemo(() => getFileOperations(action.params), [action.params]);
@@ -111,6 +117,14 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     );
     const renameNodeOps = useMemo(
         () => fileOperations.filter((operation) => operation.type === 'rename_node'),
+        [fileOperations]
+    );
+    const createNoteOps = useMemo(
+        () => fileOperations.filter((operation) => operation.type === 'create_note'),
+        [fileOperations]
+    );
+    const createDraftOps = useMemo(
+        () => fileOperations.filter((operation) => operation.type === 'create_draft'),
         [fileOperations]
     );
     const filePlanSummary = useMemo(() => {
@@ -279,6 +293,18 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 {renameNodeOps.length} Datei{renameNodeOps.length === 1 ? '' : 'en'} umbenennen
                             </span>
                         )}
+                        {createNoteOps.length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-100">
+                                <FileCheck size={12} />
+                                {createNoteOps.length} Notiz{createNoteOps.length === 1 ? '' : 'en'} erstellen
+                            </span>
+                        )}
+                        {createDraftOps.length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-100">
+                                <FileCheck size={12} />
+                                {createDraftOps.length} Entwurf{createDraftOps.length === 1 ? '' : 'e'} erstellen
+                            </span>
+                        )}
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60">
                             <ShieldAlert size={12} />
                             Risiko {action.risk_level}
@@ -357,6 +383,54 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                             {operation.new_name || 'Unbenannt'}
                                         </span>
                                     </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {createNoteOps.map((operation, index) => (
+                            <div key={`create-note-${index}`} className="rounded-lg border border-amber-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-amber-200/70 mb-2">
+                                    <FileCheck size={14} />
+                                    <span>Notiz erstellen</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Titel</span>
+                                        <span className="text-right text-white/90 break-words">{operation.title || 'Unbenannt'}</span>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Ziel</span>
+                                        <span className="text-right text-white/75 break-words">{operation.destination_label || formatTargetLabel(operation.parent_folder_name, operation.parent_folder_id, 'Aktueller Kontext')}</span>
+                                    </div>
+                                    {operation.content_preview && (
+                                        <div className="rounded-md bg-white/5 border border-white/5 px-2.5 py-2 text-white/70 text-xs leading-relaxed">
+                                            {operation.content_preview}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {createDraftOps.map((operation, index) => (
+                            <div key={`create-draft-${index}`} className="rounded-lg border border-indigo-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-indigo-200/70 mb-2">
+                                    <FileCheck size={14} />
+                                    <span>Entwurf erstellen</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Titel</span>
+                                        <span className="text-right text-white/90 break-words">{operation.title || 'Unbenannt'}</span>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Ziel</span>
+                                        <span className="text-right text-white/75 break-words">{operation.destination_label || formatTargetLabel(operation.parent_folder_name, operation.parent_folder_id, 'Aktueller Kontext')}</span>
+                                    </div>
+                                    {operation.content_preview && (
+                                        <div className="rounded-md bg-white/5 border border-white/5 px-2.5 py-2 text-white/70 text-xs leading-relaxed">
+                                            {operation.content_preview}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
