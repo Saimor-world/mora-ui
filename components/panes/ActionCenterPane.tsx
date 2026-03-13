@@ -21,6 +21,7 @@ interface IntakeBatch {
     confirmed: number;
     rejected: number;
     failed: number;
+    pending: number;
     routes: string[];
 }
 
@@ -134,6 +135,7 @@ function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
                 confirmed: evts.filter((e) => e.status === 'done').length,
                 rejected: evts.filter((e) => e.status === 'rejected' || e.status === 'expired').length,
                 failed: evts.filter((e) => e.status === 'failed').length,
+                pending: evts.filter((e) => e.status === 'proposed' || e.status === 'running' || e.status === 'pending_confirmation').length,
                 routes,
             };
         })
@@ -491,8 +493,12 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                         <select
                             value={intentFilter}
                             onChange={(e) => {
-                                setIntentFilter(e.target.value as IntentFilter);
+                                const next = e.target.value as IntentFilter;
+                                setIntentFilter(next);
                                 setExpandedBatchKey(null);
+                                // Reset hidden status filter when entering intake view — otherwise a
+                                // previously-active status filter silently reduces visible batches
+                                if (next === 'intake') setStatusFilter('all');
                             }}
                             className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 focus:border-cyan-400/40 focus:outline-none"
                         >
@@ -537,15 +543,19 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                     const isExpanded = expandedBatchKey === batch.batchKey;
                                     const allDone = batch.confirmed === batch.events.length;
                                     const allRejected = batch.rejected === batch.events.length;
+                                    const allPending = batch.pending === batch.events.length;
                                     const summaryText = allDone
                                         ? `${batch.confirmed} ${batch.confirmed === 1 ? 'Datei eingeordnet' : 'Dateien eingeordnet'}`
                                         : allRejected
                                             ? `${batch.rejected} ${batch.rejected === 1 ? 'Datei verworfen' : 'Dateien verworfen'}`
-                                            : [
-                                                batch.confirmed > 0 && `${batch.confirmed} eingeordnet`,
-                                                batch.rejected > 0 && `${batch.rejected} verworfen`,
-                                                batch.failed > 0 && `${batch.failed} fehlgeschlagen`,
-                                            ].filter(Boolean).join(' · ');
+                                            : allPending
+                                                ? `${batch.pending} ${batch.pending === 1 ? 'Datei wartet auf Freigabe' : 'Dateien warten auf Freigabe'}`
+                                                : [
+                                                    batch.confirmed > 0 && `${batch.confirmed} eingeordnet`,
+                                                    batch.rejected > 0 && `${batch.rejected} verworfen`,
+                                                    batch.failed > 0 && `${batch.failed} fehlgeschlagen`,
+                                                    batch.pending > 0 && `${batch.pending} ausstehend`,
+                                                ].filter(Boolean).join(' · ');
 
                                     return (
                                         <div
