@@ -140,6 +140,15 @@ function formatActionMessage(evt: ActionEventLike): string | null {
     return base;
 }
 
+function buildExpandedDetails(evt: ActionEventLike): string[] {
+    const details = [
+        extractPayloadString(evt.payload, 'destination_summary') ? `Ziel: ${extractPayloadString(evt.payload, 'destination_summary')}` : null,
+        extractPayloadString(evt.payload, 'previous_content_preview') ? `Vorher: ${extractPayloadString(evt.payload, 'previous_content_preview')}` : null,
+        extractPayloadString(evt.payload, 'content_preview') ? `Neu: ${extractPayloadString(evt.payload, 'content_preview')}` : null,
+    ].filter(Boolean) as string[];
+    return details;
+}
+
 export const ActionTray: React.FC = () => {
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
     const openPane = usePaneStore((s) => s.openPane);
@@ -327,6 +336,9 @@ export const ActionTray: React.FC = () => {
                                                                     <span>{formatTime(evt.timestamp)}</span>
                                                                 </div>
                                                             )}
+                                                            {buildExpandedDetails(evt).map((detail) => (
+                                                                <div key={detail} className="leading-snug">{detail}</div>
+                                                            ))}
                                                         </div>
                                                     )}
                                                     {evt.error && (

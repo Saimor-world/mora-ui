@@ -47,6 +47,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     const searchRequestRef = useRef(0);
 
     const {
+        companies,
         departments,
         spacesByDepartment,
         nodesByCompany,
@@ -58,6 +59,11 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
 
     // Must be initialised after activeCompanyId is available (avoids TDZ)
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
+    const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const activeCompanyName = React.useMemo(
+        () => safeCompanies.find((company) => company.id === activeCompanyId)?.name || null,
+        [safeCompanies, activeCompanyId]
+    );
 
     // Flatten spaces and nodes for searching (Memoized to prevent infinite re-render loops)
     const allSpaces = React.useMemo(() => Object.values(spacesByDepartment).flat(), [spacesByDepartment]);
@@ -384,6 +390,22 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             </button>
                         )}
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+                        {activeCompanyName ? (
+                            <span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-cyan-200/85">
+                                Kontext: {activeCompanyName}
+                            </span>
+                        ) : (
+                            <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100/85">
+                                Firmenkontext fehlt
+                            </span>
+                        )}
+                        {query.trim() && activeCompanyName && (
+                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-white/55">
+                                Ergebnisse nur aus {activeCompanyName}
+                            </span>
+                        )}
+                    </div>
                     {(searchHint || isSearching) && (
                         <div className="mt-2 flex items-center gap-2 text-[11px]">
                             {searchHint && (
@@ -486,7 +508,10 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 <div className="p-3 border-t border-white/10">
                     <div className="flex items-center gap-2 text-xs text-white/30">
                         <Search size={12} className="text-emerald-400" />
-                        <span>{searchMode === 'mora' ? 'Lokal + Mora-Semantik' : 'Lokale Suche'}</span>
+                        <span>
+                            {searchMode === 'mora' ? 'Lokal + Mora-Semantik' : 'Lokale Suche'}
+                            {activeCompanyName ? ` · ${activeCompanyName}` : ''}
+                        </span>
                     </div>
                 </div>
             </div>

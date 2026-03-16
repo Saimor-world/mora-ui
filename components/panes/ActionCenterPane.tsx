@@ -386,9 +386,30 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
         ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
         : [];
     const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
-    if (operations.length === 0 && operationsExecuted.length === 0) return null;
+    const promotedDetails = [
+        typeof evt.payload?.destination_summary === 'string' && evt.payload.destination_summary
+            ? `Ziel: ${evt.payload.destination_summary}`
+            : null,
+        typeof evt.payload?.previous_content_preview === 'string' && evt.payload.previous_content_preview
+            ? `Vorher: ${evt.payload.previous_content_preview}`
+            : null,
+        typeof evt.payload?.content_preview === 'string' && evt.payload.content_preview
+            ? `Neu: ${evt.payload.content_preview}`
+            : null,
+    ].filter(Boolean) as string[];
+    if (operations.length === 0 && operationsExecuted.length === 0 && promotedDetails.length === 0) return null;
     return (
         <>
+            {promotedDetails.length > 0 && (
+                <div className="md:col-span-2">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Ergebnis</div>
+                    <div className="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 space-y-1">
+                        {promotedDetails.map((detail) => (
+                            <div key={detail} className="text-[11px] text-white/65">{detail}</div>
+                        ))}
+                    </div>
+                </div>
+            )}
             {renderOperationCards(operations, 'Plan', evt.action_id)}
             {renderOperationCards(operationsExecuted, 'Ergebnis', evt.action_id)}
         </>

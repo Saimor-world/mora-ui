@@ -551,6 +551,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (safeCompanies.length === 1) return safeCompanies[0].id;
         return null;
     }, [activeCompanyId, paneCompanyId, safeCompanies]);
+    const resolvedCompanyName = useMemo(() => {
+        if (!resolvedCompanyId) return null;
+        return safeCompanies.find((company) => company.id === resolvedCompanyId)?.name || null;
+    }, [resolvedCompanyId, safeCompanies]);
 
     const previousResolvedCompanyIdRef = useRef<string | null>(resolvedCompanyId);
 
@@ -1372,6 +1376,27 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                     )}
+
+                    <div className="flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 border-b border-white/5 bg-emerald-500/[0.04]">
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-100/85">
+                            {resolvedCompanyName ? `Firma: ${resolvedCompanyName}` : 'Firmenkontext fehlt'}
+                        </span>
+                        {paneCompanyId && (
+                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[11px] text-cyan-100/80">
+                                Fester Pane-Kontext
+                            </span>
+                        )}
+                        {globalSearch && (
+                            <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-100/80">
+                                Unternehmensweite Suche
+                            </span>
+                        )}
+                        {!globalSearch && searchQuery.trim() && (
+                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/60">
+                                Suchpfad: {currentPathLabel}
+                            </span>
+                        )}
+                    </div>
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
                     <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 md:px-6 py-2 md:py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">

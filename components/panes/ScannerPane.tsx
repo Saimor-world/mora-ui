@@ -75,8 +75,13 @@ interface RouteOverrideOption {
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const { activeCompanyId, user } = useMoraStore();  // Added user for autoExecuteActions
+    const { activeCompanyId, companies, user } = useMoraStore();  // Added user for autoExecuteActions
     const pane = getPane(id);
+    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const activeCompanyName = useMemo(
+        () => safeCompanies.find((company) => company.id === activeCompanyId)?.name || null,
+        [safeCompanies, activeCompanyId]
+    );
 
     const [files, setFiles] = useState<ScannedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -533,6 +538,14 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             resizable
         >
             <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5">
+                    <span className="rounded-full border border-purple-400/15 bg-purple-500/10 px-2.5 py-1 text-[11px] text-purple-100/85">
+                        {activeCompanyName ? `Einordnung für ${activeCompanyName}` : 'Firmenkontext fehlt'}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55">
+                        Globaler Drop landet in Mycelium, lokale Dropzonen bleiben im aktuellen Finder-Kontext.
+                    </span>
+                </div>
 
                 {/* Drop Zone */}
                 <div
@@ -695,7 +708,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                     type: 'finder',
                                                     title: 'Finder',
                                                     size: { width: 1280, height: 820 },
-                                                    ...(singleFolderId ? { data: { folderId: singleFolderId } } : {}),
+                                                    ...(singleFolderId ? { data: { folderId: singleFolderId, companyId: activeCompanyId || undefined } } : {}),
                                                 })}
                                                 className="text-[11px] text-emerald-300/70 hover:text-emerald-200 transition-colors shrink-0"
                                             >
@@ -730,7 +743,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                             type: 'finder',
                                                             title: 'Finder',
                                                             size: { width: 1280, height: 820 },
-                                                            data: { folderId: route.folderId },
+                                                            data: { folderId: route.folderId, companyId: activeCompanyId || undefined },
                                                         })}
                                                         className="text-emerald-300/70 hover:text-emerald-200 transition-colors"
                                                     >
@@ -780,9 +793,28 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                             )}
 
                                             {file.status === 'done' && file.result && (
-                                                <div className="flex items-start gap-2 mt-2 text-xs text-emerald-400">
-                                                    <CheckCircle size={12} className="mt-0.5 shrink-0" />
-                                                    <span>{file.result}</span>
+                                                <div className="mt-2 space-y-2">
+                                                    <div className="flex items-start gap-2 text-xs text-emerald-400">
+                                                        <CheckCircle size={12} className="mt-0.5 shrink-0" />
+                                                        <span>{file.result}</span>
+                                                    </div>
+                                                    {file.confirmedFolderId && (
+                                                        <button
+                                                            onClick={() => openPane({
+                                                                id: 'finder-main',
+                                                                type: 'finder',
+                                                                title: 'Finder',
+                                                                size: { width: 1280, height: 820 },
+                                                                data: {
+                                                                    folderId: file.confirmedFolderId,
+                                                                    companyId: activeCompanyId || undefined,
+                                                                },
+                                                            })}
+                                                            className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
+                                                        >
+                                                            Im Zielordner öffnen →
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
 
