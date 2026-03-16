@@ -100,7 +100,12 @@ function buildBaseMessage(evt: ActionEventLike): string | null {
         const resultSummary = extractPayloadString(r, 'result_summary') || extractPayloadString(r, 'summary');
         if (resultSummary) return resultSummary;
         const destSummary = extractPayloadString(r, 'destination_summary');
-        if (destSummary) return `Erstellt in ${destSummary}`;
+        if (destSummary) {
+            const intent = extractPayloadString(evt.payload, 'tool_name') || evt.intent || '';
+            return intent === 'update_note_content'
+                ? `Aktualisiert in ${destSummary}`
+                : `Erstellt in ${destSummary}`;
+        }
     }
 
     return statusLabelMap[evt.status] || null;

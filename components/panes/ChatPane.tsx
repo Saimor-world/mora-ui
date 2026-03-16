@@ -922,15 +922,23 @@ Was kann ich fuer dich tun?`,
                                                         ? { ...entry, pendingAction: undefined }
                                                         : entry
                                                 )));
+                                                const _toolName = msg.pendingAction?.tool_name || '';
+                                                const _destSummary =
+                                                    result?.destination_summary ||
+                                                    result?.result?.destination_summary;
                                                 const summary =
                                                     result?.result_summary ||
                                                     result?.result?.result_summary ||
                                                     result?.summary ||
                                                     result?.result?.summary ||
-                                                    (result?.destination_summary
-                                                        ? `Erstellt in ${result.destination_summary}`
+                                                    (_destSummary
+                                                        ? _toolName === 'update_note_content'
+                                                            ? `Inhalt aktualisiert in ${_destSummary}.`
+                                                            : `Erstellt in ${_destSummary}.`
                                                         : null) ||
-                                                    `${msg.pendingAction?.tool_name?.replace(/_/g, ' ')} erfolgreich ausgeführt.`;
+                                                    (_toolName === 'update_note_content'
+                                                        ? 'Inhalt erfolgreich aktualisiert.'
+                                                        : 'Aktion erfolgreich ausgeführt.');
                                                 setMessages(prev => [...prev, {
                                                     id: crypto.randomUUID(),
                                                     role: 'assistant',

@@ -57,6 +57,7 @@ interface FileActionOperation {
     content?: string;
     content_preview?: string;
     destination_label?: string;
+    destination_summary?: string;
     node_id?: string;
     node_name?: string;
     new_name?: string;
@@ -524,23 +525,27 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                     <div className="flex items-start justify-between gap-3">
                                         <span className="text-white/45">Ziel</span>
                                         <span className="text-right text-white/75 break-words">
-                                            {operation.destination_label || 'Aktueller Kontext'}
+                                            {operation.destination_label || operation.destination_summary || 'Aktueller Kontext'}
                                         </span>
                                     </div>
-                                    {operation.previous_content_preview && (
-                                        <div className="space-y-1">
-                                            <div className="text-white/45">Vorher</div>
-                                            <div className="rounded-md bg-white/5 border border-white/5 px-2.5 py-2 text-white/70 text-xs leading-relaxed">
-                                                {operation.previous_content_preview}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {operation.content_preview && (
-                                        <div className="space-y-1">
-                                            <div className="text-white/45">Neu</div>
-                                            <div className="rounded-md bg-white/5 border border-white/5 px-2.5 py-2 text-white/70 text-xs leading-relaxed">
-                                                {operation.content_preview}
-                                            </div>
+                                    {(operation.previous_content_preview || operation.content_preview) && (
+                                        <div className="rounded-md border border-white/10 bg-black/20 overflow-hidden">
+                                            {operation.previous_content_preview && (
+                                                <div className="px-2.5 py-2 border-b border-white/10">
+                                                    <div className="text-[10px] uppercase tracking-wider text-red-300/70 mb-1">Bisheriger Inhalt</div>
+                                                    <div className="text-xs leading-relaxed text-white/55 line-clamp-3">
+                                                        {operation.previous_content_preview}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {operation.content_preview && (
+                                                <div className="px-2.5 py-2">
+                                                    <div className="text-[10px] uppercase tracking-wider text-emerald-300/70 mb-1">Neuer Inhalt</div>
+                                                    <div className="text-xs leading-relaxed text-white/85">
+                                                        {operation.content_preview}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

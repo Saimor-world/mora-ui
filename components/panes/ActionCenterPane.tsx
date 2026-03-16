@@ -269,7 +269,10 @@ function formatActionMessage(evt: ActionEvent): string | null {
         if (typeof r.result_summary === 'string' && r.result_summary.trim()) return r.result_summary;
         if (typeof r.summary === 'string' && r.summary.trim()) return r.summary;
         if (typeof r.destination_summary === 'string' && r.destination_summary.trim()) {
-            return `Erstellt in ${r.destination_summary}`;
+            const intent = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : evt.intent;
+            return intent === 'update_note_content'
+                ? `Aktualisiert in ${r.destination_summary}`
+                : `Erstellt in ${r.destination_summary}`;
         }
     }
     return statusLabelMap[evt.status] || null;
