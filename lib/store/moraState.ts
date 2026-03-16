@@ -394,7 +394,14 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         let nextActive = activeCompanyId;
         const currentCompany = companies.find(c => c.id === nextActive);
 
-        if (mode === 'demo') {
+        if (isDemoTenant) {
+            const companyExists = nextActive ? companies.some((c) => c.id === nextActive) : false;
+            if (!companyExists) {
+                nextActive = mode === 'workspace'
+                    ? (hqCompanyId || demoCompanyId || companies[0]?.id || null)
+                    : (demoCompanyId || hqCompanyId || companies[0]?.id || null);
+            }
+        } else if (mode === 'demo') {
             // Demo mode REQUIRES a demo company.
             if (!currentCompany?.is_demo) {
                 nextActive = demoCompanyId || nextActive;
@@ -406,9 +413,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 if (currentCompany?.is_demo || !nextActive) {
                     nextActive = hqCompanyId || companies.find(c => !c.is_demo)?.id || nextActive;
                 }
-            } else if (isDemoTenant) {
-                // Demo users: workspace should showcase HQ (demo view stays demo)
-                nextActive = hqCompanyId || demoCompanyId || nextActive;
             } else if (tenantId) {
                 // Regular users are locked to their tenant's company
                 if (currentCompany?.tenant_id !== tenantId) {
@@ -648,9 +652,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const userRole = user?.role;
             const isDemoTenantContext = checkDemoTenant(user?.tenant_id);
             const includeDemo =
-                viewMode === 'demo'
-                || userRole === ROLE_SYSTEM_OWNER
-                || (viewMode === 'workspace' && isDemoTenantContext);
+                userRole === ROLE_SYSTEM_OWNER
+                || isDemoTenantContext
+                || viewMode === 'demo';
             let data = asArray<any>(await fetchCompanies(includeDemo));
 
             // Use DB name if available, only fallback to defaults if empty/null
@@ -683,18 +687,25 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             const demoCompany = data.find((c: any) => c.is_demo);
             const userCompany = data.find((c: any) => c.tenant_id === userTenant);
 
-            if (viewMode === 'demo') {
-                // DEMO MODE: Everyone (including System Owner) sees the Sandbox
-                nextActive = demoCompany?.id || currentActive;
+            const sessionCompanyId = user?.active_company_id;
+            const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
+            const sessionCompanyValid = sessionCompanyId && data.some((c: any) => c.id === sessionCompanyId);
+
+            if (isDemoTenant) {
+                if (stillValid) {
+                    nextActive = currentActive;
+                } else if (sessionCompanyValid) {
+                    nextActive = sessionCompanyId;
+                } else if (viewMode === 'workspace') {
+                    nextActive = hqCompany?.id || demoCompany?.id || data[0]?.id || null;
+                } else {
+                    nextActive = demoCompany?.id || hqCompany?.id || data[0]?.id || null;
+                }
             } else if (userRole === ROLE_SYSTEM_OWNER) {
                 // SYSTEM OWNER: Respect current selection (sub-account stepping), fallback to HQ
                 nextActive = currentActive ? (data.some((c: any) => c.id === currentActive) ? currentActive : (hqCompany?.id ?? null)) : (hqCompany?.id ?? null);
-            } else if (viewMode === 'workspace' && isDemoTenant) {
-                // Demo tenant workspace showcases HQ for comparison
-                nextActive = hqCompany?.id || demoCompany?.id || currentActive;
             } else {
                 // Regular users: Try to keep current, fallback to their tenant company
-                const stillValid = currentActive && data.some((c: any) => c.id === currentActive);
                 nextActive = stillValid ? currentActive : (userCompany?.id || data.find((c: any) => !c.is_demo)?.id || data[0]?.id || null);
             }
 

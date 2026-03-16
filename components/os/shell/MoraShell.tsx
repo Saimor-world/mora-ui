@@ -245,13 +245,13 @@ export const MoraShell: React.FC = () => {
 
     const filteredCompanies = React.useMemo(() => {
         if (!safeCompanies.length) return [];
+        if (tenantId === TENANT_DEMO) {
+            return safeCompanies.filter((c) => c.is_demo || c.tenant_id === TENANT_HQ);
+        }
         if (viewMode === 'demo') {
             return safeCompanies.filter((c) => c.is_demo);
         }
         if (viewMode === 'workspace') {
-            if (tenantId === TENANT_DEMO) {
-                return safeCompanies.filter((c) => c.tenant_id === TENANT_HQ);
-            }
             if (role === 'system_owner') {
                 return safeCompanies.filter((c) => !c.is_demo);
             }

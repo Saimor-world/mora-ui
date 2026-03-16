@@ -175,10 +175,12 @@ export function useAuthBootstrapper() {
                             : companies;
 
                         let allowedCompanies = companies;
-                        if (viewMode === 'demo') {
+                        if (isDemoTenant) {
+                            allowedCompanies = companies;
+                        } else if (viewMode === 'demo') {
                             allowedCompanies = demoCompanies;
                         } else if (viewMode === 'workspace') {
-                            allowedCompanies = isDemoTenant ? hqCompanies : tenantCompanies;
+                            allowedCompanies = tenantCompanies;
                         } else if (viewMode === 'owner' && role !== 'system_owner') {
                             allowedCompanies = tenantCompanies;
                         }
@@ -194,7 +196,13 @@ export function useAuthBootstrapper() {
                                 selectedCompanyId = found.id;
                             }
                         } else if (allowedCompanies.length > 0) {
-                            selectedCompanyId = allowedCompanies[0].id;
+                            if (isDemoTenant) {
+                                selectedCompanyId = viewMode === 'workspace'
+                                    ? (hqCompanies[0]?.id || demoCompanies[0]?.id || allowedCompanies[0].id)
+                                    : (demoCompanies[0]?.id || hqCompanies[0]?.id || allowedCompanies[0].id);
+                            } else {
+                                selectedCompanyId = allowedCompanies[0].id;
+                            }
                         }
 
                         if (selectedCompanyId) {
