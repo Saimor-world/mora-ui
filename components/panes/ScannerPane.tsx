@@ -18,6 +18,12 @@ interface IntakeContext {
     route_confidence_score?: number;
     route_confidence_label?: string;
     route_signals?: string[];
+    route_learning?: {
+        confirmed_count?: number;
+        corrected_count?: number;
+        rejected_count?: number;
+        strength?: number;
+    };
     target_company_name?: string;
     target_department_name?: string;
     target_space_name?: string;
@@ -379,7 +385,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const rejectedCount = files.filter(f => f.reviewOutcome === 'rejected').length;
     const activePendingAction = pendingActions[0] || null;
     const routeSummary = useMemo(() => {
-        const buckets = new Map<string, { count: number; category?: string; confidenceLabel?: string; confidenceScore?: number }>();
+        const buckets = new Map<string, { count: number; category?: string; confidenceLabel?: string; confidenceScore?: number; isLearned?: boolean }>();
         pendingActions.forEach((action) => {
             const label = buildRoutePath(action.intake_context);
             const current = buckets.get(label) || {
@@ -387,6 +393,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 category: action.intake_context?.suggested_category,
                 confidenceLabel: action.intake_context?.route_confidence_label,
                 confidenceScore: action.intake_context?.route_confidence_score,
+                isLearned: action.intake_context?.route_mode === 'learned_route',
             };
             current.count += 1;
             if (!current.category && action.intake_context?.suggested_category) {
@@ -397,6 +404,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             }
             if (typeof current.confidenceScore !== 'number' && typeof action.intake_context?.route_confidence_score === 'number') {
                 current.confidenceScore = action.intake_context.route_confidence_score;
+            }
+            // Any learned action in the bucket marks the whole bucket as learned
+            if (!current.isLearned && action.intake_context?.route_mode === 'learned_route') {
+                current.isLearned = true;
             }
             buckets.set(label, current);
         });
@@ -615,6 +626,11 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                     <div className="text-sm text-white/80 truncate">{route.path}</div>
                                                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/40 truncate">
                                                         {route.category && <span className="truncate">{route.category}</span>}
+                                                        {route.isLearned && (
+                                                            <span className="rounded-full border border-violet-400/20 bg-violet-500/12 px-1.5 py-0.5 text-violet-300/80">
+                                                                Gelernt
+                                                            </span>
+                                                        )}
                                                         {route.confidenceLabel && (
                                                             <span className={`rounded-full border px-1.5 py-0.5 ${
                                                                 route.confidenceLabel === 'hoch'

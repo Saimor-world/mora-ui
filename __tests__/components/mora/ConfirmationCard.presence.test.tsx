@@ -138,7 +138,8 @@ describe('ConfirmationCard presence trigger', () => {
     expect(screen.getByText('Standard-Eingang fuer neue Dateien in dieser Firma')).toBeInTheDocument();
     expect(screen.getByText(/Hohe Sicherheit/i)).toBeInTheDocument();
     expect(screen.getByText(/86%/i)).toBeInTheDocument();
-    expect(screen.getByText('firmenweite inbox')).toBeInTheDocument();
+    // Signal humanization V3: raw key → readable label inside "Erkannt anhand:" sentence
+    expect(screen.getByText(/Erkannt anhand:.*Firmenweite Inbox/i)).toBeInTheDocument();
   });
 
   it('renders readable file operation details', () => {

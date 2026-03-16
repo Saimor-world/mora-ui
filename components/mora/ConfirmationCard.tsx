@@ -14,6 +14,14 @@ import { corePost } from '@/lib/api/coreClient';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { toast } from 'sonner';
 
+interface RouteLearning {
+    confirmed_count?: number;
+    corrected_count?: number;
+    rejected_count?: number;
+    /** Integer heuristic score — treat as opaque, not a 0..1 percentage */
+    strength?: number;
+}
+
 interface IntakeContext {
     suggested_category?: string;
     suggested_location?: string;
@@ -24,6 +32,7 @@ interface IntakeContext {
     route_confidence_score?: number;
     route_confidence_label?: string;
     route_signals?: string[];
+    route_learning?: RouteLearning;
     target_company_name?: string;
     target_department_name?: string;
     target_space_name?: string;
@@ -79,7 +88,29 @@ const formatTargetLabel = (label?: string | null, id?: string | null, fallback =
     return label || shortenId(id) || fallback;
 };
 
-const formatSignal = (signal: string) => signal.replaceAll('_', ' ');
+/** Maps live Mycelium signal keys → human-readable German labels */
+const signalLabelMap: Record<string, string> = {
+    frueher_aehnlich_eingeordnet:   'Ähnliche Dateien eingeordnet',
+    manuell_korrigierter_verlauf:   'Manuell korrigierter Verlauf',
+    wiederkehrendes_dateimuster:    'Wiederkehrendes Dateimuster',
+    explizites_upload_ziel:         'Explizites Upload-Ziel',
+    ordner_im_aktuellen_kontext:    'Ordner im aktuellen Kontext',
+    firmenweite_inbox:              'Firmenweite Inbox',
+    neuer_dateieingang:             'Neuer Dateieingang',
+    standard_space:                 'Standard-Bereich',
+    keine_explizite_feinzuteilung:  'Kein spezifisches Ziel',
+    abteilungskontext:              'Abteilungskontext',
+    kein_zielordner_verfuegbar:     'Kein Zielordner verfügbar',
+    firmenkontext:                  'Unternehmenskontext',
+    struktur_noch_nicht_verfuegbar: 'Struktur noch nicht verfügbar',
+    manuell_gesetzt:                'Manuell festgelegt',
+};
+
+/** Returns a human-readable label for a signal key.
+ *  Known keys → German label. Unknown keys → Title Cased words (spaces). */
+const formatSignal = (signal: string): string =>
+    signalLabelMap[signal] ??
+    signal.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
@@ -577,7 +608,13 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         <div className="mt-2 rounded-lg border border-emerald-500/15 bg-black/20 p-3 space-y-1.5">
                             <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.18em] text-emerald-300/60">
                                 <span>Mycelium Routing</span>
-                                <div className="flex flex-wrap items-center justify-end gap-2">
+                                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                                    {/* Learned-route badge — semantically primary, visually restrained */}
+                                    {intake.route_mode === 'learned_route' && (
+                                        <span className="rounded-full border border-violet-400/25 bg-violet-500/15 px-2 py-0.5 normal-case tracking-normal text-[10px] text-violet-200">
+                                            Aus früheren Einordnungen gelernt
+                                        </span>
+                                    )}
                                     {intake.route_confidence_label && (
                                         <span className={`rounded-full border px-2 py-0.5 normal-case tracking-normal ${confidenceTone}`}>
                                             {confidenceLabel === 'hoch' ? 'Hohe' : confidenceLabel === 'niedrig' ? 'Niedrige' : 'Mittlere'} Sicherheit
@@ -589,9 +626,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                         </span>
                                     )}
                                     {intake.suggested_category && (
-                                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 normal-case tracking-normal text-white/60">
-                                        {intake.suggested_category}
-                                    </span>
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 normal-case tracking-normal text-white/60">
+                                            {intake.suggested_category}
+                                        </span>
                                     )}
                                 </div>
                             </div>
@@ -603,21 +640,45 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             )}
                             {intake.route_confidence_label === 'niedrig' && (
                                 <div className="rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">
-                                    Niedrige Sicherheit: Bitte Ziel und Begruendung besonders sorgfaeltig pruefen, bevor die Datei eingeordnet wird.
+                                    Niedrige Sicherheit: Bitte Ziel und Begründung besonders sorgfältig prüfen, bevor die Datei eingeordnet wird.
                                 </div>
                             )}
-                            {intake.route_signals && intake.route_signals.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                    {intake.route_signals.map((signal) => (
-                                        <span
-                                            key={signal}
-                                            className="px-2 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-100/80 border border-emerald-500/15"
-                                        >
-                                            {formatSignal(signal)}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
+                            {intake.route_signals && intake.route_signals.length > 0 && (() => {
+                                const labels = intake.route_signals.map(formatSignal);
+                                const MAX_INLINE = 3;
+                                const visible = labels.slice(0, MAX_INLINE);
+                                const overflow = labels.length - MAX_INLINE;
+                                const line = overflow > 0
+                                    ? `${visible.join(', ')} +${overflow} weitere`
+                                    : visible.join(', ');
+                                return (
+                                    <p className="text-[11px] text-white/45 leading-relaxed">
+                                        Erkannt anhand: {line}
+                                    </p>
+                                );
+                            })()}
+                            {/* Route learning copy — calm, operational, not anthropomorphic */}
+                            {intake.route_learning && (intake.route_learning.confirmed_count ?? 0) > 0 && (() => {
+                                const { confirmed_count = 0, corrected_count = 0 } = intake.route_learning!;
+                                const isThin = confirmed_count <= 1 && corrected_count === 0;
+                                return (
+                                    <div className="space-y-0.5">
+                                        <p className="text-[11px] text-white/45 leading-relaxed">
+                                            Dieser Pfad wurde bereits {confirmed_count}-mal bestätigt oder korrigiert.
+                                        </p>
+                                        {corrected_count > 0 && (
+                                            <p className="text-[11px] text-white/40 leading-relaxed">
+                                                Davon wurden {corrected_count}-mal manuelle Korrekturen übernommen.
+                                            </p>
+                                        )}
+                                        {isThin && (
+                                            <p className="text-[11px] text-white/35 italic leading-relaxed">
+                                                Die Einordnung ist noch im Aufbau.
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                         {intake.detected_patterns && intake.detected_patterns.length > 0 && (
                             <div className="flex gap-1.5 mt-2 flex-wrap">

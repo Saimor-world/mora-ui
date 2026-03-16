@@ -83,7 +83,7 @@ function formatActionTitle(evt: ActionEventLike): string {
     return intentLabelMap[intent] || intent.replace(/_/g, ' ');
 }
 
-function formatActionMessage(evt: ActionEventLike): string | null {
+function buildBaseMessage(evt: ActionEventLike): string | null {
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
 
@@ -104,6 +104,22 @@ function formatActionMessage(evt: ActionEventLike): string | null {
     }
 
     return statusLabelMap[evt.status] || null;
+}
+
+function formatActionMessage(evt: ActionEventLike): string | null {
+    const base = buildBaseMessage(evt);
+    if (!base) return null;
+
+    // Learned-route prefix for intake actions only
+    const isIntake = (extractPayloadString(evt.payload, 'tool_name') || evt.intent) === 'create_node_from_file';
+    if (isIntake) {
+        const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
+        const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
+        const routeMode = rs?.route_mode ?? ic?.route_mode;
+        if (routeMode === 'learned_route') return `Gelernt: ${base}`;
+    }
+
+    return base;
 }
 
 export const ActionTray: React.FC = () => {

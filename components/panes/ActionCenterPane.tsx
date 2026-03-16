@@ -72,6 +72,30 @@ function getPendingFileId(evt: ActionEvent): string | null {
     return typeof evt.payload?.file_id === 'string' ? evt.payload.file_id : null;
 }
 
+/** Returns the route_mode for an intake event.
+ *  Prefers route_suggestion (canonical routing semantics), falls back to intake_context. */
+function getIntakeRouteMode(evt: ActionEvent): string | null {
+    const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
+    if (typeof rs?.route_mode === 'string') return rs.route_mode;
+    const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
+    if (typeof ic?.route_mode === 'string') return ic.route_mode;
+    return null;
+}
+
+/** Returns a truncated route_reason for display in compact history rows (≤70 chars). */
+function getIntakeRouteReason(evt: ActionEvent): string | null {
+    const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
+    const icRaw = evt.payload?.intake_context as Record<string, unknown> | undefined;
+    const raw = (typeof rs?.route_reason === 'string' && rs.route_reason.trim())
+        ? rs.route_reason
+        : (typeof icRaw?.route_reason === 'string' && icRaw.route_reason.trim())
+            ? icRaw.route_reason
+            : null;
+    if (!raw) return null;
+    const MAX = 70;
+    return raw.length > MAX ? `${raw.slice(0, MAX)}…` : raw;
+}
+
 function canActOnPendingEvent(evt: ActionEvent): boolean {
     return evt.status === 'pending_confirmation' && !!getConfirmationToken(evt);
 }
@@ -714,9 +738,21 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                                             : statusIconMap[evt.status]}
                                                                 </div>
                                                                 <div className="min-w-0 flex-1">
-                                                                    <div className="truncate text-[12px] text-white/80">{fileName}</div>
+                                                                    <div className="flex items-center gap-1.5 truncate">
+                                                                        <span className="truncate text-[12px] text-white/80">{fileName}</span>
+                                                                        {getIntakeRouteMode(evt) === 'learned_route' && (
+                                                                            <span className="shrink-0 rounded-full border border-violet-400/20 bg-violet-500/12 px-1.5 py-0.5 text-[9px] text-violet-300/80">
+                                                                                Gelernt
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                     {route && (
                                                                         <div className="truncate text-[11px] text-white/40 mt-0.5">{route}</div>
+                                                                    )}
+                                                                    {getIntakeRouteReason(evt) && (
+                                                                        <div className="truncate text-[11px] text-white/30 mt-0.5 italic">
+                                                                            {getIntakeRouteReason(evt)}
+                                                                        </div>
                                                                     )}
                                                                     {isPending && (
                                                                         <div className="mt-2 flex flex-wrap gap-2">
