@@ -24,6 +24,7 @@ import { ChatPane } from '@/components/panes/ChatPane';
 // import { TimelinePane } from '@/components/panes/TimelinePane';
 import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { ActionCenterPane } from '@/components/panes/ActionCenterPane';
+import { WorkSessionPane } from '@/components/panes/WorkSessionPane';
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
@@ -76,6 +77,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <MoraHubPane id={pane.id} data={pane.data} />;
         case 'actions':
             return <ActionCenterPane id={pane.id} />;
+        case 'work-session':
+            return <WorkSessionPane id={pane.id} />;
         default:
             // Fallback for unknown types
             return <AppLibraryPane id={pane.id} />;

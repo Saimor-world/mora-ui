@@ -212,6 +212,7 @@ const intentLabelMap: Record<string, string> = {
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
     create_node_from_file: 'Datei einordnen',
+    work_session_plan: 'Arbeitsplan',
 };
 
 const groupStatusMap: Record<Exclude<ActionFilter, 'all'>, ActionStatus[]> = {

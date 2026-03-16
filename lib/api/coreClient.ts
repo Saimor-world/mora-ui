@@ -1244,3 +1244,80 @@ export async function getApiVersionPerformance(
         { isOptional: true }
     );
 }
+
+// ========== GROUNDED WORK SESSION (Core 0df2d28) ==========
+
+export interface WorkSessionScope {
+    company_id?: string;
+    view_level?: string;
+    active_entity_id?: string;
+    active_entity_type?: string;
+}
+
+export type WorkSessionStepStatus =
+    | 'pending'
+    | 'running'
+    | 'done'
+    | 'failed'
+    | 'pending_confirmation'
+    | 'skipped';
+
+export type WorkSessionPlanState =
+    | 'pending'
+    | 'running'
+    | 'done'
+    | 'failed'
+    | 'partial'
+    | 'waiting_confirmation';
+
+export interface WorkSessionStep {
+    step_id: string;
+    /** Semantic kind: 'read', 'search', 'create', 'update', 'move', 'delete', etc. */
+    kind: string;
+    title: string;
+    status: WorkSessionStepStatus;
+    confirm_required?: boolean;
+    tool_name?: string;
+    summary?: string;
+    why?: string;
+    output_summary?: string;
+}
+
+export interface WorkSessionStats {
+    total_steps: number;
+    read_steps: number;
+    write_steps: number;
+    planned_steps: number;
+    completed_steps: number;
+    pending_steps: number;
+    pending_confirmations: number;
+}
+
+export interface WorkSessionPlan {
+    plan_id: string;
+    session_id?: string;
+    state: WorkSessionPlanState;
+    title: string;
+    summary?: string;
+    scope: WorkSessionScope;
+    /** Aggregate step counters — use these instead of computing from steps[] */
+    stats?: WorkSessionStats;
+    steps: WorkSessionStep[];
+    /** step_ids currently awaiting user confirmation */
+    pending_confirmations?: string[];
+    mode?: string;
+    provider?: string;
+    transparency_note?: string;
+}
+
+/** Fetch a work-session plan by ID (GET /v3/work-session/plan/{id}) */
+export async function fetchWorkSessionPlan(planId: string): Promise<WorkSessionPlan | null> {
+    return coreGet(`/v3/work-session/plan/${encodeURIComponent(planId)}`, { isOptional: true });
+}
+
+/** Create / start a work-session plan (POST /v3/work-session/plan) */
+export async function postWorkSessionPlan(
+    params: Record<string, unknown>
+): Promise<WorkSessionPlan | null> {
+    return corePost('/v3/work-session/plan', params, { isOptional: true });
+}

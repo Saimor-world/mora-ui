@@ -35,6 +35,7 @@ const intentLabelMap: Record<string, string> = {
     create_node_from_file: 'Datei einordnen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
+    work_session_plan: 'Arbeitsplan',
 };
 
 const formatTime = (ts?: string): string => {
