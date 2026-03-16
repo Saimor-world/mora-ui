@@ -182,8 +182,15 @@ export const requestCreateNodeFromFile = async (
     });
 };
 
-export const confirmCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {
-    return corePost(`/v3/files/${fileId}/confirm-node`, { confirmation_token: confirmationToken });
+export const confirmCreateNodeFromFile = async (
+    fileId: string,
+    confirmationToken: string,
+    options?: { folderId?: string }
+): Promise<any> => {
+    return corePost(`/v3/files/${fileId}/confirm-node`, {
+        confirmation_token: confirmationToken,
+        folder_id: options?.folderId,
+    });
 };
 
 export const rejectCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {

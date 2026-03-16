@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
+import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient';
 import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
@@ -31,6 +32,7 @@ interface PendingAction {
     action_id: string;
     file_id: string;
     file_name?: string;
+    folder_id?: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
     intake_context?: IntakeContext;
@@ -55,6 +57,14 @@ interface IntakeSeedPayload {
     initialFiles?: File[];
 }
 
+interface RouteOverrideOption {
+    folderId: string;
+    label: string;
+    departmentName?: string | null;
+    spaceName?: string | null;
+    folderName?: string | null;
+}
+
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const { activeCompanyId, user } = useMoraStore();  // Added user for autoExecuteActions
@@ -65,6 +75,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const [stats, setStats] = useState<SystemStats | null>(null);
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+    const [routeOptions, setRouteOptions] = useState<RouteOverrideOption[]>([]);
     const seededBatchIdsRef = React.useRef<Set<string>>(new Set());
     const intakeSeed = (pane?.data || {}) as IntakeSeedPayload;
 
@@ -106,6 +117,47 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         });
         seededBatchIdsRef.current.add(batchId);
     }, [intakeSeed.batchId, intakeSeed.initialFiles]);
+
+    React.useEffect(() => {
+        let cancelled = false;
+
+        const loadRouteOptions = async () => {
+            if (!activeCompanyId) {
+                setRouteOptions([]);
+                return;
+            }
+
+            try {
+                const folders = await fetchFoldersByCompany(activeCompanyId);
+                const options = await Promise.all(
+                    folders.map(async (folder) => {
+                        const context = await fetchFolderContext(folder.id);
+                        const departmentName = context?.path?.department?.name || null;
+                        const spaceName = context?.path?.space?.name || null;
+                        const folderName = context?.folder?.name || folder.name;
+                        return {
+                            folderId: folder.id,
+                            label: [departmentName, spaceName, folderName].filter(Boolean).join(' > ') || folderName || folder.id,
+                            departmentName,
+                            spaceName,
+                            folderName,
+                        } as RouteOverrideOption;
+                    })
+                );
+                if (!cancelled) {
+                    setRouteOptions(options.filter((option) => !!option.folderId).sort((a, b) => a.label.localeCompare(b.label, 'de')));
+                }
+            } catch (error) {
+                console.error('Failed to load route options', error);
+                if (!cancelled) setRouteOptions([]);
+            }
+        };
+
+        void loadRouteOptions();
+        return () => {
+            cancelled = true;
+        };
+    }, [activeCompanyId]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -175,7 +227,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     }, []);
 
     const confirmPendingAction = useCallback(async (active: PendingAction) => {
-        await confirmCreateNodeFromFile(active.file_id, active.confirmation_token);
+        await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
         markFileOutcome(active.file_id, 'confirmed', 'Eingeordnet');
         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
         return active;
@@ -233,8 +285,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     action_id: response.action_id || `file_${uploaded.id}`,
                     file_id: uploaded.id,
                     file_name: uploaded.filename,
+                    folder_id: response.route_suggestion?.target_folder_id || response.folder_id,
                     confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
-                    confirm_payload: { confirmation_token: response.confirmation_token },
+                    confirm_payload: {
+                        confirmation_token: response.confirmation_token,
+                        folder_id: response.route_suggestion?.target_folder_id || response.folder_id,
+                    },
                     intake_context: response.intake_context,
                 };
                 setPendingActions(prev => {
@@ -323,6 +379,37 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             .map(([path, meta]) => ({ path, ...meta }))
             .sort((a, b) => (a.confidenceScore ?? buildConfidenceWeight({ route_confidence_label: a.confidenceLabel })) - (b.confidenceScore ?? buildConfidenceWeight({ route_confidence_label: b.confidenceLabel })));
     }, [pendingActions]);
+
+    const applyRouteOverride = useCallback((actionId: string, folderId: string) => {
+        const option = routeOptions.find((entry) => entry.folderId === folderId);
+        if (!option) return;
+
+        setPendingActions((prev) =>
+            prev.map((action) => {
+                if (action.action_id !== actionId) return action;
+                return {
+                    ...action,
+                    folder_id: folderId,
+                    confirm_payload: {
+                        confirmation_token: action.confirmation_token,
+                        folder_id: folderId,
+                    },
+                    intake_context: {
+                        ...action.intake_context,
+                        suggested_location: option.label,
+                        route_mode: 'manual_override',
+                        route_reason: 'Ziel im Intake manuell angepasst',
+                        route_confidence_label: 'hoch',
+                        route_confidence_score: 0.98,
+                        route_signals: ['manuell_gesetzt'],
+                        target_department_name: option.departmentName || undefined,
+                        target_space_name: option.spaceName || undefined,
+                        target_folder_name: option.folderName || undefined,
+                    },
+                };
+            })
+        );
+    }, [routeOptions]);
 
     const batchResultSummary = useMemo(() => {
         const reviewed = files.filter((file) => file.reviewOutcome);
@@ -671,6 +758,30 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         {activePendingAction.intake_context?.route_confidence_label && (
                             <div className="px-1 text-[11px] text-white/45">
                                 {buildConfidenceText(activePendingAction.intake_context)}
+                            </div>
+                        )}
+                        {routeOptions.length > 0 && (
+                            <div className="rounded-xl border border-white/8 bg-black/15 px-3 py-3 space-y-2">
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-white/40">
+                                    Ziel korrigieren
+                                </div>
+                                <p className="text-xs text-white/55 leading-relaxed">
+                                    Falls Moras Vorschlag nicht passt, waehle vor der Freigabe den richtigen Zielordner.
+                                </p>
+                                <select
+                                    value={activePendingAction.folder_id || ''}
+                                    onChange={(event) => applyRouteOverride(activePendingAction.action_id, event.target.value)}
+                                    className="w-full rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-sm text-white/80 outline-none focus:border-amber-400/40"
+                                >
+                                    <option value="" disabled>
+                                        Zielordner auswaehlen
+                                    </option>
+                                    {routeOptions.map((option) => (
+                                        <option key={option.folderId} value={option.folderId}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         )}
                         <ConfirmationCard

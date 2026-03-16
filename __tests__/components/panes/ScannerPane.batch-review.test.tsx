@@ -14,6 +14,8 @@ const mockUploadCompanyFile = jest.fn();
 const mockRequestCreateNodeFromFile = jest.fn();
 const mockConfirmCreateNodeFromFile = jest.fn();
 const mockRejectCreateNodeFromFile = jest.fn();
+const mockFetchFoldersByCompany = jest.fn();
+const mockFetchFolderContext = jest.fn();
 
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
@@ -63,6 +65,8 @@ jest.mock('framer-motion', () => ({
 
 jest.mock('@/lib/api/coreClient', () => ({
     fetchSystemStats: jest.fn().mockResolvedValue(null),
+    fetchFoldersByCompany: (...args: any[]) => mockFetchFoldersByCompany(...args),
+    fetchFolderContext: (...args: any[]) => mockFetchFolderContext(...args),
 }));
 
 jest.mock('@/lib/toast', () => ({
@@ -95,6 +99,28 @@ import { ScannerPane } from '@/components/panes/ScannerPane';
 beforeEach(() => {
     jest.clearAllMocks();
     mockConfirmCreateNodeFromFile.mockResolvedValue({ status: 'executed' });
+    mockFetchFoldersByCompany.mockResolvedValue([
+        { id: 'folder-marketing', name: 'Marketing' },
+        { id: 'folder-assets', name: 'Assets' },
+    ]);
+    mockFetchFolderContext.mockImplementation(async (folderId: string) => {
+        if (folderId === 'folder-marketing') {
+            return {
+                folder: { id: 'folder-marketing', name: 'Marketing' },
+                path: {
+                    department: { id: 'dept-1', name: 'Marketing' },
+                    space: { id: 'space-1', name: 'Kampagnen' },
+                },
+            };
+        }
+        return {
+            folder: { id: 'folder-assets', name: 'Assets' },
+            path: {
+                department: { id: 'dept-1', name: 'Marketing' },
+                space: { id: 'space-2', name: 'Assets' },
+            },
+        };
+    });
     mockUploadCompanyFile
         .mockResolvedValueOnce({ id: 'file-1', company_id: 'company-1', filename: 'brief-one.pdf' })
         .mockResolvedValueOnce({ id: 'file-2', company_id: 'company-1', filename: 'brief-two.pdf' });
@@ -170,7 +196,7 @@ describe('ScannerPane batch review', () => {
         expect(screen.getAllByText(/Eingeordnet/i).length).toBeGreaterThan(0);
         expect(screen.getAllByText(/Verworfen/i).length).toBeGreaterThan(0);
         expect(screen.getByText(/Batch abgeschlossen/i)).toBeInTheDocument();
-        expect(screen.getByText(/1 bestaetigt, 1 verworfen/i)).toBeInTheDocument();
+        expect(screen.getByText(/1 eingeordnet, 1 verworfen/i)).toBeInTheDocument();
     });
 
     test('bulk confirm processes the whole review queue', async () => {
@@ -188,5 +214,20 @@ describe('ScannerPane batch review', () => {
 
         expect(mockConfirmCreateNodeFromFile).toHaveBeenCalledTimes(2);
         expect(screen.getAllByText(/Eingeordnet/i).length).toBeGreaterThanOrEqual(2);
+    });
+
+    test('allows correcting the target folder before confirmation', async () => {
+        render(<ScannerPane id="scanner-main" />);
+
+        fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+
+        expect(await screen.findByText(/1 Datei wartet auf Freigabe|2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
+
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'folder-assets' } });
+        fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
+
+        await waitFor(() => {
+            expect(mockConfirmCreateNodeFromFile).toHaveBeenCalledWith('file-1', 'token-1', { folderId: 'folder-assets' });
+        });
     });
 });
