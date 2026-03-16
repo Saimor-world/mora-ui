@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
-import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
+import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -49,6 +49,8 @@ interface ScannedFile {
     fileRecordId?: string;
     reviewOutcome?: 'confirmed' | 'rejected';
     intakeContext?: IntakeContext;
+    /** Folder where the file was ultimately routed after confirmation */
+    confirmedFolderId?: string;
 }
 
 interface IntakeSeedPayload {
@@ -218,17 +220,40 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         return base;
     };
 
-    const markFileOutcome = useCallback((fileId: string, outcome: 'confirmed' | 'rejected', result: string) => {
+    const markFileOutcome = useCallback((
+        fileId: string,
+        outcome: 'confirmed' | 'rejected',
+        result: string,
+        confirmedFolderId?: string,
+    ) => {
         setFiles(prev => prev.map(f =>
             f.fileRecordId === fileId
-                ? { ...f, status: 'done', reviewOutcome: outcome, result }
+                ? { ...f, status: 'done', reviewOutcome: outcome, result, ...(confirmedFolderId ? { confirmedFolderId } : {}) }
                 : f
         ));
     }, []);
 
     const confirmPendingAction = useCallback(async (active: PendingAction) => {
-        await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
-        markFileOutcome(active.file_id, 'confirmed', 'Eingeordnet');
+        const result = await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
+
+        // Priority chain: direct → destination.folder_id → result.destination.folder_id → getFileNode fallback
+        let confirmedFolderId: string | undefined =
+            result?.folder_id ||
+            result?.destination?.folder_id ||
+            result?.result?.destination?.folder_id;
+
+        if (!confirmedFolderId) {
+            try {
+                const nodeStatus = await getFileNode(active.file_id);
+                confirmedFolderId = nodeStatus?.folder_id;
+            } catch { /* silent — destination unknown is fine */ }
+        }
+
+        const resultText = confirmedFolderId
+            ? `Eingeordnet → ${active.intake_context?.target_folder_name || confirmedFolderId}`
+            : 'Eingeordnet';
+
+        markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId);
         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
         return active;
     }, [markFileOutcome]);
@@ -415,12 +440,18 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         const reviewed = files.filter((file) => file.reviewOutcome);
         if (reviewed.length === 0 || pendingActions.length > 0) return null;
 
-        const buckets = new Map<string, { count: number; confirmed: number; rejected: number }>();
+        const buckets = new Map<string, { count: number; confirmed: number; rejected: number; folderId?: string }>();
         reviewed.forEach((file) => {
             const label = buildRoutePath(file.intakeContext);
             const current = buckets.get(label) || { count: 0, confirmed: 0, rejected: 0 };
             current.count += 1;
-            if (file.reviewOutcome === 'confirmed') current.confirmed += 1;
+            if (file.reviewOutcome === 'confirmed') {
+                current.confirmed += 1;
+                // Keep the first known folderId per route bucket
+                if (!current.folderId && file.confirmedFolderId) {
+                    current.folderId = file.confirmedFolderId;
+                }
+            }
             if (file.reviewOutcome === 'rejected') current.rejected += 1;
             buckets.set(label, current);
         });
@@ -636,12 +667,26 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     <div className="text-xs uppercase tracking-[0.2em] text-emerald-300/70 font-bold">
                                         Batch abgeschlossen
                                     </div>
-                                    <button
-                                        onClick={() => openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } })}
-                                        className="text-[11px] text-emerald-300/70 hover:text-emerald-200 transition-colors shrink-0"
-                                    >
-                                        Finder öffnen →
-                                    </button>
+                                    {(() => {
+                                        const singleFolderId =
+                                            batchResultSummary.routes.length === 1
+                                                ? batchResultSummary.routes[0].folderId
+                                                : undefined;
+                                        return (
+                                            <button
+                                                onClick={() => openPane({
+                                                    id: 'finder-main',
+                                                    type: 'finder',
+                                                    title: 'Finder',
+                                                    size: { width: 1280, height: 820 },
+                                                    ...(singleFolderId ? { data: { folderId: singleFolderId } } : {}),
+                                                })}
+                                                className="text-[11px] text-emerald-300/70 hover:text-emerald-200 transition-colors shrink-0"
+                                            >
+                                                {singleFolderId ? 'Im Zielordner öffnen →' : 'Finder öffnen →'}
+                                            </button>
+                                        );
+                                    })()}
                                 </div>
                                 <p className="text-sm text-white/75 mt-1 leading-relaxed">
                                     {batchResultSummary.confirmed} eingeordnet, {batchResultSummary.rejected} verworfen.
@@ -661,6 +706,20 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                     <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-white/60">
                                                         {route.rejected} verworfen
                                                     </span>
+                                                )}
+                                                {route.folderId && (
+                                                    <button
+                                                        onClick={() => openPane({
+                                                            id: 'finder-main',
+                                                            type: 'finder',
+                                                            title: 'Finder',
+                                                            size: { width: 1280, height: 820 },
+                                                            data: { folderId: route.folderId },
+                                                        })}
+                                                        className="text-emerald-300/70 hover:text-emerald-200 transition-colors"
+                                                    >
+                                                        Öffnen →
+                                                    </button>
                                                 )}
                                             </div>
                                         </div>
@@ -787,11 +846,27 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         <ConfirmationCard
                             action={activePendingAction}
                             variant="intake"
-                        onConfirmed={() => {
+                        onConfirmed={async (result) => {
                             const active = activePendingAction;
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
-                                markFileOutcome(active.file_id, 'confirmed', 'Eingeordnet');
+                                let confirmedFolderId: string | undefined =
+                                    result?.folder_id ||
+                                    result?.destination?.folder_id ||
+                                    result?.result?.destination?.folder_id;
+
+                                if (!confirmedFolderId) {
+                                    try {
+                                        const nodeStatus = await getFileNode(active.file_id);
+                                        confirmedFolderId = nodeStatus?.folder_id;
+                                    } catch { /* silent */ }
+                                }
+
+                                const resultText = confirmedFolderId
+                                    ? `Eingeordnet → ${active.intake_context?.target_folder_name || confirmedFolderId}`
+                                    : 'Eingeordnet';
+
+                                markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId);
                             }
                             toast.success('Datei eingeordnet');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
