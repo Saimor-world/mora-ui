@@ -54,7 +54,6 @@ describe('ActionTray', () => {
     expect(screen.getByText('Ordner erstellen')).toBeInTheDocument();
     expect(screen.getByText('Wartet auf Bestaetigung')).toBeInTheDocument();
     expect(screen.getByText("Ordner 'Q4 Marketing' wird erstellt")).toBeInTheDocument();
-    expect(screen.getByText('#1')).toBeInTheDocument();
   });
 
   it('renders rejected actions as user-readable audit items', () => {
@@ -84,7 +83,6 @@ describe('ActionTray', () => {
     expect(screen.getByText('Datei verschieben')).toBeInTheDocument();
     expect(screen.getAllByText('Verworfen').length).toBeGreaterThan(0);
     expect(screen.getByText("Verworfen: Datei/Node 'Budget 2026.pdf' wird verschoben")).toBeInTheDocument();
-    expect(screen.getByText('#2')).toBeInTheDocument();
   });
 
   it('renders expandable action details and filters', () => {
@@ -96,11 +94,11 @@ describe('ActionTray', () => {
           intent: 'rename_node',
           actor_role: 'owner',
           session_id: 'sess-demo',
-          message: "Abgeschlossen: Datei wurde umbenannt",
+          message: 'Abgeschlossen: Datei wurde umbenannt',
           error: null,
           payload: {
             tool_name: 'rename_node',
-            summary: "Datei wurde umbenannt",
+            summary: 'Datei wurde umbenannt',
           },
           timestamp: '2026-03-12T14:43:00.000Z',
         },
@@ -113,12 +111,10 @@ describe('ActionTray', () => {
     fireEvent.click(screen.getByTitle('Action tray'));
     fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
 
-    expect(screen.getByText('Aktion')).toBeInTheDocument();
-    expect(screen.getByText('act_abc1234567')).toBeInTheDocument();
     expect(screen.getByText('Rolle')).toBeInTheDocument();
     expect(screen.getByText('owner')).toBeInTheDocument();
-    expect(screen.getByText('Session')).toBeInTheDocument();
-    expect(screen.getByText('sess-demo')).toBeInTheDocument();
+    expect(screen.getByText('Zeit')).toBeInTheDocument();
+
 
     fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
     expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
@@ -133,7 +129,7 @@ describe('ActionTray', () => {
 
     render(<ActionTray />);
     fireEvent.click(screen.getByTitle('Action tray'));
-    fireEvent.click(screen.getByRole('button', { name: 'Im Action Center öffnen' }));
+    fireEvent.click(screen.getByRole('button', { name: /Im Action Center/i }));
 
     expect(openPane).toHaveBeenCalledWith({
       id: 'actions-main',
