@@ -129,6 +129,13 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
     const contextCompanyId = activeCompanyId || undefined;
     const contextDepartmentId = activeDepartmentId || undefined;
 
+    useEffect(() => {
+        setEvents([]);
+        setExpandedId(null);
+        setPendingAction(null);
+        setError(null);
+    }, [contextCompanyId, contextDepartmentId, scope]);
+
     const fetchEvents = useCallback(async () => {
         if (!contextCompanyId) {
             setError("Missing company context.");

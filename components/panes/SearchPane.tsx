@@ -56,6 +56,9 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         setViewLevel
     } = useMoraStore();
 
+    // Must be initialised after activeCompanyId is available (avoids TDZ)
+    const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
+
     // Flatten spaces and nodes for searching (Memoized to prevent infinite re-render loops)
     const allSpaces = React.useMemo(() => Object.values(spacesByDepartment).flat(), [spacesByDepartment]);
     const allNodes = React.useMemo(() => {
@@ -81,6 +84,17 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
             setQuery(initialQuery.trim());
         }
     }, [pane?.data?.query]);
+
+    useEffect(() => {
+        if (previousCompanyIdRef.current === activeCompanyId) return;
+        previousCompanyIdRef.current = activeCompanyId;
+        searchRequestRef.current += 1;
+        setResults([]);
+        setSearchMode(null);
+        setSearchHint(null);
+        setSelectedIndex(0);
+        setIsSearching(false);
+    }, [activeCompanyId]);
 
     const mapKeywordResult = React.useCallback((raw: any): SearchResult | null => {
         const type = String(raw?.type || raw?.result_type || '').toLowerCase();
@@ -295,7 +309,10 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     type: 'finder',
                     title: result.title,
                     size: { width: 900, height: 640 },
-                    data: { folderId: result.folderId || result.id }
+                    data: {
+                        folderId: result.folderId || result.id,
+                        companyId: activeCompanyId || undefined,
+                    }
                 });
                 removePane(id);
                 break;
@@ -307,7 +324,10 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                         type: 'finder',
                         title: result.title,
                         size: { width: 900, height: 640 },
-                        data: { folderId: result.folderId }
+                        data: {
+                            folderId: result.folderId,
+                            companyId: activeCompanyId || undefined,
+                        }
                     });
                 }
                 window.dispatchEvent(new CustomEvent('open-node-detail', { detail: { nodeId: result.nodeId || result.id } }));

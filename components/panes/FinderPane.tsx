@@ -546,15 +546,32 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const [isDeepView, setIsDeepView] = useState(false);
 
     const resolvedCompanyId = useMemo(() => {
-        if (activeCompanyId) return activeCompanyId;
         if (paneCompanyId) return paneCompanyId;
+        if (activeCompanyId) return activeCompanyId;
         if (safeCompanies.length === 1) return safeCompanies[0].id;
         return null;
     }, [activeCompanyId, paneCompanyId, safeCompanies]);
 
+    const previousResolvedCompanyIdRef = useRef<string | null>(resolvedCompanyId);
+
     useEffect(() => {
         contextCacheRef.current.clear();
     }, [resolvedCompanyId]);
+
+    useEffect(() => {
+        if (previousResolvedCompanyIdRef.current === resolvedCompanyId) return;
+        previousResolvedCompanyIdRef.current = resolvedCompanyId;
+        contextCacheRef.current.clear();
+        appliedStartKeyRef.current = '';
+        setSelectedNodeId(null);
+        setFolderContext(null);
+        setContextHint(null);
+        setBreadcrumbs([]);
+        setSearchQuery(initialQuery || '');
+        if (!paneCompanyId) {
+            resetNavigationRoot(null);
+        }
+    }, [resolvedCompanyId, paneCompanyId, resetNavigationRoot, initialQuery]);
 
     const currentPathLabel = useMemo(() => {
         const parts: string[] = [];
@@ -908,7 +925,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const appliedStartKeyRef = useRef<string>('');
     useEffect(() => {
         if (!treeData?.length) return;
-        const startKey = `${startFolderId || ''}|${startSpaceId || ''}|${departmentId || ''}`;
+        const startKey = `${resolvedCompanyId || ''}|${startFolderId || ''}|${startSpaceId || ''}|${departmentId || ''}`;
         if (appliedStartKeyRef.current === startKey) return;
 
         // Priority: startFolderId > startSpaceId > departmentId > root
@@ -928,7 +945,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             resetNavigationRoot(departmentId);
         }
         appliedStartKeyRef.current = startKey;
-    }, [treeData, startFolderId, startSpaceId, departmentId, findNodeInTree, loadNodesForFolder, resetNavigationRoot]);
+    }, [treeData, resolvedCompanyId, startFolderId, startSpaceId, departmentId, findNodeInTree, loadNodesForFolder, resetNavigationRoot]);
 
     // Sync search query from pane data (important for Chat -> Finder updates)
     useEffect(() => {
@@ -1184,10 +1201,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [handleUpload]);
 
-    // Initial Load
+    // Initial load + company-switch reload.
+    // On initial mount: preferCache avoids a redundant fetch when the store
+    // already has fresh tree data. On company change: skip the cache so the
+    // new company's tree is always fetched, never showing stale data.
+    const isFirstLoadRef = React.useRef(true);
     useEffect(() => {
-        if (resolvedCompanyId) {
+        if (!resolvedCompanyId) return;
+        if (isFirstLoadRef.current) {
+            isFirstLoadRef.current = false;
             void loadContent({ preferCache: true });
+        } else {
+            void loadContent(); // company changed — force fresh fetch
         }
     }, [resolvedCompanyId, loadContent]);
 
@@ -2163,4 +2188,5 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         </>
     );
 };
+
 

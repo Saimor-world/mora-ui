@@ -77,6 +77,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     const [moraMessages, setMoraMessages] = useState<MoraMessage[]>([]);
     const [isMoraThinking, setIsMoraThinking] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
 
     // Quick searches
     const quickSearches = [
@@ -147,6 +148,13 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         return () => clearTimeout(searchTimeout);
     }, [searchQuery, departments, activeCompanyId, mapSearchResult]);
 
+    useEffect(() => {
+        if (previousCompanyIdRef.current === activeCompanyId) return;
+        previousCompanyIdRef.current = activeCompanyId;
+        setSearchResults([]);
+        setIsSearching(false);
+    }, [activeCompanyId]);
+
     // Handle result click
     const handleResultClick = (result: SearchResult) => {
         setOrbState('focus');
@@ -166,7 +174,10 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                     type: 'finder',
                     title: result.title,
                     size: { width: 800, height: 600 },
-                    data: { folderId: result.folderId || result.id }
+                    data: {
+                        folderId: result.folderId || result.id,
+                        companyId: activeCompanyId || undefined,
+                    }
                 });
                 break;
             case 'file':
@@ -177,7 +188,10 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                         type: 'finder',
                         title: result.title,
                         size: { width: 900, height: 640 },
-                        data: { folderId: result.folderId }
+                        data: {
+                            folderId: result.folderId,
+                            companyId: activeCompanyId || undefined,
+                        }
                     });
                 }
                 window.dispatchEvent(new CustomEvent('open-node-detail', {

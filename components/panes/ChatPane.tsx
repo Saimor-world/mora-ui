@@ -446,6 +446,9 @@ Was kann ich fuer dich tun?`,
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const moraCtx = useMoraContext();
+    const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
+    const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);
+    const [memoryBasisCompanyId, setMemoryBasisCompanyId] = useState<string | null>(null);
 
     // Search for relevant memories based on user query
     const fetchRelevantMemories = useCallback(async (query: string) => {
@@ -470,10 +473,22 @@ Was kann ich fuer dich tun?`,
     }, [activeCompanyId]);
 
     useEffect(() => {
-        if (moraCtx.lastAnswerSource === 'memory') {
+        if (previousCompanyIdRef.current === activeCompanyId) return;
+        previousCompanyIdRef.current = activeCompanyId;
+        setRelevantMemories([]);
+        setShowMemories(false);
+        setMemoryHint({ show: false, content: '' });
+        setMemoryBasisCompanyId(null);
+    }, [activeCompanyId]);
+
+    useEffect(() => {
+        const previous = previousAnswerSourceRef.current;
+        if (moraCtx.lastAnswerSource === 'memory' && previous !== 'memory' && activeCompanyId) {
+            setMemoryBasisCompanyId(activeCompanyId);
             setShowMemories(true);
         }
-    }, [moraCtx.lastAnswerSource]);
+        previousAnswerSourceRef.current = moraCtx.lastAnswerSource;
+    }, [moraCtx.lastAnswerSource, activeCompanyId]);
 
     // Mark message as saved
     const markMessageAsSaved = useCallback((messageId: string) => {
@@ -632,7 +647,7 @@ Was kann ich fuer dich tun?`,
             type: 'finder',
             title: global ? 'Saimôr Mycelium (Alle Daten)' : `Finder: ${query}`,
             size: { width: 1280, height: 820 },
-            data: { query, globalSearch: global }
+            data: { query, globalSearch: global, companyId: activeCompanyId || undefined }
         });
         return global
             ? `🌐 Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
@@ -836,7 +851,7 @@ Was kann ich fuer dich tun?`,
             </div>
             {/* Relevant Memories Context */}
             <AnimatePresence>
-                {showMemories && (relevantMemories.length > 0 || moraCtx.lastAnswerSource === 'memory') ? (
+                {showMemories && (relevantMemories.length > 0 || (moraCtx.lastAnswerSource === 'memory' && memoryBasisCompanyId === activeCompanyId)) ? (
                     <RelevantMemories
                         memories={relevantMemories}
                         isMemoryBasis={moraCtx.lastAnswerSource === 'memory'}
@@ -1088,4 +1103,6 @@ Was kann ich fuer dich tun?`,
         </GlassPanel>
     );
 }
+
+
 
