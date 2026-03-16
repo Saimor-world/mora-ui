@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useMoraStore } from "@/lib/store/moraState";
 import { useMoraContext } from "@/lib/mora/useMoraContext";
+import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 
 interface ChatMessage {
@@ -98,11 +99,35 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     const [isLoadingRoom, setIsLoadingRoom] = useState(false);
     const roomEndRef = useRef<HTMLDivElement>(null);
 
+    const hasPromptedSetupRef = useRef(false);
+
     // Close handler
     const handleClose = () => {
         removePane(id);
         if (onClose) onClose();
     };
+
+    // Prompt setup if not operational
+    useEffect(() => {
+        if (ctx.isOperational !== false) {
+            hasPromptedSetupRef.current = false;
+            return;
+        }
+        if (hasPromptedSetupRef.current) return;
+
+        const timer = window.setTimeout(() => {
+            dispatchMoraPresence({
+                action: 'point',
+                targetId: 'team-setup-settings',
+                message: 'Hier Workspace einrichten',
+                source: 'system',
+                duration: 3200,
+            });
+            hasPromptedSetupRef.current = true;
+        }, 1800);
+
+        return () => window.clearTimeout(timer);
+    }, [ctx.isOperational]);
 
     // Realtime connection is managed by useRealtime (MoraShell).
     // TeamPane only subscribes to events below — no connect() here.
@@ -159,16 +184,16 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
 
         realtime.on('chat.message', handleRealtimeMessage);
         return () => realtime.off('chat.message', handleRealtimeMessage);
-    }, [showChat]);
+    }, [showChat, ctx.isOperational]);
 
     useEffect(() => {
-        if (activeTab !== "room") return;
+        if (activeTab !== "room" || ctx.isOperational !== true) return;
         setIsLoadingRoom(true);
         coreGet("/v3/user-chat/history?channel_id=team-room", { isOptional: true }).then((msgs: ChatMessage[] | null) => {
             if (msgs) setRoomHistory(msgs);
             setIsLoadingRoom(false);
         });
-    }, [activeTab]);
+    }, [activeTab, ctx.isOperational]);
 
     useEffect(() => {
         if (activeTab !== "room") return;
@@ -203,8 +228,9 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     const handleSendMessage = async () => {
         if (!message.trim() || !showChat) return;
 
+        const tempId = crypto.randomUUID();
         const newMessage: ChatMessage = {
-            id: Date.now().toString(),
+            id: tempId,
             sender_id: user?.id || 'self',
             sender_name: user?.name || 'Me',
             recipient_id: showChat,
@@ -226,7 +252,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                 });
                 if (response?.reply) {
                     const aiMessage: ChatMessage = {
-                        id: (Date.now() + 1000).toString(),
+                        id: crypto.randomUUID(),
                         sender_id: "mora",
                         sender_name: "MA'RA",
                         recipient_id: user?.id || "self",
@@ -239,6 +265,8 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                 }
             } catch (e) {
                 console.error("MA'RA request failed", e);
+                setChatHistory(prev => prev.filter(m => m.id !== tempId));
+                toast.error("MA'RA konnte nicht erreicht werden.");
             }
             return;
         }
@@ -250,6 +278,8 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
             });
         } catch (e) {
             console.error("Failed to send", e);
+            setChatHistory(prev => prev.filter(m => m.id !== tempId));
+            toast.error("Nachricht konnte nicht gesendet werden.");
         }
     };
 
@@ -257,8 +287,9 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         if (!roomMessage.trim()) return;
 
         const trimmed = roomMessage.trim();
+        const tempRoomId = crypto.randomUUID();
         const newMessage: ChatMessage = {
-            id: Date.now().toString(),
+            id: tempRoomId,
             sender_id: user?.id || "self",
             sender_name: user?.name || "Me",
             channel_id: "team-room",
@@ -277,6 +308,8 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
             });
         } catch (e) {
             console.error("Failed to send room message", e);
+            setRoomHistory(prev => prev.filter(m => m.id !== tempRoomId));
+            toast.error("Nachricht konnte nicht gesendet werden.");
         }
     };
 
@@ -374,7 +407,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
         switch (status) {
             case "online": return "Online";
             case "away": return "Abwesend";
-            case "busy": return "Beschaeftigt";
+            case "busy": return "Beschäftigt";
             default: return "Offline";
         }
     };
@@ -475,6 +508,14 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                             <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
                                 Richte eine Firma oder einen Workspace ein, um das Team nutzen zu können.
                             </p>
+                            <button
+                                id="team-setup-settings"
+                                data-agency-id="team-setup-settings"
+                                onClick={() => openPane({ id: 'company_settings', type: 'settings', title: 'Einstellungen', size: { width: 800, height: 600 } })}
+                                className="mt-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors underline underline-offset-2"
+                            >
+                                Einstellungen öffnen
+                            </button>
                         </div>
                     ) : (
                     <AnimatePresence mode="wait">
@@ -749,7 +790,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                                 {activities.length === 0 ? (
                                     <div className="text-center text-emerald-500/50 py-8">
                                         <Activity className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                                        <p className="text-sm">Noch keine Aktivitaeten</p>
+                                        <p className="text-sm">Noch keine Aktivitäten</p>
                                     </div>
                                 ) : (
                                     activities.map(activity => (
@@ -767,7 +808,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                                                     <span className="text-emerald-500/70">
                                                         {activity.action === "created" && "hat erstellt:"}
                                                         {activity.action === "updated" && "hat bearbeitet:"}
-                                                        {activity.action === "deleted" && "hat geloescht:"}
+                                                        {activity.action === "deleted" && "hat gelöscht:"}
                                                         {!["created", "updated", "deleted"].includes(activity.action) && activity.action}
                                                     </span>
                                                     {" "}
