@@ -31,6 +31,7 @@ const intentLabelMap: Record<string, string> = {
     rename_node: 'Datei umbenennen',
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
+    update_note_content: 'Inhalt aktualisieren',
     create_node_from_file: 'Datei einordnen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',

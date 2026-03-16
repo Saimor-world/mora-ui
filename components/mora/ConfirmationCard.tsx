@@ -42,7 +42,7 @@ interface PendingAction {
 }
 
 interface FileActionOperation {
-    type: 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | string;
+    type: 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | string;
     name?: string;
     title?: string;
     content?: string;
@@ -51,6 +51,7 @@ interface FileActionOperation {
     node_id?: string;
     node_name?: string;
     new_name?: string;
+    previous_content_preview?: string;
     target_folder_id?: string;
     target_folder_name?: string;
     parent_folder_id?: string | null;
@@ -86,6 +87,7 @@ const intentLabelMap: Record<string, string> = {
     rename_node: 'Datei umbenennen',
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
+    update_note_content: 'Inhalt aktualisieren',
     create_node_from_file: 'Datei einordnen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
@@ -103,7 +105,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     const hasDispatchedPresenceRef = useRef<string | null>(null);
 
     const isIntake = variant === 'intake' || !!action.intake_context;
-    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node' || action.tool_name === 'rename_node' || action.tool_name === 'create_note' || action.tool_name === 'create_draft';
+    const isFileOp = action.tool_name === 'create_folder' || action.tool_name === 'move_node' || action.tool_name === 'rename_node' || action.tool_name === 'create_note' || action.tool_name === 'create_draft' || action.tool_name === 'update_note_content';
     const intake = action.intake_context;
     const cardTargetId = useMemo(() => `confirmation-card-${action.action_id}`, [action.action_id]);
     const fileOperations = useMemo(() => getFileOperations(action.params), [action.params]);
@@ -127,13 +129,27 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         () => fileOperations.filter((operation) => operation.type === 'create_draft'),
         [fileOperations]
     );
+    const updateNoteContentOps = useMemo(
+        () => fileOperations.filter((operation) => operation.type === 'update_note_content'),
+        [fileOperations]
+    );
     const isContentOnlyOp = useMemo(
         () =>
-            (createNoteOps.length > 0 || createDraftOps.length > 0) &&
+            (createNoteOps.length > 0 || createDraftOps.length > 0 || updateNoteContentOps.length > 0) &&
             createFolderOps.length === 0 &&
             moveNodeOps.length === 0 &&
             renameNodeOps.length === 0,
-        [createNoteOps, createDraftOps, createFolderOps, moveNodeOps, renameNodeOps]
+        [createNoteOps, createDraftOps, updateNoteContentOps, createFolderOps, moveNodeOps, renameNodeOps]
+    );
+    const isContentUpdateOnlyOp = useMemo(
+        () =>
+            updateNoteContentOps.length > 0 &&
+            createNoteOps.length === 0 &&
+            createDraftOps.length === 0 &&
+            createFolderOps.length === 0 &&
+            moveNodeOps.length === 0 &&
+            renameNodeOps.length === 0,
+        [updateNoteContentOps, createNoteOps, createDraftOps, createFolderOps, moveNodeOps, renameNodeOps]
     );
     const filePlanSummary = useMemo(() => {
         const explicitSummary = typeof action.params?.summary === 'string' ? action.params.summary : null;
@@ -155,8 +171,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         if (createDraftOps.length > 0) {
             parts.push(`${createDraftOps.length} Entwurf${createDraftOps.length === 1 ? '' : 'e'} erstellen`);
         }
+        if (updateNoteContentOps.length > 0) {
+            parts.push(`${updateNoteContentOps.length} Inhalt${updateNoteContentOps.length === 1 ? '' : 'e'} aktualisieren`);
+        }
         return parts.length > 0 ? parts.join(' und ') : 'Dateioperation prüfen';
-    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps, createNoteOps, createDraftOps]);
+    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps, createNoteOps, createDraftOps, updateNoteContentOps]);
 
     useEffect(() => {
         if (!action.action_id || hasDispatchedPresenceRef.current === action.action_id) {
@@ -281,7 +300,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         <h4 className="text-amber-100 text-sm font-medium">Aktionsplan prüfen</h4>
                         <p className="text-[10px] text-amber-200/60 uppercase tracking-widest mt-0.5">
                             {isContentOnlyOp
-                                ? 'Inhalt erstellen – Bestätigung erforderlich'
+                                ? isContentUpdateOnlyOp
+                                    ? 'Inhalt ändern – Bestätigung erforderlich'
+                                    : 'Inhalt erstellen – Bestätigung erforderlich'
                                 : 'Dateibaum-Änderung – Bestätigung erforderlich'}
                         </p>
                     </div>
@@ -319,6 +340,12 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-100">
                                 <FileCheck size={12} />
                                 {createDraftOps.length} Entwurf{createDraftOps.length === 1 ? '' : 'e'} erstellen
+                            </span>
+                        )}
+                        {updateNoteContentOps.length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[11px] text-orange-100">
+                                <FileCheck size={12} />
+                                {updateNoteContentOps.length} Inhalt{updateNoteContentOps.length === 1 ? '' : 'e'} aktualisieren
                             </span>
                         )}
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60">
@@ -450,11 +477,51 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 </div>
                             </div>
                         ))}
+                        {updateNoteContentOps.map((operation, index) => (
+                            <div key={`update-note-content-${index}`} className="rounded-lg border border-orange-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-orange-200/70 mb-2">
+                                    <FileCheck size={14} />
+                                    <span>Inhalt aktualisieren</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Dokument</span>
+                                        <span className="text-right text-white/90 break-words">
+                                            {operation.node_name || formatTargetLabel(undefined, operation.node_id, 'Notiz / Entwurf')}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <span className="text-white/45">Ziel</span>
+                                        <span className="text-right text-white/75 break-words">
+                                            {operation.destination_label || 'Aktueller Kontext'}
+                                        </span>
+                                    </div>
+                                    {operation.previous_content_preview && (
+                                        <div className="space-y-1">
+                                            <div className="text-white/45">Vorher</div>
+                                            <div className="rounded-md bg-white/5 border border-white/5 px-2.5 py-2 text-white/70 text-xs leading-relaxed">
+                                                {operation.previous_content_preview}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {operation.content_preview && (
+                                        <div className="space-y-1">
+                                            <div className="text-white/45">Neu</div>
+                                            <div className="rounded-md bg-white/5 border border-white/5 px-2.5 py-2 text-white/70 text-xs leading-relaxed">
+                                                {operation.content_preview}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <div className="text-xs text-white/55 italic leading-relaxed">
                         {isContentOnlyOp
-                            ? 'MORA erstellt diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Firmenkontext bleibt dabei verbindlich.'
+                            ? isContentUpdateOnlyOp
+                                ? 'MORA ändert diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Firmenkontext bleibt dabei verbindlich.'
+                                : 'MORA erstellt diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Firmenkontext bleibt dabei verbindlich.'
                             : 'MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Firmenkontext bleibt dabei verbindlich.'}
                     </div>
                 </div>

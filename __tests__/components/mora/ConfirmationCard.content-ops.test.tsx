@@ -110,6 +110,27 @@ const mixedAction = {
   },
 } as any;
 
+const updateNoteContentAction = {
+  tool_name: 'update_note_content',
+  risk_level: 'write',
+  confirmation_token: 'tok-update-note',
+  action_id: 'act-update-note',
+  params: {
+    summary: "Entwurf 'Q4 Launch Plan' wird aktualisiert",
+    operations: [
+      {
+        type: 'update_note_content',
+        node_id: 'node-1',
+        node_name: 'Q4 Launch Plan',
+        destination_label: 'Campaigns',
+        previous_content_preview: 'Alter Inhalt',
+        content_preview: 'Neuer Inhalt fuer den Q4 Launch',
+      },
+    ],
+    session_id: 'sess-update-note',
+  },
+} as any;
+
 // ── Test suite ───────────────────────────────────────────────────────────────
 
 describe('ConfirmationCard — content-ops trust pass', () => {

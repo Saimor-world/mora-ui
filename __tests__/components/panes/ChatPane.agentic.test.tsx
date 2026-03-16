@@ -263,4 +263,31 @@ describe('ChatPane agentic file ops', () => {
     expect(screen.getByText('Q4 Launch', { selector: 'span' })).toBeInTheDocument();
   });
 
+
+  it('routes update_note_content intents through the agentic loop', async () => {
+    mockExecuteAgenticLoop.mockResolvedValueOnce({
+      final_state: 'S4_CONFIRM',
+      pending_confirmations: [{
+        tool_name: 'update_note_content',
+        confirmation_token: 'tok-update-note',
+        action_id: 'act-update-note',
+        risk_level: 'write',
+        what_will_change: "Entwurf 'Q4 Launch Plan' wird aktualisiert",
+        tool_params: {
+          summary: "Entwurf 'Q4 Launch Plan' wird aktualisiert",
+          operations: [{ type: 'update_note_content', node_id: 'node-1', node_name: 'Q4 Launch Plan', destination_label: 'Campaigns', previous_content_preview: 'Alt', content_preview: 'Neu' }],
+        },
+      }],
+    });
+
+    render(<ChatPane id="chat-main" />);
+    const textarea = screen.getByPlaceholderText(/Schreib Mora/i);
+    fireEvent.change(textarea, { target: { value: 'Aktualisiere diese Notiz mit Neuem Inhalt' } });
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, preventDefault: jest.fn() });
+
+    await waitFor(() => expect(mockExecuteAgenticLoop).toHaveBeenCalled());
+    expect(await screen.findByText('Inhalt aktualisieren')).toBeInTheDocument();
+    expect(screen.getByText('Q4 Launch Plan', { selector: 'span' })).toBeInTheDocument();
+  });
+
 });

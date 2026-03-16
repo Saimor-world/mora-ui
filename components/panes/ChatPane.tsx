@@ -121,6 +121,7 @@ function isLikelyFileOperationIntent(text: string): boolean {
         /\b(benenne|umbenennen|rename)\b.*\b(datei|dokument|node|file)\b/,
         /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(notiz|note)\b/,
         /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(entwurf|draft|briefing)\b/,
+        /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|schreibe um)\b.*\b(notiz|note|entwurf|draft|dokument)\b/,
     ].some((pattern) => pattern.test(lower));
 }
 

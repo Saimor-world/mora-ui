@@ -12,7 +12,7 @@ import { toast } from '@/lib/toast';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
-type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'confirm_action' | 'undo';
+type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | 'confirm_action' | 'undo';
 
 // ─── Intake batch grouping ────────────────────────────────────────────────────
 
@@ -184,6 +184,7 @@ const intentLabelMap: Record<string, string> = {
     rename_node: 'Datei umbenennen',
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
+    update_note_content: 'Inhalt aktualisieren',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
     create_node_from_file: 'Datei einordnen',
@@ -213,6 +214,7 @@ const intentFilters: { key: IntentFilter; label: string }[] = [
     { key: 'rename_node', label: 'Datei umbenennen' },
     { key: 'create_note', label: 'Notiz erstellen' },
     { key: 'create_draft', label: 'Entwurf erstellen' },
+    { key: 'update_note_content', label: 'Inhalt aktualisieren' },
     { key: 'confirm_action', label: 'Bestätigen' },
     { key: 'undo', label: 'Rückgängig' },
 ];
@@ -289,8 +291,14 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                             : type === 'move_node'
                                 ? `Node: ${node?.title || node?.name || op.node_name || op.node_id || '-'}`
                                 : type === 'rename_node'
-                                    ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} → ${op.new_name || node?.title || node?.name || '-'}`
-                                    : type.replace(/_/g, ' ');
+                                    ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} ? ${op.new_name || node?.title || node?.name || '-'}`
+                                    : type === 'create_note'
+                                        ? `Notiz: ${op.title || node?.title || node?.name || '-'}`
+                                        : type === 'create_draft'
+                                            ? `Entwurf: ${op.title || node?.title || node?.name || '-'}`
+                                            : type === 'update_note_content'
+                                                ? `Inhalt: ${op.node_name || node?.title || node?.name || op.node_id || '-'}`
+                                                : type.replace(/_/g, ' ');
                     const details =
                         type === 'move_node'
                             ? [
@@ -298,13 +306,24 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                                 `Ziel: ${op.target_folder_name || op.target_folder_id || node?.folder_id || '-'}`,
                             ]
                             : type === 'create_folder'
-                                ? [`Übergeordnet: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`]
+                                ? [`?bergeordnet: ${op.parent_folder_name || op.parent_folder_id || folder?.parent_folder_id || op.space_id || folder?.space_id || '-'}`]
                                 : type === 'rename_node'
                                     ? [
                                         `Vorher: ${op.old_name || op.node_name || '-'}`,
                                         `Nachher: ${op.new_name || node?.title || node?.name || '-'}`,
                                     ]
-                                    : [];
+                                    : type === 'create_note' || type === 'create_draft'
+                                        ? [
+                                            `Ziel: ${op.destination_label || op.destination_summary || '-'}`,
+                                            ...(typeof op.content_preview === 'string' && op.content_preview ? [`Inhalt: ${op.content_preview}`] : []),
+                                        ]
+                                        : type === 'update_note_content'
+                                            ? [
+                                                `Ziel: ${op.destination_label || op.destination_summary || '-'}`,
+                                                ...(typeof op.previous_content_preview === 'string' && op.previous_content_preview ? [`Vorher: ${op.previous_content_preview}`] : []),
+                                                ...(typeof op.content_preview === 'string' && op.content_preview ? [`Neu: ${op.content_preview}`] : []),
+                                            ]
+                                            : [];
                     return (
                         <div key={`${actionId}-${heading}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
                             <div className="text-[11px] font-medium text-white/80">{line}</div>
