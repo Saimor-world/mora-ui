@@ -926,7 +926,14 @@ Was kann ich fuer dich tun?`,
                                                 const _destSummary =
                                                     result?.destination_summary ||
                                                     result?.result?.destination_summary;
+                                                // content_change.summary is the semantic description from Core 6b1b301
+                                                const _changeSummary =
+                                                    result?.change_summary ||
+                                                    result?.result?.change_summary ||
+                                                    result?.content_change?.summary ||
+                                                    result?.result?.content_change?.summary;
                                                 const summary =
+                                                    _changeSummary ||
                                                     result?.result_summary ||
                                                     result?.result?.result_summary ||
                                                     result?.summary ||

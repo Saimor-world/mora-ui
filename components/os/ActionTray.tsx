@@ -87,7 +87,11 @@ function buildBaseMessage(evt: ActionEventLike): string | null {
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
 
-    // Top-level promoted fields (single content-action results — backend v2 shape)
+    // Top-level promoted fields (single content-action results).
+    // change_summary is the primary human-readable result from Core 6b1b301.
+    const changeSummary = extractPayloadString(evt.payload, 'change_summary');
+    if (changeSummary) return changeSummary;
+
     const topLevelResultSummary = extractPayloadString(evt.payload, 'result_summary');
     if (topLevelResultSummary) return topLevelResultSummary;
 
@@ -141,12 +145,22 @@ function formatActionMessage(evt: ActionEventLike): string | null {
 }
 
 function buildExpandedDetails(evt: ActionEventLike): string[] {
-    const details = [
-        extractPayloadString(evt.payload, 'destination_summary') ? `Ziel: ${extractPayloadString(evt.payload, 'destination_summary')}` : null,
-        extractPayloadString(evt.payload, 'previous_content_preview') ? `Vorher: ${extractPayloadString(evt.payload, 'previous_content_preview')}` : null,
-        extractPayloadString(evt.payload, 'content_preview') ? `Neu: ${extractPayloadString(evt.payload, 'content_preview')}` : null,
+    const destSummary = extractPayloadString(evt.payload, 'destination_summary');
+    // Prefer structured content_change contract (Core 6b1b301) over legacy flat fields.
+    const cc = typeof evt.payload?.content_change === 'object' && evt.payload.content_change !== null
+        ? evt.payload.content_change as Record<string, unknown>
+        : null;
+    const before = (typeof cc?.before_preview === 'string' && cc.before_preview)
+        ? cc.before_preview
+        : extractPayloadString(evt.payload, 'previous_content_preview');
+    const after = (typeof cc?.after_preview === 'string' && cc.after_preview)
+        ? cc.after_preview
+        : extractPayloadString(evt.payload, 'content_preview');
+    return [
+        destSummary ? `Ziel: ${destSummary}` : null,
+        before ? `Vorher: ${before}` : null,
+        after ? `Neu: ${after}` : null,
     ].filter(Boolean) as string[];
-    return details;
 }
 
 export const ActionTray: React.FC = () => {

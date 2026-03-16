@@ -50,6 +50,16 @@ interface PendingAction {
     intake_context?: IntakeContext;
 }
 
+interface ContentChange {
+    before_preview?: string;
+    after_preview?: string;
+    before_length?: number;
+    after_length?: number;
+    delta_chars?: number;
+    change_kind?: string;
+    summary?: string;
+}
+
 interface FileActionOperation {
     type: 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | string;
     name?: string;
@@ -69,6 +79,8 @@ interface FileActionOperation {
     space_id?: string;
     space_name?: string;
     company_id?: string;
+    /** Structured diff contract from Core 6b1b301 — primary source for before/after previews */
+    content_change?: ContentChange;
 }
 
 interface Props {
@@ -131,6 +143,33 @@ const getFileOperations = (params: Record<string, any>): FileActionOperation[] =
         return typeof operation === 'object' && operation !== null && typeof (operation as FileActionOperation).type === 'string';
     });
 };
+
+/**
+ * Render a before/after content diff block.
+ * Prefers the structured `content_change` contract; falls back to legacy fields.
+ */
+function renderContentDiff(
+    before: string | null | undefined,
+    after: string | null | undefined
+): React.ReactNode {
+    if (!before && !after) return null;
+    return (
+        <div className="rounded-md border border-white/10 bg-black/20 overflow-hidden">
+            {before && (
+                <div className="px-2.5 py-2 border-b border-white/10">
+                    <div className="text-[10px] uppercase tracking-wider text-red-300/70 mb-1">Bisheriger Inhalt</div>
+                    <div className="text-xs leading-relaxed text-white/55 line-clamp-3">{before}</div>
+                </div>
+            )}
+            {after && (
+                <div className="px-2.5 py-2">
+                    <div className="text-[10px] uppercase tracking-wider text-emerald-300/70 mb-1">Neuer Inhalt</div>
+                    <div className="text-xs leading-relaxed text-white/85">{after}</div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejected, onDismiss, variant }) => {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -533,25 +572,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                             {operation.destination_label || operation.destination_summary || 'Aktueller Kontext'}
                                         </span>
                                     </div>
-                                    {(operation.previous_content_preview || operation.content_preview) && (
-                                        <div className="rounded-md border border-white/10 bg-black/20 overflow-hidden">
-                                            {operation.previous_content_preview && (
-                                                <div className="px-2.5 py-2 border-b border-white/10">
-                                                    <div className="text-[10px] uppercase tracking-wider text-red-300/70 mb-1">Bisheriger Inhalt</div>
-                                                    <div className="text-xs leading-relaxed text-white/55 line-clamp-3">
-                                                        {operation.previous_content_preview}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {operation.content_preview && (
-                                                <div className="px-2.5 py-2">
-                                                    <div className="text-[10px] uppercase tracking-wider text-emerald-300/70 mb-1">Neuer Inhalt</div>
-                                                    <div className="text-xs leading-relaxed text-white/85">
-                                                        {operation.content_preview}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {renderContentDiff(
+                                        operation.content_change?.before_preview || operation.previous_content_preview,
+                                        operation.content_change?.after_preview || operation.content_preview
                                     )}
                                 </div>
                             </div>
@@ -579,25 +602,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                             </span>
                                         </div>
                                     )}
-                                    {(typeof action.params?.previous_content_preview === 'string' || typeof action.params?.content_preview === 'string') && (
-                                        <div className="rounded-md border border-white/10 bg-black/20 overflow-hidden">
-                                            {typeof action.params.previous_content_preview === 'string' && (
-                                                <div className="px-2.5 py-2 border-b border-white/10">
-                                                    <div className="text-[10px] uppercase tracking-wider text-red-300/70 mb-1">Bisheriger Inhalt</div>
-                                                    <div className="text-xs leading-relaxed text-white/55 line-clamp-3">
-                                                        {action.params.previous_content_preview}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {typeof action.params.content_preview === 'string' && (
-                                                <div className="px-2.5 py-2">
-                                                    <div className="text-[10px] uppercase tracking-wider text-emerald-300/70 mb-1">Neuer Inhalt</div>
-                                                    <div className="text-xs leading-relaxed text-white/85">
-                                                        {action.params.content_preview}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {renderContentDiff(
+                                        (action.params.content_change as ContentChange | undefined)?.before_preview || action.params.previous_content_preview,
+                                        (action.params.content_change as ContentChange | undefined)?.after_preview || action.params.content_preview
                                     )}
                                 </div>
                             </div>

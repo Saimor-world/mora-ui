@@ -260,6 +260,9 @@ function formatActionTitle(evt: ActionEvent): string {
 function formatActionMessage(evt: ActionEvent): string | null {
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
+    // change_summary is the primary human-readable result string from Core 6b1b301.
+    const changeSummary = typeof evt.payload?.change_summary === 'string' ? evt.payload.change_summary : null;
+    if (changeSummary?.trim()) return changeSummary;
     // Top-level promoted fields (single content-action results — backend v2 shape)
     const topLevelResultSummary = typeof evt.payload?.result_summary === 'string' ? evt.payload.result_summary : null;
     if (topLevelResultSummary?.trim()) return topLevelResultSummary;
@@ -356,11 +359,16 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                                             ...(typeof op.content_preview === 'string' && op.content_preview ? [`Inhalt: ${op.content_preview}`] : []),
                                         ]
                                         : type === 'update_note_content'
-                                            ? [
-                                                `Ziel: ${op.destination_label || op.destination_summary || '-'}`,
-                                                ...(typeof op.previous_content_preview === 'string' && op.previous_content_preview ? [`Vorher: ${op.previous_content_preview}`] : []),
-                                                ...(typeof op.content_preview === 'string' && op.content_preview ? [`Neu: ${op.content_preview}`] : []),
-                                            ]
+                                            ? (() => {
+                                                const cc = op.content_change as Record<string, unknown> | undefined;
+                                                const before = (typeof cc?.before_preview === 'string' && cc.before_preview) ? cc.before_preview : (typeof op.previous_content_preview === 'string' ? op.previous_content_preview : null);
+                                                const after = (typeof cc?.after_preview === 'string' && cc.after_preview) ? cc.after_preview : (typeof op.content_preview === 'string' ? op.content_preview : null);
+                                                return [
+                                                    `Ziel: ${op.destination_label || op.destination_summary || '-'}`,
+                                                    ...(before ? [`Vorher: ${before}`] : []),
+                                                    ...(after ? [`Neu: ${after}`] : []),
+                                                ];
+                                            })()
                                             : [];
                     return (
                         <div key={`${actionId}-${heading}-${type}-${index}`} className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
@@ -386,16 +394,22 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
         ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
         : [];
     const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
+    // Prefer the structured content_change contract (Core 6b1b301); fall back to legacy flat fields.
+    const _payloadCC = typeof evt.payload?.content_change === 'object' && evt.payload.content_change !== null
+        ? evt.payload.content_change as Record<string, unknown>
+        : null;
+    const _beforePreview = (typeof _payloadCC?.before_preview === 'string' && _payloadCC.before_preview)
+        ? _payloadCC.before_preview
+        : (typeof evt.payload?.previous_content_preview === 'string' && evt.payload.previous_content_preview ? evt.payload.previous_content_preview as string : null);
+    const _afterPreview = (typeof _payloadCC?.after_preview === 'string' && _payloadCC.after_preview)
+        ? _payloadCC.after_preview
+        : (typeof evt.payload?.content_preview === 'string' && evt.payload.content_preview ? evt.payload.content_preview as string : null);
     const promotedDetails = [
         typeof evt.payload?.destination_summary === 'string' && evt.payload.destination_summary
             ? `Ziel: ${evt.payload.destination_summary}`
             : null,
-        typeof evt.payload?.previous_content_preview === 'string' && evt.payload.previous_content_preview
-            ? `Vorher: ${evt.payload.previous_content_preview}`
-            : null,
-        typeof evt.payload?.content_preview === 'string' && evt.payload.content_preview
-            ? `Neu: ${evt.payload.content_preview}`
-            : null,
+        _beforePreview ? `Vorher: ${_beforePreview}` : null,
+        _afterPreview ? `Neu: ${_afterPreview}` : null,
     ].filter(Boolean) as string[];
     if (operations.length === 0 && operationsExecuted.length === 0 && promotedDetails.length === 0) return null;
     return (
