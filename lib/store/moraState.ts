@@ -431,8 +431,42 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
     setActiveCompany: (id) => {
+        const state = get();
         const nextStandard = readStandardMode(id);
-        set({ activeCompanyId: id, isStandardMode: nextStandard });
+        const nextCompany = state.companies.find((company) => company.id === id) || null;
+        const nextTenantId = nextCompany?.tenant_id || state.user?.tenant_id;
+
+        if (typeof window !== 'undefined') {
+            if (id) {
+                localStorage.setItem('last_company_id', id);
+            } else {
+                localStorage.removeItem('last_company_id');
+            }
+            if (nextCompany?.name) {
+                localStorage.setItem('last_workspace', nextCompany.name);
+            }
+        }
+
+        set({
+            activeCompanyId: id,
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            activeFolderId: null,
+            activeNode: null,
+            isStandardMode: nextStandard,
+            user: state.user
+                ? {
+                    ...state.user,
+                    active_company_id: id || undefined,
+                    active_company_name: nextCompany?.name || state.user.active_company_name,
+                }
+                : null,
+        });
+
+        if (id) {
+            get().loadDepartments(id).catch(console.error);
+            get().loadTree(nextTenantId || undefined, id).catch(console.error);
+        }
     },
     setActiveDepartment: (id) => set({ activeDepartmentId: id }),
     setActiveSpace: (id) => set({ activeSpaceId: id }),
