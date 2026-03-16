@@ -644,8 +644,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
         try {
             const viewMode = get().viewMode;
-            const userRole = get().user?.role;
-            const includeDemo = viewMode === 'demo' || userRole === ROLE_SYSTEM_OWNER;
+            const user = get().user;
+            const userRole = user?.role;
+            const isDemoTenantContext = checkDemoTenant(user?.tenant_id);
+            const includeDemo =
+                viewMode === 'demo'
+                || userRole === ROLE_SYSTEM_OWNER
+                || (viewMode === 'workspace' && isDemoTenantContext);
             let data = asArray<any>(await fetchCompanies(includeDemo));
 
             // Use DB name if available, only fallback to defaults if empty/null

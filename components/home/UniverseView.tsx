@@ -25,6 +25,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         setOrbState,
         orbState,
         viewMode,
+        user,
         navigateToCore,
         navigateToDepartment,
         treeData,
@@ -216,13 +217,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         const raw = currentCompany?.name?.trim();
         const tenantId = currentCompany?.tenant_id;
         const isDemo = currentCompany?.is_demo;
+        const userTenantId = user?.tenant_id;
+        const isDemoTenant = userTenantId === TENANT_DEMO;
         if (!raw) {
+            if (viewMode === 'demo') return 'Simple Coffee Group';
+            if (viewMode === 'workspace' && isDemoTenant) return 'Saimor HQ';
             if (isDemo || tenantId === TENANT_DEMO) return 'Simple Coffee Group';
             if (tenantId === TENANT_HQ) return 'Saimor HQ';
             return 'Workspace';
         }
         return raw;
-    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo]);
+    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo, user?.tenant_id, viewMode]);
     const titleStyle = useMemo(() => {
         const length = displayCompanyName.length;
         const max = length > 22 ? 44 : length > 18 ? 50 : 56;
