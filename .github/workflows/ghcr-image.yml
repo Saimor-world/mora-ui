@@ -2,9 +2,12 @@ name: Build and Publish UI Image (GHCR)
 
 on:
   push:
-    branches: ["main", "stabilize/phaseAB"]
     tags: ["v*"]
   workflow_dispatch:
+
+concurrency:
+  group: ghcr-ui-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
