@@ -87,6 +87,10 @@ function buildBaseMessage(evt: ActionEventLike): string | null {
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
 
+    // Top-level promoted fields (single content-action results — backend v2 shape)
+    const topLevelResultSummary = extractPayloadString(evt.payload, 'result_summary');
+    if (topLevelResultSummary) return topLevelResultSummary;
+
     const payloadSummary = extractPayloadString(evt.payload, 'summary');
     if (payloadSummary) {
         if (evt.status === 'done') return `${statusLabelMap.done}: ${payloadSummary}`;
@@ -106,6 +110,15 @@ function buildBaseMessage(evt: ActionEventLike): string | null {
                 ? `Aktualisiert in ${destSummary}`
                 : `Erstellt in ${destSummary}`;
         }
+    }
+
+    // Top-level destination_summary (promoted, no nested result object)
+    const topLevelDestSummary = extractPayloadString(evt.payload, 'destination_summary');
+    if (topLevelDestSummary) {
+        const intent = extractPayloadString(evt.payload, 'tool_name') || evt.intent || '';
+        return intent === 'update_note_content'
+            ? `Aktualisiert in ${topLevelDestSummary}`
+            : `Erstellt in ${topLevelDestSummary}`;
     }
 
     return statusLabelMap[evt.status] || null;

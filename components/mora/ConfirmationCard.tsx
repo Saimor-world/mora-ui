@@ -165,23 +165,26 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         () => fileOperations.filter((operation) => operation.type === 'update_note_content'),
         [fileOperations]
     );
+    // True when backend promotes content-update fields to top level of params
+    // (single-operation confirmations, no operations array required)
+    const hasTopLevelUpdateOp = action.tool_name === 'update_note_content' && updateNoteContentOps.length === 0;
     const isContentOnlyOp = useMemo(
         () =>
-            (createNoteOps.length > 0 || createDraftOps.length > 0 || updateNoteContentOps.length > 0) &&
+            (createNoteOps.length > 0 || createDraftOps.length > 0 || updateNoteContentOps.length > 0 || hasTopLevelUpdateOp) &&
             createFolderOps.length === 0 &&
             moveNodeOps.length === 0 &&
             renameNodeOps.length === 0,
-        [createNoteOps, createDraftOps, updateNoteContentOps, createFolderOps, moveNodeOps, renameNodeOps]
+        [createNoteOps, createDraftOps, updateNoteContentOps, hasTopLevelUpdateOp, createFolderOps, moveNodeOps, renameNodeOps]
     );
     const isContentUpdateOnlyOp = useMemo(
         () =>
-            updateNoteContentOps.length > 0 &&
+            (updateNoteContentOps.length > 0 || hasTopLevelUpdateOp) &&
             createNoteOps.length === 0 &&
             createDraftOps.length === 0 &&
             createFolderOps.length === 0 &&
             moveNodeOps.length === 0 &&
             renameNodeOps.length === 0,
-        [updateNoteContentOps, createNoteOps, createDraftOps, createFolderOps, moveNodeOps, renameNodeOps]
+        [updateNoteContentOps, hasTopLevelUpdateOp, createNoteOps, createDraftOps, createFolderOps, moveNodeOps, renameNodeOps]
     );
     const filePlanSummary = useMemo(() => {
         const explicitSummary = typeof action.params?.summary === 'string' ? action.params.summary : null;
@@ -205,9 +208,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         }
         if (updateNoteContentOps.length > 0) {
             parts.push(`${updateNoteContentOps.length} Inhalt${updateNoteContentOps.length === 1 ? '' : 'e'} aktualisieren`);
+        } else if (hasTopLevelUpdateOp) {
+            parts.push('1 Inhalt aktualisieren');
         }
         return parts.length > 0 ? parts.join(' und ') : 'Dateioperation prüfen';
-    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps, createNoteOps, createDraftOps, updateNoteContentOps]);
+    }, [action.params, createFolderOps, moveNodeOps, renameNodeOps, createNoteOps, createDraftOps, updateNoteContentOps, hasTopLevelUpdateOp]);
 
     useEffect(() => {
         if (!action.action_id || hasDispatchedPresenceRef.current === action.action_id) {
@@ -374,10 +379,10 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 {createDraftOps.length} Entwurf{createDraftOps.length === 1 ? '' : 'e'} erstellen
                             </span>
                         )}
-                        {updateNoteContentOps.length > 0 && (
+                        {(updateNoteContentOps.length > 0 || hasTopLevelUpdateOp) && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[11px] text-orange-100">
                                 <FileCheck size={12} />
-                                {updateNoteContentOps.length} Inhalt{updateNoteContentOps.length === 1 ? '' : 'e'} aktualisieren
+                                {updateNoteContentOps.length > 0 ? updateNoteContentOps.length : 1} Inhalt{updateNoteContentOps.length === 1 || hasTopLevelUpdateOp ? '' : 'e'} aktualisieren
                             </span>
                         )}
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60">
@@ -551,6 +556,52 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 </div>
                             </div>
                         ))}
+                        {hasTopLevelUpdateOp && (
+                            <div className="rounded-lg border border-orange-500/15 bg-black/20 p-3">
+                                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-orange-200/70 mb-2">
+                                    <FileCheck size={14} />
+                                    <span>Inhalt aktualisieren</span>
+                                </div>
+                                <div className="space-y-1.5 text-sm">
+                                    {typeof action.params?.node_name === 'string' && (
+                                        <div className="flex items-start justify-between gap-3">
+                                            <span className="text-white/45">Dokument</span>
+                                            <span className="text-right text-white/90 break-words">
+                                                {action.params.node_name}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {typeof action.params?.destination_summary === 'string' && (
+                                        <div className="flex items-start justify-between gap-3">
+                                            <span className="text-white/45">Ziel</span>
+                                            <span className="text-right text-white/75 break-words">
+                                                {action.params.destination_summary}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {(typeof action.params?.previous_content_preview === 'string' || typeof action.params?.content_preview === 'string') && (
+                                        <div className="rounded-md border border-white/10 bg-black/20 overflow-hidden">
+                                            {typeof action.params.previous_content_preview === 'string' && (
+                                                <div className="px-2.5 py-2 border-b border-white/10">
+                                                    <div className="text-[10px] uppercase tracking-wider text-red-300/70 mb-1">Bisheriger Inhalt</div>
+                                                    <div className="text-xs leading-relaxed text-white/55 line-clamp-3">
+                                                        {action.params.previous_content_preview}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {typeof action.params.content_preview === 'string' && (
+                                                <div className="px-2.5 py-2">
+                                                    <div className="text-[10px] uppercase tracking-wider text-emerald-300/70 mb-1">Neuer Inhalt</div>
+                                                    <div className="text-xs leading-relaxed text-white/85">
+                                                        {action.params.content_preview}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="text-xs text-white/55 italic leading-relaxed">

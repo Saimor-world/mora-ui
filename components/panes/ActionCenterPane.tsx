@@ -260,6 +260,9 @@ function formatActionTitle(evt: ActionEvent): string {
 function formatActionMessage(evt: ActionEvent): string | null {
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
+    // Top-level promoted fields (single content-action results — backend v2 shape)
+    const topLevelResultSummary = typeof evt.payload?.result_summary === 'string' ? evt.payload.result_summary : null;
+    if (topLevelResultSummary?.trim()) return topLevelResultSummary;
     const summary = typeof evt.payload?.summary === 'string' ? evt.payload.summary : null;
     if (summary) return summary;
     // Agency Step 2: confirmed results carry result_summary / destination_summary
@@ -274,6 +277,14 @@ function formatActionMessage(evt: ActionEvent): string | null {
                 ? `Aktualisiert in ${r.destination_summary}`
                 : `Erstellt in ${r.destination_summary}`;
         }
+    }
+    // Top-level destination_summary (promoted, no nested result object)
+    const topLevelDest = typeof evt.payload?.destination_summary === 'string' ? evt.payload.destination_summary : null;
+    if (topLevelDest?.trim()) {
+        const intent = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : evt.intent;
+        return intent === 'update_note_content'
+            ? `Aktualisiert in ${topLevelDest}`
+            : `Erstellt in ${topLevelDest}`;
     }
     return statusLabelMap[evt.status] || null;
 }
