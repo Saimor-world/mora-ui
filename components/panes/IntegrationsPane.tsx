@@ -1,19 +1,204 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
+import { coreGet } from '@/lib/api/coreClient';
+import { AlertCircle, Bot, Calendar, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+
+interface MailOverview {
+    configured?: boolean;
+    enabled?: boolean;
+    provider?: string;
+    email?: string;
+    status?: string;
+}
+
+interface CalendarOverview {
+    configured?: boolean;
+    provider?: string;
+    email?: string;
+    status?: string;
+}
+
+interface AssistantOverview {
+    status?: string;
+    recommended_provider?: string | null;
+    fallback_order?: string[];
+    routing_profile?: string | null;
+    primary_preference?: string | null;
+    healthy_provider_count?: number;
+    configured_provider_count?: number;
+}
+
+interface IntegrationsOverview {
+    mail?: MailOverview;
+    calendar?: CalendarOverview;
+    assistant?: AssistantOverview;
+    capabilities?: {
+        real_email_enabled?: boolean;
+        mail_local_mode?: boolean;
+        calendar_oauth_enabled?: boolean;
+        owner_manageable?: boolean;
+        assistant_available?: boolean;
+    };
+}
+
+const statusTone = (status?: string) => {
+    switch (status) {
+        case 'available':
+        case 'configured':
+        case 'connected':
+            return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20';
+        case 'local':
+        case 'degraded':
+            return 'text-amber-200 bg-amber-500/10 border-amber-500/20';
+        case 'owner_only':
+        case 'forbidden_demo':
+            return 'text-white/60 bg-white/5 border-white/10';
+        default:
+            return 'text-white/60 bg-white/5 border-white/10';
+    }
+};
+
+const humanizeIntegrationStatus = (status?: string) => {
+    switch (status) {
+        case 'available':
+            return 'VerfÃ¼gbar';
+        case 'configured':
+            return 'Konfiguriert';
+        case 'connected':
+            return 'Verbunden';
+        case 'local':
+            return 'Lokal';
+        case 'not_configured':
+            return 'Nicht eingerichtet';
+        case 'degraded':
+            return 'EingeschrÃ¤nkt';
+        case 'owner_only':
+            return 'Nur fÃ¼r EigentÃ¼mer';
+        case 'forbidden_demo':
+            return 'Im Demo-Modus gesperrt';
+        case 'unavailable':
+            return 'Nicht verfÃ¼gbar';
+        default:
+            return 'Unbekannt';
+    }
+};
+
+const buildAssistantDescription = (assistant?: AssistantOverview) => {
+    if (!assistant) return 'Provider-Status wird geladen.';
+    if (assistant.status === 'available') {
+        const provider = assistant.recommended_provider || assistant.primary_preference || 'automatisch';
+        return `${assistant.healthy_provider_count || 0} gesunde Provider aktiv. Empfehlung: ${provider}.`;
+    }
+    if (assistant.status === 'configured') {
+        return `${assistant.configured_provider_count || 0} Provider konfiguriert, aber aktuell nicht gesund.`;
+    }
+    if (assistant.status === 'degraded') {
+        return 'Provider-Konfiguration vorhanden, aber derzeit eingeschrÃ¤nkt.';
+    }
+    if (assistant.status === 'unavailable') {
+        return 'Assistant-Provider konnten nicht gelesen werden.';
+    }
+    return 'Assistant-Status ist derzeit unklar.';
+};
+
+const buildMailDescription = (overview?: IntegrationsOverview) => {
+    const mail = overview?.mail;
+    const caps = overview?.capabilities;
+    if (!mail) return 'Mail-Status wird geladen.';
+    if (mail.status === 'owner_only' || mail.status === 'forbidden_demo') {
+        return 'Diese Verbindung kann nur im EigentÃ¼mer-Kontext verwaltet werden.';
+    }
+    if (mail.status === 'local' || caps?.mail_local_mode) {
+        return 'Lokaler Postfach-Modus aktiv. Keine externe IMAP-Synchronisation.';
+    }
+    if (mail.configured) {
+        return mail.email ? `Verbunden mit ${mail.email}.` : 'Postfach ist eingerichtet.';
+    }
+    return 'Noch keine Mail-Verbindung eingerichtet.';
+};
+
+const buildCalendarDescription = (overview?: IntegrationsOverview) => {
+    const calendar = overview?.calendar;
+    const caps = overview?.capabilities;
+    if (!calendar) return 'Kalender-Status wird geladen.';
+    if (calendar.status === 'owner_only') {
+        return 'Diese Verbindung kann nur im EigentÃ¼mer-Kontext verwaltet werden.';
+    }
+    if (!caps?.calendar_oauth_enabled) {
+        return 'Kalender-OAuth ist serverseitig noch nicht aktiviert.';
+    }
+    if (calendar.configured) {
+        return calendar.email ? `Verbunden mit ${calendar.email}.` : 'Kalender ist eingerichtet.';
+    }
+    return 'Noch keine Kalender-Verbindung eingerichtet.';
+};
+
+const SummaryCard: React.FC<{
+    icon: React.ReactNode;
+    title: string;
+    status?: string;
+    description: string;
+    meta?: string | null;
+}> = ({ icon, title, status, description, meta }) => (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-emerald-300">
+                    {icon}
+                </div>
+                <div>
+                    <h4 className="text-sm font-medium text-white">{title}</h4>
+                    {meta && <p className="mt-0.5 text-xs text-white/40">{meta}</p>}
+                </div>
+            </div>
+            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(status)}`}>
+                {humanizeIntegrationStatus(status)}
+            </span>
+        </div>
+        <p className="text-xs leading-relaxed text-white/65">{description}</p>
+    </div>
+);
 
 export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const pane = getPane(id);
 
+    const [overview, setOverview] = useState<IntegrationsOverview | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadOverview = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const data = await coreGet('/v3/integrations/overview');
+            setOverview(data || null);
+        } catch (err: any) {
+            setError(err?.message || 'Integrationen konnten nicht geladen werden.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadOverview();
+    }, [loadOverview]);
+
+    const ownerBlocked = useMemo(() => {
+        const mailBlocked = overview?.mail?.status === 'owner_only' || overview?.mail?.status === 'forbidden_demo';
+        const calendarBlocked = overview?.calendar?.status === 'owner_only';
+        return Boolean(mailBlocked && calendarBlocked);
+    }, [overview]);
+
     if (!pane) return null;
 
     return (
         <GlassPanel
-            title="Integrations & Connectors"
+            title="Integrationen"
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -30,12 +215,144 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
             draggable
             resizable
         >
-            <div className="p-6 h-full overflow-y-auto">
-                <div className="space-y-8">
-                    <EmailIntegration />
-                    <CalendarIntegration />
+            <div className="flex h-full flex-col overflow-hidden">
+                <div className="border-b border-white/10 px-6 py-5">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-white/35">Integrationsübersicht</p>
+                            <h3 className="mt-2 text-lg font-medium text-white">Externe Dienste und Assistant-Provider</h3>
+                            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
+                                Mail, Kalender und LLM-Provider werden hier als betriebliche OberflÃ¤che zusammengezogen. Die
+                                Karte zeigt den aktuellen Zustand, die Bereiche darunter bleiben die ausfÃ¼hrbaren Details.
+                            </p>
+                        </div>
+                        <button
+                            onClick={loadOverview}
+                            disabled={isLoading}
+                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 transition-colors hover:bg-white/10 disabled:opacity-50"
+                        >
+                            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+                            Aktualisieren
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                    {isLoading ? (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                {[0, 1, 2].map((index) => (
+                                    <div key={index} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                                        <div className="mb-4 h-4 w-28 rounded bg-white/10" />
+                                        <div className="h-10 rounded bg-white/5" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                                {[0, 1].map((index) => (
+                                    <div key={index} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                                        <div className="mb-4 h-5 w-36 rounded bg-white/10" />
+                                        <div className="h-32 rounded bg-white/5" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : error ? (
+                        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
+                            <div className="flex items-start gap-3">
+                                <AlertCircle className="mt-0.5 text-red-300" size={18} />
+                                <div>
+                                    <h4 className="text-sm font-medium text-red-100">Integrationen konnten nicht geladen werden</h4>
+                                    <p className="mt-1 text-sm text-red-100/70">{error}</p>
+                                    <button
+                                        onClick={loadOverview}
+                                        className="mt-4 rounded-xl bg-white/10 px-3 py-2 text-xs text-white transition-colors hover:bg-white/15"
+                                    >
+                                        Erneut versuchen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                <SummaryCard
+                                    icon={<Mail size={18} />}
+                                    title="Mail"
+                                    status={overview?.mail?.status}
+                                    description={buildMailDescription(overview || undefined)}
+                                    meta={overview?.mail?.provider ? `Provider: ${overview.mail.provider}` : null}
+                                />
+                                <SummaryCard
+                                    icon={<Calendar size={18} />}
+                                    title="Kalender"
+                                    status={overview?.calendar?.status}
+                                    description={buildCalendarDescription(overview || undefined)}
+                                    meta={overview?.calendar?.provider ? `Provider: ${overview.calendar.provider}` : null}
+                                />
+                                <SummaryCard
+                                    icon={<Bot size={18} />}
+                                    title="Assistant"
+                                    status={overview?.assistant?.status}
+                                    description={buildAssistantDescription(overview?.assistant)}
+                                    meta={overview?.assistant?.routing_profile ? `Profil: ${overview.assistant.routing_profile}` : null}
+                                />
+                            </div>
+
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-xs text-white/55">
+                                <div className="flex items-center gap-2 text-white/70">
+                                    <ShieldCheck size={14} className="text-emerald-300" />
+                                    <span>Betriebszustand</span>
+                                </div>
+                                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                                    <div className="rounded-xl bg-black/20 px-3 py-2">
+                                        Mail-Modus: <span className="text-white/80">{overview?.capabilities?.mail_local_mode ? 'Lokal' : 'Extern'}</span>
+                                    </div>
+                                    <div className="rounded-xl bg-black/20 px-3 py-2">
+                                        Kalender-OAuth: <span className="text-white/80">{overview?.capabilities?.calendar_oauth_enabled ? 'Aktiv' : 'Nicht aktiv'}</span>
+                                    </div>
+                                    <div className="rounded-xl bg-black/20 px-3 py-2">
+                                        Assistant: <span className="text-white/80">{overview?.capabilities?.assistant_available ? 'VerfÃ¼gbar' : 'Nicht verfÃ¼gbar'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {ownerBlocked ? (
+                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="mt-0.5 text-white/55" size={18} />
+                                        <div>
+                                            <h4 className="text-sm font-medium text-white">Dieser Bereich ist im aktuellen Kontext eingeschrÃ¤nkt</h4>
+                                            <p className="mt-1 text-sm text-white/55">
+                                                Mail- und Kalender-Integrationen kÃ¶nnen nur im EigentÃ¼mer-Kontext verwaltet werden. Die
+                                                Assistant-Ãœbersicht bleibt sichtbar, aber die ausfÃ¼hrbaren Verbindungen sind hier gesperrt.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                                    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                        <div className="mb-4">
+                                            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
+                                            <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
+                                        </div>
+                                        <EmailIntegration />
+                                    </section>
+                                    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                        <div className="mb-4">
+                                            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
+                                            <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
+                                        </div>
+                                        <CalendarIntegration />
+                                    </section>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </GlassPanel>
     );
 };
+

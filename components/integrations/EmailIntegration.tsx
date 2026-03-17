@@ -220,7 +220,7 @@ export const EmailIntegration: React.FC = () => {
                             type={showPassword ? 'text' : 'password'}
                             value={appPassword}
                             onChange={(e) => setAppPassword(e.target.value)}
-                            placeholder={status?.configured ? '********' : 'Enter app password'}
+                            placeholder={status?.configured ? '********' : 'App-Passwort eingeben'}
                             className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-emerald-500/50 focus:outline-none pr-10"
                         />
                         <button
@@ -289,3 +289,4 @@ export const EmailIntegration: React.FC = () => {
         </div>
     );
 };
+

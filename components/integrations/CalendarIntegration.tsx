@@ -126,3 +126,4 @@ export const CalendarIntegration: React.FC = () => {
         </div>
     );
 };
+
