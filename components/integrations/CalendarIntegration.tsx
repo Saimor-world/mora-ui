@@ -40,10 +40,10 @@ export const CalendarIntegration: React.FC = () => {
             if (res?.auth_url) {
                 window.open(res.auth_url, '_blank', 'noopener,noreferrer');
             } else {
-                toast.error('Missing Google auth URL');
+                toast.error('Verbindungs-URL nicht verfügbar');
             }
         } catch (e: any) {
-            toast.error(e?.message || 'Calendar connect failed');
+            toast.error(e?.message || 'Kalender-Verbindung fehlgeschlagen');
         } finally {
             setIsConnecting(false);
         }
@@ -63,7 +63,7 @@ export const CalendarIntegration: React.FC = () => {
             <div className="p-6 rounded-xl bg-white/5 border border-white/10">
                 <div className="flex items-center gap-3 text-white/60">
                     <AlertCircle size={20} />
-                    <span>Calendar integration is available for owners only.</span>
+                    <span>Kalender-Integration ist nur für Eigentümer verfügbar.</span>
                 </div>
             </div>
         );
@@ -78,30 +78,27 @@ export const CalendarIntegration: React.FC = () => {
                     </div>
                     <div>
                         <h4 className="text-white font-medium">Google Calendar</h4>
-                        <p className="text-xs text-white/40">Connect your calendar</p>
+                        <p className="text-xs text-white/40">Kalender verbinden</p>
                     </div>
                 </div>
                 {status?.configured && (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
-                            <Check size={12} /> Connected
+                            <Check size={12} /> Verbunden
                         </span>
                     </div>
                 )}
             </div>
 
             <div className="p-6 rounded-xl bg-white/5 border border-white/10 space-y-4">
-                <div className="text-xs text-white/60">
-                    Provider: <span className="text-white/80">{status?.provider || 'google'}</span>
-                </div>
                 {status?.email && (
-                    <div className="text-xs text-white/60">
-                        Account: <span className="text-white/80">{status.email}</span>
+                    <div className="text-xs text-white/55">
+                        Konto: <span className="text-white/80">{status.email}</span>
                     </div>
                 )}
-                {status?.calendar_id && (
-                    <div className="text-xs text-white/60">
-                        Calendar: <span className="text-white/80">{status.calendar_id}</span>
+                {status?.configured && !status?.email && (
+                    <div className="text-xs text-white/40">
+                        Anbieter: <span className="text-white/60">{status?.provider || 'Google'}</span>
                     </div>
                 )}
 
@@ -112,14 +109,17 @@ export const CalendarIntegration: React.FC = () => {
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs hover:bg-emerald-500/30 transition-all disabled:opacity-50"
                     >
                         <Link2 size={14} />
-                        {status?.configured ? 'Reconnect' : 'Connect'}
+                        {isConnecting
+                            ? 'Verbinden...'
+                            : status?.configured ? 'Neu verbinden' : 'Verbinden'
+                        }
                     </button>
                     <button
                         onClick={loadStatus}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 text-xs hover:bg-white/10 transition-all"
                     >
                         <RefreshCw size={14} />
-                        Refresh
+                        Aktualisieren
                     </button>
                 </div>
             </div>

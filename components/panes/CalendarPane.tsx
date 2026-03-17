@@ -12,7 +12,6 @@ import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
-import { useMoraStore } from "@/lib/store/moraState";
 import { coreGet, corePost } from "@/lib/api/coreClient";
 import {
     Calendar as CalendarIcon,
@@ -43,6 +42,7 @@ interface CalendarPaneProps {
 
 export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore((state) => state.activePaneId === id);
     const pane = getPane(id);
 
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -51,7 +51,6 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [showNewEvent, setShowNewEvent] = useState(false);
     const [newEventTitle, setNewEventTitle] = useState("");
-    const coreError = useMoraStore(state => state.coreError);
 
     // Map backend response to UI Event
     const mapEvent = (apiEvent: any): CalendarEvent => ({
@@ -153,7 +152,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
         if (!newEventTitle.trim() || !selectedDate) return;
 
         // Optimistic UI update
-        const tempId = `temp-${Date.now()}`;
+        const tempId = crypto.randomUUID();
         const newEvent: CalendarEvent = {
             id: tempId,
             title: newEventTitle,
@@ -183,17 +182,15 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
                 setEvents(prev => prev.map(e => e.id === tempId ? mapEvent(created) : e));
             }
         } catch (e) {
-            // Revert if failed
             console.error("Failed to create event", e);
             setEvents(prev => prev.filter(e => e.id !== tempId));
-            // Show error toast (not implemented here)
         }
     };
 
     if (!pane) return null;
 
     const monthNames = [
-        "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
+        "Januar", "Februar", "März", "April", "Mai", "Juni",
         "Juli", "August", "September", "Oktober", "November", "Dezember"
     ];
 
@@ -211,7 +208,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
@@ -371,7 +368,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
                                                     disabled={!newEventTitle.trim()}
                                                     className="px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm hover:bg-emerald-500/30 disabled:opacity-50 transition-colors"
                                                 >
-                                                    Hinzufuegen
+                                                    Hinzufügen
                                                 </button>
                                                 <button
                                                     onClick={() => setShowNewEvent(false)}
@@ -388,10 +385,10 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
                     )}
                 </AnimatePresence>
 
-                {/* MORA Integration hint */}
-                <div className="p-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-emerald-500/40">
+                {/* Mycelium connection hint */}
+                <div className="p-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-white/25">
                     <Sparkles size={12} className="text-mora-gold/50" />
-                    <span>Events are stored as nodes and visible in the graph</span>
+                    <span>Termine werden als Einträge im Mycelium gespeichert</span>
                 </div>
             </div>
         </GlassPanel>

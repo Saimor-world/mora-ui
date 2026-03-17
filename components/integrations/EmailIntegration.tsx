@@ -31,6 +31,7 @@ export const EmailIntegration: React.FC = () => {
     const [appPassword, setAppPassword] = useState('');
     const [customHost, setCustomHost] = useState('');
     const [customPort, setCustomPort] = useState('993');
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     useEffect(() => {
         loadStatus();
@@ -55,7 +56,7 @@ export const EmailIntegration: React.FC = () => {
 
     const handleSave = async () => {
         if (!email || !appPassword) {
-            toast.error('Email and app password are required');
+            toast.error('E-Mail und App-Passwort erforderlich');
             return;
         }
 
@@ -69,11 +70,11 @@ export const EmailIntegration: React.FC = () => {
                 port: provider == 'custom' ? parseInt(customPort, 10) : undefined,
             });
 
-            toast.success('Email integration saved');
+            toast.success('E-Mail-Integration gespeichert');
             setAppPassword('');
             await loadStatus();
         } catch (e: any) {
-            toast.error(e.message || 'Save failed');
+            toast.error(e.message || 'Speichern fehlgeschlagen');
         } finally {
             setIsSaving(false);
         }
@@ -84,31 +85,28 @@ export const EmailIntegration: React.FC = () => {
         try {
             const result = await corePost('/v3/integrations/mail/test', {});
             if (result?.success) {
-                toast.success(`Connection ok (${result.inbox_count || 0} messages)`);
+                toast.success(`Verbindung erfolgreich (${result.inbox_count || 0} Nachrichten)`);
             } else {
-                toast.error(`Connection failed: ${result?.message || 'Unknown error'}`);
+                toast.error(`Verbindung fehlgeschlagen: ${result?.message || 'Unbekannter Fehler'}`);
             }
         } catch (e: any) {
-            toast.error('Test failed');
+            toast.error('Test fehlgeschlagen');
         } finally {
             setIsTesting(false);
         }
     };
 
     const handleDelete = async () => {
-        if (typeof window !== 'undefined') {
-            const confirmed = window.confirm('Remove mail integration?');
-            if (!confirmed) return;
-        }
-
         try {
             await coreDelete('/v3/integrations/mail');
-            toast.success('Mail integration removed');
+            toast.success('E-Mail-Integration entfernt');
             setEmail('');
             setAppPassword('');
+            setConfirmingDelete(false);
             await loadStatus();
         } catch (e) {
-            toast.error('Delete failed');
+            toast.error('Entfernen fehlgeschlagen');
+            setConfirmingDelete(false);
         }
     };
 
@@ -126,7 +124,7 @@ export const EmailIntegration: React.FC = () => {
             <div className="p-6 rounded-xl bg-white/5 border border-white/10">
                 <div className="flex items-center gap-3 text-white/60">
                     <AlertCircle size={20} />
-                    <span>Email integration is available for owners only.</span>
+                    <span>E-Mail-Integration ist nur für Eigentümer verfügbar.</span>
                 </div>
             </div>
         );
@@ -140,15 +138,15 @@ export const EmailIntegration: React.FC = () => {
                         <Mail className="text-emerald-400" size={20} />
                     </div>
                     <div>
-                        <h4 className="text-white font-medium">Email Integration</h4>
-                        <p className="text-xs text-white/40">Connect your mail account</p>
+                        <h4 className="text-white font-medium">E-Mail-Verbindung</h4>
+                        <p className="text-xs text-white/40">Postfach verbinden</p>
                     </div>
                 </div>
 
                 {status?.configured && (
                     <div className="flex items-center gap-2">
                         <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full flex items-center gap-1">
-                            <Check size={12} /> Connected
+                            <Check size={12} /> Verbunden
                         </span>
                     </div>
                 )}
@@ -156,13 +154,13 @@ export const EmailIntegration: React.FC = () => {
 
             {isLocalMode && (
                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-200">
-                    Local mailbox mode is active. IMAP sync is disabled on this server.
+                    Lokaler Postfach-Modus aktiv. IMAP-Synchronisation ist auf diesem Server deaktiviert.
                 </div>
             )}
 
             <div className="p-6 rounded-xl bg-white/5 border border-white/10 space-y-5">
                 <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider text-white/40">Provider</label>
+                    <label className="text-xs uppercase tracking-wider text-white/40">Anbieter</label>
                     <div className="flex gap-3">
                         {PROVIDERS.map(p => (
                             <button
@@ -205,7 +203,7 @@ export const EmailIntegration: React.FC = () => {
                 )}
 
                 <div className="space-y-1">
-                    <label className="text-xs text-white/40">Email address</label>
+                    <label className="text-xs text-white/40">E-Mail-Adresse</label>
                     <input
                         type="email"
                         value={email}
@@ -216,7 +214,7 @@ export const EmailIntegration: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                    <label className="text-xs text-white/40">App password</label>
+                    <label className="text-xs text-white/40">App-Passwort</label>
                     <div className="relative">
                         <input
                             type={showPassword ? 'text' : 'password'}
@@ -234,10 +232,7 @@ export const EmailIntegration: React.FC = () => {
                         </button>
                     </div>
                     <p className="text-[10px] text-white/30 mt-1">
-                        Credentials are stored encrypted and never shown in plain text.
-                    </p>
-                    <p className="text-[10px] text-white/30">
-                        App password is used for IMAP + SMTP.
+                        Zugangsdaten werden verschlüsselt gespeichert und niemals im Klartext angezeigt.
                     </p>
                 </div>
 
@@ -248,10 +243,10 @@ export const EmailIntegration: React.FC = () => {
                         className="flex-1 px-4 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-                        Save
+                        Speichern
                     </button>
 
-                    {status?.configured && (
+                    {status?.configured && !confirmingDelete && (
                         <>
                             <button
                                 onClick={handleTest}
@@ -259,17 +254,35 @@ export const EmailIntegration: React.FC = () => {
                                 className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white/80 rounded-lg text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isTesting ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                                Test
+                                Testen
                             </button>
 
                             <button
-                                onClick={handleDelete}
+                                onClick={() => setConfirmingDelete(true)}
                                 disabled={isLocalMode}
                                 className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-2"
                             >
                                 <X size={14} />
                             </button>
                         </>
+                    )}
+
+                    {status?.configured && confirmingDelete && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-white/50">Wirklich entfernen?</span>
+                            <button
+                                onClick={handleDelete}
+                                className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-xs transition-colors"
+                            >
+                                Entfernen
+                            </button>
+                            <button
+                                onClick={() => setConfirmingDelete(false)}
+                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 rounded-lg text-xs transition-colors"
+                            >
+                                Abbrechen
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

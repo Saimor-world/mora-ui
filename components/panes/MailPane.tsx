@@ -43,6 +43,7 @@ interface MailPaneProps {
 
 export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore((state) => state.activePaneId === id);
     const { activeCompanyId, loadNodesForCompany } = useMoraStore();
     const pane = getPane(id);
 
@@ -81,7 +82,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             // Notification Logic
             if (initializedRef.current && fetchedMails.length > prevCountRef.current) {
                 const newCount = fetchedMails.length - prevCountRef.current;
-                toast.success(`${newCount} New Mail${newCount > 1 ? 's' : ''}`, {
+                toast.success(`${newCount} neue Nachricht${newCount > 1 ? 'en' : ''}`, {
                     description: fetchedMails[0].subject
                 });
             }
@@ -112,10 +113,10 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                 snippet: mail.snippet
             });
 
-            toast.success("Mail Saved", { description: "Stored as Node in System Mail" });
+            toast.success("In Mycelium gespeichert");
         } catch (err) {
             console.error("Save failed", err);
-            toast.error("Save Failed");
+            toast.error("Speichern fehlgeschlagen");
         } finally {
             setSaving(null);
         }
@@ -136,10 +137,10 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                 snippet: mail.snippet
             });
 
-            toast.success("Sent to MORA", {
+            toast.success("An Mora gesendet", {
                 description: result.space_name
-                    ? `Node created in ${result.space_name}`
-                    : "Node created with MORA categorization"
+                    ? `Eingeordnet in ${result.space_name}`
+                    : "Von Mora eingeordnet"
             });
 
             // Trigger UI animation (cursor moves to department, highlights space)
@@ -166,7 +167,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         } catch (err) {
             console.error('[MailPane] Commit error:', err);
             setError(String(err));
-            toast.error("Failed to send to MORA");
+            toast.error("Senden fehlgeschlagen");
         } finally {
             setProposing(false);
         }
@@ -190,7 +191,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
     return (
         <GlassPanel
-            title="Secure Mail Gateway"
+            title="Post"
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -200,7 +201,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
@@ -217,7 +218,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                 <Mail className="w-5 h-5 text-red-400" />
                             </div>
                             <div>
-                                <p className="text-xs text-white/50 font-bold uppercase tracking-wider">Secure Inbox</p>
+                                <p className="text-xs text-white/50 font-bold uppercase tracking-wider">Posteingang</p>
                             </div>
                         </div>
 
@@ -256,7 +257,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                 onClick={fetchMails}
                                 className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm text-white transition-all"
                             >
-                                Retry Connection
+                                Erneut versuchen
                             </button>
                         </div>
                     )}
@@ -264,7 +265,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                     {!loading && !error && mails.length === 0 && !viewingMail && (
                         <div className="p-8 text-center text-white/40">
                             <Inbox className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                            <p className="text-sm">No encrypted messages in queue</p>
+                            <p className="text-sm">Keine Nachrichten im Posteingang</p>
                         </div>
                     )}
 
@@ -310,8 +311,8 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                     <ArrowLeft className="w-5 h-5" />
                                 </button>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-white font-medium truncate text-sm">Message Perspective</h3>
-                                    <p className="text-[10px] text-white/40 uppercase tracking-widest">End-to-End Decrypted</p>
+                                    <h3 className="text-white font-medium truncate text-sm">{viewingMail.subject || '(Kein Betreff)'}</h3>
+                                    <p className="text-[10px] text-white/40 uppercase tracking-widest">{viewingMail.from_addr.split('<')[0].trim()}</p>
                                 </div>
                             </div>
 
@@ -362,7 +363,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                     ) : (
                                         <Archive className="w-4 h-4 text-white/40 group-hover:text-white transition-colors" />
                                     )}
-                                    Archive to Mycelium
+                                    In Mycelium archivieren
                                 </button>
 
                                 <button
@@ -375,7 +376,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                     ) : (
                                         <Sparkles className="w-4 h-4" />
                                     )}
-                                    Send to MORA
+                                    An Mora senden
                                 </button>
                             </div>
                         </motion.div>
@@ -392,7 +393,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                             className="absolute inset-0 bg-[#0a0a0a] z-30 flex flex-col"
                         >
                             <div className="flex items-center justify-between p-4 border-b border-white/10">
-                                <h3 className="text-sm font-medium text-white">New Message</h3>
+                                <h3 className="text-sm font-medium text-white">Neue Nachricht</h3>
                                 <button onClick={() => setComposing(false)} className="text-white/50 hover:text-white">
                                     <X className="w-5 h-5" />
                                 </button>
@@ -430,13 +431,13 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                                 content: composeBody,
                                                 text_content: composeBody
                                             });
-                                            toast.success("Sent", { description: "Email sent successfully" });
+                                            toast.success("Gesendet");
                                             setComposing(false);
                                             setComposeTo("");
                                             setComposeSubject("");
                                             setComposeBody("");
                                         } catch (e) {
-                                            toast.error("Failed to send");
+                                            toast.error("Senden fehlgeschlagen");
                                         } finally {
                                             setSending(false);
                                         }
@@ -445,7 +446,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                     className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
                                 >
                                     {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                    Send Message
+                                    Senden
                                 </button>
                             </div>
                         </motion.div>
@@ -465,7 +466,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Autonomous Proposal Ready</span>
+                                        <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Mora Vorschlag</span>
                                     </div>
                                     <p className="text-white/90 text-sm font-light truncate">{currentProposal.summary}</p>
                                 </div>

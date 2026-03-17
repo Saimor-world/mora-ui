@@ -6,6 +6,7 @@ import { CalendarIntegration } from '@/components/integrations/CalendarIntegrati
 
 export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore((state) => state.activePaneId === id);
     const pane = getPane(id);
 
     if (!pane) return null;
@@ -22,7 +23,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
