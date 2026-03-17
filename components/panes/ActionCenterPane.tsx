@@ -12,7 +12,7 @@ import { toast } from '@/lib/toast';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
-type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | 'confirm_action' | 'undo';
+type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | 'confirm_action' | 'undo' | 'work_session_plan';
 
 // ─── Intake batch grouping ────────────────────────────────────────────────────
 
@@ -30,6 +30,14 @@ interface IntakeBatch {
 function isIntakeEvent(evt: ActionEvent): boolean {
     const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
     return tool === 'create_node_from_file' || evt.intent === 'create_node_from_file';
+}
+
+function getWorkSessionPlanId(evt: ActionEvent): string | null {
+    const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
+    const isWorkSession = tool === 'work_session_plan' || evt.intent === 'work_session_plan';
+    if (!isWorkSession) return null;
+    const id = evt.payload?.plan_id;
+    return typeof id === 'string' && id.length > 0 ? id : null;
 }
 
 function getIntakeRoute(evt: ActionEvent): string | null {
@@ -242,6 +250,7 @@ const intentFilters: { key: IntentFilter; label: string }[] = [
     { key: 'update_note_content', label: 'Inhalt aktualisieren' },
     { key: 'confirm_action', label: 'Bestätigen' },
     { key: 'undo', label: 'Rückgängig' },
+    { key: 'work_session_plan', label: 'Arbeitsplan' },
 ];
 
 const statusFilters: { key: ActionFilter; label: string }[] = [
@@ -259,17 +268,37 @@ function formatActionTitle(evt: ActionEvent): string {
 }
 
 function formatActionMessage(evt: ActionEvent): string | null {
+    const workSessionPlanId = getWorkSessionPlanId(evt);
+    if (workSessionPlanId) {
+        const summary = typeof evt.payload?.summary === 'string' && evt.payload.summary.trim()
+            ? evt.payload.summary
+            : evt.message;
+        const stats = typeof evt.payload?.stats === 'object' && evt.payload.stats !== null
+            ? evt.payload.stats as Record<string, unknown>
+            : null;
+        const total = typeof stats?.total_steps === 'number' ? stats.total_steps : null;
+        const read = typeof stats?.read_steps === 'number' ? stats.read_steps : null;
+        const write = typeof stats?.write_steps === 'number' ? stats.write_steps : null;
+        const pending = typeof stats?.pending_confirmations === 'number' ? stats.pending_confirmations : null;
+        const statsSummary = [
+            total ? `${total} Schritte` : null,
+            read ? `${read} Lesen` : null,
+            write ? `${write} Schreiben` : null,
+            pending ? `${pending} Freigabe${pending === 1 ? '' : 'n'} offen` : null,
+        ].filter(Boolean).join(' | ');
+        if (summary && statsSummary) return `${summary} | ${statsSummary}`;
+        if (summary) return summary;
+        if (statsSummary) return statsSummary;
+    }
+
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
-    // change_summary is the primary human-readable result string from Core 6b1b301.
     const changeSummary = typeof evt.payload?.change_summary === 'string' ? evt.payload.change_summary : null;
     if (changeSummary?.trim()) return changeSummary;
-    // Top-level promoted fields (single content-action results — backend v2 shape)
     const topLevelResultSummary = typeof evt.payload?.result_summary === 'string' ? evt.payload.result_summary : null;
     if (topLevelResultSummary?.trim()) return topLevelResultSummary;
     const summary = typeof evt.payload?.summary === 'string' ? evt.payload.summary : null;
     if (summary) return summary;
-    // Agency Step 2: confirmed results carry result_summary / destination_summary
     const result = evt.payload?.result;
     if (result && typeof result === 'object' && result !== null) {
         const r = result as Record<string, unknown>;
@@ -282,7 +311,6 @@ function formatActionMessage(evt: ActionEvent): string | null {
                 : `Erstellt in ${r.destination_summary}`;
         }
     }
-    // Top-level destination_summary (promoted, no nested result object)
     const topLevelDest = typeof evt.payload?.destination_summary === 'string' ? evt.payload.destination_summary : null;
     if (topLevelDest?.trim()) {
         const intent = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : evt.intent;
@@ -390,12 +418,44 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
 }
 
 function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
+    const workSessionPlanId = getWorkSessionPlanId(evt);
+    if (workSessionPlanId) {
+        const stats = typeof evt.payload?.stats === 'object' && evt.payload.stats !== null
+            ? evt.payload.stats as Record<string, unknown>
+            : null;
+        const scope = typeof evt.payload?.scope === 'object' && evt.payload.scope !== null
+            ? evt.payload.scope as Record<string, unknown>
+            : null;
+        const details = [
+            typeof evt.payload?.state === 'string' ? `Status: ${evt.payload.state}` : null,
+            typeof scope?.view_level === 'string' ? `Ebene: ${scope.view_level}` : null,
+            typeof scope?.active_entity_type === 'string' ? `Kontext: ${scope.active_entity_type}` : null,
+            typeof stats?.total_steps === 'number' ? `Schritte: ${stats.total_steps}` : null,
+            typeof stats?.read_steps === 'number' ? `Lesen: ${stats.read_steps}` : null,
+            typeof stats?.write_steps === 'number' ? `Schreiben: ${stats.write_steps}` : null,
+            typeof stats?.pending_confirmations === 'number' ? `Freigaben offen: ${stats.pending_confirmations}` : null,
+            typeof evt.payload?.transparency_note === 'string' && evt.payload.transparency_note.trim()
+                ? evt.payload.transparency_note
+                : null,
+        ].filter(Boolean) as string[];
+        if (details.length === 0) return null;
+        return (
+            <div className="md:col-span-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Arbeitsplan</div>
+                <div className="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 space-y-1">
+                    {details.map((detail) => (
+                        <div key={detail} className="text-[11px] text-white/65">{detail}</div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     const result = evt.payload?.result;
     const operationsExecuted = Array.isArray((result as Record<string, unknown> | undefined)?.operations_executed)
         ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
         : [];
     const operations = Array.isArray(evt.payload?.operations) ? (evt.payload.operations as Record<string, unknown>[]) : [];
-    // Prefer the structured content_change contract (Core 6b1b301); fall back to legacy flat fields.
     const _payloadCC = typeof evt.payload?.content_change === 'object' && evt.payload.content_change !== null
         ? evt.payload.content_change as Record<string, unknown>
         : null;
@@ -431,10 +491,10 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
     );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// Component ────────────────────────────────────────────────────────────────
 
 export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
 

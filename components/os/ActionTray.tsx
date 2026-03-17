@@ -85,6 +85,27 @@ function formatActionTitle(evt: ActionEventLike): string {
 }
 
 function buildBaseMessage(evt: ActionEventLike): string | null {
+    const workSessionPlanId = getWorkSessionPlanId(evt);
+    if (workSessionPlanId) {
+        const summary = extractPayloadString(evt.payload, 'summary') || evt.message;
+        const stats = typeof evt.payload?.stats === 'object' && evt.payload.stats !== null
+            ? evt.payload.stats as Record<string, unknown>
+            : null;
+        const total = typeof stats?.total_steps === 'number' ? stats.total_steps : null;
+        const read = typeof stats?.read_steps === 'number' ? stats.read_steps : null;
+        const write = typeof stats?.write_steps === 'number' ? stats.write_steps : null;
+        const pending = typeof stats?.pending_confirmations === 'number' ? stats.pending_confirmations : null;
+        const statsSummary = [
+            total ? `${total} Schritte` : null,
+            read ? `${read} Lesen` : null,
+            write ? `${write} Schreiben` : null,
+            pending ? `${pending} Freigabe${pending === 1 ? '' : 'n'} offen` : null,
+        ].filter(Boolean).join(' | ');
+        if (summary && statsSummary) return `${summary} | ${statsSummary}`;
+        if (summary) return summary;
+        if (statsSummary) return statsSummary;
+    }
+
     if (evt.error) return evt.error;
     if (evt.message) return evt.message;
 
@@ -117,7 +138,6 @@ function buildBaseMessage(evt: ActionEventLike): string | null {
         }
     }
 
-    // Top-level destination_summary (promoted, no nested result object)
     const topLevelDestSummary = extractPayloadString(evt.payload, 'destination_summary');
     if (topLevelDestSummary) {
         const intent = extractPayloadString(evt.payload, 'tool_name') || evt.intent || '';
@@ -145,9 +165,35 @@ function formatActionMessage(evt: ActionEventLike): string | null {
     return base;
 }
 
+function getWorkSessionPlanId(evt: ActionEventLike): string | null {
+    const isWorkSession =
+        evt.intent === 'work_session_plan' ||
+        extractPayloadString(evt.payload, 'tool_name') === 'work_session_plan';
+    if (!isWorkSession) return null;
+    const id = evt.payload?.plan_id;
+    return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
 function buildExpandedDetails(evt: ActionEventLike): string[] {
+    const workSessionPlanId = getWorkSessionPlanId(evt);
+    if (workSessionPlanId) {
+        const stats = typeof evt.payload?.stats === 'object' && evt.payload.stats !== null
+            ? evt.payload.stats as Record<string, unknown>
+            : null;
+        const scope = typeof evt.payload?.scope === 'object' && evt.payload.scope !== null
+            ? evt.payload.scope as Record<string, unknown>
+            : null;
+        return [
+            typeof evt.payload?.state === 'string' ? `Status: ${evt.payload.state}` : null,
+            typeof scope?.view_level === 'string' ? `Ebene: ${scope.view_level}` : null,
+            typeof scope?.active_entity_type === 'string' ? `Kontext: ${scope.active_entity_type}` : null,
+            typeof stats?.total_steps === 'number' ? `Schritte: ${stats.total_steps}` : null,
+            typeof stats?.pending_confirmations === 'number' ? `Freigaben offen: ${stats.pending_confirmations}` : null,
+            extractPayloadString(evt.payload, 'transparency_note'),
+        ].filter(Boolean) as string[];
+    }
+
     const destSummary = extractPayloadString(evt.payload, 'destination_summary');
-    // Prefer structured content_change contract (Core 6b1b301) over legacy flat fields.
     const cc = typeof evt.payload?.content_change === 'object' && evt.payload.content_change !== null
         ? evt.payload.content_change as Record<string, unknown>
         : null;
