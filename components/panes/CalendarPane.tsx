@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { coreGet, corePost } from "@/lib/api/coreClient";
+import { toast } from "sonner";
 import {
     Calendar as CalendarIcon,
     ChevronLeft,
@@ -77,6 +78,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
             }
         } catch (e) {
             console.error("Failed to load calendar events", e);
+            toast.error("Kalender konnte nicht geladen werden");
         } finally {
             setIsLoading(false);
         }
@@ -184,6 +186,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
         } catch (e) {
             console.error("Failed to create event", e);
             setEvents(prev => prev.filter(e => e.id !== tempId));
+            toast.error("Termin konnte nicht gespeichert werden");
         }
     };
 

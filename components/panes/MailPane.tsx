@@ -11,8 +11,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { executeProposal } from '@/lib/agency/actionRegistry';
-import type { ActionProposal } from '@/lib/agency/actionRegistry';
 import { toast } from 'sonner';
 import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -44,13 +42,12 @@ interface MailPaneProps {
 export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const { activeCompanyId, loadNodesForCompany } = useMoraStore();
+    const { activeCompanyId, loadTree } = useMoraStore();
     const pane = getPane(id);
 
     const [mails, setMails] = useState<MailObject[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedMail, setSelectedMail] = useState<MailObject | null>(null); // For proposal state
     const [viewingMail, setViewingMail] = useState<MailObject | null>(null); // For viewer overlay
     const [composing, setComposing] = useState(false);
     const [composeTo, setComposeTo] = useState("");
@@ -60,8 +57,6 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
     const [proposing, setProposing] = useState(false);
     const [saving, setSaving] = useState<string | null>(null);
-    const [currentProposal, setCurrentProposal] = useState<ActionProposal | null>(null);
-
     // For notification logic
     const prevCountRef = useRef<number>(0);
     const initializedRef = useRef(false);
@@ -124,10 +119,8 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
     const sendToMora = async (mail: MailObject) => {
         setProposing(true);
-        setSelectedMail(mail);
 
         try {
-            // FIXED: Use /v3/mail/commit to create node + event (not /v1/agency/propose)
             const result = await corePost('/v3/mail/commit', {
                 message_id: mail.message_id || mail.id,
                 mail_id: mail.id,
@@ -143,25 +136,8 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                     : "Von Mora eingeordnet"
             });
 
-            // Trigger UI animation (cursor moves to department, highlights space)
-            if (result.space_id) {
-                const proposal: ActionProposal = {
-                    proposal_id: crypto.randomUUID(),
-                    created_at: new Date().toISOString(),
-                    summary: "Navigate to new node",
-                    status: "proposed",
-                    actions: [
-                        { "type": "move_cursor", "target_id": result.space_id, "reason": "Navigating to new mail node" },
-                        { "type": "highlight", "target_id": result.space_id, "duration_ms": 3000, "reason": "Highlighting new mail node" }
-                    ]
-                };
-                setCurrentProposal(proposal);
-                await executeProposal(proposal);
-            }
-
-            // Reload nodes to show new node in Universe
             if (activeCompanyId) {
-                await loadNodesForCompany(activeCompanyId);
+                await loadTree(undefined, activeCompanyId);
             }
 
         } catch (err) {
@@ -226,7 +202,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                             <button
                                 onClick={() => setComposing(true)}
                                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                title="Compose"
+                                title="Neue Nachricht"
                             >
                                 <PenSquare className="w-4 h-4" />
                             </button>
@@ -287,7 +263,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                         {formatDate(mail.date)}
                                     </span>
                                 </div>
-                                <p className="text-white/70 text-sm truncate mb-1">{mail.subject || '(No Subject)'}</p>
+                                        <p className="text-white/70 text-sm truncate mb-1">{mail.subject || '(Kein Betreff)'}</p>
                                 <p className="text-white/40 text-xs line-clamp-1">{mail.snippet}</p>
                             </div>
                         </div>
@@ -335,7 +311,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
                                 {viewingMail.attachment_count > 0 && (
                                     <div className="mt-8 pt-8 border-t border-white/5">
-                                        <p className="text-white/40 text-[10px] uppercase tracking-widest mb-4">Attachments ({viewingMail.attachment_count})</p>
+                                        <p className="text-white/40 text-[10px] uppercase tracking-widest mb-4">Anhänge ({viewingMail.attachment_count})</p>
                                         <div className="grid grid-cols-1 gap-2">
                                             {viewingMail.attachments?.map((at, i) => (
                                                 <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-colors cursor-default">
@@ -401,20 +377,20 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                             <div className="flex-1 p-4 space-y-4">
                                 <input
                                     type="email"
-                                    placeholder="To"
+                                    placeholder="An"
                                     value={composeTo}
                                     onChange={(e) => setComposeTo(e.target.value)}
                                     className="w-full bg-transparent border-b border-white/10 p-2 text-white outline-none focus:border-emerald-500/50"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Subject"
+                                    placeholder="Betreff"
                                     value={composeSubject}
                                     onChange={(e) => setComposeSubject(e.target.value)}
                                     className="w-full bg-transparent border-b border-white/10 p-2 text-white outline-none focus:border-emerald-500/50 font-medium"
                                 />
                                 <textarea
-                                    placeholder="Message..."
+                                    placeholder="Nachricht ..."
                                     value={composeBody}
                                     onChange={(e) => setComposeBody(e.target.value)}
                                     className="w-full h-full bg-transparent p-2 text-white outline-none resize-none font-light leading-relaxed"
@@ -453,35 +429,6 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                     )}
                 </AnimatePresence>
 
-                {/* MORA Proposal Display (Global) */}
-                <AnimatePresence>
-                    {currentProposal && !viewingMail && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-emerald-500/30 overflow-hidden bg-emerald-500/5 backdrop-blur-xl"
-                        >
-                            <div className="p-4 flex items-center justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest">Mora Vorschlag</span>
-                                    </div>
-                                    <p className="text-white/90 text-sm font-light truncate">{currentProposal.summary}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setCurrentProposal(null)}
-                                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 transition-colors"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </div>
         </GlassPanel>
     );
