@@ -91,6 +91,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const [routeOptions, setRouteOptions] = useState<RouteOverrideOption[]>([]);
     const seededBatchIdsRef = React.useRef<Set<string>>(new Set());
     const autoOpenedBatchRef = React.useRef<string | null>(null);
+    const reportedBatchRef = React.useRef<string | null>(null);
     const intakeSeed = (pane?.data || {}) as IntakeSeedPayload;
 
     // Fetch system telemetry for "Godmode" grounding
@@ -533,6 +534,28 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         });
     }, [activeCompanyId, batchResultSummary, intakeSeed.batchId, intakeSeed.source, openPane, pendingActions.length]);
 
+    React.useEffect(() => {
+        if (intakeSeed.source !== 'mycelium' || !batchResultSummary || pendingActions.length > 0) return;
+        const batchMarker = intakeSeed.batchId || '__mycelium-complete__';
+        if (reportedBatchRef.current === batchMarker) return;
+        reportedBatchRef.current = batchMarker;
+        window.dispatchEvent(new CustomEvent('saimor:mycelium-batch-complete', {
+            detail: {
+                batchId: intakeSeed.batchId,
+                companyId: activeCompanyId || undefined,
+                total: batchResultSummary.total,
+                confirmed: batchResultSummary.confirmed,
+                rejected: batchResultSummary.rejected,
+                routes: batchResultSummary.routes.map((route) => ({
+                    path: route.path,
+                    folderId: route.folderId,
+                    confirmed: route.confirmed,
+                    rejected: route.rejected,
+                })),
+            },
+        }));
+    }, [activeCompanyId, batchResultSummary, intakeSeed.batchId, intakeSeed.source, pendingActions.length]);
+
     const bulkConfirm = async () => {
         if (pendingActions.length === 0) return;
         setIsBatchProcessing(true);
@@ -954,13 +977,25 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             const active = activePendingAction;
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
-                                const confirmedFolderId = await resolveDestinationFolderId(active, result);
+                                // Priority 1-3: synchronously extract folderId from result
+                                // so markFileOutcome (and batchResultSummary) update in the same
+                                // React render tick — no microtask boundary before the state write.
+                                const immediateFolderId: string | undefined =
+                                    result?.folder_id ||
+                                    result?.destination?.folder_id ||
+                                    result?.result?.destination?.folder_id;
                                 const resultText = buildResolvedResultText(
                                     active.intake_context,
-                                    confirmedFolderId,
+                                    immediateFolderId,
                                     result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
                                 );
-                                markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId);
+                                markFileOutcome(active.file_id, 'confirmed', resultText, immediateFolderId);
+                                // Priority 4: async fallback via getFileNode (only when result lacks folder_id)
+                                if (!immediateFolderId) {
+                                    resolveDestinationFolderId(active, result).then((fallbackId) => {
+                                        if (fallbackId) markFileOutcome(active.file_id, 'confirmed', resultText, fallbackId);
+                                    }).catch(() => { /* destination unknown is acceptable */ });
+                                }
                             }
                             toast.success(result?.destination_summary || 'Datei eingeordnet');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));

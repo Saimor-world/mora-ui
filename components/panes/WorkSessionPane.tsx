@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
-import type { WorkSessionPlan, WorkSessionStats, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
+import type { WorkSessionPlan, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
 import {
     AlertTriangle,
     CheckCircle2,
@@ -25,19 +25,26 @@ import {
     ChevronUp,
     Clock3,
     Eye,
+    FilePlus2,
+    FolderOpen,
     Loader2,
+    MoveRight,
     Pencil,
     PlayCircle,
+    Search,
     SkipForward,
+    Trash2,
+    Type,
+    Upload,
     XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
-/** Kinds that mutate data — shown with amber/orange accent */
+/** Kinds that mutate data — shown with amber/orange accent (Core 7099179 canonical set) */
 const WRITE_KINDS = new Set([
-    'create', 'update', 'move', 'delete', 'write', 'execute', 'patch', 'rename',
+    'create', 'update', 'move', 'rename', 'intake', 'delete', 'write', 'execute', 'patch',
 ]);
 
 const POLL_INTERVAL_MS = 3000;
@@ -46,6 +53,36 @@ const POLL_INTERVAL_MS = 3000;
 
 function isWriteKind(kind: string): boolean {
     return WRITE_KINDS.has(kind.toLowerCase());
+}
+
+/** German action verbs — used in kind badges and confirmation button labels */
+const kindLabels: Record<string, string> = {
+    create:   'Erstellen',
+    update:   'Ändern',
+    move:     'Verschieben',
+    rename:   'Umbenennen',
+    intake:   'Einordnen',
+    delete:   'Löschen',
+    search:   'Suchen',
+    navigate: 'Navigieren',
+    write:    'Schreiben',
+    execute:  'Ausführen',
+    patch:    'Aktualisieren',
+};
+
+/** Per-kind icon. Write kinds get a semantically meaningful icon; read kinds also get one. */
+function KindIcon({ kind, size = 12, className }: { kind: string; size?: number; className?: string }) {
+    const k = kind.toLowerCase();
+    const p = { size, className };
+    if (k === 'search')   return <Search {...p} />;
+    if (k === 'navigate') return <FolderOpen {...p} />;
+    if (k === 'create')   return <FilePlus2 {...p} />;
+    if (k === 'update')   return <Pencil {...p} />;
+    if (k === 'move')     return <MoveRight {...p} />;
+    if (k === 'rename')   return <Type {...p} />;
+    if (k === 'intake')   return <Upload {...p} />;
+    if (k === 'delete')   return <Trash2 {...p} />;
+    return isWriteKind(k) ? <Pencil {...p} /> : <Eye {...p} />;
 }
 
 const planStateLabels: Record<string, { label: string; cls: string }> = {
@@ -95,11 +132,13 @@ function StepRow({ step }: { step: WorkSessionStep }) {
         :            'border-white/[0.06] bg-white/[0.02]';
 
     const titleCls = isDone
-        ? 'text-white/35 line-through decoration-white/15'
+        ? 'text-white/32'
         : isFailed  ? 'text-red-300/70'
         : isRunning ? 'text-white/90 font-medium'
-        : write     ? 'text-amber-100/75'
-        :             'text-white/55';
+        : write     ? 'text-amber-100/78'
+        :             'text-white/58';
+
+    const kindLabel = kindLabels[step.kind.toLowerCase()];
 
     return (
         <div className={`rounded-lg border px-3 py-2.5 ${rowCls}`}>
@@ -113,14 +152,16 @@ function StepRow({ step }: { step: WorkSessionStep }) {
                             {step.title}
                         </span>
                         <div className="flex items-center gap-1.5 shrink-0">
-                            {write && !isDone && (
+                            {/* Write steps: kind badge with German verb */}
+                            {write && !isDone && kindLabel && (
                                 <span className="text-[9px] uppercase tracking-wider text-orange-300/45 flex items-center gap-1">
-                                    <Pencil size={8} />
-                                    {step.kind}
+                                    <KindIcon kind={step.kind} size={8} />
+                                    {kindLabel}
                                 </span>
                             )}
+                            {/* Read steps: subtle kind icon only */}
                             {!write && (
-                                <Eye size={9} className="text-white/15" />
+                                <KindIcon kind={step.kind} size={10} className="text-white/18" />
                             )}
                             {hasDetail && (
                                 <button
@@ -188,18 +229,27 @@ function ConfirmStepCard({
         try { await fn(step.step_id); } finally { setProcessing(false); }
     };
 
+    const confirmLabel = kindLabels[step.kind.toLowerCase()] ?? 'Ausführen';
+
     return (
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3">
             <div className="flex items-start gap-2 mb-3">
-                <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                <div className="shrink-0 mt-0.5 flex items-center justify-center w-5 h-5 rounded-md bg-amber-500/15 border border-amber-500/20">
+                    <KindIcon kind={step.kind} size={11} className="text-amber-300/80" />
+                </div>
                 <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-amber-100/90 leading-snug">{step.title}</div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[9px] uppercase tracking-wider text-amber-300/50">
+                            {kindLabels[step.kind.toLowerCase()] ?? step.kind}
+                        </span>
+                    </div>
+                    <div className="text-xs font-medium text-amber-100/90 leading-snug mt-0.5">{step.title}</div>
                     {step.why && (
-                        <p className="text-[11px] text-white/42 mt-1 leading-relaxed">{step.why}</p>
+                        <p className="text-[11px] text-white/42 mt-1.5 leading-relaxed">{step.why}</p>
                     )}
                     {step.tool_name && (
-                        <span className="text-[9px] uppercase tracking-wider text-amber-200/35 mt-1 inline-block">
-                            {step.tool_name.replace(/_/g, ' ')}
+                        <span className="text-[9px] text-amber-200/30 mt-1 inline-block font-mono">
+                            {step.tool_name}
                         </span>
                     )}
                 </div>
@@ -211,7 +261,7 @@ function ConfirmStepCard({
                     disabled={processing}
                     className="flex-1 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/45 hover:text-white/65 text-xs transition-colors disabled:opacity-40"
                 >
-                    Ablehnen
+                    Überspringen
                 </button>
                 <button
                     type="button"
@@ -219,8 +269,11 @@ function ConfirmStepCard({
                     disabled={processing}
                     className="flex-1 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-100 text-xs font-medium transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
                 >
-                    {processing && <Loader2 size={11} className="animate-spin" />}
-                    Ausführen
+                    {processing
+                        ? <Loader2 size={11} className="animate-spin" />
+                        : <KindIcon kind={step.kind} size={11} />
+                    }
+                    {confirmLabel}
                 </button>
             </div>
         </div>
@@ -284,7 +337,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                 setPlan(updated as WorkSessionPlan);
             }
         } catch {
-            toast.error('Best?tigung fehlgeschlagen.');
+            toast.error('Bestätigung fehlgeschlagen.');
         }
     };
 
@@ -390,19 +443,19 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                                 )}
                                 {/* Step count summary from stats */}
                                 {readCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/25 flex items-center gap-1">
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/28 flex items-center gap-1">
                                         <Eye size={9} />
-                                        {readCount} Lesen
+                                        {readCount}
                                     </span>
                                 )}
                                 {writeCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/[0.08] border border-orange-400/15 text-orange-200/50 flex items-center gap-1">
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/[0.08] border border-orange-400/15 text-orange-200/55 flex items-center gap-1">
                                         <Pencil size={9} />
-                                        {writeCount} Schreiben
+                                        {writeCount}
                                     </span>
                                 )}
-                                {completedCount !== undefined && totalCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.05] text-white/22">
+                                {completedCount !== undefined && totalCount > 0 && completedCount > 0 && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/[0.06] border border-emerald-400/15 text-emerald-300/50">
                                         {completedCount}/{totalCount}
                                     </span>
                                 )}
