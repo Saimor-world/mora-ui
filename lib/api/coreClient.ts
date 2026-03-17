@@ -1293,6 +1293,16 @@ export interface WorkSessionStats {
     pending_confirmations: number;
 }
 
+export interface WorkSessionPendingConfirmation {
+    step_id?: string;
+    action_id?: string;
+    confirmation_token?: string;
+    tool_name?: string;
+    message?: string;
+    summary?: string;
+    [key: string]: unknown;
+}
+
 export interface WorkSessionPlan {
     plan_id: string;
     session_id?: string;
@@ -1303,8 +1313,7 @@ export interface WorkSessionPlan {
     /** Aggregate step counters — use these instead of computing from steps[] */
     stats?: WorkSessionStats;
     steps: WorkSessionStep[];
-    /** step_ids currently awaiting user confirmation */
-    pending_confirmations?: string[];
+    pending_confirmations?: WorkSessionPendingConfirmation[];
     mode?: string;
     provider?: string;
     transparency_note?: string;

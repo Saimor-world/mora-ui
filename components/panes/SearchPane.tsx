@@ -6,7 +6,7 @@ import { Search, X, FileText, Folder, Building2, Clock, ArrowRight, Sparkles } f
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { searchGlobal, searchSemantic, fetchNodeDetails } from '@/lib/api/coreClient';
 
 /**
  * SearchPane - Universal Search Interface
@@ -291,7 +291,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         }
     };
 
-    const handleResultClick = (result: SearchResult) => {
+    const handleResultClick = async (result: SearchResult) => {
         // Save to recent searches
         const newRecent = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
         setRecentSearches(newRecent);
@@ -324,14 +324,23 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 break;
             case 'file':
             case 'node':
-                if (result.folderId) {
+                let resolvedFolderId = result.folderId;
+                if (!resolvedFolderId && (result.nodeId || result.id)) {
+                    try {
+                        const node = await fetchNodeDetails(result.nodeId || result.id);
+                        resolvedFolderId = (node as any)?.folder_id || resolvedFolderId;
+                    } catch {
+                        // fall back to document-only open
+                    }
+                }
+                if (resolvedFolderId) {
                     openPane({
-                        id: `finder-${result.folderId}`,
+                        id: `finder-${resolvedFolderId}`,
                         type: 'finder',
                         title: result.title,
                         size: { width: 900, height: 640 },
                         data: {
-                            folderId: result.folderId,
+                            folderId: resolvedFolderId,
                             companyId: activeCompanyId || undefined,
                         }
                     });
@@ -445,7 +454,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                             initial={{ opacity: 0, y: 5 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.03 }}
-                                            onClick={() => handleResultClick(result)}
+                                            onClick={() => void handleResultClick(result)}
                                             className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${index === selectedIndex
                                                 ? 'bg-emerald-500/20 border border-emerald-500/30'
                                                 : 'hover:bg-white/5 border border-transparent'

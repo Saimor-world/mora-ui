@@ -279,27 +279,22 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     const handleConfirmStep = async (stepId: string) => {
         if (!plan) return;
         try {
-            await corePost('/v3/work-session/confirm', { plan_id: plan.plan_id, step_id: stepId });
-            // Optimistic update
-            setPlan((prev) => prev ? {
-                ...prev,
-                steps: prev.steps.map((s) => s.step_id === stepId ? { ...s, status: 'running' as const } : s),
-                pending_confirmations: (prev.pending_confirmations ?? []).filter((sid) => sid !== stepId),
-            } : prev);
+            const updated = await corePost('/v3/work-session/confirm', { plan_id: plan.plan_id, step_id: stepId }, { isOptional: true });
+            if (updated) {
+                setPlan(updated as WorkSessionPlan);
+            }
         } catch {
-            toast.error('Bestätigung fehlgeschlagen.');
+            toast.error('Best?tigung fehlgeschlagen.');
         }
     };
 
     const handleRejectStep = async (stepId: string) => {
         if (!plan) return;
         try {
-            await corePost('/v3/work-session/reject', { plan_id: plan.plan_id, step_id: stepId });
-            setPlan((prev) => prev ? {
-                ...prev,
-                steps: prev.steps.map((s) => s.step_id === stepId ? { ...s, status: 'failed' as const } : s),
-                pending_confirmations: (prev.pending_confirmations ?? []).filter((sid) => sid !== stepId),
-            } : prev);
+            const updated = await corePost('/v3/work-session/reject', { plan_id: plan.plan_id, step_id: stepId }, { isOptional: true });
+            if (updated) {
+                setPlan(updated as WorkSessionPlan);
+            }
         } catch {
             toast.error('Ablehnung fehlgeschlagen.');
         }

@@ -31,7 +31,7 @@ import {
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
-import { searchGlobal, corePost } from '@/lib/api/coreClient';
+import { searchGlobal, corePost, fetchNodeDetails } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 
 interface SearchResult {
@@ -156,7 +156,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     }, [activeCompanyId]);
 
     // Handle result click
-    const handleResultClick = (result: SearchResult) => {
+    const handleResultClick = async (result: SearchResult) => {
         setOrbState('focus');
 
         switch (result.type) {
@@ -182,14 +182,23 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                 break;
             case 'file':
             case 'node':
-                if (result.folderId) {
+                let resolvedFolderId = result.folderId;
+                if (!resolvedFolderId && (result.nodeId || result.id)) {
+                    try {
+                        const node = await fetchNodeDetails(result.nodeId || result.id);
+                        resolvedFolderId = (node as any)?.folder_id || resolvedFolderId;
+                    } catch {
+                        // fall back to document-only open
+                    }
+                }
+                if (resolvedFolderId) {
                     openPane({
-                        id: `finder-${result.folderId}`,
+                        id: `finder-${resolvedFolderId}`,
                         type: 'finder',
                         title: result.title,
                         size: { width: 900, height: 640 },
                         data: {
-                            folderId: result.folderId,
+                            folderId: resolvedFolderId,
                             companyId: activeCompanyId || undefined,
                         }
                     });
@@ -453,7 +462,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                         return (
                                             <button
                                                 key={result.id}
-                                                onClick={() => handleResultClick(result)}
+                                                onClick={() => void handleResultClick(result)}
                                                 className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
                                                     isStandardMode
                                                         ? 'hover:bg-gray-100'
@@ -473,9 +482,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                     <div className={`text-sm truncate ${
                                                         isStandardMode ? 'text-[#1F1F1F]' : 'text-white/90'
                                                     }`}>{result.title}</div>
-                                                    <div className={`text-xs capitalize ${
+                                                    <div className={`text-xs ${
                                                         isStandardMode ? 'text-gray-400' : 'text-white/40'
-                                                    }`}>{result.type}</div>
+                                                    }`}>{getTypeLabel(result.type)}</div>
                                                 </div>
                                                 <ArrowRight size={14} className={`transition-colors ${
                                                     isStandardMode
@@ -542,7 +551,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                 {recentItems.slice(0, 5).map((item) => (
                                                     <button
                                                         key={item.id}
-                                                        onClick={() => handleResultClick(item)}
+                                                        onClick={() => void handleResultClick(item)}
                                                         className={`w-full flex items-center gap-2 p-2 rounded-lg text-sm text-left ${
                                                             isStandardMode
                                                                 ? 'hover:bg-gray-100 text-gray-600'
@@ -632,3 +641,13 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 };
 
 
+    const getTypeLabel = (type: SearchResult['type']) => {
+        switch (type) {
+            case 'department': return 'Abteilung';
+            case 'space': return 'Bereich';
+            case 'folder': return 'Ordner';
+            case 'file': return 'Datei';
+            case 'node': return 'Dokument';
+            default: return 'Treffer';
+        }
+    };

@@ -90,6 +90,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const [isBatchProcessing, setIsBatchProcessing] = useState(false);
     const [routeOptions, setRouteOptions] = useState<RouteOverrideOption[]>([]);
     const seededBatchIdsRef = React.useRef<Set<string>>(new Set());
+    const autoOpenedBatchRef = React.useRef<string | null>(null);
     const intakeSeed = (pane?.data || {}) as IntakeSeedPayload;
 
     // Fetch system telemetry for "Godmode" grounding
@@ -244,10 +245,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         ));
     }, []);
 
-    const confirmPendingAction = useCallback(async (active: PendingAction) => {
-        const result = await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
-
-        // Priority chain: direct → destination.folder_id → result.destination.folder_id → getFileNode fallback
+    const resolveDestinationFolderId = useCallback(async (
+        active: Pick<PendingAction, 'file_id' | 'folder_id'>,
+        result?: Record<string, any> | null,
+    ) => {
         let confirmedFolderId: string | undefined =
             result?.folder_id ||
             result?.destination?.folder_id ||
@@ -257,17 +258,37 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             try {
                 const nodeStatus = await getFileNode(active.file_id);
                 confirmedFolderId = nodeStatus?.folder_id;
-            } catch { /* silent — destination unknown is fine */ }
+            } catch {
+                // destination unknown is acceptable
+            }
         }
 
-        const resultText = confirmedFolderId
-            ? `Eingeordnet → ${active.intake_context?.target_folder_name || confirmedFolderId}`
-            : 'Eingeordnet';
+        return confirmedFolderId;
+    }, []);
+
+    const buildResolvedResultText = useCallback((
+        intake: IntakeContext | undefined,
+        confirmedFolderId?: string,
+        destinationSummary?: string,
+    ) => {
+        if (destinationSummary) return destinationSummary;
+        if (confirmedFolderId) return `Eingeordnet -> ${buildRoutePath(intake)}`;
+        return 'Eingeordnet';
+    }, []);
+
+    const confirmPendingAction = useCallback(async (active: PendingAction) => {
+        const result = await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
+        const confirmedFolderId = await resolveDestinationFolderId(active, result);
+        const resultText = buildResolvedResultText(
+            active.intake_context,
+            confirmedFolderId,
+            result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
+        );
 
         markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId);
         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
         return active;
-    }, [markFileOutcome]);
+    }, [buildResolvedResultText, markFileOutcome, resolveDestinationFolderId]);
 
     const rejectPendingAction = useCallback(async (active: PendingAction) => {
         await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
@@ -296,8 +317,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             const uploaded = await uploadCompanyFile(fileObject, activeCompanyId);
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, fileRecordId: uploaded.id } : f));
 
-            // P6: Data Sovereignty - respect user's auto-execute preference
-            const autoExecute = user?.settings?.autoExecuteActions ?? true;
+            // Global Mycelium intake must stay reviewable; silent auto-execution hides routing decisions.
+            const autoExecute = intakeSeed.source === 'mycelium'
+                ? false
+                : (user?.settings?.autoExecuteActions ?? true);
             const response = await requestCreateNodeFromFile(uploaded.id, {
                 autoExecute,
                 batchId: intakeSeed.batchId,
@@ -337,9 +360,21 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             }
 
             if (response?.status === 'executed') {
-                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'done', result: 'Eingeordnet' } : f));
+                const confirmedFolderId = await resolveDestinationFolderId({ file_id: uploaded.id, folder_id: response.folder_id }, response as any);
+                const resultText = buildResolvedResultText(
+                    response.intake_context,
+                    confirmedFolderId,
+                    response.result_summary || response.destination_summary,
+                );
+                setFiles(prev => prev.map(f => f.id === fileId ? {
+                    ...f,
+                    status: 'done',
+                    result: resultText,
+                    intakeContext: response.intake_context,
+                    ...(confirmedFolderId ? { confirmedFolderId } : {})
+                } : f));
                 window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
-                toast.success(`Eingeordnet: ${fileObject.name}`);
+                toast.success(response.destination_summary || `Eingeordnet: ${fileObject.name}`);
                 return;
             }
 
@@ -480,6 +515,24 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         };
     }, [files, pendingActions]);
 
+    React.useEffect(() => {
+        if (intakeSeed.source !== 'mycelium' || !batchResultSummary || pendingActions.length > 0) return;
+        if (autoOpenedBatchRef.current === intakeSeed.batchId) return;
+        const singleRoute = batchResultSummary.routes.length === 1 ? batchResultSummary.routes[0] : null;
+        if (!singleRoute?.folderId) return;
+        autoOpenedBatchRef.current = intakeSeed.batchId || '__auto-opened__';
+        openPane({
+            id: 'finder-main',
+            type: 'finder',
+            title: 'Finder',
+            size: { width: 1280, height: 820 },
+            data: {
+                folderId: singleRoute.folderId,
+                companyId: activeCompanyId || undefined,
+            },
+        });
+    }, [activeCompanyId, batchResultSummary, intakeSeed.batchId, intakeSeed.source, openPane, pendingActions.length]);
+
     const bulkConfirm = async () => {
         if (pendingActions.length === 0) return;
         setIsBatchProcessing(true);
@@ -586,6 +639,9 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                 <p className="text-sm text-white/75 mt-1 leading-relaxed">
                                     Dateien wurden im Universe aufgenommen. Mora bereitet jetzt Einordnungsvorschläge vor und führt die
                                     bestätigte Ablage in den Dateibaum aus.
+                                </p>
+                                <p className="text-xs text-white/50 mt-2 leading-relaxed">
+                                    Globaler Intake wird hier erst geprüft. Danach sehen Sie direkt, wohin die Datei eingeordnet wurde.
                                 </p>
                             </div>
                         </div>
@@ -898,25 +954,15 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             const active = activePendingAction;
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
-                                let confirmedFolderId: string | undefined =
-                                    result?.folder_id ||
-                                    result?.destination?.folder_id ||
-                                    result?.result?.destination?.folder_id;
-
-                                if (!confirmedFolderId) {
-                                    try {
-                                        const nodeStatus = await getFileNode(active.file_id);
-                                        confirmedFolderId = nodeStatus?.folder_id;
-                                    } catch { /* silent */ }
-                                }
-
-                                const resultText = confirmedFolderId
-                                    ? `Eingeordnet → ${active.intake_context?.target_folder_name || confirmedFolderId}`
-                                    : 'Eingeordnet';
-
+                                const confirmedFolderId = await resolveDestinationFolderId(active, result);
+                                const resultText = buildResolvedResultText(
+                                    active.intake_context,
+                                    confirmedFolderId,
+                                    result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
+                                );
                                 markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId);
                             }
-                            toast.success('Datei eingeordnet');
+                            toast.success(result?.destination_summary || 'Datei eingeordnet');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                         }}
                         onRejected={async () => {
