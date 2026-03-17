@@ -83,7 +83,7 @@ import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
 import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
-import { Upload, Sparkles } from 'lucide-react';
+import { Upload, Sparkles, FolderOpen, History, X } from 'lucide-react';
 
 // Naming Conflict Modal (409 UX)
 import NameConflictModal from '@/components/ui/NameConflictModal';
@@ -217,6 +217,20 @@ export const MoraShell: React.FC = () => {
         size: number;
     };
 
+    type MyceliumCompletionSummary = {
+        batchId?: string;
+        companyId?: string;
+        total: number;
+        confirmed: number;
+        rejected: number;
+        routes: Array<{
+            path: string;
+            folderId?: string;
+            confirmed: number;
+            rejected: number;
+        }>;
+    };
+
     // Auth
     const { isBootstrapped, authError } = useAuthBootstrapper();
 
@@ -298,6 +312,7 @@ export const MoraShell: React.FC = () => {
         batchId: string;
         files: MyceliumDropVisualFile[];
     } | null>(null);
+    const [myceliumCompletion, setMyceliumCompletion] = useState<MyceliumCompletionSummary | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
@@ -376,6 +391,16 @@ export const MoraShell: React.FC = () => {
         const isDev = process.env.NODE_ENV === 'development';
         const hasParam = window.location.search.includes('diagnostics=1');
         setDiagnosticsEnabled(isDev || hasParam);
+    }, []);
+
+    useEffect(() => {
+        const handleMyceliumComplete = (event: Event) => {
+            const detail = (event as CustomEvent<MyceliumCompletionSummary>).detail;
+            if (!detail) return;
+            setMyceliumCompletion(detail);
+        };
+        window.addEventListener('saimor:mycelium-batch-complete', handleMyceliumComplete as EventListener);
+        return () => window.removeEventListener('saimor:mycelium-batch-complete', handleMyceliumComplete as EventListener);
     }, []);
 
     // Hooks
@@ -536,6 +561,7 @@ export const MoraShell: React.FC = () => {
         : (storeOrbState === 'idle' && apiOrbState !== 'idle'
             ? apiOrbState
             : (storeOrbState || apiOrbState));
+    const primaryMyceliumRoute = myceliumCompletion?.routes.length === 1 ? myceliumCompletion.routes[0] : null;
 
     // ==========================================================================
     // RENDER
@@ -704,6 +730,111 @@ export const MoraShell: React.FC = () => {
                 files={myceliumDropBatch?.files || []}
                 onComplete={() => setMyceliumDropBatch(null)}
             />
+
+            {myceliumCompletion && !isShellDropActive && (
+                <div className="fixed bottom-24 left-1/2 z-[930] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2">
+                    <div className="rounded-[24px] border border-emerald-400/18 bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                        <div className="flex items-start gap-4 px-5 py-4">
+                            <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-500/12">
+                                <Sparkles className="h-5 w-5 text-emerald-300" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[11px] uppercase tracking-[0.24em] text-emerald-300/70 font-semibold">
+                                            Mycelium abgeschlossen
+                                        </div>
+                                        <div className="mt-1 text-sm text-white/82">
+                                            {myceliumCompletion.confirmed} eingeordnet, {myceliumCompletion.rejected} verworfen.
+                                            {myceliumCompletion.total > 1
+                                                ? ` ${myceliumCompletion.total} Dateien wurden im Intake-Lauf bearbeitet.`
+                                                : ' 1 Datei wurde im Intake-Lauf bearbeitet.'}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMyceliumCompletion(null)}
+                                        className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
+                                        aria-label="Mycelium summary schließen"
+                                    >
+                                        <X size={15} />
+                                    </button>
+                                </div>
+
+                                {myceliumCompletion.routes.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {myceliumCompletion.routes.slice(0, 3).map((route) => (
+                                            <div
+                                                key={`${route.path}:${route.folderId || 'unknown'}`}
+                                                className="rounded-full border border-emerald-400/12 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-100/85"
+                                            >
+                                                {route.path || 'Unbekannter Pfad'}
+                                            </div>
+                                        ))}
+                                        {myceliumCompletion.routes.length > 3 && (
+                                            <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/45">
+                                                +{myceliumCompletion.routes.length - 3} weitere Ziele
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {primaryMyceliumRoute?.folderId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => openPane({
+                                                id: 'finder-main',
+                                                type: 'finder',
+                                                title: 'Finder',
+                                                size: { width: 1280, height: 820 },
+                                                data: {
+                                                    folderId: primaryMyceliumRoute.folderId,
+                                                    companyId: myceliumCompletion.companyId || undefined,
+                                                },
+                                            })}
+                                            className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
+                                        >
+                                            <FolderOpen size={13} />
+                                            Im Zielordner öffnen
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => openPane({
+                                            id: 'scanner-main',
+                                            type: 'scanner',
+                                            title: 'Mycelium Intake',
+                                            size: { width: 920, height: 640 },
+                                            data: {
+                                                source: 'mycelium',
+                                                batchId: myceliumCompletion.batchId,
+                                            },
+                                        })}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
+                                    >
+                                        <Sparkles size={13} />
+                                        Einordnung prüfen
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => openPane({
+                                            id: 'actions-main',
+                                            type: 'actions',
+                                            title: 'Action Center',
+                                            size: { width: 920, height: 680 },
+                                        })}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
+                                    >
+                                        <History size={13} />
+                                        Verlauf öffnen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />

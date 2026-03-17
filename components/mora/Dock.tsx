@@ -114,6 +114,7 @@ const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
     chat: MessageCircle,
     team: Users,
     mail: Mail,
+    integrations: Settings,
     calendar: Calendar,
     terminal: Terminal,
     search: Search,
@@ -192,6 +193,7 @@ export const Dock = () => {
             case 'finder': openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } }); break;
             case 'team': openPane({ id: 'team-main', type: 'team', title: 'Team', size: defaultSize }); break;
             case 'mail': openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: defaultSize }); break;
+            case 'integrations': openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: { width: 760, height: 620 } }); break;
             case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: defaultSize }); break;
             case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } }); break;
@@ -212,8 +214,8 @@ export const Dock = () => {
         { icon: FolderOpen, label: 'Finder', shortcut: `${mod}+F`, action: 'finder', description: 'Dateien & Ordner' },
         { icon: Users, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
         { icon: FileText, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
-        { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Bald verfuegbar', disabled: true },
-        { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Bald verfuegbar', disabled: true },
+        { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Inbox, Commit & Versand' },
+        { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Termine & Sync-Kontext' },
         { icon: Terminal, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
         { icon: Settings, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
     ], [mod, pendingCount]);
@@ -497,6 +499,21 @@ export const Dock = () => {
                                                 )}
                                             </button>
                                         ))}
+                                    </div>
+                                    <div className="border-t border-white/5 p-2">
+                                        <button
+                                            onClick={() => {
+                                                handleDockClick('integrations');
+                                                setShowCompanySwitcher(false);
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all text-white/70 hover:bg-white/5 hover:text-white"
+                                        >
+                                            <Settings size={14} className="text-white/40" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-xs font-medium truncate">Integrationen</div>
+                                                <div className="text-[9px] text-white/35">Mail, Kalender, externe Verbindungen</div>
+                                            </div>
+                                        </button>
                                     </div>
                                 </motion.div>
                             )}
