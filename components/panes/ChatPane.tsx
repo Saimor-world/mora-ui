@@ -25,7 +25,7 @@ import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
-import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2 } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2, LayoutList } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
@@ -47,6 +47,8 @@ interface Message {
     isTyping?: boolean;
     savedAsInsight?: boolean; // Track if message was saved as insight
     pendingAction?: PendingAction;
+    /** set when the agent produced a work-session plan; used to open WorkSessionPane */
+    planId?: string;
 }
 
 // Memory keywords that trigger save hint (German)
@@ -111,6 +113,21 @@ function normalizeAgentResponse(input: unknown): string {
         }
     }
     return decodeEscapedUnicode(input);
+}
+
+/**
+ * Extract plan_id from an agent response that created a work-session plan.
+ * Checks the promoted top-level field first, then scans tools_executed as fallback.
+ */
+function extractPlanId(agentResponse: import('@/lib/api/cognitionClient').AgentResponse): string | null {
+    if (agentResponse.work_session_plan?.plan_id) return agentResponse.work_session_plan.plan_id;
+    for (const tool of agentResponse.tools_executed ?? []) {
+        if (tool.tool === 'work_session_plan' || tool.tool === 'create_work_session_plan') {
+            const result = tool.result as Record<string, unknown> | undefined;
+            if (typeof result?.plan_id === 'string' && result.plan_id) return result.plan_id;
+        }
+    }
+    return null;
 }
 
 function isLikelyFileOperationIntent(text: string): boolean {
@@ -742,11 +759,13 @@ Was kann ich fuer dich tun?`,
                     }
 
                     if (agentResponse?.final_message) {
+                        const planId = extractPlanId(agentResponse) ?? undefined;
                         setMessages(prev => [...prev, {
                             id: crypto.randomUUID(),
                             role: 'assistant',
                             content: agentResponse.final_message,
                             timestamp: new Date(),
+                            planId,
                         }]);
                         setIsLoading(false);
                         return;
@@ -912,6 +931,26 @@ Was kann ich fuer dich tun?`,
                                         />
                                     )}
                                 </div>
+                                {msg.planId && (
+                                    <button
+                                        type="button"
+                                        onClick={() => openPane({
+                                            id: `work-session-${msg.planId}`,
+                                            type: 'work-session',
+                                            title: 'Arbeitsplan',
+                                            size: { width: 480, height: 640 },
+                                            data: { plan_id: msg.planId },
+                                        })}
+                                        className={`mt-2 flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                                            isStandardMode
+                                                ? 'border-[#0078D4]/25 bg-[#0078D4]/[0.05] text-[#0078D4]/80 hover:border-[#0078D4]/40 hover:bg-[#0078D4]/[0.1]'
+                                                : 'border-cyan-400/20 bg-cyan-500/[0.06] text-cyan-200/65 hover:border-cyan-400/35 hover:bg-cyan-500/[0.12] hover:text-cyan-200'
+                                        }`}
+                                    >
+                                        <LayoutList size={11} />
+                                        Plan anzeigen
+                                    </button>
+                                )}
                                 {msg.pendingAction && (
                                     <div className="mt-3">
                                         <ConfirmationCard

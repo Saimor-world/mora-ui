@@ -156,6 +156,8 @@ export interface AgentResponse {
     pending_confirmations: AgentPendingConfirmation[];
     mode: string;
     transparency_note: string;
+    /** Present when the agent created a work-session plan (Core 6d53ddd) */
+    work_session_plan?: { plan_id: string; title?: string; summary?: string };
 }
 
 /**
