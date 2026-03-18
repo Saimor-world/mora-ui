@@ -105,11 +105,12 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
 export function surfaceNavigationOutcome(outcome: NavigationOutcome, openPane: OpenPaneFn) {
     openNavigationOutcome(outcome, openPane);
     dispatchNavigationResult(outcome);
-    const activePlanId = useWorkSessionStore.getState().activePlanId;
+    const { activePlanId, activeSessionId } = useWorkSessionStore.getState();
     if (!activePlanId) return;
 
     void corePost('/v3/work-session/navigation', {
         plan_id: activePlanId,
+        session_id: activeSessionId || undefined,
         target_type: outcome.targetType,
         label: outcome.label,
         message: outcome.message,

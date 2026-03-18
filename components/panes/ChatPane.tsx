@@ -416,7 +416,11 @@ const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const setActivePlanId = useWorkSessionStore((state) => state.setActivePlanId);
+    const { activePlanId, activeSessionId, setActiveSession } = useWorkSessionStore((state) => ({
+        activePlanId: state.activePlanId,
+        activeSessionId: state.activeSessionId,
+        setActiveSession: state.setActiveSession,
+    }));
     const {
         departments,
         isStandardMode,
@@ -790,12 +794,19 @@ Was kann ich fuer dich tun?`,
                                 ? { entityId: activeDepartmentId, entityType: 'department' as const }
                                 : { entityId: undefined, entityType: undefined };
 
-                    const agentResponse = await executeAgenticLoop(content, {
-                        level: viewLevel,
-                        entityId: activeContext.entityId,
-                        entityType: activeContext.entityType,
-                        companyId: activeCompanyId || undefined,
-                    });
+                    const agentResponse = await executeAgenticLoop(
+                        content,
+                        {
+                            level: viewLevel,
+                            entityId: activeContext.entityId,
+                            entityType: activeContext.entityType,
+                            companyId: activeCompanyId || undefined,
+                        },
+                        activePlanId ? {
+                            planId: activePlanId,
+                            sessionId: activeSessionId || undefined,
+                        } : undefined,
+                    );
 
                     if (agentResponse?.final_state === 'S4_CONFIRM') {
                         const confirm = agentResponse.pending_confirmations[0];
@@ -821,10 +832,10 @@ Was kann ich fuer dich tun?`,
                     if (agentResponse?.final_message) {
                         const planId = extractPlanId(agentResponse) ?? undefined;
                         if (planId) {
-                            setActivePlanId(planId);
                             try {
                                 const plan = await fetchWorkSessionPlan(planId);
                                 if (plan) {
+                                    setActiveSession({ planId: plan.plan_id, sessionId: plan.session_id });
                                     dispatchWorkSessionPlan({
                                         planId: plan.plan_id,
                                         sessionId: plan.session_id,
@@ -838,6 +849,7 @@ Was kann ich fuer dich tun?`,
                                         transparencyNote: plan.transparency_note,
                                     });
                                 } else {
+                                    setActiveSession({ planId, sessionId: agentResponse.work_session_plan?.session_id });
                                     dispatchWorkSessionPlan({
                                         planId,
                                         source: 'chat',
@@ -847,6 +859,7 @@ Was kann ich fuer dich tun?`,
                                     });
                                 }
                             } catch {
+                                setActiveSession({ planId, sessionId: agentResponse.work_session_plan?.session_id });
                                 dispatchWorkSessionPlan({
                                     planId,
                                     source: 'chat',

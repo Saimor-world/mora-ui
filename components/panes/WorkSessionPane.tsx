@@ -433,7 +433,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const setActivePlanId = useWorkSessionStore((state) => state.setActivePlanId);
+    const setActiveSession = useWorkSessionStore((state) => state.setActiveSession);
 
     const [plan, setPlan] = useState<WorkSessionPlan | null>((pane?.data?.plan as WorkSessionPlan | undefined) ?? null);
     const [isLoading, setIsLoading] = useState(!plan && !!pane?.data?.plan_id);
@@ -485,7 +485,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
 
     useEffect(() => {
         if (!plan?.plan_id) return;
-        setActivePlanId(plan.plan_id);
+        setActiveSession({ planId: plan.plan_id, sessionId: plan.session_id });
         dispatchWorkSessionPlan({
             planId: plan.plan_id,
             sessionId: plan.session_id,
@@ -498,7 +498,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
             stats: plan.stats,
             transparencyNote: plan.transparency_note,
         });
-    }, [plan, setActivePlanId]);
+    }, [plan, setActiveSession]);
 
     useEffect(() => {
         const handlePlanUpdate = (event: Event) => {

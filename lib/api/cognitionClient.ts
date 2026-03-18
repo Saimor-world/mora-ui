@@ -157,7 +157,7 @@ export interface AgentResponse {
     mode: string;
     transparency_note: string;
     /** Present when the agent created a work-session plan (Core 6d53ddd) */
-    work_session_plan?: { plan_id: string; title?: string; summary?: string };
+    work_session_plan?: { plan_id: string; session_id?: string; title?: string; summary?: string; state?: string; stats?: Record<string, any> };
 }
 
 /**
@@ -168,7 +168,8 @@ export interface AgentResponse {
  */
 export async function executeAgenticLoop(
     intent: string,
-    viewContext?: { level: string; entityId?: string; entityType?: string; companyId?: string }
+    viewContext?: { level: string; entityId?: string; entityType?: string; companyId?: string },
+    workSession?: { planId?: string; sessionId?: string }
 ): Promise<AgentResponse> {
     try {
         const allowToolExecution = process.env.NEXT_PUBLIC_ALLOW_TOOL_EXECUTION !== 'false';
@@ -178,6 +179,8 @@ export async function executeAgenticLoop(
             active_entity_id: viewContext?.entityId,
             active_entity_type: viewContext?.entityType,
             company_id: viewContext?.companyId,
+            plan_id: workSession?.planId,
+            session_id: workSession?.sessionId,
             allow_tool_execution: allowToolExecution,
             max_iterations: 10
         });
