@@ -8,11 +8,28 @@ import { coreGet, corePost } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
 import { confirmCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
 import type { ActionEvent, ActionStatus } from '@/lib/hooks/useActionEvents';
+import { NAVIGATION_ACTION_INTENT, NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 import { toast } from '@/lib/toast';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
 type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | 'confirm_action' | 'undo' | 'work_session_plan';
+
+function navigationOutcomeToActionEvent(detail: NavigationOutcome): ActionEvent {
+    return {
+        action_id: `nav-${Date.now()}-${detail.targetType}-${detail.nodeId || detail.folderId || detail.spaceId || detail.departmentId || detail.label || 'target'}`,
+        status: 'done',
+        intent: NAVIGATION_ACTION_INTENT,
+        actor_role: 'system',
+        message: detail.message,
+        error: null,
+        payload: {
+            ...detail,
+            tool_name: NAVIGATION_ACTION_INTENT,
+        },
+        timestamp: new Date().toISOString(),
+    };
+}
 
 // ─── Intake batch grouping ────────────────────────────────────────────────────
 
@@ -38,6 +55,13 @@ function getWorkSessionPlanId(evt: ActionEvent): string | null {
     if (!isWorkSession) return null;
     const id = evt.payload?.plan_id;
     return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+function getNavigationOutcome(evt: ActionEvent): NavigationOutcome | null {
+    const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
+    const intent = tool || evt.intent || '';
+    if (intent !== NAVIGATION_ACTION_INTENT) return null;
+    return evt.payload as unknown as NavigationOutcome;
 }
 
 function getIntakeRoute(evt: ActionEvent): string | null {
@@ -221,6 +245,7 @@ const intentLabelMap: Record<string, string> = {
     undo: 'Aktion rückgängig machen',
     create_node_from_file: 'Datei einordnen',
     work_session_plan: 'Arbeitsplan',
+    navigation_open: 'Navigation',
 };
 
 const groupStatusMap: Record<Exclude<ActionFilter, 'all'>, ActionStatus[]> = {
@@ -451,6 +476,26 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
         );
     }
 
+    const navigation = getNavigationOutcome(evt);
+    if (navigation) {
+        const details = [
+            navigation.label ? `Ziel: ${navigation.label}` : null,
+            navigation.path ? `Pfad: ${navigation.path}` : null,
+            navigation.query ? `Suche: ${navigation.query}` : null,
+        ].filter(Boolean) as string[];
+        if (details.length === 0) return null;
+        return (
+            <div className="md:col-span-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Navigation</div>
+                <div className="mt-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 space-y-1">
+                    {details.map((detail) => (
+                        <div key={detail} className="text-[11px] text-white/65">{detail}</div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     const result = evt.payload?.result;
     const operationsExecuted = Array.isArray((result as Record<string, unknown> | undefined)?.operations_executed)
         ? ((result as Record<string, unknown>).operations_executed as Record<string, unknown>[])
@@ -544,7 +589,17 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
         const handleActionStatus = () => { void loadEvents({ silent: true }); };
         realtime.on('action_status', handleActionStatus);
         realtime.connect();
-        return () => { realtime.off('action_status', handleActionStatus); };
+        const handleNavigationResult = (event: Event) => {
+            const detail = (event as CustomEvent<NavigationOutcome>).detail;
+            if (!detail) return;
+            const evt = navigationOutcomeToActionEvent(detail);
+            setEvents((prev) => [evt, ...prev]);
+        };
+        window.addEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
+        return () => {
+            realtime.off('action_status', handleActionStatus);
+            window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
+        };
     }, [loadEvents]);
 
     const filteredEvents = useMemo(() => {
@@ -915,6 +970,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                 const actionMessage = formatActionMessage(evt);
                                 const isPending = canActOnPendingEvent(evt);
                                 const state = pendingActionState[evt.action_id];
+                                const navigationOutcome = getNavigationOutcome(evt);
                                 return (
                                     <div key={`${evt.action_id}:${evt.timestamp}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                                         <div className="flex items-start gap-3">
@@ -977,6 +1033,18 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Session</div>
                                                             <div className="mt-1 break-all font-mono text-white/75">{evt.session_id || '-'}</div>
                                                         </div>
+                                                        {navigationOutcome && (
+                                                            <div className="md:col-span-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openNavigationOutcome(navigationOutcome, openPane)}
+                                                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/18"
+                                                                >
+                                                                    {navigationOutcome.targetType === 'search' ? <Search size={12} /> : <CheckCircle size={12} />}
+                                                                    {navigationOutcome.targetType === 'search' ? 'Suche oeffnen' : 'Erneut oeffnen'}
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                         {renderActionResultDetails(evt)}
                                                     </div>
                                                 )}

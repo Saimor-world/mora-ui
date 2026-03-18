@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, ShieldAlert, XCircle } from 'lucide-react';
+import { Activity, CheckCircle2, ChevronDown, Clock3, FolderOpen, Loader2, PlayCircle, Search, ShieldAlert, XCircle } from 'lucide-react';
 import { useActionEvents, type ActionStatus } from '@/lib/hooks/useActionEvents';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { NAVIGATION_ACTION_INTENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 
 const statusIconMap: Record<ActionStatus, React.ReactNode> = {
     proposed: <Clock3 size={14} className="text-blue-400" />,
@@ -36,6 +37,7 @@ const intentLabelMap: Record<string, string> = {
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
     work_session_plan: 'Arbeitsplan',
+    navigation_open: 'Navigation',
 };
 
 const formatTime = (ts?: string): string => {
@@ -174,6 +176,12 @@ function getWorkSessionPlanId(evt: ActionEventLike): string | null {
     return typeof id === 'string' && id.length > 0 ? id : null;
 }
 
+function getNavigationOutcome(evt: ActionEventLike): NavigationOutcome | null {
+    const intent = extractPayloadString(evt.payload, 'tool_name') || evt.intent || '';
+    if (intent !== NAVIGATION_ACTION_INTENT) return null;
+    return evt.payload as unknown as NavigationOutcome;
+}
+
 function buildExpandedDetails(evt: ActionEventLike): string[] {
     const workSessionPlanId = getWorkSessionPlanId(evt);
     if (workSessionPlanId) {
@@ -190,6 +198,15 @@ function buildExpandedDetails(evt: ActionEventLike): string[] {
             typeof stats?.total_steps === 'number' ? `Schritte: ${stats.total_steps}` : null,
             typeof stats?.pending_confirmations === 'number' ? `Freigaben offen: ${stats.pending_confirmations}` : null,
             extractPayloadString(evt.payload, 'transparency_note'),
+        ].filter(Boolean) as string[];
+    }
+
+    const navigation = getNavigationOutcome(evt);
+    if (navigation) {
+        return [
+            navigation.label ? `Ziel: ${navigation.label}` : null,
+            navigation.path ? `Pfad: ${navigation.path}` : null,
+            navigation.query ? `Suche: ${navigation.query}` : null,
         ].filter(Boolean) as string[];
     }
 
@@ -342,6 +359,7 @@ export const ActionTray: React.FC = () => {
                                     <div className="space-y-1">
                                         {filteredEvents.map((evt) => {
                                             const isExpanded = expandedActionId === evt.action_id;
+                                            const navigationOutcome = getNavigationOutcome(evt);
                                             return (
                                             <div
                                                 key={`${evt.action_id}:${evt.timestamp}`}
@@ -400,6 +418,20 @@ export const ActionTray: React.FC = () => {
                                                             {buildExpandedDetails(evt).map((detail) => (
                                                                 <div key={detail} className="leading-snug">{detail}</div>
                                                             ))}
+                                                            {navigationOutcome && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openNavigationOutcome(navigationOutcome, openPane)}
+                                                                    className={`mt-1 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] transition-colors ${
+                                                                        isStandardMode
+                                                                            ? 'border-[#0078D4]/20 bg-[#0078D4]/8 text-[#0078D4] hover:bg-[#0078D4]/12'
+                                                                            : 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/16'
+                                                                    }`}
+                                                                >
+                                                                    {navigationOutcome.targetType === 'search' ? <Search size={11} /> : <FolderOpen size={11} />}
+                                                                    {navigationOutcome.targetType === 'search' ? 'Suche oeffnen' : 'Erneut oeffnen'}
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     )}
                                                     {evt.error && (

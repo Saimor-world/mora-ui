@@ -84,7 +84,7 @@ import { SnapPreview } from '@/components/os/SnapPreview';
 import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
 import { Upload, Sparkles, FolderOpen, History, X, Search, FileText } from 'lucide-react';
-import { NAVIGATION_RESULT_EVENT, type NavigationOutcome } from '@/lib/utils/searchOpen';
+import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 
 // Naming Conflict Modal (409 UX)
 import NameConflictModal from '@/components/ui/NameConflictModal';
@@ -586,55 +586,7 @@ export const MoraShell: React.FC = () => {
     }, [openPane]);
 
     const reopenNavigationOutcome = useCallback((outcome: ShellNavigationOutcome) => {
-        if (outcome.targetType === 'search') {
-            openPane({
-                id: 'search-main',
-                type: 'search',
-                title: 'Suche',
-                size: { width: 960, height: 720 },
-                data: { query: outcome.query || outcome.label || '' },
-            });
-            return;
-        }
-
-        if (outcome.targetType === 'node' && outcome.nodeId) {
-            if (outcome.folderId || outcome.companyId) {
-                openPane({
-                    id: `finder-${outcome.folderId || outcome.companyId || 'main'}`,
-                    type: 'finder',
-                    title: outcome.label || 'Finder',
-                    size: { width: 1280, height: 820 },
-                    data: {
-                        folderId: outcome.folderId,
-                        companyId: outcome.companyId,
-                    }
-                });
-            }
-            openPane({
-                id: `document-${outcome.nodeId}`,
-                type: 'document',
-                title: outcome.label || 'Dokument',
-                size: { width: 800, height: 600 },
-                data: {
-                    nodeId: outcome.nodeId,
-                    name: outcome.label,
-                }
-            });
-            return;
-        }
-
-        openPane({
-            id: `finder-${outcome.folderId || outcome.spaceId || outcome.departmentId || outcome.companyId || 'main'}`,
-            type: 'finder',
-            title: outcome.label || 'Finder',
-            size: { width: 1280, height: 820 },
-            data: {
-                companyId: outcome.companyId,
-                departmentId: outcome.departmentId,
-                spaceId: outcome.spaceId,
-                folderId: outcome.folderId,
-            }
-        });
+        openNavigationOutcome(outcome, openPane);
     }, [openPane]);
 
     // Computed

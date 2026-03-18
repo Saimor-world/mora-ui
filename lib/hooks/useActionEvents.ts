@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { realtime } from '@/lib/api/realtimeClient';
 import { coreGet } from '@/lib/api/coreClient';
+import { NAVIGATION_ACTION_INTENT, NAVIGATION_RESULT_EVENT, type NavigationOutcome } from '@/lib/utils/searchOpen';
 
 export type ActionStatus =
     | 'proposed'
@@ -36,6 +37,23 @@ interface ActionEventState {
     loadHistoricalEvents: () => Promise<void>;
     removeEvent: (actionId: string) => void;
     clearEvents: () => void;
+}
+
+function navigationOutcomeToActionEvent(detail: NavigationOutcome): ActionEvent {
+    const now = new Date().toISOString();
+    return {
+        action_id: `nav-${Date.now()}-${detail.targetType}-${detail.nodeId || detail.folderId || detail.spaceId || detail.departmentId || detail.label || 'target'}`,
+        status: 'done',
+        intent: NAVIGATION_ACTION_INTENT,
+        actor_role: 'system',
+        message: detail.message,
+        error: null,
+        payload: {
+            ...detail,
+            tool_name: NAVIGATION_ACTION_INTENT,
+        },
+        timestamp: now,
+    };
 }
 
 export const useActionEventStore = create<ActionEventState>((set, get) => ({
@@ -142,6 +160,13 @@ export function useActionEvents(enabled: boolean = true) {
         realtime.on('action_status', handleActionStatus);
         realtime.connect();
 
+        const handleNavigationResult = (event: Event) => {
+            const detail = (event as CustomEvent<NavigationOutcome>).detail;
+            if (!detail) return;
+            addEvent(navigationOutcomeToActionEvent(detail));
+        };
+        window.addEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
+
         // Optional polling fallback just in case WS reconnects or misses packets
         const intervalId = setInterval(() => {
             loadHistoricalEvents();
@@ -149,6 +174,7 @@ export function useActionEvents(enabled: boolean = true) {
 
         return () => {
             realtime.off('action_status', handleActionStatus);
+            window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
             clearInterval(intervalId);
         };
     }, [enabled, addEvent, loadHistoricalEvents]);

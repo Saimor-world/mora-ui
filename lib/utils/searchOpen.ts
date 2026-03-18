@@ -5,6 +5,7 @@ import { fetchNodeDetails, searchGlobal, searchSemantic } from '@/lib/api/coreCl
 
 type OpenPaneFn = (pane: Omit<PaneConfig, 'position' | 'zIndex' | 'minimized'>) => void;
 export const NAVIGATION_RESULT_EVENT = 'saimor:navigation-result';
+export const NAVIGATION_ACTION_INTENT = 'navigation_open';
 
 export interface OpenableSearchResult {
     id: string;
@@ -45,6 +46,58 @@ export interface NavigationOutcome {
 export function dispatchNavigationResult(outcome: NavigationOutcome) {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent<NavigationOutcome>(NAVIGATION_RESULT_EVENT, { detail: outcome }));
+}
+
+export function openNavigationOutcome(outcome: NavigationOutcome, openPane: OpenPaneFn) {
+    if (outcome.targetType === 'search') {
+        openPane({
+            id: 'search-main',
+            type: 'search',
+            title: 'Suche',
+            size: { width: 960, height: 720 },
+            data: { query: outcome.query || outcome.label || '' },
+        });
+        return;
+    }
+
+    if (outcome.targetType === 'node' && outcome.nodeId) {
+        if (outcome.folderId || outcome.companyId) {
+            openPane({
+                id: `finder-${outcome.folderId || outcome.companyId || 'main'}`,
+                type: 'finder',
+                title: outcome.label || 'Finder',
+                size: { width: 1280, height: 820 },
+                data: {
+                    folderId: outcome.folderId,
+                    companyId: outcome.companyId,
+                }
+            });
+        }
+        openPane({
+            id: `document-${outcome.nodeId}`,
+            type: 'document',
+            title: outcome.label || 'Dokument',
+            size: { width: 800, height: 600 },
+            data: {
+                nodeId: outcome.nodeId,
+                name: outcome.label,
+            }
+        });
+        return;
+    }
+
+    openPane({
+        id: `finder-${outcome.folderId || outcome.spaceId || outcome.departmentId || outcome.companyId || 'main'}`,
+        type: 'finder',
+        title: outcome.label || 'Finder',
+        size: { width: 1280, height: 820 },
+        data: {
+            companyId: outcome.companyId,
+            departmentId: outcome.departmentId,
+            spaceId: outcome.spaceId,
+            folderId: outcome.folderId,
+        }
+    });
 }
 
 export function mapRawSearchResult(raw: any): OpenableSearchResult | null {
