@@ -6,6 +6,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import type { WorkSessionPlan, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
+import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
 import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 import {
     AlertTriangle,
@@ -479,6 +480,21 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
             if (pollRef.current) clearInterval(pollRef.current);
         };
     }, [plan?.plan_id, plan?.state]);
+
+    useEffect(() => {
+        if (!plan?.plan_id) return;
+        dispatchWorkSessionPlan({
+            planId: plan.plan_id,
+            sessionId: plan.session_id,
+            state: plan.state,
+            title: plan.title,
+            summary: plan.summary,
+            mode: plan.mode,
+            scope: plan.scope,
+            stats: plan.stats,
+            transparencyNote: plan.transparency_note,
+        });
+    }, [plan]);
 
     const handleConfirmStep = async (stepId: string) => {
         if (!plan) return;

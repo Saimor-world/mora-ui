@@ -31,6 +31,8 @@ import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 import { dispatchNavigationResult, openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
+import { fetchWorkSessionPlan } from '@/lib/api/coreClient';
+import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
 
 interface PendingAction {
     tool_name: string;
@@ -816,6 +818,38 @@ Was kann ich fuer dich tun?`,
 
                     if (agentResponse?.final_message) {
                         const planId = extractPlanId(agentResponse) ?? undefined;
+                        if (planId) {
+                            try {
+                                const plan = await fetchWorkSessionPlan(planId);
+                                if (plan) {
+                                    dispatchWorkSessionPlan({
+                                        planId: plan.plan_id,
+                                        sessionId: plan.session_id,
+                                        state: plan.state,
+                                        title: plan.title,
+                                        summary: plan.summary,
+                                        mode: plan.mode,
+                                        scope: plan.scope,
+                                        stats: plan.stats,
+                                        transparencyNote: plan.transparency_note,
+                                    });
+                                } else {
+                                    dispatchWorkSessionPlan({
+                                        planId,
+                                        state: 'pending',
+                                        title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
+                                        summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
+                                    });
+                                }
+                            } catch {
+                                dispatchWorkSessionPlan({
+                                    planId,
+                                    state: 'pending',
+                                    title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
+                                    summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
+                                });
+                            }
+                        }
                         setMessages(prev => [...prev, {
                             id: crypto.randomUUID(),
                             role: 'assistant',

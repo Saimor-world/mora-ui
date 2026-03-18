@@ -83,12 +83,14 @@ import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
 import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
-import { Upload, Sparkles, FolderOpen, History, X, Search, FileText } from 'lucide-react';
+import { Upload, Sparkles, FolderOpen, History, X, Search, FileText, LayoutList } from 'lucide-react';
 import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 import {
     MYCELIUM_BATCH_COMPLETE_EVENT,
     MYCELIUM_REVIEW_READY_EVENT,
     type MyceliumShellSummary,
+    WORK_SESSION_PLAN_EVENT,
+    type WorkSessionShellSummary,
 } from '@/lib/utils/moraExplanation';
 
 // Naming Conflict Modal (409 UX)
@@ -309,6 +311,7 @@ export const MoraShell: React.FC = () => {
         files: MyceliumDropVisualFile[];
     } | null>(null);
     const [myceliumSummary, setMyceliumSummary] = useState<MyceliumShellSummary | null>(null);
+    const [workSessionSummary, setWorkSessionSummary] = useState<WorkSessionShellSummary | null>(null);
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
@@ -421,6 +424,16 @@ export const MoraShell: React.FC = () => {
         };
         window.addEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
         return () => window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
+    }, []);
+
+    useEffect(() => {
+        const handleWorkSessionPlan = (event: Event) => {
+            const detail = (event as CustomEvent<WorkSessionShellSummary>).detail;
+            if (!detail) return;
+            setWorkSessionSummary(detail);
+        };
+        window.addEventListener(WORK_SESSION_PLAN_EVENT, handleWorkSessionPlan as EventListener);
+        return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handleWorkSessionPlan as EventListener);
     }, []);
 
     // Hooks
@@ -971,6 +984,110 @@ export const MoraShell: React.FC = () => {
                                     >
                                         <Sparkles size={13} />
                                         Einordnung pruefen
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => openPane({
+                                            id: 'actions-main',
+                                            type: 'actions',
+                                            title: 'Action Center',
+                                            size: { width: 920, height: 680 },
+                                        })}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
+                                    >
+                                        <History size={13} />
+                                        Verlauf oeffnen
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {workSessionSummary && !isShellDropActive && (
+                <div className={`fixed left-1/2 z-[929] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumSummary ? 'bottom-[31rem]' : navigationOutcome ? 'bottom-[14.5rem]' : 'bottom-24'}`}>
+                    <div className="rounded-[24px] border border-violet-400/18 bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                        <div className="flex items-start gap-4 px-5 py-4">
+                            <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-violet-300/20 bg-violet-500/12">
+                                <LayoutList className="h-5 w-5 text-violet-200" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[11px] uppercase tracking-[0.24em] text-violet-200/70 font-semibold">
+                                            Mora erklaert
+                                        </div>
+                                        <div className="mt-1 text-sm text-white/82">
+                                            {workSessionSummary.state === 'waiting_confirmation'
+                                                ? 'Ein Arbeitsplan wartet auf Freigabe.'
+                                                : workSessionSummary.state === 'running'
+                                                    ? 'Mora arbeitet in einem fortlaufenden Arbeitskontext.'
+                                                    : 'Mora haelt den aktuellen Arbeitsplan im Scope bereit.'}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setWorkSessionSummary(null)}
+                                        className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
+                                        aria-label="Arbeitsplan-Hinweis schliessen"
+                                    >
+                                        <X size={15} />
+                                    </button>
+                                </div>
+
+                                <div className="mt-3 rounded-2xl border border-violet-400/12 bg-black/18 px-3.5 py-3">
+                                    <div className="text-sm text-white/84">
+                                        {workSessionSummary.title}
+                                    </div>
+                                    {workSessionSummary.summary && (
+                                        <div className="mt-1 text-xs leading-relaxed text-white/56">
+                                            {workSessionSummary.summary}
+                                        </div>
+                                    )}
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {workSessionSummary.scope?.view_level && (
+                                            <div className="rounded-full border border-violet-400/12 bg-violet-500/10 px-3 py-1 text-[11px] text-violet-100/85">
+                                                {workSessionSummary.scope.view_level}
+                                            </div>
+                                        )}
+                                        {typeof workSessionSummary.stats?.read_steps === 'number' && (
+                                            <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/55">
+                                                Lesen {workSessionSummary.stats.read_steps}
+                                            </div>
+                                        )}
+                                        {typeof workSessionSummary.stats?.write_steps === 'number' && (
+                                            <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/55">
+                                                Schreiben {workSessionSummary.stats.write_steps}
+                                            </div>
+                                        )}
+                                        {(workSessionSummary.stats?.pending_confirmations || 0) > 0 && (
+                                            <div className="rounded-full border border-amber-400/15 bg-amber-500/10 px-3 py-1 text-[11px] text-amber-100/85">
+                                                Freigaben {workSessionSummary.stats?.pending_confirmations}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {workSessionSummary.transparencyNote && (
+                                        <div className="mt-3 text-[11px] leading-relaxed text-white/42">
+                                            {workSessionSummary.transparencyNote}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => openPane({
+                                            id: `work-session-${workSessionSummary.planId}`,
+                                            type: 'work-session',
+                                            title: workSessionSummary.title || 'Arbeitsplan',
+                                            size: { width: 900, height: 700 },
+                                            data: { plan_id: workSessionSummary.planId },
+                                        })}
+                                        className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/14 px-3.5 py-2 text-[11px] font-medium text-violet-50 transition-colors hover:border-violet-300/35 hover:bg-violet-500/22"
+                                    >
+                                        <LayoutList size={13} />
+                                        Arbeitsplan oeffnen
                                     </button>
                                     <button
                                         type="button"
