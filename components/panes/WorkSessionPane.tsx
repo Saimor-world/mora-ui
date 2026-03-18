@@ -32,6 +32,20 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// ─── exported for unit testing ───────────────────────────────────────────────
+export function splitAtPlannedSteps<T>(
+    steps: T[],
+    plannedCount: number | null | undefined,
+): { original: T[]; continuation: T[] } {
+    if (!plannedCount || plannedCount <= 0 || plannedCount >= steps.length) {
+        return { original: steps, continuation: [] };
+    }
+    return {
+        original: steps.slice(0, plannedCount),
+        continuation: steps.slice(plannedCount),
+    };
+}
+
 const WRITE_KINDS = new Set([
     'create', 'update', 'move', 'rename', 'intake', 'delete', 'write', 'execute', 'patch',
 ]);
