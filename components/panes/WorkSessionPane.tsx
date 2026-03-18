@@ -6,6 +6,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import type { WorkSessionPlan, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
+import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 import {
     AlertTriangle,
     ArrowUpRight,
@@ -149,72 +150,74 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
     switch (nav.target_type) {
         case 'department':
             if (!nav.department_id) return;
-            openPane({
-                id: `work-session-department-${nav.department_id}`,
-                type: 'finder',
-                title: label,
-                size: { width: 900, height: 640 },
-                data: { departmentId: nav.department_id, companyId },
-            });
+            surfaceNavigationOutcome({
+                title: 'Bereich geoeffnet',
+                message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`,
+                targetType: 'department',
+                label,
+                companyId,
+                departmentId: nav.department_id,
+                source: 'search',
+            }, openPane);
             return;
         case 'space':
             if (!nav.space_id) return;
-            openPane({
-                id: `work-session-space-${nav.space_id}`,
-                type: 'finder',
-                title: label,
-                size: { width: 900, height: 640 },
-                data: { spaceId: nav.space_id, companyId },
-            });
+            surfaceNavigationOutcome({
+                title: 'Bereich geoeffnet',
+                message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`,
+                targetType: 'space',
+                label,
+                companyId,
+                spaceId: nav.space_id,
+                source: 'search',
+            }, openPane);
             return;
         case 'folder':
             if (!nav.folder_id) return;
-            openPane({
-                id: `work-session-folder-${nav.folder_id}`,
-                type: 'finder',
-                title: label,
-                size: { width: 900, height: 640 },
-                data: { folderId: nav.folder_id, companyId },
-            });
+            surfaceNavigationOutcome({
+                title: 'Ordner geoeffnet',
+                message: `Ich habe ${label} aus dem Arbeitsplan im Finder geoeffnet.`,
+                targetType: 'folder',
+                label,
+                companyId,
+                folderId: nav.folder_id,
+                source: 'search',
+            }, openPane);
             return;
         case 'company':
             if (!companyId) return;
-            openPane({
-                id: `work-session-company-${companyId}`,
-                type: 'finder',
-                title: label,
-                size: { width: 900, height: 640 },
-                data: { companyId },
-            });
+            surfaceNavigationOutcome({
+                title: 'Firmenkontext geoeffnet',
+                message: `Ich habe ${label} im aktuellen Firmenkontext geoeffnet.`,
+                targetType: 'company',
+                label,
+                companyId,
+                source: 'search',
+            }, openPane);
             return;
         case 'node':
-            if (nav.folder_id) {
-                openPane({
-                    id: `work-session-folder-${nav.folder_id}`,
-                    type: 'finder',
-                    title: label,
-                    size: { width: 900, height: 640 },
-                    data: { folderId: nav.folder_id, companyId },
-                });
-            }
-            if (nav.node_id) {
-                openPane({
-                    id: `work-session-node-${nav.node_id}`,
-                    type: 'document',
-                    title: label,
-                    size: { width: 800, height: 600 },
-                    data: { nodeId: nav.node_id, name: label },
-                });
-            }
+            if (!nav.node_id) return;
+            surfaceNavigationOutcome({
+                title: 'Datei geoeffnet',
+                message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`,
+                targetType: 'node',
+                label,
+                companyId,
+                folderId: nav.folder_id || undefined,
+                nodeId: nav.node_id,
+                source: 'search',
+            }, openPane);
             return;
         case 'search':
-            openPane({
-                id: `work-session-search-${step.step_id}`,
-                type: 'search',
-                title: 'Suche',
-                size: { width: 960, height: 680 },
-                data: { query: label, globalSearch: true, companyId },
-            });
+            surfaceNavigationOutcome({
+                title: 'Suche geoeffnet',
+                message: `Ich habe die Suche aus dem Arbeitsplan geoeffnet.`,
+                targetType: 'search',
+                label,
+                query: label,
+                companyId,
+                source: 'search',
+            }, openPane);
             return;
         default:
             return;

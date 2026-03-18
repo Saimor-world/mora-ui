@@ -9,6 +9,7 @@ import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
+import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -506,6 +507,33 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             .sort((a, b) => (a.confidenceScore ?? buildConfidenceWeight({ route_confidence_label: a.confidenceLabel })) - (b.confidenceScore ?? buildConfidenceWeight({ route_confidence_label: b.confidenceLabel })));
     }, [pendingActions]);
 
+    const openConfirmedFolder = useCallback((folderId: string, label?: string, path?: string) => {
+        surfaceNavigationOutcome({
+            title: 'Ordner geoeffnet',
+            message: `Ich habe ${label || 'den Zielordner'} im Finder geoeffnet.`,
+            targetType: 'folder',
+            label: label || 'Zielordner',
+            path,
+            companyId: activeCompanyId || undefined,
+            folderId,
+            source: 'search',
+        }, openPane);
+    }, [activeCompanyId, openPane]);
+
+    const openConfirmedDocument = useCallback((nodeId: string, label?: string, folderId?: string, path?: string) => {
+        surfaceNavigationOutcome({
+            title: 'Datei geoeffnet',
+            message: `Ich habe ${label || 'das Dokument'} geoeffnet.`,
+            targetType: 'node',
+            label: label || 'Dokument',
+            path,
+            companyId: activeCompanyId || undefined,
+            folderId,
+            nodeId,
+            source: 'search',
+        }, openPane);
+    }, [activeCompanyId, openPane]);
+
     const applyRouteOverride = useCallback((actionId: string, folderId: string) => {
         const option = routeOptions.find((entry) => entry.folderId === folderId);
         if (!option) return;
@@ -841,13 +869,18 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                 : undefined;
                                         return (
                                             <button
-                                                onClick={() => openPane({
-                                                    id: 'finder-main',
-                                                    type: 'finder',
-                                                    title: 'Finder',
-                                                    size: { width: 1280, height: 820 },
-                                                    ...(singleFolderId ? { data: { folderId: singleFolderId, companyId: activeCompanyId || undefined } } : {}),
-                                                })}
+                                                onClick={() => {
+                                                    if (singleFolderId) {
+                                                        openConfirmedFolder(singleFolderId, 'Zielordner', batchResultSummary.routes[0]?.path);
+                                                        return;
+                                                    }
+                                                    openPane({
+                                                        id: 'finder-main',
+                                                        type: 'finder',
+                                                        title: 'Finder',
+                                                        size: { width: 1280, height: 820 },
+                                                    });
+                                                }}
                                                 className="text-[11px] text-emerald-300/70 hover:text-emerald-200 transition-colors shrink-0"
                                             >
                                                 {singleFolderId ? 'Im Zielordner öffnen →' : 'Finder öffnen →'}
@@ -891,13 +924,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                 )}
                                                 {route.folderId && (
                                                     <button
-                                                        onClick={() => openPane({
-                                                            id: 'finder-main',
-                                                            type: 'finder',
-                                                            title: 'Finder',
-                                                            size: { width: 1280, height: 820 },
-                                                            data: { folderId: route.folderId, companyId: activeCompanyId || undefined },
-                                                        })}
+                                                        onClick={() => openConfirmedFolder(route.folderId!, route.path || 'Zielordner', route.path)}
                                                         className="text-emerald-300/70 hover:text-emerald-200 transition-colors"
                                                     >
                                                         Öffnen →
@@ -910,16 +937,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                 {batchResultSummary.primaryFile?.confirmedNodeId && (
                                     <div className="mt-3">
                                         <button
-                                            onClick={() => openPane({
-                                                id: `document-${batchResultSummary.primaryFile?.confirmedNodeId}`,
-                                                type: 'document',
-                                                title: batchResultSummary.primaryFile?.name || 'Dokument',
-                                                size: { width: 960, height: 720 },
-                                                data: {
-                                                    nodeId: batchResultSummary.primaryFile?.confirmedNodeId,
-                                                    name: batchResultSummary.primaryFile?.name,
-                                                },
-                                            })}
+                                            onClick={() => openConfirmedDocument(
+                                                batchResultSummary.primaryFile!.confirmedNodeId!,
+                                                batchResultSummary.primaryFile?.name || 'Dokument',
+                                                batchResultSummary.primaryFile?.confirmedFolderId,
+                                                batchResultSummary.routes.length === 1 ? batchResultSummary.routes[0].path : undefined,
+                                            )}
                                             className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
                                         >
                                             Datei oeffnen â†’
@@ -972,16 +995,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </div>
                                                     {file.confirmedFolderId && (
                                                         <button
-                                                            onClick={() => openPane({
-                                                                id: 'finder-main',
-                                                                type: 'finder',
-                                                                title: 'Finder',
-                                                                size: { width: 1280, height: 820 },
-                                                                data: {
-                                                                    folderId: file.confirmedFolderId,
-                                                                    companyId: activeCompanyId || undefined,
-                                                                },
-                                                            })}
+                                                            onClick={() => openConfirmedFolder(file.confirmedFolderId!, file.name)}
                                                             className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
                                                         >
                                                             Im Zielordner öffnen →
@@ -1114,3 +1128,4 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         </GlassPanel>
     );
 };
+

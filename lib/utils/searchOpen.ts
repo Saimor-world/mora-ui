@@ -100,6 +100,11 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
     });
 }
 
+export function surfaceNavigationOutcome(outcome: NavigationOutcome, openPane: OpenPaneFn) {
+    openNavigationOutcome(outcome, openPane);
+    dispatchNavigationResult(outcome);
+}
+
 export function mapRawSearchResult(raw: any): OpenableSearchResult | null {
     const type = String(raw?.type || raw?.result_type || '').toLowerCase();
     const normalizedType = (['department', 'space', 'folder', 'file', 'node'].includes(type)
@@ -195,17 +200,7 @@ export async function openSearchResult(
 ) {
     switch (result.type) {
         case 'department':
-            openPane({
-                id: `search-department-${result.departmentId || result.id}`,
-                type: 'finder',
-                title: result.title,
-                size: { width: 900, height: 640 },
-                data: {
-                    departmentId: result.departmentId || result.id,
-                    companyId: scope.companyId || undefined,
-                }
-            });
-            dispatchNavigationResult({
+            surfaceNavigationOutcome({
                 title: 'Bereich geoeffnet',
                 message: `Ich habe ${result.title} im aktuellen Firmenkontext geoeffnet.`,
                 targetType: 'department',
@@ -214,20 +209,10 @@ export async function openSearchResult(
                 companyId: scope.companyId || undefined,
                 departmentId: result.departmentId || result.id,
                 source,
-            });
+            }, openPane);
             return;
         case 'space':
-            openPane({
-                id: `search-space-${result.spaceId || result.id}`,
-                type: 'finder',
-                title: result.title,
-                size: { width: 900, height: 640 },
-                data: {
-                    spaceId: result.spaceId || result.id,
-                    companyId: scope.companyId || undefined,
-                }
-            });
-            dispatchNavigationResult({
+            surfaceNavigationOutcome({
                 title: 'Bereich geoeffnet',
                 message: `Ich habe ${result.title} im aktuellen Firmenkontext geoeffnet.`,
                 targetType: 'space',
@@ -236,20 +221,10 @@ export async function openSearchResult(
                 companyId: scope.companyId || undefined,
                 spaceId: result.spaceId || result.id,
                 source,
-            });
+            }, openPane);
             return;
         case 'folder':
-            openPane({
-                id: `finder-${result.folderId || result.id}`,
-                type: 'finder',
-                title: result.title,
-                size: { width: 900, height: 640 },
-                data: {
-                    folderId: result.folderId || result.id,
-                    companyId: scope.companyId || undefined,
-                }
-            });
-            dispatchNavigationResult({
+            surfaceNavigationOutcome({
                 title: 'Ordner geoeffnet',
                 message: `Ich habe ${result.title} im Finder geoeffnet.`,
                 targetType: 'folder',
@@ -258,7 +233,7 @@ export async function openSearchResult(
                 companyId: scope.companyId || undefined,
                 folderId: result.folderId || result.id,
                 source,
-            });
+            }, openPane);
             return;
         case 'file':
         case 'node': {
@@ -273,29 +248,7 @@ export async function openSearchResult(
                     // document-only fallback remains acceptable
                 }
             }
-            if (resolvedFolderId) {
-                openPane({
-                    id: `finder-${resolvedFolderId}`,
-                    type: 'finder',
-                    title: result.title,
-                    size: { width: 900, height: 640 },
-                    data: {
-                        folderId: resolvedFolderId,
-                        companyId: scope.companyId || undefined,
-                    }
-                });
-            }
-            openPane({
-                id: `document-${resolvedNodeId}`,
-                type: 'document',
-                title: result.title,
-                size: { width: 800, height: 600 },
-                data: {
-                    nodeId: resolvedNodeId,
-                    name: result.title,
-                }
-            });
-            dispatchNavigationResult({
+            surfaceNavigationOutcome({
                 title: 'Datei geoeffnet',
                 message: resolvedFolderId
                     ? `Ich habe ${result.title} im Finder-Kontext und als Dokument geoeffnet.`
@@ -307,7 +260,7 @@ export async function openSearchResult(
                 folderId: resolvedFolderId,
                 nodeId: resolvedNodeId,
                 source,
-            });
+            }, openPane);
             return;
         }
     }
