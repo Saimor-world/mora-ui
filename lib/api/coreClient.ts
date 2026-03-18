@@ -1278,9 +1278,45 @@ export interface WorkSessionStep {
     status: WorkSessionStepStatus;
     confirm_required?: boolean;
     tool_name?: string;
+    action_label?: string;
     summary?: string;
     why?: string;
     output_summary?: string;
+    navigation?: {
+        target_type?: string;
+        open_mode?: string;
+        company_id?: string;
+        department_id?: string;
+        space_id?: string;
+        folder_id?: string;
+        node_id?: string;
+        label?: string;
+    };
+    result?: {
+        change_summary?: string;
+        result_summary?: string;
+        summary?: string;
+        destination_summary?: string;
+        previous_content_preview?: string;
+        content_preview?: string;
+        content_change?: {
+            before_preview?: string | null;
+            after_preview?: string | null;
+            before_length?: number;
+            after_length?: number;
+            delta_chars?: number;
+            change_kind?: string;
+            summary?: string;
+        };
+        destination?: {
+            company_id?: string;
+            department_id?: string;
+            space_id?: string;
+            folder_id?: string;
+            node_id?: string;
+            path?: string;
+        };
+    };
 }
 
 export interface WorkSessionStats {
@@ -1289,6 +1325,9 @@ export interface WorkSessionStats {
     write_steps: number;
     planned_steps: number;
     completed_steps: number;
+    running_steps?: number;
+    failed_steps?: number;
+    skipped_steps?: number;
     pending_steps: number;
     pending_confirmations: number;
 }
