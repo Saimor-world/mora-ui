@@ -416,7 +416,7 @@ export const MoraShell: React.FC = () => {
 
     // Hooks
     const apiOrbState = useAwareness();
-    useMindloopStream(isBootstrapped && viewMode !== 'demo');
+    useMindloopStream(isBootstrapped);
 
     useShellEvents({
         onOpenResonance: useCallback(() => setIsResonanceOpen(true), [])

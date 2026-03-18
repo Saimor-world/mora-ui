@@ -131,7 +131,7 @@ export function useAuthBootstrapper() {
                             : null;
                         if (tenantId === TENANT_DEMO) {
                             if (storedViewMode !== 'demo' && storedViewMode !== 'workspace') {
-                                store.setViewMode('demo');
+                                store.setViewMode('workspace');
                             }
                         } else if (storedViewMode === 'demo') {
                             store.setViewMode('workspace');

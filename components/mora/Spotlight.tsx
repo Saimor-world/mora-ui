@@ -367,14 +367,13 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 keywords: ["company", "workspace", company.name.toLowerCase(), "firma", "demo"],
                 onSelect: () => {
                     setActiveCompany(company.id);
-                    setViewMode(company.is_demo ? 'demo' : 'workspace');
                     onClose();
                 }
             });
         });
 
         return result;
-    }, [departments, companies, activeCompanyId, spacesByDepartment, openFromSpotlight, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany, setViewMode]);
+    }, [departments, companies, activeCompanyId, spacesByDepartment, openFromSpotlight, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany]);
 
     // Filter actions based on query
     const filteredActions = useMemo(() => {

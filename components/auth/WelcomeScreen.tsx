@@ -266,11 +266,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 saveAuthState(data.role || 'member', data.email || email, data.tenant_id, null);
                 toast.success(`Willkommen, ${(data.email || email).split('@')[0]}!`);
 
-                if (isDemoLogin) {
-                    setViewMode('demo');
-                } else {
-                    setViewMode('workspace');
-                }
+                setViewMode('workspace');
 
                 // Force a full page navigation so the home bootstrap can pick up the core session cookie.
                 window.location.href = '/home';

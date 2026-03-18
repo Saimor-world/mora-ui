@@ -56,7 +56,7 @@ export const ContextRail: React.FC = () => {
             'tenant-default';
 
         // Go to own Workspace (eigene Departments, Spaces, Folders)
-        setViewMode(isDemoTenant(tenantId) ? 'demo' : 'workspace');
+        setViewMode('workspace');
         setViewLevel('core');
         console.log('🏠 Home → Eigene Saimor-Struktur');
 

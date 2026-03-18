@@ -105,4 +105,14 @@ describe('moraState company context switching', () => {
     expect(fetchDepartments).toHaveBeenCalledWith('co-hq');
     expect(fetchTree).toHaveBeenCalledWith('tenant-saimor-hq', 'co-hq');
   });
+
+  it('does not silently switch company when demo account changes view mode', () => {
+    useMoraStore.getState().setActiveCompany('co-hq');
+
+    useMoraStore.getState().setViewMode('demo');
+    expect(useMoraStore.getState().activeCompanyId).toBe('co-hq');
+
+    useMoraStore.getState().setViewMode('workspace');
+    expect(useMoraStore.getState().activeCompanyId).toBe('co-hq');
+  });
 });

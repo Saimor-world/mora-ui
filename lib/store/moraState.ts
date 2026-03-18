@@ -396,10 +396,12 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
         if (isDemoTenant) {
             const companyExists = nextActive ? companies.some((c) => c.id === nextActive) : false;
+            const sessionCompanyId = user?.active_company_id;
+            const sessionCompanyExists = sessionCompanyId ? companies.some((c) => c.id === sessionCompanyId) : false;
             if (!companyExists) {
-                nextActive = mode === 'workspace'
-                    ? (hqCompanyId || demoCompanyId || companies[0]?.id || null)
-                    : (demoCompanyId || hqCompanyId || companies[0]?.id || null);
+                nextActive = sessionCompanyExists
+                    ? sessionCompanyId || null
+                    : (hqCompanyId || demoCompanyId || companies[0]?.id || null);
             }
         } else if (mode === 'demo') {
             // Demo mode REQUIRES a demo company.
@@ -568,7 +570,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             } else if (user.role === ROLE_SYSTEM_OWNER) {
                 get().setViewMode('owner');
             } else if (isDemoTenant) {
-                get().setViewMode('demo');
+                get().setViewMode('workspace');
             } else {
                 get().setViewMode('workspace');
             }
@@ -730,10 +732,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                     nextActive = currentActive;
                 } else if (sessionCompanyValid) {
                     nextActive = sessionCompanyId;
-                } else if (viewMode === 'workspace') {
-                    nextActive = hqCompany?.id || demoCompany?.id || data[0]?.id || null;
                 } else {
-                    nextActive = demoCompany?.id || hqCompany?.id || data[0]?.id || null;
+                    nextActive = hqCompany?.id || demoCompany?.id || data[0]?.id || null;
                 }
             } else if (userRole === ROLE_SYSTEM_OWNER) {
                 // SYSTEM OWNER: Respect current selection (sub-account stepping), fallback to HQ
