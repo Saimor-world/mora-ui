@@ -4,6 +4,7 @@ import type { PaneConfig } from '@/lib/store/paneStore';
 import { fetchNodeDetails, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
 
 type OpenPaneFn = (pane: Omit<PaneConfig, 'position' | 'zIndex' | 'minimized'>) => void;
+export const NAVIGATION_RESULT_EVENT = 'saimor:navigation-result';
 
 export interface OpenableSearchResult {
     id: string;
@@ -24,6 +25,26 @@ interface ActiveScope {
     departmentId?: string | null;
     spaceId?: string | null;
     folderId?: string | null;
+}
+
+export interface NavigationOutcome {
+    title: string;
+    message: string;
+    targetType: 'company' | 'department' | 'space' | 'folder' | 'node' | 'search';
+    label?: string;
+    path?: string;
+    query?: string;
+    companyId?: string;
+    departmentId?: string;
+    spaceId?: string;
+    folderId?: string;
+    nodeId?: string;
+    source?: 'chat' | 'search-popup' | 'search-pane' | 'search';
+}
+
+export function dispatchNavigationResult(outcome: NavigationOutcome) {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent<NavigationOutcome>(NAVIGATION_RESULT_EVENT, { detail: outcome }));
 }
 
 export function mapRawSearchResult(raw: any): OpenableSearchResult | null {
@@ -117,6 +138,7 @@ export async function openSearchResult(
     result: OpenableSearchResult,
     openPane: OpenPaneFn,
     scope: ActiveScope,
+    source: NavigationOutcome['source'] = 'search',
 ) {
     switch (result.type) {
         case 'department':
@@ -130,6 +152,16 @@ export async function openSearchResult(
                     companyId: scope.companyId || undefined,
                 }
             });
+            dispatchNavigationResult({
+                title: 'Bereich geoeffnet',
+                message: `Ich habe ${result.title} im aktuellen Firmenkontext geoeffnet.`,
+                targetType: 'department',
+                label: result.title,
+                path: result.path,
+                companyId: scope.companyId || undefined,
+                departmentId: result.departmentId || result.id,
+                source,
+            });
             return;
         case 'space':
             openPane({
@@ -142,6 +174,16 @@ export async function openSearchResult(
                     companyId: scope.companyId || undefined,
                 }
             });
+            dispatchNavigationResult({
+                title: 'Bereich geoeffnet',
+                message: `Ich habe ${result.title} im aktuellen Firmenkontext geoeffnet.`,
+                targetType: 'space',
+                label: result.title,
+                path: result.path,
+                companyId: scope.companyId || undefined,
+                spaceId: result.spaceId || result.id,
+                source,
+            });
             return;
         case 'folder':
             openPane({
@@ -153,6 +195,16 @@ export async function openSearchResult(
                     folderId: result.folderId || result.id,
                     companyId: scope.companyId || undefined,
                 }
+            });
+            dispatchNavigationResult({
+                title: 'Ordner geoeffnet',
+                message: `Ich habe ${result.title} im Finder geoeffnet.`,
+                targetType: 'folder',
+                label: result.title,
+                path: result.path,
+                companyId: scope.companyId || undefined,
+                folderId: result.folderId || result.id,
+                source,
             });
             return;
         case 'file':
@@ -189,6 +241,19 @@ export async function openSearchResult(
                     nodeId: resolvedNodeId,
                     name: result.title,
                 }
+            });
+            dispatchNavigationResult({
+                title: 'Datei geoeffnet',
+                message: resolvedFolderId
+                    ? `Ich habe ${result.title} im Finder-Kontext und als Dokument geoeffnet.`
+                    : `Ich habe ${result.title} als Dokument geoeffnet.`,
+                targetType: 'node',
+                label: result.title,
+                path: result.path,
+                companyId: scope.companyId || undefined,
+                folderId: resolvedFolderId,
+                nodeId: resolvedNodeId,
+                source,
             });
             return;
         }

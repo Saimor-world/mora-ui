@@ -83,7 +83,8 @@ import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
 import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
-import { Upload, Sparkles, FolderOpen, History, X } from 'lucide-react';
+import { Upload, Sparkles, FolderOpen, History, X, Search, FileText } from 'lucide-react';
+import { NAVIGATION_RESULT_EVENT, type NavigationOutcome } from '@/lib/utils/searchOpen';
 
 // Naming Conflict Modal (409 UX)
 import NameConflictModal from '@/components/ui/NameConflictModal';
@@ -242,6 +243,10 @@ export const MoraShell: React.FC = () => {
         };
     };
 
+    type ShellNavigationOutcome = NavigationOutcome & {
+        timestamp: number;
+    };
+
     // Auth
     const { isBootstrapped, authError } = useAuthBootstrapper();
 
@@ -324,6 +329,7 @@ export const MoraShell: React.FC = () => {
         files: MyceliumDropVisualFile[];
     } | null>(null);
     const [myceliumCompletion, setMyceliumCompletion] = useState<MyceliumCompletionSummary | null>(null);
+    const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
@@ -412,6 +418,19 @@ export const MoraShell: React.FC = () => {
         };
         window.addEventListener('saimor:mycelium-batch-complete', handleMyceliumComplete as EventListener);
         return () => window.removeEventListener('saimor:mycelium-batch-complete', handleMyceliumComplete as EventListener);
+    }, []);
+
+    useEffect(() => {
+        const handleNavigationResult = (event: Event) => {
+            const detail = (event as CustomEvent<NavigationOutcome>).detail;
+            if (!detail) return;
+            setNavigationOutcome({
+                ...detail,
+                timestamp: Date.now(),
+            });
+        };
+        window.addEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
+        return () => window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
     }, []);
 
     // Hooks
@@ -564,6 +583,58 @@ export const MoraShell: React.FC = () => {
 
         window.addEventListener('mora-pane-action', handlePaneAction);
         return () => window.removeEventListener('mora-pane-action', handlePaneAction);
+    }, [openPane]);
+
+    const reopenNavigationOutcome = useCallback((outcome: ShellNavigationOutcome) => {
+        if (outcome.targetType === 'search') {
+            openPane({
+                id: 'search-main',
+                type: 'search',
+                title: 'Suche',
+                size: { width: 960, height: 720 },
+                data: { query: outcome.query || outcome.label || '' },
+            });
+            return;
+        }
+
+        if (outcome.targetType === 'node' && outcome.nodeId) {
+            if (outcome.folderId || outcome.companyId) {
+                openPane({
+                    id: `finder-${outcome.folderId || outcome.companyId || 'main'}`,
+                    type: 'finder',
+                    title: outcome.label || 'Finder',
+                    size: { width: 1280, height: 820 },
+                    data: {
+                        folderId: outcome.folderId,
+                        companyId: outcome.companyId,
+                    }
+                });
+            }
+            openPane({
+                id: `document-${outcome.nodeId}`,
+                type: 'document',
+                title: outcome.label || 'Dokument',
+                size: { width: 800, height: 600 },
+                data: {
+                    nodeId: outcome.nodeId,
+                    name: outcome.label,
+                }
+            });
+            return;
+        }
+
+        openPane({
+            id: `finder-${outcome.folderId || outcome.spaceId || outcome.departmentId || outcome.companyId || 'main'}`,
+            type: 'finder',
+            title: outcome.label || 'Finder',
+            size: { width: 1280, height: 820 },
+            data: {
+                companyId: outcome.companyId,
+                departmentId: outcome.departmentId,
+                spaceId: outcome.spaceId,
+                folderId: outcome.folderId,
+            }
+        });
     }, [openPane]);
 
     // Computed
@@ -741,6 +812,93 @@ export const MoraShell: React.FC = () => {
                 files={myceliumDropBatch?.files || []}
                 onComplete={() => setMyceliumDropBatch(null)}
             />
+
+            {navigationOutcome && !isShellDropActive && (
+                <div className={`fixed left-1/2 z-[928] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumCompletion ? 'bottom-[14.75rem]' : 'bottom-24'}`}>
+                    <div className="rounded-[24px] border border-cyan-400/18 bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                        <div className="flex items-start gap-4 px-5 py-4">
+                            <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-500/12">
+                                {navigationOutcome.targetType === 'search' ? (
+                                    <Search className="h-5 w-5 text-cyan-200" />
+                                ) : navigationOutcome.targetType === 'node' ? (
+                                    <FileText className="h-5 w-5 text-cyan-200" />
+                                ) : (
+                                    <FolderOpen className="h-5 w-5 text-cyan-200" />
+                                )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70 font-semibold">
+                                            Mora hat geoeffnet
+                                        </div>
+                                        <div className="mt-1 text-sm text-white/82">
+                                            {navigationOutcome.message}
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNavigationOutcome(null)}
+                                        className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
+                                        aria-label="Navigationshinweis schliessen"
+                                    >
+                                        <X size={15} />
+                                    </button>
+                                </div>
+
+                                {(navigationOutcome.label || navigationOutcome.path) && (
+                                    <div className="mt-3 rounded-2xl border border-cyan-400/12 bg-black/18 px-3.5 py-3">
+                                        {navigationOutcome.label && (
+                                            <div className="text-sm text-white/84">
+                                                {navigationOutcome.label}
+                                            </div>
+                                        )}
+                                        {navigationOutcome.path && (
+                                            <div className="mt-1 text-xs leading-relaxed text-white/50">
+                                                {navigationOutcome.path}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => reopenNavigationOutcome(navigationOutcome)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
+                                    >
+                                        {navigationOutcome.targetType === 'search' ? <Search size={13} /> : navigationOutcome.targetType === 'node' ? <FileText size={13} /> : <FolderOpen size={13} />}
+                                        {navigationOutcome.targetType === 'search'
+                                            ? 'Suche oeffnen'
+                                            : navigationOutcome.targetType === 'node'
+                                                ? 'Datei oeffnen'
+                                                : 'Im Finder oeffnen'}
+                                    </button>
+                                    {navigationOutcome.targetType === 'node' && navigationOutcome.folderId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => openPane({
+                                                id: `finder-${navigationOutcome.folderId}`,
+                                                type: 'finder',
+                                                title: navigationOutcome.label || 'Finder',
+                                                size: { width: 1280, height: 820 },
+                                                data: {
+                                                    folderId: navigationOutcome.folderId,
+                                                    companyId: navigationOutcome.companyId,
+                                                }
+                                            })}
+                                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
+                                        >
+                                            <FolderOpen size={13} />
+                                            Im Zielordner oeffnen
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {myceliumCompletion && !isShellDropActive && (
                 <div className="fixed bottom-24 left-1/2 z-[930] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2">

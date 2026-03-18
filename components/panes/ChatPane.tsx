@@ -30,7 +30,7 @@ import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
-import { openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
+import { dispatchNavigationResult, openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
 
 interface PendingAction {
     tool_name: string;
@@ -668,6 +668,17 @@ Was kann ich fuer dich tun?`,
             size: { width: 1280, height: 820 },
             data: { query, globalSearch: global, companyId: activeCompanyId || undefined }
         });
+        dispatchNavigationResult({
+            title: global ? 'Unternehmenssuche geoeffnet' : 'Suche geoeffnet',
+            message: global
+                ? 'Ich habe die unternehmensweite Suche im aktuellen Firmenkontext geoeffnet.'
+                : `Ich habe die Suche fuer ${query} im aktuellen Firmenkontext geoeffnet.`,
+            targetType: 'search',
+            label: query || 'Alle Dokumente',
+            query: query || '',
+            companyId: activeCompanyId || undefined,
+            source: 'chat',
+        });
         return global
             ? `🌐 Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
             : `🔍 Ich öffne die Suche für **"${query}"**...`;
@@ -697,10 +708,19 @@ Was kann ich fuer dich tun?`,
                 size: { width: 960, height: 720 },
                 data: { query: trimmed },
             });
+            dispatchNavigationResult({
+                title: 'Suche geoeffnet',
+                message: `Ich habe mehrere passende Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
+                targetType: 'search',
+                label: trimmed,
+                query: trimmed,
+                companyId: activeCompanyId || undefined,
+                source: 'chat',
+            });
             return `Ich habe mehrere passende Treffer fuer **${trimmed}** gefunden und die Suche im aktuellen Firmenkontext geoeffnet.`;
         }
 
-        await openSearchResult(chosen, openPane, scope);
+        await openSearchResult(chosen, openPane, scope, 'chat');
         if (chosen.type === 'file' || chosen.type === 'node') {
             return `Ich oeffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
         }
