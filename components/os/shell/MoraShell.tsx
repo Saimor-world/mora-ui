@@ -85,6 +85,11 @@ import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemoryS
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
 import { Upload, Sparkles, FolderOpen, History, X, Search, FileText } from 'lucide-react';
 import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
+import {
+    MYCELIUM_BATCH_COMPLETE_EVENT,
+    MYCELIUM_REVIEW_READY_EVENT,
+    type MyceliumShellSummary,
+} from '@/lib/utils/moraExplanation';
 
 // Naming Conflict Modal (409 UX)
 import NameConflictModal from '@/components/ui/NameConflictModal';
@@ -218,31 +223,6 @@ export const MoraShell: React.FC = () => {
         size: number;
     };
 
-    type MyceliumCompletionSummary = {
-        batchId?: string;
-        companyId?: string;
-        total: number;
-        confirmed: number;
-        rejected: number;
-        routes: Array<{
-            path: string;
-            folderId?: string;
-            confirmed: number;
-            rejected: number;
-        }>;
-        primaryFile?: {
-            name?: string;
-            nodeId?: string;
-            folderId?: string;
-            result?: string;
-            routeExplanation?: {
-                headline?: string;
-                reason?: string;
-                learning_summary?: string;
-            };
-        };
-    };
-
     type ShellNavigationOutcome = NavigationOutcome & {
         timestamp: number;
     };
@@ -328,7 +308,7 @@ export const MoraShell: React.FC = () => {
         batchId: string;
         files: MyceliumDropVisualFile[];
     } | null>(null);
-    const [myceliumCompletion, setMyceliumCompletion] = useState<MyceliumCompletionSummary | null>(null);
+    const [myceliumSummary, setMyceliumSummary] = useState<MyceliumShellSummary | null>(null);
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
@@ -411,13 +391,23 @@ export const MoraShell: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleMyceliumComplete = (event: Event) => {
-            const detail = (event as CustomEvent<MyceliumCompletionSummary>).detail;
+        const handleMyceliumReview = (event: Event) => {
+            const detail = (event as CustomEvent<MyceliumShellSummary>).detail;
             if (!detail) return;
-            setMyceliumCompletion(detail);
+            setMyceliumSummary(detail);
         };
-        window.addEventListener('saimor:mycelium-batch-complete', handleMyceliumComplete as EventListener);
-        return () => window.removeEventListener('saimor:mycelium-batch-complete', handleMyceliumComplete as EventListener);
+        window.addEventListener(MYCELIUM_REVIEW_READY_EVENT, handleMyceliumReview as EventListener);
+        return () => window.removeEventListener(MYCELIUM_REVIEW_READY_EVENT, handleMyceliumReview as EventListener);
+    }, []);
+
+    useEffect(() => {
+        const handleMyceliumComplete = (event: Event) => {
+            const detail = (event as CustomEvent<MyceliumShellSummary>).detail;
+            if (!detail) return;
+            setMyceliumSummary(detail);
+        };
+        window.addEventListener(MYCELIUM_BATCH_COMPLETE_EVENT, handleMyceliumComplete as EventListener);
+        return () => window.removeEventListener(MYCELIUM_BATCH_COMPLETE_EVENT, handleMyceliumComplete as EventListener);
     }, []);
 
     useEffect(() => {
@@ -595,7 +585,7 @@ export const MoraShell: React.FC = () => {
         : (storeOrbState === 'idle' && apiOrbState !== 'idle'
             ? apiOrbState
             : (storeOrbState || apiOrbState));
-    const primaryMyceliumRoute = myceliumCompletion?.routes.length === 1 ? myceliumCompletion.routes[0] : null;
+    const primaryMyceliumRoute = myceliumSummary?.routes.length === 1 ? myceliumSummary.routes[0] : null;
 
     // ==========================================================================
     // RENDER
@@ -766,7 +756,7 @@ export const MoraShell: React.FC = () => {
             />
 
             {navigationOutcome && !isShellDropActive && (
-                <div className={`fixed left-1/2 z-[928] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumCompletion ? 'bottom-[14.75rem]' : 'bottom-24'}`}>
+                <div className={`fixed left-1/2 z-[928] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumSummary ? 'bottom-[17.5rem]' : 'bottom-24'}`}>
                     <div className="rounded-[24px] border border-cyan-400/18 bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
                         <div className="flex items-start gap-4 px-5 py-4">
                             <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-500/12">
@@ -782,7 +772,7 @@ export const MoraShell: React.FC = () => {
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70 font-semibold">
-                                            Mora hat geoeffnet
+                                            Mora erklaert
                                         </div>
                                         <div className="mt-1 text-sm text-white/82">
                                             {navigationOutcome.message}
@@ -852,29 +842,34 @@ export const MoraShell: React.FC = () => {
                 </div>
             )}
 
-            {myceliumCompletion && !isShellDropActive && (
+            {myceliumSummary && !isShellDropActive && (
                 <div className="fixed bottom-24 left-1/2 z-[930] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2">
                     <div className="rounded-[24px] border border-emerald-400/18 bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
                         <div className="flex items-start gap-4 px-5 py-4">
                             <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-500/12">
-                                <Sparkles className="h-5 w-5 text-emerald-300" />
+                                {myceliumSummary.phase === 'review' ? (
+                                    <Upload className="h-5 w-5 text-emerald-300" />
+                                ) : (
+                                    <Sparkles className="h-5 w-5 text-emerald-300" />
+                                )}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className="text-[11px] uppercase tracking-[0.24em] text-emerald-300/70 font-semibold">
-                                            Mycelium abgeschlossen
+                                            Mora erklaert
                                         </div>
                                         <div className="mt-1 text-sm text-white/82">
-                                            {myceliumCompletion.confirmed} eingeordnet, {myceliumCompletion.rejected} verworfen.
-                                            {myceliumCompletion.total > 1
-                                                ? ` ${myceliumCompletion.total} Dateien wurden im Intake-Lauf bearbeitet.`
-                                                : ' 1 Datei wurde im Intake-Lauf bearbeitet.'}
+                                            {myceliumSummary.phase === 'review'
+                                                ? `${myceliumSummary.pending || myceliumSummary.total} ${myceliumSummary.total === 1 ? 'Datei wartet' : 'Dateien warten'} auf Einordnung. Mora hat einen Zielvorschlag vorbereitet.`
+                                                : `${myceliumSummary.confirmed || 0} eingeordnet, ${myceliumSummary.rejected || 0} verworfen.${myceliumSummary.total > 1
+                                                    ? ` ${myceliumSummary.total} Dateien wurden im Intake-Lauf bearbeitet.`
+                                                    : ' 1 Datei wurde im Intake-Lauf bearbeitet.'}`}
                                         </div>
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setMyceliumCompletion(null)}
+                                        onClick={() => setMyceliumSummary(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
                                         aria-label="Mycelium summary schließen"
                                     >
@@ -882,9 +877,9 @@ export const MoraShell: React.FC = () => {
                                     </button>
                                 </div>
 
-                                {myceliumCompletion.routes.length > 0 && (
+                                {myceliumSummary.routes.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                        {myceliumCompletion.routes.slice(0, 3).map((route) => (
+                                        {myceliumSummary.routes.slice(0, 3).map((route) => (
                                             <div
                                                 key={`${route.path}:${route.folderId || 'unknown'}`}
                                                 className="rounded-full border border-emerald-400/12 bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-100/85"
@@ -892,32 +887,37 @@ export const MoraShell: React.FC = () => {
                                                 {route.path || 'Unbekannter Pfad'}
                                             </div>
                                         ))}
-                                        {myceliumCompletion.routes.length > 3 && (
+                                        {myceliumSummary.routes.length > 3 && (
                                             <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-white/45">
-                                                +{myceliumCompletion.routes.length - 3} weitere Ziele
+                                                +{myceliumSummary.routes.length - 3} weitere Ziele
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                {myceliumCompletion.primaryFile?.routeExplanation?.reason && (
+                                {myceliumSummary.primaryFile?.routeExplanation?.reason && (
                                     <div className="mt-3 rounded-2xl border border-emerald-400/12 bg-black/18 px-3.5 py-3">
                                         <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/65 font-semibold">
-                                            Warum dort
+                                            {myceliumSummary.phase === 'review' ? 'Warum dieser Vorschlag' : 'Warum dort'}
                                         </div>
-                                        {myceliumCompletion.primaryFile.routeExplanation.headline && (
+                                        {myceliumSummary.primaryFile.routeExplanation.headline && (
                                             <div className="mt-1 text-sm text-white/82">
-                                                {myceliumCompletion.primaryFile.routeExplanation.headline}
+                                                {myceliumSummary.primaryFile.routeExplanation.headline}
                                             </div>
                                         )}
                                         <div className="mt-1 text-xs leading-relaxed text-white/56">
-                                            {myceliumCompletion.primaryFile.routeExplanation.reason}
+                                            {myceliumSummary.primaryFile.routeExplanation.reason}
                                         </div>
+                                        {myceliumSummary.primaryFile.routeExplanation.learning_summary && (
+                                            <div className="mt-2 text-[11px] leading-relaxed text-emerald-100/60">
+                                                {myceliumSummary.primaryFile.routeExplanation.learning_summary}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    {primaryMyceliumRoute?.folderId && (
+                                    {myceliumSummary.phase === 'complete' && primaryMyceliumRoute?.folderId && (
                                         <button
                                             type="button"
                                             onClick={() => openPane({
@@ -927,13 +927,32 @@ export const MoraShell: React.FC = () => {
                                                 size: { width: 1280, height: 820 },
                                                 data: {
                                                     folderId: primaryMyceliumRoute.folderId,
-                                                    companyId: myceliumCompletion.companyId || undefined,
+                                                    companyId: myceliumSummary.companyId || undefined,
                                                 },
                                             })}
                                             className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
                                         >
                                             <FolderOpen size={13} />
-                                            Im Zielordner öffnen
+                                            Im Zielordner oeffnen
+                                        </button>
+                                    )}
+                                    {myceliumSummary.phase === 'complete' && myceliumSummary.primaryFile?.nodeId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => openNavigationOutcome({
+                                                title: 'Datei geoeffnet',
+                                                message: `Ich habe ${myceliumSummary.primaryFile?.name || 'das Dokument'} geoeffnet.`,
+                                                targetType: 'node',
+                                                label: myceliumSummary.primaryFile?.name || 'Dokument',
+                                                companyId: myceliumSummary.companyId || undefined,
+                                                folderId: myceliumSummary.primaryFile?.folderId,
+                                                nodeId: myceliumSummary.primaryFile?.nodeId,
+                                                source: 'search',
+                                            }, openPane)}
+                                            className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
+                                        >
+                                            <FileText size={13} />
+                                            Datei oeffnen
                                         </button>
                                     )}
                                     <button
@@ -945,13 +964,13 @@ export const MoraShell: React.FC = () => {
                                             size: { width: 920, height: 640 },
                                             data: {
                                                 source: 'mycelium',
-                                                batchId: myceliumCompletion.batchId,
+                                                batchId: myceliumSummary.batchId,
                                             },
                                         })}
                                         className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                     >
                                         <Sparkles size={13} />
-                                        Einordnung prüfen
+                                        Einordnung pruefen
                                     </button>
                                     <button
                                         type="button"
@@ -964,7 +983,7 @@ export const MoraShell: React.FC = () => {
                                         className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                     >
                                         <History size={13} />
-                                        Verlauf öffnen
+                                        Verlauf oeffnen
                                     </button>
                                 </div>
                             </div>

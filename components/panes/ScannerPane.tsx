@@ -9,6 +9,7 @@ import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
+import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
 import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 
 interface IntakeContext {
@@ -476,7 +477,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const rejectedCount = files.filter(f => f.reviewOutcome === 'rejected').length;
     const activePendingAction = pendingActions[0] || null;
     const routeSummary = useMemo(() => {
-        const buckets = new Map<string, { count: number; category?: string; confidenceLabel?: string; confidenceScore?: number; isLearned?: boolean }>();
+        const buckets = new Map<string, { count: number; category?: string; confidenceLabel?: string; confidenceScore?: number; isLearned?: boolean; folderId?: string }>();
         pendingActions.forEach((action) => {
             const label = buildRoutePath(action.intake_context);
             const current = buckets.get(label) || {
@@ -485,6 +486,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 confidenceLabel: action.intake_context?.route_confidence_label,
                 confidenceScore: action.intake_context?.route_confidence_score,
                 isLearned: action.intake_context?.route_mode === 'learned_route',
+                folderId: action.folder_id,
             };
             current.count += 1;
             if (!current.category && action.intake_context?.suggested_category) {
@@ -499,6 +501,9 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             // Any learned action in the bucket marks the whole bucket as learned
             if (!current.isLearned && action.intake_context?.route_mode === 'learned_route') {
                 current.isLearned = true;
+            }
+            if (!current.folderId && action.folder_id) {
+                current.folderId = action.folder_id;
             }
             buckets.set(label, current);
         });
@@ -595,6 +600,41 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     }, [files, pendingActions]);
 
     React.useEffect(() => {
+        if (intakeSeed.source !== 'mycelium' || pendingActions.length === 0) return;
+
+        dispatchMyceliumReviewReady({
+            phase: 'review',
+            batchId: intakeSeed.batchId,
+            companyId: activeCompanyId || undefined,
+            total: pendingActions.length,
+            pending: pendingActions.length,
+            confirmed: confirmedCount,
+            rejected: rejectedCount,
+            routes: routeSummary.map((route) => ({
+                path: route.path,
+                folderId: route.folderId,
+                count: route.count,
+            })),
+            primaryFile: activePendingAction
+                ? {
+                    name: activePendingAction.file_name,
+                    folderId: activePendingAction.folder_id,
+                    routeExplanation: activePendingAction.intake_context?.route_explanation,
+                }
+                : undefined,
+        });
+    }, [
+        activeCompanyId,
+        activePendingAction,
+        confirmedCount,
+        intakeSeed.batchId,
+        intakeSeed.source,
+        pendingActions.length,
+        rejectedCount,
+        routeSummary,
+    ]);
+
+    React.useEffect(() => {
         if (intakeSeed.source !== 'mycelium' || !batchResultSummary || pendingActions.length > 0) return;
         if (autoOpenedBatchRef.current === intakeSeed.batchId) return;
         const singleRoute = batchResultSummary.routes.length === 1 ? batchResultSummary.routes[0] : null;
@@ -617,30 +657,29 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         const batchMarker = intakeSeed.batchId || '__mycelium-complete__';
         if (reportedBatchRef.current === batchMarker) return;
         reportedBatchRef.current = batchMarker;
-        window.dispatchEvent(new CustomEvent('saimor:mycelium-batch-complete', {
-            detail: {
-                batchId: intakeSeed.batchId,
-                companyId: activeCompanyId || undefined,
-                total: batchResultSummary.total,
-                confirmed: batchResultSummary.confirmed,
-                rejected: batchResultSummary.rejected,
-                routes: batchResultSummary.routes.map((route) => ({
-                    path: route.path,
-                    folderId: route.folderId,
-                    confirmed: route.confirmed,
-                    rejected: route.rejected,
-                })),
-                primaryFile: batchResultSummary.primaryFile
-                    ? {
-                        name: batchResultSummary.primaryFile.name,
-                        nodeId: batchResultSummary.primaryFile.confirmedNodeId,
-                        folderId: batchResultSummary.primaryFile.confirmedFolderId,
-                        result: batchResultSummary.primaryFile.result,
-                        routeExplanation: batchResultSummary.primaryFile.intakeContext?.route_explanation,
-                    }
-                    : undefined,
-            },
-        }));
+        dispatchMyceliumBatchComplete({
+            phase: 'complete',
+            batchId: intakeSeed.batchId,
+            companyId: activeCompanyId || undefined,
+            total: batchResultSummary.total,
+            confirmed: batchResultSummary.confirmed,
+            rejected: batchResultSummary.rejected,
+            routes: batchResultSummary.routes.map((route) => ({
+                path: route.path,
+                folderId: route.folderId,
+                confirmed: route.confirmed,
+                rejected: route.rejected,
+            })),
+            primaryFile: batchResultSummary.primaryFile
+                ? {
+                    name: batchResultSummary.primaryFile.name,
+                    nodeId: batchResultSummary.primaryFile.confirmedNodeId,
+                    folderId: batchResultSummary.primaryFile.confirmedFolderId,
+                    result: batchResultSummary.primaryFile.result,
+                    routeExplanation: batchResultSummary.primaryFile.intakeContext?.route_explanation,
+                }
+                : undefined,
+        });
     }, [activeCompanyId, batchResultSummary, intakeSeed.batchId, intakeSeed.source, pendingActions.length]);
 
     const bulkConfirm = async () => {
