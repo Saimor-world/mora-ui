@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Folder, Building2 } from 'lucide-react';
 import type { PaneConfig } from '@/lib/store/paneStore';
-import { fetchNodeDetails, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { corePost, fetchNodeDetails, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
+import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 
 type OpenPaneFn = (pane: Omit<PaneConfig, 'position' | 'zIndex' | 'minimized'>) => void;
 export const NAVIGATION_RESULT_EVENT = 'saimor:navigation-result';
@@ -103,6 +105,43 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
 export function surfaceNavigationOutcome(outcome: NavigationOutcome, openPane: OpenPaneFn) {
     openNavigationOutcome(outcome, openPane);
     dispatchNavigationResult(outcome);
+    const activePlanId = useWorkSessionStore.getState().activePlanId;
+    if (!activePlanId) return;
+
+    void corePost('/v3/work-session/navigation', {
+        plan_id: activePlanId,
+        target_type: outcome.targetType,
+        label: outcome.label,
+        message: outcome.message,
+        query: outcome.query,
+        company_id: outcome.companyId,
+        department_id: outcome.departmentId,
+        space_id: outcome.spaceId,
+        folder_id: outcome.folderId,
+        node_id: outcome.nodeId,
+        open_mode: outcome.targetType === 'node' ? 'finder_and_document' : outcome.targetType === 'search' ? 'search' : 'finder',
+        source: outcome.source || 'search',
+    }, { isOptional: true })
+        .then((plan) => {
+            if (!plan || typeof plan !== 'object') return;
+            const typedPlan = plan as Record<string, any>;
+            if (typeof typedPlan.plan_id !== 'string') return;
+            dispatchWorkSessionPlan({
+                planId: typedPlan.plan_id,
+                sessionId: typedPlan.session_id,
+                source: 'navigation',
+                state: typedPlan.state,
+                title: typedPlan.title,
+                summary: typedPlan.summary,
+                mode: typedPlan.mode,
+                scope: typedPlan.scope,
+                stats: typedPlan.stats,
+                transparencyNote: typedPlan.transparency_note,
+            });
+        })
+        .catch(() => {
+            // navigation remains a valid UI outcome even if session recording fails
+        });
 }
 
 export function mapRawSearchResult(raw: any): OpenableSearchResult | null {

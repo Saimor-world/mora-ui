@@ -35,6 +35,7 @@ export interface MyceliumShellSummary {
 export interface WorkSessionShellSummary {
     planId: string;
     sessionId?: string;
+    source?: 'chat' | 'pane' | 'navigation';
     state: string;
     title: string;
     summary?: string;

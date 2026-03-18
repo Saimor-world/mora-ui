@@ -6,7 +6,8 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import type { WorkSessionPlan, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
-import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
+import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
+import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 import {
     AlertTriangle,
@@ -432,6 +433,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
+    const setActivePlanId = useWorkSessionStore((state) => state.setActivePlanId);
 
     const [plan, setPlan] = useState<WorkSessionPlan | null>((pane?.data?.plan as WorkSessionPlan | undefined) ?? null);
     const [isLoading, setIsLoading] = useState(!plan && !!pane?.data?.plan_id);
@@ -483,9 +485,11 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
 
     useEffect(() => {
         if (!plan?.plan_id) return;
+        setActivePlanId(plan.plan_id);
         dispatchWorkSessionPlan({
             planId: plan.plan_id,
             sessionId: plan.session_id,
+            source: 'pane',
             state: plan.state,
             title: plan.title,
             summary: plan.summary,
@@ -494,7 +498,23 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
             stats: plan.stats,
             transparencyNote: plan.transparency_note,
         });
-    }, [plan]);
+    }, [plan, setActivePlanId]);
+
+    useEffect(() => {
+        const handlePlanUpdate = (event: Event) => {
+            const detail = (event as CustomEvent<WorkSessionShellSummary>).detail;
+            if (!detail || detail.source === 'pane' || !plan?.plan_id || detail.planId !== plan.plan_id) return;
+            void coreGet(`/v3/work-session/plan/${encodeURIComponent(plan.plan_id)}`, { isOptional: true })
+                .then((fresh) => {
+                    if (fresh) setPlan(fresh as WorkSessionPlan);
+                })
+                .catch(() => {
+                    // keep current snapshot if refresh fails
+                });
+        };
+        window.addEventListener(WORK_SESSION_PLAN_EVENT, handlePlanUpdate as EventListener);
+        return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handlePlanUpdate as EventListener);
+    }, [plan?.plan_id]);
 
     const handleConfirmStep = async (stepId: string) => {
         if (!plan) return;

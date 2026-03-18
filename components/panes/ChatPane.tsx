@@ -33,6 +33,7 @@ import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 import { dispatchNavigationResult, openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
 import { fetchWorkSessionPlan } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
+import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 
 interface PendingAction {
     tool_name: string;
@@ -415,6 +416,7 @@ const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
+    const setActivePlanId = useWorkSessionStore((state) => state.setActivePlanId);
     const {
         departments,
         isStandardMode,
@@ -819,12 +821,14 @@ Was kann ich fuer dich tun?`,
                     if (agentResponse?.final_message) {
                         const planId = extractPlanId(agentResponse) ?? undefined;
                         if (planId) {
+                            setActivePlanId(planId);
                             try {
                                 const plan = await fetchWorkSessionPlan(planId);
                                 if (plan) {
                                     dispatchWorkSessionPlan({
                                         planId: plan.plan_id,
                                         sessionId: plan.session_id,
+                                        source: 'chat',
                                         state: plan.state,
                                         title: plan.title,
                                         summary: plan.summary,
@@ -836,6 +840,7 @@ Was kann ich fuer dich tun?`,
                                 } else {
                                     dispatchWorkSessionPlan({
                                         planId,
+                                        source: 'chat',
                                         state: 'pending',
                                         title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
                                         summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
@@ -844,6 +849,7 @@ Was kann ich fuer dich tun?`,
                             } catch {
                                 dispatchWorkSessionPlan({
                                     planId,
+                                    source: 'chat',
                                     state: 'pending',
                                     title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
                                     summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
