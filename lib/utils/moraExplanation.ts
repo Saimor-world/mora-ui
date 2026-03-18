@@ -50,6 +50,7 @@ export interface WorkSessionShellSummary {
         total_steps?: number;
         read_steps?: number;
         write_steps?: number;
+        planned_steps?: number;
         completed_steps?: number;
         pending_confirmations?: number;
         running_steps?: number;
