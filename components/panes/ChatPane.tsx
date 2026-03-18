@@ -30,6 +30,7 @@ import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
+import { openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
 
 interface PendingAction {
     tool_name: string;
@@ -618,7 +619,7 @@ Was kann ich fuer dich tun?`,
         }
 
         // Navigation commands
-        if (lower.includes('zeig') || lower.includes('show') || lower.includes('geh zu') || lower.includes('go to')) {
+        if (lower.includes('zeig') || lower.includes('zeige') || lower.includes('show') || lower.includes('geh zu') || lower.includes('go to')) {
             // Find department name
             for (const dept of departments) {
                 if (lower.includes(dept.name.toLowerCase())) {
@@ -628,10 +629,11 @@ Was kann ich fuer dich tun?`,
         }
 
         // Search commands
-        if (lower.includes('find') || lower.includes('such') || lower.includes('search')) {
+        if (lower.includes('find') || lower.includes('such') || lower.includes('search') || lower.includes('oeffne') || lower.includes('öffne')) {
             // Priority regex for German/English search verbs
-            const target = text.replace(/^(finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
-                .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file)$/i, '')
+            const target = text
+                .replace(/^(zeige mir|zeig mir|zeige|zeig|oeffne|öffne|finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
+                .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file|ordner|folder|folders)$/i, '')
                 .trim();
             return { type: 'search', target };
         }
@@ -670,6 +672,40 @@ Was kann ich fuer dich tun?`,
             ? `🌐 Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
             : `🔍 Ich öffne die Suche für **"${query}"**...`;
     };
+
+    const executeDirectOpenIntent = useCallback(async (query: string) => {
+        const trimmed = query.trim();
+        if (!activeCompanyId) {
+            return executeSearch(trimmed);
+        }
+
+        const scope = {
+            companyId: activeCompanyId,
+            departmentId: activeDepartmentId,
+            spaceId: activeSpaceId,
+            folderId: activeFolderId,
+        };
+        const results = await resolveSearchResults(trimmed, scope);
+        const exactMatches = results.filter((result) => result.title.trim().toLowerCase() === trimmed.toLowerCase());
+        const chosen = results.length === 1 ? results[0] : exactMatches.length === 1 ? exactMatches[0] : null;
+
+        if (!chosen) {
+            openPane({
+                id: 'search-main',
+                type: 'search',
+                title: 'Suche',
+                size: { width: 960, height: 720 },
+                data: { query: trimmed },
+            });
+            return `Ich habe mehrere passende Treffer fuer **${trimmed}** gefunden und die Suche im aktuellen Firmenkontext geoeffnet.`;
+        }
+
+        await openSearchResult(chosen, openPane, scope);
+        if (chosen.type === 'file' || chosen.type === 'node') {
+            return `Ich oeffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
+        }
+        return `Ich oeffne **${chosen.title}** im aktuellen Firmenkontext.`;
+    }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)
     const processMessage = async (content: string) => {
@@ -711,7 +747,7 @@ Was kann ich fuer dich tun?`,
                 setIsLoading(false);
                 return;
             } else if (intent.type === 'search' && intent.target) {
-                responseContent = executeSearch(intent.target);
+                responseContent = await executeDirectOpenIntent(intent.target);
                 setMessages(prev => [...prev, {
                     id: crypto.randomUUID(),
                     role: 'assistant',

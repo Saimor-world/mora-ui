@@ -28,6 +28,13 @@ interface IntakeContext {
     target_department_name?: string;
     target_space_name?: string;
     target_folder_name?: string;
+    route_explanation?: {
+        kind?: string;
+        headline?: string;
+        reason?: string;
+        signal_labels?: string[];
+        learning_summary?: string;
+    };
 }
 
 interface PendingAction {
@@ -57,6 +64,7 @@ interface ScannedFile {
     intakeContext?: IntakeContext;
     /** Folder where the file was ultimately routed after confirmation */
     confirmedFolderId?: string;
+    confirmedNodeId?: string;
 }
 
 interface IntakeSeedPayload {
@@ -238,10 +246,18 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         outcome: 'confirmed' | 'rejected',
         result: string,
         confirmedFolderId?: string,
+        confirmedNodeId?: string,
     ) => {
         setFiles(prev => prev.map(f =>
             f.fileRecordId === fileId
-                ? { ...f, status: 'done', reviewOutcome: outcome, result, ...(confirmedFolderId ? { confirmedFolderId } : {}) }
+                ? {
+                    ...f,
+                    status: 'done',
+                    reviewOutcome: outcome,
+                    result,
+                    ...(confirmedFolderId ? { confirmedFolderId } : {}),
+                    ...(confirmedNodeId ? { confirmedNodeId } : {}),
+                }
                 : f
         ));
     }, []);
@@ -267,6 +283,27 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         return confirmedFolderId;
     }, []);
 
+    const resolveDestinationNodeId = useCallback(async (
+        active: Pick<PendingAction, 'file_id'>,
+        result?: Record<string, any> | null,
+    ) => {
+        let confirmedNodeId: string | undefined =
+            result?.node_id ||
+            result?.destination?.node_id ||
+            result?.result?.destination?.node_id;
+
+        if (!confirmedNodeId) {
+            try {
+                const nodeStatus = await getFileNode(active.file_id);
+                confirmedNodeId = nodeStatus?.node_id;
+            } catch {
+                // destination unknown is acceptable
+            }
+        }
+
+        return confirmedNodeId;
+    }, []);
+
     const buildResolvedResultText = useCallback((
         intake: IntakeContext | undefined,
         confirmedFolderId?: string,
@@ -280,16 +317,17 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const confirmPendingAction = useCallback(async (active: PendingAction) => {
         const result = await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
         const confirmedFolderId = await resolveDestinationFolderId(active, result);
+        const confirmedNodeId = await resolveDestinationNodeId(active, result);
         const resultText = buildResolvedResultText(
             active.intake_context,
             confirmedFolderId,
             result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
         );
 
-        markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId);
+        markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId, confirmedNodeId);
         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
         return active;
-    }, [buildResolvedResultText, markFileOutcome, resolveDestinationFolderId]);
+    }, [buildResolvedResultText, markFileOutcome, resolveDestinationFolderId, resolveDestinationNodeId]);
 
     const rejectPendingAction = useCallback(async (active: PendingAction) => {
         await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
@@ -331,7 +369,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     ...f,
                     status: 'review',
                     result: 'Wartet auf Einordnung',
-                    intakeContext: response.intake_context,
+                    intakeContext: {
+                        ...response.intake_context,
+                        route_explanation: response.route_explanation,
+                    },
                 } : f));
                 const nextAction = {
                     tool_name: response.tool_name || 'create_node_from_file',
@@ -351,7 +392,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         confirmation_token: response.confirmation_token,
                         folder_id: response.route_suggestion?.target_folder_id || response.folder_id,
                     },
-                    intake_context: response.intake_context,
+                    intake_context: {
+                        ...response.intake_context,
+                        route_explanation: response.route_explanation,
+                    },
                 };
                 setPendingActions(prev => {
                     const sorted = [...prev, nextAction].sort((a, b) => buildConfidenceWeight(a.intake_context) - buildConfidenceWeight(b.intake_context));
@@ -362,6 +406,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
             if (response?.status === 'executed') {
                 const confirmedFolderId = await resolveDestinationFolderId({ file_id: uploaded.id, folder_id: response.folder_id }, response as any);
+                const confirmedNodeId = await resolveDestinationNodeId({ file_id: uploaded.id }, response as any);
                 const resultText = buildResolvedResultText(
                     response.intake_context,
                     confirmedFolderId,
@@ -371,8 +416,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     ...f,
                     status: 'done',
                     result: resultText,
-                    intakeContext: response.intake_context,
-                    ...(confirmedFolderId ? { confirmedFolderId } : {})
+                    intakeContext: {
+                        ...response.intake_context,
+                        route_explanation: response.route_explanation,
+                    },
+                    ...(confirmedFolderId ? { confirmedFolderId } : {}),
+                    ...(confirmedNodeId ? { confirmedNodeId } : {}),
                 } : f));
                 window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                 toast.success(response.destination_summary || `Eingeordnet: ${fileObject.name}`);
@@ -513,6 +562,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             confirmed: reviewed.filter((file) => file.reviewOutcome === 'confirmed').length,
             rejected: reviewed.filter((file) => file.reviewOutcome === 'rejected').length,
             routes: Array.from(buckets.entries()).map(([path, meta]) => ({ path, ...meta })),
+            primaryFile: reviewed.length === 1 ? reviewed[0] : null,
         };
     }, [files, pendingActions]);
 
@@ -552,6 +602,15 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     confirmed: route.confirmed,
                     rejected: route.rejected,
                 })),
+                primaryFile: batchResultSummary.primaryFile
+                    ? {
+                        name: batchResultSummary.primaryFile.name,
+                        nodeId: batchResultSummary.primaryFile.confirmedNodeId,
+                        folderId: batchResultSummary.primaryFile.confirmedFolderId,
+                        result: batchResultSummary.primaryFile.result,
+                        routeExplanation: batchResultSummary.primaryFile.intakeContext?.route_explanation,
+                    }
+                    : undefined,
             },
         }));
     }, [activeCompanyId, batchResultSummary, intakeSeed.batchId, intakeSeed.source, pendingActions.length]);
@@ -800,6 +859,21 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     {batchResultSummary.confirmed} eingeordnet, {batchResultSummary.rejected} verworfen.
                                     {batchResultSummary.total > 1 ? ` ${batchResultSummary.total} Dateien wurden im Intake-Lauf bearbeitet.` : ' 1 Datei wurde im Intake-Lauf bearbeitet.'}
                                 </p>
+                                {batchResultSummary.primaryFile?.intakeContext?.route_explanation?.reason && (
+                                    <div className="mt-3 rounded-lg border border-emerald-400/12 bg-black/15 px-3 py-3">
+                                        <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-300/65">
+                                            Warum dort
+                                        </div>
+                                        {batchResultSummary.primaryFile.intakeContext.route_explanation.headline && (
+                                            <div className="mt-1 text-sm text-white/82">
+                                                {batchResultSummary.primaryFile.intakeContext.route_explanation.headline}
+                                            </div>
+                                        )}
+                                        <div className="mt-1 text-xs text-white/58 leading-relaxed">
+                                            {batchResultSummary.primaryFile.intakeContext.route_explanation.reason}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="mt-3 space-y-2">
                                     {batchResultSummary.routes.map((route) => (
                                         <div key={route.path || 'unknown'} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/15 px-3 py-2">
@@ -833,6 +907,25 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                     ))}
                                 </div>
+                                {batchResultSummary.primaryFile?.confirmedNodeId && (
+                                    <div className="mt-3">
+                                        <button
+                                            onClick={() => openPane({
+                                                id: `document-${batchResultSummary.primaryFile?.confirmedNodeId}`,
+                                                type: 'document',
+                                                title: batchResultSummary.primaryFile?.name || 'Dokument',
+                                                size: { width: 960, height: 720 },
+                                                data: {
+                                                    nodeId: batchResultSummary.primaryFile?.confirmedNodeId,
+                                                    name: batchResultSummary.primaryFile?.name,
+                                                },
+                                            })}
+                                            className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
+                                        >
+                                            Datei oeffnen â†’
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

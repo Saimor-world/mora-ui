@@ -6,7 +6,8 @@ import { Search, X, FileText, Folder, Building2, Clock, ArrowRight, Sparkles } f
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { searchGlobal, searchSemantic, fetchNodeDetails } from '@/lib/api/coreClient';
+import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
 
 /**
  * SearchPane - Universal Search Interface
@@ -23,7 +24,7 @@ interface SearchResult {
     type: 'node' | 'space' | 'department' | 'user' | 'file' | 'folder';
     title: string;
     subtitle?: string;
-    icon: typeof FileText;
+    icon: typeof FileText | typeof Folder | typeof Building2;
     source?: 'local' | 'mora';
     score?: number;
     departmentId?: string;
@@ -103,39 +104,13 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     }, [activeCompanyId]);
 
     const mapKeywordResult = React.useCallback((raw: any): SearchResult | null => {
-        const type = String(raw?.type || raw?.result_type || '').toLowerCase();
-        const normalizedType = (['department', 'space', 'node', 'file', 'folder'].includes(type)
-            ? type
-            : 'node') as SearchResult['type'];
-        const departmentId = raw?.department_id || raw?.departmentId;
-        const spaceId = raw?.space_id || raw?.spaceId;
-        const folderId = raw?.folder_id || raw?.folderId;
-        const nodeId = raw?.node_id || raw?.nodeId || (normalizedType === 'node' || normalizedType === 'file' ? raw?.id : undefined);
-        const id = departmentId || spaceId || folderId || nodeId || raw?.id;
-
-        if (!id) return null;
-
-        const subtitle =
-            raw?.path ||
-            raw?.scope_path ||
-            raw?.content?.substring?.(0, 80) ||
-            (normalizedType === 'department' ? 'Bereich' :
-                normalizedType === 'space' ? 'Space' :
-                    normalizedType === 'folder' ? 'Ordner' :
-                        normalizedType === 'file' ? 'Datei' : 'Treffer');
-
+        const mapped = mapRawSearchResult(raw);
+        if (!mapped) return null;
         return {
-            id,
-            type: normalizedType,
-            title: raw?.title || raw?.name || raw?.filename || 'Unbenannt',
-            subtitle,
-            icon: normalizedType === 'department' ? Building2 :
-                normalizedType === 'space' || normalizedType === 'folder' ? Folder : FileText,
+            ...mapped,
+            icon: mapped.icon || FileText,
+            subtitle: mapped.path || raw?.content?.substring?.(0, 80) || (mapped.type === 'department' ? 'Bereich' : mapped.type === 'space' ? 'Space' : mapped.type === 'folder' ? 'Ordner' : mapped.type === 'file' ? 'Datei' : 'Treffer'),
             source: 'mora',
-            departmentId,
-            spaceId,
-            folderId,
-            nodeId,
         };
     }, []);
 
@@ -310,42 +285,9 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 removePane(id);
                 break;
             case 'folder':
-                openPane({
-                    id: `finder-${result.folderId || result.id}`,
-                    type: 'finder',
-                    title: result.title,
-                    size: { width: 900, height: 640 },
-                    data: {
-                        folderId: result.folderId || result.id,
-                        companyId: activeCompanyId || undefined,
-                    }
-                });
-                removePane(id);
-                break;
             case 'file':
             case 'node':
-                let resolvedFolderId = result.folderId;
-                if (!resolvedFolderId && (result.nodeId || result.id)) {
-                    try {
-                        const node = await fetchNodeDetails(result.nodeId || result.id);
-                        resolvedFolderId = (node as any)?.folder_id || resolvedFolderId;
-                    } catch {
-                        // fall back to document-only open
-                    }
-                }
-                if (resolvedFolderId) {
-                    openPane({
-                        id: `finder-${resolvedFolderId}`,
-                        type: 'finder',
-                        title: result.title,
-                        size: { width: 900, height: 640 },
-                        data: {
-                            folderId: resolvedFolderId,
-                            companyId: activeCompanyId || undefined,
-                        }
-                    });
-                }
-                window.dispatchEvent(new CustomEvent('open-node-detail', { detail: { nodeId: result.nodeId || result.id } }));
+                await openSearchResult(result as any, openPane, { companyId: activeCompanyId || undefined });
                 removePane(id);
                 break;
             default:

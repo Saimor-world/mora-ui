@@ -1,0 +1,196 @@
+import type { LucideIcon } from 'lucide-react';
+import { FileText, Folder, Building2 } from 'lucide-react';
+import type { PaneConfig } from '@/lib/store/paneStore';
+import { fetchNodeDetails, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+
+type OpenPaneFn = (pane: Omit<PaneConfig, 'position' | 'zIndex' | 'minimized'>) => void;
+
+export interface OpenableSearchResult {
+    id: string;
+    type: 'department' | 'space' | 'folder' | 'file' | 'node';
+    title: string;
+    subtitle?: string;
+    icon?: LucideIcon;
+    path?: string;
+    score?: number;
+    departmentId?: string;
+    spaceId?: string;
+    folderId?: string;
+    nodeId?: string;
+}
+
+interface ActiveScope {
+    companyId?: string | null;
+    departmentId?: string | null;
+    spaceId?: string | null;
+    folderId?: string | null;
+}
+
+export function mapRawSearchResult(raw: any): OpenableSearchResult | null {
+    const type = String(raw?.type || raw?.result_type || '').toLowerCase();
+    const normalizedType = (['department', 'space', 'folder', 'file', 'node'].includes(type)
+        ? type
+        : 'node') as OpenableSearchResult['type'];
+
+    const departmentId = raw?.department_id || raw?.departmentId;
+    const spaceId = raw?.space_id || raw?.spaceId;
+    const folderId = raw?.folder_id || raw?.folderId;
+    const nodeId = raw?.node_id || raw?.nodeId || (normalizedType === 'node' || normalizedType === 'file' ? raw?.id : undefined);
+    const id = departmentId || spaceId || folderId || nodeId || raw?.id;
+
+    if (!id) return null;
+
+    return {
+        id,
+        title: raw?.title || raw?.name || raw?.filename || 'Unbenannt',
+        type: normalizedType,
+        path: raw?.path || raw?.scope_path || undefined,
+        subtitle: raw?.path || raw?.scope_path || undefined,
+        icon: normalizedType === 'department' ? Building2 : normalizedType === 'space' || normalizedType === 'folder' ? Folder : FileText,
+        departmentId,
+        spaceId,
+        folderId,
+        nodeId,
+    };
+}
+
+function scoreResult(result: OpenableSearchResult, query: string, scope: ActiveScope): number {
+    const lowerQuery = query.trim().toLowerCase();
+    const title = result.title.toLowerCase();
+    let score = 0;
+
+    if (title === lowerQuery) score += 120;
+    else if (title.includes(lowerQuery)) score += 60;
+
+    if (result.path?.toLowerCase().includes(lowerQuery)) score += 20;
+    if (result.folderId && scope.folderId && result.folderId === scope.folderId) score += 50;
+    if (result.spaceId && scope.spaceId && result.spaceId === scope.spaceId) score += 35;
+    if (result.departmentId && scope.departmentId && result.departmentId === scope.departmentId) score += 20;
+    if (result.type === 'file' || result.type === 'node') score += 5;
+    if (typeof result.score === 'number') score += result.score * 10;
+
+    return score;
+}
+
+function dedupeResults(results: OpenableSearchResult[]): OpenableSearchResult[] {
+    const map = new Map<string, OpenableSearchResult>();
+    results.forEach((result) => {
+        const key = `${result.type}:${result.id}`;
+        if (!map.has(key)) map.set(key, result);
+    });
+    return Array.from(map.values());
+}
+
+export async function resolveSearchResults(query: string, scope: ActiveScope): Promise<OpenableSearchResult[]> {
+    const trimmed = query.trim();
+    if (!trimmed || !scope.companyId) return [];
+
+    const [keywordResponse, semanticResponse] = await Promise.all([
+        searchGlobal(trimmed, scope.companyId),
+        searchSemantic(trimmed, scope.companyId, 10, 0.55),
+    ]);
+
+    const keywordResults = (keywordResponse?.results || [])
+        .map(mapRawSearchResult)
+        .filter((result): result is OpenableSearchResult => result !== null);
+
+    const semanticResults = semanticResponse
+        .map((result) => ({
+            id: result.node_id,
+            type: 'node' as const,
+            title: result.metadata?.title || 'Unbenannt',
+            subtitle: result.content?.substring(0, 100) || result.metadata?.type || 'Treffer',
+            icon: FileText,
+            score: result.score,
+            nodeId: result.node_id,
+            folderId: result.metadata?.folder_id,
+            spaceId: result.metadata?.space_id,
+        }))
+        .filter((result) => !!result.id);
+
+    return dedupeResults([...keywordResults, ...semanticResults]).sort(
+        (a, b) => scoreResult(b, trimmed, scope) - scoreResult(a, trimmed, scope)
+    );
+}
+
+export async function openSearchResult(
+    result: OpenableSearchResult,
+    openPane: OpenPaneFn,
+    scope: ActiveScope,
+) {
+    switch (result.type) {
+        case 'department':
+            openPane({
+                id: `search-department-${result.departmentId || result.id}`,
+                type: 'finder',
+                title: result.title,
+                size: { width: 900, height: 640 },
+                data: {
+                    departmentId: result.departmentId || result.id,
+                    companyId: scope.companyId || undefined,
+                }
+            });
+            return;
+        case 'space':
+            openPane({
+                id: `search-space-${result.spaceId || result.id}`,
+                type: 'finder',
+                title: result.title,
+                size: { width: 900, height: 640 },
+                data: {
+                    spaceId: result.spaceId || result.id,
+                    companyId: scope.companyId || undefined,
+                }
+            });
+            return;
+        case 'folder':
+            openPane({
+                id: `finder-${result.folderId || result.id}`,
+                type: 'finder',
+                title: result.title,
+                size: { width: 900, height: 640 },
+                data: {
+                    folderId: result.folderId || result.id,
+                    companyId: scope.companyId || undefined,
+                }
+            });
+            return;
+        case 'file':
+        case 'node': {
+            let resolvedFolderId = result.folderId;
+            let resolvedNodeId = result.nodeId || result.id;
+            if (!resolvedFolderId && resolvedNodeId) {
+                try {
+                    const node = await fetchNodeDetails(resolvedNodeId);
+                    resolvedFolderId = (node as any)?.folder_id || resolvedFolderId;
+                    resolvedNodeId = (node as any)?.id || resolvedNodeId;
+                } catch {
+                    // document-only fallback remains acceptable
+                }
+            }
+            if (resolvedFolderId) {
+                openPane({
+                    id: `finder-${resolvedFolderId}`,
+                    type: 'finder',
+                    title: result.title,
+                    size: { width: 900, height: 640 },
+                    data: {
+                        folderId: resolvedFolderId,
+                        companyId: scope.companyId || undefined,
+                    }
+                });
+            }
+            openPane({
+                id: `document-${resolvedNodeId}`,
+                type: 'document',
+                title: result.title,
+                size: { width: 800, height: 600 },
+                data: {
+                    nodeId: resolvedNodeId,
+                    name: result.title,
+                }
+            });
+            return;
+        }
+    }
+}

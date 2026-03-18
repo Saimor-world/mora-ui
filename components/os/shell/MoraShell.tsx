@@ -229,6 +229,17 @@ export const MoraShell: React.FC = () => {
             confirmed: number;
             rejected: number;
         }>;
+        primaryFile?: {
+            name?: string;
+            nodeId?: string;
+            folderId?: string;
+            result?: string;
+            routeExplanation?: {
+                headline?: string;
+                reason?: string;
+                learning_summary?: string;
+            };
+        };
     };
 
     // Auth
@@ -776,6 +787,22 @@ export const MoraShell: React.FC = () => {
                                                 +{myceliumCompletion.routes.length - 3} weitere Ziele
                                             </div>
                                         )}
+                                    </div>
+                                )}
+
+                                {myceliumCompletion.primaryFile?.routeExplanation?.reason && (
+                                    <div className="mt-3 rounded-2xl border border-emerald-400/12 bg-black/18 px-3.5 py-3">
+                                        <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-300/65 font-semibold">
+                                            Warum dort
+                                        </div>
+                                        {myceliumCompletion.primaryFile.routeExplanation.headline && (
+                                            <div className="mt-1 text-sm text-white/82">
+                                                {myceliumCompletion.primaryFile.routeExplanation.headline}
+                                            </div>
+                                        )}
+                                        <div className="mt-1 text-xs leading-relaxed text-white/56">
+                                            {myceliumCompletion.primaryFile.routeExplanation.reason}
+                                        </div>
                                     </div>
                                 )}
 

@@ -28,17 +28,19 @@ import {
     Loader2,
     MessageCircle
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
-import { searchGlobal, corePost, fetchNodeDetails } from '@/lib/api/coreClient';
+import { searchGlobal, corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
+import { mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
 
 interface SearchResult {
     id: string;
     title: string;
     type: 'department' | 'space' | 'folder' | 'file' | 'node';
-    icon?: string;
+    icon?: LucideIcon;
     path?: string;
     departmentId?: string;
     spaceId?: string;
@@ -87,29 +89,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     ];
 
     const mapSearchResult = useCallback((raw: any): SearchResult | null => {
-        const type = String(raw?.type || raw?.result_type || '').toLowerCase();
-        const normalizedType = (['department', 'space', 'folder', 'file', 'node'].includes(type)
-            ? type
-            : 'node') as SearchResult['type'];
-
-        const departmentId = raw?.department_id || raw?.departmentId;
-        const spaceId = raw?.space_id || raw?.spaceId;
-        const folderId = raw?.folder_id || raw?.folderId;
-        const nodeId = raw?.node_id || raw?.nodeId || (normalizedType === 'node' || normalizedType === 'file' ? raw?.id : undefined);
-        const id = departmentId || spaceId || folderId || nodeId || raw?.id;
-
-        if (!id) return null;
-
-        return {
-            id,
-            title: raw?.title || raw?.name || raw?.filename || 'Unbenannt',
-            type: normalizedType,
-            path: raw?.path || raw?.scope_path || undefined,
-            departmentId,
-            spaceId,
-            folderId,
-            nodeId,
-        };
+        const mapped = mapRawSearchResult(raw);
+        if (!mapped) return null;
+        return mapped;
     }, []);
 
     // Search when query changes
@@ -169,43 +151,9 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                 navigateToSpace(result.spaceId || result.id);
                 break;
             case 'folder':
-                openPane({
-                    id: `finder-${result.folderId || result.id}`,
-                    type: 'finder',
-                    title: result.title,
-                    size: { width: 800, height: 600 },
-                    data: {
-                        folderId: result.folderId || result.id,
-                        companyId: activeCompanyId || undefined,
-                    }
-                });
-                break;
             case 'file':
             case 'node':
-                let resolvedFolderId = result.folderId;
-                if (!resolvedFolderId && (result.nodeId || result.id)) {
-                    try {
-                        const node = await fetchNodeDetails(result.nodeId || result.id);
-                        resolvedFolderId = (node as any)?.folder_id || resolvedFolderId;
-                    } catch {
-                        // fall back to document-only open
-                    }
-                }
-                if (resolvedFolderId) {
-                    openPane({
-                        id: `finder-${resolvedFolderId}`,
-                        type: 'finder',
-                        title: result.title,
-                        size: { width: 900, height: 640 },
-                        data: {
-                            folderId: resolvedFolderId,
-                            companyId: activeCompanyId || undefined,
-                        }
-                    });
-                }
-                window.dispatchEvent(new CustomEvent('open-node-detail', {
-                    detail: { nodeId: result.nodeId || result.id }
-                }));
+                await openSearchResult(result, openPane, { companyId: activeCompanyId || undefined });
                 break;
         }
 
