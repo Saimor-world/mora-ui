@@ -854,6 +854,8 @@ Was kann ich fuer dich tun?`,
                                         state: 'pending',
                                         title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
                                         summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        stats: agentResponse.work_session_plan?.stats as any,
                                     });
                                 }
                             } catch {
@@ -864,6 +866,8 @@ Was kann ich fuer dich tun?`,
                                     state: 'pending',
                                     title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
                                     summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    stats: agentResponse.work_session_plan?.stats as any,
                                 });
                             }
                         }

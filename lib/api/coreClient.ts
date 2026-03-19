@@ -1282,6 +1282,10 @@ export interface WorkSessionStep {
     summary?: string;
     why?: string;
     output_summary?: string;
+    /** V5: which planning segment this step belongs to (0 = original plan, 1+ = continuation) */
+    segment_index?: number;
+    /** V5: semantic origin of this step within its segment */
+    origin?: 'planning' | 'continuation' | 'navigation' | 'native' | string;
     navigation?: {
         target_type?: string;
         open_mode?: string;
@@ -1330,6 +1334,39 @@ export interface WorkSessionStats {
     skipped_steps?: number;
     pending_steps: number;
     pending_confirmations: number;
+    // V5 segmentation stats:
+    segments?: number;
+    continuation_segments?: number;
+    initial_steps?: number;
+    continuation_steps?: number;
+    latest_segment_index?: number;
+    latest_segment_steps?: number;
+    has_continuation?: boolean;
+}
+
+/**
+ * V5: Per-segment summary delivered by the backend in WorkSessionPlan.segment_summaries.
+ * Primary render contract for segmented work-session timelines.
+ */
+export interface WorkSessionSegmentSummary {
+    segment_index: number;
+    origin: 'planning' | 'continuation' | 'navigation' | 'native' | string;
+    origin_label?: string;
+    state?: string;
+    latest?: boolean;
+    total_steps?: number;
+    completed_steps?: number;
+    running_steps?: number;
+    failed_steps?: number;
+    skipped_steps?: number;
+    pending_steps?: number;
+    pending_confirmations?: number;
+    has_navigation?: boolean;
+    /** Compat alias for total_steps — backend may send either */
+    step_count?: number;
+    title?: string;
+    summary?: string;
+    titles?: string[];
 }
 
 export interface WorkSessionPendingConfirmation {
@@ -1356,6 +1393,8 @@ export interface WorkSessionPlan {
     mode?: string;
     provider?: string;
     transparency_note?: string;
+    /** V5: canonical segmentation list — primary render contract for segmented timelines */
+    segment_summaries?: WorkSessionSegmentSummary[];
 }
 
 /** Fetch a work-session plan by ID (GET /v3/work-session/plan/{id}) */

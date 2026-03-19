@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
-import type { WorkSessionPlan, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
+import type { WorkSessionPlan, WorkSessionSegmentSummary, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
@@ -33,6 +33,7 @@ import {
 import { toast } from 'sonner';
 
 // ─── exported for unit testing ───────────────────────────────────────────────
+/** @deprecated Use groupStepsBySegment instead. */
 export function splitAtPlannedSteps<T>(
     steps: T[],
     plannedCount: number | null | undefined,
@@ -44,6 +45,58 @@ export function splitAtPlannedSteps<T>(
         original: steps.slice(0, plannedCount),
         continuation: steps.slice(plannedCount),
     };
+}
+
+/**
+ * Groups steps by segment, pairing each group with its segment summary.
+ * Primary path: uses segment_summaries if present.
+ * Fallback 1: groups by step.segment_index if any step has segment_index > 0.
+ * Fallback 2: one flat group if no segmentation data at all.
+ * Orphan steps (segment_index not in summaries) are preserved as null-summary groups.
+ */
+export function groupStepsBySegment(
+    steps: WorkSessionStep[],
+    summaries: WorkSessionSegmentSummary[] | undefined,
+): Array<{ summary: WorkSessionSegmentSummary | null; steps: WorkSessionStep[] }> {
+    // Build step index map
+    const byIndex = new Map<number, WorkSessionStep[]>();
+    for (const step of steps) {
+        const idx = step.segment_index ?? 0;
+        if (!byIndex.has(idx)) byIndex.set(idx, []);
+        byIndex.get(idx)!.push(step);
+    }
+
+    if (summaries?.length) {
+        // Primary path: segment_summaries is authoritative
+        const summaryMap = new Map<number, WorkSessionSegmentSummary>(
+            summaries.map((s) => [s.segment_index, s])
+        );
+        // Collect all indices present: from summaries + any orphan step indices
+        const allIndices = new Set([
+            ...summaries.map((s) => s.segment_index),
+            ...byIndex.keys(),
+        ]);
+        return Array.from(allIndices)
+            .sort((a, b) => a - b)
+            .map((idx) => ({
+                summary: summaryMap.get(idx) ?? null,
+                steps: byIndex.get(idx) ?? [],
+            }));
+    }
+
+    // Fallback 1: step-level segment_index present
+    const hasSegmentation = Array.from(byIndex.keys()).some((k) => k > 0);
+    if (hasSegmentation) {
+        return Array.from(byIndex.keys())
+            .sort((a, b) => a - b)
+            .map((idx) => ({
+                summary: null,
+                steps: byIndex.get(idx) ?? [],
+            }));
+    }
+
+    // Fallback 2: flat group
+    return [{ summary: null, steps }];
 }
 
 const WRITE_KINDS = new Set([
@@ -79,6 +132,13 @@ const planStateLabels: Record<string, { label: string; cls: string }> = {
     done: { label: 'Abgeschlossen', cls: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' },
     partial: { label: 'Teilweise', cls: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20' },
     failed: { label: 'Fehlgeschlagen', cls: 'bg-red-500/10 text-red-300 border-red-500/20' },
+};
+
+const segmentOriginLabels: Record<string, string> = {
+    planning: 'Ausgangsplan',
+    continuation: 'Fortsetzung',
+    navigation: 'Navigation',
+    native: 'Direkte Aktion',
 };
 
 const stepStatusLabels: Record<WorkSessionStepStatus, string> = {
@@ -126,6 +186,31 @@ function compactText(value?: string | null, max = 180): string | null {
     const single = value.replace(/\s+/g, ' ').trim();
     if (!single) return null;
     return single.length > max ? `${single.slice(0, max - 1)}...` : single;
+}
+
+function SegmentDivider({ summary }: { summary: WorkSessionSegmentSummary | null }) {
+    const origin = summary?.origin ?? 'continuation';
+    const label = summary?.origin_label || segmentOriginLabels[origin] || origin;
+    const subtitle = summary?.summary;
+    const completed = summary?.completed_steps;
+    const total = summary?.total_steps ?? summary?.step_count;
+    const isActive = summary?.state === 'running' || summary?.latest === true;
+
+    return (
+        <div className="my-3">
+            <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-white/[0.06]" />
+                <span className="text-[9px] uppercase tracking-[0.22em] text-white/28">
+                    {label}
+                    {isActive && total ? ` ${completed ?? 0}/${total}` : ''}
+                </span>
+                <div className="h-px flex-1 bg-white/[0.06]" />
+            </div>
+            {subtitle && (
+                <p className="mt-1.5 text-[10px] text-white/28 leading-relaxed text-center">{subtitle}</p>
+            )}
+        </div>
+    );
 }
 
 function renderContentDiff(step: WorkSessionStep) {
@@ -687,34 +772,17 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                         </AnimatePresence>
 
                         {timelineSteps.length > 0 && (() => {
-                            const plannedCount = plan.stats?.planned_steps;
-                            const { original, continuation } = splitAtPlannedSteps(timelineSteps, plannedCount);
+                            const groups = groupStepsBySegment(timelineSteps, plan.segment_summaries);
                             return (
                                 <div className="px-4 py-4">
                                     {pendingSteps.length > 0 && (
                                         <div className="text-[10px] uppercase tracking-[0.2em] text-white/25 mb-3">Schritte</div>
                                     )}
-                                    <div className="space-y-1">
-                                        {original.map((step, idx) => (
-                                            <motion.div
-                                                key={step.step_id}
-                                                initial={{ opacity: 0, x: -3 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: idx * 0.025, duration: 0.15 }}
-                                            >
-                                                <StepRow step={step} onOpen={(targetStep) => openWorkSessionNavigation(targetStep, openPane)} />
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                    {continuation.length > 0 && (
-                                        <>
-                                            <div className="my-3 flex items-center gap-2">
-                                                <div className="h-px flex-1 bg-white/[0.06]" />
-                                                <span className="text-[9px] uppercase tracking-[0.22em] text-white/28">Weitergefuehrt</span>
-                                                <div className="h-px flex-1 bg-white/[0.06]" />
-                                            </div>
+                                    {groups.map((group, groupIdx) => (
+                                        <React.Fragment key={group.summary?.segment_index ?? `seg-${groupIdx}`}>
+                                            {groupIdx > 0 && <SegmentDivider summary={group.summary} />}
                                             <div className="space-y-1">
-                                                {continuation.map((step, idx) => (
+                                                {group.steps.map((step, idx) => (
                                                     <motion.div
                                                         key={step.step_id}
                                                         initial={{ opacity: 0, x: -3 }}
@@ -725,8 +793,8 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </motion.div>
                                                 ))}
                                             </div>
-                                        </>
-                                    )}
+                                        </React.Fragment>
+                                    ))}
                                 </div>
                             );
                         })()}

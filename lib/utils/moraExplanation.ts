@@ -56,6 +56,10 @@ export interface WorkSessionShellSummary {
         running_steps?: number;
         failed_steps?: number;
         skipped_steps?: number;
+        // V5 segmentation:
+        has_continuation?: boolean;
+        continuation_segments?: number;
+        segments?: number;
     };
     transparencyNote?: string;
 }
@@ -109,6 +113,17 @@ export function getSessionBodyText(s: WorkSessionShellSummary): string {
  * Exported for unit testing.
  */
 export function getSessionExtendedNote(s: WorkSessionShellSummary): string | null {
+    // V5 primary: explicit continuation flag from backend
+    if (s.stats?.has_continuation === true) {
+        const n = s.stats.continuation_segments ?? 1;
+        return n === 1
+            ? 'Mora hat die Session fortgesetzt.'
+            : `Mora hat die Session ${n}\u00d7 fortgesetzt.`;
+    }
+    if (s.stats?.has_continuation === false) {
+        return null;
+    }
+    // Pre-V5 fallback: infer from total vs planned step count
     const total = s.stats?.total_steps ?? 0;
     const planned = s.stats?.planned_steps ?? 0;
     if (planned > 0 && total > planned) {

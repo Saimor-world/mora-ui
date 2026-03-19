@@ -72,4 +72,30 @@ describe('getSessionExtendedNote', () => {
     it('returns null when stats is undefined', () => {
         expect(getSessionExtendedNote(base)).toBeNull();
     });
+
+    // V5 segmentation tests
+    it('V5: has_continuation true with 1 segment returns single continuation text', () => {
+        const s = { ...base, stats: { has_continuation: true } };
+        expect(getSessionExtendedNote(s)).toBe('Mora hat die Session fortgesetzt.');
+    });
+
+    it('V5: has_continuation true with continuation_segments=2 returns multi-continuation text', () => {
+        const s = { ...base, stats: { has_continuation: true, continuation_segments: 2 } };
+        expect(getSessionExtendedNote(s)).toBe('Mora hat die Session 2\u00d7 fortgesetzt.');
+    });
+
+    it('V5: has_continuation false returns null', () => {
+        const s = { ...base, stats: { has_continuation: false } };
+        expect(getSessionExtendedNote(s)).toBeNull();
+    });
+
+    it('Pre-V5 fallback: has_continuation absent, total > planned returns Navigation text', () => {
+        const s = { ...base, stats: { total_steps: 7, planned_steps: 3 } };
+        expect(getSessionExtendedNote(s)).toBe('Navigation hat 4 Schritte zum Verlauf ergaenzt.');
+    });
+
+    it('Pre-V5 fallback: has_continuation absent, total <= planned returns null', () => {
+        const s = { ...base, stats: { total_steps: 3, planned_steps: 3 } };
+        expect(getSessionExtendedNote(s)).toBeNull();
+    });
 });
