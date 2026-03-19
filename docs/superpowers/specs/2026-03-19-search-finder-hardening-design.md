@@ -82,6 +82,10 @@ return {
 ```ts
 const mapped: SearchResult[] = semanticResults.map((result) => {
     const scopePath = (result as any).scope_path || (result as any).path || undefined;
+    // Priority: scope_path > path > content preview (last resort) > type label.
+    // Content preview is intentionally retained as last-resort fallback here —
+    // SearchPane is UI-facing and showing something is better than showing nothing
+    // when scope_path is absent (e.g., older results from pre-contract producers).
     return {
         id: result.node_id,
         type: 'node' as const,
@@ -89,7 +93,7 @@ const mapped: SearchResult[] = semanticResults.map((result) => {
         path: scopePath,
         subtitle: getSearchResultSubtitle(
             { path: scopePath, subtitle: undefined, type: 'node' },
-            result.content?.substring(0, 80)
+            result.content?.substring(0, 80)  // passed as fallbackPreview, only used when scopePath is absent
         ),
         icon: FileText,
         source: 'mora' as const,
@@ -103,13 +107,21 @@ const mapped: SearchResult[] = semanticResults.map((result) => {
 });
 ```
 
-`getSearchResultSubtitle` will return `scopePath` when present (the `result.path` check), falling back to content preview only when `scope_path` is absent (e.g., local results).
+`getSearchResultSubtitle` returns `scopePath` when present (the `result.path` check), then falls back to `content.substring(0,80)` only when `scope_path` is absent. This matches the stated priority: `scope_path > path > preview > type label`. The `resolveSearchResults` equivalent in Delta 2 is intentionally stricter (no content preview) because it feeds a combined result set where type label is an acceptable fallback.
+
+**Note on Delta 2 vs Delta 3 consistency:** Both honour the `scope_path > path` primary rule. Delta 2 (`resolveSearchResults`) drops content preview entirely since it's used in a merged/ranked result context. Delta 3 (`SearchPane`) retains content as last resort because the UI pane benefits from showing any context over a generic type label. This is a deliberate asymmetry, not an inconsistency.
 
 ### Delta 4 — `components/panes/FinderPane.tsx` · `handleOpen()` · folderId + context handoff
 
 **Current:** Opens DocumentPane with `{ nodeId, content, name, type }` only. No `folderId`, no `navigationContext`. DocumentPane shows no location context, "Im Zielordner oeffnen" button is absent.
 
 **Fix:** Pass `folderId: currentFolderIdRef.current ?? undefined`. Forward the FinderPane's existing `navigationContext` **only if it is present** (meaning Finder was opened from a Mora/search/session context with a real explanation). Do not fabricate a `navigationContext` for locally-opened Finders. DocumentPane stays quiet rather than inventing a story.
+
+**Import change required:** Add `DocumentNavigationContext` to the existing import in `FinderPane.tsx`:
+```ts
+import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/utils/searchOpen';
+```
+This is needed for the `satisfies DocumentNavigationContext` expression in the snippet below.
 
 ```ts
 const handleOpen = () => {
@@ -131,12 +143,19 @@ const handleOpen = () => {
                 folderId: resolvedFolderId,
                 // Forward Finder's own navigationContext only if it came from Mora/search/session.
                 // If Finder was opened locally, omit navigationContext entirely — DocumentPane stays quiet.
+                // Pick only DocumentNavigationContext-compatible fields from FinderNavigationContext.
+                // FinderNavigationContext has `targetType` and `query` which do not exist on
+                // DocumentNavigationContext — do NOT spread navigationContext directly.
                 ...(navigationContext ? {
                     navigationContext: {
-                        ...navigationContext,
-                        folderId: resolvedFolderId ?? navigationContext.folderId,
+                        title: navigationContext.title,
+                        message: navigationContext.message,
+                        label: navigationContext.label,
+                        path: navigationContext.path,
+                        source: navigationContext.source,
+                        folderId: resolvedFolderId,
                         timestamp: Date.now(),
-                    }
+                    } satisfies DocumentNavigationContext,
                 } : {}),
             }
         });
@@ -146,6 +165,10 @@ const handleOpen = () => {
 ```
 
 **Key constraint:** Only `navigationContext` from the pane's own `data.navigationContext` is forwarded. No string is invented. If `navigationContext` is `undefined`, DocumentPane receives no context block — which is the correct UX for a locally-navigated document open.
+
+`FinderNavigationContext` and `DocumentNavigationContext` are distinct types — the former has `targetType` and `query` which the latter does not; the latter has `folderId` and `companyId` which the former does not. The code explicitly picks compatible fields (`title`, `message`, `label`, `path`, `source`) and provides `folderId` from `resolvedFolderId`. The spread operator is intentionally avoided to prevent type errors and extra field leakage.
+
+`companyId` is intentionally absent from the forwarded `DocumentNavigationContext` — `FinderNavigationContext` does not carry it, and `DocumentPane` sources the active company from the pane `data.companyId` field (which `openSearchResult()` already sets correctly) or from the active company store. No data loss.
 
 ### Delta 5 — `components/mora/SearchPopup.tsx` · dead code removal
 
