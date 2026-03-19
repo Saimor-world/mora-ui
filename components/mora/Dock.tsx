@@ -8,6 +8,10 @@ import {
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useWorkSessionStore } from '@/lib/store/workSessionStore';
+
+// Derived from paneStore — consistent with WorkSessionPane.tsx
+type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
 import { SearchPopup } from './SearchPopup';
 import { useMemoryPendingCount } from '@/lib/hooks/useMemoryPendingCount';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
@@ -109,6 +113,51 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
 // ─── End MagneticDockIcon (memoized to prevent spurious re-renders) ───────────────────────
 const MagneticDockIconMemo = React.memo(MagneticDockIcon);
 
+// ─── Session Chip ─────────────────────────────────────────────────────────────
+// Quiet ambient indicator: renders only when a work-session plan is active.
+// Clicking opens / focuses the WorkSessionPane. Exported for testing.
+// Follows the MagneticDockIcon inline sub-component pattern.
+interface SessionChipProps {
+    planId: string; // always non-null — Dock gates with {activePlanId && ...}
+    openPane: OpenPaneFn;
+    isStandardMode: boolean;
+}
+
+export const SessionChip: React.FC<SessionChipProps> = ({ planId, openPane, isStandardMode }) => {
+    const paneData = React.useMemo(() => ({ plan_id: planId }), [planId]);
+
+    const handleClick = React.useCallback(() => {
+        openPane({
+            id: `work-session-${paneData.plan_id}`,
+            type: 'work-session',
+            title: 'Arbeitsplan',
+            size: { width: 900, height: 700 },
+            data: paneData,
+        });
+    }, [openPane, paneData]);
+
+    return (
+        <button
+            type="button"
+            onClick={handleClick}
+            title="Aktiven Arbeitsplan oeffnen"
+            data-testid="session-chip"
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-all ${
+                isStandardMode
+                    ? 'bg-blue-50 border border-blue-200 text-blue-700 hover:border-blue-400 hover:bg-blue-100'
+                    : 'bg-violet-500/10 border border-violet-400/20 text-violet-200/80 hover:border-violet-300/35 hover:bg-violet-500/20'
+            }`}
+        >
+            <span
+                className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${
+                    isStandardMode ? 'bg-blue-500' : 'bg-violet-400'
+                }`}
+            />
+            Plan aktiv
+        </button>
+    );
+};
+
 const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
     finder: FolderOpen,
     chat: MessageCircle,
@@ -134,6 +183,8 @@ export const Dock = () => {
     const setActiveCompany = useMoraStore((s) => s.setActiveCompany);
     const viewMode = useMoraStore((s) => s.viewMode);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
+
+    const activePlanId = useWorkSessionStore((s) => s.activePlanId);
 
     const panes = usePaneStore((s) => s.panes);
     const restorePane = usePaneStore((s) => s.restorePane);
@@ -424,6 +475,15 @@ export const Dock = () => {
 
                         {/* Notification Center */}
                         <NotificationCenter />
+
+                        {/* Session Chip — visible only while a work-session plan is active */}
+                        {activePlanId && (
+                            <SessionChip
+                                planId={activePlanId}
+                                openPane={openPane}
+                                isStandardMode={isStandardMode}
+                            />
+                        )}
                     </div>
 
                     {/* DIVIDER - Glowing */}
