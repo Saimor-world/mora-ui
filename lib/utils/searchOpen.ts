@@ -216,8 +216,9 @@ export function mapRawSearchResult(raw: any): OpenableSearchResult | null {
         id,
         title: raw?.title || raw?.name || raw?.filename || 'Unbenannt',
         type: normalizedType,
-        path: raw?.path || raw?.scope_path || undefined,
-        subtitle: raw?.path || raw?.scope_path || undefined,
+        path: raw?.scope_path || raw?.path || undefined,
+        subtitle: raw?.scope_path || raw?.path || undefined,
+        score: raw?.score,
         icon: normalizedType === 'department' ? Building2 : normalizedType === 'space' || normalizedType === 'folder' ? Folder : FileText,
         companyId: raw?.company_id || raw?.companyId,
         departmentId,
@@ -287,18 +288,23 @@ export async function resolveSearchResults(query: string, scope: ActiveScope): P
         .filter((result): result is OpenableSearchResult => result !== null);
 
     const semanticResults = semanticResponse
-        .map((result) => ({
-            id: result.node_id,
-            type: 'node' as const,
-            title: result.metadata?.title || 'Unbenannt',
-            subtitle: result.content?.substring(0, 100) || result.metadata?.type || 'Treffer',
-            icon: FileText,
-            score: result.score,
-            nodeId: result.node_id,
-            companyId: scope.companyId || undefined,
-            folderId: result.metadata?.folder_id,
-            spaceId: result.metadata?.space_id,
-        }))
+        .map((result) => {
+            const scopePath = (result as any).scope_path || (result as any).path || undefined;
+            return {
+                id: result.node_id,
+                type: 'node' as const,
+                title: result.metadata?.title || 'Unbenannt',
+                path: scopePath,
+                subtitle: scopePath,   // location-first; no content preview in merged context
+                icon: FileText,
+                score: result.score,
+                nodeId: result.node_id,
+                companyId: (result as any).company_id || scope.companyId || undefined,
+                folderId: (result as any).folder_id || result.metadata?.folder_id,
+                departmentId: (result as any).department_id || undefined,
+                spaceId: (result as any).space_id || result.metadata?.space_id,
+            };
+        })
         .filter((result) => !!result.id);
 
     return dedupeResults([...keywordResults, ...semanticResults]).sort(
