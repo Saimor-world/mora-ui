@@ -34,7 +34,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { searchGlobal, corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
-import { mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
 
 interface SearchResult {
     id: string;
@@ -42,6 +42,8 @@ interface SearchResult {
     type: 'department' | 'space' | 'folder' | 'file' | 'node';
     icon?: LucideIcon;
     path?: string;
+    subtitle?: string;
+    companyId?: string;
     departmentId?: string;
     spaceId?: string;
     folderId?: string;
@@ -153,7 +155,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
             case 'folder':
             case 'file':
             case 'node':
-                await openSearchResult(result, openPane, { companyId: activeCompanyId || undefined });
+                await openSearchResult(result, openPane, { companyId: activeCompanyId || result.companyId || undefined });
                 break;
         }
 
@@ -432,7 +434,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                     }`}>{result.title}</div>
                                                     <div className={`text-xs ${
                                                         isStandardMode ? 'text-gray-400' : 'text-white/40'
-                                                    }`}>{getTypeLabel(result.type)}</div>
+                                                    }`}>{getSearchResultSubtitle(result)}</div>
                                                 </div>
                                                 <ArrowRight size={14} className={`transition-colors ${
                                                     isStandardMode

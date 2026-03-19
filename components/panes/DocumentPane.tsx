@@ -5,7 +5,7 @@ import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X,
 import { toast } from '@/lib/toast';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
 import { getDownloadUrl } from '@/lib/api/filesClient';
-import type { DocumentNavigationContext } from '@/lib/utils/searchOpen';
+import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
 
 interface DocumentPaneProps {
     id: string;
@@ -235,16 +235,16 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                                         <div className="mt-3">
                                             <button
                                                 type="button"
-                                                onClick={() => openPane({
-                                                    id: `finder-${navigationContext.folderId || folderId}`,
-                                                    type: 'finder',
-                                                    title: navigationContext.label || name || 'Finder',
-                                                    size: { width: 1280, height: 820 },
-                                                    data: {
-                                                        folderId: navigationContext.folderId || folderId,
-                                                        companyId: navigationContext.companyId || companyId,
-                                                    }
-                                                })}
+                                                onClick={() => openNavigationOutcome({
+                                                    title: 'Zielordner geoeffnet',
+                                                    message: `Ich habe den zugehoerigen Zielordner fuer ${navigationContext.label || name || 'das Dokument'} geoeffnet.`,
+                                                    targetType: 'folder',
+                                                    label: navigationContext.label || name || 'Finder',
+                                                    path: navigationContext.path,
+                                                    companyId: navigationContext.companyId || companyId,
+                                                    folderId: navigationContext.folderId || folderId,
+                                                    source: navigationContext.source || 'search',
+                                                }, openPane)}
                                                 className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
                                             >
                                                 <FolderOpen size={13} />

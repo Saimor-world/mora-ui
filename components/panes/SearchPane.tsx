@@ -7,7 +7,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
-import { mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
 
 /**
  * SearchPane - Universal Search Interface
@@ -27,6 +27,8 @@ interface SearchResult {
     icon: typeof FileText | typeof Folder | typeof Building2;
     source?: 'local' | 'mora';
     score?: number;
+    path?: string;
+    companyId?: string;
     departmentId?: string;
     spaceId?: string;
     folderId?: string;
@@ -109,7 +111,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         return {
             ...mapped,
             icon: mapped.icon || FileText,
-            subtitle: mapped.path || raw?.content?.substring?.(0, 80) || (mapped.type === 'department' ? 'Bereich' : mapped.type === 'space' ? 'Space' : mapped.type === 'folder' ? 'Ordner' : mapped.type === 'file' ? 'Datei' : 'Treffer'),
+            subtitle: getSearchResultSubtitle(mapped, raw?.content_preview?.substring?.(0, 80) || raw?.content?.substring?.(0, 80)),
             source: 'mora',
         };
     }, []);
@@ -201,6 +203,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     icon: FileText,
                     source: 'mora',
                     score: result.score,
+                    companyId: activeCompanyId || undefined,
                     nodeId: result.node_id,
                     folderId: result.metadata?.folder_id,
                     spaceId: result.metadata?.space_id,
@@ -287,7 +290,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
             case 'folder':
             case 'file':
             case 'node':
-                await openSearchResult(result as any, openPane, { companyId: activeCompanyId || undefined });
+                await openSearchResult(result as any, openPane, { companyId: activeCompanyId || result.companyId || undefined });
                 removePane(id);
                 break;
             default:

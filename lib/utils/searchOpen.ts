@@ -17,6 +17,7 @@ export interface OpenableSearchResult {
     icon?: LucideIcon;
     path?: string;
     score?: number;
+    companyId?: string;
     departmentId?: string;
     spaceId?: string;
     folderId?: string;
@@ -218,11 +219,31 @@ export function mapRawSearchResult(raw: any): OpenableSearchResult | null {
         path: raw?.path || raw?.scope_path || undefined,
         subtitle: raw?.path || raw?.scope_path || undefined,
         icon: normalizedType === 'department' ? Building2 : normalizedType === 'space' || normalizedType === 'folder' ? Folder : FileText,
+        companyId: raw?.company_id || raw?.companyId,
         departmentId,
         spaceId,
         folderId,
         nodeId,
     };
+}
+
+export function getSearchResultSubtitle(result: Pick<OpenableSearchResult, 'path' | 'subtitle' | 'type'>, fallbackPreview?: string): string {
+    if (result.path) return result.path;
+    if (result.subtitle) return result.subtitle;
+    if (fallbackPreview) return fallbackPreview;
+    switch (result.type) {
+        case 'department':
+            return 'Bereich';
+        case 'space':
+            return 'Space';
+        case 'folder':
+            return 'Ordner';
+        case 'file':
+        case 'node':
+            return 'Datei';
+        default:
+            return 'Treffer';
+    }
 }
 
 function scoreResult(result: OpenableSearchResult, query: string, scope: ActiveScope): number {
@@ -274,6 +295,7 @@ export async function resolveSearchResults(query: string, scope: ActiveScope): P
             icon: FileText,
             score: result.score,
             nodeId: result.node_id,
+            companyId: scope.companyId || undefined,
             folderId: result.metadata?.folder_id,
             spaceId: result.metadata?.space_id,
         }))
@@ -290,6 +312,7 @@ export async function openSearchResult(
     scope: ActiveScope,
     source: NavigationOutcome['source'] = 'search',
 ) {
+    const effectiveCompanyId = result.companyId || scope.companyId || undefined;
     switch (result.type) {
         case 'department':
             surfaceNavigationOutcome({
@@ -298,7 +321,7 @@ export async function openSearchResult(
                 targetType: 'department',
                 label: result.title,
                 path: result.path,
-                companyId: scope.companyId || undefined,
+                companyId: effectiveCompanyId,
                 departmentId: result.departmentId || result.id,
                 source,
             }, openPane);
@@ -310,7 +333,7 @@ export async function openSearchResult(
                 targetType: 'space',
                 label: result.title,
                 path: result.path,
-                companyId: scope.companyId || undefined,
+                companyId: effectiveCompanyId,
                 spaceId: result.spaceId || result.id,
                 source,
             }, openPane);
@@ -322,7 +345,7 @@ export async function openSearchResult(
                 targetType: 'folder',
                 label: result.title,
                 path: result.path,
-                companyId: scope.companyId || undefined,
+                companyId: effectiveCompanyId,
                 folderId: result.folderId || result.id,
                 source,
             }, openPane);
@@ -348,7 +371,7 @@ export async function openSearchResult(
                 targetType: 'node',
                 label: result.title,
                 path: result.path,
-                companyId: scope.companyId || undefined,
+                companyId: effectiveCompanyId,
                 folderId: resolvedFolderId,
                 nodeId: resolvedNodeId,
                 source,
