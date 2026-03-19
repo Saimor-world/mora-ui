@@ -195,19 +195,31 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 ]);
                 if (requestId !== searchRequestRef.current) return;
 
-                const mapped: SearchResult[] = semanticResults.map((result) => ({
-                    id: result.node_id,
-                    type: 'node',
-                    title: result.metadata?.title || 'Untitled',
-                    subtitle: result.content?.substring(0, 80) || result.metadata?.type || 'Semantic result',
-                    icon: FileText,
-                    source: 'mora',
-                    score: result.score,
-                    companyId: activeCompanyId || undefined,
-                    nodeId: result.node_id,
-                    folderId: result.metadata?.folder_id,
-                    spaceId: result.metadata?.space_id,
-                }));
+                const mapped: SearchResult[] = semanticResults.map((result) => {
+                    const scopePath = (result as any).scope_path || (result as any).path || undefined;
+                    // Priority: scope_path > path > content preview (last resort) > type label.
+                    // Content preview retained as last resort only — SearchPane is UI-facing and
+                    // showing any context is better than a generic type label for pre-contract results.
+                    // TODO: remove (result as any) casts when SemanticSearchResult declares top-level path fields.
+                    return {
+                        id: result.node_id,
+                        type: 'node' as const,
+                        title: result.metadata?.title || 'Untitled',
+                        path: scopePath,
+                        subtitle: getSearchResultSubtitle(
+                            { path: scopePath, type: 'node' },
+                            result.content?.substring(0, 80),  // fallbackPreview — only used when scopePath absent
+                        ),
+                        icon: FileText,
+                        source: 'mora' as const,
+                        score: result.score,
+                        companyId: (result as any).company_id || activeCompanyId || undefined,
+                        nodeId: result.node_id,
+                        folderId: (result as any).folder_id || result.metadata?.folder_id,
+                        departmentId: (result as any).department_id || undefined,
+                        spaceId: (result as any).space_id || result.metadata?.space_id,
+                    };
+                });
 
                 const keywordMapped = (keywordResponse?.results || [])
                     .map(mapKeywordResult)

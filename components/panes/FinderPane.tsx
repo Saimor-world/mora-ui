@@ -14,7 +14,7 @@ import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { realtime } from '@/lib/api/realtimeClient';
-import type { FinderNavigationContext } from '@/lib/utils/searchOpen';
+import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -232,12 +232,34 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
             navigateToFolder(contextMenu.item.id);
         } else {
+            const resolvedFolderId = currentFolderIdRef.current ?? undefined;
             openPane({
                 id: `doc-${contextMenu.item.id}`,
                 type: 'document',
                 title: contextMenu.item.name || 'Document',
                 size: { width: 800, height: 600 },
-                data: { nodeId: contextMenu.item.id, content: contextMenu.item.content, name: contextMenu.item.name, type: contextMenu.item.type }
+                data: {
+                    nodeId: contextMenu.item.id,
+                    content: contextMenu.item.content,
+                    name: contextMenu.item.name,
+                    type: contextMenu.item.type,
+                    folderId: resolvedFolderId,
+                    // Forward Finder's own navigationContext only if it came from Mora/search/session.
+                    // If Finder was opened locally, omit navigationContext — DocumentPane stays quiet.
+                    // Pick only DocumentNavigationContext-compatible fields (FinderNavigationContext
+                    // has targetType + query which do not exist on DocumentNavigationContext).
+                    ...(navigationContext ? {
+                        navigationContext: {
+                            title: navigationContext.title,
+                            message: navigationContext.message,
+                            label: navigationContext.label,
+                            path: navigationContext.path,
+                            source: navigationContext.source,
+                            folderId: resolvedFolderId,
+                            timestamp: Date.now(),
+                        } satisfies DocumentNavigationContext,
+                    } : {}),
+                },
             });
         }
         setContextMenu(null);

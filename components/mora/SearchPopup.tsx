@@ -589,15 +589,3 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         </AnimatePresence>
     );
 };
-
-
-    const getTypeLabel = (type: SearchResult['type']) => {
-        switch (type) {
-            case 'department': return 'Abteilung';
-            case 'space': return 'Bereich';
-            case 'folder': return 'Ordner';
-            case 'file': return 'Datei';
-            case 'node': return 'Dokument';
-            default: return 'Treffer';
-        }
-    };
