@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X } from 'lucide-react';
+import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X, FolderOpen, Search, Sparkles, UploadCloud } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
 import { getDownloadUrl } from '@/lib/api/filesClient';
+import type { DocumentNavigationContext } from '@/lib/utils/searchOpen';
 
 interface DocumentPaneProps {
     id: string;
@@ -21,12 +22,22 @@ interface DocumentPaneProps {
  * - PDF info
  */
 export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
 
     // Get document data from pane
     const docData = pane?.data || {};
-    const { nodeId, content: initialContent, name: initialName, type: initialType, metadata: initialMetadata, url } = docData;
+    const { nodeId, content: initialContent, name: initialName, type: initialType, metadata: initialMetadata, url, folderId, companyId, navigationContext } = docData as {
+        nodeId?: string;
+        content?: string;
+        name?: string;
+        type?: string;
+        metadata?: Record<string, any>;
+        url?: string;
+        folderId?: string;
+        companyId?: string;
+        navigationContext?: DocumentNavigationContext;
+    };
 
     const [content, setContent] = useState(initialContent || '');
     const [name, setName] = useState(initialName || 'Document');
@@ -86,6 +97,36 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const imageUrl = url || (metadata?.file_path && nodeId
         ? getDownloadUrl(nodeId)
         : null);
+
+    const navigationSourceLabel = (() => {
+        switch (navigationContext?.source) {
+            case 'chat':
+                return 'Aus Mora-Chat geoeffnet';
+            case 'mycelium':
+                return 'Aus Einordnung geoeffnet';
+            case 'work-session':
+                return 'Aus Arbeitsplan geoeffnet';
+            case 'search':
+            case 'search-popup':
+            case 'search-pane':
+                return 'Aus Suche geoeffnet';
+            default:
+                return 'Von Mora geoeffnet';
+        }
+    })();
+
+    const NavigationIcon = (() => {
+        switch (navigationContext?.source) {
+            case 'mycelium':
+                return UploadCloud;
+            case 'search':
+            case 'search-popup':
+            case 'search-pane':
+                return Search;
+            default:
+                return Sparkles;
+        }
+    })();
 
     // Simple markdown renderer
     const renderMarkdown = (md: string) => {
@@ -164,6 +205,59 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             resizable
         >
             <div className="flex flex-col h-full">
+                {navigationContext && (
+                    <div className="px-3 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
+                        <div className="rounded-xl border border-cyan-400/15 bg-black/15 px-3 py-3">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/12">
+                                    <NavigationIcon size={15} className="text-cyan-200/85" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/70 font-semibold">
+                                        {navigationSourceLabel}
+                                    </div>
+                                    <div className="mt-1 text-sm text-white/82 leading-relaxed">
+                                        {navigationContext.message}
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                                        {navigationContext.label && (
+                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-white/72">
+                                                {navigationContext.label}
+                                            </span>
+                                        )}
+                                        {navigationContext.path && (
+                                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-cyan-100/82">
+                                                {navigationContext.path}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {(navigationContext.folderId || folderId) && (
+                                        <div className="mt-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => openPane({
+                                                    id: `finder-${navigationContext.folderId || folderId}`,
+                                                    type: 'finder',
+                                                    title: navigationContext.label || name || 'Finder',
+                                                    size: { width: 1280, height: 820 },
+                                                    data: {
+                                                        folderId: navigationContext.folderId || folderId,
+                                                        companyId: navigationContext.companyId || companyId,
+                                                    }
+                                                })}
+                                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
+                                            >
+                                                <FolderOpen size={13} />
+                                                Im Zielordner oeffnen
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Toolbar */}
                 <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/5">
                     <div className="flex items-center gap-3">

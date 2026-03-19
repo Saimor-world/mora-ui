@@ -56,6 +56,17 @@ export interface FinderNavigationContext {
     timestamp: number;
 }
 
+export interface DocumentNavigationContext {
+    title: string;
+    message: string;
+    label?: string;
+    path?: string;
+    source?: NavigationOutcome['source'];
+    folderId?: string;
+    companyId?: string;
+    timestamp: number;
+}
+
 export function dispatchNavigationResult(outcome: NavigationOutcome) {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent<NavigationOutcome>(NAVIGATION_RESULT_EVENT, { detail: outcome }));
@@ -110,6 +121,18 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
             data: {
                 nodeId: outcome.nodeId,
                 name: outcome.label,
+                folderId: outcome.folderId,
+                companyId: outcome.companyId,
+                navigationContext: {
+                    title: outcome.title,
+                    message: outcome.message,
+                    label: outcome.label,
+                    path: outcome.path,
+                    source: outcome.source,
+                    folderId: outcome.folderId,
+                    companyId: outcome.companyId,
+                    timestamp: Date.now(),
+                } satisfies DocumentNavigationContext,
             }
         });
         return;
