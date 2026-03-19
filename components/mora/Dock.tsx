@@ -406,7 +406,7 @@ export const Dock = () => {
 
                     {/* CENTER: SEARCH - Enhanced */}
                     <div className="relative flex items-center flex-1 max-w-sm mx-4">
-                        <Search size={16} className={`absolute left-4 ${isStandardMode ? 'text-gray-400' : 'text-emerald-400/50'}`} />
+                        <Search size={16} className={`pointer-events-none absolute left-4 ${isStandardMode ? 'text-gray-400' : 'text-emerald-400/50'}`} />
                         <input
                             ref={inputRef}
                             type="text"
