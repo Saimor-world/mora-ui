@@ -10,11 +10,12 @@ import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
-import { uploadCompanyFile, requestCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
+import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { realtime } from '@/lib/api/realtimeClient';
 import type { FinderNavigationContext } from '@/lib/utils/searchOpen';
+import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -46,6 +47,13 @@ interface IntakeContext {
     target_department_name?: string;
     target_space_name?: string;
     target_folder_name?: string;
+    route_explanation?: {
+        kind?: string;
+        headline?: string;
+        reason?: string;
+        signal_labels?: string[];
+        learning_summary?: string;
+    };
 }
 
 interface PendingAction {
@@ -598,6 +606,67 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return 'Home';
     }, [folderContext, breadcrumbs]);
 
+    const buildRoutePath = useCallback((intake?: IntakeContext | null) => {
+        return [
+            intake?.target_department_name,
+            intake?.target_space_name,
+            intake?.target_folder_name,
+        ].filter(Boolean).join(' > ') || intake?.suggested_location || currentPathLabel || 'Ziel nicht erkannt';
+    }, [currentPathLabel]);
+
+    const surfaceFinderReview = useCallback((action: PendingAction) => {
+        dispatchMyceliumReviewReady({
+            phase: 'review',
+            companyId: resolvedCompanyId || undefined,
+            total: 1,
+            pending: 1,
+            routes: [
+                {
+                    path: buildRoutePath(action.intake_context),
+                    folderId: action.confirm_payload?.folder_id,
+                    count: 1,
+                }
+            ],
+            primaryFile: {
+                name: action.params?.filename,
+                folderId: action.confirm_payload?.folder_id,
+                routeExplanation: action.intake_context?.route_explanation,
+            },
+        });
+    }, [buildRoutePath, resolvedCompanyId]);
+
+    const surfaceFinderCompletion = useCallback((args: {
+        fileName?: string;
+        intakeContext?: IntakeContext;
+        folderId?: string;
+        nodeId?: string;
+        result?: string;
+        outcome: 'confirmed' | 'rejected';
+    }) => {
+        dispatchMyceliumBatchComplete({
+            phase: 'complete',
+            companyId: resolvedCompanyId || undefined,
+            total: 1,
+            confirmed: args.outcome === 'confirmed' ? 1 : 0,
+            rejected: args.outcome === 'rejected' ? 1 : 0,
+            routes: [
+                {
+                    path: buildRoutePath(args.intakeContext),
+                    folderId: args.folderId,
+                    confirmed: args.outcome === 'confirmed' ? 1 : 0,
+                    rejected: args.outcome === 'rejected' ? 1 : 0,
+                }
+            ],
+            primaryFile: {
+                name: args.fileName,
+                nodeId: args.nodeId,
+                folderId: args.folderId,
+                result: args.result,
+                routeExplanation: args.intakeContext?.route_explanation,
+            },
+        });
+    }, [buildRoutePath, resolvedCompanyId]);
+
     const navigationSourceLabel = useMemo(() => {
         switch (navigationContext?.source) {
             case 'chat':
@@ -1104,7 +1173,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                         // We still use the ConfirmationCard for fine-tuning/policy reasons, but now it's clearly for the file we just dropped
 
-                        setPendingAction({
+                        const nextPendingAction = {
                             tool_name: response.tool_name || 'create_node_from_file',
                             params: {
                                 file_id: uploaded.id,
@@ -1116,10 +1185,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             action_id: response.action_id || `file_${uploaded.id}`,
                             file_id: uploaded.id,
                             confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
-                            confirm_payload: { confirmation_token: response.confirmation_token },
+                            confirm_payload: {
+                                confirmation_token: response.confirmation_token,
+                                folder_id: response.route_suggestion?.target_folder_id || targetFolderId,
+                            },
                             // P6: Pass intake_context to ConfirmationCard
-                            intake_context: response.intake_context
-                        });
+                            intake_context: {
+                                ...response.intake_context,
+                                route_explanation: response.route_explanation,
+                            }
+                        };
+                        setPendingAction(nextPendingAction);
+                        surfaceFinderReview(nextPendingAction);
                         break;
                     }
 
@@ -1160,6 +1237,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             successCount = 0; // suppress duplicate success toast below
                         }
 
+                        surfaceFinderCompletion({
+                            fileName: uploaded.filename,
+                            intakeContext: {
+                                ...response.intake_context,
+                                route_explanation: response.route_explanation,
+                            },
+                            folderId: resolvedFolderId,
+                            nodeId: resolvedNodeId,
+                            result: response.result_summary || response.destination_summary,
+                            outcome: 'confirmed',
+                        });
+
                         // P6: Auto-executed, return to idle
                         setIdle();
                     }
@@ -1195,7 +1284,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setIsUploading(false);
             setUploadProgress(null);
         }
-    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions, findNodeInTree, rawTree, loadNodesForFolder, navigateToFolder]);
+    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions, findNodeInTree, rawTree, loadNodesForFolder, navigateToFolder, surfaceFinderCompletion, surfaceFinderReview]);
 
     // Integrated Drag & Drop Handlers
     const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -2126,20 +2215,60 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <ConfirmationCard
                                 action={pendingAction}
                                 variant="intake"
-                                onConfirmed={() => {
+                                onConfirmed={async (result) => {
+                                    const active = pendingAction;
                                     setPendingAction(null);
-                                    // P6: Orb returns to idle after confirmation
                                     setIdle();
+                                    if (active) {
+                                        let resolvedFolderId: string | undefined =
+                                            result?.folder_id ||
+                                            result?.destination?.folder_id ||
+                                            result?.result?.destination?.folder_id ||
+                                            active.confirm_payload?.folder_id;
+                                        let resolvedNodeId: string | undefined =
+                                            result?.node_id ||
+                                            result?.destination?.node_id ||
+                                            result?.result?.destination?.node_id;
+
+                                        if (!resolvedFolderId || !resolvedNodeId) {
+                                            try {
+                                                const nodeStatus = await getFileNode(active.file_id);
+                                                if (!resolvedFolderId && nodeStatus?.folder_id) {
+                                                    resolvedFolderId = nodeStatus.folder_id;
+                                                }
+                                                if (!resolvedNodeId && nodeStatus?.node_id) {
+                                                    resolvedNodeId = nodeStatus.node_id;
+                                                }
+                                            } catch {
+                                                // best-effort only
+                                            }
+                                        }
+
+                                        surfaceFinderCompletion({
+                                            fileName: active.params?.filename,
+                                            intakeContext: active.intake_context,
+                                            folderId: resolvedFolderId,
+                                            nodeId: resolvedNodeId,
+                                            result: result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
+                                            outcome: 'confirmed',
+                                        });
+                                    }
                                     loadContent();
                                 }}
                                 onRejected={async () => {
                                     const active = pendingAction;
                                     setPendingAction(null);
-                                    // P6: Orb returns to idle after reject
                                     setIdle();
                                     if (active) {
                                         try {
                                             await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
+                                            surfaceFinderCompletion({
+                                                fileName: active.params?.filename,
+                                                intakeContext: active.intake_context,
+                                                folderId: active.confirm_payload?.folder_id,
+                                                result: 'Verworfen',
+                                                outcome: 'rejected',
+                                            });
                                             toast.info('Node creation rejected');
                                         } catch (err) {
                                             console.error('Reject failed', err);
