@@ -521,7 +521,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             path,
             companyId: activeCompanyId || undefined,
             folderId,
-            source: 'search',
+            source: 'mycelium',
         }, openPane);
     }, [activeCompanyId, openPane]);
 
@@ -535,7 +535,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             companyId: activeCompanyId || undefined,
             folderId,
             nodeId,
-            source: 'search',
+            source: 'mycelium',
         }, openPane);
     }, [activeCompanyId, openPane]);
 

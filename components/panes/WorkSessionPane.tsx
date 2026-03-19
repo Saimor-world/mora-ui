@@ -173,7 +173,7 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
                 label,
                 companyId,
                 departmentId: nav.department_id,
-                source: 'search',
+                source: 'work-session',
             }, openPane);
             return;
         case 'space':
@@ -185,7 +185,7 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
                 label,
                 companyId,
                 spaceId: nav.space_id,
-                source: 'search',
+                source: 'work-session',
             }, openPane);
             return;
         case 'folder':
@@ -197,7 +197,7 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
                 label,
                 companyId,
                 folderId: nav.folder_id,
-                source: 'search',
+                source: 'work-session',
             }, openPane);
             return;
         case 'company':
@@ -208,7 +208,7 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
                 targetType: 'company',
                 label,
                 companyId,
-                source: 'search',
+                source: 'work-session',
             }, openPane);
             return;
         case 'node':
@@ -221,7 +221,7 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
                 companyId,
                 folderId: nav.folder_id || undefined,
                 nodeId: nav.node_id,
-                source: 'search',
+                source: 'work-session',
             }, openPane);
             return;
         case 'search':
@@ -232,7 +232,7 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
                 label,
                 query: label,
                 companyId,
-                source: 'search',
+                source: 'work-session',
             }, openPane);
             return;
         default:

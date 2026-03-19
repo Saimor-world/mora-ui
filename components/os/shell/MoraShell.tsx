@@ -834,16 +834,14 @@ export const MoraShell: React.FC = () => {
                                     {navigationOutcome.targetType === 'node' && navigationOutcome.folderId && (
                                         <button
                                             type="button"
-                                            onClick={() => openPane({
-                                                id: `finder-${navigationOutcome.folderId}`,
-                                                type: 'finder',
-                                                title: navigationOutcome.label || 'Finder',
-                                                size: { width: 1280, height: 820 },
-                                                data: {
-                                                    folderId: navigationOutcome.folderId,
-                                                    companyId: navigationOutcome.companyId,
-                                                }
-                                            })}
+                                            onClick={() => openNavigationOutcome({
+                                                ...navigationOutcome,
+                                                targetType: 'folder',
+                                                title: 'Ordner geoeffnet',
+                                                message: `Ich habe ${navigationOutcome.label || 'den Zielordner'} im Finder geoeffnet.`,
+                                                nodeId: undefined,
+                                                folderId: navigationOutcome.folderId,
+                                            }, openPane)}
                                             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                         >
                                             <FolderOpen size={13} />

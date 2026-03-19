@@ -42,12 +42,37 @@ export interface NavigationOutcome {
     spaceId?: string;
     folderId?: string;
     nodeId?: string;
-    source?: 'chat' | 'search-popup' | 'search-pane' | 'search';
+    source?: 'chat' | 'search-popup' | 'search-pane' | 'search' | 'mycelium' | 'work-session';
+}
+
+export interface FinderNavigationContext {
+    title: string;
+    message: string;
+    targetType: Exclude<NavigationOutcome['targetType'], 'search'>;
+    label?: string;
+    path?: string;
+    query?: string;
+    source?: NavigationOutcome['source'];
+    timestamp: number;
 }
 
 export function dispatchNavigationResult(outcome: NavigationOutcome) {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new CustomEvent<NavigationOutcome>(NAVIGATION_RESULT_EVENT, { detail: outcome }));
+}
+
+function toFinderNavigationContext(outcome: NavigationOutcome): FinderNavigationContext | null {
+    if (outcome.targetType === 'search') return null;
+    return {
+        title: outcome.title,
+        message: outcome.message,
+        targetType: outcome.targetType,
+        label: outcome.label,
+        path: outcome.path,
+        query: outcome.query,
+        source: outcome.source,
+        timestamp: Date.now(),
+    };
 }
 
 export function openNavigationOutcome(outcome: NavigationOutcome, openPane: OpenPaneFn) {
@@ -63,6 +88,7 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
     }
 
     if (outcome.targetType === 'node' && outcome.nodeId) {
+        const navigationContext = toFinderNavigationContext(outcome);
         if (outcome.folderId || outcome.companyId) {
             openPane({
                 id: `finder-${outcome.folderId || outcome.companyId || 'main'}`,
@@ -72,6 +98,7 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
                 data: {
                     folderId: outcome.folderId,
                     companyId: outcome.companyId,
+                    navigationContext,
                 }
             });
         }
@@ -88,6 +115,7 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
         return;
     }
 
+    const navigationContext = toFinderNavigationContext(outcome);
     openPane({
         id: `finder-${outcome.folderId || outcome.spaceId || outcome.departmentId || outcome.companyId || 'main'}`,
         type: 'finder',
@@ -98,6 +126,7 @@ export function openNavigationOutcome(outcome: NavigationOutcome, openPane: Open
             departmentId: outcome.departmentId,
             spaceId: outcome.spaceId,
             folderId: outcome.folderId,
+            navigationContext,
         }
     });
 }
