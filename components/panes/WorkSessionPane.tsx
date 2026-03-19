@@ -686,25 +686,50 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                             )}
                         </AnimatePresence>
 
-                        {timelineSteps.length > 0 && (
-                            <div className="px-4 py-4">
-                                {pendingSteps.length > 0 && (
-                                    <div className="text-[10px] uppercase tracking-[0.2em] text-white/25 mb-3">Schritte</div>
-                                )}
-                                <div className="space-y-1">
-                                    {timelineSteps.map((step, idx) => (
-                                        <motion.div
-                                            key={step.step_id}
-                                            initial={{ opacity: 0, x: -3 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: idx * 0.025, duration: 0.15 }}
-                                        >
-                                            <StepRow step={step} onOpen={(targetStep) => openWorkSessionNavigation(targetStep, openPane)} />
-                                        </motion.div>
-                                    ))}
+                        {timelineSteps.length > 0 && (() => {
+                            const plannedCount = plan.stats?.planned_steps;
+                            const { original, continuation } = splitAtPlannedSteps(timelineSteps, plannedCount);
+                            return (
+                                <div className="px-4 py-4">
+                                    {pendingSteps.length > 0 && (
+                                        <div className="text-[10px] uppercase tracking-[0.2em] text-white/25 mb-3">Schritte</div>
+                                    )}
+                                    <div className="space-y-1">
+                                        {original.map((step, idx) => (
+                                            <motion.div
+                                                key={step.step_id}
+                                                initial={{ opacity: 0, x: -3 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: idx * 0.025, duration: 0.15 }}
+                                            >
+                                                <StepRow step={step} onOpen={(targetStep) => openWorkSessionNavigation(targetStep, openPane)} />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                    {continuation.length > 0 && (
+                                        <>
+                                            <div className="my-3 flex items-center gap-2">
+                                                <div className="h-px flex-1 bg-white/[0.06]" />
+                                                <span className="text-[9px] uppercase tracking-[0.22em] text-white/28">Weitergefuehrt</span>
+                                                <div className="h-px flex-1 bg-white/[0.06]" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                {continuation.map((step, idx) => (
+                                                    <motion.div
+                                                        key={step.step_id}
+                                                        initial={{ opacity: 0, x: -3 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: idx * 0.025, duration: 0.15 }}
+                                                    >
+                                                        <StepRow step={step} onOpen={(targetStep) => openWorkSessionNavigation(targetStep, openPane)} />
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {plan.transparency_note && (
                             <div className="px-5 pb-5">

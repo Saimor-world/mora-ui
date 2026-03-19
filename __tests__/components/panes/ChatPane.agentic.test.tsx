@@ -151,7 +151,7 @@ describe('ChatPane agentic file ops', () => {
         entityId: 'space-1',
         entityType: 'space',
         companyId: 'company-1',
-      }));
+      }), undefined);
     });
 
     expect(mockStreamSend).not.toHaveBeenCalled();
@@ -187,7 +187,7 @@ describe('ChatPane agentic file ops', () => {
         entityId: 'space-1',
         entityType: 'space',
         companyId: 'company-1',
-      }));
+      }), undefined);
     });
 
     expect(mockStreamSend).not.toHaveBeenCalled();

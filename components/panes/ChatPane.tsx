@@ -416,11 +416,9 @@ const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 
 export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const { activePlanId, activeSessionId, setActiveSession } = useWorkSessionStore((state) => ({
-        activePlanId: state.activePlanId,
-        activeSessionId: state.activeSessionId,
-        setActiveSession: state.setActiveSession,
-    }));
+    const activePlanId = useWorkSessionStore((s) => s.activePlanId);
+    const activeSessionId = useWorkSessionStore((s) => s.activeSessionId);
+    const setActiveSession = useWorkSessionStore((s) => s.setActiveSession);
     const {
         departments,
         isStandardMode,
@@ -1056,6 +1054,12 @@ Was kann ich fuer dich tun?`,
                                                 : 'border-cyan-400/20 bg-cyan-500/[0.06] text-cyan-200/65 hover:border-cyan-400/35 hover:bg-cyan-500/[0.12] hover:text-cyan-200'
                                         }`}
                                     >
+                                        {msg.planId === activePlanId && (
+                                            <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60" />
+                                                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                                            </span>
+                                        )}
                                         <LayoutList size={11} />
                                         Plan anzeigen
                                     </button>

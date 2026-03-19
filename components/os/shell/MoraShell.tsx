@@ -91,6 +91,8 @@ import {
     type MyceliumShellSummary,
     WORK_SESSION_PLAN_EVENT,
     type WorkSessionShellSummary,
+    getSessionBodyText,
+    getSessionExtendedNote,
 } from '@/lib/utils/moraExplanation';
 
 // Naming Conflict Modal (409 UX)
@@ -1019,11 +1021,7 @@ export const MoraShell: React.FC = () => {
                                             Mora erklaert
                                         </div>
                                         <div className="mt-1 text-sm text-white/82">
-                                            {workSessionSummary.state === 'waiting_confirmation'
-                                                ? 'Ein Arbeitsplan wartet auf Freigabe.'
-                                                : workSessionSummary.state === 'running'
-                                                    ? 'Mora arbeitet in einem fortlaufenden Arbeitskontext.'
-                                                    : 'Mora haelt den aktuellen Arbeitsplan im Scope bereit.'}
+                                            {getSessionBodyText(workSessionSummary)}
                                         </div>
                                     </div>
                                     <button
@@ -1072,6 +1070,14 @@ export const MoraShell: React.FC = () => {
                                             {workSessionSummary.transparencyNote}
                                         </div>
                                     )}
+                                    {(() => {
+                                        const note = getSessionExtendedNote(workSessionSummary);
+                                        return note ? (
+                                            <div className="mt-2 text-[11px] leading-relaxed text-violet-200/45">
+                                                {note}
+                                            </div>
+                                        ) : null;
+                                    })()}
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
