@@ -62,6 +62,12 @@ export interface WorkSessionShellSummary {
         segments?: number;
     };
     transparencyNote?: string;
+    // Execution focus (V5+):
+    running_step_title?: string;         // execution.current_step_title — only set when state === 'running'
+    pending_confirmation_title?: string; // execution.pending_confirmation_title — only set when state === 'waiting_confirmation'
+    /** "What's next" — primary source for waiting/continue emphasis */
+    next_label?: string;                 // execution.next_label
+    next_message?: string;              // execution.next_message
 }
 
 export function dispatchMyceliumReviewReady(detail: MyceliumShellSummary) {
@@ -88,6 +94,16 @@ export function getSessionBodyText(s: WorkSessionShellSummary): string {
     const total = s.stats?.total_steps ?? 0;
     const pending = s.stats?.pending_confirmations ?? 0;
 
+    if (s.state === 'failed') {
+        return 'Arbeitsplan nicht abgeschlossen.';
+    }
+    if (s.state === 'partial') {
+        const completed = s.stats?.completed_steps ?? 0;
+        const total = s.stats?.total_steps ?? 0;
+        return total > 0
+            ? `${completed} von ${total} Schritten abgeschlossen (partiell).`
+            : 'Arbeitsplan partiell abgeschlossen.';
+    }
     if (s.state === 'waiting_confirmation' && pending > 0) {
         return pending === 1
             ? 'Ein Schritt wartet auf Freigabe.'

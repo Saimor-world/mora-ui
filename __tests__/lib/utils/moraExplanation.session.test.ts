@@ -41,6 +41,16 @@ describe('getSessionBodyText', () => {
         const s = { ...base, state: 'done' };
         expect(getSessionBodyText(s)).toBe('Arbeitsplan abgeschlossen.');
     });
+
+    it('returns failure copy when state is failed', () => {
+        const s = { ...base, state: 'failed' };
+        expect(getSessionBodyText(s)).toBe('Arbeitsplan nicht abgeschlossen.');
+    });
+
+    it('returns partial copy with step counts when state is partial', () => {
+        const s = { ...base, state: 'partial', stats: { total_steps: 5, completed_steps: 3 } };
+        expect(getSessionBodyText(s)).toBe('3 von 5 Schritten abgeschlossen (partiell).');
+    });
 });
 
 describe('getSessionExtendedNote', () => {

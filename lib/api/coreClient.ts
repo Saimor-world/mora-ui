@@ -1345,6 +1345,37 @@ export interface WorkSessionStats {
 }
 
 /**
+ * V5+: Execution focus — delivered on work_session_plan in GET, agent, and navigation responses.
+ * Primary source for what is currently running, waiting, or next.
+ */
+export interface WorkSessionExecution {
+    state: string;
+    can_continue: boolean;
+    is_waiting_for_confirmation?: boolean;
+    current_segment_index?: number;
+    current_segment_origin?: string;
+    current_segment_origin_label?: string;
+    current_segment_state?: string;
+    current_segment_title?: string;
+    current_segment_summary?: string;
+    current_step_id?: string;
+    current_step_title?: string;
+    current_step_status?: string;
+    current_step_kind?: string;
+    current_step_action_label?: string;
+    current_step_origin?: string;
+    pending_confirmation_step_id?: string;
+    pending_confirmation_title?: string;
+    pending_confirmation_action_label?: string;
+    /** "What's next" — primary source for waiting/continue emphasis in the shell card */
+    next_step_id?: string;
+    next_mode?: string;
+    next_label?: string;
+    next_message?: string;
+    latest_activity_at?: string;
+}
+
+/**
  * V5: Per-segment summary delivered by the backend in WorkSessionPlan.segment_summaries.
  * Primary render contract for segmented work-session timelines.
  */
@@ -1395,6 +1426,8 @@ export interface WorkSessionPlan {
     transparency_note?: string;
     /** V5: canonical segmentation list — primary render contract for segmented timelines */
     segment_summaries?: WorkSessionSegmentSummary[];
+    /** V5+: execution focus — primary source for current step, waiting state, and next action */
+    execution?: WorkSessionExecution;
 }
 
 /** Fetch a work-session plan by ID (GET /v3/work-session/plan/{id}) */

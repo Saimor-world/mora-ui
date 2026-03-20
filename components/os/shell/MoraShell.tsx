@@ -1007,7 +1007,12 @@ export const MoraShell: React.FC = () => {
 
             {workSessionSummary && !isShellDropActive && (
                 <div className={`fixed left-1/2 z-[929] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumSummary ? 'bottom-[31rem]' : navigationOutcome ? 'bottom-[14.5rem]' : 'bottom-24'}`}>
-                    <div className="rounded-[24px] border border-violet-400/18 bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+                    {(() => {
+                        const isRunning = workSessionSummary.state === 'running';
+                        const isWaiting = workSessionSummary.state === 'waiting_confirmation';
+                        const isDone    = workSessionSummary.state === 'done';
+                        return (
+                    <div className={`rounded-[24px] border bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden ${isRunning ? 'border-blue-400/28' : isWaiting ? 'border-amber-400/28' : isDone ? 'border-white/8' : 'border-violet-400/18'}`}>
                         <div className="flex items-start gap-4 px-5 py-4">
                             <div className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-violet-300/20 bg-violet-500/12">
                                 <LayoutList className="h-5 w-5 text-violet-200" />
@@ -1015,12 +1020,39 @@ export const MoraShell: React.FC = () => {
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-[11px] uppercase tracking-[0.24em] text-violet-200/70 font-semibold">
-                                            Mora erklaert
+                                        <div className={`text-[11px] uppercase tracking-[0.24em] font-semibold ${isRunning ? 'text-blue-200/70' : isWaiting ? 'text-amber-200/70' : isDone ? 'text-white/30' : 'text-violet-200/70'}`}>
+                                            {isRunning ? 'Laeuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora erklaert'}
                                         </div>
-                                        <div className="mt-1 text-sm text-white/82">
-                                            {getSessionBodyText(workSessionSummary)}
-                                        </div>
+                                        {isRunning && (
+                                            <div className="flex items-center gap-2 mb-2 mt-1">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-400/80 animate-pulse shrink-0" />
+                                                <span className="text-sm text-white/78">
+                                                    {workSessionSummary.running_step_title ?? getSessionBodyText(workSessionSummary)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {isWaiting && (
+                                            <div className="flex items-center gap-2 mb-2 mt-1 px-3 py-2 rounded-lg border border-amber-400/14 bg-amber-500/[0.06]">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-amber-400/80 shrink-0" />
+                                                <div>
+                                                    <span className="text-sm text-amber-100/75">
+                                                        {workSessionSummary.next_message
+                                                            ?? workSessionSummary.pending_confirmation_title
+                                                            ?? 'Mora wartet auf deine Entscheidung'}
+                                                    </span>
+                                                    {workSessionSummary.next_label && (
+                                                        <div className="text-[10px] text-amber-200/50 mt-0.5">
+                                                            {workSessionSummary.next_label}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!isRunning && !isWaiting && (
+                                            <div className="mt-1 text-sm text-white/82">
+                                                <span>{getSessionBodyText(workSessionSummary)}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <button
                                         type="button"
@@ -1110,6 +1142,8 @@ export const MoraShell: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                        );
+                    })()}
                 </div>
             )}
 

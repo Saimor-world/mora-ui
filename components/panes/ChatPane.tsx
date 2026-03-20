@@ -32,7 +32,7 @@ import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 import { dispatchNavigationResult, openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
 import { fetchWorkSessionPlan } from '@/lib/api/coreClient';
-import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
+import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 
 interface PendingAction {
@@ -473,6 +473,18 @@ Was kann ich fuer dich tun?`,
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);
     const [memoryBasisCompanyId, setMemoryBasisCompanyId] = useState<string | null>(null);
+    const [activeSessionTitle, setActiveSessionTitle] = useState<string | null>(null);
+
+    // Keep activeSessionTitle in sync with WORK_SESSION_PLAN_EVENT so the pill
+    // updates even when the plan is dispatched from outside sendMessage().
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent<WorkSessionShellSummary>).detail;
+            if (detail?.title) setActiveSessionTitle(detail.title);
+        };
+        window.addEventListener(WORK_SESSION_PLAN_EVENT, handler as EventListener);
+        return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handler as EventListener);
+    }, []);
 
     // Search for relevant memories based on user query
     const fetchRelevantMemories = useCallback(async (query: string) => {
@@ -834,6 +846,7 @@ Was kann ich fuer dich tun?`,
                                 const plan = await fetchWorkSessionPlan(planId);
                                 if (plan) {
                                     setActiveSession({ planId: plan.plan_id, sessionId: plan.session_id });
+                                    setActiveSessionTitle(plan.title);
                                     dispatchWorkSessionPlan({
                                         planId: plan.plan_id,
                                         sessionId: plan.session_id,
@@ -845,29 +858,69 @@ Was kann ich fuer dich tun?`,
                                         scope: plan.scope,
                                         stats: plan.stats,
                                         transparencyNote: plan.transparency_note,
+                                        running_step_title:
+                                            plan.state === 'running'
+                                                ? plan.execution?.current_step_title
+                                                : undefined,
+                                        pending_confirmation_title:
+                                            plan.state === 'waiting_confirmation'
+                                                ? plan.execution?.pending_confirmation_title
+                                                : undefined,
+                                        next_label:   plan.execution?.next_label,
+                                        next_message: plan.execution?.next_message,
                                     });
                                 } else {
                                     setActiveSession({ planId, sessionId: agentResponse.work_session_plan?.session_id });
+                                    setActiveSessionTitle(agentResponse.work_session_plan?.title ?? null);
                                     dispatchWorkSessionPlan({
                                         planId,
                                         source: 'chat',
-                                        state: 'pending',
+                                        state: agentResponse.work_session_plan?.state ?? 'pending',
                                         title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
                                         summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
                                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         stats: agentResponse.work_session_plan?.stats as any,
+                                        running_step_title:
+                                            agentResponse.work_session_plan?.state === 'running'
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                ? (agentResponse.work_session_plan as any)?.execution?.current_step_title
+                                                : undefined,
+                                        pending_confirmation_title:
+                                            agentResponse.work_session_plan?.state === 'waiting_confirmation'
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                                ? (agentResponse.work_session_plan as any)?.execution?.pending_confirmation_title
+                                                : undefined,
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        next_label:   (agentResponse.work_session_plan as any)?.execution?.next_label,
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                        next_message: (agentResponse.work_session_plan as any)?.execution?.next_message,
                                     });
                                 }
                             } catch {
                                 setActiveSession({ planId, sessionId: agentResponse.work_session_plan?.session_id });
+                                setActiveSessionTitle(agentResponse.work_session_plan?.title ?? null);
                                 dispatchWorkSessionPlan({
                                     planId,
                                     source: 'chat',
-                                    state: 'pending',
+                                    state: agentResponse.work_session_plan?.state ?? 'pending',
                                     title: agentResponse.work_session_plan?.title || 'Arbeitsplan',
                                     summary: agentResponse.work_session_plan?.summary || agentResponse.final_message,
                                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     stats: agentResponse.work_session_plan?.stats as any,
+                                    running_step_title:
+                                        agentResponse.work_session_plan?.state === 'running'
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                            ? (agentResponse.work_session_plan as any)?.execution?.current_step_title
+                                            : undefined,
+                                    pending_confirmation_title:
+                                        agentResponse.work_session_plan?.state === 'waiting_confirmation'
+                                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                            ? (agentResponse.work_session_plan as any)?.execution?.pending_confirmation_title
+                                            : undefined,
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    next_label:   (agentResponse.work_session_plan as any)?.execution?.next_label,
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                    next_message: (agentResponse.work_session_plan as any)?.execution?.next_message,
                                 });
                             }
                         }
@@ -1189,6 +1242,15 @@ Was kann ich fuer dich tun?`,
                                 />
                             )}
                         </AnimatePresence>
+
+                        {activePlanId && activeSessionTitle && (
+                            <div className="flex items-center gap-1.5 px-1 mb-1.5">
+                                <div className="h-1.5 w-1.5 rounded-full bg-violet-400/70 shrink-0" />
+                                <span className="text-[10px] text-violet-300/60 truncate">
+                                    Aktiver Plan: {activeSessionTitle}
+                                </span>
+                            </div>
+                        )}
 
                         <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <input

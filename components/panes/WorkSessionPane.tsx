@@ -596,6 +596,16 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
             scope: plan.scope,
             stats: plan.stats,
             transparencyNote: plan.transparency_note,
+            running_step_title:
+                plan.state === 'running'
+                    ? plan.execution?.current_step_title
+                    : undefined,
+            pending_confirmation_title:
+                plan.state === 'waiting_confirmation'
+                    ? plan.execution?.pending_confirmation_title
+                    : undefined,
+            next_label:   plan.execution?.next_label,
+            next_message: plan.execution?.next_message,
         });
     }, [plan, setActiveSession]);
 
@@ -778,23 +788,34 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                                     {pendingSteps.length > 0 && (
                                         <div className="text-[10px] uppercase tracking-[0.2em] text-white/25 mb-3">Schritte</div>
                                     )}
-                                    {groups.map((group, groupIdx) => (
-                                        <React.Fragment key={group.summary?.segment_index ?? `seg-${groupIdx}`}>
-                                            {groupIdx > 0 && <SegmentDivider summary={group.summary} />}
-                                            <div className="space-y-1">
-                                                {group.steps.map((step, idx) => (
-                                                    <motion.div
-                                                        key={step.step_id}
-                                                        initial={{ opacity: 0, x: -3 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: idx * 0.025, duration: 0.15 }}
-                                                    >
-                                                        <StepRow step={step} onOpen={(targetStep) => openWorkSessionNavigation(targetStep, openPane)} />
-                                                    </motion.div>
-                                                ))}
-                                            </div>
-                                        </React.Fragment>
-                                    ))}
+                                    {groups.map((group, groupIdx) => {
+                                        const isActiveGroup = plan?.state === 'running' && (() => {
+                                            if (plan?.execution?.current_segment_index !== undefined) {
+                                                return group.summary?.segment_index === plan.execution.current_segment_index;
+                                            }
+                                            if (group.summary?.latest === true) return true;
+                                            return group.steps.some(s => s.status === 'running');
+                                        })();
+                                        return (
+                                            <React.Fragment key={group.summary?.segment_index ?? `seg-${groupIdx}`}>
+                                                {groupIdx > 0 && <SegmentDivider summary={group.summary} />}
+                                                <div className={isActiveGroup ? 'border-l-2 border-blue-400/25 pl-2.5' : ''}>
+                                                    <div className="space-y-1">
+                                                        {group.steps.map((step, idx) => (
+                                                            <motion.div
+                                                                key={step.step_id}
+                                                                initial={{ opacity: 0, x: -3 }}
+                                                                animate={{ opacity: 1, x: 0 }}
+                                                                transition={{ delay: idx * 0.025, duration: 0.15 }}
+                                                            >
+                                                                <StepRow step={step} onOpen={(targetStep) => openWorkSessionNavigation(targetStep, openPane)} />
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </React.Fragment>
+                                        );
+                                    })}
                                 </div>
                             );
                         })()}
