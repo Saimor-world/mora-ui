@@ -1,4 +1,4 @@
-import { getSessionBodyText, getSessionExtendedNote } from '@/lib/utils/moraExplanation';
+import { getSessionBodyText, getSessionExtendedNote, getSessionRunningSignal } from '@/lib/utils/moraExplanation';
 import type { WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
 
 const base: WorkSessionShellSummary = {
@@ -107,5 +107,64 @@ describe('getSessionExtendedNote', () => {
     it('Pre-V5 fallback: has_continuation absent, total <= planned returns null', () => {
         const s = { ...base, stats: { total_steps: 3, planned_steps: 3 } };
         expect(getSessionExtendedNote(s)).toBeNull();
+    });
+});
+
+describe('getSessionRunningSignal', () => {
+    it('returns next_message as primaryText when last_transition_step_id is set and next_message present', () => {
+        const s: WorkSessionShellSummary = {
+            state: 'running',
+            planId: 'p1',
+            title: 'Plan',
+            last_transition_step_id: 'step-1',
+            next_message: 'Schritt bestaetigt.',
+            running_step_title: 'Dokument lesen',
+        };
+        const result = getSessionRunningSignal(s);
+        expect(result.isPostDecision).toBe(true);
+        expect(result.primaryText).toBe('Schritt bestaetigt.');
+        expect(result.secondaryText).toBe('Dokument lesen');
+    });
+
+    it('returns running_step_title as primaryText when next_message absent even if last_transition_step_id set', () => {
+        const s: WorkSessionShellSummary = {
+            state: 'running',
+            planId: 'p1',
+            title: 'Plan',
+            last_transition_step_id: 'step-1',
+            next_message: undefined,
+            running_step_title: 'Datei laden',
+        };
+        const result = getSessionRunningSignal(s);
+        expect(result.isPostDecision).toBe(true);
+        expect(result.primaryText).toBe('Datei laden');
+        expect(result.secondaryText).toBeNull();
+    });
+
+    it('falls back to getSessionBodyText when last_transition_step_id not set (normal running)', () => {
+        const s: WorkSessionShellSummary = {
+            state: 'running',
+            planId: 'p1',
+            title: 'Plan',
+            stats: { total_steps: 5, completed_steps: 2 },
+        };
+        const result = getSessionRunningSignal(s);
+        expect(result.isPostDecision).toBe(false);
+        expect(result.primaryText).toBe('2 von 5 Schritten abgeschlossen.');
+        expect(result.secondaryText).toBeNull();
+    });
+
+    it('secondaryText is null when post-decision but running_step_title absent', () => {
+        const s: WorkSessionShellSummary = {
+            state: 'running',
+            planId: 'p1',
+            title: 'Plan',
+            last_transition_step_id: 'step-1',
+            next_message: 'Schritt bestaetigt.',
+            running_step_title: undefined,
+        };
+        const result = getSessionRunningSignal(s);
+        expect(result.primaryText).toBe('Schritt bestaetigt.');
+        expect(result.secondaryText).toBeNull();
     });
 });

@@ -165,11 +165,11 @@ describe('ChatPane session pill', () => {
         mockActivePlanId = 'p1';
     });
 
-    it('renders "Aktiver Plan: Mein Plan" pill when activePlanId is set and title is received via event', async () => {
+    it('renders "Laeuft: Mein Plan" pill when activePlanId is set and state is running', async () => {
         render(<ChatPane id="chat-main" />);
 
         // Pill should be absent initially (title not yet set)
-        expect(screen.queryByText(/Aktiver Plan: Mein Plan/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Laeuft: Mein Plan/)).not.toBeInTheDocument();
 
         // Simulate a dispatchWorkSessionPlan event (what the send flow calls after fetching plan)
         await act(async () => {
@@ -186,8 +186,70 @@ describe('ChatPane session pill', () => {
             }));
         });
 
-        // After title is set, pill should appear
-        // NOTE: This will FAIL until Step 3b/3d adds the activeSessionTitle state + pill JSX
+        // After title is set, pill should appear with state-aware label
+        await waitFor(() => {
+            expect(screen.getByText(/Laeuft: Mein Plan/)).toBeInTheDocument();
+        });
+    });
+
+    it('renders "Wartet: Mein Plan" for waiting_confirmation state', async () => {
+        render(<ChatPane id="chat-main" />);
+
+        await act(async () => {
+            window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {
+                detail: {
+                    planId: 'p1',
+                    sessionId: 'sess-1',
+                    source: 'chat',
+                    state: 'waiting_confirmation',
+                    title: 'Mein Plan',
+                    stats: { total_steps: 1, completed_steps: 0 },
+                },
+            }));
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Wartet: Mein Plan/)).toBeInTheDocument();
+        });
+    });
+
+    it('renders "Abgeschlossen: Mein Plan" for done state', async () => {
+        render(<ChatPane id="chat-main" />);
+
+        await act(async () => {
+            window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {
+                detail: {
+                    planId: 'p1',
+                    sessionId: 'sess-1',
+                    source: 'chat',
+                    state: 'done',
+                    title: 'Mein Plan',
+                    stats: { total_steps: 1, completed_steps: 1 },
+                },
+            }));
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Abgeschlossen: Mein Plan/)).toBeInTheDocument();
+        });
+    });
+
+    it('renders "Aktiver Plan: Mein Plan" for default/null state (pending falls through to default)', async () => {
+        render(<ChatPane id="chat-main" />);
+
+        await act(async () => {
+            window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {
+                detail: {
+                    planId: 'p1',
+                    sessionId: 'sess-1',
+                    source: 'chat',
+                    state: 'pending',
+                    title: 'Mein Plan',
+                    stats: { total_steps: 1, completed_steps: 0 },
+                },
+            }));
+        });
+
         await waitFor(() => {
             expect(screen.getByText(/Aktiver Plan: Mein Plan/)).toBeInTheDocument();
         });
