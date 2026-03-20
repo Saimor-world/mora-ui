@@ -1,9 +1,9 @@
-# Confirm/Skip Continuation UX — Design Spec
+# Confirm/Skip Continuation UX - Design Spec
 
 **Date:** 2026-03-20
-**Baseline UI SHA:** 1b4eafb
-**Baseline Core SHA:** 56ba131
-**Beta 2.0 Claude track item:** 5 — Confirm/skip continuation UX
+**Baseline UI SHA:** 3e4b1be
+**Baseline Core SHA:** f67e0bc
+**Beta 2.0 Claude track item:** 5 - Confirm/skip continuation UX
 
 ---
 
@@ -15,7 +15,7 @@ skips a step feels like a status change rather than a meaningful operational
 advancement. The ConfirmStepCard disappears, the plan flips to `running`, and no
 surface acknowledges what just happened or what comes next.
 
-The backend (Core 56ba131) now makes `execution.next_message` transition-aware
+The backend (Core f67e0bc) now makes `execution.next_message` transition-aware
 immediately after a decision:
 
 - after confirm: *"Schritt bestaetigt. Mora kann den aktuellen Arbeitslauf direkt fortsetzen."*
@@ -37,21 +37,22 @@ advanced, not merely changed status.
 
 ## Beta 2.0 alignment
 
-This spec implements one surface of the **canonical receipt model** from the
-Beta 2.0 Reset Plan. Every critical Mora operation should expose:
+This spec extends the **canonical receipt model** from the Beta 2.0 Reset Plan.
+`CommandReceipt` is already live across shell, finder, document, work-session, and
+memory surfaces. Every critical Mora operation should expose:
 
-> **what happened · why · where · what next**
+> **what happened / why / where / what next**
 
-The ghost card established here is the first instance of that pattern applied to
-confirm/skip. The same shape will be reused for upload/intake, search/open, and
-navigation receipts in a subsequent spec.
+The ghost card is the next application of that pattern, wiring confirm/skip
+decisions into the same `CommandReceipt` contract already in use. The same
+approach will extend to upload/intake, search/open, and navigation receipts.
 
 Surface boundaries (not changed by this spec):
 
 | Surface | Role |
 |---|---|
-| Shell/Dock | "now" — current state |
-| WorkSessionPane | "current run" — full execution timeline |
+| Shell/Dock | "now" - current state |
+| WorkSessionPane | "current run" - full execution timeline |
 | Action Center | "history" |
 
 ---
@@ -60,13 +61,13 @@ Surface boundaries (not changed by this spec):
 
 | Surface | Decision | Rationale |
 |---|---|---|
-| WorkSessionPane | Ghost card (B) | Spatial continuity — card transforms in place rather than disappearing; receipt stays until server state changes |
+| WorkSessionPane | Ghost card (B) | Spatial continuity - card transforms in place rather than disappearing; receipt stays until server state changes |
 | MoraShell | `next_message` primary, `running_step_title` secondary (B) | Transition-aware message is the most useful post-decision signal; step title provides precision |
 | ChatPane pill | State-aware dot + word (A) | Glanceable plan state without opening shell or pane; low footprint |
 
 ---
 
-## Delta 0 — `lib/utils/moraExplanation.ts`
+## Delta 0 - `lib/utils/moraExplanation.ts`
 
 One field added to `WorkSessionShellSummary` to allow MoraShell to safely gate
 `next_message` as primary body only in post-decision running state:
@@ -74,7 +75,7 @@ One field added to `WorkSessionShellSummary` to allow MoraShell to safely gate
 ```ts
 export interface WorkSessionShellSummary {
   // ... existing fields ...
-  last_transition_step_id?: string;  // execution.last_transition_step_id — set after confirm/skip
+  last_transition_step_id?: string;  // execution.last_transition_step_id - set after confirm/skip
 }
 ```
 
@@ -83,17 +84,17 @@ WorkSessionPane dispatch enrichment (inside the `plan` effect):
 last_transition_step_id: plan.execution?.last_transition_step_id,
 ```
 
-ChatPane Sites 1–3 do **not** need to pass this field — they don't have access
+ChatPane Sites 1–3 do **not** need to pass this field - they don't have access
 to `last_transition_step_id` from the agent response shape. WorkSessionPane is
 the authoritative dispatcher of this field.
 
 `last_transition_message`, `last_transition_type`, and `last_transition_label`
-remain on `plan.execution` only — read directly inside WorkSessionPane, not on
+remain on `plan.execution` only - read directly inside WorkSessionPane, not on
 the event bus.
 
 ---
 
-## Delta 1 — `components/panes/WorkSessionPane.tsx`
+## Delta 1 - `components/panes/WorkSessionPane.tsx`
 
 ### Ghost card component
 
@@ -106,7 +107,7 @@ interface TransitionGhostCardProps {
   stepTitle: string;
   transitionType: 'confirmed' | 'skipped' | string;
   message: string;           // last_transition_message ?? next_message
-  segmentContext?: string;   // execution.current_segment_origin_label — "where"
+  segmentContext?: string;   // execution.current_segment_origin_label - "where"
 }
 ```
 
@@ -115,10 +116,10 @@ interface TransitionGhostCardProps {
 - Badge row: `CheckCircle2` (emerald, confirmed) or `SkipForward` (white/20,
   skipped) + text label ("Bestaetigt" / "Uebersprungen") in matching muted color
 - Step title: dimmed `text-white/32 text-xs`
-- Message body: `text-[11px] text-blue-200/55 mt-1.5 leading-relaxed` —
+- Message body: `text-[11px] text-blue-200/55 mt-1.5 leading-relaxed` -
   `last_transition_message ?? next_message`
 - Segment context line (when present):
-  `text-[10px] text-white/22 mt-1` — `↳ {segmentContext}`
+  `text-[10px] text-white/22 mt-1` - `-> {segmentContext}`
 
 ### Detection and lifecycle
 
@@ -154,7 +155,7 @@ appear. The ghost renders first (above any remaining `ConfirmStepCard`s):
       exit={{ opacity: 0, y: -4 }}
       className="px-4 pt-4 pb-2"
     >
-      {/* Label only when there are actual pending steps — ghost-only has no label */}
+      {/* Label only when there are actual pending steps - ghost-only has no label */}
       {pendingSteps.length > 0 && (
         <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">
           Bestaetigung erforderlich
@@ -182,11 +183,11 @@ appear. The ghost renders first (above any remaining `ConfirmStepCard`s):
 
 When transitioning from ghost-only back to a new pending step, the label pops
 in without animation (it's inside an already-mounted `motion.div`). This is
-acceptable — the label appearing simultaneously with the new card is coherent.
+acceptable - the label appearing simultaneously with the new card is coherent.
 `lastTransitionStepId` is in scope at the render site (computed at the top of
 the render block alongside `showGhost`).
 
-**Lifecycle:** Server-state-driven — no local timers. Ghost disappears when the
+**Lifecycle:** Server-state-driven - no local timers. Ghost disappears when the
 backend's next response changes `last_transition_step_id` (new decision) or
 clears it. WorkSessionPane polls every 3 s; ghost persists until that poll.
 
@@ -205,9 +206,9 @@ not need to travel via the event bus for the surfaces in this spec.
 
 ---
 
-## Delta 2 — `components/os/shell/MoraShell.tsx`
+## Delta 2 - `components/os/shell/MoraShell.tsx`
 
-### Running body — `next_message` primary
+### Running body - `next_message` primary
 
 **Current:**
 ```tsx
@@ -227,7 +228,7 @@ not need to travel via the event bus for the surfaces in this spec.
   // next_message is only used as primary body when it is post-decision:
   // i.e. last_transition_step_id is set, meaning a confirm/skip just happened.
   // During normal running (no recent decision), next_message may be generic
-  // ("Mora fuehrt den naechsten Schritt aus") — in that case running_step_title
+  // ("Mora fuehrt den naechsten Schritt aus") - in that case running_step_title
   // is the more precise primary signal.
   const isPostDecision = !!workSessionSummary.last_transition_step_id;
   const primaryText = isPostDecision && workSessionSummary.next_message
@@ -255,12 +256,12 @@ not need to travel via the event bus for the surfaces in this spec.
 **Behaviour:**
 - Post-decision (`last_transition_step_id` set) AND `next_message` present →
   `next_message` primary, `running_step_title` secondary dim line
-- All other running states → `running_step_title ?? getSessionBodyText()` —
+- All other running states → `running_step_title ?? getSessionBodyText()` -
   unchanged existing behaviour
 
 ---
 
-## Delta 3 — `components/panes/ChatPane.tsx`
+## Delta 3 - `components/panes/ChatPane.tsx`
 
 ### State-aware session pill
 
@@ -270,7 +271,7 @@ const [activeSessionTitle, setActiveSessionTitle] = useState<string | null>(null
 const [activeSessionState, setActiveSessionState] = useState<string | null>(null);  // new
 ```
 
-**Sync from event bus** — the existing `WORK_SESSION_PLAN_EVENT` listener in
+**Sync from event bus** - the existing `WORK_SESSION_PLAN_EVENT` listener in
 ChatPane has no `planId` guard today. The full listener body must be **replaced**
 (not appended) to add the guard and sync both fields atomically.
 
@@ -280,7 +281,7 @@ include `activePlanId`**. When `activePlanId` changes (new plan opened), the
 effect re-registers a fresh listener with the current ID.
 
 ```ts
-// Replace existing listener useEffect entirely — note activePlanId in deps:
+// Replace existing listener useEffect entirely - note activePlanId in deps:
 useEffect(() => {
   const handlePlanEvent = (e: Event) => {
     const detail = (e as CustomEvent<WorkSessionShellSummary>).detail;
@@ -290,10 +291,10 @@ useEffect(() => {
   };
   window.addEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
   return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
-}, [activePlanId]);  // ← replaces existing [] — critical for correct guard
+}, [activePlanId]);  // ← replaces existing [] - critical for correct guard
 ```
 
-`activeSessionTitle` and `activeSessionState` must use the same `planId` guard —
+`activeSessionTitle` and `activeSessionState` must use the same `planId` guard -
 they must never arrive from different events. Without the guard both could reflect
 a different plan if multiple WorkSessionPanes are open simultaneously.
 
@@ -304,15 +305,15 @@ all dispatch sites.
 
 **ChatPane Site 1 and `last_transition_step_id`:** Site 1 fetches the full
 `WorkSessionPlan` including `plan.execution?.last_transition_step_id`, so the
-data is available. However, Site 1 fires when a new agent response arrives — at
+data is available. However, Site 1 fires when a new agent response arrives - at
 that moment `last_transition_step_id` is absent or refers to a decision on the
 prior session, not the current one. Dispatching it from Site 1 would create
 misleading `isPostDecision` signals in MoraShell on plan creation. **Site 1
 deliberately omits this field.** WorkSessionPane's 3 s poller is the authoritative
-source — it dispatches `last_transition_step_id` on every poll cycle, so the
+source - it dispatches `last_transition_step_id` on every poll cycle, so the
 shell card receives the correct value within 3 s of the first WorkSessionPane
 render. If WorkSessionPane is not open, the MoraShell running body falls back to
-`running_step_title` (normal behaviour) — accepted degradation.
+`running_step_title` (normal behaviour) - accepted degradation.
 
 **Pill rendering** (replaces current violet-only pill):
 ```tsx
@@ -345,7 +346,7 @@ render. If WorkSessionPane is not open, the MoraShell running body falls back to
     <div className="flex items-center gap-1.5 px-1 mb-1.5">
       <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${dotCls}`} />
       <span className={`text-[10px] truncate ${textCls}`}>
-        {stateWord} · {activeSessionTitle}
+        {stateWord} / {activeSessionTitle}
       </span>
     </div>
   );
@@ -353,7 +354,7 @@ render. If WorkSessionPane is not open, the MoraShell running body falls back to
 ```
 
 **Note:** `activeSessionState` is component-local `useState` (same rationale as
-`activeSessionTitle`). Plan state in ChatPane is a display signal only — it does
+`activeSessionTitle`). Plan state in ChatPane is a display signal only - it does
 not drive navigation or dispatch actions.
 
 ---
@@ -364,9 +365,9 @@ not drive navigation or dispatch actions.
 
 | File | Count | What it covers |
 |---|---|---|
-| `__tests__/components/panes/WorkSessionPane.ghost.test.tsx` | 6 | ghost appears when `last_transition_step_id` set + step is `done`; ghost appears when step is `skipped`; ghost absent when step is `pending_confirmation` (not yet acted); ghost absent when step is `running` or `pending` (non-decision state — prevents false ghost); ghost absent when `last_transition_step_id` not in `plan.steps` (orphan step_id, silent no-op); ghost absent when no `last_transition_step_id` |
+| `__tests__/components/panes/WorkSessionPane.ghost.test.tsx` | 6 | ghost appears when `last_transition_step_id` set + step is `done`; ghost appears when step is `skipped`; ghost absent when step is `pending_confirmation` (not yet acted); ghost absent when step is `running` or `pending` (non-decision state - prevents false ghost); ghost absent when `last_transition_step_id` not in `plan.steps` (orphan step_id, silent no-op); ghost absent when no `last_transition_step_id` |
 | `__tests__/components/os/shell/MoraShell.running-body.test.tsx` | 4 | `next_message` shown as primary when `last_transition_step_id` set; `running_step_title` shown as secondary in that case; falls back to `running_step_title` when `next_message` absent even if `last_transition_step_id` set; falls back to `running_step_title` when `last_transition_step_id` not set (normal running) |
-| `__tests__/components/panes/ChatPane.pill-state.test.tsx` | 5 | blue dot + "Laeuft" for running; amber dot + "Wartet" for waiting_confirmation; dim + "Abgeschlossen" for done; violet + "Aktiver Plan:" for default; violet + title shown when `activeSessionState` is null (before first event fires — startup ordering) |
+| `__tests__/components/panes/ChatPane.pill-state.test.tsx` | 5 | blue dot + "Laeuft" for running; amber dot + "Wartet" for waiting_confirmation; dim + "Abgeschlossen" for done; violet + "Aktiver Plan:" for default; violet + title shown when `activeSessionState` is null (before first event fires - startup ordering) |
 
 **Existing tests unchanged.** Full suite baseline: 252 passing.
 
@@ -374,12 +375,12 @@ not drive navigation or dispatch actions.
 
 ## Out of scope
 
-- `searchOpen.ts` navigation dispatch — already updated in Core 1b4eafb; no UI
+- `searchOpen.ts` navigation dispatch - already updated in Core 1b4eafb; no UI
   change needed
-- ChatPane follow-up message after confirm/skip — out of scope; the pane and shell
+- ChatPane follow-up message after confirm/skip - out of scope; the pane and shell
   carry feedback
 - Beta 2.0 items 1–4, 6 (Universe command-center, canonical receipt
-  componentization, degraded/error rendering) — separate specs
+  componentization, degraded/error rendering) - separate specs
 
 ---
 
