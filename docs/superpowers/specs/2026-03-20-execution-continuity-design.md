@@ -1,6 +1,6 @@
 # Execution Continuity — Design Spec
 **Date:** 2026-03-20
-**Baseline UI:** b520ee6 · Core: 5eb99d4
+**Baseline UI:** b520ee6 · Core: a916021
 
 ---
 
@@ -35,12 +35,13 @@ The backend now delivers an `execution` object on `work_session_plan` (both GET 
 
 ## New Backend Contract: `WorkSessionExecution`
 
-Live as of Core 5eb99d4. Present on `work_session_plan` in both GET responses and continued agent responses.
+Live as of Core a916021. Present on `work_session_plan` in both GET responses and continued agent responses, including `/v3/work-session/navigation` responses.
 
 ```ts
 export interface WorkSessionExecution {
     state: string;
     can_continue: boolean;
+    is_waiting_for_confirmation?: boolean;
     current_segment_index?: number;
     current_segment_origin?: string;
     current_segment_origin_label?: string;
@@ -56,6 +57,11 @@ export interface WorkSessionExecution {
     pending_confirmation_step_id?: string;
     pending_confirmation_title?: string;
     pending_confirmation_action_label?: string;
+    /** "what's next" fields — primary source for waiting/continue emphasis in MoraShell */
+    next_step_id?: string;
+    next_mode?: string;       // e.g. 'confirm', 'continue', 'done'
+    next_label?: string;      // human-readable action label
+    next_message?: string;    // instructional message for user
     latest_activity_at?: string;
 }
 ```
@@ -81,7 +87,7 @@ export interface WorkSessionPlan {
 
 ### Delta 1 — `lib/utils/moraExplanation.ts`
 
-**1a. Extend `WorkSessionShellSummary`** with two execution fields:
+**1a. Extend `WorkSessionShellSummary`** with execution fields:
 
 ```ts
 export interface WorkSessionShellSummary {
@@ -89,10 +95,13 @@ export interface WorkSessionShellSummary {
     // Execution focus (V5+):
     running_step_title?: string;            // execution.current_step_title — only set when state === 'running'
     pending_confirmation_title?: string;    // execution.pending_confirmation_title — only set when state === 'waiting_confirmation'
+    /** "What's next" — primary source for waiting/continue emphasis in MoraShell */
+    next_label?: string;                    // execution.next_label — human-readable action label
+    next_message?: string;                  // execution.next_message — instructional message for user
 }
 ```
 
-Note: `can_continue` is intentionally excluded — no current consumer.
+Note: `can_continue`, `next_mode`, `next_step_id` are intentionally excluded from the shell summary — no current consumer in MoraShell. Accessible from `WorkSessionPlan.execution` directly when needed.
 
 **1b. Update `getSessionBodyText`** to handle `'failed'` and `'partial'` states explicitly, before the existing `'running'`/`'done'`/`'waiting_confirmation'` branches:
 
@@ -145,9 +154,12 @@ pending_confirmation_title:
     plan.state === 'waiting_confirmation'
         ? plan.execution?.pending_confirmation_title
         : undefined,
+// "What's next" — always pass through, backend provides these when relevant
+next_label:   plan.execution?.next_label,
+next_message: plan.execution?.next_message,
 ```
 
-The state guard ensures that once the plan transitions (e.g. `running` → `waiting_confirmation`), the next dispatch explicitly clears `running_step_title` to `undefined` — preventing stale data in the MoraShell card.
+The state guard ensures that once the plan transitions (e.g. `running` → `waiting_confirmation`), the next dispatch explicitly clears `running_step_title` to `undefined` — preventing stale data in the MoraShell card. `next_label`/`next_message` are not guarded — the backend emits them when relevant and omits them otherwise.
 
 ---
 
@@ -186,7 +198,7 @@ Disappears naturally when `activePlanId` is cleared.
 
 **3b. Dispatch enrichment — Site 1 only**
 
-In the fetched-plan branch (Site 1, lines ~837–848) only, add the guarded execution fields:
+In the fetched-plan branch (Site 1, lines ~837–848), add the guarded execution fields:
 ```ts
 running_step_title:
     plan.state === 'running'
@@ -196,11 +208,26 @@ pending_confirmation_title:
     plan.state === 'waiting_confirmation'
         ? plan.execution?.pending_confirmation_title
         : undefined,
+next_label:   plan.execution?.next_label,
+next_message: plan.execution?.next_message,
 ```
 
-**Sites 2 and 3 (fallback branches)**: These produce `state: 'pending'` — `isRunning` and `isWaiting` are both false in MoraShell for this state, so no execution fields are rendered. Explicitly: Sites 2 and 3 do NOT add execution fields. They are out-of-scope for execution enrichment because they cannot reliably access `plan.execution` — emitting `undefined` for those fields is correct.
+**Sites 2 and 3 (fallback branches)**: `agentResponse.work_session_plan` may now carry `execution`. Pass execution-derived fields through using the same state guards:
+```ts
+running_step_title:
+    agentResponse.work_session_plan?.state === 'running'
+        ? agentResponse.work_session_plan?.execution?.current_step_title
+        : undefined,
+pending_confirmation_title:
+    agentResponse.work_session_plan?.state === 'waiting_confirmation'
+        ? agentResponse.work_session_plan?.execution?.pending_confirmation_title
+        : undefined,
+next_label: agentResponse.work_session_plan?.execution?.next_label,
+next_message: agentResponse.work_session_plan?.execution?.next_message,
+```
+`agentResponse.work_session_plan` is typed `Record<string, any>` in cognitionClient — cast fields as needed.
 
-**`searchOpen.ts` dispatch** (`dispatchWorkSessionPlan` called on navigation outcomes): This dispatch receives a full plan from the navigation endpoint (`/v3/work-session/navigation`) and fires with whatever `state` the backend returns — which may include `'running'`. However, the navigation endpoint does not return a `WorkSessionExecution` object. Execution fields (`running_step_title`, `pending_confirmation_title`) will therefore be absent. MoraShell will evaluate `isRunning` correctly from `state`, but the running body will fall through to `getSessionBodyText()` since `running_step_title` is absent. This is accepted as graceful degradation — the "Laeuft gerade" label and pulsing dot render correctly; only the step-level detail is missing until the navigation endpoint adds `execution` support (a future backend improvement, out of scope here).
+**`searchOpen.ts` dispatch** (`dispatchWorkSessionPlan` called on navigation outcomes): As of Core a916021, `/v3/work-session/navigation` returns a full `work_session_plan` that includes `execution`. The `surfaceNavigationOutcome` path in `searchOpen.ts` therefore has `execution` available. This path is out-of-scope for this pass — the navigation dispatch in searchOpen.ts does not need to be updated here since the WorkSessionPane polling loop will pick up the correct execution state on its next poll (within 3 s). Acceptable gap.
 
 ---
 
@@ -244,15 +271,23 @@ default    → "Mora erklaert"            existing violet (unchanged)
   ```
   Falls back to `getSessionBodyText` if `running_step_title` is absent (pre-execution or stale).
 
-- **`isWaiting`**: amber cue using `pending_confirmation_title` if available:
+- **`isWaiting`**: amber cue. Priority: `next_message` (backend instructional text) → `pending_confirmation_title` → static fallback. Below the cue, if `next_label` is present, show it as a secondary hint:
   ```tsx
   <div className="flex items-center gap-2 mb-2 px-3 py-2
                   rounded-lg border border-amber-400/14 bg-amber-500/6">
       <div className="h-1.5 w-1.5 rounded-full bg-amber-400/80" />
-      <span className="text-sm text-amber-100/75">
-          {workSessionSummary.pending_confirmation_title
-              ?? 'Mora wartet auf deine Entscheidung'}
-      </span>
+      <div>
+          <span className="text-sm text-amber-100/75">
+              {workSessionSummary.next_message
+                  ?? workSessionSummary.pending_confirmation_title
+                  ?? 'Mora wartet auf deine Entscheidung'}
+          </span>
+          {workSessionSummary.next_label && (
+              <div className="text-[10px] text-amber-200/50 mt-0.5">
+                  {workSessionSummary.next_label}
+              </div>
+          )}
+      </div>
   </div>
   ```
 
@@ -266,21 +301,32 @@ default    → "Mora erklaert"            existing violet (unchanged)
 WorkSessionPane polling (state === 'running'):
   GET /v3/work-session/plan/{id}
     → plan.execution.current_step_title
-  → dispatchWorkSessionPlan({ running_step_title: title, pending_confirmation_title: undefined })
+    → plan.execution.next_label / next_message
+  → dispatchWorkSessionPlan({
+        running_step_title: title,
+        pending_confirmation_title: undefined,
+        next_label, next_message
+    })
     → WORK_SESSION_PLAN_EVENT → MoraShell → isRunning card
 
 WorkSessionPane polling (state === 'waiting_confirmation'):
-  → dispatchWorkSessionPlan({ running_step_title: undefined, pending_confirmation_title: title })
+  → dispatchWorkSessionPlan({
+        running_step_title: undefined,   // ← explicitly cleared
+        pending_confirmation_title: title,
+        next_label, next_message         // ← backend provides these for waiting state
+    })
     → WORK_SESSION_PLAN_EVENT → MoraShell → isWaiting card
-    (running_step_title explicitly undefined — stale value not carried forward)
 
-ChatPane fetch (state === 'running'):
-  plan.execution.current_step_title → dispatch enrichment (Site 1)
+ChatPane fetch Site 1 (fetched plan, any state):
+  plan.execution → enriched dispatch with running_step_title / pending_confirmation_title (guarded) + next_label/next_message
   plan.title → setActiveSessionTitle → pill render
 
-ChatPane fetch (fallback, Sites 2/3):
-  state: 'pending' → no execution fields (isRunning/isWaiting both false in MoraShell)
+ChatPane fetch Sites 2/3 (agentResponse fallback, any state):
+  agentResponse.work_session_plan?.execution → same guarded execution fields pass-through
   agentResponse.work_session_plan?.title → setActiveSessionTitle (title stays fresh)
+
+searchOpen.ts navigation dispatch:
+  Out-of-scope this pass. WorkSessionPane polling recovers execution state within 3 s.
 ```
 
 ---
@@ -299,13 +345,14 @@ ChatPane fetch (fallback, Sites 2/3):
 3. Accent NOT rendered when `plan.state === 'done'`
 4. Dispatch emits `running_step_title` from `execution.current_step_title` when `state === 'running'`; emits `undefined` for `running_step_title` when `state === 'waiting_confirmation'`
 
-**Delta 3 — `ChatPane.tsx`** (4 tests):
+**Delta 3 — `ChatPane.tsx`** (5 tests):
 1. `activeSessionTitle` is set from `plan.title` when plan is fetched (Site 1)
 2. `activeSessionTitle` is set from `agentResponse.work_session_plan?.title` in fallback (Sites 2/3)
 3. Pill renders when `activePlanId && activeSessionTitle` are both set
 4. Pill is absent when `activePlanId` is null
+5. Sites 2/3 dispatch includes `next_label`/`next_message` from `agentResponse.work_session_plan?.execution`
 
-**Delta 4 — `MoraShell.tsx`** (10 tests):
+**Delta 4 — `MoraShell.tsx`** (12 tests):
 1. `border-blue-400/28` when `state === 'running'`
 2. `border-amber-400/28` when `state === 'waiting_confirmation'`
 3. `border-white/8` when `state === 'done'`
@@ -313,9 +360,11 @@ ChatPane fetch (fallback, Sites 2/3):
 5. "Freigabe erforderlich" label when waiting
 6. "Abgeschlossen" label when done
 7. `running_step_title` value renders in running body
-8. `running_step_title` absent → falls back to `getSessionBodyText` output (graceful degradation, covers searchOpen.ts dispatch path)
-9. `pending_confirmation_title` renders in waiting body
-10. `pending_confirmation_title` absent → falls back to static "Mora wartet auf deine Entscheidung"
+8. `running_step_title` absent → falls back to `getSessionBodyText` output
+9. `next_message` renders as primary text in waiting body
+10. `next_message` absent, `pending_confirmation_title` present → renders confirmation title
+11. Both absent → falls back to static "Mora wartet auf deine Entscheidung"
+12. `next_label` present → renders secondary hint line below waiting cue
 
 ---
 
