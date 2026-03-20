@@ -960,6 +960,44 @@ export interface SearchResult {
     search_type: string;
 }
 
+export interface OpenIntentCandidate {
+    id: string;
+    title: string;
+    type: string;
+    node_id?: string;
+    folder_id?: string;
+    space_id?: string;
+    department_id?: string;
+    company_id?: string;
+    path?: string;
+    scope_path?: string;
+    source?: string;
+    rank_score?: number;
+    decision_signals?: string[];
+    exact_title_match?: boolean;
+    title_match?: boolean;
+}
+
+export interface OpenIntentResolution {
+    query: string;
+    resolution: 'act' | 'choose' | 'none' | string;
+    headline: string;
+    reason: string;
+    chosen?: OpenIntentCandidate | null;
+    candidates: OpenIntentCandidate[];
+    scope?: {
+        company_id?: string;
+        department_id?: string;
+        space_id?: string;
+        folder_id?: string;
+    };
+    metadata?: {
+        total_candidates?: number;
+        plausible_candidates?: number;
+        timestamp?: string;
+    };
+}
+
 export async function searchGlobal(query: string, companyId?: string): Promise<SearchResult> {
     const q = encodeURIComponent(query);
     const c = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
@@ -979,6 +1017,27 @@ export async function searchGlobal(query: string, companyId?: string): Promise<S
         results: [],
         total: 0,
         search_type: 'keyword',
+    };
+}
+
+export async function resolveOpenIntent(payload: {
+    query: string;
+    company_id?: string | null;
+    department_id?: string | null;
+    space_id?: string | null;
+    folder_id?: string | null;
+    limit?: number;
+}): Promise<OpenIntentResolution> {
+    const result = await corePost('/v3/search/open-intent', payload);
+    return {
+        query: String((result as any)?.query || payload.query || ''),
+        resolution: String((result as any)?.resolution || 'none'),
+        headline: String((result as any)?.headline || 'Kein klarer Treffer'),
+        reason: String((result as any)?.reason || ''),
+        chosen: ((result as any)?.chosen || null) as OpenIntentCandidate | null,
+        candidates: normalizeList<OpenIntentCandidate>(result, ['candidates', 'items', 'results', 'data']),
+        scope: (result as any)?.scope,
+        metadata: (result as any)?.metadata,
     };
 }
 

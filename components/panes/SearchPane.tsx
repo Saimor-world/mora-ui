@@ -1,13 +1,14 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, FileText, Folder, Building2, Clock, ArrowRight, Sparkles } from 'lucide-react';
+import { Search, X, FileText, Folder, Building2, Clock, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
-import { getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { getSearchResolution, getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 
 /**
  * SearchPane - Universal Search Interface
@@ -21,7 +22,7 @@ import { getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@
 
 interface SearchResult {
     id: string;
-    type: 'node' | 'space' | 'department' | 'user' | 'file' | 'folder';
+    type: 'node' | 'space' | 'department' | 'file' | 'folder';
     title: string;
     subtitle?: string;
     icon: typeof FileText | typeof Folder | typeof Building2;
@@ -104,6 +105,12 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         setSelectedIndex(0);
         setIsSearching(false);
     }, [activeCompanyId]);
+
+    useEffect(() => {
+        if (!query.trim()) return;
+        const resolution = getSearchResolution(query, results);
+        setSelectedIndex(resolution.status === 'ask' ? -1 : results.length > 0 ? 0 : -1);
+    }, [query, results]);
 
     const mapKeywordResult = React.useCallback((raw: any): SearchResult | null => {
         const mapped = mapRawSearchResult(raw);
@@ -264,11 +271,17 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                setSelectedIndex(i => Math.min(i + 1, results.length - 1));
+                setSelectedIndex(i => {
+                    const next = i < 0 ? 0 : i + 1;
+                    return Math.min(next, results.length - 1);
+                });
                 break;
             case 'ArrowUp':
                 e.preventDefault();
-                setSelectedIndex(i => Math.max(i - 1, 0));
+                setSelectedIndex(i => {
+                    if (i < 0) return 0;
+                    return Math.max(i - 1, 0);
+                });
                 break;
             case 'Enter':
                 if (results[selectedIndex]) {
@@ -384,7 +397,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                 </span>
                             )}
                             {isSearching && (
-                                <span className="text-white/35">Semantic Suche läuft…</span>
+                                <span className="text-white/35">Semantic Suche laeuft...</span>
                             )}
                         </div>
                     )}
@@ -404,44 +417,40 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                     </motion.div>
                                 </div>
                             ) : results.length > 0 ? (
-                                <div className="space-y-1">
-                                    {results.map((result, index) => (
-                                        <motion.button
-                                            key={result.id}
-                                            initial={{ opacity: 0, y: 5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.03 }}
-                                            onClick={() => void handleResultClick(result)}
-                                            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${index === selectedIndex
-                                                ? 'bg-emerald-500/20 border border-emerald-500/30'
-                                                : 'hover:bg-white/5 border border-transparent'
-                                                }`}
-                                        >
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${result.type === 'department' ? 'bg-purple-500/20 text-purple-400' :
-                                                result.type === 'space' ? 'bg-blue-500/20 text-blue-400' :
-                                                    'bg-emerald-500/20 text-emerald-400'
-                                                }`}>
-                                                <result.icon size={18} />
-                                            </div>
-                                            <div className="flex-1 text-left">
-                                                <div className="text-sm font-medium text-white/90">{result.title}</div>
-                                                {result.subtitle && (
-                                                    <div className="text-xs text-white/40 truncate">{result.subtitle}</div>
-                                                )}
-                                                {typeof result.score === 'number' && result.source === 'mora' && (
-                                                    <div className="text-[10px] text-emerald-300/70 mt-0.5">
-                                                        Relevanz {Math.round(result.score * 100)}%
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <ArrowRight size={14} className="text-white/20" />
-                                        </motion.button>
-                                    ))}
-                                </div>
+                                <AmbiguityChoiceSurface
+                                    query={query}
+                                    results={results as any}
+                                    selectedIndex={selectedIndex}
+                                    onPick={(result) => void handleResultClick(result as any)}
+                                    onReview={() => openPane({
+                                        id: 'search-main',
+                                        type: 'search',
+                                        title: 'Suche',
+                                        size: { width: 960, height: 720 },
+                                        data: { query },
+                                    })}
+                                    tone={results.length > 1 ? 'amber' : 'cyan'}
+                                    body={results.length > 1
+                                        ? 'Mehrere plausible Treffer. Waehle einen Eintrag.'
+                                        : 'Ein klarer Treffer. Du kannst ihn direkt oeffnen.'}
+                                />
                             ) : (
                                 <div className="text-center py-8 text-white/40">
                                     <Search size={32} className="mx-auto mb-2 opacity-50" />
-                                    <p>Keine Ergebnisse für &quot;{query}&quot;</p>
+                                    <p>Kein klarer Treffer fuer &quot;{query}&quot;</p>
+                                    <button
+                                        onClick={() => openPane({
+                                            id: 'search-main',
+                                            type: 'search',
+                                            title: 'Suche',
+                                            size: { width: 960, height: 720 },
+                                            data: { query },
+                                        })}
+                                        className="mt-3 text-sm flex items-center gap-2 mx-auto text-emerald-400 hover:text-emerald-300"
+                                    >
+                                        <Sparkles size={14} />
+                                        Suche pruefen
+                                    </button>
                                 </div>
                             )}
                         </AnimatePresence>

@@ -16,14 +16,10 @@ import {
     Search,
     Clock,
     Sparkles,
-    Folder,
     FileText,
     Building2,
-    Users,
     X,
-    ArrowRight,
     Zap,
-    Star,
     Send,
     Loader2,
     MessageCircle
@@ -34,7 +30,8 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { searchGlobal, corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
-import { getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 
 interface SearchResult {
     id: string;
@@ -230,17 +227,6 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         }
     };
 
-    const getTypeIcon = (type: string) => {
-        switch (type) {
-            case 'department': return Building2;
-            case 'space': return Star;
-            case 'folder': return Folder;
-            case 'file':
-            case 'node': return FileText;
-            default: return FileText;
-        }
-    };
-
     if (!isOpen) return null;
 
     return (
@@ -406,45 +392,25 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 <h3 className={`text-xs uppercase tracking-wider mb-3 ${
                                     isStandardMode ? 'text-gray-500' : 'text-white/40'
                                 }`}>Ergebnisse</h3>
-                                <div className="space-y-1">
-                                    {searchResults.map((result) => {
-                                        const Icon = getTypeIcon(result.type);
-                                        return (
-                                            <button
-                                                key={result.id}
-                                                onClick={() => void handleResultClick(result)}
-                                                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left group ${
-                                                    isStandardMode
-                                                        ? 'hover:bg-gray-100'
-                                                        : 'hover:bg-white/5'
-                                                }`}
-                                            >
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                                    isStandardMode
-                                                        ? 'bg-gray-100'
-                                                        : 'bg-white/5'
-                                                }`}>
-                                                    <Icon size={16} className={
-                                                        isStandardMode ? 'text-gray-600' : 'text-white/60'
-                                                    } />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className={`text-sm truncate ${
-                                                        isStandardMode ? 'text-[#1F1F1F]' : 'text-white/90'
-                                                    }`}>{result.title}</div>
-                                                    <div className={`text-xs ${
-                                                        isStandardMode ? 'text-gray-400' : 'text-white/40'
-                                                    }`}>{getSearchResultSubtitle(result)}</div>
-                                                </div>
-                                                <ArrowRight size={14} className={`transition-colors ${
-                                                    isStandardMode
-                                                        ? 'text-gray-300 group-hover:text-gray-500'
-                                                        : 'text-white/20 group-hover:text-white/50'
-                                                }`} />
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                <AmbiguityChoiceSurface
+                                    query={searchQuery}
+                                    results={searchResults as any}
+                                    onPick={(result) => void handleResultClick(result as any)}
+                                    onReview={() => {
+                                        onClose();
+                                        openPane({
+                                            id: 'search-main',
+                                            type: 'search',
+                                            title: 'Suche',
+                                            size: { width: 960, height: 720 },
+                                            data: { query: searchQuery },
+                                        });
+                                    }}
+                                    tone={searchResults.length > 1 ? 'amber' : 'cyan'}
+                                    body={searchResults.length > 1
+                                        ? 'Mehrere plausible Treffer. Waehle einen Eintrag.'
+                                        : 'Ein klarer Treffer. Du kannst ihn direkt oeffnen.'}
+                                />
                             </div>
                         )}
 
@@ -567,10 +533,17 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 isStandardMode ? 'text-gray-400' : 'text-white/40'
                             }`}>
                                 <Search size={32} className="mx-auto mb-3 opacity-50" />
-                                <p>Keine Ergebnisse für &quot;{searchQuery}&quot;</p>
+                                <p>Kein klarer Treffer fuer &quot;{searchQuery}&quot;</p>
                                 <button
                                     onClick={() => {
-                                        onQueryChange(`@mora ${searchQuery}`);
+                                        onClose();
+                                        openPane({
+                                            id: 'search-main',
+                                            type: 'search',
+                                            title: 'Suche',
+                                            size: { width: 960, height: 720 },
+                                            data: { query: searchQuery },
+                                        });
                                     }}
                                     className={`mt-3 text-sm flex items-center gap-2 mx-auto ${
                                         isStandardMode
@@ -579,7 +552,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     }`}
                                 >
                                     <Sparkles size={14} />
-                                    Frag Môra danach
+                                    Suche pruefen
                                 </button>
                             </div>
                         )}

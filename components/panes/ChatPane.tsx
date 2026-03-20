@@ -30,10 +30,11 @@ import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
-import { dispatchNavigationResult, openSearchResult, resolveSearchResults } from '@/lib/utils/searchOpen';
-import { fetchWorkSessionPlan } from '@/lib/api/coreClient';
+import { dispatchNavigationResult, openSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
+import { fetchWorkSessionPlan, resolveOpenIntent } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
+import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 
 interface PendingAction {
     tool_name: string;
@@ -144,6 +145,29 @@ function isLikelyFileOperationIntent(text: string): boolean {
         /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(entwurf|draft|briefing)\b/,
         /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|schreibe um)\b.*\b(notiz|note|entwurf|draft|dokument)\b/,
     ].some((pattern) => pattern.test(lower));
+}
+
+function toChatOpenableResult(candidate: import('@/lib/api/coreClient').OpenIntentCandidate): OpenableSearchResult {
+    const normalizedType = (
+        candidate.type === 'department'
+        || candidate.type === 'space'
+        || candidate.type === 'folder'
+        || candidate.type === 'file'
+        || candidate.type === 'node'
+    ) ? candidate.type : 'node';
+
+    return {
+        id: candidate.id,
+        title: candidate.title,
+        type: normalizedType,
+        subtitle: candidate.scope_path || candidate.path,
+        path: candidate.scope_path || candidate.path,
+        companyId: candidate.company_id,
+        departmentId: candidate.department_id,
+        spaceId: candidate.space_id,
+        folderId: candidate.folder_id,
+        nodeId: candidate.node_id,
+    };
 }
 
 // ─── Memory: Save Insight Button ───
@@ -469,6 +493,7 @@ Was kann ich fuer dich tun?`,
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [ambiguityChoice, setAmbiguityChoice] = useState<{ query: string; results: OpenableSearchResult[] } | null>(null);
     const moraCtx = useMoraContext();
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);
@@ -714,11 +739,32 @@ Was kann ich fuer dich tun?`,
             spaceId: activeSpaceId,
             folderId: activeFolderId,
         };
-        const results = await resolveSearchResults(trimmed, scope);
-        const exactMatches = results.filter((result) => result.title.trim().toLowerCase() === trimmed.toLowerCase());
-        const chosen = results.length === 1 ? results[0] : exactMatches.length === 1 ? exactMatches[0] : null;
+        const openIntent = await resolveOpenIntent({
+            query: trimmed,
+            company_id: activeCompanyId,
+            department_id: activeDepartmentId,
+            space_id: activeSpaceId,
+            folder_id: activeFolderId,
+        });
 
-        if (!chosen) {
+        if (openIntent.resolution === 'choose' && openIntent.candidates.length > 0) {
+            dispatchNavigationResult({
+                title: 'Mehrdeutiger Treffer',
+                message: openIntent.reason || `Mehrere passende Treffer fuer ${trimmed}. Waehle unten einen aus.`,
+                targetType: 'search',
+                label: trimmed,
+                query: trimmed,
+                companyId: activeCompanyId || undefined,
+                source: 'chat',
+            });
+            setAmbiguityChoice({
+                query: trimmed,
+                results: openIntent.candidates.map((candidate) => toChatOpenableResult(candidate)),
+            });
+            return `Ich sehe mehrere passende Treffer fuer **${trimmed}**. Waehle unten einen aus.`;
+        }
+
+        if (openIntent.resolution === 'none' || !openIntent.chosen) {
             openPane({
                 id: 'search-main',
                 type: 'search',
@@ -728,16 +774,18 @@ Was kann ich fuer dich tun?`,
             });
             dispatchNavigationResult({
                 title: 'Suche geoeffnet',
-                message: `Ich habe mehrere passende Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
+                message: openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
                 companyId: activeCompanyId || undefined,
                 source: 'chat',
             });
-            return `Ich habe mehrere passende Treffer fuer **${trimmed}** gefunden und die Suche im aktuellen Firmenkontext geoeffnet.`;
+            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fuer **${trimmed}** geoeffnet.`;
         }
 
+        const chosen = toChatOpenableResult(openIntent.chosen);
+        setAmbiguityChoice(null);
         await openSearchResult(chosen, openPane, scope, 'chat');
         if (chosen.type === 'file' || chosen.type === 'node') {
             return `Ich oeffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
@@ -748,6 +796,7 @@ Was kann ich fuer dich tun?`,
     // Process message content (used by both sendMessage and initial message handler)
     const processMessage = async (content: string) => {
         setIsLoading(true);
+        setAmbiguityChoice(null);
         const intent = parseIntent(content);
 
         // Check for memory intent (e.g., "merke dir...", "wichtig...")
@@ -1207,6 +1256,45 @@ Was kann ich fuer dich tun?`,
                                         }}
                                     />
                                 </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {ambiguityChoice && (
+                        <motion.div
+                            key={`ambiguity-${ambiguityChoice.query}`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex justify-start"
+                        >
+                            <div className="max-w-[80%] w-full">
+                                <AmbiguityChoiceSurface
+                                    query={ambiguityChoice.query}
+                                    results={ambiguityChoice.results}
+                                    onPick={async (result) => {
+                                        setAmbiguityChoice(null);
+                                        const scope = {
+                                            companyId: activeCompanyId,
+                                            departmentId: activeDepartmentId,
+                                            spaceId: activeSpaceId,
+                                            folderId: activeFolderId,
+                                        };
+                                        await openSearchResult(result, openPane, scope, 'chat');
+                                    }}
+                                    onReview={() => {
+                                        setAmbiguityChoice(null);
+                                        openPane({
+                                            id: 'search-main',
+                                            type: 'search',
+                                            title: 'Suche',
+                                            size: { width: 960, height: 720 },
+                                            data: { query: ambiguityChoice.query },
+                                        });
+                                    }}
+                                />
                             </div>
                         </motion.div>
                     )}

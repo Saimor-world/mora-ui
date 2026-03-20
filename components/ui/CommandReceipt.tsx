@@ -65,6 +65,7 @@ interface CommandReceiptProps {
     icon?: React.ComponentType<any>;
     dismiss?: React.ReactNode;
     className?: string;
+    children?: React.ReactNode;
 }
 
 export const CommandReceipt: React.FC<CommandReceiptProps> = ({
@@ -77,6 +78,7 @@ export const CommandReceipt: React.FC<CommandReceiptProps> = ({
     footer,
     icon: Icon,
     dismiss,
+    children,
     className = '',
 }) => {
     const styles = toneStyles[tone];
@@ -119,6 +121,7 @@ export const CommandReceipt: React.FC<CommandReceiptProps> = ({
                     )}
 
                     {actions && <div className="mt-4 flex flex-wrap gap-2">{actions}</div>}
+                    {children && <div className="mt-4">{children}</div>}
                     {footer && <div className="mt-3 text-[11px] leading-relaxed text-white/42">{footer}</div>}
                 </div>
             </div>

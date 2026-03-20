@@ -24,6 +24,104 @@ export interface OpenableSearchResult {
     nodeId?: string;
 }
 
+export function toOpenableSearchResult(candidate: {
+    id: string;
+    title: string;
+    type: string;
+    subtitle?: string;
+    icon?: LucideIcon;
+    score?: number;
+    companyId?: string;
+    departmentId?: string;
+    spaceId?: string;
+    folderId?: string;
+    nodeId?: string;
+    company_id?: string;
+    department_id?: string;
+    space_id?: string;
+    folder_id?: string;
+    node_id?: string;
+    path?: string;
+    scope_path?: string;
+}): OpenableSearchResult {
+    const normalizedType = (
+        candidate.type === 'department'
+        || candidate.type === 'space'
+        || candidate.type === 'folder'
+        || candidate.type === 'file'
+        || candidate.type === 'node'
+    ) ? candidate.type : 'node';
+
+    return {
+        id: candidate.id,
+        title: candidate.title,
+        type: normalizedType,
+        subtitle: candidate.scope_path || candidate.path || candidate.subtitle,
+        path: candidate.scope_path || candidate.path || candidate.path,
+        icon: candidate.icon,
+        companyId: candidate.companyId || candidate.company_id,
+        departmentId: candidate.departmentId || candidate.department_id,
+        spaceId: candidate.spaceId || candidate.space_id,
+        folderId: candidate.folderId || candidate.folder_id,
+        nodeId: candidate.nodeId || candidate.node_id,
+        score: candidate.score,
+    };
+}
+
+export function getSearchResultTypeLabel(type: OpenableSearchResult['type']): string {
+    switch (type) {
+        case 'department':
+            return 'Bereich';
+        case 'space':
+            return 'Space';
+        case 'folder':
+            return 'Ordner';
+        case 'file':
+        case 'node':
+            return 'Datei';
+        default:
+            return 'Treffer';
+    }
+}
+
+export function getSearchResultLocationLabel(result: Pick<OpenableSearchResult, 'path' | 'subtitle'>): string {
+    return result.path || result.subtitle || 'Ohne Pfad';
+}
+
+function normalizeSearchText(value: string): string {
+    return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function getSearchResolution(
+    query: string,
+    results: OpenableSearchResult[],
+): {
+    status: 'act' | 'ask' | 'none';
+    chosen?: OpenableSearchResult;
+    choices: OpenableSearchResult[];
+} {
+    const trimmed = normalizeSearchText(query);
+    const exactTitleMatches = results.filter((result) => normalizeSearchText(result.title) === trimmed);
+    if (exactTitleMatches.length === 1) {
+        return { status: 'act', chosen: exactTitleMatches[0], choices: [exactTitleMatches[0]] };
+    }
+
+    const exactPathMatches = results.filter((result) => normalizeSearchText(result.path || result.subtitle || '') === trimmed);
+    if (exactPathMatches.length === 1) {
+        return { status: 'act', chosen: exactPathMatches[0], choices: [exactPathMatches[0]] };
+    }
+
+    if (results.length === 1) {
+        return { status: 'act', chosen: results[0], choices: [results[0]] };
+    }
+
+    if (results.length > 1) {
+        return { status: 'ask', choices: results.slice(0, 5) };
+    }
+
+    return { status: 'none', choices: [] };
+}
+
 interface ActiveScope {
     companyId?: string | null;
     departmentId?: string | null;
