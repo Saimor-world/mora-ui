@@ -68,15 +68,28 @@ Surface boundaries (not changed by this spec):
 
 ## Delta 0 — `lib/utils/moraExplanation.ts`
 
-**No structural changes required.** `WorkSessionShellSummary` already carries all
-fields needed by MoraShell and ChatPane:
+One field added to `WorkSessionShellSummary` to allow MoraShell to safely gate
+`next_message` as primary body only in post-decision running state:
 
-- `state: string` — consumed by ChatPane pill
-- `next_message?: string` — consumed by MoraShell running body
-- `running_step_title?: string` — consumed by MoraShell running body secondary
+```ts
+export interface WorkSessionShellSummary {
+  // ... existing fields ...
+  last_transition_step_id?: string;  // execution.last_transition_step_id — set after confirm/skip
+}
+```
 
-`last_transition_*` fields are read directly from `plan.execution` inside
-WorkSessionPane, which holds the full `WorkSessionPlan` object.
+WorkSessionPane dispatch enrichment (inside the `plan` effect):
+```ts
+last_transition_step_id: plan.execution?.last_transition_step_id,
+```
+
+ChatPane Sites 1–3 do **not** need to pass this field — they don't have access
+to `last_transition_step_id` from the agent response shape. WorkSessionPane is
+the authoritative dispatcher of this field.
+
+`last_transition_message`, `last_transition_type`, and `last_transition_label`
+remain on `plan.execution` only — read directly inside WorkSessionPane, not on
+the event bus.
 
 ---
 
@@ -115,14 +128,54 @@ const lastTransitionStepId = plan?.execution?.last_transition_step_id;
 const ghostStep = lastTransitionStepId
   ? plan?.steps.find(s => s.step_id === lastTransitionStepId)
   : null;
-// Show ghost only when the step is no longer pending_confirmation
-// (i.e. it has been acted on this round)
-const showGhost = ghostStep != null && ghostStep.status !== 'pending_confirmation';
+// Show ghost only when the step has reached a terminal post-decision state.
+// 'done' = confirmed+executed, 'skipped' = rejected.
+// Explicitly excludes 'pending', 'running', 'failed', 'pending_confirmation'
+// to prevent false ghost renders on non-decision transitions.
+// If last_transition_step_id points to a step not in plan.steps (removed by
+// backend), ghostStep is undefined → showGhost is false → silent no-op.
+const showGhost =
+  ghostStep != null &&
+  (ghostStep.status === 'done' || ghostStep.status === 'skipped');
 ```
 
-**Render location:** Top of the `pendingSteps` section, inside the existing
-`AnimatePresence` block. Ghost uses `motion.div` with `initial={{ opacity: 0, y: -4 }}`
-and `exit={{ opacity: 0 }}`.
+**Render location:** The ghost has its own keyed `motion.div` inside the
+`AnimatePresence` block. The existing block condition changes from
+`pendingSteps.length > 0` to `pendingSteps.length > 0 || showGhost` so the
+block renders when all steps have been resolved but the ghost should still
+appear. The ghost renders first (above any remaining `ConfirmStepCard`s):
+
+```tsx
+<AnimatePresence>
+  {(pendingSteps.length > 0 || showGhost) && (
+    <motion.div
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      className="px-4 pt-4 pb-2"
+    >
+      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">
+        Bestaetigung erforderlich
+      </div>
+      <div className="space-y-2">
+        {showGhost && (
+          <motion.div key={`ghost-${lastTransitionStepId}`}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <TransitionGhostCard ... />
+          </motion.div>
+        )}
+        {pendingSteps.map((step) => (
+          <ConfirmStepCard key={step.step_id} ... />
+        ))}
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+The section label "Bestaetigung erforderlich" shows when `pendingSteps.length > 0`
+(unchanged meaning). When only the ghost is present the label is suppressed —
+replace with a bare ghost-only container with no header label.
 
 **Lifecycle:** Server-state-driven — no local timers. Ghost disappears when the
 backend's next response changes `last_transition_step_id` (new decision) or
@@ -161,29 +214,40 @@ not need to travel via the event bus for the surfaces in this spec.
 
 **After:**
 ```tsx
-{isRunning && (
-  <div className="mb-2 mt-1">
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-1.5 rounded-full bg-blue-400/80 animate-pulse shrink-0" />
-      <span className="text-sm text-white/78">
-        {workSessionSummary.next_message
-          ?? workSessionSummary.running_step_title
-          ?? getSessionBodyText(workSessionSummary)}
-      </span>
-    </div>
-    {workSessionSummary.next_message && workSessionSummary.running_step_title && (
-      <div className="ml-[14px] mt-1 text-[11px] text-white/38">
-        {workSessionSummary.running_step_title}
+{isRunning && (() => {
+  // next_message is only used as primary body when it is post-decision:
+  // i.e. last_transition_step_id is set, meaning a confirm/skip just happened.
+  // During normal running (no recent decision), next_message may be generic
+  // ("Mora fuehrt den naechsten Schritt aus") — in that case running_step_title
+  // is the more precise primary signal.
+  const isPostDecision = !!workSessionSummary.last_transition_step_id;
+  const primaryText = isPostDecision && workSessionSummary.next_message
+    ? workSessionSummary.next_message
+    : (workSessionSummary.running_step_title ?? getSessionBodyText(workSessionSummary));
+  const secondaryText = isPostDecision && workSessionSummary.next_message
+    ? workSessionSummary.running_step_title   // may be undefined → not rendered
+    : null;
+  return (
+    <div className="mb-2 mt-1">
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 w-1.5 rounded-full bg-blue-400/80 animate-pulse shrink-0" />
+        <span className="text-sm text-white/78">{primaryText}</span>
       </div>
-    )}
-  </div>
-)}
+      {secondaryText && (
+        <div className="ml-[14px] mt-1 text-[11px] text-white/38">
+          {secondaryText}
+        </div>
+      )}
+    </div>
+  );
+})()}
 ```
 
 **Behaviour:**
-- `next_message` present → primary body, `running_step_title` as secondary dim line
-- `next_message` absent → `running_step_title ?? getSessionBodyText()` — unchanged
-  existing behaviour
+- Post-decision (`last_transition_step_id` set) AND `next_message` present →
+  `next_message` primary, `running_step_title` secondary dim line
+- All other running states → `running_step_title ?? getSessionBodyText()` —
+  unchanged existing behaviour
 
 ---
 
@@ -197,13 +261,30 @@ const [activeSessionTitle, setActiveSessionTitle] = useState<string | null>(null
 const [activeSessionState, setActiveSessionState] = useState<string | null>(null);  // new
 ```
 
-**Sync from event bus** (inside the existing `WORK_SESSION_PLAN_EVENT` listener):
+**Sync from event bus** — the existing `WORK_SESSION_PLAN_EVENT` listener in
+ChatPane has no `planId` guard today. The full listener body must be **replaced**
+(not appended) to add the guard and sync both fields atomically:
+
 ```ts
-if (detail.planId === activePlanId) {
-  setActiveSessionTitle(detail.title);
-  setActiveSessionState(detail.state);   // add this line
-}
+// Replace existing listener body entirely:
+const handlePlanEvent = (e: Event) => {
+  const detail = (e as CustomEvent<WorkSessionShellSummary>).detail;
+  if (!detail || !activePlanId || detail.planId !== activePlanId) return;
+  setActiveSessionTitle(detail.title ?? null);
+  setActiveSessionState(detail.state ?? null);  // new
+};
+window.addEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
+return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
 ```
+
+`activeSessionTitle` and `activeSessionState` must use the same `planId` guard —
+they must never arrive from different events. Without the guard both could reflect
+a different plan if multiple WorkSessionPanes are open simultaneously.
+
+`detail.state` is a required field on `WorkSessionShellSummary` (non-optional).
+It is present on all three ChatPane dispatch sites because all three call
+`dispatchWorkSessionPlan` with `state: plan.state`. The sync is complete across
+all dispatch sites.
 
 **Pill rendering** (replaces current violet-only pill):
 ```tsx
@@ -255,9 +336,9 @@ not drive navigation or dispatch actions.
 
 | File | Count | What it covers |
 |---|---|---|
-| `__tests__/components/panes/WorkSessionPane.ghost.test.tsx` | 4 | ghost appears when `last_transition_step_id` set + step not pending; ghost absent when step still pending; ghost uses `last_transition_message` over `next_message`; ghost absent when no `last_transition_step_id` |
-| `__tests__/components/os/shell/MoraShell.running-body.test.tsx` | 3 | `next_message` shown as primary when present; `running_step_title` shown as secondary when both present; falls back to `running_step_title` when `next_message` absent |
-| `__tests__/components/panes/ChatPane.pill-state.test.tsx` | 4 | blue dot + "Laeuft" for running; amber dot + "Wartet" for waiting_confirmation; dim + "Abgeschlossen" for done; violet + "Aktiver Plan:" for default |
+| `__tests__/components/panes/WorkSessionPane.ghost.test.tsx` | 6 | ghost appears when `last_transition_step_id` set + step is `done`; ghost appears when step is `skipped`; ghost absent when step is `pending_confirmation` (not yet acted); ghost absent when step is `running` or `pending` (non-decision state — prevents false ghost); ghost absent when `last_transition_step_id` not in `plan.steps` (orphan step_id, silent no-op); ghost absent when no `last_transition_step_id` |
+| `__tests__/components/os/shell/MoraShell.running-body.test.tsx` | 4 | `next_message` shown as primary when `last_transition_step_id` set; `running_step_title` shown as secondary in that case; falls back to `running_step_title` when `next_message` absent even if `last_transition_step_id` set; falls back to `running_step_title` when `last_transition_step_id` not set (normal running) |
+| `__tests__/components/panes/ChatPane.pill-state.test.tsx` | 5 | blue dot + "Laeuft" for running; amber dot + "Wartet" for waiting_confirmation; dim + "Abgeschlossen" for done; violet + "Aktiver Plan:" for default; violet + title shown when `activeSessionState` is null (before first event fires — startup ordering) |
 
 **Existing tests unchanged.** Full suite baseline: 252 passing.
 
