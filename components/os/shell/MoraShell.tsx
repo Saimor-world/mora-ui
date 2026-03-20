@@ -93,6 +93,7 @@ import {
     type WorkSessionShellSummary,
     getSessionBodyText,
     getSessionExtendedNote,
+    getSessionRunningSignal,
 } from '@/lib/utils/moraExplanation';
 
 // Naming Conflict Modal (409 UX)
@@ -1011,6 +1012,7 @@ export const MoraShell: React.FC = () => {
                         const isRunning = workSessionSummary.state === 'running';
                         const isWaiting = workSessionSummary.state === 'waiting_confirmation';
                         const isDone    = workSessionSummary.state === 'done';
+                        const runningSignal = isRunning ? getSessionRunningSignal(workSessionSummary) : null;
                         return (
                     <div className={`rounded-[24px] border bg-black/70 backdrop-blur-xl shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden ${isRunning ? 'border-blue-400/28' : isWaiting ? 'border-amber-400/28' : isDone ? 'border-white/8' : 'border-violet-400/18'}`}>
                         <div className="flex items-start gap-4 px-5 py-4">
@@ -1024,11 +1026,18 @@ export const MoraShell: React.FC = () => {
                                             {isRunning ? 'Laeuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora zeigt dir'}
                                         </div>
                                         {isRunning && (
-                                            <div className="flex items-center gap-2 mb-2 mt-1">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-blue-400/80 animate-pulse shrink-0" />
-                                                <span className="text-sm text-white/78">
-                                                    {workSessionSummary.running_step_title ?? getSessionBodyText(workSessionSummary)}
-                                                </span>
+                                            <div className="mb-2 mt-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-400/80 animate-pulse shrink-0" />
+                                                    <span className="text-sm text-white/78">
+                                                        {runningSignal?.primaryText}
+                                                    </span>
+                                                </div>
+                                                {runningSignal?.secondaryText && (
+                                                    <div className="ml-[14px] mt-1 text-[11px] text-white/38">
+                                                        {runningSignal.secondaryText}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                         {isWaiting && (

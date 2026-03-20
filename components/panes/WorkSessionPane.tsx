@@ -529,6 +529,37 @@ function ConfirmStepCard({
     );
 }
 
+function TransitionGhostCard({
+    stepTitle,
+    transitionType,
+    message,
+    segmentContext,
+}: {
+    stepTitle: string;
+    transitionType: 'confirmed' | 'skipped' | string;
+    message: string;
+    segmentContext?: string;
+}) {
+    const isConfirmed = transitionType === 'confirmed';
+    const tone = isConfirmed ? 'emerald' : 'slate';
+    const label = isConfirmed ? 'Bestaetigt' : 'Uebersprungen';
+    const Icon = isConfirmed ? CheckCircle2 : SkipForward;
+    const body = compactText(message, 220) || (isConfirmed ? 'Schritt bestaetigt.' : 'Schritt uebersprungen.');
+    const footer = segmentContext ? `Weiter in ${segmentContext}.` : undefined;
+
+    return (
+        <CommandReceipt
+            tone={tone}
+            icon={Icon}
+            label={label}
+            title={<span className="text-xs text-white/38">{stepTitle}</span>}
+            body={<span className="text-[11px] leading-relaxed text-blue-200/55">{body}</span>}
+            footer={footer}
+            className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
+        />
+    );
+}
+
 export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
@@ -607,6 +638,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                     : undefined,
             next_label:   plan.execution?.next_label,
             next_message: plan.execution?.next_message,
+            last_transition_step_id: plan.execution?.last_transition_step_id,
         });
     }, [plan, setActiveSession]);
 
@@ -667,6 +699,17 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     const runningCount = plan?.stats?.running_steps ?? plan?.steps.filter((s) => s.status === 'running').length ?? 0;
     const skippedCount = plan?.stats?.skipped_steps ?? plan?.steps.filter((s) => s.status === 'skipped').length ?? 0;
     const totalCount = plan?.stats?.total_steps ?? plan?.steps.length ?? 0;
+    const lastTransitionStepId = plan?.execution?.last_transition_step_id;
+    const ghostStep = lastTransitionStepId
+        ? plan?.steps.find((step) => step.step_id === lastTransitionStepId)
+        : null;
+    const showGhost = !!ghostStep && (ghostStep.status === 'done' || ghostStep.status === 'skipped');
+    const ghostMessage = compactText(
+        plan?.execution?.last_transition_message ?? plan?.execution?.next_message ?? '',
+        220,
+    ) || '';
+    const ghostTransitionType = plan?.execution?.last_transition_type ?? (ghostStep?.status === 'skipped' ? 'skipped' : 'confirmed');
+    const ghostSegmentContext = plan?.execution?.current_segment_origin_label ?? undefined;
 
     return (
         <GlassPanel
@@ -745,17 +788,34 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
 
                         <AnimatePresence>
-                            {pendingSteps.length > 0 && (
+                            {(pendingSteps.length > 0 || showGhost) && (
                                 <motion.div
                                     initial={{ opacity: 0, y: -4 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -4 }}
                                     className="px-4 pt-4 pb-2"
                                 >
-                                    <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">
-                                        Bestaetigung erforderlich
-                                    </div>
+                                    {pendingSteps.length > 0 && (
+                                        <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">
+                                            Bestaetigung erforderlich
+                                        </div>
+                                    )}
                                     <div className="space-y-2">
+                                        {showGhost && ghostStep && (
+                                            <motion.div
+                                                key={`ghost-${lastTransitionStepId}`}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                            >
+                                                <TransitionGhostCard
+                                                    stepTitle={ghostStep.title}
+                                                    transitionType={ghostTransitionType}
+                                                    message={ghostMessage}
+                                                    segmentContext={ghostSegmentContext}
+                                                />
+                                            </motion.div>
+                                        )}
                                         {pendingSteps.map((step) => (
                                             <ConfirmStepCard
                                                 key={step.step_id}

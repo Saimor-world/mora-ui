@@ -63,11 +63,12 @@ export interface WorkSessionShellSummary {
     };
     transparencyNote?: string;
     // Execution focus (V5+):
-    running_step_title?: string;         // execution.current_step_title — only set when state === 'running'
-    pending_confirmation_title?: string; // execution.pending_confirmation_title — only set when state === 'waiting_confirmation'
-    /** "What's next" — primary source for waiting/continue emphasis */
+    running_step_title?: string;         // execution.current_step_title - only set when state === 'running'
+    pending_confirmation_title?: string; // execution.pending_confirmation_title - only set when state === 'waiting_confirmation'
+    /** "What's next" - primary source for waiting/continue emphasis */
     next_label?: string;                 // execution.next_label
-    next_message?: string;              // execution.next_message
+    next_message?: string;               // execution.next_message
+    last_transition_step_id?: string;
 }
 
 export function dispatchMyceliumReviewReady(detail: MyceliumShellSummary) {
@@ -98,8 +99,6 @@ export function getSessionBodyText(s: WorkSessionShellSummary): string {
         return 'Arbeitsplan nicht abgeschlossen.';
     }
     if (s.state === 'partial') {
-        const completed = s.stats?.completed_steps ?? 0;
-        const total = s.stats?.total_steps ?? 0;
         return total > 0
             ? `${completed} von ${total} Schritten abgeschlossen (partiell).`
             : 'Arbeitsplan partiell abgeschlossen.';
@@ -149,4 +148,25 @@ export function getSessionExtendedNote(s: WorkSessionShellSummary): string | nul
             : `Navigation hat ${added} Schritte zum Verlauf ergaenzt.`;
     }
     return null;
+}
+
+export function getSessionRunningSignal(s: WorkSessionShellSummary): {
+    isPostDecision: boolean;
+    primaryText: string;
+    secondaryText: string | null;
+} {
+    const isPostDecision = !!s.last_transition_step_id;
+    if (isPostDecision && s.next_message) {
+        return {
+            isPostDecision,
+            primaryText: s.next_message,
+            secondaryText: s.running_step_title ?? null,
+        };
+    }
+
+    return {
+        isPostDecision,
+        primaryText: s.running_step_title ?? getSessionBodyText(s),
+        secondaryText: null,
+    };
 }
