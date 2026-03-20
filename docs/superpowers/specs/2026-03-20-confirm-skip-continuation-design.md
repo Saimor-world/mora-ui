@@ -154,13 +154,20 @@ appear. The ghost renders first (above any remaining `ConfirmStepCard`s):
       exit={{ opacity: 0, y: -4 }}
       className="px-4 pt-4 pb-2"
     >
-      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">
-        Bestaetigung erforderlich
-      </div>
+      {/* Label only when there are actual pending steps — ghost-only has no label */}
+      {pendingSteps.length > 0 && (
+        <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">
+          Bestaetigung erforderlich
+        </div>
+      )}
       <div className="space-y-2">
         {showGhost && (
-          <motion.div key={`ghost-${lastTransitionStepId}`}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            key={`ghost-${lastTransitionStepId}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <TransitionGhostCard ... />
           </motion.div>
         )}
@@ -173,9 +180,11 @@ appear. The ghost renders first (above any remaining `ConfirmStepCard`s):
 </AnimatePresence>
 ```
 
-The section label "Bestaetigung erforderlich" shows when `pendingSteps.length > 0`
-(unchanged meaning). When only the ghost is present the label is suppressed —
-replace with a bare ghost-only container with no header label.
+When transitioning from ghost-only back to a new pending step, the label pops
+in without animation (it's inside an already-mounted `motion.div`). This is
+acceptable — the label appearing simultaneously with the new card is coherent.
+`lastTransitionStepId` is in scope at the render site (computed at the top of
+the render block alongside `showGhost`).
 
 **Lifecycle:** Server-state-driven — no local timers. Ghost disappears when the
 backend's next response changes `last_transition_step_id` (new decision) or
@@ -263,18 +272,25 @@ const [activeSessionState, setActiveSessionState] = useState<string | null>(null
 
 **Sync from event bus** — the existing `WORK_SESSION_PLAN_EVENT` listener in
 ChatPane has no `planId` guard today. The full listener body must be **replaced**
-(not appended) to add the guard and sync both fields atomically:
+(not appended) to add the guard and sync both fields atomically.
+
+The listener closes over `activePlanId` from state. To prevent stale-closure
+bugs (old plan ID captured at mount), the `useEffect` **dependency array must
+include `activePlanId`**. When `activePlanId` changes (new plan opened), the
+effect re-registers a fresh listener with the current ID.
 
 ```ts
-// Replace existing listener body entirely:
-const handlePlanEvent = (e: Event) => {
-  const detail = (e as CustomEvent<WorkSessionShellSummary>).detail;
-  if (!detail || !activePlanId || detail.planId !== activePlanId) return;
-  setActiveSessionTitle(detail.title ?? null);
-  setActiveSessionState(detail.state ?? null);  // new
-};
-window.addEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
-return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
+// Replace existing listener useEffect entirely — note activePlanId in deps:
+useEffect(() => {
+  const handlePlanEvent = (e: Event) => {
+    const detail = (e as CustomEvent<WorkSessionShellSummary>).detail;
+    if (!detail || !activePlanId || detail.planId !== activePlanId) return;
+    setActiveSessionTitle(detail.title ?? null);
+    setActiveSessionState(detail.state ?? null);  // new
+  };
+  window.addEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
+  return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handlePlanEvent as EventListener);
+}, [activePlanId]);  // ← replaces existing [] — critical for correct guard
 ```
 
 `activeSessionTitle` and `activeSessionState` must use the same `planId` guard —
@@ -285,6 +301,18 @@ a different plan if multiple WorkSessionPanes are open simultaneously.
 It is present on all three ChatPane dispatch sites because all three call
 `dispatchWorkSessionPlan` with `state: plan.state`. The sync is complete across
 all dispatch sites.
+
+**ChatPane Site 1 and `last_transition_step_id`:** Site 1 fetches the full
+`WorkSessionPlan` including `plan.execution?.last_transition_step_id`, so the
+data is available. However, Site 1 fires when a new agent response arrives — at
+that moment `last_transition_step_id` is absent or refers to a decision on the
+prior session, not the current one. Dispatching it from Site 1 would create
+misleading `isPostDecision` signals in MoraShell on plan creation. **Site 1
+deliberately omits this field.** WorkSessionPane's 3 s poller is the authoritative
+source — it dispatches `last_transition_step_id` on every poll cycle, so the
+shell card receives the correct value within 3 s of the first WorkSessionPane
+render. If WorkSessionPane is not open, the MoraShell running body falls back to
+`running_step_title` (normal behaviour) — accepted degradation.
 
 **Pill rendering** (replaces current violet-only pill):
 ```tsx
