@@ -41,7 +41,7 @@ export const MemoryBadge: React.FC<MemoryBadgeProps> = ({
                     ? "p-1.5 bg-violet-500/20 hover:bg-violet-500/30"
                     : "px-2.5 py-1 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20"
             }`}
-            title={`${pendingCount} Insight${pendingCount !== 1 ? 's' : ''} zur Prüfung`}
+            title={`${pendingCount} Konto-Eintraege zur Pruefung`}
         >
             <Brain className={`text-violet-400 ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`} />
 

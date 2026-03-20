@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import type { WorkSessionPlan, WorkSessionSegmentSummary, WorkSessionStep, WorkSessionStepStatus } from '@/lib/api/coreClient';
@@ -650,6 +651,15 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     const pendingSteps = plan?.steps.filter((s) => s.status === 'pending_confirmation') ?? [];
     const timelineSteps = plan?.steps.filter((s) => s.status !== 'pending_confirmation') ?? [];
     const stateBadge = plan ? (planStateLabels[plan.state] ?? { label: plan.state, cls: 'bg-white/[0.05] text-white/40 border-white/10' }) : null;
+    const receiptTone = plan?.state === 'running'
+        ? 'blue'
+        : plan?.state === 'waiting_confirmation'
+            ? 'amber'
+            : plan?.state === 'done'
+                ? 'emerald'
+                : plan?.state === 'failed'
+                    ? 'red'
+                    : 'violet';
 
     const readCount = plan?.stats?.read_steps ?? timelineSteps.filter((s) => !isWriteKind(s.kind)).length;
     const writeCount = plan?.stats?.write_steps ?? timelineSteps.filter((s) => isWriteKind(s.kind)).length;
@@ -681,79 +691,57 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
 
                 {!isLoading && error && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
-                        <div>
-                            <XCircle size={22} className="mx-auto mb-2 text-red-400/50" />
-                            <p className="text-sm text-white/45">{error}</p>
-                        </div>
+                        <CommandReceipt
+                            tone="red"
+                            icon={XCircle}
+                            label="Arbeitsplan nicht erreichbar"
+                            title={error}
+                            body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schliessen und erneut oeffnen, wenn der Fehler bleibt."
+                            chips={[
+                                { label: 'Keine Aktion ausgefuehrt' },
+                                { label: 'Datenstand bleibt erhalten' },
+                            ]}
+                            className="w-full max-w-xl"
+                        />
                     </div>
                 )}
 
                 {!isLoading && !error && !plan && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
-                        <p className="text-sm text-white/25">Kein Plan geladen.</p>
+                        <CommandReceipt
+                            tone="slate"
+                            label="Arbeitsplan"
+                            title="Kein Plan geladen."
+                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geoeffnet wurde, erscheint er in dieser Flaeche."
+                            chips={[
+                                { label: 'Wartet auf Plan' },
+                                { label: 'Universe bleibt aktiv' },
+                            ]}
+                            className="w-full max-w-xl"
+                        />
                     </div>
                 )}
 
                 {plan && (
                     <div className="flex-1 overflow-y-auto">
                         <div className="px-5 pt-5 pb-4 border-b border-white/[0.05]">
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                                <h2 className="text-sm font-semibold text-white/90 leading-snug">{plan.title}</h2>
-                                {stateBadge && (
-                                    <span className={`shrink-0 text-[10px] uppercase tracking-[0.14em] px-2 py-0.5 rounded-full border ${stateBadge.cls}`}>
-                                        {stateBadge.label}
-                                    </span>
-                                )}
-                            </div>
-
-                            {plan.summary && <p className="text-xs text-white/50 leading-relaxed mb-3">{plan.summary}</p>}
-
-                            <div className="flex flex-wrap gap-1.5">
-                                {plan.scope?.view_level && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-400/20 text-cyan-200/65">
-                                        {plan.scope.view_level}
-                                    </span>
-                                )}
-                                {plan.scope?.active_entity_type && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-white/35">
-                                        {plan.scope.active_entity_type}
-                                    </span>
-                                )}
-                                {plan.mode && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/10 text-white/30">
-                                        {plan.mode}
-                                    </span>
-                                )}
-                                {readCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/28 flex items-center gap-1">
-                                        <Eye size={9} />
-                                        {readCount}
-                                    </span>
-                                )}
-                                {writeCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/[0.08] border border-orange-400/15 text-orange-200/55 flex items-center gap-1">
-                                        <Pencil size={9} />
-                                        {writeCount}
-                                    </span>
-                                )}
-                                {runningCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/[0.08] border border-blue-400/15 text-blue-200/55 flex items-center gap-1">
-                                        <PlayCircle size={9} />
-                                        {runningCount}
-                                    </span>
-                                )}
-                                {skippedCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/32 flex items-center gap-1">
-                                        <SkipForward size={9} />
-                                        {skippedCount}
-                                    </span>
-                                )}
-                                {completedCount !== undefined && totalCount > 0 && completedCount > 0 && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/[0.06] border border-emerald-400/15 text-emerald-300/50">
-                                        {completedCount}/{totalCount}
-                                    </span>
-                                )}
-                            </div>
+                            <CommandReceipt
+                                tone={receiptTone}
+                                label={stateBadge?.label || 'Arbeitsplan'}
+                                title={plan.title}
+                                body={plan.summary || 'Der Plan ist geladen und Mora zeigt hier die aktuelle Arbeit und ihre Statuslage.'}
+                                chips={[
+                                    ...(plan.scope?.view_level ? [{ label: `Sicht: ${plan.scope.view_level}` }] : []),
+                                    ...(plan.scope?.active_entity_type ? [{ label: `Objekt: ${plan.scope.active_entity_type}` }] : []),
+                                    ...(plan.mode ? [{ label: `Modus: ${plan.mode}` }] : []),
+                                    ...(readCount > 0 ? [{ label: `Lesen ${readCount}` }] : []),
+                                    ...(writeCount > 0 ? [{ label: `Schreiben ${writeCount}` }] : []),
+                                    ...(runningCount > 0 ? [{ label: `Laeuft ${runningCount}` }] : []),
+                                    ...(skippedCount > 0 ? [{ label: `Uebersprungen ${skippedCount}` }] : []),
+                                    ...(completedCount !== undefined && totalCount > 0 && completedCount > 0 ? [{ label: `${completedCount}/${totalCount} fertig`, tone: 'emerald' as const }] : []),
+                                ]}
+                                footer={plan.transparency_note || 'Mora zeigt nur den Zustand, den der Kern geliefert hat. Wenn etwas unklar bleibt, liegt das am Datenstand und nicht an einer versteckten Aktion.'}
+                            />
                         </div>
 
                         <AnimatePresence>

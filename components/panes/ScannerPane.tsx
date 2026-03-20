@@ -361,7 +361,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             // Global Mycelium intake must stay reviewable; silent auto-execution hides routing decisions.
             const autoExecute = intakeSeed.source === 'mycelium'
                 ? false
-                : (user?.settings?.autoExecuteActions ?? true);
+                : (user?.settings?.autoExecuteActions || true);
             const response = await requestCreateNodeFromFile(uploaded.id, {
                 autoExecute,
                 batchId: intakeSeed.batchId,
@@ -984,7 +984,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                             )}
                                             className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
                                         >
-                                            Datei oeffnen â†’
+                                            Datei oeffnen
                                         </button>
                                     </div>
                                 )}
@@ -1167,4 +1167,3 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         </GlassPanel>
     );
 };
-

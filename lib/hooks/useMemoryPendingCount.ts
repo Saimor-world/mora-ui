@@ -6,9 +6,10 @@ import { useMoraStore } from "@/lib/store/moraState";
 
 export function useMemoryPendingCount(manualCompanyId?: string | null) {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const companies = useMoraStore((s) => s.companies);
-    const safeCompanies = Array.isArray(companies) ? companies : [];
-    const scopedCompanyId = manualCompanyId || activeCompanyId || safeCompanies[0]?.id || null;
+    const scopedCompanyId =
+        manualCompanyId !== undefined
+            ? manualCompanyId
+            : activeCompanyId ?? null;
     const [pendingCount, setPendingCount] = useState(0);
 
     const load = useCallback(async () => {

@@ -516,10 +516,9 @@ describe('getMemoryOverview', () => {
         expect(result?.metrics.structured_facts).toBe(42);
     });
 
-    it('returns null on error (isOptional)', async () => {
+    it('throws on error for this critical surface', async () => {
         mockFetchError(500);
-        const result = await getMemoryOverview('co-err');
-        expect(result).toBeNull();
+        await expect(getMemoryOverview('co-err')).rejects.toThrow();
     });
 
     it('throws when company_id is empty', async () => {

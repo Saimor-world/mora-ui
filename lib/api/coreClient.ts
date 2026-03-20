@@ -1080,21 +1080,50 @@ export interface MemoryOverviewMetrics {
     pending_reviews: number;
     episodic_total: number;
     episodic_memories?: Record<string, number>;
+    ownership_breakdown?: {
+        personal_recent?: number;
+        personal_pending?: number;
+        company_structured_facts?: number;
+    };
 }
 
 export interface MemoryOverview {
     metrics: MemoryOverviewMetrics;
+    memory_model?: {
+        chat_memory_scope?: string;
+        shared_operational_scope?: string;
+        recent_scope?: string;
+        pending_scope?: string;
+        metrics_scope?: string;
+    };
+    ownership?: {
+        recent?: string;
+        pending?: string;
+        metrics?: string;
+        user_id?: string;
+        company_id?: string;
+    };
 }
 
 export async function getMemoryOverview(companyId: string): Promise<MemoryOverview | null> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;
-    // v3: envelope unwrap handled transparently in coreRequest()
-    return coreGet(`/v3/memory/overview${companyQuery}`, { isOptional: true });
+    return coreGet(`/v3/memory/overview${companyQuery}`);
 }
 
 // GET /v3/memory/debug/scope - Diagnostics endpoint (dev mode or ?diagnostics=1)
 export interface MemoryDebugScope {
+    memory_model?: {
+        chat_memory_scope?: string;
+        shared_operational_scope?: string;
+    };
+    ownership?: {
+        recent?: string;
+        pending?: string;
+        legacy_memories?: string;
+        user_id?: string;
+        company_id?: string;
+    };
     scope: { type: string; tenant_id?: string; company_id?: string; user_id?: string };
     counts: {
         mem_episodic: number;
@@ -1420,6 +1449,12 @@ export interface WorkSessionPlan {
     state: WorkSessionPlanState;
     title: string;
     summary?: string;
+    ownership?: {
+        session_scope?: string;
+        shared_operational_scope?: string;
+        actor_user_id?: string;
+        company_id?: string;
+    };
     scope: WorkSessionScope;
     /** Aggregate step counters — use these instead of computing from steps[] */
     stats?: WorkSessionStats;
@@ -1436,12 +1471,12 @@ export interface WorkSessionPlan {
 
 /** Fetch a work-session plan by ID (GET /v3/work-session/plan/{id}) */
 export async function fetchWorkSessionPlan(planId: string): Promise<WorkSessionPlan | null> {
-    return coreGet(`/v3/work-session/plan/${encodeURIComponent(planId)}`, { isOptional: true });
+    return coreGet(`/v3/work-session/plan/${encodeURIComponent(planId)}`);
 }
 
 /** Create / start a work-session plan (POST /v3/work-session/plan) */
 export async function postWorkSessionPlan(
     params: Record<string, unknown>
 ): Promise<WorkSessionPlan | null> {
-    return corePost('/v3/work-session/plan', params, { isOptional: true });
+    return corePost('/v3/work-session/plan', params);
 }

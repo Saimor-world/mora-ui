@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { useMoraStore } from '@/lib/store/moraState';
+import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import {
     searchMemory,
     learnInsight,
@@ -599,9 +600,8 @@ const DiagnosticsPanel: React.FC<{
 
 export const MemorySidebar: React.FC = () => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const companies = useMoraStore((s) => s.companies);
     const user = useMoraStore((s) => (s as any).user);
-    const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
+    const resolvedCompanyId = activeCompanyId ?? null;
     const mod = usePlatformModifier();
     const { isOpen, isCollapsed, setOpen, setCollapsed } = useMemorySidebarStore();
     const { pendingCount, pendingItems, refresh, approve, reject, debugScope } = useMemory();
@@ -728,7 +728,9 @@ export const MemorySidebar: React.FC = () => {
                                     <div className="flex items-center justify-between p-3 border-b border-white/5">
                                         <div className="flex items-center gap-2">
                                             <Brain size={16} className="text-violet-400" />
-                                            <span className="text-xs font-medium text-white/80">Memory</span>
+                                            <span className="text-xs font-medium text-white/80">
+                                                {resolvedCompanyId ? 'Firmen-Memory' : 'Konto-Gedächtnis'}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button
@@ -772,6 +774,23 @@ export const MemorySidebar: React.FC = () => {
                                         />
                                     ) : (<>
 
+                                        <div className="px-3 pt-3">
+                                            <CommandReceipt
+                                                tone={resolvedCompanyId ? 'cyan' : 'amber'}
+                                                icon={Brain}
+                                                label={resolvedCompanyId ? 'Getrennte Speicher' : 'Kein Firmenkontext'}
+                                                title={resolvedCompanyId
+                                                    ? 'Konto-Gedächtnis und Firmenmetriken werden getrennt gezeigt.'
+                                                    : 'Konto-Gedächtnis bleibt lokal. Firmenmetriken und Freigaben sind ausgeblendet, bis eine Company aktiv ist.'}
+                                                chips={[
+                                                    { label: 'Kürzlich: Konto' },
+                                                    { label: 'Wartend: Konto' },
+                                                    { label: 'Metriken: Company', tone: resolvedCompanyId ? 'cyan' : 'slate' },
+                                                ]}
+                                                footer="Mora trennt hier bewusst zwischen persönlichen Verläufen und dem aktuellen Workspace."
+                                            />
+                                        </div>
+
                                         {ctx.isOperational === null ? null : ctx.isOperational ? (
                                             <>
                                                 {/* Quick Input */}
@@ -783,7 +802,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Keine aktive Company gewaehlt. Memory ist pro Company isoliert.
+                                                        Keine aktive Company gewaehlt. Konto-Gedächtnis bleibt lokal; Firmenmetriken und Freigaben werden erst mit Workspace angezeigt.
                                                     </div>
                                                 )}
 

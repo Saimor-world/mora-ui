@@ -261,7 +261,7 @@ export const Dock = () => {
         { icon: Home, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zur Universe-Uebersicht' },
         { icon: Sparkles, label: 'Mora Nexus', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
         { icon: MessageCircle, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
-        { icon: Brain, label: 'Memory', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Lernspeicher', hidden: pendingCount === 0 },
+        { icon: Brain, label: 'Memory', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Konto-Gedächtnis', hidden: pendingCount === 0 },
         { icon: FolderOpen, label: 'Finder', shortcut: `${mod}+F`, action: 'finder', description: 'Dateien & Ordner' },
         { icon: Users, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
         { icon: FileText, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
@@ -633,21 +633,26 @@ export const Dock = () => {
                             </span>
                             <span className={`text-xs ${isStandardMode ? 'text-gray-500' : 'text-white/60'
                                 }`}>
-                                {viewMode === 'demo' ? 'Demo aktiv' : 'Bereit'}
+                                {activePlanId ? 'Arbeitsplan offen' : viewMode === 'demo' ? 'Demo aktiv' : 'Bereit'}
                             </span>
-                            {/* Status indicator */}
-                            <div className="flex items-center gap-1.5 mt-1">
-                                <div
-                                    className={`w-2 h-2 rounded-full dock-dot-pulse ${orbState === 'thinking' ? 'bg-blue-400' :
-                                        orbState === 'alert' ? 'bg-red-400' :
-                                            'bg-emerald-400'
-                                        }`}
-                                />
-                                <span className="text-[10px] text-white/40">
-                                    {orbState === 'thinking' ? 'Denkt...' :
-                                        orbState === 'alert' ? 'Warnung' :
-                                            'Online'}
+                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-gray-200 text-gray-500 bg-gray-100' : 'border-white/10 text-white/55 bg-white/[0.04]'}`}>
+                                    {orbState === 'thinking'
+                                        ? 'Mora liest Kontext'
+                                        : orbState === 'alert'
+                                            ? 'Mora wartet auf Klaerung'
+                                            : 'Mora ist bereit'}
                                 </span>
+                                {activePlanId && (
+                                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-blue-200 text-blue-700 bg-blue-50' : 'border-emerald-400/20 text-emerald-100/80 bg-emerald-500/10'}`}>
+                                        Plan aktiv
+                                    </span>
+                                )}
+                                {pendingCount > 0 && (
+                                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-violet-200 text-violet-700 bg-violet-50' : 'border-violet-400/20 text-violet-100/80 bg-violet-500/10'}`}>
+                                        Memory {pendingCount}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

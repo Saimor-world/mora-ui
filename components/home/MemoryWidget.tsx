@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Brain, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useMoraStore } from '@/lib/store/moraState';
 
 /**
  * MEMORY DASHBOARD WIDGET
@@ -22,7 +23,9 @@ interface MemoryWidgetProps {
 
 export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) => {
     const { metrics, pendingCount, isLoading } = useMemory();
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const { openPane } = usePaneStore();
+    const isAccountScoped = !activeCompanyId;
 
     // Berechne Gesamtzahl der Erinnerungen
     const totalMemories = useMemo(() => {
@@ -78,19 +81,15 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                 ${className}
             `}
         >
-            {/* Glassmorphism Shine */}
             <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-            {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                            <Brain className="w-4.5 h-4.5 text-violet-400" />
+                        <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${isAccountScoped ? 'bg-amber-500/10 border-amber-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>
+                            <Brain className={`w-4.5 h-4.5 ${isAccountScoped ? 'text-amber-400' : 'text-violet-400'}`} />
                         </div>
-
-                        {/* Pulsierender Indikator wenn pending > 0 */}
-                        {pendingCount > 0 && (
+                        {pendingCount > 0 && !isAccountScoped && (
                             <span className="absolute -top-1 -right-1 flex h-3 w-3">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
                                 <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500" />
@@ -99,15 +98,14 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                     </div>
                     <div>
                         <h3 className="text-xs font-medium text-white/80 tracking-wide">
-                            Gedaechtnis
+                            {isAccountScoped ? 'Konto-Gedächtnis' : 'Gedächtnis'}
                         </h3>
                         <p className="text-[9px] text-white/30 uppercase tracking-widest">
-                            Memory Hub
+                            {isAccountScoped ? 'Firmenkontext fehlt' : 'Memory Hub'}
                         </p>
                     </div>
                 </div>
 
-                {/* Status Badge */}
                 {isLoading ? (
                     <div className="w-4 h-4 border-2 border-white/20 border-t-violet-400 rounded-full animate-spin" />
                 ) : pendingCount > 0 ? (
@@ -122,117 +120,66 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                 )}
             </div>
 
-            {/* Stats Grid */}
+            {isAccountScoped && (
+                <div className="mb-4 rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-xs text-white/45 leading-relaxed">
+                    Keine aktive Company gewählt. Konto-Gedächtnis bleibt lokal; Firmenmetriken und Freigaben werden erst mit Workspace angezeigt.
+                </div>
+            )}
+
             <div className="grid grid-cols-3 gap-3 mb-4">
-                {/* Erinnerungen */}
                 <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.03]">
-                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">
-                        Erinnerungen
-                    </div>
-                    <div className="text-lg font-mono text-white/90">
-                        {isLoading ? '-' : totalMemories}
-                    </div>
+                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Erinnerungen</div>
+                    <div className="text-lg font-mono text-white/90">{isLoading ? '-' : totalMemories}</div>
                 </div>
-
-                {/* Pending */}
-                <div className={`rounded-xl p-3 border ${
-                    pendingCount > 0
-                        ? 'bg-violet-500/5 border-violet-500/10'
-                        : 'bg-white/[0.03] border-white/[0.03]'
-                }`}>
-                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">
-                        Ausstehend
-                    </div>
-                    <div className={`text-lg font-mono ${
-                        pendingCount > 0 ? 'text-violet-400' : 'text-white/90'
-                    }`}>
-                        {isLoading ? '-' : pendingCount}
-                    </div>
+                <div className={`rounded-xl p-3 border ${pendingCount > 0 ? 'bg-violet-500/5 border-violet-500/10' : 'bg-white/[0.03] border-white/[0.03]'}`}>
+                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">Ausstehend</div>
+                    <div className={`text-lg font-mono ${pendingCount > 0 ? 'text-violet-400' : 'text-white/90'}`}>{isLoading ? '-' : pendingCount}</div>
                 </div>
-
-                {/* Letzte 7 Tage */}
                 <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.03]">
-                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">
-                        7-Tage
-                    </div>
-                    <div className="text-lg font-mono text-white/90">
-                        {isLoading ? '-' : (metrics?.recent_learns_7d || 0)}
-                    </div>
+                    <div className="text-[8px] text-white/30 uppercase tracking-widest mb-1">7-Tage</div>
+                    <div className="text-lg font-mono text-white/90">{isLoading ? '-' : (metrics?.recent_learns_7d || 0)}</div>
                 </div>
             </div>
 
-            {/* Mini-Graph: Letzte 7 Tage */}
             <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[8px] text-white/30 uppercase tracking-widest">
-                        Aktivitaet
-                    </span>
+                    <span className="text-[8px] text-white/30 uppercase tracking-widest">Aktivitaet</span>
                     <div className="flex items-center gap-1 text-[8px] text-white/20">
                         <Clock className="w-2.5 h-2.5" />
                         <span>{formatLastActivity()}</span>
                     </div>
                 </div>
-
                 <div className="flex items-end gap-1 h-8">
                     {weeklyActivity.map((value, index) => {
                         const height = Math.max(15, (value / maxActivity) * 100);
                         const isToday = index === 6;
-
                         return (
                             <motion.div
                                 key={index}
                                 initial={{ height: 0 }}
                                 animate={{ height: `${height}%` }}
-                                transition={{
-                                    duration: 0.5,
-                                    delay: index * 0.05,
-                                    ease: "easeOut"
-                                }}
-                                className={`
-                                    flex-1 rounded-sm transition-colors
-                                    ${isToday
-                                        ? 'bg-violet-400 group-hover:bg-violet-300'
-                                        : 'bg-white/10 group-hover:bg-white/15'
-                                    }
-                                `}
+                                transition={{ duration: 0.5, delay: index * 0.05, ease: "easeOut" }}
+                                className={`flex-1 rounded-sm transition-colors ${isToday ? 'bg-violet-400 group-hover:bg-violet-300' : 'bg-white/10 group-hover:bg-white/15'}`}
                                 title={`Tag ${index + 1}: ${value} Eintraege`}
                             />
                         );
                     })}
                 </div>
-
-                {/* Wochentage Labels */}
                 <div className="flex gap-1 mt-1">
                     {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day, i) => (
-                        <span
-                            key={day}
-                            className={`flex-1 text-center text-[7px] ${
-                                i === 6 ? 'text-violet-400/60' : 'text-white/20'
-                            }`}
-                        >
-                            {day}
-                        </span>
+                        <span key={day} className={`flex-1 text-center text-[7px] ${i === 6 ? 'text-violet-400/60' : 'text-white/20'}`}>{day}</span>
                     ))}
                 </div>
             </div>
 
-            {/* Footer CTA */}
             <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <span className="text-[9px] text-white/30 tracking-wide">
-                    Klicken zum Oeffnen
-                </span>
-                <motion.div
-                    className="text-[9px] text-violet-400/60 group-hover:text-violet-400 transition-colors flex items-center gap-1"
-                    whileHover={{ x: 2 }}
-                >
+                <span className="text-[9px] text-white/30 tracking-wide">Klicken zum Oeffnen</span>
+                <motion.div className="text-[9px] text-violet-400/60 group-hover:text-violet-400 transition-colors flex items-center gap-1" whileHover={{ x: 2 }}>
                     Mora Nexus
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        &rarr;
-                    </span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
                 </motion.div>
             </div>
 
-            {/* Hover Glow Effect */}
             <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/5 via-transparent to-transparent" />
             </div>

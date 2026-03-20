@@ -4,7 +4,7 @@
  * MoraShell - Main OS Shell Component
  * ====================================
  *
- * This is the heart of SAIMÔR OS. All other components orbit around it.
+ * This is the heart of SAIMOR OS. All other components orbit around it.
  *
  * STRUCTURE:
  * 1. Background Layers (StarField, Mycelium, LivingBackground)
@@ -186,13 +186,13 @@ const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Netzwerkverbindung prüfen und Seite neu laden
+                                Netzwerkverbindung pruefen und Seite neu laden
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Hält das Problem an, bitte Support kontaktieren
+                                Haelt das Problem an, bitte Support kontaktieren
                             </div>
                         </div>
                     </div>
@@ -473,7 +473,7 @@ export const MoraShell: React.FC = () => {
             openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 } });
         }, [openPane]),
         onOpenMemory: useCallback(() => {
-            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Memory', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } });
+            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Konto-Gedaechtnis', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } });
         }, [openPane]),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();
@@ -696,7 +696,7 @@ export const MoraShell: React.FC = () => {
                 isExpanded={isResonanceExpanded}
             />
 
-            {/* Mora Insight Popup — surfaces MindLoop insight events above the Dock */}
+            {/* Mora Insight Popup -- surfaces MindLoop insight events above the Dock */}
             <MoraInsightPopup
                 insight={currentInsight}
                 onConfirm={(insight) => confirmInsight(insight.id)}
@@ -727,7 +727,7 @@ export const MoraShell: React.FC = () => {
             {/* Memory Sidebar (Cmd+Shift+M) */}
             {!hasFullscreenPane && <MemorySidebar />}
 
-            {/* ═══ PREMIUM INTELLIGENCE LAYER ═══ */}
+            {/* === PREMIUM INTELLIGENCE LAYER === */}
             {/*
              * V11 CLEANUP: Removed MoraIntelligenceBar + MoraThoughtStream
              * Status is now shown next to the Orb (see below)
@@ -787,7 +787,7 @@ export const MoraShell: React.FC = () => {
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className="text-[11px] uppercase tracking-[0.24em] text-cyan-200/70 font-semibold">
-                                            Mora erklaert
+                                            Mora zeigt dir
                                         </div>
                                         <div className="mt-1 text-sm text-white/82">
                                             {navigationOutcome.message}
@@ -870,7 +870,7 @@ export const MoraShell: React.FC = () => {
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className="text-[11px] uppercase tracking-[0.24em] text-emerald-300/70 font-semibold">
-                                            Mora erklaert
+                                            Mora zeigt dir
                                         </div>
                                         <div className="mt-1 text-sm text-white/82">
                                             {myceliumSummary.phase === 'review'
@@ -884,7 +884,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setMyceliumSummary(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Mycelium summary schließen"
+                                        aria-label="Mycelium summary schliessen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -983,7 +983,7 @@ export const MoraShell: React.FC = () => {
                                         className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                     >
                                         <Sparkles size={13} />
-                                        Einordnung pruefen
+                                        Einordnung ansehen
                                     </button>
                                     <button
                                         type="button"
@@ -996,7 +996,7 @@ export const MoraShell: React.FC = () => {
                                         className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                     >
                                         <History size={13} />
-                                        Verlauf oeffnen
+                                        Verlauf ansehen
                                     </button>
                                 </div>
                             </div>
@@ -1021,7 +1021,7 @@ export const MoraShell: React.FC = () => {
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className={`text-[11px] uppercase tracking-[0.24em] font-semibold ${isRunning ? 'text-blue-200/70' : isWaiting ? 'text-amber-200/70' : isDone ? 'text-white/30' : 'text-violet-200/70'}`}>
-                                            {isRunning ? 'Laeuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora erklaert'}
+                                            {isRunning ? 'Laeuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora zeigt dir'}
                                         </div>
                                         {isRunning && (
                                             <div className="flex items-center gap-2 mb-2 mt-1">
@@ -1136,7 +1136,7 @@ export const MoraShell: React.FC = () => {
                                         className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                     >
                                         <History size={13} />
-                                        Verlauf oeffnen
+                                        Verlauf ansehen
                                     </button>
                                 </div>
                             </div>
@@ -1150,7 +1150,7 @@ export const MoraShell: React.FC = () => {
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />
 
-            {/* Dev-only intelligence diagnostics panel — hidden in prod unless ?diagnostics=1 */}
+            {/* Dev-only intelligence diagnostics panel -- hidden in prod unless ?diagnostics=1 */}
             {diagnosticsEnabled && <IntelligenceDiagnostics />}
 
             {isShellDropActive && (

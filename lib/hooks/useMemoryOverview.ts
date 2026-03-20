@@ -18,14 +18,11 @@ const ZERO: MemoryOverviewCounts = {
 
 export function useMemoryOverview(manualCompanyId?: string | null): MemoryOverviewCounts {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const companies = useMoraStore((s) => s.companies);
-    const safeCompanies = Array.isArray(companies) ? companies : [];
-    // Strict undefined-check: null is treated as explicit "no company" (suppresses fetch).
-    // This differs from useMemoryPendingCount which uses || (falsy semantics).
+    // Null means explicit "no company" and suppresses the fetch.
     const scopedCompanyId =
         manualCompanyId !== undefined
             ? manualCompanyId
-            : activeCompanyId ?? safeCompanies[0]?.id ?? null;
+            : activeCompanyId ?? null;
 
     const [counts, setCounts] = useState<MemoryOverviewCounts>(ZERO);
 

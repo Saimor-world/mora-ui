@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X, FolderOpen, Search, Sparkles, UploadCloud } from 'lucide-react';
 import { toast } from '@/lib/toast';
@@ -207,54 +208,39 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             <div className="flex flex-col h-full">
                 {navigationContext && (
                     <div className="px-3 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
-                        <div className="rounded-xl border border-cyan-400/15 bg-black/15 px-3 py-3">
-                            <div className="flex items-start gap-3">
-                                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/12">
-                                    <NavigationIcon size={15} className="text-cyan-200/85" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/70 font-semibold">
-                                        {navigationSourceLabel}
-                                    </div>
-                                    <div className="mt-1 text-sm text-white/82 leading-relaxed">
-                                        {navigationContext.message}
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                                        {navigationContext.label && (
-                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-white/72">
-                                                {navigationContext.label}
-                                            </span>
-                                        )}
-                                        {navigationContext.path && (
-                                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-cyan-100/82">
-                                                {navigationContext.path}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {(navigationContext.folderId || folderId) && (
-                                        <div className="mt-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => openNavigationOutcome({
-                                                    title: 'Zielordner geoeffnet',
-                                                    message: `Ich habe den zugehoerigen Zielordner fuer ${navigationContext.label || name || 'das Dokument'} geoeffnet.`,
-                                                    targetType: 'folder',
-                                                    label: navigationContext.label || name || 'Finder',
-                                                    path: navigationContext.path,
-                                                    companyId: navigationContext.companyId || companyId,
-                                                    folderId: navigationContext.folderId || folderId,
-                                                    source: navigationContext.source || 'search',
-                                                }, openPane)}
-                                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                            >
-                                                <FolderOpen size={13} />
-                                                Im Zielordner oeffnen
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                        <CommandReceipt
+                            tone="cyan"
+                            icon={NavigationIcon}
+                            label={navigationSourceLabel}
+                            title={navigationContext.message}
+                            chips={[
+                                ...(navigationContext.label ? [{ label: navigationContext.label }] : []),
+                                ...(navigationContext.path ? [{ label: navigationContext.path }] : []),
+                                ...(folderId || navigationContext.folderId ? [{ label: `Zielordner: ${navigationContext.folderId || folderId}` }] : []),
+                            ]}
+                            actions={(
+                                (navigationContext.folderId || folderId) ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => openNavigationOutcome({
+                                            title: 'Zielordner geoeffnet',
+                                            message: `Ich habe den zugehoerigen Zielordner fuer ${navigationContext.label || name || 'das Dokument'} geoeffnet.`,
+                                            targetType: 'folder',
+                                            label: navigationContext.label || name || 'Finder',
+                                            path: navigationContext.path,
+                                            companyId: navigationContext.companyId || companyId,
+                                            folderId: navigationContext.folderId || folderId,
+                                            source: navigationContext.source || 'search',
+                                        }, openPane)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
+                                    >
+                                        <FolderOpen size={13} />
+                                        Im Zielordner oeffnen
+                                    </button>
+                                ) : null
+                            )}
+                            footer="Diese Datei bleibt mit ihrem Ursprung verknuepft. Mora blendet nur die Herkunft ein, die der Kontext wirklich geliefert hat."
+                        />
                     </div>
                 )}
 
@@ -295,15 +281,34 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 {/* Content */}
                 <div className="flex-1 overflow-auto">
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-4">
-                            <Loader2 className="animate-spin text-emerald-400" size={40} />
-                            <p className="text-white/50 text-sm">Dokument wird geladen...</p>
+                        <div className="flex items-center justify-center h-full p-6">
+                            <CommandReceipt
+                                tone="cyan"
+                                icon={Loader2}
+                                label="Dokument laedt"
+                                title={name}
+                                body="Der Inhalt wird aus dem Kern geladen. Mora zeigt solange den zuletzt bekannten Titel und Kontext an."
+                                chips={[
+                                    ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
+                                    ...(folderId ? [{ label: `Ordner: ${folderId}` }] : []),
+                                ]}
+                                className="w-full max-w-xl"
+                            />
                         </div>
                     ) : loadError ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-4 text-red-400/70">
-                            <X size={48} />
-                            <p className="text-lg">Fehler beim Laden</p>
-                            <p className="text-sm text-white/40">{loadError}</p>
+                        <div className="flex items-center justify-center h-full p-6">
+                            <CommandReceipt
+                                tone="red"
+                                icon={X}
+                                label="Dokument nicht lesbar"
+                                title="Fehler beim Laden"
+                                body={loadError}
+                                chips={[
+                                    ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
+                                    { label: 'Inhalt bleibt unveraendert' },
+                                ]}
+                                className="w-full max-w-xl"
+                            />
                         </div>
                     ) : isImage ? (
                         /* Image Viewer */
@@ -352,9 +357,19 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                         </pre>
                     ) : (
                         /* Empty State */
-                        <div className="flex flex-col items-center justify-center h-full gap-4 text-white/30">
-                            <FileText size={48} />
-                            <p>Diese Datei hat keinen Inhalt</p>
+                        <div className="flex items-center justify-center h-full p-6">
+                            <CommandReceipt
+                                tone="slate"
+                                icon={FileText}
+                                label="Leeres Dokument"
+                                title="Diese Datei hat keinen Inhalt."
+                                body="Mora zeigt bewusst keinen erfundenen Inhalt. Wenn spaeter Text oder Metadaten geliefert werden, erscheint er hier."
+                                chips={[
+                                    ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
+                                    { label: 'Keine Vorschau verfuegbar' },
+                                ]}
+                                className="w-full max-w-xl"
+                            />
                         </div>
                     )}
                 </div>

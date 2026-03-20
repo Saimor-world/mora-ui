@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
@@ -545,7 +546,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
      * Click-race guard for folder navigation.
      * Framer Motion's gesture system can absorb native `dblclick` on animated elements.
      * Instead we track two rapid clicks ourselves: first click selects, second click
-     * within DOUBLE_CLICK_MS navigates forward â€” deterministic in all view modes.
+     * within DOUBLE_CLICK_MS navigates forward -- deterministic in all view modes.
      */
     const DOUBLE_CLICK_MS = 300;
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -557,13 +558,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             lastClickedFolderRef.current === folderId &&
             clickTimerRef.current !== null
         ) {
-            // Second click within window â†’ navigate forward
+            // Second click within window -> navigate forward
             clearTimeout(clickTimerRef.current);
             clickTimerRef.current = null;
             lastClickedFolderRef.current = null;
             navigateToFolder(folderId);
         } else {
-            // First click â†’ select only; arm timer
+            // First click -> select only; arm timer
             if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
             setSelectedNodeId(folderId);
             lastClickedFolderRef.current = folderId;
@@ -1145,7 +1146,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setIsUploading(true);
         setUploadProgress({ current: 0, total: fileList.length, filename: fileList[0]?.name || 'file' });
 
-        // P6: Orb reacts - thinking (lila) wÃ¤hrend Upload/Analyse
+        // P6: Orb reacts - thinking (lila) waehrend Upload/Analyse
         setThinking();
 
         // P6: Timeline event - intake started (P2-Pattern)
@@ -1243,7 +1244,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     }
                                 }
                             } catch {
-                                // best-effort â€” silently ignore if endpoint unavailable
+                                // best-effort -- silently ignore if endpoint unavailable
                             }
                         }
 
@@ -1255,7 +1256,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             await loadNodesForFolder(resolvedFolderId);
                             navigateToFolder(resolvedFolderId);
                             // Override the generic end-of-loop toast with a precise one
-                            toast.success(`${file.name} â†’ ${folderName}`);
+                            toast.success(`${file.name} -> ${folderName}`);
                             successCount = 0; // suppress duplicate success toast below
                         }
 
@@ -1545,60 +1546,39 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {navigationContext && (
                         <div className="px-3 md:px-6 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
-                            <div className="rounded-xl border border-cyan-400/15 bg-black/15 px-3 py-3">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/12">
-                                        <NavigationIcon size={15} className="text-cyan-200/85" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/70 font-semibold">
-                                                    {navigationSourceLabel}
-                                                </div>
-                                                <div className="mt-1 text-sm text-white/82 leading-relaxed">
-                                                    {navigationContext.message}
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => updatePane(id, {
-                                                    data: {
-                                                        ...(pane?.data || {}),
-                                                        navigationContext: undefined,
-                                                    }
-                                                })}
-                                                className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] text-white/55 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white/80"
-                                            >
-                                                Ausblenden
-                                            </button>
-                                        </div>
-                                        <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                                            {navigationContext.label && (
-                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-white/72">
-                                                    {navigationContext.label}
-                                                </span>
-                                            )}
-                                            {navigationContext.path && (
-                                                <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-cyan-100/82">
-                                                    {navigationContext.path}
-                                                </span>
-                                            )}
-                                            {navigationContext.query && (
-                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-white/58">
-                                                    Suche: {navigationContext.query}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <CommandReceipt
+                                tone="cyan"
+                                icon={NavigationIcon}
+                                label={navigationSourceLabel}
+                                title={navigationContext.message}
+                                chips={[
+                                    ...(navigationContext.label ? [{ label: navigationContext.label }] : []),
+                                    ...(navigationContext.path ? [{ label: navigationContext.path }] : []),
+                                    ...(navigationContext.query ? [{ label: `Suche: ${navigationContext.query}` }] : []),
+                                    ...(currentPathLabel ? [{ label: `Pfad: ${currentPathLabel}` }] : []),
+                                ]}
+                                actions={(
+                                    <button
+                                        type="button"
+                                        onClick={() => updatePane(id, {
+                                            data: {
+                                                ...(pane?.data || {}),
+                                                navigationContext: undefined,
+                                            }
+                                        })}
+                                        className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] text-white/55 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white/80"
+                                    >
+                                        Ausblenden
+                                    </button>
+                                )}
+                                footer="Mora zeigt hier die Herkunft des offenen Kontexts. Der Eintrag bleibt sichtbar, bis du ihn ausblendest oder ein neuer Kontext ihn ersetzt."
+                            />
                         </div>
                     )}
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
                     <div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 md:px-6 py-2 md:py-4 border-b border-white/5 bg-white/[0.02] backdrop-blur-md">
-                        {/* nav-group: exactly one Back/Forward/Up set â€” do not duplicate */}
+                        {/* nav-group: exactly one Back/Forward/Up set -- do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
                                 onClick={navigateBack}
@@ -1804,25 +1784,42 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="flex flex-col items-center justify-center h-full gap-4 text-white/30"
+                                    className="flex items-center justify-center h-full"
                                 >
-                                    <div className="w-16 h-16 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                                    <span className="text-sm font-light tracking-[0.2em] uppercase">Synchronizing Mycelium...</span>
+                                    <CommandReceipt
+                                        tone="cyan"
+                                        icon={Loader2}
+                                        label="Finder laeuft"
+                                        title="Inhalte werden synchronisiert."
+                                        body="Mora zieht Pfad, Baum und Suchkontext zusammen. Das kann kurz dauern, wenn der aktuelle Ordner gerade neu geladen wird."
+                                        chips={[
+                                            { label: `Pfad: ${currentPathLabel}` },
+                                            { label: searchQuery ? `Suche: ${searchQuery}` : 'Kein Suchfilter' },
+                                        ]}
+                                        className="w-full max-w-xl"
+                                    />
                                 </motion.div>
                             ) : filteredFiles.length === 0 && filteredFolders.length === 0 ? (
                                 <motion.div
                                     key="empty"
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="flex flex-col items-center justify-center h-full gap-4 text-emerald-500/20"
+                                    className="flex items-center justify-center h-full"
                                 >
-                                    <div className="w-24 h-24 rounded-full bg-emerald-500/5 flex items-center justify-center border border-emerald-500/10 ring-1 ring-emerald-500/20">
-                                        <Search size={48} className="opacity-40 text-emerald-500" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-lg font-light text-emerald-400/40 tracking-wide">{searchQuery ? 'No resonance found' : 'No signals detected'}</p>
-                                        <p className="text-xs text-emerald-500/30 mt-2 uppercase tracking-widest">Drop files to initiate intake</p>
-                                    </div>
+                                    <CommandReceipt
+                                        tone="slate"
+                                        icon={Search}
+                                        label={searchQuery ? 'Kein Treffer' : 'Leerer Bereich'}
+                                        title={searchQuery ? 'Zu dieser Suche gibt es gerade keine sichtbaren Treffer.' : 'In diesem Bereich sind noch keine Ordner oder Dateien sichtbar.'}
+                                        body={searchQuery
+                                            ? 'Die Suche ist aktiv, aber der aktuelle Kontext liefert nichts Sichtbares. Mora zeigt dir trotzdem den letzten Pfad und den Suchbegriff oben an.'
+                                            : 'Drop Dateien hier hinein oder navigiere tiefer in den Baum. Mora blendet keine falschen Treffer ein.'}
+                                        chips={[
+                                            { label: `Pfad: ${currentPathLabel}` },
+                                            ...(searchQuery ? [{ label: `Suche: ${searchQuery}`, tone: 'cyan' as const }] : [{ label: 'Keine Suche aktiv' }]),
+                                        ]}
+                                        className="w-full max-w-xl"
+                                    />
                                 </motion.div>
                             ) : (
                                 <motion.div
@@ -2298,7 +2295,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     }
                                 }}
                                 onDismiss={() => {
-                                    // P6: "SpÃ¤ter" - dismiss UI without policy reject
+                                    // P6: "Spaeter" - dismiss UI without policy reject
                                     // Pending stays pending (token still valid for 5 min)
                                     setPendingAction(null);
                                     setIdle();
@@ -2313,7 +2310,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2 text-xs text-emerald-400">
                                         <Loader2 size={12} className="animate-spin" />
-                                        <span className="font-medium">Uploading...</span>
+                                        <span className="font-medium">Lade hoch...</span>
                                     </div>
                                     {uploadProgress && (
                                         <span className="text-[10px] text-emerald-400/60">
@@ -2451,5 +2448,3 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         </>
     );
 };
-
-

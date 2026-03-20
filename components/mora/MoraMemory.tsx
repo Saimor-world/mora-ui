@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     Brain,
     Search,
@@ -29,9 +29,7 @@ import type {
     ReviewItem,
     MemoryMetrics
 } from "@/lib/types/memory";
-// ═══════════════════════════════════════════════════════════════════════════
-// CATEGORY ICONS
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================================================
 const categoryIcons: Record<string, React.ElementType> = {
     preference: Heart,
     fact: BookOpen,
@@ -50,9 +48,9 @@ const riskColors: Record<string, string> = {
     high: "text-amber-400 bg-amber-500/10 border-amber-500/20",
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MEMORY SEARCH
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================================================
+// ===========================================================================
+// ===========================================================================
 interface MemorySearchProps {
     compact?: boolean;
     companyId?: string | null;
@@ -134,7 +132,7 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Gedächtnis durchsuchen..."
+                    placeholder="Gedaechtnis durchsuchen..."
                     className="w-full pl-8 pr-3 py-2 rounded-lg bg-black/30 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/40 transition-colors"
                 />
                 {isSearching && (
@@ -191,9 +189,9 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
     );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// REVIEW QUEUE
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================================================
+// ===========================================================================
+// ===========================================================================
 interface ReviewQueueProps {
     compact?: boolean;
     companyId?: string | null;
@@ -238,7 +236,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <span className="text-[9px] uppercase tracking-wider text-white/30">
-                    {items.length} Insight{items.length !== 1 ? "s" : ""} zur Prüfung
+                    {items.length} Insight{items.length !== 1 ? "s" : ""} zur Pruefung
                 </span>
             </div>
 
@@ -296,9 +294,9 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
     );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MEMORY STATS
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================================================
+// ===========================================================================
+// ===========================================================================
 interface MemoryStatsProps {
     compact?: boolean;
     companyId?: string | null;
@@ -310,7 +308,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     if (!companyId) {
         return (
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
-                Keine Company im Scope. Bitte Workspace/Company waehlen.
+                Keine aktive Company. Konto-Gedächtnis bleibt sichtbar, Firmenmetriken sind ausgeblendet.
             </div>
         );
     }
@@ -319,7 +317,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
         return (
             <div className="flex items-center gap-2 text-xs text-white/40 p-2">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-400/70" />
-                Lade Memory-Statistiken...
+                Lade Firmenmetriken...
             </div>
         );
     }
@@ -327,7 +325,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     if (!metrics) {
         return (
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
-                Keine Memory-Statistiken verfuegbar.
+                Keine Firmenmetriken verfuegbar.
             </div>
         );
     }
@@ -372,9 +370,9 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
+// ===========================================================================
+// ===========================================================================
+// ===========================================================================
 interface MoraMemoryProps {
     compact?: boolean;
     showSearch?: boolean;
@@ -391,9 +389,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     companyId = null,
 }) => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const companies = useMoraStore((s) => s.companies);
-    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
-    const resolvedCompanyId = companyId || activeCompanyId || safeCompanies[0]?.id || null;
+    const resolvedCompanyId = companyId ?? activeCompanyId ?? null;
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -409,7 +405,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Brain className="h-4 w-4 text-violet-400" />
-                    <span className="text-xs font-medium text-white/80">Mora&#39;s Gedächtnis</span>
+                    <span className="text-xs font-medium text-white/80">Konto-Gedächtnis</span>
                 </div>
                 <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5">
                     {tabs.map((tab) => {
