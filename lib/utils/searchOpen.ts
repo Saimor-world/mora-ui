@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Folder, Building2 } from 'lucide-react';
 import type { PaneConfig } from '@/lib/store/paneStore';
-import { corePost, fetchNodeDetails, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { corePost, fetchNodeDetails, searchGlobal, searchSemantic, type WorkSessionPlan } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 
@@ -178,7 +178,7 @@ export function surfaceNavigationOutcome(outcome: NavigationOutcome, openPane: O
     }, { isOptional: true })
         .then((plan) => {
             if (!plan || typeof plan !== 'object') return;
-            const typedPlan = plan as Record<string, any>;
+            const typedPlan = plan as WorkSessionPlan;
             if (typeof typedPlan.plan_id !== 'string') return;
             dispatchWorkSessionPlan({
                 planId: typedPlan.plan_id,
@@ -191,6 +191,18 @@ export function surfaceNavigationOutcome(outcome: NavigationOutcome, openPane: O
                 scope: typedPlan.scope,
                 stats: typedPlan.stats,
                 transparencyNote: typedPlan.transparency_note,
+                running_step_title:
+                    typedPlan.state === 'running'
+                        ? typedPlan.execution?.current_step_title
+                        : undefined,
+                pending_confirmation_title:
+                    typedPlan.state === 'waiting_confirmation'
+                        ? typedPlan.execution?.pending_confirmation_title
+                        : undefined,
+                next_label: typedPlan.execution?.next_label,
+                next_message:
+                    typedPlan.execution?.last_transition_message
+                    ?? typedPlan.execution?.next_message,
             });
         })
         .catch(() => {

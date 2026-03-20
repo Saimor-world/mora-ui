@@ -1,6 +1,7 @@
 // __tests__/lib/utils/searchOpen.test.ts
-import { mapRawSearchResult, getSearchResultSubtitle, resolveSearchResults } from '@/lib/utils/searchOpen';
-import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { mapRawSearchResult, getSearchResultSubtitle, resolveSearchResults, surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
+import { corePost, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
+import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
 
 // Mock all imports that searchOpen.ts evaluates at module load time.
 // Only mapRawSearchResult and getSearchResultSubtitle are pure — they
@@ -14,10 +15,11 @@ jest.mock('@/lib/api/coreClient', () => ({
 jest.mock('@/lib/utils/moraExplanation', () => ({
     dispatchWorkSessionPlan: jest.fn(),
 }));
+const mockedStoreState = { activePlanId: null as string | null, activeSessionId: null as string | null };
 jest.mock('@/lib/store/workSessionStore', () => ({
     useWorkSessionStore: Object.assign(
-        (selector: (s: any) => unknown) => selector({ activePlanId: null, activeSessionId: null }),
-        { getState: () => ({ activePlanId: null, activeSessionId: null }) },
+        (selector: (s: any) => unknown) => selector(mockedStoreState),
+        { getState: () => mockedStoreState },
     ),
 }));
 
@@ -54,6 +56,8 @@ describe('mapRawSearchResult — scope_path priority', () => {
 
 const mockSearchGlobal = searchGlobal as jest.Mock;
 const mockSearchSemantic = searchSemantic as jest.Mock;
+const mockCorePost = corePost as jest.Mock;
+const mockDispatchWorkSessionPlan = dispatchWorkSessionPlan as jest.Mock;
 
 describe('resolveSearchResults — semantic normalization', () => {
     beforeEach(() => {
@@ -128,5 +132,53 @@ describe('resolveSearchResults — semantic normalization', () => {
         expect(results[0].companyId).toBe('c-top');
         expect(results[0].departmentId).toBe('d-top');
         expect(results[0].spaceId).toBe('s-top');
+    });
+});
+
+describe('surfaceNavigationOutcome — execution continuity', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockedStoreState.activePlanId = 'plan-1';
+        mockedStoreState.activeSessionId = 'session-1';
+        mockCorePost.mockResolvedValue({
+            plan_id: 'plan-1',
+            session_id: 'session-1',
+            state: 'waiting_confirmation',
+            title: 'Arbeitsplan',
+            summary: 'Fortgesetzt',
+            stats: { total_steps: 4, pending_confirmations: 1 },
+            execution: {
+                pending_confirmation_title: 'Inhalt aktualisieren',
+                next_label: 'Freigeben',
+                next_message: 'Naechster Schritt wartet auf Freigabe.',
+                last_transition_message: 'Eine Navigation wurde als Teil des Arbeitsplans ausgefuehrt.',
+            },
+        });
+    });
+
+    it('dispatches execution-aware shell summary immediately after navigation recording', async () => {
+        const openPane = jest.fn();
+
+        surfaceNavigationOutcome({
+            title: 'Datei geoeffnet',
+            message: 'Ich habe das Dokument geoeffnet.',
+            targetType: 'node',
+            label: 'Dokument',
+            companyId: 'c1',
+            folderId: 'f1',
+            nodeId: 'n1',
+            source: 'search',
+        }, openPane);
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(mockDispatchWorkSessionPlan).toHaveBeenCalledWith(expect.objectContaining({
+            planId: 'plan-1',
+            state: 'waiting_confirmation',
+            pending_confirmation_title: 'Inhalt aktualisieren',
+            next_label: 'Freigeben',
+            next_message: 'Eine Navigation wurde als Teil des Arbeitsplans ausgefuehrt.',
+        }));
     });
 });

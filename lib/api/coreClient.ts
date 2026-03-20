@@ -1372,6 +1372,10 @@ export interface WorkSessionExecution {
     next_mode?: string;
     next_label?: string;
     next_message?: string;
+    last_transition_step_id?: string;
+    last_transition_type?: string;
+    last_transition_label?: string;
+    last_transition_message?: string;
     latest_activity_at?: string;
 }
 
