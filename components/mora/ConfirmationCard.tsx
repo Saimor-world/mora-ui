@@ -143,6 +143,15 @@ const formatDestinationLabel = (destination?: FileIntakeDestination | null, fall
     return destination?.label || path || fallback || 'Ziel offen';
 };
 
+const formatIntakeTargetLabel = (intake?: IntakeContext | null, fallback = 'Ziel offen') => {
+    const path = [
+        intake?.target_department_name,
+        intake?.target_space_name,
+        intake?.target_folder_name,
+    ].filter(Boolean).join(' > ');
+    return path || intake?.suggested_location || fallback;
+};
+
 /** Maps live Mycelium signal keys → human-readable German labels */
 const signalLabelMap: Record<string, string> = {
     frueher_aehnlich_eingeordnet:   'Ähnliche Dateien eingeordnet',
@@ -688,25 +697,13 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
     }
 
     if (isIntake && intake) {
-        const routePath = [
-            intake.target_department_name,
-            intake.target_space_name,
-            intake.target_folder_name,
-        ].filter(Boolean).join(' > ') || intake.suggested_location;
         const routeExplanation = intake.route_explanation;
-        const selectedRoute = Array.isArray(action.route_candidates)
-            ? action.route_candidates.find((candidate) => {
-                const candidateFolderId =
-                    candidate?.target_folder_id ||
-                    candidate?.destination?.folder_id;
-                return candidateFolderId && action.folder_id && candidateFolderId === action.folder_id;
-            })
-            : null;
-        const routeSummary = action.route_summary || routeExplanation?.headline || intake.business_summary || routePath;
-        const routeWhere = formatDestinationLabel(selectedRoute?.destination || action.destination, routePath);
-        const routeWhyHeadline = routeExplanation?.headline || action.route_choice_headline || intake.route_reason;
-        const routeWhyReason = routeExplanation?.reason || action.route_choice_reason || intake.route_reason;
+        const routeSummary = action.route_summary || routeExplanation?.headline || formatIntakeTargetLabel(intake, intake.business_summary || 'Ziel offen');
+        const routeWhere = formatDestinationLabel(action.destination, formatIntakeTargetLabel(intake));
+        const routeWhyHeadline = routeExplanation?.headline || intake.route_reason;
+        const routeWhyReason = routeExplanation?.reason || intake.route_reason;
         const routeWhySignals = routeExplanation?.signal_labels || intake.route_signals || [];
+        const routeLearningSummary = routeExplanation?.learning_summary;
         const routeNext = action.next;
         const routeResolutionLabel = action.route_resolution === 'choose'
             ? 'Zielwahl offen'
@@ -789,9 +786,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                             {routeWhySignals.length > 3 ? ` +${routeWhySignals.length - 3} weitere` : ''}
                                         </div>
                                     )}
-                                    {routeExplanation?.learning_summary && (
+                                    {routeLearningSummary && (
                                         <div className="text-[11px] text-white/38">
-                                            {routeExplanation.learning_summary}
+                                            {routeLearningSummary}
                                         </div>
                                     )}
                                 </div>
@@ -802,7 +799,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 <div className="mt-1 text-sm text-white/88 leading-relaxed">
                                     {routeWhere}
                                 </div>
-                                {(action.destination?.company_name || action.destination?.department_name || action.destination?.space_name || action.destination?.folder_name) && (
+                                {action.destination && (
                                     <div className="mt-1 text-[11px] text-white/42 leading-relaxed">
                                         {[action.destination.company_name, action.destination.department_name, action.destination.space_name, action.destination.folder_name]
                                             .filter(Boolean)
@@ -812,7 +809,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             </div>
 
                             <div className="rounded-lg border border-white/8 bg-black/15 p-3">
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Was als Naechstes</div>
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Naechster Schritt</div>
                                 <div className="mt-1 text-sm text-white/88 leading-relaxed">
                                     {routeNext?.label || 'Einordnung bestaetigen'}
                                 </div>
