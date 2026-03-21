@@ -17,6 +17,7 @@ import {
     rejectCreateNodeFromFile,
     getFileNode,
     type FileCreateNodeResponse,
+    type FileIntakeDestination,
     type FileIntakeNext,
     type FileIntakeRouteCandidate,
 } from '@/lib/api/filesClient';
@@ -62,6 +63,7 @@ interface PendingAction {
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
     intake_context?: IntakeContext;
+    destination?: FileIntakeDestination;
     route_summary?: string;
     route_resolution?: 'act' | 'choose' | string;
     route_candidates?: FileIntakeRouteCandidate[];
@@ -425,6 +427,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     file_id: uploaded.id,
                     file_name: uploaded.filename,
                     folder_id: response.route_suggestion?.target_folder_id || response.folder_id,
+                    destination: response.destination,
                     confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
                     confirm_payload: {
                         confirmation_token: response.confirmation_token,

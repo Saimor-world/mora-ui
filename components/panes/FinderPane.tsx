@@ -19,6 +19,7 @@ import {
     rejectCreateNodeFromFile,
     getFileNode,
     type FileCreateNodeResponse,
+    type FileIntakeDestination,
     type FileIntakeNext,
     type FileIntakeRouteCandidate,
 } from '@/lib/api/filesClient';
@@ -79,6 +80,7 @@ interface PendingAction {
     confirm_payload?: Record<string, any>;
     // P6: Guided Intake
     intake_context?: IntakeContext;
+    destination?: FileIntakeDestination;
     route_summary?: string;
     route_resolution?: 'act' | 'choose' | string;
     route_candidates?: FileIntakeRouteCandidate[];
@@ -1254,6 +1256,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             route_choice_headline: response.route_choice_headline,
                             route_choice_reason: response.route_choice_reason,
                             next: response.next,
+                            destination: response.destination,
                             // P6: Pass intake_context to ConfirmationCard
                             intake_context: {
                                 ...response.intake_context,

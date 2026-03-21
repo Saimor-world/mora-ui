@@ -32,11 +32,38 @@ interface IntakeContext {
     route_confidence_score?: number;
     route_confidence_label?: string;
     route_signals?: string[];
+    route_explanation?: FileIntakeRouteExplanation;
     route_learning?: RouteLearning;
     target_company_name?: string;
     target_department_name?: string;
     target_space_name?: string;
     target_folder_name?: string;
+}
+
+interface FileIntakeRouteExplanation {
+    kind?: string;
+    headline?: string;
+    reason?: string;
+    signal_labels?: string[];
+    learning_summary?: string;
+}
+
+interface FileIntakeDestination {
+    company_id?: string;
+    company_name?: string;
+    department_id?: string;
+    department_name?: string;
+    space_id?: string;
+    space_name?: string;
+    folder_id?: string;
+    folder_name?: string;
+    label?: string;
+}
+
+interface FileIntakeNext {
+    mode?: 'review' | 'open' | string;
+    label?: string;
+    message?: string;
 }
 
 interface PendingAction {
@@ -45,9 +72,17 @@ interface PendingAction {
     risk_level: string;
     confirmation_token: string;
     action_id: string;
+    folder_id?: string;
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
     intake_context?: IntakeContext;
+    destination?: FileIntakeDestination;
+    route_summary?: string;
+    route_resolution?: 'act' | 'choose' | string;
+    route_candidates?: Array<Record<string, any>>;
+    route_choice_headline?: string;
+    route_choice_reason?: string;
+    next?: FileIntakeNext;
 }
 
 interface ContentChange {
@@ -99,6 +134,13 @@ const shortenId = (value?: string | null) => {
 
 const formatTargetLabel = (label?: string | null, id?: string | null, fallback = 'Unbekannt') => {
     return label || shortenId(id) || fallback;
+};
+
+const formatDestinationLabel = (destination?: FileIntakeDestination | null, fallback?: string | null) => {
+    const path = [destination?.department_name, destination?.space_name, destination?.folder_name]
+        .filter(Boolean)
+        .join(' > ');
+    return destination?.label || path || fallback || 'Ziel offen';
 };
 
 /** Maps live Mycelium signal keys → human-readable German labels */
@@ -651,6 +693,26 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             intake.target_space_name,
             intake.target_folder_name,
         ].filter(Boolean).join(' > ') || intake.suggested_location;
+        const routeExplanation = intake.route_explanation;
+        const selectedRoute = Array.isArray(action.route_candidates)
+            ? action.route_candidates.find((candidate) => {
+                const candidateFolderId =
+                    candidate?.target_folder_id ||
+                    candidate?.destination?.folder_id;
+                return candidateFolderId && action.folder_id && candidateFolderId === action.folder_id;
+            })
+            : null;
+        const routeSummary = action.route_summary || routeExplanation?.headline || intake.business_summary || routePath;
+        const routeWhere = formatDestinationLabel(selectedRoute?.destination || action.destination, routePath);
+        const routeWhyHeadline = routeExplanation?.headline || action.route_choice_headline || intake.route_reason;
+        const routeWhyReason = routeExplanation?.reason || action.route_choice_reason || intake.route_reason;
+        const routeWhySignals = routeExplanation?.signal_labels || intake.route_signals || [];
+        const routeNext = action.next;
+        const routeResolutionLabel = action.route_resolution === 'choose'
+            ? 'Zielwahl offen'
+            : action.route_resolution === 'act'
+                ? 'Direkt einordnen'
+                : 'Einordnung bereit';
         const confidenceLabel = intake.route_confidence_label || 'mittel';
         const confidenceTone = confidenceLabel === 'hoch'
             ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
@@ -666,83 +728,127 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
             >
                 <div className="px-4 py-3 flex items-start gap-3">
                     <FileCheck className="text-white/60 shrink-0 mt-0.5" size={18} />
-                    <div className="flex-1">
-                        <p className="text-white font-medium text-sm">{intake.business_summary}</p>
-                        <div className="mt-2 rounded-lg border border-emerald-500/15 bg-black/20 p-3 space-y-1.5">
-                            <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.18em] text-emerald-300/60">
-                                <span>Mycelium Routing</span>
-                                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                                    {/* Learned-route badge — semantically primary, visually restrained */}
-                                    {intake.route_mode === 'learned_route' && (
-                                        <span className="rounded-full border border-violet-400/25 bg-violet-500/15 px-2 py-0.5 normal-case tracking-normal text-[10px] text-violet-200">
-                                            Aus früheren Einordnungen gelernt
+                    <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-sm">{routeSummary}</p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-white/55">
+                                {routeResolutionLabel}
+                            </span>
+                            {intake.route_mode === 'learned_route' && (
+                                <span className="rounded-full border border-violet-400/25 bg-violet-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-violet-200">
+                                    Gelernter Pfad
+                                </span>
+                            )}
+                            {intake.route_confidence_label && (
+                                <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${confidenceTone}`}>
+                                    {confidenceLabel === 'hoch' ? 'Hohe' : confidenceLabel === 'niedrig' ? 'Niedrige' : 'Mittlere'} Sicherheit
+                                    {typeof intake.route_confidence_score === 'number' && (
+                                        <span className="ml-1 text-white/55">
+                                            {Math.round(intake.route_confidence_score * 100)}%
                                         </span>
                                     )}
-                                    {intake.route_confidence_label && (
-                                        <span className={`rounded-full border px-2 py-0.5 normal-case tracking-normal ${confidenceTone}`}>
-                                            {confidenceLabel === 'hoch' ? 'Hohe' : confidenceLabel === 'niedrig' ? 'Niedrige' : 'Mittlere'} Sicherheit
-                                            {typeof intake.route_confidence_score === 'number' && (
-                                                <span className="ml-1 text-white/55">
-                                                    {Math.round(intake.route_confidence_score * 100)}%
-                                                </span>
-                                            )}
-                                        </span>
+                                </span>
+                            )}
+                            {intake.suggested_category && (
+                                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                                    {intake.suggested_category}
+                                </span>
+                            )}
+                            {Array.isArray(action.route_candidates) && action.route_candidates.length > 1 && (
+                                <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-100">
+                                    {action.route_candidates.length} Optionen
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="mt-3 grid gap-2 md:grid-cols-2">
+                            <div className="rounded-lg border border-white/8 bg-black/15 p-3">
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Was</div>
+                                <div className="mt-1 text-sm text-white/88 leading-relaxed">
+                                    {routeSummary}
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-white/8 bg-black/15 p-3">
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Warum</div>
+                                <div className="mt-1 space-y-1.5 text-sm text-white/78 leading-relaxed">
+                                    {routeWhyHeadline && (
+                                        <div className="text-white/90">
+                                            {routeWhyHeadline}
+                                        </div>
                                     )}
-                                    {intake.suggested_category && (
-                                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 normal-case tracking-normal text-white/60">
-                                            {intake.suggested_category}
-                                        </span>
+                                    {routeWhyReason && (
+                                        <div className="text-white/62">
+                                            {routeWhyReason}
+                                        </div>
+                                    )}
+                                    {routeWhySignals.length > 0 && (
+                                        <div className="text-[11px] text-white/42">
+                                            Signale: {routeWhySignals.map(formatSignal).slice(0, 3).join(', ')}
+                                            {routeWhySignals.length > 3 ? ` +${routeWhySignals.length - 3} weitere` : ''}
+                                        </div>
+                                    )}
+                                    {routeExplanation?.learning_summary && (
+                                        <div className="text-[11px] text-white/38">
+                                            {routeExplanation.learning_summary}
+                                        </div>
                                     )}
                                 </div>
                             </div>
-                            <p className="text-xs text-white/80">
-                                Ziel: <span className="text-emerald-100">{routePath}</span>
-                            </p>
-                            {intake.route_reason && (
-                                <p className="text-[11px] text-white/50 leading-relaxed">{intake.route_reason}</p>
-                            )}
-                            {intake.route_confidence_label === 'niedrig' && (
-                                <div className="rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">
-                                    Niedrige Sicherheit: Bitte Ziel und Begründung besonders sorgfältig prüfen, bevor die Datei eingeordnet wird.
+
+                            <div className="rounded-lg border border-white/8 bg-black/15 p-3">
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Wo</div>
+                                <div className="mt-1 text-sm text-white/88 leading-relaxed">
+                                    {routeWhere}
                                 </div>
-                            )}
-                            {intake.route_signals && intake.route_signals.length > 0 && (() => {
-                                const labels = intake.route_signals.map(formatSignal);
-                                const MAX_INLINE = 3;
-                                const visible = labels.slice(0, MAX_INLINE);
-                                const overflow = labels.length - MAX_INLINE;
-                                const line = overflow > 0
-                                    ? `${visible.join(', ')} +${overflow} weitere`
-                                    : visible.join(', ');
-                                return (
-                                    <p className="text-[11px] text-white/45 leading-relaxed">
-                                        Erkannt anhand: {line}
-                                    </p>
-                                );
-                            })()}
-                            {/* Route learning copy — calm, operational, not anthropomorphic */}
-                            {intake.route_learning && (intake.route_learning.confirmed_count ?? 0) > 0 && (() => {
-                                const { confirmed_count = 0, corrected_count = 0 } = intake.route_learning!;
-                                const isThin = confirmed_count <= 1 && corrected_count === 0;
-                                return (
-                                    <div className="space-y-0.5">
-                                        <p className="text-[11px] text-white/45 leading-relaxed">
-                                            Dieser Pfad wurde bereits {confirmed_count}-mal bestätigt oder korrigiert.
-                                        </p>
-                                        {corrected_count > 0 && (
-                                            <p className="text-[11px] text-white/40 leading-relaxed">
-                                                Davon wurden {corrected_count}-mal manuelle Korrekturen übernommen.
-                                            </p>
-                                        )}
-                                        {isThin && (
-                                            <p className="text-[11px] text-white/35 italic leading-relaxed">
-                                                Die Einordnung ist noch im Aufbau.
-                                            </p>
-                                        )}
+                                {(action.destination?.company_name || action.destination?.department_name || action.destination?.space_name || action.destination?.folder_name) && (
+                                    <div className="mt-1 text-[11px] text-white/42 leading-relaxed">
+                                        {[action.destination.company_name, action.destination.department_name, action.destination.space_name, action.destination.folder_name]
+                                            .filter(Boolean)
+                                            .join(' > ')}
                                     </div>
-                                );
-                            })()}
+                                )}
+                            </div>
+
+                            <div className="rounded-lg border border-white/8 bg-black/15 p-3">
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Was als Naechstes</div>
+                                <div className="mt-1 text-sm text-white/88 leading-relaxed">
+                                    {routeNext?.label || 'Einordnung bestaetigen'}
+                                </div>
+                                <div className="mt-1 text-[11px] text-white/46 leading-relaxed">
+                                    {routeNext?.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                </div>
+                            </div>
                         </div>
+
+                        {intake.route_confidence_label === 'niedrig' && (
+                            <div className="mt-3 rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">
+                                Niedrige Sicherheit: Ziel und Begruendung vor der Freigabe nochmal pruefen.
+                            </div>
+                        )}
+
+                        {intake.route_learning && (intake.route_learning.confirmed_count ?? 0) > 0 && (() => {
+                            const { confirmed_count = 0, corrected_count = 0 } = intake.route_learning!;
+                            const isThin = confirmed_count <= 1 && corrected_count === 0;
+                            return (
+                                <div className="mt-3 space-y-0.5 text-[11px] leading-relaxed text-white/45">
+                                    <div>
+                                        Dieser Pfad wurde bereits {confirmed_count}-mal bestaetigt oder korrigiert.
+                                    </div>
+                                    {corrected_count > 0 && (
+                                        <div>
+                                            Davon wurden {corrected_count}-mal manuelle Korrekturen uebernommen.
+                                        </div>
+                                    )}
+                                    {isThin && (
+                                        <div className="italic text-white/35">
+                                            Die Einordnung ist noch im Aufbau.
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                         {intake.detected_patterns && intake.detected_patterns.length > 0 && (
                             <div className="flex gap-1.5 mt-2 flex-wrap">
                                 {intake.detected_patterns.map((pattern, i) => (
@@ -764,7 +870,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         disabled={isProcessing}
                         className="text-white/40 hover:text-white/60 text-xs font-medium transition-colors px-3 py-2"
                     >
-                        Später
+                        Spaeter
                     </button>
                     <div className="flex-1" />
                     <button
