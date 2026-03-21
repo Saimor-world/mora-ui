@@ -79,6 +79,7 @@ class RealtimeClient {
     private listeners: Map<string, Set<EventHandler>> = new Map();
     private reconnectTimer: NodeJS.Timeout | null = null;
     private resubscribeTimer: NodeJS.Timeout | null = null;
+    private heartbeatTimer: NodeJS.Timeout | null = null;
     private isConnecting: boolean = false;
     private connectionId: string | null = null;
     private subscribedEventTypesKey: string = 'all';
@@ -112,10 +113,30 @@ class RealtimeClient {
                 this.ws.close();
                 this.ws = null;
             }
+            this.clearHeartbeat();
             this.isConnecting = false;
             setWsLock(false);
             this.connect();
         }, 75);
+    }
+
+    private clearHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
+    private startHeartbeat() {
+        this.clearHeartbeat();
+        this.heartbeatTimer = setInterval(() => {
+            if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+            try {
+                this.ws.send(JSON.stringify({ type: 'ping' }));
+            } catch {
+                // Best effort only. onerror/onclose handles recovery.
+            }
+        }, 20_000);
     }
 
     private getToken(): string | null {
@@ -152,6 +173,7 @@ class RealtimeClient {
         const token = this.getToken();
         if (!token) {
             // console.warn('[Realtime] No token found, skipping connection');
+            setWsLock(false);
             return;
         }
 
@@ -168,6 +190,7 @@ class RealtimeClient {
                 this.isConnecting = false;
                 // Lock stays set (wsLocked=true) while OPEN — prevents other instances connecting
                 if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+                this.startHeartbeat();
                 this.emit('connected', { timestamp: Date.now() });
             };
 
@@ -183,8 +206,11 @@ class RealtimeClient {
                         // console.log('[Realtime] Event:', payload.event_type);
                         this.emit(payload.event_type, payload.data);
                     }
-                    else if (payload.type === 'ping') {
-                        // ignore/reply pong?
+                    else if (payload.type === 'ping' && this.ws?.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ type: 'pong' }));
+                    }
+                    else if (payload.type === 'pong') {
+                        // heartbeat acknowledged
                     }
                 } catch (e) {
                     console.error('[Realtime] Failed to parse message:', event.data);
@@ -195,6 +221,7 @@ class RealtimeClient {
                 console.log('[Realtime] Disconnected');
                 this.isConnecting = false;
                 this.ws = null;
+                this.clearHeartbeat();
                 setWsLock(false); // release lock so reconnect can proceed
                 this.emit('disconnected', {});
                 this.scheduleReconnect();
@@ -208,6 +235,8 @@ class RealtimeClient {
         } catch (e) {
             console.error('[Realtime] Connection failed:', e);
             this.isConnecting = false;
+            this.clearHeartbeat();
+            setWsLock(false);
             this.scheduleReconnect();
         }
     }
@@ -223,6 +252,7 @@ class RealtimeClient {
     public disconnect() {
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
         if (this.resubscribeTimer) clearTimeout(this.resubscribeTimer);
+        this.clearHeartbeat();
         if (this.ws) {
             this.ws.onclose = null; // prevent onclose from scheduling a reconnect
             this.ws.onerror = null;
