@@ -198,7 +198,7 @@ describe('TerminalPane session-truth pass', () => {
         mockedCreateTerminalSession.mockResolvedValue(null);
 
         render(<TerminalPane id="terminal-main" />);
-        await screen.findByText(/Core gerade nicht erreichbar/i);
+        await screen.findByText(/Remote Core Terminal nicht verfügbar/i);
 
         const input = screen.getByRole('textbox');
         expect(input).not.toBeDisabled();
@@ -207,7 +207,7 @@ describe('TerminalPane session-truth pass', () => {
         fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
         await waitFor(() => {
-            expect(screen.getByText(/Verbindung: offline/i)).toBeInTheDocument();
+            expect(screen.getByText(/Verbindung: nicht verfügbar/i)).toBeInTheDocument();
         });
     });
 });

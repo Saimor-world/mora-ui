@@ -11,8 +11,11 @@
  * Connection model:
  *   checking        — createTerminalSession() in flight
  *   ready           — session active; transcript hydrated from server history[]
- *   offline         — Core unreachable; only local MORA commands work
+ *   offline         — Core unreachable at startup; MORA meta-commands still work (no shell)
+ *   disconnected    — session was ready, then Core became unreachable mid-session; 'reconnect' to recover
  *   unauthenticated — no user in store; input locked
+ *
+ * No PTY. No streaming. No interactive process support. Request/response only.
  *
  * Local-only commands (no server needed):
  *   help, clear, version, whoami, stats, status
@@ -51,7 +54,7 @@ interface TerminalPaneProps {
     id?: string;
 }
 
-type ConnectionState = "checking" | "ready" | "offline" | "unauthenticated";
+type ConnectionState = "checking" | "ready" | "offline" | "disconnected" | "unauthenticated";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -198,7 +201,8 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 setConn("offline");
                 setLines([
                     makeLine("system", "Core Terminal — Remote Linux Server"),
-                    makeLine("error", "Core gerade nicht erreichbar. Lokale Befehle: help, version, status, whoami, clear."),
+                    makeLine("error", "Remote Core Terminal nicht verfügbar — keine Shell-Verbindung möglich."),
+                    makeLine("system", "MORA-Befehle verfügbar: help, status, whoami, version, clear."),
                 ]);
                 return;
             }
@@ -234,7 +238,15 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 }
             }
 
-            setLines([...bannerLines, ...historyLines]);
+            if (historyLines.length > 0) {
+                const sep = makeLine(
+                    "system",
+                    `── Verlauf wiederhergestellt (${sess.history.length} Einträge vom Server) ──`
+                );
+                setLines([...bannerLines, sep, ...historyLines]);
+            } else {
+                setLines([...bannerLines]);
+            }
         };
 
         void bootstrap();
@@ -264,10 +276,11 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
         const panes = usePaneStore.getState().panes;
         const conn = connectionStateRef.current;
         const connLabel =
-            conn === "ready"    ? "verbunden" :
-            conn === "offline"  ? "offline" :
-            conn === "checking" ? "prüft..." :
-                                  "gesperrt";
+            conn === "ready"        ? "verbunden" :
+            conn === "offline"      ? "nicht verfügbar (Session-Start fehlgeschlagen)" :
+            conn === "disconnected" ? "getrennt (Session abgelaufen — 'reconnect')" :
+            conn === "checking"     ? "prüft..." :
+                                      "gesperrt";
 
         return [
             "CORE TERMINAL STATUS",
@@ -319,7 +332,9 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
             "error",
             conn === "checking"
                 ? `${label}: Remote-Verbindung wird noch geprüft — kurz warten.`
-                : `${label}: Core-Verbindung nicht verfügbar.`
+                : conn === "disconnected"
+                ? `${label}: Session getrennt — gib 'reconnect' ein.`
+                : `${label}: Remote Core Terminal nicht verfügbar.`
         );
         return false;
     }, [addLine]);
@@ -467,6 +482,26 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 return;
             }
 
+            // ── Reconnect — restore a lost session ──────────────────────────
+
+            if (command === "reconnect") {
+                setConn("checking");
+                addLine("system", "Verbinde neu mit Core Terminal...");
+                const newSess = await createTerminalSession();
+                if (!newSess) {
+                    setConn("disconnected");
+                    addLine("error", "Reconnect fehlgeschlagen. Core Terminal nicht erreichbar.");
+                    addLine("system", "Eingabe 'reconnect' erneut versuchen oder Terminal schließen.");
+                } else {
+                    sessionRef.current = newSess;
+                    setSession(newSess);
+                    setConn("ready");
+                    addLine("system", `Neue Session: ${newSess.session_id} | ${newSess.cwd ?? "/"} | ${newSess.host_label ?? "Remote"}`);
+                }
+                setIsProcessing(false);
+                return;
+            }
+
             // ── Remote shell via session ────────────────────────────────────
 
             if (!requireOnline(trimmed)) {
@@ -483,7 +518,9 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
 
             const result = await executeSessionInput(sid, trimmed);
             if (!result) {
-                addLine("error", "Verbindung zum Core-Terminal verloren.");
+                setConn("disconnected");
+                addLine("error", "Session getrennt. Core Terminal nicht mehr erreichbar.");
+                addLine("system", "Eingabe 'reconnect' zum Neuverbinden oder Terminal schließen.");
             } else {
                 renderInputResult(result);
                 // Update tracked cwd if the server reports a change
@@ -600,7 +637,8 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         disabled={isProcessing || connectionState === "unauthenticated"}
                         placeholder={
                             connectionState === "unauthenticated" ? "Anmeldung erforderlich" :
-                            connectionState === "offline"         ? "Offline: lokale Befehle funktionieren" :
+                            connectionState === "disconnected"    ? "Session getrennt — 'reconnect' eingeben" :
+                            connectionState === "offline"         ? "Core nicht verfügbar — MORA-Befehle aktiv" :
                             connectionState === "checking"        ? "Verbindung wird geprüft..." :
                                                                     "Befehl eingeben (oder 'help')"
                         }
