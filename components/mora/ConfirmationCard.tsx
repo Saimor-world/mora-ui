@@ -66,6 +66,22 @@ interface FileIntakeNext {
     message?: string;
 }
 
+interface FileIntakeDestinationSummary {
+    company_name?: string;
+    department_name?: string;
+    space_name?: string;
+    folder_name?: string;
+    label?: string;
+}
+
+interface FileIntakeRouteDecision {
+    mode?: 'accepted' | 'changed' | 'rejected' | string;
+    label?: string;
+    message?: string;
+    suggested_destination?: FileIntakeDestinationSummary;
+    selected_destination?: FileIntakeDestinationSummary;
+}
+
 interface PendingAction {
     tool_name: string;
     params: Record<string, any>;
@@ -82,6 +98,7 @@ interface PendingAction {
     route_candidates?: Array<Record<string, any>>;
     route_choice_headline?: string;
     route_choice_reason?: string;
+    route_decision?: FileIntakeRouteDecision;
     next?: FileIntakeNext;
 }
 
@@ -141,6 +158,13 @@ const formatDestinationLabel = (destination?: FileIntakeDestination | null, fall
         .filter(Boolean)
         .join(' > ');
     return destination?.label || path || fallback || 'Ziel offen';
+};
+
+const formatDestinationSummary = (destination?: FileIntakeDestinationSummary | null, fallback = 'Ziel offen') => {
+    const path = [destination?.department_name, destination?.space_name, destination?.folder_name]
+        .filter(Boolean)
+        .join(' > ');
+    return destination?.label || path || fallback;
 };
 
 const formatIntakeTargetLabel = (intake?: IntakeContext | null, fallback = 'Ziel offen') => {
@@ -704,6 +728,27 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
         const routeWhyReason = routeExplanation?.reason || intake.route_reason;
         const routeWhySignals = routeExplanation?.signal_labels || intake.route_signals || [];
         const routeLearningSummary = routeExplanation?.learning_summary;
+        const routeDecision = action.route_decision;
+        const routeDecisionMode = routeDecision?.mode || 'accepted';
+        const routeDecisionLabel = routeDecision?.label
+            || (routeDecisionMode === 'rejected'
+                ? 'Einordnung verworfen'
+                : routeDecisionMode === 'changed'
+                    ? 'Ziel manuell geändert'
+                    : 'Vorschlag akzeptiert');
+        const routeDecisionMessage = routeDecision?.message
+            || (routeDecisionMode === 'rejected'
+                ? 'Die Einordnung wurde nicht freigegeben.'
+                : routeDecisionMode === 'changed'
+                    ? 'Das Ziel wurde vor der Freigabe angepasst.'
+                    : 'Der Vorschlag wurde ohne Zielwechsel übernommen.');
+        const routeDecisionTone = routeDecisionMode === 'rejected'
+            ? 'border-red-400/20 bg-red-500/10 text-red-100'
+            : routeDecisionMode === 'changed'
+                ? 'border-amber-400/20 bg-amber-500/10 text-amber-100'
+                : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100';
+        const routeDecisionFrom = formatDestinationSummary(routeDecision?.suggested_destination, routeWhere);
+        const routeDecisionTo = formatDestinationSummary(routeDecision?.selected_destination, routeWhere);
         const routeNext = action.next;
         const routeResolutionLabel = action.route_resolution === 'choose'
             ? 'Zielwahl offen'
@@ -768,7 +813,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             </div>
 
                             <div className="rounded-lg border border-white/8 bg-black/15 p-3">
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Warum</div>
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Warum dort</div>
                                 <div className="mt-1 space-y-1.5 text-sm text-white/78 leading-relaxed">
                                     {routeWhyHeadline && (
                                         <div className="text-white/90">
@@ -795,7 +840,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             </div>
 
                             <div className="rounded-lg border border-white/8 bg-black/15 p-3">
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Wo</div>
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Ziel</div>
                                 <div className="mt-1 text-sm text-white/88 leading-relaxed">
                                     {routeWhere}
                                 </div>
@@ -818,6 +863,29 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                 </div>
                             </div>
                         </div>
+
+                        {routeDecision && (
+                            <div className={`mt-3 rounded-lg border px-3 py-3 ${routeDecisionTone}`}>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full border border-current/20 bg-black/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em]">
+                                        {routeDecisionLabel}
+                                    </span>
+                                    <span className="text-[11px] uppercase tracking-[0.18em] text-white/50">
+                                        Audit
+                                    </span>
+                                </div>
+                                <div className="mt-2 text-sm text-white/88 leading-relaxed">
+                                    {routeDecisionMessage}
+                                </div>
+                                {routeDecisionMode === 'changed' && (
+                                    <div className="mt-2 text-[11px] text-white/58 leading-relaxed">
+                                        Von: <span className="text-white/82">{routeDecisionFrom}</span>
+                                        {' '}nach{' '}
+                                        <span className="text-white/82">{routeDecisionTo}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {intake.route_confidence_label === 'niedrig' && (
                             <div className="mt-3 rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">

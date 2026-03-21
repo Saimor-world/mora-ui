@@ -69,6 +69,22 @@ interface IntakeContext {
     };
 }
 
+interface FileIntakeDestinationSummary {
+    company_name?: string;
+    department_name?: string;
+    space_name?: string;
+    folder_name?: string;
+    label?: string;
+}
+
+interface FileIntakeRouteDecision {
+    mode?: 'accepted' | 'changed' | 'rejected' | string;
+    label?: string;
+    message?: string;
+    suggested_destination?: FileIntakeDestinationSummary;
+    selected_destination?: FileIntakeDestinationSummary;
+}
+
 interface PendingAction {
     tool_name: string;
     params: Record<string, any>;
@@ -81,6 +97,7 @@ interface PendingAction {
     // P6: Guided Intake
     intake_context?: IntakeContext;
     destination?: FileIntakeDestination;
+    route_decision?: FileIntakeRouteDecision;
     route_summary?: string;
     route_resolution?: 'act' | 'choose' | string;
     route_candidates?: FileIntakeRouteCandidate[];
@@ -1213,6 +1230,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         autoExecute,
                         folderId: targetFolderId
                     });
+                    const routeDecision = (response as any)?.route_decision;
                     if (response?.status === 'pending_confirmation') {
                         if (!response.confirmation_token) {
                             throw new Error('Confirmation token missing for pending intake action.');
@@ -1255,6 +1273,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             route_candidates: response.route_candidates,
                             route_choice_headline: response.route_choice_headline,
                             route_choice_reason: response.route_choice_reason,
+                            route_decision: routeDecision,
                             next: response.next,
                             destination: response.destination,
                             // P6: Pass intake_context to ConfirmationCard

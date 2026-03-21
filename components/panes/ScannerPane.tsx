@@ -51,6 +51,22 @@ interface IntakeContext {
     };
 }
 
+interface FileIntakeDestinationSummary {
+    company_name?: string;
+    department_name?: string;
+    space_name?: string;
+    folder_name?: string;
+    label?: string;
+}
+
+interface FileIntakeRouteDecision {
+    mode?: 'accepted' | 'changed' | 'rejected' | string;
+    label?: string;
+    message?: string;
+    suggested_destination?: FileIntakeDestinationSummary;
+    selected_destination?: FileIntakeDestinationSummary;
+}
+
 interface PendingAction {
     tool_name: string;
     params: Record<string, any>;
@@ -64,6 +80,7 @@ interface PendingAction {
     confirm_payload?: Record<string, any>;
     intake_context?: IntakeContext;
     destination?: FileIntakeDestination;
+    route_decision?: FileIntakeRouteDecision;
     route_summary?: string;
     route_resolution?: 'act' | 'choose' | string;
     route_candidates?: FileIntakeRouteCandidate[];
@@ -390,8 +407,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         }
 
         try {
-            const uploaded = await uploadCompanyFile(fileObject, activeCompanyId);
-            setFiles(prev => prev.map(f => f.id === fileId ? { ...f, fileRecordId: uploaded.id } : f));
+                const uploaded = await uploadCompanyFile(fileObject, activeCompanyId);
+                setFiles(prev => prev.map(f => f.id === fileId ? { ...f, fileRecordId: uploaded.id } : f));
 
             // Global Mycelium intake must stay reviewable; silent auto-execution hides routing decisions.
             const autoExecute = intakeSeed.source === 'mycelium'
@@ -401,6 +418,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 autoExecute,
                 batchId: intakeSeed.batchId,
             });
+            const routeDecision = (response as any)?.route_decision;
             if (response?.status === 'pending_confirmation') {
                 if (!response.confirmation_token) {
                     throw new Error('Confirmation token missing for pending intake action.');
@@ -437,6 +455,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     route_candidates: response.route_candidates,
                     route_choice_headline: response.route_choice_headline,
                     route_choice_reason: response.route_choice_reason,
+                    route_decision: routeDecision,
                     next: response.next,
                     route_summary: response.route_summary,
                     intake_context: {
@@ -598,6 +617,23 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 return {
                     ...action,
                     folder_id: folderId,
+                    route_decision: {
+                        mode: 'changed',
+                        label: 'Ziel manuell geändert',
+                        message: 'Der Vorschlag wurde vor der Freigabe angepasst.',
+                        suggested_destination: action.route_decision?.suggested_destination || {
+                            department_name: action.intake_context?.target_department_name,
+                            space_name: action.intake_context?.target_space_name,
+                            folder_name: action.intake_context?.target_folder_name,
+                            label: action.intake_context?.suggested_location,
+                        },
+                        selected_destination: {
+                            department_name: option.departmentName || undefined,
+                            space_name: option.spaceName || undefined,
+                            folder_name: option.folderName || undefined,
+                            label: option.label,
+                        },
+                    },
                     confirm_payload: {
                         confirmation_token: action.confirmation_token,
                         folder_id: folderId,
