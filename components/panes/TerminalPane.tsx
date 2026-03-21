@@ -1,17 +1,16 @@
 "use client";
 
 /**
- * TerminalPane - MORA Command Line Interface
- * 
- * A terminal emulator for power users and MORA commands.
- * Supports both system commands and MORA AI commands.
+ * TerminalPane - Remote Core Terminal
+ *
+ * Remote terminal surface for core-backed commands and server truth.
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { Terminal as TerminalIcon, ChevronRight, Sparkles } from "lucide-react";
-import { corePost, coreGet, fetchFoldersByCompany, getCoreBaseUrl } from "@/lib/api/coreClient";
+import { corePost, coreGet } from "@/lib/api/coreClient";
 import { buildChatContext } from "@/lib/api/moraAgentClient";
 import { useMoraStore } from "@/lib/store/moraState";
 
@@ -26,56 +25,19 @@ interface TerminalPaneProps {
     id?: string;
 }
 
-const AUTH_COOKIE = "mora_auth_token";
-const SESSION_COOKIE = "mora_session";
-
-function readCookie(name: string): string | null {
-    if (typeof document === 'undefined') return null;
-    const value = document.cookie.split('; ').find(row => row.startsWith(`${name}=`));
-    if (!value) return null;
-    const [, raw] = value.split('=');
-    try {
-        return decodeURIComponent(raw);
-    } catch {
-        return raw;
-    }
-}
-
-function hasTerminalAuth(): boolean {
-    if (typeof window === 'undefined') return false;
-    const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
-    return !!(
-        readCookie(AUTH_COOKIE) ||
-        readCookie(SESSION_COOKIE) ||
-        (isLocalhost ? localStorage.getItem('saimor_dev_token') : null)
-    );
-}
-
-function getRealtimeDiagnosticsUrl(): string {
-    if (typeof window === 'undefined') return 'wss://api.saimor.world/v3/realtime/subscribe';
-
-    const coreWsUrl = process.env.NEXT_PUBLIC_CORE_WS_URL?.trim();
-    if (coreWsUrl) {
-        return `${coreWsUrl.replace(/\/+$/, '')}/v3/realtime/subscribe`;
-    }
-
-    const coreApiUrl = (process.env.NEXT_PUBLIC_CORE_API_URL || '/api/core').trim().replace(/\/+$/, '');
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-    if (coreApiUrl.startsWith('/')) {
-        if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
-            return 'ws://localhost:8081/v3/realtime/subscribe';
-        }
-        const apiHost = window.location.host.startsWith('hq.')
-            ? window.location.host.replace(/^hq\./, 'api.')
-            : 'api.saimor.world';
-        return `${protocol}//${apiHost}/v3/realtime/subscribe`;
-    }
-
-    return `${coreApiUrl.replace(/^http/, 'ws')}/v3/realtime/subscribe`;
-}
-
 type ConnectionState = "checking" | "ready" | "unauthenticated" | "offline";
+
+interface TerminalTruth {
+    host_label?: string;
+    role?: string;
+    mode?: string;
+    cwd?: string;
+    session_id?: string;
+    exit_code?: number;
+    stdout?: string;
+    stderr?: string;
+    stream_chunks?: string[];
+}
 
 // MORA command definitions
 const MORA_COMMANDS: Record<string, { description: string; handler: (args: string[]) => Promise<string> }> = {
@@ -83,43 +45,40 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
         description: "Zeigt alle verfuegbaren Befehle",
         handler: async () => {
             return [
-                "SAIMOR OS Terminal v2.0",
+                "REMOTE CORE TERMINAL",
                 "",
-                "MORA:",
-                "  mora <frage>     - Frage an MORA stellen",
+                "REMOTE:",
+                "  status           - Servertruth anzeigen",
+                "  whoami           - Aktuelle Rolle anzeigen",
+                "  version          - Version anzeigen",
+                "  clear            - Terminal leeren",
+                "  help             - Diese Hilfe",
+                "",
+                "REMOTE COMMANDS:",
+                "  mora <frage>     - Remote LLM Anfrage",
                 "  search <term>    - Semantische Suche",
                 "  providers        - Verfuegbare AI-Provider",
                 "  analyze          - Workspace-Analyse starten",
                 "",
-                "LOKAL:",
-                "  status           - Terminal- und Verbindungsstatus",
-                "  whoami           - Angemeldeter Nutzer und Rolle",
-                "  version          - Version anzeigen",
-                "  hostname         - Browser-Host und Origin",
-                "  ipconfig         - Browser-Verbindungsdiagnose",
+                "FUTURE SERVER-TRUTH:",
+                "  dir / ls / list  - Wartet auf Server cwd/session_id",
                 "",
-                "LIVE DATA:",
-                "  dir / ls / list  - Zugaengliche Firmenordner",
-                "",
-                "SONSTIGES:",
-                "  clear            - Terminal leeren",
-                "  help             - Diese Hilfe",
+                "Hinweis: Befehle ohne Servertruth werden als absent/unknown angezeigt.",
             ].join("\n");
         }
     },
     version: {
         description: "Version anzeigen",
-        handler: async () => "MORA OS v2.0.0-beta | Kernel: Organic Neural Core | Build: 2026.01.07"
+        handler: async () => "REMOTE CORE TERMINAL | UI passt sich an Servertruth an"
     },
     whoami: {
         description: "Benutzerinfo anzeigen",
         handler: async () => {
-            const isLocalhost = typeof window !== 'undefined' && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const readCookie = (name: string) => {
                 const match = document.cookie.split('; ').find(r => r.startsWith(`${name}=`));
                 return match ? match.split('=')[1] : null;
             };
-            const token = readCookie('mora_auth_token') || readCookie('saimor_auth') || (isLocalhost ? localStorage.getItem('saimor_dev_token') : null);
+            const token = readCookie('mora_auth_token') || readCookie('saimor_auth');
             if (token) {
                 try {
                     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -139,7 +98,6 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
 Active Panes: ${panes.length}
 Open Windows: ${panes.filter(p => !p.minimized).length}
 Minimized: ${panes.filter(p => p.minimized).length}
-Session Start: ${new Date().toLocaleTimeString('de-DE')}
 `;
         }
     },
@@ -172,18 +130,13 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
     const user = useMoraStore((state) => state.user);
-    const activeCompanyId = useMoraStore((state) => state.activeCompanyId);
-    const companies = useMoraStore((state) => state.companies);
-    const activeCompanyName = React.useMemo(
-        () => companies.find((company) => company.id === activeCompanyId)?.name || null,
-        [companies, activeCompanyId]
-    );
+    const terminalTruth = React.useMemo(() => (pane?.data || {}) as Partial<TerminalTruth>, [pane?.data]);
 
     const [lines, setLines] = useState<TerminalLine[]>([
         {
             id: "welcome",
             type: "system",
-            content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+            content: "Remote Core Terminal - Tippe 'help' fuer verfuegbare Befehle.",
             timestamp: new Date()
         }
     ]);
@@ -225,13 +178,13 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                     {
                         id: "welcome",
                         type: "system",
-                        content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                        content: "Remote Core Terminal - Tippe 'help' fuer verfuegbare Befehle.",
                         timestamp: new Date()
                     },
                     {
                         id: "auth-required",
                         type: "error",
-                        content: "Terminal gesperrt: Bitte zuerst mit einem aktiven Workspace anmelden.",
+                        content: "Terminal gesperrt: Anmeldung fehlt.",
                         timestamp: new Date()
                     }
                 ]);
@@ -250,15 +203,13 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         {
                             id: "welcome",
                             type: "system",
-                            content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                            content: "Remote Core Terminal - Tippe 'help' fuer verfuegbare Befehle.",
                             timestamp: new Date()
                         },
                         {
                             id: "ready",
                             type: "system",
-                            content: activeCompanyId
-                                ? `Verbunden als ${user.email || user.name || "Nutzer"} im Workspace ${activeCompanyName || activeCompanyId}.`
-                                : `Verbunden als ${user.email || user.name || "Nutzer"}.`,
+                            content: `Remote server bereit. Rolle: ${terminalTruth.role || user.role || "unknown"} | Modus: ${terminalTruth.mode || "stateless"}.`,
                             timestamp: new Date()
                         }
                     ]);
@@ -268,13 +219,13 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         {
                             id: "welcome",
                             type: "system",
-                            content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                            content: "Remote Core Terminal - Tippe 'help' fuer verfuegbare Befehle.",
                             timestamp: new Date()
                         },
                         {
                             id: "offline",
                             type: "error",
-                            content: "Core gerade nicht erreichbar. Lokale Info-Befehle bleiben verfuegbar.",
+                            content: "Core gerade nicht erreichbar. Servertruth-Befehle bleiben unverfuegbar.",
                             timestamp: new Date()
                         }
                     ]);
@@ -286,13 +237,13 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                     {
                         id: "welcome",
                         type: "system",
-                        content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                        content: "Remote Core Terminal - Tippe 'help' fuer verfuegbare Befehle.",
                         timestamp: new Date()
                     },
                     {
                         id: "offline",
                         type: "error",
-                        content: "Core gerade nicht erreichbar. Lokale Info-Befehle bleiben verfuegbar.",
+                        content: "Core gerade nicht erreichbar. Servertruth-Befehle bleiben unverfuegbar.",
                         timestamp: new Date()
                     }
                 ]);
@@ -304,55 +255,32 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
         return () => {
             cancelled = true;
         };
-    }, [activeCompanyId, activeCompanyName, user]);
-
-    const buildConnectionOutput = useCallback(() => {
-        if (typeof window === "undefined") {
-            return "Browser-Verbindungsdaten sind hier nicht verfuegbar.";
-        }
-
-        return [
-            "BROWSER-VERBINDUNG",
-            `Browser: ${navigator.onLine ? "online" : "offline"}`,
-            `UI Origin: ${window.location.origin}`,
-            `Core API URL: ${getCoreBaseUrl()}`,
-            `Realtime URL: ${getRealtimeDiagnosticsUrl()}`,
-            "",
-            "Hinweis: Die lokale Rechner-Netzwerkkonfiguration wird hier nicht angezeigt.",
-        ].join("\n");
-    }, []);
-
-    const buildHostnameOutput = useCallback(() => {
-        if (typeof window === "undefined") {
-            return "Hostdaten sind hier nicht verfuegbar.";
-        }
-
-        return [
-            "BROWSER-HOST",
-            `Hostname: ${window.location.hostname}`,
-            `Origin: ${window.location.origin}`,
-        ].join("\n");
-    }, []);
+    }, [terminalTruth, user]);
 
     const buildStatusOutput = useCallback(() => {
         const panes = usePaneStore.getState().panes;
         return [
-            "TERMINAL STATUS",
-            `Verbindung: ${connectionState === "ready" ? "verbunden" : connectionState === "offline" ? "offline" : connectionState === "checking" ? "prueft" : "gesperrt"}`,
-            `Browser: ${navigator.onLine ? "online" : "offline"}`,
+            "REMOTE CORE STATUS",
+            `Remote server: ${connectionState === "ready" ? "bereit" : connectionState === "offline" ? "offline" : connectionState === "checking" ? "prueft" : "gesperrt"}`,
+            `Rolle: ${terminalTruth.role || user?.role || "unknown"}`,
+            `Modus: ${terminalTruth.mode || "stateless"}`,
+            `host_label: ${terminalTruth.host_label || "unknown"}`,
+            `cwd: ${terminalTruth.cwd || "unknown"}`,
+            `session_id: ${terminalTruth.session_id || "unknown"}`,
+            `exit_code: ${typeof terminalTruth.exit_code === "number" ? terminalTruth.exit_code : "unknown"}`,
+            `stdout: ${terminalTruth.stdout ? "present" : "absent"}`,
+            `stderr: ${terminalTruth.stderr ? "present" : "absent"}`,
+            `stream_chunks: ${terminalTruth.stream_chunks?.length ? String(terminalTruth.stream_chunks.length) : "absent"}`,
             `Input: ${connectionState === "unauthenticated" ? "gesperrt" : "bereit"}`,
-            `Nutzer: ${user?.email || user?.name || "unbekannt"}`,
-            `Rolle: ${user?.role || "unbekannt"}`,
-            `Company: ${activeCompanyName || activeCompanyId || "-"}`,
             `Aktive Fenster: ${panes.filter((entry) => !entry.minimized).length}`,
         ].join("\n");
-    }, [activeCompanyId, activeCompanyName, connectionState, user]);
+    }, [connectionState, terminalTruth, user]);
 
     const requireOnline = useCallback((label: string) => {
         if (connectionState === "ready") return true;
         addLine("error", connectionState === "checking"
-            ? `${label} braucht noch einen Moment, weil die Verbindung noch geprueft wird.`
-            : `${label} braucht eine Core-Verbindung, die gerade offline ist.`);
+            ? `${label} braucht noch einen Moment, weil die Remote-Verbindung noch geprueft wird.`
+            : `${label} braucht eine Remote-Core-Verbindung, die gerade offline ist.`);
         return false;
     }, [addLine, connectionState]);
 
@@ -401,40 +329,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 addLine("output", buildStatusOutput());
             }
             else if (command === "dir") {
-                if (!activeCompanyId) {
-                    addLine("error", "Kein aktiver Workspace gesetzt.");
-                } else if (requireOnline("Ordnerliste")) {
-                    addLine("system", "Lade zugaengliche Ordner...");
-                    try {
-                        const folders = await fetchFoldersByCompany(activeCompanyId);
-                        if (!folders.length) {
-                            addLine("output", "WORKSPACE ORDNER:\n\n  Keine Ordner verfuegbar");
-                        } else {
-                            const rendered = folders
-                                .slice(0, 20)
-                                .map((folder) => {
-                                    const count = typeof folder.node_count === "number" ? `${folder.node_count} Dok.` : "-";
-                                    return `  ${(folder.name || "Ordner").padEnd(28, " ")} ${count}`;
-                                })
-                                .join("\n");
-                            addLine("output", `WORKSPACE ORDNER:\n\n${rendered}\n\n  ${folders.length} Ordner zugaenglich`);
-                        }
-                    } catch (e: any) {
-                        addLine("error", `Ordner konnten nicht geladen werden: ${e?.message || "Unbekannter Fehler"}`);
-                    }
-                }
-            }
-            else if (command === "hostname") {
-                addLine("output", buildHostnameOutput());
-            }
-            else if (command === "ipconfig") {
-                addLine("output", buildConnectionOutput());
-            }
-            else if (command === "ping") {
-                addLine("error", "'ping' ist im Browser nicht unterstuetzt - kein direkter TCP-Zugriff moeglich.");
-            }
-            else if (command === "git" && args[0] === "status") {
-                addLine("error", "'git status' ist hier nicht verfuegbar.");
+                addLine("error", "Der Remote-Core liefert noch keinen cwd/session_id. Verzeichnislisten werden hier erst angezeigt, wenn der Server sie real liefert.");
             }
             // ... (providers block hidden for brevity) ...
             else if (command === "root" || command === "admin") {
@@ -450,7 +345,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                     try {
                         const response = await corePost("/v3/chat", {
                             message: question,
-                            context: buildChatContext({ session_id: "terminal" }),
+                            context: buildChatContext(),
                             include_synthesis: true
                         });
                         if (response?.reply) {
@@ -474,7 +369,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         const response = await corePost("/v3/chat", {
                             message: prompt,
                             provider_preference: "ollama",
-                            context: buildChatContext({ session_id: "terminal_ollama" })
+                            context: buildChatContext()
                         });
                         if (response?.reply) {
                             addLine("mora", `Ollama: ${response.reply}`);
@@ -595,9 +490,8 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
                     </div>
                     <div className="flex-1 text-center text-xs text-white/30 font-medium">
-                        {useMoraStore.getState().user?.email || 'user@saimor.io'}:~
+                        Core Terminal | Remote server | Rolle: {terminalTruth.role || user?.role || 'unknown'} | Modus: {terminalTruth.mode || 'stateless'}
                     </div>
-                    {/* Spacer to balance traffic lights */}
                     <div className="w-[42px]" />
                 </div>
 
