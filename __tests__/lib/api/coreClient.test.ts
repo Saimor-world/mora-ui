@@ -22,6 +22,7 @@ import {
     getMemoryMetrics,
     getMemoryOverview,
     searchGlobal,
+    resolveOpenIntent,
     searchSemantic,
     getApiVersionPerformance,
     learnInsight,
@@ -643,6 +644,58 @@ describe('createSimpleDepartment', () => {
         expect(lastFetchInit().method).toBe('POST');
         expect((lastFetchInit().body as string)).toContain('"name":"Simple Ops"');
         expect(result?.name).toBe('Simple Ops');
+    });
+});
+
+describe('resolveOpenIntent', () => {
+    it('routes to /v3/search/open-intent and preserves receipt fields', async () => {
+        mockFetchV3({
+            query: 'Launch Briefing',
+            resolution: 'act',
+            headline: 'Eindeutiger Treffer',
+            reason: 'Ein klarer Treffer passt zum aktuellen Kontext.',
+            chosen: { id: 'node-1', title: 'Launch Briefing', type: 'node', folder_id: 'folder-1' },
+            candidates: [],
+            destination: {
+                folder_id: 'folder-1',
+                node_id: 'node-1',
+                target_type: 'node',
+                label: 'Launch Briefing',
+                path: '/Acme/Operations/Briefings',
+            },
+            open_explanation: {
+                kind: 'act',
+                headline: 'Eindeutiger Treffer',
+                reason: 'Ein klarer Treffer passt zum aktuellen Kontext.',
+                signal_labels: ['exact_title', 'same_folder'],
+            },
+            next: {
+                mode: 'open',
+                label: 'Treffer oeffnen',
+                message: 'Der Treffer ist klar genug.',
+            },
+        });
+
+        const result = await resolveOpenIntent({
+            query: 'Launch Briefing',
+            company_id: 'co-1',
+            folder_id: 'folder-1',
+        });
+
+        expect(lastFetchUrl()).toContain('/v3/search/open-intent');
+        expect(result.destination).toMatchObject({
+            folder_id: 'folder-1',
+            node_id: 'node-1',
+            target_type: 'node',
+        });
+        expect(result.open_explanation).toMatchObject({
+            kind: 'act',
+            headline: 'Eindeutiger Treffer',
+        });
+        expect(result.next).toMatchObject({
+            mode: 'open',
+            label: 'Treffer oeffnen',
+        });
     });
 });
 

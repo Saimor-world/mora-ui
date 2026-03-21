@@ -996,6 +996,27 @@ export interface OpenIntentResolution {
         plausible_candidates?: number;
         timestamp?: string;
     };
+    destination?: {
+        company_id?: string;
+        department_id?: string;
+        space_id?: string;
+        folder_id?: string;
+        node_id?: string;
+        target_type?: string;
+        label?: string;
+        path?: string;
+    } | null;
+    open_explanation?: {
+        kind?: string;
+        headline?: string;
+        reason?: string;
+        signal_labels?: string[];
+    };
+    next?: {
+        mode?: 'open' | 'choose' | 'review' | string;
+        label?: string;
+        message?: string;
+    };
 }
 
 export async function searchGlobal(query: string, companyId?: string): Promise<SearchResult> {
@@ -1038,6 +1059,9 @@ export async function resolveOpenIntent(payload: {
         candidates: normalizeList<OpenIntentCandidate>(result, ['candidates', 'items', 'results', 'data']),
         scope: (result as any)?.scope,
         metadata: (result as any)?.metadata,
+        destination: (result as any)?.destination || null,
+        open_explanation: (result as any)?.open_explanation,
+        next: (result as any)?.next,
     };
 }
 
