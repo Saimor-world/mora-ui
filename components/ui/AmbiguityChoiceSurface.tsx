@@ -6,10 +6,34 @@ import type { LucideIcon } from 'lucide-react';
 import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 import { getSearchResultLocationLabel, getSearchResultTypeLabel, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 
+interface IntakeDestinationSummary {
+    company_name?: string;
+    department_name?: string;
+    space_name?: string;
+    folder_name?: string;
+    label?: string;
+}
+
+interface IntakeRouteExplanation {
+    headline?: string;
+    reason?: string;
+    signal_labels?: string[];
+    learning_summary?: string;
+}
+
+interface IntakeChoiceResult extends OpenableSearchResult {
+    route_destination?: IntakeDestinationSummary;
+    route_explanation?: IntakeRouteExplanation;
+    route_reason?: string;
+    route_signals?: string[];
+    route_confidence_label?: string;
+    route_confidence_score?: number;
+}
+
 interface AmbiguityChoiceSurfaceProps {
     query?: string;
-    results: OpenableSearchResult[];
-    onPick: (result: OpenableSearchResult) => void | Promise<void>;
+    results: IntakeChoiceResult[];
+    onPick: (result: IntakeChoiceResult) => void | Promise<void>;
     onReview?: () => void;
     className?: string;
     selectedIndex?: number;
@@ -43,6 +67,18 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
     if (shownResults.length === 0) return null;
 
     const firstLabel = query?.trim() ? ` fuer "${query.trim()}"` : '';
+    const formatDestination = (destination?: IntakeDestinationSummary | null) => {
+        const path = [destination?.department_name, destination?.space_name, destination?.folder_name]
+            .filter(Boolean)
+            .join(' > ');
+        return destination?.label || path || 'Ziel offen';
+    };
+
+    const formatConfidence = (label?: string, score?: number) => {
+        const normalized = label || 'mittel';
+        const prefix = normalized === 'hoch' ? 'Hoch' : normalized === 'niedrig' ? 'Niedrig' : 'Mittel';
+        return typeof score === 'number' ? `${prefix} (${Math.round(score * 100)}%)` : prefix;
+    };
 
     return (
         <CommandReceipt
@@ -76,6 +112,12 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                     const typeLabel = getSearchResultTypeLabel(result.type);
                     const locationLabel = getSearchResultLocationLabel(result);
                     const isSelected = typeof selectedIndex === 'number' && selectedIndex === index;
+                    const destinationLabel = formatDestination(result.route_destination);
+                    const explanation = result.route_explanation;
+                    const whyHeadline = explanation?.headline || result.route_reason;
+                    const whyReason = explanation?.reason || result.route_reason;
+                    const signals = explanation?.signal_labels || result.route_signals || [];
+                    const strengthLabel = formatConfidence(result.route_confidence_label, result.route_confidence_score);
 
                     return (
                         <button
@@ -98,6 +140,37 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-medium text-white/88">{result.title}</div>
                                 <div className="mt-0.5 truncate text-xs text-white/48">{locationLabel}</div>
+                                <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-white/58">
+                                    <div className="flex gap-2">
+                                        <span className="shrink-0 uppercase tracking-[0.18em] text-white/36">Ziel</span>
+                                        <span className="min-w-0 text-white/78">{destinationLabel}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="shrink-0 uppercase tracking-[0.18em] text-white/36">Warum</span>
+                                        <span className="min-w-0 text-white/72">
+                                            {whyHeadline || whyReason || 'Keine kurze Begruendung verfuegbar'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="shrink-0 uppercase tracking-[0.18em] text-white/36">Stark</span>
+                                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-white/72">
+                                                {strengthLabel}
+                                            </span>
+                                            {signals.length > 0 && (
+                                                <span className="text-white/42">
+                                                    {signals.slice(0, 2).map((signal) => signal.split('_').join(' ')).join(', ')}
+                                                    {signals.length > 2 ? ` +${signals.length - 2} weitere` : ''}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {explanation?.learning_summary && (
+                                        <div className="text-white/40">
+                                            {explanation.learning_summary}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/55">

@@ -119,9 +119,29 @@ interface RouteOverrideOption {
     folderName?: string | null;
 }
 
-function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex: number): OpenableSearchResult {
+interface IntakeChoiceResult extends OpenableSearchResult {
+    route_destination?: {
+        company_name?: string;
+        department_name?: string;
+        space_name?: string;
+        folder_name?: string;
+        label?: string;
+    };
+    route_explanation?: {
+        headline?: string;
+        reason?: string;
+        signal_labels?: string[];
+        learning_summary?: string;
+    };
+    route_reason?: string;
+    route_signals?: string[];
+    route_confidence_label?: string;
+    route_confidence_score?: number;
+}
+
+function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex: number): IntakeChoiceResult {
     const folderId = candidate.target_folder_id || candidate.destination?.folder_id;
-    return toOpenableSearchResult({
+    const base = toOpenableSearchResult({
         id: folderId || candidate.target_space_id || candidate.target_department_id || `intake-choice-${fallbackIndex}`,
         title: candidate.label || candidate.target_folder_name || candidate.suggested_location || 'Ziel',
         type: folderId ? 'folder' : candidate.target_space_id ? 'space' : candidate.target_department_id ? 'department' : 'folder',
@@ -133,6 +153,15 @@ function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex
         folder_id: folderId,
         score: candidate.route_confidence_score,
     });
+    return {
+        ...base,
+        route_destination: candidate.destination || undefined,
+        route_explanation: candidate.route_explanation || undefined,
+        route_reason: candidate.route_reason,
+        route_signals: candidate.route_signals,
+        route_confidence_label: candidate.route_confidence_label,
+        route_confidence_score: candidate.route_confidence_score,
+    };
 }
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
