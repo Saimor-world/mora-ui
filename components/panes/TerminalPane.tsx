@@ -11,7 +11,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { Terminal as TerminalIcon, ChevronRight, Sparkles } from "lucide-react";
-import { corePost, coreGet } from "@/lib/api/coreClient";
+import { corePost, coreGet, fetchFoldersByCompany, getCoreBaseUrl } from "@/lib/api/coreClient";
 import { buildChatContext } from "@/lib/api/moraAgentClient";
 import { useMoraStore } from "@/lib/store/moraState";
 
@@ -26,6 +26,57 @@ interface TerminalPaneProps {
     id?: string;
 }
 
+const AUTH_COOKIE = "mora_auth_token";
+const SESSION_COOKIE = "mora_session";
+
+function readCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const value = document.cookie.split('; ').find(row => row.startsWith(`${name}=`));
+    if (!value) return null;
+    const [, raw] = value.split('=');
+    try {
+        return decodeURIComponent(raw);
+    } catch {
+        return raw;
+    }
+}
+
+function hasTerminalAuth(): boolean {
+    if (typeof window === 'undefined') return false;
+    const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    return !!(
+        readCookie(AUTH_COOKIE) ||
+        readCookie(SESSION_COOKIE) ||
+        (isLocalhost ? localStorage.getItem('saimor_dev_token') : null)
+    );
+}
+
+function getRealtimeDiagnosticsUrl(): string {
+    if (typeof window === 'undefined') return 'wss://api.saimor.world/v3/realtime/subscribe';
+
+    const coreWsUrl = process.env.NEXT_PUBLIC_CORE_WS_URL?.trim();
+    if (coreWsUrl) {
+        return `${coreWsUrl.replace(/\/+$/, '')}/v3/realtime/subscribe`;
+    }
+
+    const coreApiUrl = (process.env.NEXT_PUBLIC_CORE_API_URL || '/api/core').trim().replace(/\/+$/, '');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+    if (coreApiUrl.startsWith('/')) {
+        if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+            return 'ws://localhost:8081/v3/realtime/subscribe';
+        }
+        const apiHost = window.location.host.startsWith('hq.')
+            ? window.location.host.replace(/^hq\./, 'api.')
+            : 'api.saimor.world';
+        return `${protocol}//${apiHost}/v3/realtime/subscribe`;
+    }
+
+    return `${coreApiUrl.replace(/^http/, 'ws')}/v3/realtime/subscribe`;
+}
+
+type ConnectionState = "checking" | "ready" | "unauthenticated" | "offline";
+
 // MORA command definitions
 const MORA_COMMANDS: Record<string, { description: string; handler: (args: string[]) => Promise<string> }> = {
     help: {
@@ -34,24 +85,25 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
             return [
                 "SAIMOR OS Terminal v2.0",
                 "",
-                "SYSTEM COMMANDS:",
-                "  help          - Diese Hilfe anzeigen",
-                "  clear         - Terminal leeren",
-                "  status        - Systemstatus (CPU, RAM, Access Level)",
-                "  whoami        - Aktuelle Benutzerinfo",
-                "  version       - Version anzeigen",
+                "MORA:",
+                "  mora <frage>     - Frage an MORA stellen",
+                "  search <term>    - Semantische Suche",
+                "  providers        - Verfuegbare AI-Provider",
+                "  analyze          - Workspace-Analyse starten",
                 "",
-                "SHELL COMMANDS (Core Terminal):",
-                "  dir           - Verzeichnisinhalt",
-                "  ls, list      - Alias fuer dir",
-                "  hostname      - Hostname anzeigen",
-                "  ping <host>   - Netzwerk-Diagnose",
-                "  git status    - Git Repository Status",
+                "LOKAL:",
+                "  status           - Terminal- und Verbindungsstatus",
+                "  whoami           - Angemeldeter Nutzer und Rolle",
+                "  version          - Version anzeigen",
+                "  hostname         - Browser-Host und Origin",
+                "  ipconfig         - Browser-Verbindungsdiagnose",
                 "",
-                "AI COMMANDS:",
-                "  mora <frage>  - Frage an MA'RA stellen (via LLM)",
-                "  providers     - Verfuegbare AI Provider anzeigen",
-                "  search <term> - Semantische Suche",
+                "LIVE DATA:",
+                "  dir / ls / list  - Zugaengliche Firmenordner",
+                "",
+                "SONSTIGES:",
+                "  clear            - Terminal leeren",
+                "  help             - Diese Hilfe",
             ].join("\n");
         }
     },
@@ -116,38 +168,16 @@ Session Start: ${new Date().toLocaleTimeString('de-DE')}
     }
 };
 
-const BROWSER_UNSUPPORTED_COMMANDS = new Set(['ipconfig']);
-
-type ShellRoutingResult =
-    | { routable: true; command: string; display: string }
-    | { routable: false; reason: string };
-
-const normalizeShellCommand = (command: string, args: string[]): ShellRoutingResult => {
-    if (command === 'ls' || command === 'list') {
-        return { routable: true, command: 'dir', display: 'dir' };
-    }
-
-    if (command === 'git' && args[0] === 'status') {
-        return { routable: true, command: 'git status', display: 'git status' };
-    }
-
-    if (command === 'dir' || command === 'hostname' || command === 'ping') {
-        return { routable: true, command, display: command };
-    }
-
-    if (BROWSER_UNSUPPORTED_COMMANDS.has(command)) {
-        return { routable: false, reason: `Der Befehl "${command}" ist im Browser-Terminal nicht verfuegbar.` };
-    }
-
-    return {
-        routable: false,
-        reason: `Der Befehl "${command}" wird im Browser-Terminal nicht ausgefuehrt. Verwende Hilfe fuer verfuegbare Befehle.`,
-    };
-};
-
 export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
+    const user = useMoraStore((state) => state.user);
+    const activeCompanyId = useMoraStore((state) => state.activeCompanyId);
+    const companies = useMoraStore((state) => state.companies);
+    const activeCompanyName = React.useMemo(
+        () => companies.find((company) => company.id === activeCompanyId)?.name || null,
+        [companies, activeCompanyId]
+    );
 
     const [lines, setLines] = useState<TerminalLine[]>([
         {
@@ -161,6 +191,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
     const [commandHistory, setCommandHistory] = useState<string[]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
 
     const inputRef = useRef<HTMLInputElement>(null);
     const terminalRef = useRef<HTMLDivElement>(null);
@@ -184,6 +215,147 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
         }]);
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        const bootstrap = async () => {
+            if (!user) {
+                setConnectionState("unauthenticated");
+                setLines([
+                    {
+                        id: "welcome",
+                        type: "system",
+                        content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                        timestamp: new Date()
+                    },
+                    {
+                        id: "auth-required",
+                        type: "error",
+                        content: "Terminal gesperrt: Bitte zuerst mit einem aktiven Workspace anmelden.",
+                        timestamp: new Date()
+                    }
+                ]);
+                return;
+            }
+
+            setConnectionState("checking");
+
+            try {
+                const probe = await coreGet("/v3/chat/providers", { isOptional: true });
+                if (cancelled) return;
+
+                if (probe) {
+                    setConnectionState("ready");
+                    setLines([
+                        {
+                            id: "welcome",
+                            type: "system",
+                            content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                            timestamp: new Date()
+                        },
+                        {
+                            id: "ready",
+                            type: "system",
+                            content: activeCompanyId
+                                ? `Verbunden als ${user.email || user.name || "Nutzer"} im Workspace ${activeCompanyName || activeCompanyId}.`
+                                : `Verbunden als ${user.email || user.name || "Nutzer"}.`,
+                            timestamp: new Date()
+                        }
+                    ]);
+                } else {
+                    setConnectionState("offline");
+                    setLines([
+                        {
+                            id: "welcome",
+                            type: "system",
+                            content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                            timestamp: new Date()
+                        },
+                        {
+                            id: "offline",
+                            type: "error",
+                            content: "Core gerade nicht erreichbar. Lokale Info-Befehle bleiben verfuegbar.",
+                            timestamp: new Date()
+                        }
+                    ]);
+                }
+            } catch {
+                if (cancelled) return;
+                setConnectionState("offline");
+                setLines([
+                    {
+                        id: "welcome",
+                        type: "system",
+                        content: "MORA Terminal v2.0 - Tippe 'help' fuer verfuegbare Befehle.",
+                        timestamp: new Date()
+                    },
+                    {
+                        id: "offline",
+                        type: "error",
+                        content: "Core gerade nicht erreichbar. Lokale Info-Befehle bleiben verfuegbar.",
+                        timestamp: new Date()
+                    }
+                ]);
+            }
+        };
+
+        void bootstrap();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeCompanyId, activeCompanyName, user]);
+
+    const buildConnectionOutput = useCallback(() => {
+        if (typeof window === "undefined") {
+            return "Browser-Verbindungsdaten sind hier nicht verfuegbar.";
+        }
+
+        return [
+            "BROWSER-VERBINDUNG",
+            `Browser: ${navigator.onLine ? "online" : "offline"}`,
+            `UI Origin: ${window.location.origin}`,
+            `Core API URL: ${getCoreBaseUrl()}`,
+            `Realtime URL: ${getRealtimeDiagnosticsUrl()}`,
+            "",
+            "Hinweis: Die lokale Rechner-Netzwerkkonfiguration wird hier nicht angezeigt.",
+        ].join("\n");
+    }, []);
+
+    const buildHostnameOutput = useCallback(() => {
+        if (typeof window === "undefined") {
+            return "Hostdaten sind hier nicht verfuegbar.";
+        }
+
+        return [
+            "BROWSER-HOST",
+            `Hostname: ${window.location.hostname}`,
+            `Origin: ${window.location.origin}`,
+        ].join("\n");
+    }, []);
+
+    const buildStatusOutput = useCallback(() => {
+        const panes = usePaneStore.getState().panes;
+        return [
+            "TERMINAL STATUS",
+            `Verbindung: ${connectionState === "ready" ? "verbunden" : connectionState === "offline" ? "offline" : connectionState === "checking" ? "prueft" : "gesperrt"}`,
+            `Browser: ${navigator.onLine ? "online" : "offline"}`,
+            `Input: ${connectionState === "unauthenticated" ? "gesperrt" : "bereit"}`,
+            `Nutzer: ${user?.email || user?.name || "unbekannt"}`,
+            `Rolle: ${user?.role || "unbekannt"}`,
+            `Company: ${activeCompanyName || activeCompanyId || "-"}`,
+            `Aktive Fenster: ${panes.filter((entry) => !entry.minimized).length}`,
+        ].join("\n");
+    }, [activeCompanyId, activeCompanyName, connectionState, user]);
+
+    const requireOnline = useCallback((label: string) => {
+        if (connectionState === "ready") return true;
+        addLine("error", connectionState === "checking"
+            ? `${label} braucht noch einen Moment, weil die Verbindung noch geprueft wird.`
+            : `${label} braucht eine Core-Verbindung, die gerade offline ist.`);
+        return false;
+    }, [addLine, connectionState]);
+
     const executeCommand = async (cmd: string) => {
         const trimmed = cmd.trim();
         if (!trimmed) return;
@@ -196,7 +368,8 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
 
         try {
             const parts = trimmed.split(" ");
-            const command = parts[0].toLowerCase();
+            const rawCommand = parts[0].toLowerCase();
+            const command = rawCommand === "ls" || rawCommand === "list" ? "dir" : rawCommand;
             const args = parts.slice(1);
 
             if (command === "clear") {
@@ -210,9 +383,58 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 return;
             }
 
+            if (connectionState === "unauthenticated") {
+                addLine("error", "Terminal gesperrt: Bitte zuerst mit einem aktiven Workspace anmelden.");
+                setIsProcessing(false);
+                return;
+            }
+
             if (MORA_COMMANDS[command]) {
+                if (command === "providers" && !requireOnline("AI-Provider")) {
+                    setIsProcessing(false);
+                    return;
+                }
                 const result = await MORA_COMMANDS[command].handler(args);
                 addLine("output", result);
+            }
+            else if (command === "status") {
+                addLine("output", buildStatusOutput());
+            }
+            else if (command === "dir") {
+                if (!activeCompanyId) {
+                    addLine("error", "Kein aktiver Workspace gesetzt.");
+                } else if (requireOnline("Ordnerliste")) {
+                    addLine("system", "Lade zugaengliche Ordner...");
+                    try {
+                        const folders = await fetchFoldersByCompany(activeCompanyId);
+                        if (!folders.length) {
+                            addLine("output", "WORKSPACE ORDNER:\n\n  Keine Ordner verfuegbar");
+                        } else {
+                            const rendered = folders
+                                .slice(0, 20)
+                                .map((folder) => {
+                                    const count = typeof folder.node_count === "number" ? `${folder.node_count} Dok.` : "-";
+                                    return `  ${(folder.name || "Ordner").padEnd(28, " ")} ${count}`;
+                                })
+                                .join("\n");
+                            addLine("output", `WORKSPACE ORDNER:\n\n${rendered}\n\n  ${folders.length} Ordner zugaenglich`);
+                        }
+                    } catch (e: any) {
+                        addLine("error", `Ordner konnten nicht geladen werden: ${e?.message || "Unbekannter Fehler"}`);
+                    }
+                }
+            }
+            else if (command === "hostname") {
+                addLine("output", buildHostnameOutput());
+            }
+            else if (command === "ipconfig") {
+                addLine("output", buildConnectionOutput());
+            }
+            else if (command === "ping") {
+                addLine("error", "'ping' ist im Browser nicht unterstuetzt - kein direkter TCP-Zugriff moeglich.");
+            }
+            else if (command === "git" && args[0] === "status") {
+                addLine("error", "'git status' ist hier nicht verfuegbar.");
             }
             // ... (providers block hidden for brevity) ...
             else if (command === "root" || command === "admin") {
@@ -223,7 +445,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 const question = args.join(" ");
                 if (!question) {
                     addLine("error", "Usage: mora <deine Frage>");
-                } else {
+                } else if (requireOnline("MORA")) {
                     addLine("mora", "MORA denkt nach...");
                     try {
                         const response = await corePost("/v3/chat", {
@@ -246,7 +468,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 const prompt = args.join(" ");
                 if (!prompt) {
                     addLine("error", "Usage: ollama <prompt>");
-                } else {
+                } else if (requireOnline("Ollama")) {
                     addLine("system", "Sende an Ollama...");
                     try {
                         const response = await corePost("/v3/chat", {
@@ -266,18 +488,20 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
             }
             else if (command === "analyze") {
                 addLine("system", "Starte Workspace-Analyse...");
-                try {
-                    const response = await corePost("/v1/autonomous/analyze", { deep: false });
-                    addLine("output", `Analyse: ${response?.tasks_processed || 0} Tasks verarbeitet`);
-                } catch (e) {
-                    addLine("error", "Analyse fehlgeschlagen");
+                if (requireOnline("Analyse")) {
+                    try {
+                        const response = await corePost("/v1/autonomous/analyze", { deep: false });
+                        addLine("output", `Analyse: ${response?.tasks_processed || 0} Tasks verarbeitet`);
+                    } catch (e) {
+                        addLine("error", "Analyse fehlgeschlagen");
+                    }
                 }
             }
             else if (command === "search") {
                 const query = args.join(" ");
                 if (!query) {
                     addLine("error", "Usage: search <suchbegriff>");
-                } else {
+                } else if (requireOnline("Suche")) {
                     addLine("system", `Suche nach "${query}"...`);
                     try {
                         // Use Hybrid search (Semantic + Keyword)
@@ -296,29 +520,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 }
             }
             else {
-                const shell = normalizeShellCommand(command, args);
-
-                if (!shell.routable) {
-                    addLine("error", shell.reason);
-                } else {
-                    setIsProcessing(true);
-                    try {
-                        addLine("system", `Ausfuehrung im Core-Terminal: ${shell.display}`);
-                        const res = await corePost("/v1/terminal/execute", { command: shell.command });
-
-                        if (res?.success) {
-                            if (res.output) {
-                                addLine("output", res.output);
-                            } else {
-                                addLine("system", "Befehl ausgefuehrt, aber ohne Ausgabe.");
-                            }
-                        } else {
-                            addLine("error", res?.output || `Der Befehl "${shell.display}" konnte im Core-Terminal nicht ausgefuehrt werden.`);
-                        }
-                    } catch (e: any) {
-                        addLine("error", `Core-Terminal nicht erreichbar: ${e.message || "Unknown Core Error"}`);
-                    }
-                }
+                addLine("error", `Unbekannter Befehl: '${trimmed}' - tippe 'help' fuer verfuegbare Befehle.`);
             }
         } catch (error: any) {
             addLine("error", `Fehler: ${error.message || error}`);
@@ -421,8 +623,16 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         value={currentInput}
                         onChange={(e) => setCurrentInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        disabled={isProcessing}
-                        placeholder=""
+                        disabled={isProcessing || connectionState === "unauthenticated"}
+                        placeholder={
+                            connectionState === "unauthenticated"
+                                ? "Anmeldung erforderlich"
+                                : connectionState === "offline"
+                                    ? "Offline: lokale Befehle funktionieren"
+                                    : connectionState === "checking"
+                                        ? "Verbindung wird geprueft"
+                                        : "Befehl eingeben"
+                        }
                         className="flex-1 bg-transparent text-emerald-100 placeholder:text-emerald-500/30 focus:outline-none disabled:opacity-50 font-mono"
                         autoFocus
                     />
