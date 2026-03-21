@@ -181,4 +181,69 @@ describe('surfaceNavigationOutcome — execution continuity', () => {
             next_message: 'Eine Navigation wurde als Teil des Arbeitsplans ausgefuehrt.',
         }));
     });
+
+    it('dispatches last_transition_step_id, last_transition_type and last_transition_message when plan carries a post-decision transition', async () => {
+        mockCorePost.mockResolvedValueOnce({
+            plan_id: 'plan-1',
+            session_id: 'session-1',
+            state: 'running',
+            title: 'Arbeitsplan',
+            stats: {},
+            execution: {
+                last_transition_step_id: 'step-confirm-001',
+                last_transition_type: 'confirmed',
+                last_transition_message: 'Schritt bestaetigt. Mora setzt den Plan fort.',
+                next_message: 'Naechster Schritt: Dokument lesen.',
+            },
+        });
+
+        surfaceNavigationOutcome({
+            title: 'Datei geoeffnet',
+            message: '',
+            targetType: 'node',
+            label: 'Dokument',
+            companyId: 'c1',
+            nodeId: 'n1',
+            source: 'search',
+        }, jest.fn());
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(mockDispatchWorkSessionPlan).toHaveBeenCalledWith(expect.objectContaining({
+            last_transition_step_id: 'step-confirm-001',
+            last_transition_type: 'confirmed',
+            last_transition_message: 'Schritt bestaetigt. Mora setzt den Plan fort.',
+        }));
+    });
+
+    it('does not dispatch last_transition_step_id when execution carries no post-decision transition', async () => {
+        mockCorePost.mockResolvedValueOnce({
+            plan_id: 'plan-1',
+            session_id: 'session-1',
+            state: 'running',
+            title: 'Arbeitsplan',
+            stats: {},
+            execution: {
+                current_step_title: 'Schritt lesen',
+                next_message: 'Mora arbeitet.',
+            },
+        });
+
+        surfaceNavigationOutcome({
+            title: 'Datei geoeffnet',
+            message: '',
+            targetType: 'node',
+            label: 'Dokument',
+            companyId: 'c1',
+            nodeId: 'n1',
+            source: 'search',
+        }, jest.fn());
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const call = mockDispatchWorkSessionPlan.mock.calls[0]?.[0];
+        expect(call?.last_transition_step_id).toBeUndefined();
+    });
 });
