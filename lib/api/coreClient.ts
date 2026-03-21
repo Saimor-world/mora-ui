@@ -1626,11 +1626,16 @@ export interface TerminalHistoryEntry {
     executed_at?: string;
 }
 
+/** Explicit lifecycle state of a terminal session (Core fdac89e+). */
+export type TerminalSessionState = 'stateless' | 'active' | 'closed' | 'expired';
+
 /**
  * Full session object returned by POST /v3/terminal/session and
  * GET /v3/terminal/session/{id}.
  *
  * supports_sessions = true, supports_cwd = true, supports_streaming = false.
+ * session_state / expires_at / close_reason / history_count / history_limit
+ * are the new lifecycle-truth fields added in Core dca969f.
  */
 export interface TerminalSession {
     session_id: string;
@@ -1653,6 +1658,12 @@ export interface TerminalSession {
     last_command?: string;
     last_exit_code?: number;
     history: TerminalHistoryEntry[];
+    // ── Lifecycle-truth fields (Core dca969f) ────────────────────────────────
+    session_state?: TerminalSessionState;  // stateless | active | closed | expired
+    expires_at?: string;                   // ISO-8601 expiry timestamp
+    close_reason?: string;                 // why the session was closed
+    history_count?: number;               // current server-owned transcript entries
+    history_limit?: number;               // server-imposed transcript cap
 }
 
 /** Structured result from POST /v3/terminal/session/{id}/input */

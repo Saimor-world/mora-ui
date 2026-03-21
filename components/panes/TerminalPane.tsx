@@ -37,7 +37,7 @@ import {
     executeSessionInput,
     closeTerminalSession,
 } from "@/lib/api/coreClient";
-import type { TerminalSession, TerminalInputResult } from "@/lib/api/coreClient";
+import type { TerminalSession, TerminalInputResult, TerminalSessionState } from "@/lib/api/coreClient";
 import { buildChatContext } from "@/lib/api/moraAgentClient";
 import { useMoraStore } from "@/lib/store/moraState";
 
@@ -282,10 +282,11 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
             conn === "checking"     ? "prüft..." :
                                       "gesperrt";
 
-        return [
+        const lines = [
             "CORE TERMINAL STATUS",
             `Verbindung: ${connLabel}`,
             `Session-ID: ${sess?.session_id ?? "keine"}`,
+            `Session-State: ${sess?.session_state ?? "unbekannt"}`,
             `Server: ${sess?.host_label ?? "unbekannt"} (${sess?.platform ?? "unbekannt"})`,
             `Arbeitsverzeichnis: ${sess?.cwd ?? "unbekannt"}`,
             `Rolle: ${sess?.role ?? user?.role ?? "unbekannt"}`,
@@ -295,7 +296,17 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
             `supports_cwd: ${sess?.supports_cwd === true ? "ja" : "nein"}`,
             `supports_streaming: ${sess?.supports_streaming === true ? "ja" : "nein"}`,
             `Aktive Fenster: ${panes.filter((p) => !p.minimized).length}`,
-        ].join("\n");
+        ];
+        if (sess?.expires_at) {
+            lines.push(`Läuft ab: ${sess.expires_at}`);
+        }
+        if (sess?.history_count != null && sess?.history_limit != null) {
+            lines.push(`Verlauf: ${sess.history_count}/${sess.history_limit}`);
+        }
+        if (sess?.close_reason) {
+            lines.push(`Schließ-Grund: ${sess.close_reason}`);
+        }
+        return lines.join("\n");
     }, [user]);
 
     /**
@@ -308,6 +319,22 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
      * - no output at all → "(kein Output) exit N"
      */
     const renderInputResult = useCallback((result: TerminalInputResult) => {
+        // ── Session lifecycle events take priority over stdout/stderr ─────────
+        const sessState = result.session?.session_state as TerminalSessionState | undefined;
+        if (sessState === "expired") {
+            setConn("disconnected");
+            addLine("error", "Session abgelaufen. Core Terminal hat die Session beendet.");
+            addLine("system", "Eingabe 'reconnect' um neue Session zu starten.");
+            return;
+        }
+        if (sessState === "closed") {
+            const reason = result.session?.close_reason;
+            setConn("disconnected");
+            addLine("error", `Session geschlossen${reason ? `: ${reason}` : "."}`);
+            addLine("system", "Eingabe 'reconnect' um neue Session zu starten.");
+            return;
+        }
+
         if (result.denied_reason) {
             addLine("error", `Verweigert: ${result.denied_reason}`);
             return;
@@ -323,7 +350,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
         } else if (typeof result.exit_code === "number" && result.exit_code !== 0) {
             addLine("system", `exit ${result.exit_code}`);
         }
-    }, [addLine]);
+    }, [addLine, setConn]);
 
     const requireOnline = useCallback((label: string): boolean => {
         const conn = connectionStateRef.current;
