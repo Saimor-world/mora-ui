@@ -31,10 +31,11 @@ import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 import { dispatchNavigationResult, openSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
-import { fetchWorkSessionPlan, resolveOpenIntent } from '@/lib/api/coreClient';
+import { fetchWorkSessionPlan, resolveOpenIntent, type OpenIntentResolution } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
+import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 
 interface PendingAction {
     tool_name: string;
@@ -82,6 +83,35 @@ function extractInsightFromRequest(text: string): string {
         content = content.replace(new RegExp(`^${prefix}\\s*`, 'i'), '');
     }
     return content.trim();
+}
+
+function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
+    label: string;
+    title: string;
+    body?: string;
+    chips: CommandReceiptChip[];
+    footer?: string;
+} {
+    const chips: CommandReceiptChip[] = [];
+    if (query.trim()) {
+        chips.push({ label: `"${query.trim()}"` });
+    }
+    if (intent.destination?.path) {
+        chips.push({ label: intent.destination.path });
+    } else if (intent.destination?.label) {
+        chips.push({ label: intent.destination.label });
+    }
+    if (intent.next?.label) {
+        chips.push({ label: intent.next.label, tone: intent.resolution === 'choose' ? 'amber' : intent.resolution === 'act' ? 'cyan' : 'slate' });
+    }
+
+    return {
+        label: intent.headline || 'Treffer',
+        title: intent.open_explanation?.headline || intent.reason || `Suche fuer "${query}"`,
+        body: intent.open_explanation?.reason || intent.reason || undefined,
+        chips,
+        footer: intent.next?.message,
+    };
 }
 
 interface ChatPaneProps {
@@ -493,7 +523,15 @@ Was kann ich fuer dich tun?`,
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [ambiguityChoice, setAmbiguityChoice] = useState<{ query: string; results: OpenableSearchResult[] } | null>(null);
+    const [ambiguityChoice, setAmbiguityChoice] = useState<{
+        query: string;
+        results: OpenableSearchResult[];
+        receipt: ReturnType<typeof buildOpenIntentReceipt>;
+    } | null>(null);
+    const [openIntentReceipt, setOpenIntentReceipt] = useState<{
+        query: string;
+        receipt: ReturnType<typeof buildOpenIntentReceipt>;
+    } | null>(null);
     const moraCtx = useMoraContext();
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);
@@ -740,6 +778,7 @@ Was kann ich fuer dich tun?`,
         if (!activeCompanyId) {
             return executeSearch(trimmed);
         }
+        setOpenIntentReceipt(null);
 
         const scope = {
             companyId: activeCompanyId,
@@ -758,7 +797,7 @@ Was kann ich fuer dich tun?`,
         if (openIntent.resolution === 'choose' && openIntent.candidates.length > 0) {
             dispatchNavigationResult({
                 title: 'Mehrdeutiger Treffer',
-                message: openIntent.reason || `Mehrere passende Treffer fuer ${trimmed}. Waehle unten einen aus.`,
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer fuer ${trimmed}. Waehle unten einen aus.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -768,6 +807,7 @@ Was kann ich fuer dich tun?`,
             setAmbiguityChoice({
                 query: trimmed,
                 results: openIntent.candidates.map((candidate) => toChatOpenableResult(candidate)),
+                receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
             return `Ich sehe mehrere passende Treffer fuer **${trimmed}**. Waehle unten einen aus.`;
         }
@@ -782,18 +822,23 @@ Was kann ich fuer dich tun?`,
             });
             dispatchNavigationResult({
                 title: 'Suche geoeffnet',
-                message: openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
                 companyId: activeCompanyId || undefined,
                 source: 'chat',
             });
+            setOpenIntentReceipt({
+                query: trimmed,
+                receipt: buildOpenIntentReceipt(openIntent, trimmed),
+            });
             return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fuer **${trimmed}** geoeffnet.`;
         }
 
         const chosen = toChatOpenableResult(openIntent.chosen);
         setAmbiguityChoice(null);
+        setOpenIntentReceipt(null);
         await openSearchResult(chosen, openPane, scope, 'chat');
         if (chosen.type === 'file' || chosen.type === 'node') {
             return `Ich oeffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
@@ -805,6 +850,7 @@ Was kann ich fuer dich tun?`,
     const processMessage = async (content: string) => {
         setIsLoading(true);
         setAmbiguityChoice(null);
+        setOpenIntentReceipt(null);
         const intent = parseIntent(content);
 
         // Check for memory intent (e.g., "merke dir...", "wichtig...")
@@ -1294,6 +1340,11 @@ Was kann ich fuer dich tun?`,
                                 <AmbiguityChoiceSurface
                                     query={ambiguityChoice.query}
                                     results={ambiguityChoice.results}
+                                    label={ambiguityChoice.receipt.label}
+                                    body={ambiguityChoice.receipt.title}
+                                    description={ambiguityChoice.receipt.body}
+                                    chips={ambiguityChoice.receipt.chips}
+                                    footer={ambiguityChoice.receipt.footer}
                                     onPick={async (result) => {
                                         setAmbiguityChoice(null);
                                         const scope = {
@@ -1314,6 +1365,49 @@ Was kann ich fuer dich tun?`,
                                             data: { query: ambiguityChoice.query },
                                         });
                                     }}
+                                />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {openIntentReceipt && (
+                        <motion.div
+                            key={`open-intent-receipt-${openIntentReceipt.query}`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex justify-start"
+                        >
+                            <div className="max-w-[80%] w-full">
+                                <CommandReceipt
+                                    tone="slate"
+                                    label={openIntentReceipt.receipt.label}
+                                    title={openIntentReceipt.receipt.title}
+                                    body={openIntentReceipt.receipt.body}
+                                    chips={openIntentReceipt.receipt.chips}
+                                    footer={openIntentReceipt.receipt.footer}
+                                    actions={
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const query = openIntentReceipt.query;
+                                                setOpenIntentReceipt(null);
+                                                openPane({
+                                                    id: 'search-main',
+                                                    type: 'search',
+                                                    title: 'Suche',
+                                                    size: { width: 960, height: 720 },
+                                                    data: { query },
+                                                });
+                                            }}
+                                            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
+                                        >
+                                            Suche pruefen
+                                        </button>
+                                    }
+                                    className="rounded-[22px]"
                                 />
                             </div>
                         </motion.div>

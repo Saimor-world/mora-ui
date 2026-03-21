@@ -3,7 +3,7 @@
 import React from 'react';
 import { ArrowRight, Search } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { CommandReceipt } from '@/components/ui/CommandReceipt';
+import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 import { getSearchResultLocationLabel, getSearchResultTypeLabel, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 
 interface AmbiguityChoiceSurfaceProps {
@@ -13,8 +13,12 @@ interface AmbiguityChoiceSurfaceProps {
     onReview?: () => void;
     className?: string;
     selectedIndex?: number;
+    label?: string;
     title?: string;
     body?: string;
+    description?: React.ReactNode;
+    chips?: CommandReceiptChip[];
+    footer?: React.ReactNode;
     tone?: 'amber' | 'cyan' | 'slate';
 }
 
@@ -25,8 +29,12 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
     onReview,
     className = '',
     selectedIndex,
+    label,
     title,
     body,
+    description,
+    chips,
+    footer,
     tone = 'amber',
 }) => {
     const shownResults = results.slice(0, 5);
@@ -39,14 +47,16 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
     return (
         <CommandReceipt
             tone={tone}
-            label={title || (isAmbiguous ? 'Mehrere passende Treffer' : 'Treffer')}
+            label={label || (isAmbiguous ? 'Mehrere passende Treffer' : 'Treffer')}
             title={body || (isAmbiguous
                 ? `Ich sehe mehrere plausible Ziele${firstLabel}. Waehle eins.`
                 : `Ich habe einen klaren Treffer${firstLabel}.`)}
+            body={description}
             icon={isAmbiguous ? Search : undefined}
             chips={[
                 { label: `${shownResults.length} Auswahl${shownResults.length === 1 ? '' : 'en'}` },
                 { label: 'Titel + Pfad + Typ' },
+                ...(chips || []),
             ]}
             actions={onReview ? (
                 <button
@@ -57,6 +67,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                     Suche pruefen
                 </button>
             ) : undefined}
+            footer={footer}
             className={className}
         >
             <div className="space-y-2">
