@@ -41,10 +41,10 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
                 "  whoami        - Aktuelle Benutzerinfo",
                 "  version       - Version anzeigen",
                 "",
-                "SHELL COMMANDS (Role-Based):",
-                "  dir, ls       - Verzeichnisinhalt",
+                "SHELL COMMANDS (Core Terminal):",
+                "  dir           - Verzeichnisinhalt",
+                "  ls, list      - Alias fuer dir",
                 "  hostname      - Hostname anzeigen",
-                "  ipconfig      - Netzwerkkonfiguration",
                 "  ping <host>   - Netzwerk-Diagnose",
                 "  git status    - Git Repository Status",
                 "",
@@ -114,6 +114,35 @@ Session Start: ${new Date().toLocaleTimeString('de-DE')}
             }
         }
     }
+};
+
+const BROWSER_UNSUPPORTED_COMMANDS = new Set(['ipconfig']);
+
+type ShellRoutingResult =
+    | { routable: true; command: string; display: string }
+    | { routable: false; reason: string };
+
+const normalizeShellCommand = (command: string, args: string[]): ShellRoutingResult => {
+    if (command === 'ls' || command === 'list') {
+        return { routable: true, command: 'dir', display: 'dir' };
+    }
+
+    if (command === 'git' && args[0] === 'status') {
+        return { routable: true, command: 'git status', display: 'git status' };
+    }
+
+    if (command === 'dir' || command === 'hostname' || command === 'ping') {
+        return { routable: true, command, display: command };
+    }
+
+    if (BROWSER_UNSUPPORTED_COMMANDS.has(command)) {
+        return { routable: false, reason: `Der Befehl "${command}" ist im Browser-Terminal nicht verfuegbar.` };
+    }
+
+    return {
+        routable: false,
+        reason: `Der Befehl "${command}" wird im Browser-Terminal nicht ausgefuehrt. Verwende Hilfe fuer verfuegbare Befehle.`,
+    };
 };
 
 export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
@@ -267,27 +296,28 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                 }
             }
             else {
-                // FALLBACK: Send to Backend Terminal Service
-                // This enables real command execution (e.g. echo, directory listing)
-                setIsProcessing(true); // Keep processing state active
-                try {
-                    // Remove $ if user typed it manually, though usually not needed here as logic handles it
-                    const cmdToSend = trimmed.startsWith('$') ? trimmed : trimmed;
+                const shell = normalizeShellCommand(command, args);
 
-                    addLine("system", "Routing to Core Terminal...");
-                    const res = await corePost("/v1/terminal/execute", { command: cmdToSend });
+                if (!shell.routable) {
+                    addLine("error", shell.reason);
+                } else {
+                    setIsProcessing(true);
+                    try {
+                        addLine("system", `Ausfuehrung im Core-Terminal: ${shell.display}`);
+                        const res = await corePost("/v1/terminal/execute", { command: shell.command });
 
-                    if (res?.success) {
-                        if (res.output) {
-                            addLine("output", res.output);
+                        if (res?.success) {
+                            if (res.output) {
+                                addLine("output", res.output);
+                            } else {
+                                addLine("system", "Befehl ausgefuehrt, aber ohne Ausgabe.");
+                            }
                         } else {
-                            addLine("system", "Command executed (no output)");
+                            addLine("error", res?.output || `Der Befehl "${shell.display}" konnte im Core-Terminal nicht ausgefuehrt werden.`);
                         }
-                    } else {
-                        addLine("error", res?.output || "Command failed on server");
+                    } catch (e: any) {
+                        addLine("error", `Core-Terminal nicht erreichbar: ${e.message || "Unknown Core Error"}`);
                     }
-                } catch (e: any) {
-                    addLine("error", `Execution Error: ${e.message || "Unknown Core Error"}`);
                 }
             }
         } catch (error: any) {
