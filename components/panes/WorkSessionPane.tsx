@@ -637,8 +637,10 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
                     ? plan.execution?.pending_confirmation_title
                     : undefined,
             next_label:   plan.execution?.next_label,
-            next_message: plan.execution?.next_message,
+            next_message: plan.execution?.last_transition_message ?? plan.execution?.next_message,
             last_transition_step_id: plan.execution?.last_transition_step_id,
+            last_transition_type: plan.execution?.last_transition_type,
+            last_transition_message: plan.execution?.last_transition_message,
         });
     }, [plan, setActiveSession]);
 

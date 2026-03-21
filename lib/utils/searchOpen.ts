@@ -301,6 +301,9 @@ export function surfaceNavigationOutcome(outcome: NavigationOutcome, openPane: O
                 next_message:
                     typedPlan.execution?.last_transition_message
                     ?? typedPlan.execution?.next_message,
+                last_transition_step_id: typedPlan.execution?.last_transition_step_id,
+                last_transition_type: typedPlan.execution?.last_transition_type,
+                last_transition_message: typedPlan.execution?.last_transition_message,
             });
         })
         .catch(() => {

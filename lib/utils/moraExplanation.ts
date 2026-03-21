@@ -69,6 +69,8 @@ export interface WorkSessionShellSummary {
     next_label?: string;                 // execution.next_label
     next_message?: string;               // execution.next_message
     last_transition_step_id?: string;
+    last_transition_type?: string;
+    last_transition_message?: string;
 }
 
 export function dispatchMyceliumReviewReady(detail: MyceliumShellSummary) {
@@ -156,10 +158,11 @@ export function getSessionRunningSignal(s: WorkSessionShellSummary): {
     secondaryText: string | null;
 } {
     const isPostDecision = !!s.last_transition_step_id;
-    if (isPostDecision && s.next_message) {
+    const postDecisionMessage = s.last_transition_message ?? s.next_message;
+    if (isPostDecision && postDecisionMessage) {
         return {
             isPostDecision,
-            primaryText: s.next_message,
+            primaryText: postDecisionMessage,
             secondaryText: s.running_step_title ?? null,
         };
     }

@@ -925,7 +925,10 @@ Was kann ich fuer dich tun?`,
                                                 ? plan.execution?.pending_confirmation_title
                                                 : undefined,
                                         next_label:   plan.execution?.next_label,
-                                        next_message: plan.execution?.next_message,
+                                        next_message: plan.execution?.last_transition_message ?? plan.execution?.next_message,
+                                        last_transition_step_id: plan.execution?.last_transition_step_id,
+                                        last_transition_type: plan.execution?.last_transition_type,
+                                        last_transition_message: plan.execution?.last_transition_message,
                                     });
                                 } else {
                                     setActiveSession({ planId, sessionId: agentResponse.work_session_plan?.session_id });
@@ -947,7 +950,15 @@ Was kann ich fuer dich tun?`,
                                                 ? (agentResponse.work_session_plan as any)?.execution?.pending_confirmation_title
                                                 : undefined,
                                         next_label:   (agentResponse.work_session_plan as any)?.execution?.next_label,
-                                        next_message: (agentResponse.work_session_plan as any)?.execution?.next_message,
+                                        next_message:
+                                            (agentResponse.work_session_plan as any)?.execution?.last_transition_message
+                                            ?? (agentResponse.work_session_plan as any)?.execution?.next_message,
+                                        last_transition_step_id:
+                                            (agentResponse.work_session_plan as any)?.execution?.last_transition_step_id,
+                                        last_transition_type:
+                                            (agentResponse.work_session_plan as any)?.execution?.last_transition_type,
+                                        last_transition_message:
+                                            (agentResponse.work_session_plan as any)?.execution?.last_transition_message,
                                     });
                                 }
                             } catch {
@@ -970,7 +981,15 @@ Was kann ich fuer dich tun?`,
                                             ? (agentResponse.work_session_plan as any)?.execution?.pending_confirmation_title
                                             : undefined,
                                     next_label:   (agentResponse.work_session_plan as any)?.execution?.next_label,
-                                    next_message: (agentResponse.work_session_plan as any)?.execution?.next_message,
+                                    next_message:
+                                        (agentResponse.work_session_plan as any)?.execution?.last_transition_message
+                                        ?? (agentResponse.work_session_plan as any)?.execution?.next_message,
+                                    last_transition_step_id:
+                                        (agentResponse.work_session_plan as any)?.execution?.last_transition_step_id,
+                                    last_transition_type:
+                                        (agentResponse.work_session_plan as any)?.execution?.last_transition_type,
+                                    last_transition_message:
+                                        (agentResponse.work_session_plan as any)?.execution?.last_transition_message,
                                 });
                             }
                         }
