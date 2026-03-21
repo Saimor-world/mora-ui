@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
+import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
@@ -11,11 +12,21 @@ import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
-import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
+import {
+    uploadCompanyFile,
+    requestCreateNodeFromFile,
+    confirmCreateNodeFromFile,
+    rejectCreateNodeFromFile,
+    getFileNode,
+    type FileCreateNodeResponse,
+    type FileIntakeNext,
+    type FileIntakeRouteCandidate,
+} from '@/lib/api/filesClient';
 import { useSemanticConstellation } from '@/lib/hooks/useSemanticConstellation';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { realtime } from '@/lib/api/realtimeClient';
 import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/utils/searchOpen';
+import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -68,6 +79,28 @@ interface PendingAction {
     confirm_payload?: Record<string, any>;
     // P6: Guided Intake
     intake_context?: IntakeContext;
+    route_summary?: string;
+    route_resolution?: 'act' | 'choose' | string;
+    route_candidates?: FileIntakeRouteCandidate[];
+    route_choice_headline?: string;
+    route_choice_reason?: string;
+    next?: FileIntakeNext;
+}
+
+function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex: number): OpenableSearchResult {
+    const folderId = candidate.target_folder_id || candidate.destination?.folder_id;
+    return toOpenableSearchResult({
+        id: folderId || candidate.target_space_id || candidate.target_department_id || `finder-intake-choice-${fallbackIndex}`,
+        title: candidate.label || candidate.target_folder_name || candidate.suggested_location || 'Ziel',
+        type: folderId ? 'folder' : candidate.target_space_id ? 'space' : candidate.target_department_id ? 'department' : 'folder',
+        scope_path: candidate.label || candidate.suggested_location,
+        path: candidate.label || candidate.suggested_location,
+        company_id: candidate.target_company_id || candidate.destination?.company_id,
+        department_id: candidate.target_department_id || candidate.destination?.department_id,
+        space_id: candidate.target_space_id || candidate.destination?.space_id,
+        folder_id: folderId,
+        score: candidate.route_confidence_score,
+    });
 }
 
 
@@ -1174,11 +1207,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     // P6: Data Sovereignty - respect user's auto-execute preference
                     const autoExecute = user?.settings?.autoExecuteActions ?? true;
-                    const response = await requestCreateNodeFromFile(uploaded.id, {
+                    const response: FileCreateNodeResponse = await requestCreateNodeFromFile(uploaded.id, {
                         autoExecute,
                         folderId: targetFolderId
                     });
                     if (response?.status === 'pending_confirmation') {
+                        if (!response.confirmation_token) {
+                            throw new Error('Confirmation token missing for pending intake action.');
+                        }
                         hasPendingConfirmation = true;
                         // P6: Orb switches to focus (blau) - waiting for user
                         setFocus();
@@ -1212,6 +1248,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 confirmation_token: response.confirmation_token,
                                 folder_id: response.route_suggestion?.target_folder_id || targetFolderId,
                             },
+                            route_summary: response.route_summary,
+                            route_resolution: response.route_resolution,
+                            route_candidates: response.route_candidates,
+                            route_choice_headline: response.route_choice_headline,
+                            route_choice_reason: response.route_choice_reason,
+                            next: response.next,
                             // P6: Pass intake_context to ConfirmationCard
                             intake_context: {
                                 ...response.intake_context,
@@ -2231,77 +2273,108 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
 
                         {pendingAction && (
-                            <ConfirmationCard
-                                action={pendingAction}
-                                variant="intake"
-                                onConfirmed={async (result) => {
-                                    const active = pendingAction;
-                                    setPendingAction(null);
-                                    setIdle();
-                                    if (active) {
-                                        let resolvedFolderId: string | undefined =
-                                            result?.folder_id ||
-                                            result?.destination?.folder_id ||
-                                            result?.result?.destination?.folder_id ||
-                                            active.confirm_payload?.folder_id;
-                                        let resolvedNodeId: string | undefined =
-                                            result?.node_id ||
-                                            result?.destination?.node_id ||
-                                            result?.result?.destination?.node_id;
+                            <div className="space-y-3">
+                                {pendingAction.route_resolution === 'choose' && (pendingAction.route_candidates?.length || 0) > 0 && (
+                                    <AmbiguityChoiceSurface
+                                        query={pendingAction.params?.filename}
+                                        results={(pendingAction.route_candidates || []).map((candidate, index) => toIntakeChoiceResult(candidate, index))}
+                                        title={pendingAction.route_choice_headline || 'Mehrere plausible Ziele'}
+                                        body={pendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Waehle den richtigen Zielordner vor der Freigabe.'}
+                                        onPick={(result) => {
+                                            const folderId = result.folderId;
+                                            if (!folderId) return;
+                                            setPendingAction((prev) => prev ? {
+                                                ...prev,
+                                                folder_id: folderId,
+                                                confirm_payload: {
+                                                    ...(prev.confirm_payload || {}),
+                                                    folder_id: folderId,
+                                                },
+                                            } : prev);
+                                        }}
+                                    />
+                                )}
+                                {pendingAction.next && (
+                                    <CommandReceipt
+                                        tone={pendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
+                                        label={pendingAction.next.label || 'Naechster Schritt'}
+                                        title={pendingAction.route_summary || buildRoutePath(pendingAction.intake_context)}
+                                        body={pendingAction.next.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                        className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
+                                    />
+                                )}
+                                <ConfirmationCard
+                                    action={pendingAction}
+                                    variant="intake"
+                                    onConfirmed={async (result) => {
+                                        const active = pendingAction;
+                                        setPendingAction(null);
+                                        setIdle();
+                                        if (active) {
+                                            let resolvedFolderId: string | undefined =
+                                                result?.folder_id ||
+                                                result?.destination?.folder_id ||
+                                                result?.result?.destination?.folder_id ||
+                                                active.confirm_payload?.folder_id;
+                                            let resolvedNodeId: string | undefined =
+                                                result?.node_id ||
+                                                result?.destination?.node_id ||
+                                                result?.result?.destination?.node_id;
 
-                                        if (!resolvedFolderId || !resolvedNodeId) {
-                                            try {
-                                                const nodeStatus = await getFileNode(active.file_id);
-                                                if (!resolvedFolderId && nodeStatus?.folder_id) {
-                                                    resolvedFolderId = nodeStatus.folder_id;
+                                            if (!resolvedFolderId || !resolvedNodeId) {
+                                                try {
+                                                    const nodeStatus = await getFileNode(active.file_id);
+                                                    if (!resolvedFolderId && nodeStatus?.folder_id) {
+                                                        resolvedFolderId = nodeStatus.folder_id;
+                                                    }
+                                                    if (!resolvedNodeId && nodeStatus?.node_id) {
+                                                        resolvedNodeId = nodeStatus.node_id;
+                                                    }
+                                                } catch {
+                                                    // best-effort only
                                                 }
-                                                if (!resolvedNodeId && nodeStatus?.node_id) {
-                                                    resolvedNodeId = nodeStatus.node_id;
-                                                }
-                                            } catch {
-                                                // best-effort only
                                             }
-                                        }
 
-                                        surfaceFinderCompletion({
-                                            fileName: active.params?.filename,
-                                            intakeContext: active.intake_context,
-                                            folderId: resolvedFolderId,
-                                            nodeId: resolvedNodeId,
-                                            result: result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
-                                            outcome: 'confirmed',
-                                        });
-                                    }
-                                    loadContent();
-                                }}
-                                onRejected={async () => {
-                                    const active = pendingAction;
-                                    setPendingAction(null);
-                                    setIdle();
-                                    if (active) {
-                                        try {
-                                            await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
                                             surfaceFinderCompletion({
                                                 fileName: active.params?.filename,
                                                 intakeContext: active.intake_context,
-                                                folderId: active.confirm_payload?.folder_id,
-                                                result: 'Verworfen',
-                                                outcome: 'rejected',
+                                                folderId: resolvedFolderId,
+                                                nodeId: resolvedNodeId,
+                                                result: result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
+                                                outcome: 'confirmed',
                                             });
-                                            toast.info('Node creation rejected');
-                                        } catch (err) {
-                                            console.error('Reject failed', err);
                                         }
-                                    }
-                                }}
-                                onDismiss={() => {
-                                    // P6: "Spaeter" - dismiss UI without policy reject
-                                    // Pending stays pending (token still valid for 5 min)
-                                    setPendingAction(null);
-                                    setIdle();
-                                    toast.info('Einordnung verschoben');
-                                }}
-                            />
+                                        loadContent();
+                                    }}
+                                    onRejected={async () => {
+                                        const active = pendingAction;
+                                        setPendingAction(null);
+                                        setIdle();
+                                        if (active) {
+                                            try {
+                                                await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
+                                                surfaceFinderCompletion({
+                                                    fileName: active.params?.filename,
+                                                    intakeContext: active.intake_context,
+                                                    folderId: active.confirm_payload?.folder_id,
+                                                    result: 'Verworfen',
+                                                    outcome: 'rejected',
+                                                });
+                                                toast.info('Node creation rejected');
+                                            } catch (err) {
+                                                console.error('Reject failed', err);
+                                            }
+                                        }
+                                    }}
+                                    onDismiss={() => {
+                                        // P6: "Spaeter" - dismiss UI without policy reject
+                                        // Pending stays pending (token still valid for 5 min)
+                                        setPendingAction(null);
+                                        setIdle();
+                                        toast.info('Einordnung verschoben');
+                                    }}
+                                />
+                            </div>
                         )}
 
                         {/* Upload Progress Footer */}

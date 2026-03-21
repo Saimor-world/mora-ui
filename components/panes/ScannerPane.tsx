@@ -6,11 +6,22 @@ import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient'
 import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
+import { CommandReceipt } from '@/components/ui/CommandReceipt';
+import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
-import { uploadCompanyFile, requestCreateNodeFromFile, confirmCreateNodeFromFile, rejectCreateNodeFromFile, getFileNode } from '@/lib/api/filesClient';
+import {
+    uploadCompanyFile,
+    requestCreateNodeFromFile,
+    confirmCreateNodeFromFile,
+    rejectCreateNodeFromFile,
+    getFileNode,
+    type FileCreateNodeResponse,
+    type FileIntakeNext,
+    type FileIntakeRouteCandidate,
+} from '@/lib/api/filesClient';
 import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
-import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
+import { surfaceNavigationOutcome, toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -51,6 +62,12 @@ interface PendingAction {
     confirm_endpoint?: string;
     confirm_payload?: Record<string, any>;
     intake_context?: IntakeContext;
+    route_summary?: string;
+    route_resolution?: 'act' | 'choose' | string;
+    route_candidates?: FileIntakeRouteCandidate[];
+    route_choice_headline?: string;
+    route_choice_reason?: string;
+    next?: FileIntakeNext;
 }
 
 interface ScannedFile {
@@ -81,6 +98,22 @@ interface RouteOverrideOption {
     departmentName?: string | null;
     spaceName?: string | null;
     folderName?: string | null;
+}
+
+function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex: number): OpenableSearchResult {
+    const folderId = candidate.target_folder_id || candidate.destination?.folder_id;
+    return toOpenableSearchResult({
+        id: folderId || candidate.target_space_id || candidate.target_department_id || `intake-choice-${fallbackIndex}`,
+        title: candidate.label || candidate.target_folder_name || candidate.suggested_location || 'Ziel',
+        type: folderId ? 'folder' : candidate.target_space_id ? 'space' : candidate.target_department_id ? 'department' : 'folder',
+        scope_path: candidate.label || candidate.suggested_location,
+        path: candidate.label || candidate.suggested_location,
+        company_id: candidate.target_company_id || candidate.destination?.company_id,
+        department_id: candidate.target_department_id || candidate.destination?.department_id,
+        space_id: candidate.target_space_id || candidate.destination?.space_id,
+        folder_id: folderId,
+        score: candidate.route_confidence_score,
+    });
 }
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
@@ -362,11 +395,14 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             const autoExecute = intakeSeed.source === 'mycelium'
                 ? false
                 : (user?.settings?.autoExecuteActions || true);
-            const response = await requestCreateNodeFromFile(uploaded.id, {
+            const response: FileCreateNodeResponse = await requestCreateNodeFromFile(uploaded.id, {
                 autoExecute,
                 batchId: intakeSeed.batchId,
             });
             if (response?.status === 'pending_confirmation') {
+                if (!response.confirmation_token) {
+                    throw new Error('Confirmation token missing for pending intake action.');
+                }
                 setFiles(prev => prev.map(f => f.id === fileId ? {
                     ...f,
                     status: 'review',
@@ -394,6 +430,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         confirmation_token: response.confirmation_token,
                         folder_id: response.route_suggestion?.target_folder_id || response.folder_id,
                     },
+                    route_resolution: response.route_resolution,
+                    route_candidates: response.route_candidates,
+                    route_choice_headline: response.route_choice_headline,
+                    route_choice_reason: response.route_choice_reason,
+                    next: response.next,
+                    route_summary: response.route_summary,
                     intake_context: {
                         ...response.intake_context,
                         route_explanation: response.route_explanation,
@@ -476,6 +518,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const confirmedCount = files.filter(f => f.reviewOutcome === 'confirmed').length;
     const rejectedCount = files.filter(f => f.reviewOutcome === 'rejected').length;
     const activePendingAction = pendingActions[0] || null;
+    const activeChoiceResults = useMemo(
+        () => (activePendingAction?.route_candidates || []).map((candidate, index) => toIntakeChoiceResult(candidate, index)),
+        [activePendingAction]
+    );
     const routeSummary = useMemo(() => {
         const buckets = new Map<string, { count: number; category?: string; confidenceLabel?: string; confidenceScore?: number; isLearned?: boolean; folderId?: string }>();
         pendingActions.forEach((action) => {
@@ -1091,6 +1137,28 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                             <div className="px-1 text-[11px] text-white/45">
                                 {buildConfidenceText(activePendingAction.intake_context)}
                             </div>
+                        )}
+                        {activePendingAction.route_resolution === 'choose' && activeChoiceResults.length > 0 && (
+                            <AmbiguityChoiceSurface
+                                query={activePendingAction.file_name}
+                                results={activeChoiceResults}
+                                title={activePendingAction.route_choice_headline || 'Mehrere plausible Ziele'}
+                                body={activePendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Waehle den richtigen Zielordner vor der Freigabe.'}
+                                onPick={(result) => {
+                                    if (!result.folderId) return;
+                                    applyRouteOverride(activePendingAction.action_id, result.folderId);
+                                }}
+                                className="rounded-xl"
+                            />
+                        )}
+                        {activePendingAction.next && (
+                            <CommandReceipt
+                                tone={activePendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
+                                label={activePendingAction.next.label || 'Naechster Schritt'}
+                                title={activePendingAction.route_summary || buildRoutePath(activePendingAction.intake_context)}
+                                body={activePendingAction.next.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
+                            />
                         )}
                         {routeOptions.length > 0 && (
                             <div className="rounded-xl border border-white/8 bg-black/15 px-3 py-3 space-y-2">

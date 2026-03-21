@@ -18,6 +18,78 @@ export interface CompanyFileRecord {
     created_at: string;
 }
 
+export interface FileIntakeRouteExplanation {
+    kind?: string;
+    headline?: string;
+    reason?: string;
+    signal_labels?: string[];
+    learning_summary?: string;
+}
+
+export interface FileIntakeDestination {
+    company_id?: string;
+    company_name?: string;
+    department_id?: string;
+    department_name?: string;
+    space_id?: string;
+    space_name?: string;
+    folder_id?: string;
+    folder_name?: string;
+    label?: string;
+}
+
+export interface FileIntakeRouteCandidate {
+    route_mode?: string;
+    target_company_id?: string;
+    target_company_name?: string;
+    target_department_id?: string;
+    target_department_name?: string;
+    target_space_id?: string;
+    target_space_name?: string;
+    target_folder_id?: string;
+    target_folder_name?: string;
+    suggested_location?: string;
+    route_reason?: string;
+    route_signals?: string[];
+    route_confidence_score?: number;
+    route_confidence_label?: string;
+    label?: string;
+    destination?: FileIntakeDestination;
+    route_explanation?: FileIntakeRouteExplanation;
+}
+
+export interface FileIntakeNext {
+    mode?: 'review' | 'open' | string;
+    label?: string;
+    message?: string;
+}
+
+export interface FileCreateNodeResponse {
+    status: 'pending_confirmation' | 'executed' | 'rejected' | 'error' | string;
+    tool_name?: string;
+    risk_level?: string;
+    confirmation_token?: string;
+    action_id?: string;
+    route_suggestion?: Record<string, any>;
+    intake_context?: Record<string, any>;
+    route_summary?: string;
+    result_summary?: string;
+    destination_summary?: string;
+    destination?: FileIntakeDestination;
+    route_explanation?: FileIntakeRouteExplanation;
+    route_resolution?: 'act' | 'choose' | string;
+    route_candidates?: FileIntakeRouteCandidate[];
+    route_choice_headline?: string;
+    route_choice_reason?: string;
+    next?: FileIntakeNext;
+    folder_id?: string;
+    node_id?: string;
+    already_linked?: boolean;
+    batch_id?: string;
+    overridden_folder_id?: string | null;
+    result?: Record<string, any>;
+}
+
 const AUTH_COOKIE = "mora_auth_token";
 const SESSION_COOKIE = "mora_session";
 
@@ -174,27 +246,27 @@ export const downloadCompanyFile = async (fileId: string, filename: string): Pro
 export const requestCreateNodeFromFile = async (
     fileId: string,
     options?: { autoExecute?: boolean; folderId?: string; batchId?: string }
-): Promise<any> => {
+): Promise<FileCreateNodeResponse> => {
     return corePost(`/v3/files/${fileId}/create-node`, {
         auto_execute: options?.autoExecute ?? true,
         folder_id: options?.folderId,
         batch_id: options?.batchId,
-    });
+    }) as Promise<FileCreateNodeResponse>;
 };
 
 export const confirmCreateNodeFromFile = async (
     fileId: string,
     confirmationToken: string,
     options?: { folderId?: string }
-): Promise<any> => {
+): Promise<FileCreateNodeResponse> => {
     return corePost(`/v3/files/${fileId}/confirm-node`, {
         confirmation_token: confirmationToken,
         folder_id: options?.folderId,
-    });
+    }) as Promise<FileCreateNodeResponse>;
 };
 
-export const rejectCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<any> => {
-    return corePost(`/v3/files/${fileId}/reject-node`, { confirmation_token: confirmationToken });
+export const rejectCreateNodeFromFile = async (fileId: string, confirmationToken: string): Promise<FileCreateNodeResponse> => {
+    return corePost(`/v3/files/${fileId}/reject-node`, { confirmation_token: confirmationToken }) as Promise<FileCreateNodeResponse>;
 };
 
 export interface FileNodeStatus {
