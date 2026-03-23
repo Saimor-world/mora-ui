@@ -45,6 +45,8 @@ import { realtime } from '@/lib/api/realtimeClient';
 
 // Layout Components
 import { ViewPort } from '@/components/layout/ViewPort';
+import { useContextStore } from '@/lib/store/contextStore';
+import { PersonalHome } from '@/components/personal/PersonalHome';
 
 // Background Layers
 import { StarField } from '@/components/visual/StarField';
@@ -252,6 +254,7 @@ export const MoraShell: React.FC = () => {
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
+    const osContext = useContextStore((s) => s.osContext);
     const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
@@ -677,8 +680,13 @@ export const MoraShell: React.FC = () => {
                 />
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
+                {/* Personal context replaces ViewPort when osContext=personal */}
                 <div className="flex-1 relative h-full w-full">
-                    <ViewPort />
+                    {osContext === 'personal' ? (
+                        <PersonalHome />
+                    ) : (
+                        <ViewPort />
+                    )}
 
                     {/* Bottom Gradient */}
                     <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/20 to-transparent pointer-events-none z-10" />
