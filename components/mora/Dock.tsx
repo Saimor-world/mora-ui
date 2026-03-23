@@ -18,6 +18,7 @@ import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 import { ActionTray } from '@/components/os/ActionTray';
+import { ContextSwitcher } from '@/components/os/ContextSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
 
 /**
@@ -402,6 +403,7 @@ export const Dock = () => {
                                 {viewMode === 'demo' ? 'Demo Mode' : user?.role === 'system_owner' ? 'System Owner' : user?.role || 'Mitglied'}
                             </span>
                         </div>
+                        <ContextSwitcher />
                     </div>
 
                     {/* CENTER: SEARCH - Enhanced */}
