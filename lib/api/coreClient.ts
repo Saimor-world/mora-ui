@@ -1721,6 +1721,43 @@ export interface UserMembership {
  * Returns null if the endpoint is unavailable -- callers must degrade gracefully.
  * On null: treat all departments as visible (legacy fallback).
  */
-export async function fetchUserMemberships(): Promise<UserMembership[] | null> {
+// ── Personal Space (v3) ────────────────────────────────────────────────────────
+
+export interface UserMembershipsResponse {
+    department_memberships: UserMembership[];
+    personal_space_id: string | null;
+    has_department_assignments: boolean;
+}
+
+/**
+ * Fetch the current user's department memberships.
+ * Returns null if the endpoint is unavailable -- callers must degrade gracefully.
+ * On null: treat all departments as visible (legacy fallback).
+ */
+export async function fetchUserMemberships(): Promise<UserMembershipsResponse | null> {
     return coreGet('/v3/users/me/memberships', { isOptional: true });
+}
+
+export interface PersonalSpace {
+    id: string;
+    name: string;
+    owner_id: string;
+    created_at?: string;
+}
+
+export async function fetchPersonalSpace(): Promise<PersonalSpace | null> {
+    return coreGet('/v3/users/me/personal-space', { isOptional: true });
+}
+
+export interface PersonalHomeNote {
+    content: string;
+    updated_at?: string;
+}
+
+export async function fetchPersonalHomeNote(): Promise<PersonalHomeNote | null> {
+    return coreGet('/v3/users/me/personal-home-note', { isOptional: true });
+}
+
+export async function savePersonalHomeNote(content: string): Promise<PersonalHomeNote | null> {
+    return corePost('/v3/users/me/personal-home-note', { content }, { isOptional: true });
 }
