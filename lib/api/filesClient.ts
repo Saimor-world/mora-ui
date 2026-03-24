@@ -91,7 +91,6 @@ export interface FileCreateNodeResponse {
 }
 
 const AUTH_COOKIE = "mora_auth_token";
-const SESSION_COOKIE = "mora_session";
 
 function isLocalhost(): boolean {
     if (typeof window === 'undefined') return false;
@@ -118,10 +117,6 @@ function getAuthToken(): string | null {
         || process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT
         || process.env.NEXT_PUBLIC_API_TOKEN
         || null;
-}
-
-function hasSessionCookie(): boolean {
-    return !!readCookie(SESSION_COOKIE);
 }
 
 export const getFilePreview = async (nodeId: string): Promise<FilePreview> => {
@@ -152,8 +147,6 @@ export const uploadCompanyFile = async (
     visibility: 'public' | 'private' = 'private'
 ): Promise<CompanyFileRecord> => {
     const token = getAuthToken();
-    const hasSession = hasSessionCookie();
-    if (!token && !hasSession) throw new CoreError('Unauthorized', 401);
 
     // Guard against empty files before hitting the network — backend returns 400 for these.
     if (file.size === 0) {
@@ -212,8 +205,6 @@ export const uploadCompanyFile = async (
 
 export const downloadCompanyFile = async (fileId: string, filename: string): Promise<void> => {
     const token = getAuthToken();
-    const hasSession = hasSessionCookie();
-    if (!token && !hasSession) throw new CoreError('Unauthorized', 401);
 
     const response = await fetch(`${getCoreBaseUrl()}/v3/files/${fileId}`, {
         method: 'GET',
@@ -280,3 +271,4 @@ export interface FileNodeStatus {
 export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {
     return coreGet(`/v3/files/${fileId}/node`) as Promise<FileNodeStatus>;
 };
+

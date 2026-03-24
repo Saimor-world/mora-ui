@@ -571,7 +571,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
             if (sessionFilter.trim()) {
                 queryParts.push(`session_id=${encodeURIComponent(sessionFilter.trim())}`);
             }
-            const res = await coreGet(`/v3/actions/events?${queryParts.join('&')}`, { isOptional: true });
+            const res = await coreGet(`/v3/actions/events?${queryParts.join('&')}`);
             const nextEvents = Array.isArray(res?.events) ? res.events as ActionEvent[] : [];
             setEvents(nextEvents);
         } catch (err: unknown) {
@@ -587,8 +587,10 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
 
     useEffect(() => {
         const handleActionStatus = () => { void loadEvents({ silent: true }); };
+        const handleInboxRefresh = () => { void loadEvents({ silent: true }); };
         realtime.on('action_status', handleActionStatus);
         realtime.connect();
+        window.addEventListener('saimor:inbox-refresh', handleInboxRefresh);
         const handleNavigationResult = (event: Event) => {
             const detail = (event as CustomEvent<NavigationOutcome>).detail;
             if (!detail) return;
@@ -598,6 +600,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
         window.addEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
         return () => {
             realtime.off('action_status', handleActionStatus);
+            window.removeEventListener('saimor:inbox-refresh', handleInboxRefresh);
             window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
         };
     }, [loadEvents]);

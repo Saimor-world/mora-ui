@@ -22,7 +22,6 @@ export function getCoreBaseUrl(): string {
 }
 
 const AUTH_COOKIE = "mora_auth_token";
-const SESSION_COOKIE = "mora_session";
 
 function isLocalhost(): boolean {
     if (typeof window === 'undefined') return false;
@@ -80,11 +79,8 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         ...(options.headers || {})
     };
 
-    let hasValidToken = false;
-
     if (!options.skipAuth) {
         const token = readCookie(AUTH_COOKIE);
-        const sessionCookie = readCookie(SESSION_COOKIE);
         // Only use devToken if NO cookie is present - gives priority to fresh sessions
         const devToken = !token && isLocalhost() ? localStorage.getItem('saimor_dev_token') : null;
         const finalToken = token || devToken;
@@ -92,24 +88,16 @@ async function coreRequest(path: string, options: CoreRequestOptions = {}): Prom
         if (finalToken) {
             // Check if token is expired BEFORE making request
             if (isTokenExpired(finalToken)) {
-                // Token expired - clear it silently and return null
+                // Clear stale readable tokens, but still continue the request.
+                // A valid HttpOnly core session may still exist server-side.
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('saimor_dev_token');
                     document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
                 }
-                return null;
+            } else {
+                headers['Authorization'] = `Bearer ${finalToken}`;
             }
-            headers['Authorization'] = `Bearer ${finalToken}`;
-            hasValidToken = true;
-        } else if (sessionCookie) {
-            hasValidToken = true;
-        } else {
-            // NO TOKEN = Skip API call entirely, return null silently
-            // This prevents browser from logging 401 errors to console
-            return null;
         }
-    } else {
-        hasValidToken = true; // skipAuth endpoints don't need token
     }
 
     let response: Response;

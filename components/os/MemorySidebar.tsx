@@ -778,16 +778,16 @@ export const MemorySidebar: React.FC = () => {
                                             <CommandReceipt
                                                 tone={resolvedCompanyId ? 'cyan' : 'amber'}
                                                 icon={Brain}
-                                                label={resolvedCompanyId ? 'Getrennte Speicher' : 'Kein Firmenkontext'}
+                                                label={resolvedCompanyId ? 'Dein Workspace' : 'Kein Workspace aktiv'}
                                                 title={resolvedCompanyId
-                                                    ? 'Konto-Gedächtnis und Firmenmetriken werden getrennt gezeigt.'
-                                                    : 'Konto-Gedächtnis bleibt lokal. Firmenmetriken und Freigaben sind ausgeblendet, bis eine Company aktiv ist.'}
+                                                    ? 'Hier siehst du deine letzten Eintraege und die Hinweise zum aktiven Workspace.'
+                                                    : 'Hier siehst du nur deine eigenen Eintraege. Firmenhinweise erscheinen, sobald ein Workspace aktiv ist.'}
                                                 chips={[
-                                                    { label: 'Kürzlich: Konto' },
-                                                    { label: 'Wartend: Konto' },
-                                                    { label: 'Metriken: Company', tone: resolvedCompanyId ? 'cyan' : 'slate' },
+                                                    { label: 'Kuerzlich' },
+                                                    { label: 'Offen' },
+                                                    { label: 'Workspace', tone: resolvedCompanyId ? 'cyan' : 'slate' },
                                                 ]}
-                                                footer="Mora trennt hier bewusst zwischen persönlichen Verläufen und dem aktuellen Workspace."
+                                                footer={resolvedCompanyId ? 'Mora zeigt hier, was fuer dich im aktuellen Workspace gerade relevant ist.' : 'Waehle einen Workspace, damit auch Firmenhinweise und Freigaben erscheinen.'}
                                             />
                                         </div>
 
@@ -802,7 +802,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Keine aktive Company gewaehlt. Konto-Gedächtnis bleibt lokal; Firmenmetriken und Freigaben werden erst mit Workspace angezeigt.
+                                                        Kein Workspace aktiv. Deine eigenen Eintraege bleiben sichtbar; Firmenhinweise und Freigaben kommen dazu, sobald du in einem Workspace bist.
                                                     </div>
                                                 )}
 
@@ -848,7 +848,7 @@ export const MemorySidebar: React.FC = () => {
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <AlertCircle size={12} className="text-amber-400" />
                                                                 <span className="text-[9px] uppercase tracking-wider text-amber-400/70">
-                                                                    Zur Prüfung ({pendingCount})
+                                                                    Zur Pruefung ({pendingCount})
                                                                 </span>
                                                             </div>
                                                             <div className="space-y-2">
@@ -875,7 +875,7 @@ export const MemorySidebar: React.FC = () => {
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <Clock size={12} className="text-white/30" />
                                                                 <span className="text-[9px] uppercase tracking-wider text-white/30">
-                                                                    Kürzlich gelernt
+                                                                    Kuerzlich gelernt
                                                                 </span>
                                                             </div>
                                                             {recentMemories.length > 0 ? (
@@ -896,7 +896,7 @@ export const MemorySidebar: React.FC = () => {
                                             </>
                                         ) : (
                                             <p className="text-xs text-muted-foreground px-4 py-6 text-center leading-relaxed">
-                                                Speicher ist verfügbar, sobald ein Workspace eingerichtet ist.
+                                                Dein Bereich ist verfuegbar. Firmenhinweise erscheinen, sobald ein Workspace aktiv ist.
                                             </p>
                                         )}
 
@@ -916,3 +916,4 @@ export const MemorySidebar: React.FC = () => {
 };
 
 export default MemorySidebar;
+

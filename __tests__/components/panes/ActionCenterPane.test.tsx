@@ -215,14 +215,12 @@ describe('ActionCenterPane', () => {
 
     fireEvent.change(screen.getByDisplayValue('Alle Aktionen'), { target: { value: 'rename_node' } });
     await waitFor(() => expect(coreGet).toHaveBeenLastCalledWith(
-      expect.stringContaining('intent=rename_node'),
-      { isOptional: true }
+      expect.stringContaining('intent=rename_node')
     ));
 
     fireEvent.change(screen.getByPlaceholderText('Session-ID'), { target: { value: 'sess-2' } });
     await waitFor(() => expect(coreGet).toHaveBeenLastCalledWith(
-      expect.stringContaining('session_id=sess-2'),
-      { isOptional: true }
+      expect.stringContaining('session_id=sess-2')
     ));
   });
 
