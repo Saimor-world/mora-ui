@@ -189,8 +189,8 @@ export async function corePatch(path: string, body: any): Promise<any> {
     return coreRequest(path, { method: 'PATCH', body });
 }
 
-export async function corePut(path: string, body: any): Promise<any> {
-    return coreRequest(path, { method: 'PUT', body });
+export async function corePut(path: string, body: any, options: Omit<CoreRequestOptions, 'method'> = {}): Promise<any> {
+    return coreRequest(path, { ...options, method: 'PUT', body });
 }
 
 export async function coreDelete(path: string): Promise<void> {
@@ -1759,5 +1759,5 @@ export async function fetchPersonalHomeNote(): Promise<PersonalHomeNote | null> 
 }
 
 export async function savePersonalHomeNote(content: string): Promise<PersonalHomeNote | null> {
-    return corePost('/v3/users/me/personal-home-note', { content }, { isOptional: true });
+    return corePut('/v3/users/me/personal-home-note', { content }, { isOptional: true });
 }
