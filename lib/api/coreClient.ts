@@ -1692,3 +1692,28 @@ export async function executeSessionInput(
 export async function closeTerminalSession(sessionId: string): Promise<void> {
     await corePost(`/v3/terminal/session/${sessionId}/close`, {}, { isOptional: true });
 }
+
+// -- User Memberships (v3) --
+
+/**
+ * A department the current user is a member of.
+ * Returned by GET /v3/users/me/memberships (Codex endpoint -- live).
+ *
+ * The backend carries visibility truth. Frontend uses this list only to
+ * determine WHICH departments the user is a member of.
+ * Visibility for rendering comes from the department object itself (CoreDepartment.visibility).
+ */
+export interface UserMembership {
+    department_id: string;
+    department_name: string;
+    role?: string; // user's role within this department
+}
+
+/**
+ * Fetch the current user's department memberships.
+ * Returns null if the endpoint is unavailable -- callers must degrade gracefully.
+ * On null: treat all departments as visible (legacy fallback).
+ */
+export async function fetchUserMemberships(): Promise<UserMembership[] | null> {
+    return coreGet('/v3/users/me/memberships', { isOptional: true });
+}
