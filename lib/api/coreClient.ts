@@ -1707,6 +1707,13 @@ export interface UserMembership {
     department_id: string;
     department_name: string;
     role?: string; // user's role within this department
+    /**
+     * The endpoint may return visibility per membership record.
+     * Frontend does not use this for rendering decisions -- visibility comes from
+     * CoreDepartment.visibility (server truth on the department object).
+     * Included here for forward-compatibility with the API response shape.
+     */
+    visibility?: 'public' | 'visible' | 'private';
 }
 
 /**

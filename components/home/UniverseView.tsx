@@ -458,7 +458,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         isActive={activeDepartmentId === p.id}
                                         onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
                                         onClick={() => {
-                                            navigateToDepartment(p.id);
+                                            // Locked: outer wrapper handles click (tooltip). Block navigation.
                                         }}
                                         health={health}
                                         activity={activity}
