@@ -453,7 +453,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     style={{ opacity: 0.4, cursor: 'pointer', filter: 'grayscale(0.6)' }}
                                 >
                                     <Planet
-                                        department={p}
+                                        department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={activeDepartmentId === p.id}
                                         onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
@@ -467,7 +467,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 </div>
                             ) : (
                                 <Planet
-                                    department={p}
+                                    department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
                                     isActive={activeDepartmentId === p.id}
                                     onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
