@@ -12,7 +12,7 @@ import { PersonalNotesArea } from './PersonalNotesArea';
  * Spec (Section 2, Surface A, "Minimum viable personal context"):
  * - User identity visible
  * - Personal notes area (even if empty)
- * - Mora interaction surface labeled as personal scope
+ * - Surface-level personal context badge (per-response Mora label is MoraContextLabel, Chunk 3)
  *
  * Visual design is an open decision (spec Section 10, item 1).
  * This is the functional MVC, not the final design.
@@ -46,6 +46,7 @@ export const PersonalHome: React.FC = () => {
             {/* Return to Universe */}
             <button
                 onClick={() => setOsContext('company')}
+                aria-label="Zum Unternehmens-Universum wechseln"
                 className="flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors w-fit"
             >
                 <Building2 size={14} />
