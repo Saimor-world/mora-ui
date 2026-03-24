@@ -47,6 +47,7 @@ import { realtime } from '@/lib/api/realtimeClient';
 import { ViewPort } from '@/components/layout/ViewPort';
 import { useContextStore } from '@/lib/store/contextStore';
 import { PersonalHome } from '@/components/personal/PersonalHome';
+import { AdminHome } from '@/components/admin/AdminHome';
 
 // Background Layers
 import { StarField } from '@/components/visual/StarField';
@@ -255,6 +256,7 @@ export const MoraShell: React.FC = () => {
     const { reset: resetPanes, openPane } = usePaneStore();
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
     const osContext = useContextStore((s) => s.osContext);
+    const isAdminMode = useContextStore((s) => s.isAdminMode);
     const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
@@ -682,7 +684,9 @@ export const MoraShell: React.FC = () => {
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
                 {/* Personal context replaces ViewPort when osContext=personal */}
                 <div className="flex-1 relative h-full w-full">
-                    {osContext === 'personal' ? (
+                    {isAdminMode ? (
+                        <AdminHome />
+                    ) : osContext === 'personal' ? (
                         <PersonalHome />
                     ) : (
                         <ViewPort />

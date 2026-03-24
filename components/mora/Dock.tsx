@@ -19,6 +19,7 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 import { ActionTray } from '@/components/os/ActionTray';
 import { ContextSwitcher } from '@/components/os/ContextSwitcher';
+import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
 
 /**
@@ -404,6 +405,7 @@ export const Dock = () => {
                             </span>
                         </div>
                         <ContextSwitcher />
+                        <AdminModeSwitcher />
                     </div>
 
                     {/* CENTER: SEARCH - Enhanced */}
