@@ -7,6 +7,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { coreGet, corePost, fetchAdminUsers, patchAdminUser, patchUserCompanyBinding, AdminUser, AdminUserPatch } from '@/lib/api/coreClient';
+import { createInvite } from '@/lib/api/inviteClient';
 import { toast } from 'sonner';
 
 /**
@@ -55,8 +56,12 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState<'member' | 'manager'>('member');
 
+    const [inviteDepartmentIds, setInviteDepartmentIds] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const { viewMode } = useMoraStore();
     const currentUser = useMoraStore(s => s.user);
+    const departments = useMoraStore(s => s.departments);
     const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
     // Load team members
@@ -134,35 +139,22 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
         return true;
     });
 
-    const handleInvite = async () => {
+    const handleInviteSubmit = async () => {
         if (!inviteEmail) return;
-
-        try {
-            const res = await corePost(`/v3/team/invite`, {
-                email: inviteEmail,
-                role: inviteRole
-            });
-
-            if (res?.id) {
-                setInvites(prev => [...prev, {
-                    id: res.id,
-                    name: inviteEmail.split('@')[0],
-                    email: inviteEmail,
-                    role: inviteRole,
-                    status: 'invited'
-                }]);
-            }
-
-            if (res?.invite_code) {
-                toast.success(`Invite code: ${res.invite_code}`);
-            }
-
+        setIsSubmitting(true);
+        const result = await createInvite({
+            email: inviteEmail,
+            role: inviteRole as 'member' | 'manager' | 'admin',
+            department_ids: inviteDepartmentIds,
+        });
+        setIsSubmitting(false);
+        if (result) {
+            toast.success(`Einladung gesendet. Link: ${result.invite_link}`);
             setShowInviteModal(false);
             setInviteEmail('');
-        } catch (error) {
-            console.error('Failed to send invite:', error);
-            setShowInviteModal(false);
-            setInviteEmail('');
+            setInviteDepartmentIds([]);
+        } else {
+            toast.error('Einladung fehlgeschlagen. Bitte erneut versuchen.');
         }
     };
 
@@ -445,6 +437,28 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                             ))}
                                         </div>
                                     </div>
+
+                                    {departments && departments.length > 0 && (
+                                        <div className="flex flex-col gap-1">
+                                            <label className="text-xs text-white/40">Abteilungen</label>
+                                            {departments.map((dept) => (
+                                                <label key={dept.id} className="flex items-center gap-2 text-sm text-white/60">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={inviteDepartmentIds.includes(dept.id)}
+                                                        onChange={(e) => {
+                                                            setInviteDepartmentIds((prev) =>
+                                                                e.target.checked
+                                                                    ? [...prev, dept.id]
+                                                                    : prev.filter((id) => id !== dept.id)
+                                                            );
+                                                        }}
+                                                    />
+                                                    {dept.name}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex gap-2 mt-6">
@@ -455,11 +469,11 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                         Cancel
                                     </button>
                                     <button
-                                        onClick={handleInvite}
-                                        disabled={!inviteEmail}
+                                        onClick={handleInviteSubmit}
+                                        disabled={!inviteEmail || isSubmitting}
                                         className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
                                     >
-                                        Send Invite
+                                        {isSubmitting ? 'Sending...' : 'Send Invite'}
                                     </button>
                                 </div>
                             </motion.div>
