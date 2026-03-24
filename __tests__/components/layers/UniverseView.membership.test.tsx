@@ -42,7 +42,11 @@ describe('UniverseView membership-scoped rendering', () => {
     });
 
     it('shows member and public departments normally', async () => {
-        mockFetchUserMemberships.mockResolvedValue(memberships);
+        mockFetchUserMemberships.mockResolvedValue({
+            department_memberships: memberships,
+            personal_space_id: 'space-test',
+            has_department_assignments: true,
+        });
         render(<UniverseView />);
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-eng')).toBeInTheDocument(); // member
@@ -51,7 +55,11 @@ describe('UniverseView membership-scoped rendering', () => {
     });
 
     it('does not render private departments for non-members', async () => {
-        mockFetchUserMemberships.mockResolvedValue(memberships);
+        mockFetchUserMemberships.mockResolvedValue({
+            department_memberships: memberships,
+            personal_space_id: 'space-test',
+            has_department_assignments: true,
+        });
         render(<UniverseView />);
         await waitFor(() => {
             expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
@@ -59,7 +67,11 @@ describe('UniverseView membership-scoped rendering', () => {
     });
 
     it('renders Visible departments as locked for non-members', async () => {
-        mockFetchUserMemberships.mockResolvedValue(memberships);
+        mockFetchUserMemberships.mockResolvedValue({
+            department_memberships: memberships,
+            personal_space_id: 'space-test',
+            has_department_assignments: true,
+        });
         render(<UniverseView />);
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
@@ -68,7 +80,11 @@ describe('UniverseView membership-scoped rendering', () => {
     });
 
     it('shows LockedPlanetTooltip when clicking a Visible locked planet', async () => {
-        mockFetchUserMemberships.mockResolvedValue(memberships);
+        mockFetchUserMemberships.mockResolvedValue({
+            department_memberships: memberships,
+            personal_space_id: 'space-test',
+            has_department_assignments: true,
+        });
         render(<UniverseView />);
         await waitFor(() => {
             expect(screen.getByTestId('locked-planet-dept-fin')).toBeInTheDocument();

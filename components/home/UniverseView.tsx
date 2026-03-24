@@ -8,8 +8,9 @@ import { Planet } from '@/components/mora/Planet';
 import { StarField } from '@/components/visual/StarField';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
-import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership } from '@/lib/api/coreClient';
+import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
 import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
+import { useContextStore } from '@/lib/store/contextStore';
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -32,6 +33,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         treeData,
         spacesByDepartment
     } = useMoraStore();
+
+    const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
@@ -66,8 +69,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     // ─── FETCH USER MEMBERSHIPS ───
     useEffect(() => {
         if (!activeCompanyId) return;
-        fetchUserMemberships().then(setMemberships);
-    }, [activeCompanyId]);
+        fetchUserMemberships().then((response) => {
+            if (response === null) {
+                setMemberships(null);
+                setPersonalSpaceId(null);
+            } else {
+                setMemberships(response.department_memberships);
+                setPersonalSpaceId(response.personal_space_id);
+            }
+        });
+    }, [activeCompanyId, setPersonalSpaceId]);
 
     // ─── MEMBERSHIP HELPERS ───
     const isMember = (deptId: string): boolean => {
