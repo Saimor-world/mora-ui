@@ -22,6 +22,8 @@ export interface CoreDepartment {
     icon?: string | null;
     color?: string | null;
     order: number;
+    visibility?: 'public' | 'visible' | 'private';
+    description?: string | null;
     created_at?: string | null;
     updated_at?: string | null;
 }
@@ -38,6 +40,7 @@ export interface CoreSpace {
     folder_count?: number;
     order: number;
     is_default: boolean;
+    visibility?: 'public' | 'visible' | 'private';
     created_at?: string | null;
     updated_at?: string | null;
 }
@@ -53,6 +56,7 @@ export interface CoreFolder {
     order: number;
     parent_id?: string | null;
     node_count?: number;
+    visibility?: 'public' | 'visible' | 'private';
     created_at?: string | null;
     updated_at?: string | null;
 }
