@@ -27,14 +27,19 @@ export const JoinFlow: React.FC<JoinFlowProps> = ({ token, onComplete }) => {
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        fetchInvite(token).then((result) => {
-            setLoading(false);
-            if (!result) {
-                setError('Einladung ungültig oder abgelaufen.');
-            } else {
-                setInvite(result);
-            }
-        });
+        fetchInvite(token)
+            .then((result) => {
+                setLoading(false);
+                if (!result) {
+                    setError('Einladung ungültig oder abgelaufen.');
+                } else {
+                    setInvite(result);
+                }
+            })
+            .catch(() => {
+                setLoading(false);
+                setError('Einladung konnte nicht geladen werden. Bitte erneut versuchen.');
+            });
     }, [token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
