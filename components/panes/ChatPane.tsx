@@ -493,11 +493,13 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         s.departments?.find((d) => d.id === s.activeDepartmentId)
     );
 
-    const deriveScope = (): { scope: MoraScope; sourceName?: string } => {
+    const derivedScope = useMemo((): { scope: MoraScope; sourceName?: string } => {
         if (osContext === 'personal') return { scope: 'personal' };
-        if (activeDepartment) return { scope: 'shared', sourceName: activeDepartment.name };
+        // 'object' scope (active folder/document) is Phase 2 -- requires active-object state
+        // TODO: add 'object' branch when active-object state is surfaced (spec Section 5)
+        if (osContext === 'company' && activeDepartment) return { scope: 'shared', sourceName: activeDepartment.name };
         return { scope: 'shared' };
-    };
+    }, [osContext, activeDepartment]);
 
     // Streaming hook — real AI, token-by-token
     const {
@@ -1224,10 +1226,9 @@ Was kann ich fuer dich tun?`,
                                         />
                                     )}
                                     {/* Scope indicator -- spec Section 5: Memory Scope Visibility Rule */}
-                                    {msg.role === 'assistant' && (() => {
-                                        const { scope, sourceName } = deriveScope();
-                                        return <MoraContextLabel scope={scope} sourceName={sourceName} />;
-                                    })()}
+                                    {msg.role === 'assistant' && (
+                                        <MoraContextLabel {...derivedScope} />
+                                    )}
                                 </div>
                                 {msg.planId && (
                                     <button
