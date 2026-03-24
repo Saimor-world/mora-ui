@@ -36,6 +36,8 @@ import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShell
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
+import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextLabel';
+import { useContextStore } from '@/lib/store/contextStore';
 
 interface PendingAction {
     tool_name: string;
@@ -484,6 +486,18 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     } = useMoraStore();
     const pane = getPane(id);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+
+    // Scope derivation for MoraContextLabel
+    const osContext = useContextStore((s) => s.osContext);
+    const activeDepartment = useMoraStore((s) =>
+        s.departments?.find((d) => d.id === s.activeDepartmentId)
+    );
+
+    const deriveScope = (): { scope: MoraScope; sourceName?: string } => {
+        if (osContext === 'personal') return { scope: 'personal' };
+        if (activeDepartment) return { scope: 'shared', sourceName: activeDepartment.name };
+        return { scope: 'shared' };
+    };
 
     // Streaming hook — real AI, token-by-token
     const {
@@ -1209,6 +1223,11 @@ Was kann ich fuer dich tun?`,
                                             isSaved={msg.savedAsInsight || false}
                                         />
                                     )}
+                                    {/* Scope indicator -- spec Section 5: Memory Scope Visibility Rule */}
+                                    {msg.role === 'assistant' && (() => {
+                                        const { scope, sourceName } = deriveScope();
+                                        return <MoraContextLabel scope={scope} sourceName={sourceName} />;
+                                    })()}
                                 </div>
                                 {msg.planId && (
                                     <button
