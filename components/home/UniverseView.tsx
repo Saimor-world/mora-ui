@@ -8,7 +8,8 @@ import { Planet } from '@/components/mora/Planet';
 import { StarField } from '@/components/visual/StarField';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
-import { fetchDepartmentStats, type DepartmentStats } from '@/lib/api/coreClient';
+import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership } from '@/lib/api/coreClient';
+import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -35,6 +36,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
+    const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
+    const [lockedTooltipDeptId, setLockedTooltipDeptId] = useState<string | null>(null);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
@@ -59,6 +62,30 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
         loadStats();
     }, [activeCompanyId]);
+
+    // ─── FETCH USER MEMBERSHIPS ───
+    useEffect(() => {
+        if (!activeCompanyId) return;
+        fetchUserMemberships().then(setMemberships);
+    }, [activeCompanyId]);
+
+    // ─── MEMBERSHIP HELPERS ───
+    const isMember = (deptId: string): boolean => {
+        if (memberships === null) return true;        // null = graceful fallback
+        if (user?.role === 'owner' || user?.role === 'admin') return true;
+        return memberships.some((m) => m.department_id === deptId);
+    };
+
+    const shouldRender = (dept: any): boolean => {
+        if (isMember(dept.id)) return true;
+        const vis = dept.visibility ?? 'private';    // server truth; default private
+        return vis === 'public' || vis === 'visible'; // private never renders
+    };
+
+    const isLocked = (dept: any): boolean => {
+        if (isMember(dept.id)) return false;
+        return (dept.visibility ?? 'private') === 'visible';
+    };
 
     // ─── DEPARTMENT METRICS (from API or fallback to tree) ───
     const departmentMetrics = useMemo(() => {
@@ -398,7 +425,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
             {/* 3. PLANET LAYER (Managed by Store Data) */}
             <div className="absolute inset-0 z-30 pointer-events-none">
-                {planetPositions.map((p, idx) => {
+                {planetPositions
+                    .filter((p) => shouldRender(p))
+                    .map((p, idx) => {
                     // REAL METRICS from API or tree data
                     const deptStats = departmentMetrics[p.id];
                     const nodeCount = deptStats?.nodes || 0;
@@ -413,20 +442,51 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     // Health: From API if available, otherwise calculate
                     const health = healthFromAPI ?? Math.min(100, (spaceCount > 0 ? 40 : 0) + (folderCount > 0 ? 30 : 0) + (nodeCount > 0 ? 30 : 0));
 
+                    const locked = isLocked(p);
+
                     return (
-                        <Planet
-                            key={p.id}
-                            department={p}
-                            position={{ x: p.x + '%', y: p.y + '%' } as any}
-                            isActive={activeDepartmentId === p.id}
-                            onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
-                            onClick={() => {
-                                navigateToDepartment(p.id);
-                            }}
-                            health={health}
-                            activity={activity}
-                            capacity={capacity}
-                        />
+                        <div key={p.id} style={{ position: 'relative' }}>
+                            {locked ? (
+                                <div
+                                    data-testid={`locked-planet-${p.id}`}
+                                    onClick={() => setLockedTooltipDeptId(p.id)}
+                                    style={{ opacity: 0.4, cursor: 'pointer', filter: 'grayscale(0.6)' }}
+                                >
+                                    <Planet
+                                        department={p}
+                                        position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                        isActive={activeDepartmentId === p.id}
+                                        onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
+                                        onClick={() => {
+                                            navigateToDepartment(p.id);
+                                        }}
+                                        health={health}
+                                        activity={activity}
+                                        capacity={capacity}
+                                    />
+                                </div>
+                            ) : (
+                                <Planet
+                                    department={p}
+                                    position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                    isActive={activeDepartmentId === p.id}
+                                    onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
+                                    onClick={() => {
+                                        navigateToDepartment(p.id);
+                                    }}
+                                    health={health}
+                                    activity={activity}
+                                    capacity={capacity}
+                                />
+                            )}
+                            {lockedTooltipDeptId === p.id && (
+                                <LockedPlanetTooltip
+                                    name={p.name}
+                                    description={(p as any).description}
+                                    onDismiss={() => setLockedTooltipDeptId(null)}
+                                />
+                            )}
+                        </div>
                     );
                 })}
             </div>
