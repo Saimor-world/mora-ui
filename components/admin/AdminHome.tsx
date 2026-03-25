@@ -4,6 +4,7 @@ import React from 'react';
 import { Settings2, X } from 'lucide-react';
 import { useContextStore } from '@/lib/store/contextStore';
 import { AdminRosterView } from './AdminRosterView';
+import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
 
 /**
  * AdminHome -- the admin OS surface (spec Section 2, Surface C).
@@ -40,6 +41,9 @@ export const AdminHome: React.FC = () => {
             {/* Main admin content */}
             <div className="flex-1 overflow-y-auto p-6">
                 <AdminRosterView />
+                <div className="mt-8 pt-6 border-t border-white/5">
+                    <DepartmentVisibilityEditor />
+                </div>
             </div>
         </div>
     );
