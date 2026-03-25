@@ -40,6 +40,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
+    const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [lockedTooltipDeptId, setLockedTooltipDeptId] = useState<string | null>(null);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
@@ -77,13 +78,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 setMemberships(response.department_memberships);
                 setPersonalSpaceId(response.personal_space_id);
             }
+            setMembershipsLoaded(true);
         });
     }, [activeCompanyId, setPersonalSpaceId]);
 
     // ─── MEMBERSHIP HELPERS ───
     const isMember = (deptId: string): boolean => {
-        if (memberships === null) return true;        // null = graceful fallback
+        // While loading (first render before API responds): show all to avoid flash
+        if (!membershipsLoaded) return true;
         if (user?.role === 'owner' || user?.role === 'admin') return true;
+        // API failed: restrict to public departments only (no silent cross-scope fallback)
+        if (memberships === null) return false;
         return memberships.some((m) => m.department_id === deptId);
     };
 

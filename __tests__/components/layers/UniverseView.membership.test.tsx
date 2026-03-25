@@ -93,13 +93,17 @@ describe('UniverseView membership-scoped rendering', () => {
         expect(screen.getByText(/Mitgliedschaft/i)).toBeInTheDocument();
     });
 
-    it('falls back to showing all departments when membership API returns null', async () => {
+    it('restricts to public/visible departments only when membership API returns null', async () => {
         mockFetchUserMemberships.mockResolvedValue(null);
         render(<UniverseView />);
         await waitFor(() => {
-            departments.forEach((d) => {
-                expect(screen.getByTestId(`planet-${d.id}`)).toBeInTheDocument();
-            });
+            // public department always renders
+            expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument();
+            // visible department renders (locked)
+            expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
+            // private departments do NOT render
+            expect(screen.queryByTestId('planet-dept-eng')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
         });
     });
 });
