@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Folder, FileText, Paperclip, ChevronRight, Link, Check, X } from 'lucide-react';
 import { fetchMyContent, shareNode, shareFile, type UserContentResponse } from '@/lib/api/coreClient';
+
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 
 /**
@@ -47,10 +48,10 @@ export const MeineDateienPane: React.FC = () => {
     const handleShareNode = useCallback(async (nodeId: string) => {
         setShare(nodeId, { status: 'sharing' });
         const result = await shareNode(nodeId);
-        if (result?.share_url) {
-            setShare(nodeId, { status: 'done', url: result.share_url });
+        if (result?.public_url) {
+            setShare(nodeId, { status: 'done', url: result.public_url });
         } else {
-            // Server returned null — node is not file-backed, sharing not available yet
+            // Server returned null (409 for non-file-backed nodes) — surface honestly
             setShare(nodeId, { status: 'unavailable' });
         }
     }, []);
@@ -58,8 +59,8 @@ export const MeineDateienPane: React.FC = () => {
     const handleShareFile = useCallback(async (fileId: string) => {
         setShare(fileId, { status: 'sharing' });
         const result = await shareFile(fileId);
-        if (result?.share_url) {
-            setShare(fileId, { status: 'done', url: result.share_url });
+        if (result?.public_url) {
+            setShare(fileId, { status: 'done', url: result.public_url });
         } else {
             setShare(fileId, { status: 'unavailable' });
         }

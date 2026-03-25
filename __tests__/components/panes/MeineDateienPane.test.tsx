@@ -131,7 +131,15 @@ describe('MeineDateienPane', () => {
     describe('sharing', () => {
         it('calls shareFile and shows share URL on success', async () => {
             mockFetch.mockResolvedValue(mockResponse);
-            mockShareFile.mockResolvedValue({ share_url: 'https://saimor.app/s/abc', token: 'abc' });
+            mockShareFile.mockResolvedValue({
+                file_id: 'file-1',
+                company_id: 'c-1',
+                owner_user_id: 'u-me',
+                visibility: 'public',
+                public_path: '/s/abc',
+                public_url: 'https://saimor.app/s/abc',
+                status: 'active',
+            });
             render(<MeineDateienPane />);
             await waitFor(() => expect(screen.getByTestId('file-row-file-1')).toBeInTheDocument());
             // file share button is the last share button (after node share buttons)

@@ -1888,22 +1888,35 @@ export async function fetchMyContent(): Promise<UserContentResponse | null> {
     return coreGet('/v3/users/me/content', { isOptional: true });
 }
 
-export interface ShareNodeResult {
-    /** Publicly accessible URL — no auth required. */
-    share_url: string;
-    /** Opaque token embedded in the URL. */
-    token: string;
+/**
+ * Response from POST /v3/files/{id}/share or POST /v3/nodes/{id}/share.
+ * Matches the live contract (Core: 77f4fda).
+ */
+export interface ShareResult {
+    file_id: string;
+    company_id: string;
+    owner_user_id: string;
+    /** NodeVisibility level of the shared item. */
+    visibility: string;
+    /** Scope qualifier for the visibility rule. */
+    visibility_scope?: string | null;
+    /** Relative public path, e.g. /s/abc123 */
+    public_path: string;
+    /** Absolute public URL — present this to the user. */
+    public_url: string;
+    /** Share status — e.g. 'active'. */
+    status: string;
 }
 
 /**
  * Generate a public share link for a node.
  *
- * Honest limitation (Core: 77f4fda): public links are currently only supported
- * for file-backed nodes. Calling this on a text-only node returns null.
- * Callers must handle null gracefully and surface the limitation to the user.
- * Do not imply generic public sharing for all node types.
+ * Honest scope (Core: 77f4fda):
+ * - File-backed nodes: delegates to the linked file share contract → returns ShareResult
+ * - Non-file-backed nodes: server returns 409 → isOptional maps to null here
+ *   Callers must surface this as an explicit limitation, not a generic error.
  */
-export async function shareNode(nodeId: string): Promise<ShareNodeResult | null> {
+export async function shareNode(nodeId: string): Promise<ShareResult | null> {
     return corePost(`/v3/nodes/${nodeId}/share`, {}, { isOptional: true });
 }
 
@@ -1912,6 +1925,6 @@ export async function shareNode(nodeId: string): Promise<ShareNodeResult | null>
  * Files are always shareable — this is the primary public-link path.
  * Returns null on failure.
  */
-export async function shareFile(fileId: string): Promise<ShareNodeResult | null> {
+export async function shareFile(fileId: string): Promise<ShareResult | null> {
     return corePost(`/v3/files/${fileId}/share`, {}, { isOptional: true });
 }
