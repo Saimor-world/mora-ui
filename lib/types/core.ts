@@ -61,6 +61,23 @@ export interface CoreFolder {
     updated_at?: string | null;
 }
 
+/**
+ * Node-level visibility — who can read a specific document or note.
+ *
+ * This is SEPARATE from department/folder visibility (which controls whether
+ * a space appears in the Universe at all). NodeVisibility controls access
+ * to a single content item regardless of where it lives.
+ *
+ * - 'private'    → only the owner can read
+ * - 'department' → all members of the owning department
+ * - 'company'    → all authenticated company members
+ * - 'public'     → anyone with the share link (no auth required)
+ *
+ * Default for new uploads: 'department'.
+ * Null / missing: treat as 'company' for legacy nodes created before this field existed.
+ */
+export type NodeVisibility = 'private' | 'department' | 'company' | 'public';
+
 export interface CoreNode {
     id: string;
     space_id: string;
@@ -75,6 +92,10 @@ export interface CoreNode {
     size?: number | null;
     created_at?: string | null;
     updated_at?: string | null;
+    /** User ID of the content creator. Null for legacy content. */
+    owner_id?: string | null;
+    /** Who can read this node. See NodeVisibility. Null = legacy, treat as 'company'. */
+    visibility?: NodeVisibility;
 }
 
 // Tree structure for hierarchical navigation

@@ -1828,3 +1828,32 @@ export async function updateDepartmentVisibility(
         { isOptional: true }
     );
 }
+
+// ── My Content (v3) ───────────────────────────────────────────────────────────
+
+/**
+ * Fetch all nodes owned by the current user, across all visibility levels.
+ * Includes private, department, company, and public nodes.
+ *
+ * Returns null if the endpoint is unavailable — degrade gracefully (show empty state).
+ * Callers must NOT throw on null.
+ */
+export async function fetchMyContent(): Promise<CoreNode[] | null> {
+    return coreGet('/v3/users/me/content', { isOptional: true });
+}
+
+export interface ShareNodeResult {
+    /** Publicly accessible URL — no auth required. */
+    share_url: string;
+    /** Opaque token embedded in the URL. */
+    token: string;
+}
+
+/**
+ * Generate a public share link for a node.
+ * The server also sets node visibility to 'public'.
+ * Returns null on failure.
+ */
+export async function shareNode(nodeId: string): Promise<ShareNodeResult | null> {
+    return corePost(`/v3/nodes/${nodeId}/share`, {}, { isOptional: true });
+}
