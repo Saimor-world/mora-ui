@@ -1,13 +1,18 @@
 // __tests__/components/panes/MeineDateienPane.test.tsx
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
-import { fetchMyContent } from '@/lib/api/coreClient';
+import { fetchMyContent, shareNode, shareFile } from '@/lib/api/coreClient';
 import type { UserContentResponse } from '@/lib/api/coreClient';
 
 jest.mock('@/lib/api/coreClient', () => ({
     fetchMyContent: jest.fn(),
+    shareNode: jest.fn(),
+    shareFile: jest.fn(),
 }));
+
+const mockShareNode = shareNode as jest.MockedFunction<typeof shareNode>;
+const mockShareFile = shareFile as jest.MockedFunction<typeof shareFile>;
 
 const mockFetch = fetchMyContent as jest.MockedFunction<typeof fetchMyContent>;
 
@@ -120,6 +125,35 @@ describe('MeineDateienPane', () => {
         await waitFor(() => {
             expect(screen.getByTestId('folder-row-f-1')).toBeInTheDocument();
             expect(screen.getByTestId('node-row-n-1')).toBeInTheDocument();
+        });
+    });
+
+    describe('sharing', () => {
+        it('calls shareFile and shows share URL on success', async () => {
+            mockFetch.mockResolvedValue(mockResponse);
+            mockShareFile.mockResolvedValue({ share_url: 'https://saimor.app/s/abc', token: 'abc' });
+            render(<MeineDateienPane />);
+            await waitFor(() => expect(screen.getByTestId('file-row-file-1')).toBeInTheDocument());
+            // file share button is the last share button (after node share buttons)
+            const shareBtns = screen.getAllByTestId('share-button');
+            fireEvent.click(shareBtns[shareBtns.length - 1]);
+            await waitFor(() => {
+                expect(mockShareFile).toHaveBeenCalledWith('file-1');
+                expect(screen.getByTestId('share-url')).toBeInTheDocument();
+            });
+        });
+
+        it('calls shareNode and shows unavailable message when server returns null', async () => {
+            mockFetch.mockResolvedValue(mockResponse);
+            mockShareNode.mockResolvedValue(null); // non-file-backed node
+            render(<MeineDateienPane />);
+            await waitFor(() => expect(screen.getByTestId('node-row-n-1')).toBeInTheDocument());
+            const shareBtns = screen.getAllByTestId('share-button');
+            fireEvent.click(shareBtns[0]);
+            await waitFor(() => {
+                expect(mockShareNode).toHaveBeenCalledWith('n-1');
+                expect(screen.getByTestId('share-unavailable')).toBeInTheDocument();
+            });
         });
     });
 });

@@ -1897,9 +1897,21 @@ export interface ShareNodeResult {
 
 /**
  * Generate a public share link for a node.
- * The server also sets node visibility to 'public'.
- * Returns null on failure.
+ *
+ * Honest limitation (Core: 77f4fda): public links are currently only supported
+ * for file-backed nodes. Calling this on a text-only node returns null.
+ * Callers must handle null gracefully and surface the limitation to the user.
+ * Do not imply generic public sharing for all node types.
  */
 export async function shareNode(nodeId: string): Promise<ShareNodeResult | null> {
     return corePost(`/v3/nodes/${nodeId}/share`, {}, { isOptional: true });
+}
+
+/**
+ * Generate a public share link for an uploaded file.
+ * Files are always shareable — this is the primary public-link path.
+ * Returns null on failure.
+ */
+export async function shareFile(fileId: string): Promise<ShareNodeResult | null> {
+    return corePost(`/v3/files/${fileId}/share`, {}, { isOptional: true });
 }
