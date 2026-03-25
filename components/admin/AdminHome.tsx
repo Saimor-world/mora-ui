@@ -3,6 +3,7 @@
 import React from 'react';
 import { Settings2, X } from 'lucide-react';
 import { useContextStore } from '@/lib/store/contextStore';
+import { AdminRosterView } from './AdminRosterView';
 
 /**
  * AdminHome -- the admin OS surface (spec Section 2, Surface C).
@@ -36,9 +37,9 @@ export const AdminHome: React.FC = () => {
                 </button>
             </div>
 
-            {/* Main admin content -- roster wired in Chunk 3 */}
+            {/* Main admin content */}
             <div className="flex-1 overflow-y-auto p-6">
-                <div className="text-white/30 text-sm">Benutzerverwaltung wird geladen...</div>
+                <AdminRosterView />
             </div>
         </div>
     );
