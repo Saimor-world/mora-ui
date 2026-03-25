@@ -4,7 +4,7 @@ import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Mail, Calendar, Building2, ChevronUp,
-    Home, Sparkles, MessageCircle, Brain, FolderOpen, Users, FileText, Terminal, Settings
+    Home, Sparkles, MessageCircle, Brain, FolderOpen, Users, FileText, Terminal, Settings, FolderHeart
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -404,6 +404,19 @@ export const Dock = () => {
                             </span>
                         </div>
                         <AdminModeSwitcher />
+                        <button
+                            onClick={() => openPane({
+                                id: 'meine-dateien',
+                                type: 'meine-dateien',
+                                title: 'Meine Dateien',
+                                size: { width: 380, height: 560 },
+                            })}
+                            title="Meine Dateien"
+                            aria-label="Meine Dateien öffnen"
+                            className="w-[42px] h-[42px] flex items-center justify-center rounded-xl bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 transition-all duration-200"
+                        >
+                            <FolderHeart size={18} />
+                        </button>
                     </div>
 
                     {/* CENTER: SEARCH - Enhanced */}
