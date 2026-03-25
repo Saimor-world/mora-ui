@@ -15,6 +15,7 @@ import { mapNodesToMycelium } from '@/lib/utils/myceliumDataMapper';
 import type { CoreNode } from '@/lib/types/core';
 import { motion } from 'framer-motion';
 import { toast } from '@/lib/toast';
+import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 
 // --- CONFIG ---
 const NODE_TYPES = [
@@ -556,6 +557,9 @@ export const FolderLayer: React.FC = () => {
                                                             >
                                                                 {node.type}
                                                             </span>
+                                                            {node.visibility && (
+                                                                <VisibilityBadge visibility={node.visibility} size={11} />
+                                                            )}
                                                         </motion.button>
                                                     );
                                                 })}
@@ -594,6 +598,9 @@ export const FolderLayer: React.FC = () => {
                                                             <span className="text-white/75 group-hover:text-white flex-1 text-sm">
                                                                 {node.name}
                                                             </span>
+                                                            {node.visibility && (
+                                                                <VisibilityBadge visibility={node.visibility} size={11} />
+                                                            )}
                                                             <span
                                                                 className="text-[10px] uppercase tracking-wider font-medium px-2 py-0.5 rounded"
                                                                 style={{ color: `${accentColor}99`, background: `${accentColor}12` }}
