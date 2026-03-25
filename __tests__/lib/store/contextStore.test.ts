@@ -2,26 +2,44 @@ import { useContextStore } from '@/lib/store/contextStore';
 
 describe('contextStore', () => {
     beforeEach(() => {
-        useContextStore.getState().setOsContext('company');
+        useContextStore.setState({ isAdminMode: false, personalSpaceId: null });
     });
 
-    it('defaults to company context -- Universe is primary', () => {
-        expect(useContextStore.getState().osContext).toBe('company');
+    it('isAdminMode defaults to false', () => {
+        expect(useContextStore.getState().isAdminMode).toBe(false);
     });
 
-    it('setOsContext changes to personal', () => {
-        useContextStore.getState().setOsContext('personal');
-        expect(useContextStore.getState().osContext).toBe('personal');
+    it('setAdminMode sets isAdminMode to true', () => {
+        useContextStore.getState().setAdminMode(true);
+        expect(useContextStore.getState().isAdminMode).toBe(true);
     });
 
-    it('toggleContext switches company -> personal', () => {
-        useContextStore.getState().toggleContext();
-        expect(useContextStore.getState().osContext).toBe('personal');
+    it('setAdminMode sets isAdminMode back to false', () => {
+        useContextStore.getState().setAdminMode(true);
+        useContextStore.getState().setAdminMode(false);
+        expect(useContextStore.getState().isAdminMode).toBe(false);
     });
 
-    it('toggleContext switches personal -> company', () => {
-        useContextStore.getState().setOsContext('personal');
-        useContextStore.getState().toggleContext();
-        expect(useContextStore.getState().osContext).toBe('company');
+    it('personalSpaceId defaults to null', () => {
+        expect(useContextStore.getState().personalSpaceId).toBeNull();
+    });
+
+    it('setPersonalSpaceId stores the id', () => {
+        useContextStore.getState().setPersonalSpaceId('space-abc-123');
+        expect(useContextStore.getState().personalSpaceId).toBe('space-abc-123');
+    });
+
+    it('setPersonalSpaceId accepts null to clear', () => {
+        useContextStore.getState().setPersonalSpaceId('space-abc-123');
+        useContextStore.getState().setPersonalSpaceId(null);
+        expect(useContextStore.getState().personalSpaceId).toBeNull();
+    });
+
+    it('osContext does not exist on store (removed)', () => {
+        expect((useContextStore.getState() as any).osContext).toBeUndefined();
+    });
+
+    it('toggleContext does not exist on store (removed)', () => {
+        expect((useContextStore.getState() as any).toggleContext).toBeUndefined();
     });
 });

@@ -37,7 +37,6 @@ import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextLabel';
-import { useContextStore } from '@/lib/store/contextStore';
 
 interface PendingAction {
     tool_name: string;
@@ -488,18 +487,16 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     // Scope derivation for MoraContextLabel
-    const osContext = useContextStore((s) => s.osContext);
     const activeDepartment = useMoraStore((s) =>
         s.departments?.find((d) => d.id === s.activeDepartmentId)
     );
 
     const derivedScope = useMemo((): { scope: MoraScope; sourceName?: string } => {
-        if (osContext === 'personal') return { scope: 'personal' };
         // 'object' scope (active folder/document) is Phase 2 -- requires active-object state
         // TODO: add 'object' branch when active-object state is surfaced (spec Section 5)
-        if (osContext === 'company' && activeDepartment) return { scope: 'shared', sourceName: activeDepartment.name };
+        if (activeDepartment) return { scope: 'shared', sourceName: activeDepartment.name };
         return { scope: 'shared' };
-    }, [osContext, activeDepartment]);
+    }, [activeDepartment]);
 
     // Streaming hook — real AI, token-by-token
     const {

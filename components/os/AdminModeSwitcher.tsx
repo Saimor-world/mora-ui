@@ -11,7 +11,7 @@ import { useMoraStore } from '@/lib/store/moraState';
  * Spec (Section 2, Surface C):
  * - Renders only for owner/admin roles
  * - Admin mode is an OS state switch, not a navigation
- * - Exiting restores the previous osContext (personal or company)
+ * - Exiting restores normal Universe view
  * - Always-visible exit while in admin mode
  */
 export const AdminModeSwitcher: React.FC = () => {
