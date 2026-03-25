@@ -92,9 +92,22 @@ export interface CoreNode {
     size?: number | null;
     created_at?: string | null;
     updated_at?: string | null;
-    /** User ID of the content creator. Null for legacy content. */
+    /**
+     * User ID of the original author (immutable after creation).
+     * Exposed by NodeResponse where the backend can honestly derive it.
+     * Primarily reliable on personal-scoped content surfaces.
+     */
+    author_id?: string | null;
+    /**
+     * User ID of the current owner. May differ from author_id if ownership was transferred.
+     * Exposed by NodeResponse where the backend can honestly derive it.
+     */
     owner_id?: string | null;
-    /** Who can read this node. See NodeVisibility. Null = legacy, treat as 'company'. */
+    /**
+     * Who can read this node. See NodeVisibility.
+     * Null = legacy content predating ownership tracking — treat as 'company'.
+     * Only meaningful where the server exposes it (personal-scoped content today).
+     */
     visibility?: NodeVisibility;
 }
 

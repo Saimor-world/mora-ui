@@ -1,4 +1,4 @@
-import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
+import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode, NodeVisibility } from '@/lib/types/core';
 import type { OperationalState } from '@/lib/store/moraState';
 
 type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
@@ -1838,7 +1838,53 @@ export async function updateDepartmentVisibility(
  * Returns null if the endpoint is unavailable — degrade gracefully (show empty state).
  * Callers must NOT throw on null.
  */
-export async function fetchMyContent(): Promise<CoreNode[] | null> {
+/**
+ * The full user content surface returned by GET /v3/users/me/content (Core: 5616cc6+).
+ *
+ * Server-owned user content — not locally stitched, not fabricated.
+ * `author_id` / `owner_id` / `visibility` on nodes are honest server truth,
+ * primarily reliable on personal-scoped content. This is NOT a global node ACL system.
+ *
+ * All fields are optional: the server returns what it can honestly derive today.
+ * Callers must handle missing sections gracefully.
+ */
+export interface UserContentResponse {
+    /** The user's personal space anchor. */
+    space?: PersonalSpace | null;
+    /** Folders owned by or shared with the user in their personal space. */
+    folders?: CoreFolder[];
+    /** Nodes (documents, notes, tasks) owned by the user. */
+    nodes?: CoreNode[];
+    /** Uploaded files owned by the user. */
+    files?: Array<{
+        id: string;
+        name: string;
+        size?: number | null;
+        mime_type?: string | null;
+        created_at?: string | null;
+        owner_id?: string | null;
+        visibility?: NodeVisibility;
+    }>;
+    /** Summary counts for quick display. */
+    counts?: {
+        folders?: number;
+        nodes?: number;
+        files?: number;
+        total?: number;
+    };
+    /** Ownership metadata for this content surface. */
+    ownership?: {
+        user_id: string;
+        [key: string]: unknown;
+    };
+}
+
+/**
+ * Fetch the current user's personal content surface.
+ * Returns the full structured response (space, folders, nodes, files, counts, ownership).
+ * Returns null if the endpoint is unavailable — degrade gracefully.
+ */
+export async function fetchMyContent(): Promise<UserContentResponse | null> {
     return coreGet('/v3/users/me/content', { isOptional: true });
 }
 

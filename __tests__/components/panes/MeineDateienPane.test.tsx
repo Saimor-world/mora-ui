@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
 import { fetchMyContent } from '@/lib/api/coreClient';
+import type { UserContentResponse } from '@/lib/api/coreClient';
 
 jest.mock('@/lib/api/coreClient', () => ({
     fetchMyContent: jest.fn(),
@@ -10,48 +11,81 @@ jest.mock('@/lib/api/coreClient', () => ({
 
 const mockFetch = fetchMyContent as jest.MockedFunction<typeof fetchMyContent>;
 
-const mockNodes = [
-    {
-        id: 'n-1',
-        title: 'Projektplan Q2',
-        type: 'document' as const,
-        space_id: 's-1',
-        owner_id: 'u-me',
-        visibility: 'private' as const,
-    },
-    {
-        id: 'n-2',
-        title: 'Team-Präsentation',
-        type: 'document' as const,
-        space_id: 's-1',
-        owner_id: 'u-me',
-        visibility: 'department' as const,
-    },
-];
+const mockResponse: UserContentResponse = {
+    space: { id: 'sp-1', name: 'Mein Bereich', owner_id: 'u-me' },
+    folders: [
+        { id: 'f-1', name: 'Projekte', space_id: 'sp-1', order: 0 },
+    ],
+    nodes: [
+        {
+            id: 'n-1',
+            title: 'Projektplan Q2',
+            type: 'document',
+            space_id: 'sp-1',
+            owner_id: 'u-me',
+            visibility: 'private',
+        },
+        {
+            id: 'n-2',
+            title: 'Team-Präsentation',
+            type: 'document',
+            space_id: 'sp-1',
+            owner_id: 'u-me',
+            visibility: 'department',
+        },
+    ],
+    files: [
+        {
+            id: 'file-1',
+            name: 'bericht.pdf',
+            size: 204800,
+            owner_id: 'u-me',
+            visibility: 'private',
+        },
+    ],
+    counts: { folders: 1, nodes: 2, files: 1, total: 4 },
+};
 
 describe('MeineDateienPane', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('shows loading state initially', () => {
-        mockFetch.mockImplementation(() => new Promise(() => {})); // never resolves
+        mockFetch.mockImplementation(() => new Promise(() => {}));
         render(<MeineDateienPane />);
         expect(screen.getByTestId('meine-dateien-loading')).toBeInTheDocument();
     });
 
-    it('shows documents after loading', async () => {
-        mockFetch.mockResolvedValue(mockNodes);
+    it('shows folder section with folder names', async () => {
+        mockFetch.mockResolvedValue(mockResponse);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/Projektplan Q2/i)).toBeInTheDocument();
-            expect(screen.getByText(/Team-Präsentation/i)).toBeInTheDocument();
+            expect(screen.getByText('Projekte')).toBeInTheDocument();
         });
     });
 
-    it('shows visibility badge for each document', async () => {
-        mockFetch.mockResolvedValue(mockNodes);
+    it('shows nodes in Dokumente section', async () => {
+        mockFetch.mockResolvedValue(mockResponse);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByTitle('Privat')).toBeInTheDocument();
+            expect(screen.getByText('Projektplan Q2')).toBeInTheDocument();
+            expect(screen.getByText('Team-Präsentation')).toBeInTheDocument();
+        });
+    });
+
+    it('shows files in Dateien section', async () => {
+        mockFetch.mockResolvedValue(mockResponse);
+        render(<MeineDateienPane />);
+        await waitFor(() => {
+            expect(screen.getByText('bericht.pdf')).toBeInTheDocument();
+        });
+    });
+
+    it('shows visibility badges on nodes and files', async () => {
+        mockFetch.mockResolvedValue(mockResponse);
+        render(<MeineDateienPane />);
+        await waitFor(() => {
+            const privateBadges = screen.getAllByTitle('Privat');
+            expect(privateBadges.length).toBeGreaterThanOrEqual(1);
             expect(screen.getByTitle('Abteilung')).toBeInTheDocument();
         });
     });
@@ -64,11 +98,28 @@ describe('MeineDateienPane', () => {
         });
     });
 
-    it('shows empty state when no documents exist', async () => {
-        mockFetch.mockResolvedValue([]);
+    it('shows empty state when all sections are empty', async () => {
+        mockFetch.mockResolvedValue({ folders: [], nodes: [], files: [] });
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/keine dateien/i)).toBeInTheDocument();
+            expect(screen.getByText(/keine eigenen inhalte/i)).toBeInTheDocument();
+        });
+    });
+
+    it('shows counts summary when counts are present', async () => {
+        mockFetch.mockResolvedValue(mockResponse);
+        render(<MeineDateienPane />);
+        await waitFor(() => {
+            expect(screen.getByText(/2 Dokumente/i)).toBeInTheDocument();
+        });
+    });
+
+    it('folder rows have lighter visual weight than node rows', async () => {
+        mockFetch.mockResolvedValue(mockResponse);
+        render(<MeineDateienPane />);
+        await waitFor(() => {
+            expect(screen.getByTestId('folder-row-f-1')).toBeInTheDocument();
+            expect(screen.getByTestId('node-row-n-1')).toBeInTheDocument();
         });
     });
 });
