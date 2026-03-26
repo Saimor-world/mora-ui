@@ -29,6 +29,7 @@ import { realtime } from '@/lib/api/realtimeClient';
 import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
+import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -2032,6 +2033,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 <span className="text-[9px] text-white/30 uppercase tracking-tighter">{file.type || 'system'}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
                                                                 <span className="text-[9px] text-white/30">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
+                                                                {file.visibility && (
+                                                                    <VisibilityBadge visibility={file.visibility} size={10} />
+                                                                )}
                                                             </div>
                                                         </div>
 
@@ -2312,6 +2316,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <span className="text-[10px] text-white/30 shrink-0">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
+                                                        {file.visibility && (
+                                                            <VisibilityBadge visibility={file.visibility} size={11} />
+                                                        )}
                                                         {isResonant && <Sparkles size={14} className="text-amber-400" />}
                                                     </div>
                                                 );
