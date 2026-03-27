@@ -75,6 +75,7 @@ import { UserCursor } from '@/components/layout/UserCursor';
 // import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
+import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
 
 // V12: Connection Status, Quick Tips, Greeting & Stats
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner';
@@ -665,6 +666,9 @@ export const MoraShell: React.FC = () => {
                     workspaceLabel={workspaceTabLabel}
                     scopeLabel={scopeLabel}
                 />
+
+                {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}
+                <ShellBreadcrumb />
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
                 <div className="flex-1 relative h-full w-full">
