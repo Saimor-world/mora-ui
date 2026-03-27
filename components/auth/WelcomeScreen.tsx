@@ -8,7 +8,7 @@ import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie, deleteCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
-import { getCoreBaseUrl } from '@/lib/api/coreClient';
+import { coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
 
 import { signIn } from "next-auth/react";
 import { OnboardingWizard } from './OnboardingWizard';
@@ -60,7 +60,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     // Check for existing session on mount
     useEffect(() => {
-        const checkSession = () => {
+        let cancelled = false;
+
+        const checkSession = async () => {
             const authToken = readCookie('saimor_auth');
             const coreSession = readCookie('mora_session');
             const isLocalhost =
@@ -74,6 +76,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
 
             if (authToken || coreSession || devToken) {
+                if (cancelled) return;
                 setSessionInfo({
                     lastWorkspace: lastWorkspace || undefined,
                     lastActivity: lastActivity || undefined,
@@ -82,10 +85,26 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     role: savedRole || undefined
                 });
                 setShowSessionCard(true);
+                return;
             }
+
+            const serverSession = await coreGet('/v3/auth/session', { skipAuth: true, isOptional: true });
+            if (cancelled || !serverSession?.user_id) return;
+
+            setSessionInfo({
+                lastWorkspace: lastWorkspace || serverSession.active_company_name || undefined,
+                lastActivity: lastActivity || undefined,
+                mode: (savedMode as 'user' | 'owner') || 'user',
+                userName: userName || serverSession.name || serverSession.email?.split('@')[0] || undefined,
+                role: savedRole || serverSession.role || undefined,
+            });
+            setShowSessionCard(true);
         };
 
-        checkSession();
+        void checkSession();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
