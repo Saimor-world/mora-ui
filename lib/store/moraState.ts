@@ -67,6 +67,19 @@ const readStandardMode = (companyId?: string | null) => {
 export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
+/**
+ * CoreMode — which surface is active when viewLevel === 'core'.
+ *
+ * 'home'    — Day-start working surface: recent docs, activity, quick access.
+ *             Default after login and after Dock "Start" / Mod+H.
+ * 'explore' — Universe planet map: spatial overview of all departments.
+ *             Reached via "Explore" button in Home or breadcrumb root click from dept/space.
+ *
+ * NOT the same as viewMode (which answers "who is this user?").
+ * NOT a new route — this is a surface mode inside viewLevel='core'.
+ */
+export type CoreMode = 'home' | 'explore';
+
 export interface UiScopeHints {
     view_level?: string;
     layer?: string;
@@ -165,6 +178,12 @@ export const getPermissions = (role: UserRole): Permissions => ROLE_PERMISSIONS[
 interface MoraState {
     // Spatial Position
     viewLevel: ViewLevel;
+    /**
+     * Which surface is active when viewLevel === 'core'.
+     * Default: 'home'. Set to 'explore' to show the Universe planet map.
+     * Resets to 'home' on company switch and on Dock "Start" / Mod+H.
+     */
+    coreMode: CoreMode;
     viewMode: ViewMode; // NEW: Owner View (Kunden) vs Demo View (Café) vs Workspace View (eigene Firma)
     activeCompanyId: string | null;
     activeDepartmentId: string | null;
@@ -234,6 +253,7 @@ interface MoraState {
     // Actions
     resolveNameConflict: (newName: string) => Promise<void>;
     cancelNameConflict: () => void;
+    setCoreMode: (mode: CoreMode) => void;
     setViewLevel: (level: ViewLevel) => void;
     setViewMode: (mode: ViewMode) => void; // NEW: Switch between Owner/Demo/Workspace
     setActiveCompany: (id: string | null) => void;
@@ -307,6 +327,7 @@ interface MoraState {
 export const useMoraStore = create<MoraState>((set, get) => ({
     // Initial State
     viewLevel: 'core',
+    coreMode: 'home',
     viewMode: 'workspace',
     activeCompanyId: null,
     activeDepartmentId: null,
@@ -365,6 +386,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
         set({ isStandardMode: active });
     },
+    setCoreMode: (mode) => set({ coreMode: mode }),
     setViewLevel: (level) => set({ viewLevel: level }),
     setViewMode: (mode) => {
         set({ viewMode: mode });
@@ -455,6 +477,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             activeSpaceId: null,
             activeFolderId: null,
             activeNode: null,
+            coreMode: 'home', // reset to Home on company switch — fresh start for new workspace
             isStandardMode: nextStandard,
             user: state.user
                 ? {

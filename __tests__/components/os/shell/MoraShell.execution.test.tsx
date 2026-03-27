@@ -239,7 +239,10 @@ const BASE_SUMMARY = {
 
 // ── tests ──────────────────────────────────────────────────────────────────
 
-describe('MoraShell execution card', () => {
+// 1.0 gated — WorkSession banner removed from shell (work-session is future-tier).
+// Tests kept for reactivation when work-session surface ships.
+// See docs/plans/2026-03-27-surface-hierarchy-1.0.md § Future / Hidden
+describe.skip('MoraShell execution card', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });

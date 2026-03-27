@@ -94,11 +94,12 @@ import {
     MYCELIUM_BATCH_COMPLETE_EVENT,
     MYCELIUM_REVIEW_READY_EVENT,
     type MyceliumShellSummary,
-    WORK_SESSION_PLAN_EVENT,
-    type WorkSessionShellSummary,
-    getSessionBodyText,
-    getSessionExtendedNote,
-    getSessionRunningSignal,
+    // 1.0 gated — work-session surface is future-tier:
+    // WORK_SESSION_PLAN_EVENT,
+    // type WorkSessionShellSummary,
+    // getSessionBodyText,
+    // getSessionExtendedNote,
+    // getSessionRunningSignal,
 } from '@/lib/utils/moraExplanation';
 
 // Naming Conflict Modal (409 UX)
@@ -318,7 +319,7 @@ export const MoraShell: React.FC = () => {
         files: MyceliumDropVisualFile[];
     } | null>(null);
     const [myceliumSummary, setMyceliumSummary] = useState<MyceliumShellSummary | null>(null);
-    const [workSessionSummary, setWorkSessionSummary] = useState<WorkSessionShellSummary | null>(null);
+    // workSessionSummary — 1.0 gated (work-session surface is future-tier)
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
@@ -433,15 +434,7 @@ export const MoraShell: React.FC = () => {
         return () => window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
     }, []);
 
-    useEffect(() => {
-        const handleWorkSessionPlan = (event: Event) => {
-            const detail = (event as CustomEvent<WorkSessionShellSummary>).detail;
-            if (!detail) return;
-            setWorkSessionSummary(detail);
-        };
-        window.addEventListener(WORK_SESSION_PLAN_EVENT, handleWorkSessionPlan as EventListener);
-        return () => window.removeEventListener(WORK_SESSION_PLAN_EVENT, handleWorkSessionPlan as EventListener);
-    }, []);
+    // WORK_SESSION_PLAN_EVENT listener — 1.0 gated with work-session surface
 
     // Hooks
     const apiOrbState = useAwareness();
@@ -974,6 +967,7 @@ export const MoraShell: React.FC = () => {
                 </div>
             )}
 
+            {/* WorkSession banner — 1.0 gated with work-session surface
             {workSessionSummary && !isShellDropActive && (
                 <div className={`fixed left-1/2 z-[929] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumSummary ? 'bottom-[31rem]' : navigationOutcome ? 'bottom-[14.5rem]' : 'bottom-24'}`}>
                     {(() => {
@@ -1122,7 +1116,7 @@ export const MoraShell: React.FC = () => {
                         );
                     })()}
                 </div>
-            )}
+            )} */}
 
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />
