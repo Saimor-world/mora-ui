@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, UserPlus, Shield, Crown, User, Mail, MoreVertical, Search, RefreshCw, Settings } from 'lucide-react';
+import { Users, UserPlus, Shield, Crown, User, Mail, Search, RefreshCw, Settings, Copy, Check } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -58,6 +58,8 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
 
     const [inviteDepartmentIds, setInviteDepartmentIds] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [inviteLink, setInviteLink] = useState<string | null>(null);
+    const [linkCopied, setLinkCopied] = useState(false);
 
     const { viewMode } = useMoraStore();
     const currentUser = useMoraStore(s => s.user);
@@ -149,10 +151,15 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
         });
         setIsSubmitting(false);
         if (result) {
-            toast.success(`Einladung gesendet. Link: ${result.invite_link}`);
-            setShowInviteModal(false);
-            setInviteEmail('');
-            setInviteDepartmentIds([]);
+            setInviteLink(result.invite_link ?? null);
+            // Optimistically add the pending invite so it appears immediately
+            setInvites(prev => [...prev, {
+                id: result.token ?? inviteEmail,
+                name: inviteEmail.split('@')[0],
+                email: inviteEmail,
+                role: inviteRole,
+                status: 'invited' as const,
+            }]);
         } else {
             toast.error('Einladung fehlgeschlagen. Bitte erneut versuchen.');
         }
@@ -177,6 +184,22 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
             ));
             toast.success(updated.is_active ? 'User activated' : 'User deactivated');
         }
+    };
+
+    const closeInviteModal = () => {
+        setShowInviteModal(false);
+        setInviteEmail('');
+        setInviteDepartmentIds([]);
+        setInviteLink(null);
+        setLinkCopied(false);
+    };
+
+    const handleCopyInviteLink = () => {
+        if (!inviteLink) return;
+        navigator.clipboard.writeText(inviteLink).then(() => {
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+        });
     };
 
     const handleCompanyBindingChange = async (memberId: string, companyId: string) => {
@@ -222,13 +245,16 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                 {combinedMembers.length} members
                             </span>
                         </div>
-                        <button
-                            onClick={() => setShowInviteModal(true)}
-                            className="flex items-center gap-2 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm transition-all"
-                        >
-                            <UserPlus size={16} />
-                            Invite
-                        </button>
+                        {isAdmin && (
+                            <button
+                                data-testid="invite-button"
+                                onClick={() => setShowInviteModal(true)}
+                                className="flex items-center gap-2 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm transition-all"
+                            >
+                                <UserPlus size={16} />
+                                Invite
+                            </button>
+                        )}
                     </div>
 
                     {/* Search & Filter */}
@@ -366,10 +392,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                                 </div>
                                             )}
 
-                                            {/* Actions */}
-                                            <button className="p-1 rounded hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-all">
-                                                <MoreVertical size={14} className="text-white/40" />
-                                            </button>
+                                            {/* Actions: reserved for future row menu */}
                                         </motion.div>
                                     );
                                 })}
@@ -397,7 +420,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 rounded-2xl"
-                            onClick={() => setShowInviteModal(false)}
+                            onClick={closeInviteModal}
                         >
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0 }}
@@ -406,76 +429,118 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                 onClick={(e) => e.stopPropagation()}
                                 className="bg-black/90 border border-white/20 rounded-2xl p-6 w-80"
                             >
-                                <h3 className="text-lg font-medium mb-4">Invite Team Member</h3>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="text-xs text-white/40 mb-1 block">Email Address</label>
-                                        <input
-                                            type="email"
-                                            value={inviteEmail}
-                                            onChange={(e) => setInviteEmail(e.target.value)}
-                                            placeholder="colleague@company.com"
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs text-white/40 mb-1 block">Role</label>
-                                        <div className="flex gap-2">
-                                            {(['member', 'manager'] as const).map(role => (
-                                                <button
-                                                    key={role}
-                                                    onClick={() => setInviteRole(role)}
-                                                    className={`flex-1 py-2 rounded-lg text-sm transition-all ${inviteRole === role
-                                                        ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
-                                                        : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80'
-                                                        }`}
-                                                >
-                                                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                                                </button>
-                                            ))}
+                                {inviteLink ? (
+                                    /* ── Success view: show link with copy button ── */
+                                    <>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Check size={18} className="text-emerald-400" />
+                                            <h3 className="text-lg font-medium">Einladung gesendet</h3>
                                         </div>
-                                    </div>
-
-                                    {departments && departments.length > 0 && (
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-xs text-white/40">Abteilungen</label>
-                                            {departments.map((dept) => (
-                                                <label key={dept.id} className="flex items-center gap-2 text-sm text-white/60">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={inviteDepartmentIds.includes(dept.id)}
-                                                        onChange={(e) => {
-                                                            setInviteDepartmentIds((prev) =>
-                                                                e.target.checked
-                                                                    ? [...prev, dept.id]
-                                                                    : prev.filter((id) => id !== dept.id)
-                                                            );
-                                                        }}
-                                                    />
-                                                    {dept.name}
-                                                </label>
-                                            ))}
+                                        <p className="text-xs text-white/40 mb-4">
+                                            Teile diesen Link mit <span className="text-white/60">{inviteEmail}</span>.
+                                            Er ist einmalig verwendbar.
+                                        </p>
+                                        <div
+                                            data-testid="invite-link-display"
+                                            className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 mb-4"
+                                        >
+                                            <span className="flex-1 text-xs text-emerald-300 font-mono truncate">
+                                                {inviteLink}
+                                            </span>
+                                            <button
+                                                data-testid="copy-invite-link"
+                                                onClick={handleCopyInviteLink}
+                                                className="shrink-0 p-1 rounded hover:bg-white/10 text-white/50 hover:text-emerald-400 transition-all"
+                                                title="Link kopieren"
+                                            >
+                                                {linkCopied
+                                                    ? <Check size={14} className="text-emerald-400" />
+                                                    : <Copy size={14} />
+                                                }
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
+                                        <button
+                                            onClick={closeInviteModal}
+                                            className="w-full py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white/80 transition-all"
+                                        >
+                                            Fertig
+                                        </button>
+                                    </>
+                                ) : (
+                                    /* ── Invite form ── */
+                                    <>
+                                        <h3 className="text-lg font-medium mb-4">Invite Team Member</h3>
 
-                                <div className="flex gap-2 mt-6">
-                                    <button
-                                        onClick={() => setShowInviteModal(false)}
-                                        className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white/80 transition-all"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleInviteSubmit}
-                                        disabled={!inviteEmail || isSubmitting}
-                                        className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
-                                    >
-                                        {isSubmitting ? 'Sending...' : 'Send Invite'}
-                                    </button>
-                                </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="text-xs text-white/40 mb-1 block">Email Address</label>
+                                                <input
+                                                    type="email"
+                                                    value={inviteEmail}
+                                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                                    placeholder="colleague@company.com"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs text-white/40 mb-1 block">Role</label>
+                                                <div className="flex gap-2">
+                                                    {(['member', 'manager'] as const).map(role => (
+                                                        <button
+                                                            key={role}
+                                                            onClick={() => setInviteRole(role)}
+                                                            className={`flex-1 py-2 rounded-lg text-sm transition-all ${inviteRole === role
+                                                                ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
+                                                                : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80'
+                                                                }`}
+                                                        >
+                                                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {departments && departments.length > 0 && (
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-xs text-white/40">Abteilungen</label>
+                                                    {departments.map((dept) => (
+                                                        <label key={dept.id} className="flex items-center gap-2 text-sm text-white/60">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={inviteDepartmentIds.includes(dept.id)}
+                                                                onChange={(e) => {
+                                                                    setInviteDepartmentIds((prev) =>
+                                                                        e.target.checked
+                                                                            ? [...prev, dept.id]
+                                                                            : prev.filter((id) => id !== dept.id)
+                                                                    );
+                                                                }}
+                                                            />
+                                                            {dept.name}
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-2 mt-6">
+                                            <button
+                                                onClick={closeInviteModal}
+                                                className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white/80 transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleInviteSubmit}
+                                                disabled={!inviteEmail || isSubmitting}
+                                                className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
+                                            >
+                                                {isSubmitting ? 'Sending...' : 'Send Invite'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </motion.div>
                         </motion.div>
                     )}

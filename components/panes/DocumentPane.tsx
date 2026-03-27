@@ -68,6 +68,11 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     setContent(nodeData.content || '');
                     setType(nodeData.type || '');
                     setMetadata(nodeData.metadata || {});
+                } else {
+                    // fetchNodeDetails uses isOptional: returns null on 404/403/error.
+                    // Without this branch the pane silently shows an empty document,
+                    // giving no signal to the user that something went wrong.
+                    setLoadError('Dokument nicht gefunden oder kein Zugriff.');
                 }
 
                 // Fetch relations to explain connections
