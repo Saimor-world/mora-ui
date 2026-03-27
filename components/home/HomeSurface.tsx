@@ -1,49 +1,212 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { fetchNodesByCompany, fetchMyContent } from '@/lib/api/coreClient';
+import type { UserContentResponse } from '@/lib/api/coreClient';
+import type { CoreNode } from '@/lib/types/core';
 
 /**
  * HomeSurface — Day-start working surface for SAIMOR 1.0
  *
- * Default landing when viewLevel='core' + coreMode='home'.
- * Shows: recent docs, team activity, quick access, my content summary.
+ * Sections:
+ *   1. Quick Access  — Finder, Meine Dateien, Mora, Erkunden (no API)
+ *   2. Recent Docs   — fetchNodesByCompany, sorted desc by updated_at
+ *   3. My Content    — fetchMyContent counts summary card
  *
- * Commit A: Placeholder only — static layout, no API calls yet.
- * Commit B: Real data sections (fetchNodesByCompany, team/activity, fetchMyContent).
+ * Each data section degrades independently — null response = section hidden.
+ * No fake/placeholder content. Empty states are honest.
+ *
+ * Follows FinderPane stale-closure cancellation pattern.
  *
  * @see docs/plans/2026-03-27-corelayer-home-implementation-order.md
  */
 export const HomeSurface: React.FC = () => {
-    const setCoreMode = useMoraStore((s) => s.setCoreMode);
+    const setCoreMode    = useMoraStore((s) => s.setCoreMode);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
-    const user = useMoraStore((s) => s.user);
+    const user           = useMoraStore((s) => s.user);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const openPane       = usePaneStore((s) => s.openPane);
+
+    // ── State ────────────────────────────────────────────────────────────────
+    const [recentDocs, setRecentDocs]     = useState<CoreNode[] | null>(null); // null = error/not loaded
+    const [myContent, setMyContent]       = useState<UserContentResponse | null | undefined>(undefined); // undefined = not loaded yet
+
+    // ── Data loading ─────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!activeCompanyId) return;
+        let cancelled = false;
+
+        Promise.all([
+            fetchNodesByCompany(activeCompanyId, { limit: 8 }),
+            fetchMyContent(),
+        ]).then(([nodes, content]) => {
+            if (cancelled) return;
+            // Sort recent docs by updatedAt DESC, fall back to createdAt
+            const sorted = Array.isArray(nodes)
+                ? [...nodes].sort((a, b) => {
+                      const ta = a.updated_at ?? a.created_at ?? '';
+                      const tb = b.updated_at ?? b.created_at ?? '';
+                      return tb.localeCompare(ta);
+                  })
+                : null;
+            setRecentDocs(sorted);
+            setMyContent(content);
+        });
+
+        return () => { cancelled = true; };
+    }, [activeCompanyId]);
+
+    // ── Handlers ─────────────────────────────────────────────────────────────
+    const openDocument = useCallback((node: CoreNode) => {
+        openPane({
+            id: `doc-${node.id}`,
+            type: 'document',
+            title: node.title || 'Dokument',
+            size: { width: 960, height: 720 },
+            data: { nodeId: node.id },
+        });
+    }, [openPane]);
+
+    const openFinder = useCallback(() => {
+        openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
+    }, [openPane]);
+
+    const openMeineDateien = useCallback(() => {
+        openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 380, height: 560 } });
+    }, [openPane]);
+
+    const openMora = useCallback(() => {
+        openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
+    }, [openPane]);
+
+    // ── Theming ───────────────────────────────────────────────────────────────
+    const t = {
+        bg:        isStandardMode ? 'bg-white'           : 'bg-transparent',
+        heading:   isStandardMode ? 'text-gray-900'      : 'text-white/90',
+        sub:       isStandardMode ? 'text-gray-500'      : 'text-white/40',
+        card:      isStandardMode ? 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                                  : 'bg-white/[0.04] border-white/8 hover:border-white/18',
+        cardText:  isStandardMode ? 'text-gray-700'      : 'text-white/75',
+        cardSub:   isStandardMode ? 'text-gray-400'      : 'text-white/35',
+        sectionHd: isStandardMode ? 'text-gray-400'      : 'text-white/30',
+        item:      isStandardMode ? 'hover:bg-gray-50 text-gray-700'
+                                  : 'hover:bg-white/[0.04] text-white/70',
+        qaBtn:     isStandardMode
+            ? 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50 shadow-sm'
+            : 'bg-white/[0.05] border border-white/10 text-white/65 hover:border-white/22 hover:bg-white/[0.08]',
+        qaIcon:    isStandardMode ? 'text-gray-400'      : 'text-white/35',
+    };
+
+    const firstName = user?.name?.split(' ')[0] ?? null;
 
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 px-8 py-12 overflow-auto">
-            {/* Header */}
-            <div className="text-center">
-                <h1 className={`text-2xl font-semibold tracking-tight ${isStandardMode ? 'text-gray-900' : 'text-white/90'}`}>
-                    {user?.name ? `Guten Tag, ${user.name.split(' ')[0]}.` : 'Arbeitsplatz'}
-                </h1>
-                <p className={`mt-1 text-sm ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                    Was möchtest du heute tun?
-                </p>
-            </div>
+        <div className="absolute inset-0 overflow-auto">
+            <div className="mx-auto max-w-3xl px-6 py-12 flex flex-col gap-10">
 
-            {/* Quick Access — always available, no API */}
-            <div className="flex flex-wrap gap-3 justify-center">
-                {/* Commit B will add Recent Docs, Activity, My Content sections here */}
-                <button
-                    onClick={() => setCoreMode('explore')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium transition-all ${
-                        isStandardMode
-                            ? 'bg-gray-100 border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                            : 'bg-white/[0.06] border border-white/10 text-white/70 hover:border-white/25 hover:bg-white/[0.1]'
-                    }`}
-                >
-                    Erkunden →
-                </button>
+                {/* ── Header ── */}
+                <div>
+                    <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>
+                        {firstName ? `Guten Tag, ${firstName}.` : 'Arbeitsplatz'}
+                    </h1>
+                    <p className={`mt-1 text-sm ${t.sub}`}>Was möchtest du heute tun?</p>
+                </div>
+
+                {/* ── Quick Access ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <button
+                        data-testid="qa-finder"
+                        onClick={openFinder}
+                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
+                    >
+                        <FolderOpen size={22} className={t.qaIcon} />
+                        Finder
+                    </button>
+                    <button
+                        data-testid="qa-meine-dateien"
+                        onClick={openMeineDateien}
+                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
+                    >
+                        <FolderHeart size={22} className={t.qaIcon} />
+                        Meine Dateien
+                    </button>
+                    <button
+                        data-testid="qa-mora"
+                        onClick={openMora}
+                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
+                    >
+                        <MessageCircle size={22} className={t.qaIcon} />
+                        Mora
+                    </button>
+                    <button
+                        data-testid="qa-explore"
+                        onClick={() => setCoreMode('explore')}
+                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
+                    >
+                        <Compass size={22} className={t.qaIcon} />
+                        Erkunden
+                    </button>
+                </div>
+
+                {/* ── Recent Docs ── */}
+                {recentDocs !== null && (
+                    <section data-testid="recent-docs-section">
+                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                            Zuletzt geöffnet
+                        </h2>
+                        {recentDocs.length === 0 ? (
+                            <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
+                                Noch keine Dokumente — öffne den Finder, um loszulegen.
+                            </p>
+                        ) : (
+                            <ul className="flex flex-col gap-1">
+                                {recentDocs.map((node) => (
+                                    <li key={node.id} data-testid="recent-doc-item">
+                                        <button
+                                            onClick={() => openDocument(node)}
+                                            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${t.item}`}
+                                        >
+                                            <FileText size={15} className={t.cardSub} />
+                                            <span className="flex-1 truncate text-sm">{node.title || 'Unbenannt'}</span>
+                                            {node.updated_at && (
+                                                <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
+                                                    <Clock size={11} className="inline mr-1 opacity-60" />
+                                                    {new Date(node.updated_at).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                )}
+
+                {/* ── My Content Summary Card ── */}
+                {myContent && (
+                    <button
+                        data-testid="my-content-card"
+                        onClick={openMeineDateien}
+                        className={`w-full flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${t.card}`}
+                    >
+                        <FolderHeart size={20} className={t.qaIcon} />
+                        <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
+                            {myContent.counts && (
+                                <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
+                                    {[
+                                        myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
+                                        myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
+                                        myContent.counts.files != null && `${myContent.counts.files} Dateien`,
+                                    ].filter(Boolean).join(' · ')}
+                                </div>
+                            )}
+                        </div>
+                    </button>
+                )}
+
             </div>
         </div>
     );
