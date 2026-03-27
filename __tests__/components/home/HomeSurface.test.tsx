@@ -127,6 +127,20 @@ describe('HomeSurface — Recent Docs', () => {
         });
     });
 
+    it('still shows My Content when Recent Docs request fails', async () => {
+        mockFetchNodes.mockRejectedValue(new Error('nodes failed'));
+        mockFetchMyContent.mockResolvedValue({
+            counts: { folders: 1, nodes: 2, files: 3 },
+        } as any);
+
+        render(<HomeSurface />);
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('recent-docs-section')).not.toBeInTheDocument();
+            expect(screen.getByTestId('my-content-card')).toBeInTheDocument();
+        });
+    });
+
     it('clicking a document opens the document pane', async () => {
         mockFetchNodes.mockResolvedValue(nodes as any);
         render(<HomeSurface />);
@@ -216,5 +230,19 @@ describe('HomeSurface — My Content Summary', () => {
         expect(openPane).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'meine-dateien' })
         );
+    });
+
+    it('still shows Recent Docs when My Content request fails', async () => {
+        mockFetchNodes.mockResolvedValue([
+            { id: 'n-1', title: 'Jahresbericht', type: 'document', updated_at: '2026-03-26T10:00:00Z' },
+        ] as any);
+        mockFetchMyContent.mockRejectedValue(new Error('content failed'));
+
+        render(<HomeSurface />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('recent-docs-section')).toBeInTheDocument();
+            expect(screen.queryByTestId('my-content-card')).not.toBeInTheDocument();
+        });
     });
 });

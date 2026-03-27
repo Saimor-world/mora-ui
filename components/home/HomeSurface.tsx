@@ -24,7 +24,7 @@ import type { CoreNode } from '@/lib/types/core';
  * @see docs/plans/2026-03-27-corelayer-home-implementation-order.md
  */
 export const HomeSurface: React.FC = () => {
-    const setCoreMode    = useMoraStore((s) => s.setCoreMode);
+    const navigateToExplore = useMoraStore((s) => s.navigateToExplore);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
     const user           = useMoraStore((s) => s.user);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
@@ -36,25 +36,37 @@ export const HomeSurface: React.FC = () => {
 
     // ── Data loading ─────────────────────────────────────────────────────────
     useEffect(() => {
-        if (!activeCompanyId) return;
+        if (!activeCompanyId) {
+            setRecentDocs(null);
+            setMyContent(undefined);
+            return;
+        }
         let cancelled = false;
 
-        Promise.all([
-            fetchNodesByCompany(activeCompanyId, { limit: 8 }),
-            fetchMyContent(),
-        ]).then(([nodes, content]) => {
-            if (cancelled) return;
-            // Sort recent docs by updatedAt DESC, fall back to createdAt
-            const sorted = Array.isArray(nodes)
-                ? [...nodes].sort((a, b) => {
-                      const ta = a.updated_at ?? a.created_at ?? '';
-                      const tb = b.updated_at ?? b.created_at ?? '';
-                      return tb.localeCompare(ta);
-                  })
-                : null;
-            setRecentDocs(sorted);
-            setMyContent(content);
-        });
+        void fetchNodesByCompany(activeCompanyId, { limit: 8 })
+            .then((nodes) => {
+                if (cancelled) return;
+                // Sort recent docs by updatedAt DESC, fall back to createdAt
+                const sorted = Array.isArray(nodes)
+                    ? [...nodes].sort((a, b) => {
+                          const ta = a.updated_at ?? a.created_at ?? '';
+                          const tb = b.updated_at ?? b.created_at ?? '';
+                          return tb.localeCompare(ta);
+                      })
+                    : null;
+                setRecentDocs(sorted);
+            })
+            .catch(() => {
+                if (!cancelled) setRecentDocs(null);
+            });
+
+        void fetchMyContent()
+            .then((content) => {
+                if (!cancelled) setMyContent(content);
+            })
+            .catch(() => {
+                if (!cancelled) setMyContent(null);
+            });
 
         return () => { cancelled = true; };
     }, [activeCompanyId]);
@@ -142,7 +154,7 @@ export const HomeSurface: React.FC = () => {
                     </button>
                     <button
                         data-testid="qa-explore"
-                        onClick={() => setCoreMode('explore')}
+                        onClick={navigateToExplore}
                         className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
                     >
                         <Compass size={22} className={t.qaIcon} />

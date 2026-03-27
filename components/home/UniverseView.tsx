@@ -69,17 +69,38 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     // ─── FETCH USER MEMBERSHIPS ───
     useEffect(() => {
-        if (!activeCompanyId) return;
-        fetchUserMemberships().then((response) => {
-            if (response === null) {
+        if (!activeCompanyId) {
+            setMemberships(null);
+            setMembershipsLoaded(false);
+            setPersonalSpaceId(null);
+            return;
+        }
+
+        let cancelled = false;
+        setMembershipsLoaded(false);
+
+        void fetchUserMemberships()
+            .then((response) => {
+                if (cancelled) return;
+                if (response === null) {
+                    setMemberships(null);
+                    setPersonalSpaceId(null);
+                } else {
+                    setMemberships(response.department_memberships);
+                    setPersonalSpaceId(response.personal_space_id);
+                }
+                setMembershipsLoaded(true);
+            })
+            .catch(() => {
+                if (cancelled) return;
                 setMemberships(null);
                 setPersonalSpaceId(null);
-            } else {
-                setMemberships(response.department_memberships);
-                setPersonalSpaceId(response.personal_space_id);
-            }
-            setMembershipsLoaded(true);
-        });
+                setMembershipsLoaded(true);
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [activeCompanyId, setPersonalSpaceId]);
 
     // ─── MEMBERSHIP HELPERS ───

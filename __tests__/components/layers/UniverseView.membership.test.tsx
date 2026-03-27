@@ -106,4 +106,15 @@ describe('UniverseView membership-scoped rendering', () => {
             expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
         });
     });
+
+    it('restricts to public/visible departments when membership request rejects', async () => {
+        mockFetchUserMemberships.mockRejectedValue(new Error('membership failed'));
+        render(<UniverseView />);
+        await waitFor(() => {
+            expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument();
+            expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
+            expect(screen.queryByTestId('planet-dept-eng')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
+        });
+    });
 });
