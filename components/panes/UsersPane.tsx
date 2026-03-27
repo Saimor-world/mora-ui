@@ -64,7 +64,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     const { viewMode } = useMoraStore();
     const currentUser = useMoraStore(s => s.user);
     const departments = useMoraStore(s => s.departments);
-    const isAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+    const isAdmin = ['owner', 'admin', 'system_owner'].includes(currentUser?.role ?? '');
 
     // Load team members
     useEffect(() => {

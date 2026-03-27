@@ -172,11 +172,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [activeCompanyId]);
 
     // ─── DYNAMIC ORBITAL SYSTEM (CALM & DETERMINISTIC) ───
-    // Fixed rings for calm "Solar System" feel
+    // Fixed rings for calm "Solar System" feel.
+    // ry capped at 40 so outer-ring planets stay within the visible viewport
+    // (prevents clipping above the shell nav bar and below the Dock).
     const rings = useMemo(() => [
-        { rx: 20, ry: 20, speed: 0 }, // Inner Ring (Planets 1-3)
-        { rx: 35, ry: 35, speed: 0 }, // Middle Ring (Planets 4-8)
-        { rx: 50, ry: 50, speed: 0 }  // Outer Ring (Planets 9+)
+        { rx: 20, ry: 18, speed: 0 }, // Inner Ring (Planets 1-3)
+        { rx: 34, ry: 30, speed: 0 }, // Middle Ring (Planets 4-8)
+        { rx: 46, ry: 40, speed: 0 }  // Outer Ring (Planets 9+)
     ], []);
 
     const planetPositions = useMemo(() => {
@@ -212,7 +214,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ...dept,
                 color: dept.color,
                 x: 50 + (ring.rx * Math.cos(angle)), // Circular orbits for stability
-                y: 50 + (ring.ry * Math.sin(angle)),
+                y: 54 + (ring.ry * Math.sin(angle)), // +4% bias keeps planets away from top edge
                 angle,
                 rx: ring.rx,
                 ry: ring.ry,
@@ -398,7 +400,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 {/* Static Elliptical Rings */}
                 {rings.map((r, i) => (
                     <ellipse
-                        key={i} cx="50" cy="50" rx={r.rx} ry={r.ry}
+                        key={i} cx="50" cy="54" rx={r.rx} ry={r.ry}
                         fill="none" stroke="white" strokeWidth="0.05" strokeOpacity={0.08 + i * 0.03}
                         className="transition-all duration-1000"
                     />
