@@ -22,7 +22,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
  * - Logout redirects to WelcomeScreen (/)
  */
 export const ContextRail: React.FC = () => {
-    const { setViewLevel, viewLevel, viewMode, setViewMode, loadTree, resetStore, isStandardMode } = useMoraStore();
+    const { navigateToCore, viewLevel, viewMode, setViewMode, loadTree, resetStore, isStandardMode } = useMoraStore();
     const { currentAccount, logout } = useAccountStore();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
@@ -57,7 +57,7 @@ export const ContextRail: React.FC = () => {
 
         // Go to own Workspace (eigene Departments, Spaces, Folders)
         setViewMode('workspace');
-        setViewLevel('core');
+        navigateToCore();
         console.log('🏠 Home → Eigene Saimor-Struktur');
 
         // RESET Active Company to User's Company (Fix for "No Data after Demo")
@@ -91,8 +91,8 @@ export const ContextRail: React.FC = () => {
             label: 'Home',
             action: handleHomeClick
         },
-        { id: 'search', icon: Search, label: 'Search', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },
-        { id: 'activity', icon: Activity, label: 'Activity', action: () => { closeOverlays(); setViewLevel('core'); loadTree(); openChatDock(); } },
+        { id: 'search', icon: Search, label: 'Search', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
+        { id: 'activity', icon: Activity, label: 'Activity', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
         { id: 'chat', icon: MessageSquare, label: "Mora Chat", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
@@ -111,7 +111,7 @@ export const ContextRail: React.FC = () => {
 
         // Reset to workspace and navigate to Welcome for proper demo entry
         setViewMode('workspace');
-        setViewLevel('core');
+        navigateToCore();
 
         // Navigate to Welcome Screen - user must explicitly enter demo from there
         router.push('/');
@@ -135,7 +135,7 @@ export const ContextRail: React.FC = () => {
 
         // Reset view mode
         setViewMode('workspace');
-        setViewLevel('core');
+        navigateToCore();
 
         closeOverlays();
 
@@ -176,6 +176,7 @@ export const ContextRail: React.FC = () => {
                             <button
                                 key={item.id}
                                 onClick={item.action}
+                                aria-label={item.label}
                                 className={`group relative flex items-center justify-center w-full aspect-square transition-all duration-300 ${isStandardMode ? 'rounded' : 'rounded-xl'
                                     }`}
                             >

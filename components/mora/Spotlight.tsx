@@ -70,11 +70,8 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         companies,
         spacesByDepartment,
         activeCompanyId,
-        setViewLevel,
+        navigateToCore,
         setActiveCompany,
-        setActiveDepartment,
-        setActiveSpace,
-        setActiveFolder,
         setViewMode,
         navigateToDepartment,
         navigateToSpace
@@ -312,11 +309,8 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             keywords: ["home", "universe", "dashboard", "main", "start"],
             onSelect: () => {
                 panes.forEach(p => !p.minimized && minimizePane(p.id));
-                setViewLevel('core');
+                navigateToCore();
                 setActiveCompany(activeCompanyId || null);
-                setActiveDepartment(null);
-                setActiveSpace(null);
-                setActiveFolder(null);
                 onClose();
             }
         });
