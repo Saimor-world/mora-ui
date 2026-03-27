@@ -5,10 +5,11 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
-import { writeCookie, readCookie, deleteCookie } from '@/lib/auth/cookies';
+import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
-import { coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
+import { authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
+import { clearClientSessionArtifacts, isSessionResumeStale, touchSessionActivity } from '@/lib/auth/sessionLifecycle';
 
 import { signIn } from "next-auth/react";
 import { OnboardingWizard } from './OnboardingWizard';
@@ -43,7 +44,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [inviteCode, setInviteCode] = useState('');
     const [companyName, setCompanyName] = useState(''); // For owner registration
     const [logoUrl, setLogoUrl] = useState<string | null>(null); // For owner company logo
-    const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // Standardmäßig Owner
+    const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // StandardmÃƒÂ¤ÃƒÅ¸ig Owner
     const [isLoading, setIsLoading] = useState(false);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showSessionCard, setShowSessionCard] = useState(false);
@@ -57,6 +58,21 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const { setViewMode, setUser, navigateToCore } = useMoraStore();
     const hasInvite = inviteCode.trim().length > 0;
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
+
+    const handleLogout = React.useCallback(async (showToast = true) => {
+        await authLogout();
+        const store = useMoraStore.getState();
+        clearClientSessionArtifacts();
+        store.resetStore();
+        store.setUser(null);
+        store.navigateToCore();
+        store.setViewMode('workspace');
+        setSessionInfo(null);
+        setShowSessionCard(false);
+        if (showToast) {
+            toast.info("Sitzung wurde vollstÃƒÂ¤ndig bereinigt");
+        }
+    }, []);
 
     // Check for existing session on mount
     useEffect(() => {
@@ -74,6 +90,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const lastActivity = typeof window !== 'undefined' ? localStorage.getItem('last_activity') : null;
             const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null;
             const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
+
+            if (isSessionResumeStale(lastActivity)) {
+                await handleLogout(false);
+                return;
+            }
 
             if (authToken || coreSession || devToken) {
                 if (cancelled) return;
@@ -105,7 +126,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [handleLogout]);
 
     useEffect(() => {
         // Clear inputs whenever mode changes to avoid "zombie" values
@@ -128,49 +149,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    const handleLogout = () => {
-        // SECURITY HARDENING: Complete localStorage purge
-        const keysToRemove = [
-            'saimor_dev_token',
-            'saimor_mode',
-            'saimor_role',
-            'saimor_tenant',
-            'last_workspace',
-            'last_activity',
-            'user_name',
-            'onboarding_complete',
-            'mora_session',
-            'last_user_name',
-            // Additional keys that might exist
-            'saimor_auth_token',
-            'mora_auth_token'
-        ];
-
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-
-        // Also clear any saimor/mora prefixed keys we might have missed
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('saimor_') || key.startsWith('mora_') || key.startsWith('last_')) {
-                localStorage.removeItem(key);
-            }
-        });
-
-        // Explicitly clear all stores
-        const store = useMoraStore.getState();
-        store.resetStore();
-        store.setUser(null);
-
-        // Force reload relevant parts to ensure clean UI
-        store.navigateToCore();
-        store.setViewMode('workspace');
-        writeCookie('saimor_auth', '', -1);
-        writeCookie('mora_auth_token', '', -1);
-        deleteCookie('mora_session');
-        deleteCookie('mora_auth_token');
-        setSessionInfo(null);
-        setShowSessionCard(false);
-        toast.info("Sitzung wurde vollständig bereinigt");
-    };
 
     const handleContinueSession = async () => {
         const savedRole = localStorage.getItem('saimor_role');
@@ -197,16 +175,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             if (targetCompany) {
                 store.setActiveCompany(targetCompany.id);
                 await store.loadDepartments(targetCompany.id);
-                console.log('✅ Sitzung wiederhergestellt für:', targetCompany.name);
             } else {
-                console.warn('⚠️ Keine Firma für Benutzer gefunden.');
+                console.warn('Ã¢Å¡Â Ã¯Â¸Â Keine Firma fÃƒÂ¼r Benutzer gefunden.');
             }
 
-            toast.success("Willkommen zurück!");
+            toast.success("Willkommen zurÃƒÂ¼ck!");
+            touchSessionActivity();
             onAuthenticated();
         } catch (error) {
             console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
-            handleLogout();
+            await handleLogout(false);
             toast.error("Sitzung abgelaufen. Bitte erneut anmelden.");
         } finally {
             setIsLoading(false);
@@ -237,7 +215,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         localStorage.setItem('saimor_role', role);
         localStorage.setItem('saimor_tenant', tenantId);
         localStorage.setItem('user_name', email.split('@')[0]);
-        localStorage.setItem('last_activity', new Date().toISOString());
+        touchSessionActivity();
     };
 
 
@@ -268,7 +246,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 ({ response, data } = await attemptCoreLogin('demo123'));
             }
             if (!response.ok || !data?.success) {
-                throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
+                throw new Error(data?.detail || data?.message || "UngÃƒÂ¼ltige Zugangsdaten");
             }
 
             const result = await signIn("credentials", {
@@ -311,7 +289,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            toast.error('Ungültige E-Mail-Adresse');
+            toast.error('UngÃƒÂ¼ltige E-Mail-Adresse');
             return;
         }
 
@@ -321,7 +299,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!usingInvite && selectedRole === 'owner' && (!companyName || !companyName.trim())) {
-            toast.error('Firmenname ist erforderlich für Owner-Accounts');
+            toast.error('Firmenname ist erforderlich fÃƒÂ¼r Owner-Accounts');
             return;
         }
 
@@ -394,7 +372,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 setViewMode('workspace');
                 navigateToCore();
                 localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
-                toast.success("Account erstellt! Willkommen bei SAIMÔR.", { id: toastId });
+                toast.success("Account erstellt! Willkommen bei SAIMÃƒâ€R.", { id: toastId });
             }
 
             onAuthenticated();
@@ -593,15 +571,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     <Clock className="w-5 h-5 text-emerald-400" />
                                                 </motion.div>
                                                 <div>
-                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Willkommen zurück!</div>
+                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Willkommen zurÃƒÂ¼ck!</div>
                                                     <div className="text-xs text-emerald-500/60 font-light tracking-wider">
                                                         {sessionInfo.userName || 'Benutzer'}
-                                                        {sessionInfo.role && ` • ${sessionInfo.role === 'owner' ? 'Eigentümer' : 'Mitglied'}`}
+                                                        {sessionInfo.role && ` Ã¢â‚¬Â¢ ${sessionInfo.role === 'owner' ? 'EigentÃƒÂ¼mer' : 'Mitglied'}`}
                                                     </div>
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={handleLogout}
+                                                onClick={() => void handleLogout()}
                                                 className="text-xs text-red-400/50 hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-500/10"
                                             >
                                                 Beenden
@@ -752,7 +730,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                                                 autoComplete="new-password"
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                                placeholder="••••••••"
+                                                placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
                                             />
                                         </div>
 
@@ -774,7 +752,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            ← Zurück zum Hauptbereich
+                                            Ã¢â€ Â ZurÃƒÂ¼ck zum Hauptbereich
                                         </button>
                                     </div>
                                 </div>
@@ -827,7 +805,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-mora-gold/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                                placeholder="••••••••"
+                                                placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
                                             />
                                         </div>
 
@@ -891,7 +869,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     >
                                                         {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
                                                         <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                        <span className="text-xs font-medium relative z-10">Eigentümer</span>
+                                                        <span className="text-xs font-medium relative z-10">EigentÃƒÂ¼mer</span>
                                                         <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
                                                     </button>
                                                     <button
@@ -924,7 +902,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            ← Zurück zum Hauptbereich
+                                            Ã¢â€ Â ZurÃƒÂ¼ck zum Hauptbereich
                                         </button>
                                     </div>
                                 </div>

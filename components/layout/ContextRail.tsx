@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import { isDemoTenant } from '@/lib/constants/tenants';
 import { UserAvatar } from '@/components/mora/UserAvatar';
 import { resetUserState } from '@/lib/hooks/useUser';
+import { authLogout } from '@/lib/api/coreClient';
+import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 
 /**
  * ContextRail - Left Navigation Sidebar
@@ -58,7 +60,6 @@ export const ContextRail: React.FC = () => {
         // Go to own Workspace (eigene Departments, Spaces, Folders)
         setViewMode('workspace');
         navigateToCore();
-        console.log('🏠 Home → Eigene Saimor-Struktur');
 
         // RESET Active Company to User's Company (Fix for "No Data after Demo")
         const { companies, setActiveCompany, loadDepartments, loadNodesForCompany } = useMoraStore.getState();
@@ -117,16 +118,9 @@ export const ContextRail: React.FC = () => {
         router.push('/');
     };
 
-    const handleLogout = () => {
-        // Clear all auth state
-        localStorage.removeItem('saimor_dev_token');
-        localStorage.removeItem('saimor_mode');
-        localStorage.removeItem('saimor_role');
-        localStorage.removeItem('saimor_tenant');
-        localStorage.removeItem('last_workspace');
-        localStorage.removeItem('last_activity');
-        localStorage.removeItem('user_name');
-        writeCookie('saimor_auth', '', -1);
+    const handleLogout = async () => {
+        await authLogout();
+        clearClientSessionArtifacts();
 
         // Logout from account store
         logout();

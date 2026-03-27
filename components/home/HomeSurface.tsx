@@ -1,52 +1,52 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock } from 'lucide-react';
+import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { fetchNodesByCompany, fetchMyContent } from '@/lib/api/coreClient';
+import { fetchNodesByCompany, fetchMyContent, authLogout } from '@/lib/api/coreClient';
 import type { UserContentResponse } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
+import { useAccountStore } from '@/lib/auth/useAccount';
+import { resetUserState } from '@/lib/hooks/useUser';
+import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 
 /**
- * HomeSurface — Day-start working surface for SAIMOR 1.0
+ * HomeSurface - Day-start working surface for SAIMOR 1.0.
  *
  * Sections:
- *   1. Quick Access  — Finder, Meine Dateien, Mora, Erkunden (no API)
- *   2. Recent Docs   — fetchNodesByCompany, sorted desc by updated_at
- *   3. My Content    — fetchMyContent counts summary card
+ *   1. Quick Access  - Finder, Meine Dateien, Notizen, Mora, Erkunden
+ *   2. Recent Docs   - fetchNodesByCompany, sorted desc by updated_at
+ *   3. Personal Area - fetchMyContent counts summary card
  *
- * Each data section degrades independently — null response = section hidden.
- * No fake/placeholder content. Empty states are honest.
- *
- * Follows FinderPane stale-closure cancellation pattern.
- *
- * @see docs/plans/2026-03-27-corelayer-home-implementation-order.md
+ * Each data section degrades independently - null response = section hidden.
+ * No fake placeholder content.
  */
 export const HomeSurface: React.FC = () => {
     const navigateToExplore = useMoraStore((s) => s.navigateToExplore);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
-    const user           = useMoraStore((s) => s.user);
+    const user = useMoraStore((s) => s.user);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const openPane       = usePaneStore((s) => s.openPane);
+    const resetStore = useMoraStore((s) => s.resetStore);
+    const setUser = useMoraStore((s) => s.setUser);
+    const openPane = usePaneStore((s) => s.openPane);
+    const logoutAccount = useAccountStore((s) => s.logout);
 
-    // ── State ────────────────────────────────────────────────────────────────
-    const [recentDocs, setRecentDocs]     = useState<CoreNode[] | null>(null); // null = error/not loaded
-    const [myContent, setMyContent]       = useState<UserContentResponse | null | undefined>(undefined); // undefined = not loaded yet
+    const [recentDocs, setRecentDocs] = useState<CoreNode[] | null>(null);
+    const [myContent, setMyContent] = useState<UserContentResponse | null | undefined>(undefined);
 
-    // ── Data loading ─────────────────────────────────────────────────────────
     useEffect(() => {
         if (!activeCompanyId) {
             setRecentDocs(null);
             setMyContent(undefined);
             return;
         }
+
         let cancelled = false;
 
         void fetchNodesByCompany(activeCompanyId, { limit: 8 })
             .then((nodes) => {
                 if (cancelled) return;
-                // Sort recent docs by updatedAt DESC, fall back to createdAt
                 const sorted = Array.isArray(nodes)
                     ? [...nodes].sort((a, b) => {
                           const ta = a.updated_at ?? a.created_at ?? '';
@@ -68,10 +68,11 @@ export const HomeSurface: React.FC = () => {
                 if (!cancelled) setMyContent(null);
             });
 
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [activeCompanyId]);
 
-    // ── Handlers ─────────────────────────────────────────────────────────────
     const openDocument = useCallback((node: CoreNode) => {
         openPane({
             id: `doc-${node.id}`,
@@ -90,13 +91,27 @@ export const HomeSurface: React.FC = () => {
         openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 380, height: 560 } });
     }, [openPane]);
 
+    const openNotes = useCallback(() => {
+        openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } });
+    }, [openPane]);
+
     const openMora = useCallback(() => {
         openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
     }, [openPane]);
 
-    // ── Theming ───────────────────────────────────────────────────────────────
+    const handleLogout = useCallback(async () => {
+        await authLogout();
+        clearClientSessionArtifacts();
+        logoutAccount();
+        resetUserState();
+        setUser(null);
+        resetStore();
+        if (typeof window !== 'undefined') {
+            window.location.assign('/');
+        }
+    }, [logoutAccount, resetStore, setUser]);
+
     const t = {
-        bg:        isStandardMode ? 'bg-white'           : 'bg-transparent',
         heading:   isStandardMode ? 'text-gray-900'      : 'text-white/90',
         sub:       isStandardMode ? 'text-gray-500'      : 'text-white/40',
         card:      isStandardMode ? 'bg-gray-50 border-gray-200 hover:border-gray-300'
@@ -117,17 +132,25 @@ export const HomeSurface: React.FC = () => {
     return (
         <div className="absolute inset-0 overflow-auto">
             <div className="mx-auto max-w-3xl px-6 py-12 flex flex-col gap-10">
-
-                {/* ── Header ── */}
-                <div>
-                    <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>
-                        {firstName ? `Guten Tag, ${firstName}.` : 'Arbeitsplatz'}
-                    </h1>
-                    <p className={`mt-1 text-sm ${t.sub}`}>Was möchtest du heute tun?</p>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>
+                            {firstName ? `Guten Tag, ${firstName}.` : 'Arbeitsplatz'}
+                        </h1>
+                        <p className={`mt-1 text-sm ${t.sub}`}>Was moechtest du heute tun?</p>
+                    </div>
+                    <button
+                        type="button"
+                        data-testid="home-logout"
+                        onClick={() => void handleLogout()}
+                        className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-all ${t.qaBtn}`}
+                    >
+                        <LogOut size={16} className={t.qaIcon} />
+                        Abmelden
+                    </button>
                 </div>
 
-                {/* ── Quick Access ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     <button
                         data-testid="qa-finder"
                         onClick={openFinder}
@@ -143,6 +166,14 @@ export const HomeSurface: React.FC = () => {
                     >
                         <FolderHeart size={22} className={t.qaIcon} />
                         Meine Dateien
+                    </button>
+                    <button
+                        data-testid="qa-notes"
+                        onClick={openNotes}
+                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
+                    >
+                        <StickyNote size={22} className={t.qaIcon} />
+                        Notizen
                     </button>
                     <button
                         data-testid="qa-mora"
@@ -162,15 +193,14 @@ export const HomeSurface: React.FC = () => {
                     </button>
                 </div>
 
-                {/* ── Recent Docs ── */}
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt geöffnet
+                            Zuletzt geoeffnet
                         </h2>
                         {recentDocs.length === 0 ? (
                             <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
-                                Noch keine Dokumente — öffne den Finder, um loszulegen.
+                                Noch keine Dokumente - oeffne den Finder, um loszulegen.
                             </p>
                         ) : (
                             <ul className="flex flex-col gap-1">
@@ -196,29 +226,32 @@ export const HomeSurface: React.FC = () => {
                     </section>
                 )}
 
-                {/* ── My Content Summary Card ── */}
                 {myContent && (
-                    <button
-                        data-testid="my-content-card"
-                        onClick={openMeineDateien}
-                        className={`w-full flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${t.card}`}
-                    >
-                        <FolderHeart size={20} className={t.qaIcon} />
-                        <div className="flex-1 min-w-0">
-                            <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
-                            {myContent.counts && (
-                                <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
-                                    {[
-                                        myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
-                                        myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
-                                        myContent.counts.files != null && `${myContent.counts.files} Dateien`,
-                                    ].filter(Boolean).join(' · ')}
-                                </div>
-                            )}
-                        </div>
-                    </button>
+                    <section data-testid="personal-area-section">
+                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                            Persoenlicher Bereich
+                        </h2>
+                        <button
+                            data-testid="my-content-card"
+                            onClick={openMeineDateien}
+                            className={`w-full flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${t.card}`}
+                        >
+                            <FolderHeart size={20} className={t.qaIcon} />
+                            <div className="flex-1 min-w-0">
+                                <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
+                                {myContent.counts && (
+                                    <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
+                                        {[
+                                            myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
+                                            myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
+                                            myContent.counts.files != null && `${myContent.counts.files} Dateien`,
+                                        ].filter(Boolean).join(' · ')}
+                                    </div>
+                                )}
+                            </div>
+                        </button>
+                    </section>
                 )}
-
             </div>
         </div>
     );

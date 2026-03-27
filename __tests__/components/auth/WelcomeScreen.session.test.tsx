@@ -12,6 +12,7 @@ jest.mock('@/lib/store/moraState', () => ({
 
 jest.mock('@/lib/api/coreClient', () => ({
     coreGet: jest.fn(),
+    authLogout: jest.fn(),
     getCoreBaseUrl: jest.fn(() => '/api/core'),
 }));
 
@@ -64,6 +65,7 @@ jest.mock('framer-motion', () => {
 
 const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
 const mockCoreGet = coreClient.coreGet as jest.MockedFunction<typeof coreClient.coreGet>;
+const mockAuthLogout = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
 const mockReadCookie = cookies.readCookie as jest.MockedFunction<typeof cookies.readCookie>;
 
 function renderWithStore(state: Record<string, unknown>) {
@@ -96,7 +98,7 @@ describe('WelcomeScreen session recovery card', () => {
 
         await waitFor(() => {
             expect(mockCoreGet).toHaveBeenCalledWith('/v3/auth/session', { skipAuth: true, isOptional: true });
-            expect(screen.getByText(/Willkommen zurück/i)).toBeInTheDocument();
+            expect(screen.getByText(/Sitzung fortsetzen/i)).toBeInTheDocument();
             expect(screen.getByText(/Anna Mueller/i)).toBeInTheDocument();
             expect(screen.getByText(/Workspace Alpha/i)).toBeInTheDocument();
         });
@@ -113,9 +115,33 @@ describe('WelcomeScreen session recovery card', () => {
 
         await waitFor(() => {
             expect(mockCoreGet).toHaveBeenCalled();
-            expect(screen.queryByText(/Willkommen zurück/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Sitzung fortsetzen/i)).not.toBeInTheDocument();
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
             expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
+        });
+    });
+
+    it('does not offer session resume when the cached session is stale', async () => {
+        localStorage.setItem('last_activity', new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString());
+        mockCoreGet.mockResolvedValue({
+            user_id: 'user-1',
+            name: 'Anna Mueller',
+            email: 'anna@example.com',
+            role: 'member',
+            active_company_name: 'Workspace Alpha',
+        } as any);
+
+        renderWithStore({
+            setViewMode: jest.fn(),
+            setUser: jest.fn(),
+            navigateToCore: jest.fn(),
+            resetStore: jest.fn(),
+        });
+
+        await waitFor(() => {
+            expect(mockAuthLogout).toHaveBeenCalled();
+            expect(screen.queryByText(/Sitzung fortsetzen/i)).not.toBeInTheDocument();
+            expect(screen.getByText('Anmelden')).toBeInTheDocument();
         });
     });
 });

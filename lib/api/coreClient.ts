@@ -259,6 +259,10 @@ export async function authLogin(payload: AuthPayload): Promise<AuthSession> {
     }
 }
 
+export async function authLogout(): Promise<{ success?: boolean; message?: string } | null> {
+    return corePost('/v3/auth/logout', {}, { skipAuth: true, isOptional: true });
+}
+
 export interface UserProfile {
     user_id: string;
     email?: string;

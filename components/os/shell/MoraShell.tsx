@@ -27,6 +27,8 @@ import { useRouter } from 'next/navigation';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
+import { authLogout } from '@/lib/api/coreClient';
+import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
 import { resetUserState } from '@/lib/hooks/useUser';
@@ -551,10 +553,10 @@ export const MoraShell: React.FC = () => {
         });
     }, [isFileDragEvent, isLocalFileDropTarget, openPane, resetShellDrop]);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         setIsSleeping(false);
-        localStorage.removeItem('saimor_dev_token');
-        localStorage.removeItem('mora_session');
+        await authLogout();
+        clearClientSessionArtifacts();
         realtime.disconnect(); // close WS before clearing session
         logout();
         resetUserState();

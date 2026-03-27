@@ -5,6 +5,8 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { useSession, signOut } from 'next-auth/react';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
+import { authLogout } from '@/lib/api/coreClient';
+import { clearClientSessionArtifacts, isSessionResumeStale } from '@/lib/auth/sessionLifecycle';
 
 const BOOTSTRAP_HEALTH_ATTEMPTS = 4;
 const BOOTSTRAP_HEALTH_RETRY_MS = 1200;
@@ -63,6 +65,7 @@ export function useAuthBootstrapper() {
             const hasNextAuth = status === 'authenticated';
             const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
+            const lastActivity = localStorage.getItem('last_activity');
             // readCookie uses document.cookie — cannot detect HttpOnly cookies set by Core.
             // hasCoreSession is intentionally kept for non-HttpOnly fallback paths.
             const hasCoreSession = !!readCookie('mora_session');
@@ -71,6 +74,17 @@ export function useAuthBootstrapper() {
             // unauthenticated, still probe /v3/auth/session so the cookie gets validated
             // server-side. This prevents HttpOnly sessions from being silently rejected.
             const mayHaveHttpOnlySession = status === 'unauthenticated' && pathname !== '/';
+
+            if (isSessionResumeStale(lastActivity) && pathname !== '/') {
+                await authLogout();
+                clearClientSessionArtifacts();
+                if (status === 'authenticated') {
+                    await signOut({ redirect: false });
+                }
+                setAuthError('Session expired. Please log in again.');
+                router.push('/');
+                return;
+            }
 
             if (hasNextAuth || hasLegacyToken || hasCoreSession || mayHaveHttpOnlySession) {
                 try {

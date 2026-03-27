@@ -7,7 +7,9 @@ import { LockScreen } from '@/components/auth/LockScreen';
 import { useMoraStore } from '@/lib/store/moraState';
 import { Suspense } from 'react';
 import { useSession } from "next-auth/react";
-import { readCookie, deleteCookie } from '@/lib/auth/cookies';
+import { readCookie } from '@/lib/auth/cookies';
+import { authLogout } from '@/lib/api/coreClient';
+import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 
 function RootPageContent() {
     const router = useRouter();
@@ -15,19 +17,17 @@ function RootPageContent() {
     const { data: session, status } = useSession();
     const [showLockScreen, setShowLockScreen] = useState(false);
 
-    // Auth redirect logic using NextAuth Session
+    // Root entry must not auto-forward into the app.
+    // A valid session should surface as an explicit "continue session" choice,
+    // not as a silent redirect.
     useEffect(() => {
         if (status === 'loading') return;
 
         const sleepMode = searchParams.get('sleep') === 'true';
         const hasCoreSession = !!readCookie('mora_session');
 
-        if (status === 'authenticated' || hasCoreSession) {
-            if (sleepMode) {
-                setShowLockScreen(true);
-            } else {
-                router.push('/home');
-            }
+        if (sleepMode && (status === 'authenticated' || hasCoreSession)) {
+            setShowLockScreen(true);
         }
     }, [status, searchParams, router]);
 
@@ -57,15 +57,9 @@ function RootPageContent() {
             {showLockScreen ? (
                 <LockScreen
                     onUnlock={handleUnlock}
-                    onLogout={() => {
-                        // Clear sensitive data on Logout (via LockScreen)
-                        localStorage.removeItem('mora_session');
-                        localStorage.removeItem('saimor_dev_token');
-                        localStorage.removeItem('last_user_name');
-                        localStorage.removeItem('saimor_mode');
-                        localStorage.removeItem('saimor_role');
-                        deleteCookie('mora_session');
-                        deleteCookie('mora_auth_token');
+                    onLogout={async () => {
+                        await authLogout();
+                        clearClientSessionArtifacts();
                         setShowLockScreen(false);
                         window.location.reload();
                     }}

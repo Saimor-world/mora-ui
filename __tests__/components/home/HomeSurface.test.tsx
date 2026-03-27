@@ -1,66 +1,63 @@
-/**
- * HomeSurface.test.tsx
- *
- * TDD RED → GREEN for Commit B: HomeSurface with real data sections.
- *
- * Sections tested:
- *   1. Recent Docs  — fetchNodesByCompany, sorted by updatedAt, click opens document pane
- *   2. Quick Access — Finder, Meine Dateien, Mora, Erkunden buttons
- *   3. My Content   — fetchMyContent counts, click opens meine-dateien pane
- *   4. Empty states — each section degrades independently (isOptional pattern)
- */
-
-import React from 'react';
+﻿import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { HomeSurface } from '@/components/home/HomeSurface';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useAccountStore } from '@/lib/auth/useAccount';
 import * as coreClient from '@/lib/api/coreClient';
+import * as sessionLifecycle from '@/lib/auth/sessionLifecycle';
 
-// ── API mocks ────────────────────────────────────────────────────────────────
 jest.mock('@/lib/api/coreClient', () => ({
     fetchNodesByCompany: jest.fn(),
     fetchMyContent: jest.fn(),
+    authLogout: jest.fn(),
     coreGet: jest.fn(),
 }));
 
-const mockFetchNodes = coreClient.fetchNodesByCompany as jest.MockedFunction<typeof coreClient.fetchNodesByCompany>;
-const mockFetchMyContent = coreClient.fetchMyContent as jest.MockedFunction<typeof coreClient.fetchMyContent>;
+jest.mock('@/lib/auth/sessionLifecycle', () => ({
+    clearClientSessionArtifacts: jest.fn(),
+}));
 
-// ── framer-motion: disable animations ───────────────────────────────────────
 jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
     motion: { div: ({ children, ...p }: any) => <div {...p}>{children}</div> },
     useReducedMotion: () => false,
 }));
 
-// ── Store helpers ────────────────────────────────────────────────────────────
-const setStore = (patch: any) => useMoraStore.setState(patch);
+const mockFetchNodes = coreClient.fetchNodesByCompany as jest.MockedFunction<typeof coreClient.fetchNodesByCompany>;
+const mockFetchMyContent = coreClient.fetchMyContent as jest.MockedFunction<typeof coreClient.fetchMyContent>;
+const mockAuthLogout = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
+const mockClearArtifacts = sessionLifecycle.clearClientSessionArtifacts as jest.MockedFunction<typeof sessionLifecycle.clearClientSessionArtifacts>;
+
 const openPane = jest.fn();
+const accountLogout = jest.fn();
+const resetStore = jest.fn();
+const setUser = jest.fn();
+
+const setStore = (patch: any) => useMoraStore.setState(patch);
 
 beforeEach(() => {
     jest.clearAllMocks();
-    openPane.mockClear();
 
-    // Default: no data
     mockFetchNodes.mockResolvedValue([]);
     mockFetchMyContent.mockResolvedValue(null);
+    mockAuthLogout.mockResolvedValue({ success: true } as any);
 
-    // Inject openPane spy into paneStore
     usePaneStore.setState({ openPane } as any);
+    useAccountStore.setState({ logout: accountLogout } as any);
 
     setStore({
         activeCompanyId: 'co-1',
         coreMode: 'home',
-        user: { id: 'u-1', name: 'Anna Müller', role: 'member' },
+        user: { id: 'u-1', name: 'Anna Mueller', role: 'member' },
         isStandardMode: false,
+        resetStore,
+        setUser,
     } as any);
 });
 
-// ── 1. Rendering ─────────────────────────────────────────────────────────────
-
-describe('HomeSurface — rendering', () => {
+describe('HomeSurface - rendering', () => {
     it('renders the user greeting', async () => {
         render(<HomeSurface />);
         await waitFor(() => {
@@ -68,18 +65,23 @@ describe('HomeSurface — rendering', () => {
         });
     });
 
-    it('renders "Arbeitsplatz" heading when no user name', async () => {
+    it('renders Arbeitsplatz heading when no user name exists', async () => {
         setStore({ user: null } as any);
         render(<HomeSurface />);
         await waitFor(() => {
             expect(screen.getByText('Arbeitsplatz')).toBeInTheDocument();
         });
     });
+
+    it('renders a visible logout button on Home', async () => {
+        render(<HomeSurface />);
+        await waitFor(() => {
+            expect(screen.getByTestId('home-logout')).toBeInTheDocument();
+        });
+    });
 });
 
-// ── 2. Recent Docs ───────────────────────────────────────────────────────────
-
-describe('HomeSurface — Recent Docs', () => {
+describe('HomeSurface - Recent Docs', () => {
     const nodes = [
         { id: 'n-1', title: 'Jahresbericht', type: 'document', updated_at: '2026-03-26T10:00:00Z' },
         { id: 'n-2', title: 'Projektplan Q2', type: 'document', updated_at: '2026-03-27T08:00:00Z' },
@@ -112,7 +114,6 @@ describe('HomeSurface — Recent Docs', () => {
     });
 
     it('shows empty state when no recent documents', async () => {
-        mockFetchNodes.mockResolvedValue([]);
         render(<HomeSurface />);
         await waitFor(() => {
             expect(screen.getByTestId('recent-docs-empty')).toBeInTheDocument();
@@ -127,7 +128,7 @@ describe('HomeSurface — Recent Docs', () => {
         });
     });
 
-    it('still shows My Content when Recent Docs request fails', async () => {
+    it('still shows Personal Area when Recent Docs request fails', async () => {
         mockFetchNodes.mockRejectedValue(new Error('nodes failed'));
         mockFetchMyContent.mockResolvedValue({
             counts: { folders: 1, nodes: 2, files: 3 },
@@ -137,7 +138,7 @@ describe('HomeSurface — Recent Docs', () => {
 
         await waitFor(() => {
             expect(screen.queryByTestId('recent-docs-section')).not.toBeInTheDocument();
-            expect(screen.getByTestId('my-content-card')).toBeInTheDocument();
+            expect(screen.getByTestId('personal-area-section')).toBeInTheDocument();
         });
     });
 
@@ -152,14 +153,13 @@ describe('HomeSurface — Recent Docs', () => {
     });
 });
 
-// ── 3. Quick Access ──────────────────────────────────────────────────────────
-
-describe('HomeSurface — Quick Access', () => {
-    it('renders all four quick access buttons', async () => {
+describe('HomeSurface - Quick Access', () => {
+    it('renders all five quick access buttons', async () => {
         render(<HomeSurface />);
         await waitFor(() => {
             expect(screen.getByTestId('qa-finder')).toBeInTheDocument();
             expect(screen.getByTestId('qa-meine-dateien')).toBeInTheDocument();
+            expect(screen.getByTestId('qa-notes')).toBeInTheDocument();
             expect(screen.getByTestId('qa-mora')).toBeInTheDocument();
             expect(screen.getByTestId('qa-explore')).toBeInTheDocument();
         });
@@ -169,30 +169,31 @@ describe('HomeSurface — Quick Access', () => {
         render(<HomeSurface />);
         await waitFor(() => screen.getByTestId('qa-finder'));
         fireEvent.click(screen.getByTestId('qa-finder'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'finder', id: 'finder-main' })
-        );
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'finder', id: 'finder-main' }));
     });
 
     it('Meine Dateien button opens meine-dateien pane', async () => {
         render(<HomeSurface />);
         await waitFor(() => screen.getByTestId('qa-meine-dateien'));
         fireEvent.click(screen.getByTestId('qa-meine-dateien'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'meine-dateien' })
-        );
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'meine-dateien' }));
+    });
+
+    it('Notizen button opens notes pane', async () => {
+        render(<HomeSurface />);
+        await waitFor(() => screen.getByTestId('qa-notes'));
+        fireEvent.click(screen.getByTestId('qa-notes'));
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'notes', id: 'notes-main' }));
     });
 
     it('Mora button opens chat pane', async () => {
         render(<HomeSurface />);
         await waitFor(() => screen.getByTestId('qa-mora'));
         fireEvent.click(screen.getByTestId('qa-mora'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'chat', id: 'chat-main' })
-        );
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'chat', id: 'chat-main' }));
     });
 
-    it('Erkunden button calls setCoreMode explore', async () => {
+    it('Erkunden button switches to explore', async () => {
         render(<HomeSurface />);
         await waitFor(() => screen.getByTestId('qa-explore'));
         fireEvent.click(screen.getByTestId('qa-explore'));
@@ -200,25 +201,22 @@ describe('HomeSurface — Quick Access', () => {
     });
 });
 
-// ── 4. My Content Summary ────────────────────────────────────────────────────
-
-describe('HomeSurface — My Content Summary', () => {
+describe('HomeSurface - Personal Area', () => {
     it('shows counts from fetchMyContent', async () => {
         mockFetchMyContent.mockResolvedValue({
             counts: { folders: 3, nodes: 12, files: 5 },
         } as any);
         render(<HomeSurface />);
         await waitFor(() => {
-            expect(screen.getByTestId('my-content-card')).toBeInTheDocument();
+            expect(screen.getByTestId('personal-area-section')).toBeInTheDocument();
             expect(screen.getByText(/12 Dokumente/i)).toBeInTheDocument();
         });
     });
 
-    it('hides My Content card when fetchMyContent returns null', async () => {
-        mockFetchMyContent.mockResolvedValue(null);
+    it('hides Personal Area when fetchMyContent returns null', async () => {
         render(<HomeSurface />);
         await waitFor(() => {
-            expect(screen.queryByTestId('my-content-card')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('personal-area-section')).not.toBeInTheDocument();
         });
     });
 
@@ -227,9 +225,7 @@ describe('HomeSurface — My Content Summary', () => {
         render(<HomeSurface />);
         await waitFor(() => screen.getByTestId('my-content-card'));
         fireEvent.click(screen.getByTestId('my-content-card'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'meine-dateien' })
-        );
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'meine-dateien' }));
     });
 
     it('still shows Recent Docs when My Content request fails', async () => {
@@ -242,7 +238,23 @@ describe('HomeSurface — My Content Summary', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('recent-docs-section')).toBeInTheDocument();
-            expect(screen.queryByTestId('my-content-card')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('personal-area-section')).not.toBeInTheDocument();
+        });
+    });
+});
+
+describe('HomeSurface - logout', () => {
+    it('calls server logout and clears client state', async () => {
+        render(<HomeSurface />);
+        await waitFor(() => screen.getByTestId('home-logout'));
+        fireEvent.click(screen.getByTestId('home-logout'));
+
+        await waitFor(() => {
+            expect(mockAuthLogout).toHaveBeenCalled();
+            expect(mockClearArtifacts).toHaveBeenCalled();
+            expect(accountLogout).toHaveBeenCalled();
+            expect(resetStore).toHaveBeenCalled();
+            expect(setUser).toHaveBeenCalledWith(null);
         });
     });
 });
