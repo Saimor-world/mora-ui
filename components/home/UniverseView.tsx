@@ -442,6 +442,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </svg>
 
             {/* 3. PLANET LAYER (Managed by Store Data) */}
+            {/*
+             * IMPORTANT: Use React.Fragment (not a div) as the per-planet key wrapper.
+             * A div with position:relative would collapse to height:0 because Planet
+             * renders position:absolute (out of flow), making top:X% resolve to 0px.
+             * Fragment creates no DOM box — absolute planets resolve against the
+             * absolute inset-0 container which correctly fills the full viewport.
+             */}
             <div className="absolute inset-0 z-30 pointer-events-none">
                 {planetPositions
                     .filter((p) => shouldRender(p))
@@ -463,7 +470,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const locked = isLocked(p);
 
                     return (
-                        <div key={p.id} style={{ position: 'relative' }}>
+                        <React.Fragment key={p.id}>
                             {locked ? (
                                 <div
                                     data-testid={`locked-planet-${p.id}`}
@@ -504,7 +511,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     onDismiss={() => setLockedTooltipDeptId(null)}
                                 />
                             )}
-                        </div>
+                        </React.Fragment>
                     );
                 })}
             </div>
