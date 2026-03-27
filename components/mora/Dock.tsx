@@ -169,9 +169,7 @@ const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
 };
 
 export const Dock = () => {
-    const setViewLevel = useMoraStore((s) => s.setViewLevel);
-    const setCoreMode = useMoraStore((s) => s.setCoreMode);
-    const setActiveDepartment = useMoraStore((s) => s.setActiveDepartment);
+    const navigateToCore = useMoraStore((s) => s.navigateToCore);
     const orbState = useMoraStore((s) => s.orbState);
     const user = useMoraStore((s) => s.user);
     const companies = useMoraStore((s) => s.companies);
@@ -231,7 +229,7 @@ export const Dock = () => {
     const handleDockClick = useCallback((action: string) => {
         switch (action) {
             // ── Core Work surfaces ──────────────────────────────────────
-            case 'home':     setViewLevel('core'); setCoreMode('home'); setActiveDepartment(null); break;
+            case 'home':     navigateToCore(); break;
             case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'Mora',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
@@ -239,7 +237,7 @@ export const Dock = () => {
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen',  size: { width: 720, height: 640 } }); break;
             default: break;
         }
-    }, [openPane, setActiveDepartment, setCoreMode, setViewLevel]);
+    }, [navigateToCore, openPane]);
 
     // Icon map: action → lucide icon. Defined here (UI concern) separate from registry (routing concern).
     const DOCK_ICON_MAP: Record<string, React.ComponentType<any>> = useMemo(() => ({
