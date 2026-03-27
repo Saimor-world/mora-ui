@@ -65,6 +65,8 @@ export const SpaceLayer: React.FC = () => {
     const isLoadingFolders = useMoraStore(s => s.isLoadingFolders);
     const viewLevel = useMoraStore(s => s.viewLevel);
     const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
+    const setViewLevel = useMoraStore(s => s.setViewLevel);
+    const setCoreMode = useMoraStore(s => s.setCoreMode);
     const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
     const addFolder = useMoraStore(s => s.addFolder);
     const { openPane } = usePaneStore();
@@ -259,6 +261,12 @@ export const SpaceLayer: React.FC = () => {
         }
     };
 
+    const handleNavigateToExplore = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        setViewLevel('core');
+        setCoreMode('explore');
+    }, [setCoreMode, setViewLevel]);
+
     if (viewLevel !== 'space' || !activeSpaceId) return null;
 
     if (isMobileViewport) {
@@ -302,30 +310,41 @@ export const SpaceLayer: React.FC = () => {
             />
 
             {/* Breadcrumb Back Button style */}
-            <motion.button
-                data-testid="nav-back-to-department"
-                onClick={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
-                className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
+            <motion.div
+                className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                whileHover={{ x: -2 }}
             >
-                <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
-                    <ArrowLeft size={16} />
-                </div>
-                <div className="flex flex-col items-start gap-0.5 pointer-events-none">
+                <button
+                    type="button"
+                    data-testid="nav-back-to-department"
+                    onClick={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
+                    className="group flex items-center gap-3 text-white/50 hover:text-white transition-colors"
+                >
+                    <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
+                        <ArrowLeft size={16} />
+                    </div>
+                </button>
+                <div className="flex flex-col items-start gap-0.5">
                     <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
                         ZurÃƒÆ’Ã‚Â¼ck
                     </span>
                     <span className="text-sm tracking-widest font-light flex items-center gap-2">
-                        <span className="text-white/40">UNIVERSE</span>
+                        <button
+                            type="button"
+                            data-testid="nav-root-to-universe"
+                            onClick={handleNavigateToExplore}
+                            className="text-white/40 hover:text-emerald-100/90 transition-colors"
+                        >
+                            UNIVERSE
+                        </button>
                         <span className="text-white/20">/</span>
                         <span className="text-emerald-100/90">{currentDepartment?.name.toUpperCase() || 'DEPARTMENT'}</span>
                         <span className="text-white/20">/</span>
                         <span className="text-white/50">{spaceName.toUpperCase()}</span>
                     </span>
                 </div>
-            </motion.button>
+            </motion.div>
 
             {/* Top-right actions: minimal floating controls */}
             <motion.div

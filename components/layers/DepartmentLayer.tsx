@@ -31,7 +31,8 @@ export const DepartmentLayer: React.FC = () => {
     const treeData = useMoraStore(s => s.treeData);
     const loadSpacesForDepartment = useMoraStore(s => s.loadSpacesForDepartment);
     const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
-    const navigateToCore = useMoraStore(s => s.navigateToCore);
+    const setViewLevel = useMoraStore(s => s.setViewLevel);
+    const setCoreMode = useMoraStore(s => s.setCoreMode);
     const navigateToSpace = useMoraStore(s => s.navigateToSpace);
     const addSpace = useMoraStore(s => s.addSpace);
     const setActiveSpace = useMoraStore(s => s.setActiveSpace);
@@ -339,6 +340,11 @@ export const DepartmentLayer: React.FC = () => {
         return departmentDocs.length;
     }, [departmentDocsFromApi, spaces, foldersBySpace, departmentDocs.length]);
 
+    const handleNavigateToExplore = useCallback(() => {
+        setViewLevel('core');
+        setCoreMode('explore');
+    }, [setCoreMode, setViewLevel]);
+
     if (!activeDepartmentId) return null;
 
     if (isMobileViewport) {
@@ -377,7 +383,7 @@ export const DepartmentLayer: React.FC = () => {
 
             <motion.button
                 data-testid="nav-back-to-universe"
-                onClick={navigateToCore}
+                onClick={handleNavigateToExplore}
                 className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
