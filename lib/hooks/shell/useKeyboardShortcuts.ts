@@ -27,17 +27,16 @@ import { getPlatformModifier } from '@/lib/hooks/usePlatformModifier';
 export function getKeyboardShortcuts(mod?: string) {
     const m = mod || getPlatformModifier();
     return [
+        // 1.0 Core Work shortcuts
         { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette oeffnen' },
         { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat oeffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
         { keys: [m, 'N'], label: 'Notes', description: 'Notizen oeffnen' },
-        { keys: [m, ','], label: 'Settings', description: 'Einstellungen oeffnen' },
-        { keys: [m, 'T'], label: 'Terminal', description: 'Terminal oeffnen' },
-        { keys: [m, 'H'], label: 'Home', description: 'Zur Uebersicht' },
-        { keys: [m, '.'], label: 'Mora Nexus', description: 'AI Hub oeffnen' },
-        { keys: [m, 'Shift', 'M'], label: 'Memory', description: 'Memory Panel oeffnen' },
+        { keys: [m, ','], label: 'System', description: 'Einstellungen oeffnen' },
+        { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
         { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
+        // 1.0 gated (future-tier): Terminal (Cmd+T), Mora Nexus (Cmd+.), Memory (Cmd+Shift+M)
     ];
 }
 
@@ -50,10 +49,8 @@ interface UseKeyboardShortcutsOptions {
     onOpenFinder?: () => void;
     onOpenNotes?: () => void;
     onOpenSettings?: () => void;
-    onOpenTerminal?: () => void;
+    // 1.0 gated: onOpenTerminal, onOpenMoraHub, onOpenMemory removed (future-tier)
     onGoHome?: () => void;
-    onOpenMoraHub?: () => void;
-    onOpenMemory?: () => void;
     onCloseTopPane?: () => void;
     onShowShortcuts?: () => void;
 }
@@ -64,10 +61,7 @@ export function useKeyboardShortcuts({
     onOpenFinder,
     onOpenNotes,
     onOpenSettings,
-    onOpenTerminal,
     onGoHome,
-    onOpenMoraHub,
-    onOpenMemory,
     onCloseTopPane,
     onShowShortcuts,
 }: UseKeyboardShortcutsOptions) {
@@ -113,27 +107,11 @@ export function useKeyboardShortcuts({
                 return;
             }
 
-            if (meta && e.key === 't') {
-                e.preventDefault();
-                onOpenTerminal?.();
-                return;
-            }
+            // 1.0 gated: Cmd+T (Terminal), Cmd+. (MoraHub), Cmd+Shift+M (Memory) removed
 
             if (meta && e.key === 'h') {
                 e.preventDefault();
                 onGoHome?.();
-                return;
-            }
-
-            if (meta && e.key === '.') {
-                e.preventDefault();
-                onOpenMoraHub?.();
-                return;
-            }
-
-            if (meta && e.shiftKey && e.key.toLowerCase() === 'm') {
-                e.preventDefault();
-                onOpenMemory?.();
                 return;
             }
 
@@ -157,10 +135,7 @@ export function useKeyboardShortcuts({
         onOpenFinder,
         onOpenNotes,
         onOpenSettings,
-        onOpenTerminal,
         onGoHome,
-        onOpenMoraHub,
-        onOpenMemory,
         onCloseTopPane,
         onShowShortcuts,
     ]);

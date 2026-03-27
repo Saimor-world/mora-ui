@@ -2,62 +2,68 @@
 
 import React from 'react';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
-import { SettingsPane } from '@/components/panes/SettingsPane';
-import { AppLibraryPane } from '@/components/panes/AppLibraryPane';
+import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 
-import { GridPane } from '@/components/panes/GridPane';
-// SpacePane replaced by FinderPane (Unified Finder)
-// import { SpacePane } from '@/components/panes/SpacePane';
+// ── Core Work surfaces ──────────────────────────────────────────────────────
+import { SettingsPane } from '@/components/panes/SettingsPane';
 import { DocumentPane } from '@/components/panes/DocumentPane';
-import { SearchPane } from '@/components/panes/SearchPane';
 import { TeamPane } from '@/components/panes/TeamPane';
-import { MailPane } from '@/components/panes/MailPane';
-import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
-import { CalendarPane } from '@/components/panes/CalendarPane';
-import { TerminalPane } from '@/components/panes/TerminalPane';
 import { NotesPane } from '@/components/panes/NotesPane';
 import { FinderPane } from '@/components/panes/FinderPane';
+import { ChatPane } from '@/components/panes/ChatPane';
+import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
+
+// ── App-tier surfaces ───────────────────────────────────────────────────────
+import { GridPane } from '@/components/panes/GridPane';
+import { SearchPane } from '@/components/panes/SearchPane';
 import { ScannerPane } from '@/components/panes/ScannerPane';
 import { UsersPane } from '@/components/panes/UsersPane';
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
-import { ChatPane } from '@/components/panes/ChatPane';
-// import { TimelinePane } from '@/components/panes/TimelinePane';
-import { MoraHubPane } from '@/components/panes/MoraHubPane';
-import { ActionCenterPane } from '@/components/panes/ActionCenterPane';
-import { WorkSessionPane } from '@/components/panes/WorkSessionPane';
-import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
+
+// ── Future-tier surfaces (imports kept for later reactivation) ──────────────
+// 1.0 gated — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
+// import { AppLibraryPane } from '@/components/panes/AppLibraryPane';
+// import { MailPane } from '@/components/panes/MailPane';
+// import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
+// import { CalendarPane } from '@/components/panes/CalendarPane';
+// import { TerminalPane } from '@/components/panes/TerminalPane';
+// import { MoraHubPane } from '@/components/panes/MoraHubPane';
+// import { ActionCenterPane } from '@/components/panes/ActionCenterPane';
+// import { WorkSessionPane } from '@/components/panes/WorkSessionPane';
+
 import { AnimatePresence } from 'framer-motion';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
+    // Gate: future-tier pane types render nothing
+    if (!isPaneEnabled(pane.type)) {
+        return null;
+    }
+
     switch (pane.type) {
+        // ── Core Work ───────────────────────────────────────────────────
         case 'settings':
             return <SettingsPane id={pane.id} />;
-        case 'apps':
-            return <AppLibraryPane id={pane.id} />;
-
-        case 'grid':
-            return <GridPane id={pane.id} />;
-        case 'space':
-            // UNIFIED FINDER: Space pane now uses FinderPane with spaceId context
-            return <FinderPane id={pane.id} />;
         case 'document':
             return <DocumentPane id={pane.id} />;
-        case 'search':
-            return <SearchPane id={pane.id} />;
         case 'team':
             return <TeamPane id={pane.id} />;
-        case 'mail':
-            return <MailPane id={pane.id} />;
-        case 'integrations':
-            return <IntegrationsPane id={pane.id} />;
-        case 'calendar':
-            return <CalendarPane id={pane.id} />;
-        case 'terminal':
-            return <TerminalPane id={pane.id} />;
         case 'notes':
             return <NotesPane id={pane.id} />;
         case 'finder':
             return <FinderPane id={pane.id} />;
+        case 'space':
+            // UNIFIED FINDER: Space pane uses FinderPane with spaceId context
+            return <FinderPane id={pane.id} />;
+        case 'chat':
+            return <ChatPane id={pane.id} />;
+        case 'meine-dateien':
+            return <MeineDateienPane />;
+
+        // ── Apps ────────────────────────────────────────────────────────
+        case 'grid':
+            return <GridPane id={pane.id} />;
+        case 'search':
+            return <SearchPane id={pane.id} />;
         case 'scanner':
             return <ScannerPane id={pane.id} />;
         case 'users':
@@ -70,21 +76,10 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
                     companyName={pane.data?.companyName}
                 />
             );
-        case 'chat':
-            return <ChatPane id={pane.id} />;
-        // case 'timeline':
-        //    return <TimelinePane id={pane.id} />;
-        case 'mora-hub':
-            return <MoraHubPane id={pane.id} data={pane.data} />;
-        case 'actions':
-            return <ActionCenterPane id={pane.id} />;
-        case 'work-session':
-            return <WorkSessionPane id={pane.id} />;
-        case 'meine-dateien':
-            return <MeineDateienPane />;
+
         default:
-            // Fallback for unknown types
-            return <AppLibraryPane id={pane.id} />;
+            // Unknown or future-tier types — render nothing
+            return null;
     }
 };
 

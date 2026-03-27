@@ -14,19 +14,14 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import type { MoraPresenceDetail } from '@/lib/mora/presenceEvents';
 
 interface UseShellEventsOptions {
-    onOpenResonance: () => void;
+    // onOpenResonance — 1.0 gated with ResonanceRoom surface
 }
 
-export function useShellEvents({ onOpenResonance }: UseShellEventsOptions) {
+export function useShellEvents(_options: UseShellEventsOptions) {
     const { setCursorAgent } = useMoraStore();
     const { focusPane, openPane } = usePaneStore();
 
-    // Resonance trigger
-    useEffect(() => {
-        const handler = () => onOpenResonance();
-        window.addEventListener('mora:open-resonance', handler);
-        return () => window.removeEventListener('mora:open-resonance', handler);
-    }, [onOpenResonance]);
+    // mora:open-resonance — 1.0 gated: ResonanceRoom not mounted in 1.0
 
     // Agency Event Bus
     useEffect(() => {

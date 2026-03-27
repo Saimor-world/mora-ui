@@ -3,21 +3,21 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Search, Minus, Mail, Calendar, Building2, ChevronUp,
-    Home, Sparkles, MessageCircle, Brain, FolderOpen, Users, FileText, Terminal, Settings, FolderHeart
+    Search, Minus, Building2, ChevronUp,
+    Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useWorkSessionStore } from '@/lib/store/workSessionStore';
+import { getCoreDockItems } from '@/lib/surface/surfaceRegistry';
 
-// Derived from paneStore — consistent with WorkSessionPane.tsx
+// Derived from paneStore — consistent with other pane-opening components
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
 import { SearchPopup } from './SearchPopup';
-import { useMemoryPendingCount } from '@/lib/hooks/useMemoryPendingCount';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
-import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
-import { ActionTray } from '@/components/os/ActionTray';
+// 1.0 gated — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
+// import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
+// import { ActionTray } from '@/components/os/ActionTray';
 import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
 
@@ -163,15 +163,9 @@ const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
     finder: FolderOpen,
     chat: MessageCircle,
     team: Users,
-    mail: Mail,
-    integrations: Settings,
-    calendar: Calendar,
-    terminal: Terminal,
     search: Search,
     notes: FileText,
     settings: Settings,
-    apps: Sparkles,
-    'mora-hub': Brain
 };
 
 export const Dock = () => {
@@ -185,16 +179,11 @@ export const Dock = () => {
     const viewMode = useMoraStore((s) => s.viewMode);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
 
-    const activePlanId = useWorkSessionStore((s) => s.activePlanId);
-
     const panes = usePaneStore((s) => s.panes);
     const restorePane = usePaneStore((s) => s.restorePane);
     const openPane = usePaneStore((s) => s.openPane);
     const minimizedPanes = useMemo(() => panes.filter(p => p.minimized), [panes]);
-    const pendingCount = useMemoryPendingCount();
     const mod = usePlatformModifier();
-    // Register keyboard shortcut for Focus Mode
-    useFocusModeShortcut();
 
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
@@ -239,43 +228,38 @@ export const Dock = () => {
     }, [user?.name]);
 
     const handleDockClick = useCallback((action: string) => {
-        const defaultSize = { width: 900, height: 640 };
         switch (action) {
-            case 'home': setViewLevel('core'); setActiveDepartment(null); break;
-            case 'finder': openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } }); break;
-            case 'team': openPane({ id: 'team-main', type: 'team', title: 'Team', size: defaultSize }); break;
-            case 'mail': openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: defaultSize }); break;
-            case 'integrations': openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: { width: 760, height: 620 } }); break;
-            case 'calendar': openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: defaultSize }); break;
-            case 'terminal': openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: defaultSize }); break;
-            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } }); break;
-            case 'mora-hub': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 } }); break;
-            case 'memory': openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } }); break;
-            case 'notes': openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } }); break;
-            case 'chat': openPane({ id: 'chat-main', type: 'chat', title: 'Chat mit Mora', size: { width: 860, height: 680 } }); break;
+            // ── Core Work surfaces ──────────────────────────────────────
+            case 'home':     setViewLevel('core'); setActiveDepartment(null); break;
+            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'Mora',           size: { width: 860, height: 680 } }); break;
+            case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
+            case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
+            case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
+            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen',  size: { width: 720, height: 640 } }); break;
             default: break;
         }
     }, [openPane, setActiveDepartment, setViewLevel]);
 
-    // Core apps - native-style, high-recognition icons
-    const dockItems: DockItem[] = useMemo(() => [
-        { icon: Home, label: 'Start', shortcut: `${mod}+H`, action: 'home', description: 'Zur Universe-Uebersicht' },
-        { icon: Sparkles, label: 'Mora Nexus', shortcut: `${mod}+.`, action: 'mora-hub', description: 'KI-Assistent', badge: pendingCount > 0 ? pendingCount : undefined },
-        { icon: MessageCircle, label: 'Chat', shortcut: `${mod}+J`, action: 'chat', description: 'Mit Mora sprechen' },
-        { icon: Brain, label: 'Memory', shortcut: `${mod}+Shift+M`, action: 'memory', description: 'Konto-Gedächtnis', hidden: pendingCount === 0 },
-        { icon: FolderOpen, label: 'Finder', shortcut: `${mod}+F`, action: 'finder', description: 'Dateien & Ordner' },
-        { icon: Users, label: 'Team', shortcut: `${mod}+U`, action: 'team', description: 'Teammitglieder' },
-        { icon: FileText, label: 'Notizen', shortcut: `${mod}+N`, action: 'notes', description: 'Schnelle Notizen' },
-        { icon: Mail, label: 'Mail', shortcut: null, action: 'mail', description: 'Inbox, Commit & Versand' },
-        { icon: Calendar, label: 'Kalender', shortcut: null, action: 'calendar', description: 'Termine & Sync-Kontext' },
-        { icon: Terminal, label: 'Terminal', shortcut: `${mod}+T`, action: 'terminal', description: 'Entwickler-Konsole' },
-        { icon: Settings, label: 'System', shortcut: `${mod}+,`, action: 'settings', description: 'Einstellungen' }
-    ], [mod, pendingCount]);
+    // Icon map: action → lucide icon. Defined here (UI concern) separate from registry (routing concern).
+    const DOCK_ICON_MAP: Record<string, React.ComponentType<any>> = useMemo(() => ({
+        home:     Home,
+        chat:     MessageCircle,
+        finder:   FolderOpen,
+        team:     Users,
+        notes:    FileText,
+        settings: Settings,
+    }), []);
 
-    const visibleDockItems = useMemo(
-        () => dockItems.filter(item => !item.hidden),
-        [dockItems]
-    );
+    // Single source of truth — order, labels, shortcuts come from surfaceRegistry.
+    const dockItems: DockItem[] = useMemo(() =>
+        getCoreDockItems().map(entry => ({
+            icon:        DOCK_ICON_MAP[entry.action] ?? Minus,
+            label:       entry.label,
+            description: entry.description,
+            shortcut:    entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
+            action:      entry.action,
+        }))
+    , [mod, DOCK_ICON_MAP]);
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
@@ -466,7 +450,7 @@ export const Dock = () => {
 
                     {/* CENTER: DOCK APPS — Magnetic Icons */}
                     <div className="flex items-center gap-2">
-                        {visibleDockItems.map((item) => (
+                        {dockItems.map((item) => (
                             <MagneticDockIconMemo
                                 key={item.action}
                                 item={item}
@@ -480,25 +464,10 @@ export const Dock = () => {
                     <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
 
-                    {/* RIGHT SECTION: Focus Mode + Notifications + Actions + Company */}
+                    {/* RIGHT SECTION: Notifications + Company */}
                     <div className="flex items-center gap-2">
-                        {/* Focus Mode Widget */}
-                        <FocusModeWidget />
-
-                        {/* Action Tray */}
-                        <ActionTray />
-
                         {/* Notification Center */}
                         <NotificationCenter />
-
-                        {/* Session Chip — visible only while a work-session plan is active */}
-                        {activePlanId && (
-                            <SessionChip
-                                planId={activePlanId}
-                                openPane={openPane}
-                                isStandardMode={isStandardMode}
-                            />
-                        )}
                     </div>
 
                     {/* DIVIDER - Glowing */}
@@ -648,7 +617,7 @@ export const Dock = () => {
                             </span>
                             <span className={`text-xs ${isStandardMode ? 'text-gray-500' : 'text-white/60'
                                 }`}>
-                                {activePlanId ? 'Arbeitsplan offen' : viewMode === 'demo' ? 'Demo aktiv' : 'Bereit'}
+                                {viewMode === 'demo' ? 'Demo aktiv' : 'Bereit'}
                             </span>
                             <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                                 <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-gray-200 text-gray-500 bg-gray-100' : 'border-white/10 text-white/55 bg-white/[0.04]'}`}>
@@ -658,16 +627,8 @@ export const Dock = () => {
                                             ? 'Mora wartet auf Klaerung'
                                             : 'Mora ist bereit'}
                                 </span>
-                                {activePlanId && (
-                                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-blue-200 text-blue-700 bg-blue-50' : 'border-emerald-400/20 text-emerald-100/80 bg-emerald-500/10'}`}>
-                                        Plan aktiv
-                                    </span>
-                                )}
-                                {pendingCount > 0 && (
-                                    <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-violet-200 text-violet-700 bg-violet-50' : 'border-violet-400/20 text-violet-100/80 bg-violet-500/10'}`}>
-                                        Memory {pendingCount}
-                                    </span>
-                                )}
+                                {/* activePlanId chip — 1.0 gated with work-session surface */}
+                                {/* pendingCount chip — 1.0 gated with MemorySidebar */}
                             </div>
                         </div>
                     </div>

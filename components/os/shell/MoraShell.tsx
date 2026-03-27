@@ -55,7 +55,8 @@ import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
-import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
+// 1.0 gated (future-tier) — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
+// import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOverlay';
 import { LockScreen } from '@/components/auth/LockScreen';
@@ -66,11 +67,12 @@ import { useMindLoopInsights } from '@/lib/hooks/useMindLoopInsights';
 // Intelligence is shown through Mora Nexus and Dock command center.
 
 // Interaction Layers
-import { CursorAgent } from '@/components/mora/CursorAgent';
-import { AgencyCursor } from '@/components/agency/AgencyCursor';
-import { GhostOverlay } from '@/components/mora/GhostOverlay';
+// 1.0 gated (future-tier: agentic cursor effects)
+// import { CursorAgent } from '@/components/mora/CursorAgent';
+// import { AgencyCursor } from '@/components/agency/AgencyCursor';
+// import { GhostOverlay } from '@/components/mora/GhostOverlay';
 import { UserCursor } from '@/components/layout/UserCursor';
-import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
+// import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 
@@ -83,7 +85,8 @@ import { SystemStats } from '@/components/ui/SystemStats';
 // V13: OS Features - Notification Center, Focus Mode, Quick Preview, Window Snapping, Memory Sidebar
 import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
-import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
+// 1.0 gated (future-tier: memory sidebar)
+// import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
 import { Upload, Sparkles, FolderOpen, History, X, Search, FileText, LayoutList } from 'lucide-react';
 import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
@@ -240,8 +243,7 @@ export const MoraShell: React.FC = () => {
     // Store
     const {
         user,
-        setCursorAgent,
-        cursorAgent,
+        // setCursorAgent, cursorAgent — 1.0 gated with CursorAgent component
         viewMode,
         viewLevel,
         orbState: storeOrbState,
@@ -304,8 +306,7 @@ export const MoraShell: React.FC = () => {
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
-    const [isResonanceOpen, setIsResonanceOpen] = useState(false);
-    const [isResonanceExpanded, setIsResonanceExpanded] = useState(false);
+    // 1.0 gated: ResonanceRoom state removed (future-tier surface)
     const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
     const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
@@ -321,7 +322,7 @@ export const MoraShell: React.FC = () => {
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
-    const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isResonanceOpen || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
+    const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
@@ -446,9 +447,7 @@ export const MoraShell: React.FC = () => {
     const apiOrbState = useAwareness();
     useMindloopStream(isBootstrapped);
 
-    useShellEvents({
-        onOpenResonance: useCallback(() => setIsResonanceOpen(true), [])
-    });
+    useShellEvents({});
 
     useRealtime(isBootstrapped);
     useOperationalFlip();
@@ -467,18 +466,10 @@ export const MoraShell: React.FC = () => {
         onOpenSettings: useCallback(() => {
             openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
         }, [openPane]),
-        onOpenTerminal: useCallback(() => {
-            openPane({ id: 'terminal-main', type: 'terminal', title: 'Terminal', size: { width: 850, height: 600 } });
-        }, [openPane]),
+        // 1.0 gated: Terminal, MoraHub, Memory shortcuts disabled (future-tier)
         onGoHome: useCallback(() => {
             useMoraStore.getState().navigateToCore();
         }, []),
-        onOpenMoraHub: useCallback(() => {
-            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 } });
-        }, [openPane]),
-        onOpenMemory: useCallback(() => {
-            openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Konto-Gedaechtnis', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } });
-        }, [openPane]),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();
             const visiblePanes = panes.filter(p => !p.minimized);
@@ -489,9 +480,7 @@ export const MoraShell: React.FC = () => {
         onShowShortcuts: useCallback(() => setIsShortcutsOpen(prev => !prev), []),
     });
 
-    // Lift memory sidebar shortcut here so it stays active even when
-    // MemorySidebar is conditionally unmounted (e.g. during fullscreen pane mode)
-    useMemorySidebarShortcut();
+    // 1.0 gated: useMemorySidebarShortcut() removed with MemorySidebar
 
     // Handlers
     const handleUnlock = () => setIsSleeping(false);
@@ -696,13 +685,7 @@ export const MoraShell: React.FC = () => {
                 LAYER 3: UI OVERLAYS
             ================================================================= */}
 
-            {/* Resonance Room */}
-            <ResonanceRoom
-                isOpen={isResonanceOpen}
-                onClose={() => setIsResonanceOpen(false)}
-                onToggleExpand={() => setIsResonanceExpanded(!isResonanceExpanded)}
-                isExpanded={isResonanceExpanded}
-            />
+            {/* Resonance Room — 1.0 gated (future-tier surface) */}
 
             {/* Mora Insight Popup -- surfaces MindLoop insight events above the Dock */}
             <MoraInsightPopup
@@ -732,8 +715,7 @@ export const MoraShell: React.FC = () => {
             {/* Window Snap Preview (when dragging near edges) */}
             <SnapPreview zone={activeSnapZone} visible={activeSnapZone !== null} />
 
-            {/* Memory Sidebar (Cmd+Shift+M) */}
-            {!hasFullscreenPane && <MemorySidebar />}
+            {/* Memory Sidebar — 1.0 gated (future-tier surface) */}
 
             {/* === PREMIUM INTELLIGENCE LAYER === */}
             {/*
@@ -748,29 +730,8 @@ export const MoraShell: React.FC = () => {
                 LAYER 4: INTERACTION
             ================================================================= */}
 
-            {
-                !isLoggingOut && (
-                    <>
-                        <CursorAgent
-                            active={cursorAgent.active}
-                            action={cursorAgent.action}
-                            target={cursorAgent.target}
-                            message={cursorAgent.message}
-                            awareness={finalOrbState}
-                            onActionComplete={(completedAction) => {
-                                if (completedAction === 'return') {
-                                    setCursorAgent({ active: false, action: 'idle', target: undefined, message: null });
-                                }
-                            }}
-                        />
-
-                        <AgencyCursor />
-                        <CursorTrailEffect />
-                        <GhostOverlay />
-                        <UserCursor enabled={true} />
-                    </>
-                )
-            }
+            {/* Cursor effects — CursorAgent, AgencyCursor, CursorTrailEffect, GhostOverlay: 1.0 gated (future-tier) */}
+            {!isLoggingOut && <UserCursor enabled={true} />}
 
             <MyceliumDropfield
                 active={!!myceliumDropBatch}
