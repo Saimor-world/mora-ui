@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -44,7 +44,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [inviteCode, setInviteCode] = useState('');
     const [companyName, setCompanyName] = useState(''); // For owner registration
     const [logoUrl, setLogoUrl] = useState<string | null>(null); // For owner company logo
-    const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // StandardmÃƒÂ¤ÃƒÅ¸ig Owner
+    const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // Default owner
     const [isLoading, setIsLoading] = useState(false);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [showSessionCard, setShowSessionCard] = useState(false);
@@ -70,7 +70,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setSessionInfo(null);
         setShowSessionCard(false);
         if (showToast) {
-            toast.info("Sitzung wurde vollstÃƒÂ¤ndig bereinigt");
+            toast.info("Sitzung wurde vollstaendig bereinigt");
         }
     }, []);
 
@@ -176,10 +176,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 store.setActiveCompany(targetCompany.id);
                 await store.loadDepartments(targetCompany.id);
             } else {
-                console.warn('Ã¢Å¡Â Ã¯Â¸Â Keine Firma fÃƒÂ¼r Benutzer gefunden.');
+                console.warn('Keine Firma fuer Benutzer gefunden.');
             }
 
-            toast.success("Willkommen zurÃƒÂ¼ck!");
+            toast.success("Willkommen zurueck!");
             touchSessionActivity();
             onAuthenticated();
         } catch (error) {
@@ -249,7 +249,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 ({ response, data } = await attemptCoreLogin('demo123'));
             }
             if (!response.ok || !data?.success) {
-                throw new Error(data?.detail || data?.message || "UngÃƒÂ¼ltige Zugangsdaten");
+                throw new Error(data?.detail || data?.message || "Ungueltige Zugangsdaten");
             }
 
             const result = await signIn("credentials", {
@@ -292,7 +292,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            toast.error('UngÃƒÂ¼ltige E-Mail-Adresse');
+            toast.error('Ungueltige E-Mail-Adresse');
             return;
         }
 
@@ -302,7 +302,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!usingInvite && selectedRole === 'owner' && (!companyName || !companyName.trim())) {
-            toast.error('Firmenname ist erforderlich fÃƒÂ¼r Owner-Accounts');
+            toast.error('Firmenname ist erforderlich fuer Owner-Accounts');
             return;
         }
 
@@ -375,7 +375,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 setViewMode('workspace');
                 navigateToCore();
                 localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
-                toast.success("Account erstellt! Willkommen bei SAIMÃƒâ€R.", { id: toastId });
+                toast.success("Account erstellt! Willkommen bei SAIMOR.", { id: toastId });
             }
 
             onAuthenticated();
@@ -574,10 +574,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     <Clock className="w-5 h-5 text-emerald-400" />
                                                 </motion.div>
                                                 <div>
-                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Willkommen zurÃƒÂ¼ck!</div>
+                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Willkommen zurueck!</div>
                                                     <div className="text-xs text-emerald-500/60 font-light tracking-wider">
                                                         {sessionInfo.userName || 'Benutzer'}
-                                                        {sessionInfo.role && ` Ã¢â‚¬Â¢ ${sessionInfo.role === 'owner' ? 'EigentÃƒÂ¼mer' : 'Mitglied'}`}
+                                                        {sessionInfo.role && ` - ${sessionInfo.role === 'owner' ? 'Eigentuemer' : 'Mitglied'}`}
                                                     </div>
                                                 </div>
                                             </div>
@@ -731,7 +731,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                                                 autoComplete="new-password"
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                                placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
+                                                placeholder="********"
                                             />
                                         </div>
 
@@ -753,7 +753,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            Ã¢â€ Â ZurÃƒÂ¼ck zum Hauptbereich
+                                            {'<- Zurueck zum Hauptbereich'}
                                         </button>
                                     </div>
                                 </div>
@@ -806,7 +806,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-mora-gold/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                                placeholder="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
+                                                placeholder="********"
                                             />
                                         </div>
 
@@ -870,7 +870,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     >
                                                         {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
                                                         <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                        <span className="text-xs font-medium relative z-10">EigentÃƒÂ¼mer</span>
+                                                        <span className="text-xs font-medium relative z-10">Eigentuemer</span>
                                                         <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
                                                     </button>
                                                     <button
@@ -903,7 +903,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            Ã¢â€ Â ZurÃƒÂ¼ck zum Hauptbereich
+                                            {'<- Zurueck zum Hauptbereich'}
                                         </button>
                                     </div>
                                 </div>
