@@ -54,7 +54,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         typeof document === 'undefined' ? true : !document.hidden
     );
 
-    const { setViewMode, setViewLevel, setUser } = useMoraStore();
+    const { setViewMode, setUser, navigateToCore } = useMoraStore();
     const hasInvite = inviteCode.trim().length > 0;
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
 
@@ -142,7 +142,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         store.setUser(null);
 
         // Force reload relevant parts to ensure clean UI
-        store.setViewLevel('core');
+        store.navigateToCore();
         store.setViewMode('workspace');
         writeCookie('saimor_auth', '', -1);
         writeCookie('mora_auth_token', '', -1);
@@ -373,7 +373,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 return;
             } else {
                 setViewMode('workspace');
-                setViewLevel('company');
+                navigateToCore();
                 localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
                 toast.success("Account erstellt! Willkommen bei SAIMÔR.", { id: toastId });
             }
@@ -395,9 +395,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 userEmail={registeredEmail || email}
                 onComplete={() => {
                     setShowOnboarding(false);
-                    // Show the workspace (planets) immediately after creation so user sees their "brain"
+                    // Land on the default working surface after onboarding.
                     setViewMode('workspace');
-                    setViewLevel('company');
+                    navigateToCore();
                     onAuthenticated();
                 }}
             />

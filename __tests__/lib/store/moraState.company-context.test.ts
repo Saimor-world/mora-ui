@@ -130,4 +130,22 @@ describe('moraState company context switching', () => {
     expect(useMoraStore.getState().activeFolderId).toBeNull();
     expect(useMoraStore.getState().orbState).toBe('idle');
   });
+
+  it('resetStore restores coreMode to home', () => {
+    useMoraStore.setState({
+      viewLevel: 'department',
+      coreMode: 'explore',
+      activeDepartmentId: 'dep-1',
+      activeSpaceId: 'space-1',
+      activeFolderId: 'folder-1',
+    });
+
+    useMoraStore.getState().resetStore();
+
+    expect(useMoraStore.getState().viewLevel).toBe('core');
+    expect(useMoraStore.getState().coreMode).toBe('home');
+    expect(useMoraStore.getState().activeDepartmentId).toBeNull();
+    expect(useMoraStore.getState().activeSpaceId).toBeNull();
+    expect(useMoraStore.getState().activeFolderId).toBeNull();
+  });
 });

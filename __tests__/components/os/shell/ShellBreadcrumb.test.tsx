@@ -7,7 +7,7 @@
  *   - Hidden at viewLevel 'core' and 'company' (core surfaces handle their own chrome)
  *   - Visible at 'department', 'space', 'folder'
  *   - Segments: [Root] / [DeptName] / [SpaceName]
- *   - Root click → setViewLevel('core') + setCoreMode('explore')
+ *   - Root click -> navigateToExplore()
  *   - Dept click (from space level) → navigateToDepartment(activeDepartmentId)
  *   - Each segment has data-testid for reliable query
  */
@@ -95,3 +95,4 @@ describe('ShellBreadcrumb — navigation', () => {
         expect(navigateToExplore).not.toHaveBeenCalled();
     });
 });
+

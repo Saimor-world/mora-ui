@@ -12,7 +12,7 @@ import { useMoraStore } from '@/lib/store/moraState';
  * need a "where am I?" anchor in the shell frame.
  *
  * Navigation contract (matches DepartmentLayer / SpaceLayer breadcrumbs):
- *   Root  → setViewLevel('core') + setCoreMode('explore')
+ *   Root  -> navigateToExplore()
  *   Dept  → navigateToDepartment(activeDepartmentId)   [space/folder level only]
  *   Space → (future: navigateToSpace)
  *
@@ -90,3 +90,4 @@ export const ShellBreadcrumb: React.FC = () => {
         </nav>
     );
 };
+

@@ -689,6 +689,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             minimizedNodes: [],
             viewMode: 'workspace',
             viewLevel: 'core',
+            coreMode: 'home',
             nameConflict: null,
             coreError: null,
             orbState: 'idle',
