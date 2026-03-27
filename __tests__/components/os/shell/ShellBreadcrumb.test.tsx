@@ -80,21 +80,18 @@ describe('ShellBreadcrumb — segments', () => {
 
 describe('ShellBreadcrumb — navigation', () => {
     it('root click sets viewLevel core + coreMode explore', () => {
-        const setViewLevel = jest.fn();
-        const setCoreMode = jest.fn();
-        renderWith({ viewLevel: 'department', activeDepartmentId: 'dept-1', activeSpaceId: null, departments: [baseDept], spacesByDepartment: {}, setViewLevel, setCoreMode });
+        const navigateToExplore = jest.fn();
+        renderWith({ viewLevel: 'department', activeDepartmentId: 'dept-1', activeSpaceId: null, departments: [baseDept], spacesByDepartment: {}, navigateToExplore });
         fireEvent.click(screen.getByTestId('breadcrumb-root'));
-        expect(setViewLevel).toHaveBeenCalledWith('core');
-        expect(setCoreMode).toHaveBeenCalledWith('explore');
+        expect(navigateToExplore).toHaveBeenCalledTimes(1);
     });
 
     it('dept click at space level calls navigateToDepartment', () => {
         const navigateToDepartment = jest.fn();
-        const setViewLevel = jest.fn();
-        const setCoreMode = jest.fn();
-        renderWith({ viewLevel: 'space', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] }, navigateToDepartment, setViewLevel, setCoreMode });
+        const navigateToExplore = jest.fn();
+        renderWith({ viewLevel: 'space', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] }, navigateToDepartment, navigateToExplore });
         fireEvent.click(screen.getByTestId('breadcrumb-dept'));
         expect(navigateToDepartment).toHaveBeenCalledWith('dept-1');
-        expect(setViewLevel).not.toHaveBeenCalled();
+        expect(navigateToExplore).not.toHaveBeenCalled();
     });
 });

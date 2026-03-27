@@ -65,8 +65,7 @@ export const SpaceLayer: React.FC = () => {
     const isLoadingFolders = useMoraStore(s => s.isLoadingFolders);
     const viewLevel = useMoraStore(s => s.viewLevel);
     const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
-    const setViewLevel = useMoraStore(s => s.setViewLevel);
-    const setCoreMode = useMoraStore(s => s.setCoreMode);
+    const navigateToExplore = useMoraStore(s => s.navigateToExplore);
     const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
     const addFolder = useMoraStore(s => s.addFolder);
     const { openPane } = usePaneStore();
@@ -263,9 +262,8 @@ export const SpaceLayer: React.FC = () => {
 
     const handleNavigateToExplore = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
-        setViewLevel('core');
-        setCoreMode('explore');
-    }, [setCoreMode, setViewLevel]);
+        navigateToExplore();
+    }, [navigateToExplore]);
 
     if (viewLevel !== 'space' || !activeSpaceId) return null;
 

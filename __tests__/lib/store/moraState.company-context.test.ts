@@ -119,4 +119,15 @@ describe('moraState company context switching', () => {
     useMoraStore.getState().setViewMode('workspace');
     expect(useMoraStore.getState().activeCompanyId).toBe('co-hq');
   });
+
+  it('navigateToExplore clears lower hierarchy state and lands on explore', () => {
+    useMoraStore.getState().navigateToExplore();
+
+    expect(useMoraStore.getState().viewLevel).toBe('core');
+    expect(useMoraStore.getState().coreMode).toBe('explore');
+    expect(useMoraStore.getState().activeDepartmentId).toBeNull();
+    expect(useMoraStore.getState().activeSpaceId).toBeNull();
+    expect(useMoraStore.getState().activeFolderId).toBeNull();
+    expect(useMoraStore.getState().orbState).toBe('idle');
+  });
 });

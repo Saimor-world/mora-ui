@@ -69,8 +69,7 @@ describe('Breadcrumb root navigation', () => {
     });
 
     it('routes Department root click to Explore instead of Home', () => {
-        const setViewLevel = jest.fn();
-        const setCoreMode = jest.fn();
+        const navigateToExplore = jest.fn();
         const navigateToCore = jest.fn();
 
         renderWithStore(<DepartmentLayer />, {
@@ -87,20 +86,17 @@ describe('Breadcrumb root navigation', () => {
             navigateToSpace: jest.fn(),
             addSpace: jest.fn(),
             setActiveSpace: jest.fn(),
-            setViewLevel,
-            setCoreMode,
+            navigateToExplore,
         });
 
         fireEvent.click(screen.getByTestId('nav-back-to-universe'));
 
-        expect(setViewLevel).toHaveBeenCalledWith('core');
-        expect(setCoreMode).toHaveBeenCalledWith('explore');
+        expect(navigateToExplore).toHaveBeenCalledTimes(1);
         expect(navigateToCore).not.toHaveBeenCalled();
     });
 
     it('routes Space root breadcrumb click to Explore', () => {
-        const setViewLevel = jest.fn();
-        const setCoreMode = jest.fn();
+        const navigateToExplore = jest.fn();
         const navigateToDepartment = jest.fn();
 
         renderWithStore(<SpaceLayer />, {
@@ -119,20 +115,17 @@ describe('Breadcrumb root navigation', () => {
             navigateToDepartment,
             loadFoldersForSpace: jest.fn(),
             addFolder: jest.fn(),
-            setViewLevel,
-            setCoreMode,
+            navigateToExplore,
         });
 
         fireEvent.click(screen.getByTestId('nav-root-to-universe'));
 
-        expect(setViewLevel).toHaveBeenCalledWith('core');
-        expect(setCoreMode).toHaveBeenCalledWith('explore');
+        expect(navigateToExplore).toHaveBeenCalledTimes(1);
         expect(navigateToDepartment).not.toHaveBeenCalled();
     });
 
     it('keeps Space back button navigating to Department', () => {
-        const setViewLevel = jest.fn();
-        const setCoreMode = jest.fn();
+        const navigateToExplore = jest.fn();
         const navigateToDepartment = jest.fn();
 
         renderWithStore(<SpaceLayer />, {
@@ -151,14 +144,12 @@ describe('Breadcrumb root navigation', () => {
             navigateToDepartment,
             loadFoldersForSpace: jest.fn(),
             addFolder: jest.fn(),
-            setViewLevel,
-            setCoreMode,
+            navigateToExplore,
         });
 
         fireEvent.click(screen.getByTestId('nav-back-to-department'));
 
         expect(navigateToDepartment).toHaveBeenCalledWith('dept-1');
-        expect(setViewLevel).not.toHaveBeenCalled();
-        expect(setCoreMode).not.toHaveBeenCalled();
+        expect(navigateToExplore).not.toHaveBeenCalled();
     });
 });

@@ -31,8 +31,7 @@ export const DepartmentLayer: React.FC = () => {
     const treeData = useMoraStore(s => s.treeData);
     const loadSpacesForDepartment = useMoraStore(s => s.loadSpacesForDepartment);
     const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
-    const setViewLevel = useMoraStore(s => s.setViewLevel);
-    const setCoreMode = useMoraStore(s => s.setCoreMode);
+    const navigateToExplore = useMoraStore(s => s.navigateToExplore);
     const navigateToSpace = useMoraStore(s => s.navigateToSpace);
     const addSpace = useMoraStore(s => s.addSpace);
     const setActiveSpace = useMoraStore(s => s.setActiveSpace);
@@ -341,9 +340,8 @@ export const DepartmentLayer: React.FC = () => {
     }, [departmentDocsFromApi, spaces, foldersBySpace, departmentDocs.length]);
 
     const handleNavigateToExplore = useCallback(() => {
-        setViewLevel('core');
-        setCoreMode('explore');
-    }, [setCoreMode, setViewLevel]);
+        navigateToExplore();
+    }, [navigateToExplore]);
 
     if (!activeDepartmentId) return null;
 

@@ -316,6 +316,7 @@ interface MoraState {
 
     // Navigation Helpers
     navigateToCore: () => void;
+    navigateToExplore: () => void;
     navigateToDepartment: (deptId: string) => void;
     navigateToSpace: (spaceId: string) => void;
     navigateToFolder: (folderId: string | null) => void;
@@ -1454,6 +1455,17 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({
             viewLevel: 'core',
             coreMode: 'home', // always land on Home surface, not Explore
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            activeFolderId: null,
+            orbState: 'idle',
+        });
+    },
+
+    navigateToExplore: () => {
+        set({
+            viewLevel: 'core',
+            coreMode: 'explore',
             activeDepartmentId: null,
             activeSpaceId: null,
             activeFolderId: null,

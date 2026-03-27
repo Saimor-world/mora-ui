@@ -24,8 +24,7 @@ export const ShellBreadcrumb: React.FC = () => {
     const activeSpaceId      = useMoraStore((s) => s.activeSpaceId);
     const departments        = useMoraStore((s) => s.departments);
     const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
-    const setViewLevel       = useMoraStore((s) => s.setViewLevel);
-    const setCoreMode        = useMoraStore((s) => s.setCoreMode);
+    const navigateToExplore  = useMoraStore((s) => s.navigateToExplore);
     const navigateToDepartment = useMoraStore((s) => s.navigateToDepartment);
 
     // Only render inside a layer
@@ -37,8 +36,7 @@ export const ShellBreadcrumb: React.FC = () => {
         : null;
 
     const handleRoot = () => {
-        setViewLevel('core');
-        setCoreMode('explore');
+        navigateToExplore();
     };
 
     const handleDept = () => {
