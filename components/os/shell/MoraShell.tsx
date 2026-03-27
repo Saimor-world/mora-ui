@@ -313,11 +313,15 @@ export const MoraShell: React.FC = () => {
     const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
     const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
-    const [isShellDropActive, setIsShellDropActive] = useState(false);
-    const [myceliumDropBatch, setMyceliumDropBatch] = useState<{
-        batchId: string;
-        files: MyceliumDropVisualFile[];
-    } | null>(null);
+    // Drop state machine — mutually exclusive phases prevent drift between two old booleans.
+    // idle: no drag in progress.  dragging: files held over shell.  batch_ready: dropped.
+    const [shellDrop, setShellDrop] = useState<
+        | { phase: 'idle' }
+        | { phase: 'dragging' }
+        | { phase: 'batch_ready'; batchId: string; files: MyceliumDropVisualFile[] }
+    >({ phase: 'idle' });
+    const isShellDropActive = shellDrop.phase === 'dragging';
+    const myceliumDropBatch  = shellDrop.phase === 'batch_ready' ? shellDrop : null;
     const [myceliumSummary, setMyceliumSummary] = useState<MyceliumShellSummary | null>(null);
     // workSessionSummary — 1.0 gated (work-session surface is future-tier)
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
@@ -489,29 +493,29 @@ export const MoraShell: React.FC = () => {
 
     const resetShellDrop = useCallback(() => {
         shellDropDepthRef.current = 0;
-        setIsShellDropActive(false);
+        setShellDrop({ phase: 'idle' });
     }, []);
 
     const handleShellDragEnter = useCallback((event: React.DragEvent) => {
         if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
         event.preventDefault();
         shellDropDepthRef.current += 1;
-        setIsShellDropActive(true);
+        setShellDrop({ phase: 'dragging' });
     }, [isFileDragEvent, isLocalFileDropTarget]);
 
     const handleShellDragOver = useCallback((event: React.DragEvent) => {
         if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
-        if (!isShellDropActive) setIsShellDropActive(true);
-    }, [isFileDragEvent, isLocalFileDropTarget, isShellDropActive]);
+        if (shellDrop.phase !== 'dragging') setShellDrop({ phase: 'dragging' });
+    }, [isFileDragEvent, isLocalFileDropTarget, shellDrop.phase]);
 
     const handleShellDragLeave = useCallback((event: React.DragEvent) => {
         if (!isFileDragEvent(event) || isLocalFileDropTarget(event.target)) return;
         event.preventDefault();
         shellDropDepthRef.current = Math.max(0, shellDropDepthRef.current - 1);
         if (shellDropDepthRef.current === 0) {
-            setIsShellDropActive(false);
+            setShellDrop({ phase: 'idle' });
         }
     }, [isFileDragEvent, isLocalFileDropTarget]);
 
@@ -523,7 +527,8 @@ export const MoraShell: React.FC = () => {
         if (files.length === 0) return;
 
         const batchId = `mycelium-${Date.now()}`;
-        setMyceliumDropBatch({
+        setShellDrop({
+            phase: 'batch_ready',
             batchId,
             files: files.map((file) => ({
                 id: `${batchId}-${file.name}-${file.size}`,
@@ -727,9 +732,9 @@ export const MoraShell: React.FC = () => {
             {!isLoggingOut && <UserCursor enabled={true} />}
 
             <MyceliumDropfield
-                active={!!myceliumDropBatch}
+                active={shellDrop.phase === 'batch_ready'}
                 files={myceliumDropBatch?.files || []}
-                onComplete={() => setMyceliumDropBatch(null)}
+                onComplete={() => setShellDrop({ phase: 'idle' })}
             />
 
             {navigationOutcome && !isShellDropActive && (
