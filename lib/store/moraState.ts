@@ -821,11 +821,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         set({ orbState: mindLoop.getCurrentState() });
 
         try {
-            // Reduce console spam - only log once per load cycle
-            if (process.env.NODE_ENV !== 'production') {
-                console.debug('[MoraState] Loading Departments for:', targetCompanyId);
-            }
-
             // Parallelize fetching to eliminate sequential lag.
             // Cap company-wide node fetch at 200 to stay within backend pagination limits.
             const [deptData, nodeData] = await Promise.all([

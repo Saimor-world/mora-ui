@@ -306,7 +306,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
 
                                     return (
                                         <motion.div
-                                            key={member.id}
+                                            key={`${member.status}:${member.id}`}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
