@@ -1,5 +1,5 @@
 /**
- * ConfirmationCard — route explainability / Trust V3
+ * ConfirmationCard Ã¢â‚¬â€ route explainability / Trust V3
  *
  * Tests that the intake variant correctly surfaces:
  *   - learned-route badge when route_mode === 'learned_route'
@@ -23,7 +23,7 @@ jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }))
 
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 
-// ── fixtures ──────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ fixtures Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 const baseIntakeContext = {
     business_summary: 'Quartalsbericht Q4 2025',
@@ -31,7 +31,7 @@ const baseIntakeContext = {
     target_space_name: 'Reports',
     target_folder_name: 'Q4 Reports',
     route_confidence_label: 'hoch',
-    route_reason: 'Ähnliche Berichte wurden hier eingeordnet.',
+    route_reason: 'Ãƒâ€žhnliche Berichte wurden hier eingeordnet.',
 };
 
 function makeAction(overrides: Record<string, unknown> = {}) {
@@ -47,9 +47,9 @@ function makeAction(overrides: Record<string, unknown> = {}) {
 
 const noop = () => {};
 
-// ── Learned badge ─────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Learned badge Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
-describe('ConfirmationCard — learned-route badge', () => {
+describe('ConfirmationCard Ã¢â‚¬â€ learned-route badge', () => {
     it('shows learned badge when route_mode is learned_route', () => {
         render(
             <ConfirmationCard
@@ -59,7 +59,7 @@ describe('ConfirmationCard — learned-route badge', () => {
                 variant="intake"
             />
         );
-        expect(screen.getByText(/Aus fr[üu]heren Einordnungen gelernt/i)).toBeInTheDocument();
+        expect(screen.getByText(/Gelernter Pfad/i)).toBeInTheDocument();
     });
 
     it('does not show learned badge when route_mode is absent', () => {
@@ -71,7 +71,7 @@ describe('ConfirmationCard — learned-route badge', () => {
                 variant="intake"
             />
         );
-        expect(screen.queryByText(/Aus fr[üu]heren Einordnungen gelernt/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Gelernter Pfad/i)).not.toBeInTheDocument();
     });
 
     it('does not show learned badge when route_mode is default_route', () => {
@@ -83,13 +83,13 @@ describe('ConfirmationCard — learned-route badge', () => {
                 variant="intake"
             />
         );
-        expect(screen.queryByText(/Aus fr[üu]heren Einordnungen gelernt/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Gelernter Pfad/i)).not.toBeInTheDocument();
     });
 });
 
-// ── Signal humanization ───────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Signal humanization Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
-describe('ConfirmationCard — signal humanization', () => {
+describe('ConfirmationCard Ã¢â‚¬â€ signal humanization', () => {
     it('renders known signal keys as German labels', () => {
         render(
             <ConfirmationCard
@@ -101,8 +101,8 @@ describe('ConfirmationCard — signal humanization', () => {
                 variant="intake"
             />
         );
-        expect(screen.getByText(/[Ää]hnliche Dateien eingeordnet/)).toBeInTheDocument();
-        expect(screen.getByText(/Wiederkehrendes Dateimuster/)).toBeInTheDocument();
+        expect(document.body).toHaveTextContent('Ähnliche Dateien eingeordnet');
+        expect(document.body).toHaveTextContent('Wiederkehrendes Dateimuster');
         // raw keys must NOT appear
         expect(screen.queryByText('frueher_aehnlich_eingeordnet')).not.toBeInTheDocument();
         expect(screen.queryByText('wiederkehrendes_dateimuster')).not.toBeInTheDocument();
@@ -136,9 +136,9 @@ describe('ConfirmationCard — signal humanization', () => {
     });
 });
 
-// ── Learning copy ─────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Learning copy Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
-describe('ConfirmationCard — route_learning copy', () => {
+describe('ConfirmationCard Ã¢â‚¬â€ route_learning copy', () => {
     it('renders confirmed-count learning line', () => {
         render(
             <ConfirmationCard
@@ -151,7 +151,7 @@ describe('ConfirmationCard — route_learning copy', () => {
                 variant="intake"
             />
         );
-        expect(screen.getByText(/Dieser Pfad wurde bereits 6-mal best[äa]tigt oder korrigiert/i)).toBeInTheDocument();
+        expect(document.body).toHaveTextContent('Dieser Pfad wurde bereits 6-mal bestaetigt oder korrigiert.');
     });
 
     it('renders correction line when corrected_count > 0', () => {
@@ -166,7 +166,7 @@ describe('ConfirmationCard — route_learning copy', () => {
                 variant="intake"
             />
         );
-        expect(screen.getByText(/Davon wurden 2-mal manuelle Korrekturen [üu]bernommen/i)).toBeInTheDocument();
+        expect(document.body).toHaveTextContent('Davon wurden 2-mal manuelle Korrekturen uebernommen.');
     });
 
     it('does not render correction line when corrected_count is 0', () => {

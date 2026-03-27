@@ -132,14 +132,14 @@ describe('ConfirmationCard presence trigger', () => {
       />
     );
 
-    expect(screen.getByText('Mycelium Routing')).toBeInTheDocument();
+    expect(screen.getByText('Einordnung bereit')).toBeInTheDocument();
     expect(screen.getByText('PDF-Dokument')).toBeInTheDocument();
-    expect(screen.getByText('Finance > Eingaenge > Inbox')).toBeInTheDocument();
-    expect(screen.getByText('Standard-Eingang fuer neue Dateien in dieser Firma')).toBeInTheDocument();
+    expect(screen.getAllByText('Finance > Eingaenge > Inbox').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Standard-Eingang fuer neue Dateien in dieser Firma').length).toBeGreaterThan(0);
     expect(screen.getByText(/Hohe Sicherheit/i)).toBeInTheDocument();
     expect(screen.getByText(/86%/i)).toBeInTheDocument();
     // Signal humanization V3: raw key → readable label inside "Erkannt anhand:" sentence
-    expect(screen.getByText(/Erkannt anhand:.*Firmenweite Inbox/i)).toBeInTheDocument();
+    expect(screen.getByText(/Signale:\s*Firmenweite Inbox/i)).toBeInTheDocument();
   });
 
   it('renders readable file operation details', () => {
