@@ -477,6 +477,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             activeSpaceId: null,
             activeFolderId: null,
             activeNode: null,
+            viewLevel: 'core',  // reset nav depth — prevents stale dept/space scope in chat
             coreMode: 'home', // reset to Home on company switch — fresh start for new workspace
             isStandardMode: nextStandard,
             user: state.user

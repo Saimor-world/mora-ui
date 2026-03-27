@@ -84,6 +84,8 @@ describe('moraState company context switching', () => {
       activeSpaceId: 'space-1',
       activeFolderId: 'folder-1',
       activeNode: { id: 'node-1', title: 'Old Node' } as any,
+      viewLevel: 'space',
+      coreMode: 'explore',
     });
   });
 
@@ -95,6 +97,8 @@ describe('moraState company context switching', () => {
     expect(useMoraStore.getState().activeSpaceId).toBeNull();
     expect(useMoraStore.getState().activeFolderId).toBeNull();
     expect(useMoraStore.getState().activeNode).toBeNull();
+    expect(useMoraStore.getState().viewLevel).toBe('core');
+    expect(useMoraStore.getState().coreMode).toBe('home');
     expect(useMoraStore.getState().user?.active_company_id).toBe('co-hq');
     expect(useMoraStore.getState().user?.active_company_name).toBe('Saimor HQ');
     expect(localStorage.getItem('last_company_id')).toBe('co-hq');
