@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
-import UniverseView from '@/components/home/UniverseView';
+import { CoreLayer } from '@/components/home/CoreLayer';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -13,11 +13,11 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
  * Routes based on:
  * - viewLevel: company | core | department | space | folder
  * - viewMode: owner | demo | workspace
- * 
- * 
- * DEMO/WORKSPACE VIEW:
- * - 🏠 Home = "core" level = UniverseView with active company's structure
- * - ⚡ Demo = "core" level with Simple Coffee Group
+ *
+ * core → CoreLayer → coreMode='home' → HomeSurface (day-start working surface)
+ *                  → coreMode='explore' → UniverseView (planet map)
+ *
+ * CoreLayer owns the Home/Explore split so ViewPort stays a pure hierarchy router.
  */
 export const ViewPort: React.FC = () => {
     const viewLevel = useMoraStore((state) => state.viewLevel);
@@ -39,7 +39,7 @@ export const ViewPort: React.FC = () => {
         <div className="w-full h-full relative">
             <AnimatePresence mode="wait" initial={false}>
 
-                {/* CORE VIEW - UniverseView (Orbital Universe) */}
+                {/* CORE VIEW — CoreLayer routes to HomeSurface or UniverseView via coreMode */}
                 {effectiveViewLevel === 'core' && (
                     <motion.div
                         key="core"
@@ -49,7 +49,7 @@ export const ViewPort: React.FC = () => {
                         transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
                         className="absolute inset-0"
                     >
-                        <UniverseView />
+                        <CoreLayer />
                     </motion.div>
                 )}
 
