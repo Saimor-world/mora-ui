@@ -1452,10 +1452,11 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     navigateToCore: () => {
         set({
             viewLevel: 'core',
+            coreMode: 'home', // always land on Home surface, not Explore
             activeDepartmentId: null,
             activeSpaceId: null,
             activeFolderId: null,
-            orbState: 'idle' // Reset to idle on home
+            orbState: 'idle',
         });
     },
 

@@ -7,10 +7,13 @@ import type { CoreNode } from '@/lib/types/core';
 import { AlertTriangle, Inbox } from 'lucide-react';
 
 /**
- * CoreLayer - Landing view for the Core/Home state
- * 
- * NOTE: The MoraOrb is now rendered by MoraOrbController (single source of truth)
- * This layer only shows the status text and instructions.
+ * @deprecated — ORPHANED. Not mounted by ViewPort.
+ *
+ * The active CoreLayer is at components/home/CoreLayer.tsx.
+ * That component replaced this inbox-widget prototype when the
+ * Home/Explore coreMode split was introduced (commit 57f5a44).
+ *
+ * This file can be deleted in a future cleanup pass.
  */
 export const CoreLayer: React.FC = () => {
     const {
