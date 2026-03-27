@@ -378,7 +378,7 @@ export const SpaceLayer: React.FC = () => {
                 transition={{ duration: 0.5, delay: 0.1 }}
             >
                 <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80 mb-2">
-                    Layer 3 / Folder Cluster
+                    {currentSpace?.name || 'Workspace'}
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">

@@ -1621,11 +1621,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-100/85">
                             {resolvedCompanyName ? `Firma: ${resolvedCompanyName}` : 'Firmenkontext fehlt'}
                         </span>
-                        {paneCompanyId && (
-                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[11px] text-cyan-100/80">
-                                Fester Pane-Kontext
-                            </span>
-                        )}
                         {globalSearch && (
                             <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-100/80">
                                 Unternehmensweite Suche
