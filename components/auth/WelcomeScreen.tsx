@@ -219,8 +219,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     };
 
 
-    const handleLogin = async () => {
-        if (!email || !password) {
+    const handleLogin = async (overrides?: { email?: string; password?: string }) => {
+        const loginEmail = overrides?.email ?? email;
+        const loginPassword = overrides?.password ?? password;
+
+        if (!loginEmail || !loginPassword) {
             toast.error("Bitte E-Mail und Passwort eingeben");
             return;
         }
@@ -232,7 +235,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: email.toLowerCase() === 'demo' ? 'demo@saimor.io' : email,
+                        email: loginEmail.toLowerCase() === 'demo' ? 'demo@saimor.io' : loginEmail,
                         password: passwordToTry
                     })
                 });
@@ -240,9 +243,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 return { response, data };
             };
 
-            let { response, data } = await attemptCoreLogin(password);
-            const isDemoLogin = email.toLowerCase().startsWith('demo') || email.toLowerCase().includes('demo');
-            if ((!response.ok || !data?.success) && isDemoLogin && password === 'demo') {
+            let { response, data } = await attemptCoreLogin(loginPassword);
+            const isDemoLogin = loginEmail.toLowerCase().startsWith('demo') || loginEmail.toLowerCase().includes('demo');
+            if ((!response.ok || !data?.success) && isDemoLogin && loginPassword === 'demo') {
                 ({ response, data } = await attemptCoreLogin('demo123'));
             }
             if (!response.ok || !data?.success) {
@@ -251,8 +254,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             const result = await signIn("credentials", {
                 redirect: false,
-                username: email,
-                password: password
+                username: loginEmail,
+                password: loginPassword
             });
 
             if (result?.error) {
@@ -260,13 +263,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
             if (response.ok && data?.success) {
-                saveAuthState(data.role || 'member', data.email || email, data.tenant_id, null);
-                toast.success(`Willkommen, ${(data.email || email).split('@')[0]}!`);
+                saveAuthState(data.role || 'member', data.email || loginEmail, data.tenant_id, null);
+                toast.success(`Willkommen, ${(data.email || loginEmail).split('@')[0]}!`);
 
                 setViewMode('workspace');
 
                 // Force a full page navigation so the home bootstrap can pick up the core session cookie.
-                window.location.href = '/home';
+                window.location.assign('/home');
                 return;
             }
 
@@ -657,9 +660,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 {/* Quick Demo Button - Re-enabling for High-Fidelity Experience */}
                                 <motion.button
                                     onClick={() => {
-                                        setEmail('demo');
-                                        setPassword('demo123');
-                                        handleLogin();
+                                        void handleLogin({ email: 'demo', password: 'demo123' });
                                     }}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
@@ -735,7 +736,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         </div>
 
                                         <motion.button
-                                            onClick={handleLogin}
+                                            onClick={() => void handleLogin()}
                                             disabled={isLoading}
                                             whileHover={{ scale: isLoading ? 1 : 1.02 }}
                                             whileTap={{ scale: isLoading ? 1 : 0.98 }}

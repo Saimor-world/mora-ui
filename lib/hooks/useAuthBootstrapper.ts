@@ -76,13 +76,14 @@ export function useAuthBootstrapper() {
             const mayHaveHttpOnlySession = status === 'unauthenticated' && pathname !== '/';
 
             if (isSessionResumeStale(lastActivity) && pathname !== '/') {
-                await authLogout();
-                clearClientSessionArtifacts();
+                const teardown: Promise<unknown>[] = [authLogout()];
                 if (status === 'authenticated') {
-                    await signOut({ redirect: false });
+                    teardown.push(signOut({ redirect: false }));
                 }
+                await Promise.allSettled(teardown);
+                clearClientSessionArtifacts();
                 setAuthError('Session expired. Please log in again.');
-                router.push('/');
+                router.replace('/');
                 return;
             }
 
