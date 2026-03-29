@@ -95,6 +95,7 @@ export function useAuthBootstrapper() {
                         // Only use localStorage token as a dev fallback. Production should rely on cookies/session.
                         if (isLocalhost) localStorage.setItem('saimor_dev_token', currentToken);
                         localStorage.setItem('last_user_name', session.user?.email?.split('@')[0] || 'User');
+                        if (session.user?.email) localStorage.setItem('last_user_email', session.user.email);
 
                         // Bridge NextAuth -> Core API cookie.
                         // coreClient/filesClient/realtimeClient rely on mora_auth_token.

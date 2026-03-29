@@ -24,6 +24,7 @@ interface SessionInfo {
     lastActivity?: string;
     mode?: 'user' | 'owner';
     userName?: string;
+    userEmail?: string;
     role?: string;
 }
 
@@ -94,6 +95,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const lastWorkspace = typeof window !== 'undefined' ? localStorage.getItem('last_workspace') : null;
             const lastActivity = typeof window !== 'undefined' ? localStorage.getItem('last_activity') : null;
             const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null;
+            const userEmail = typeof window !== 'undefined' ? localStorage.getItem('last_user_email') : null;
             const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
 
             const tier = getSessionTier(lastActivity);
@@ -121,6 +123,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 lastActivity: lastActivity || undefined,
                 mode: (savedMode as 'user' | 'owner') || 'user',
                 userName: userName || undefined,
+                userEmail: userEmail || undefined,
                 role: savedRole || undefined,
             };
 
@@ -146,6 +149,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 if (serverSession?.user_id) {
                     serverValid = true;
                     info.userName = info.userName || serverSession.name || serverSession.email?.split('@')[0] || undefined;
+                    info.userEmail = info.userEmail || serverSession.email || undefined;
                     info.lastWorkspace = info.lastWorkspace || serverSession.active_company_name || undefined;
                 }
             } catch {
@@ -243,8 +247,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     /** Erkennung tier: re-authenticate with password, then resume context */
     const handleReAuth = async () => {
         if (!reAuthPassword) return;
-        const savedEmail = sessionInfo?.userName;
-        const userEmail = localStorage.getItem('last_user_name') || (savedEmail ? `${savedEmail}@` : '');
+        const userEmail = sessionInfo?.userEmail || localStorage.getItem('last_user_email');
         if (!userEmail) {
             toast.error('E-Mail konnte nicht ermittelt werden');
             setSessionTier(null);
@@ -265,7 +268,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         // SECURITY: Clear ALL auth state first to prevent role pollution
         const keysToRemove = [
             'saimor_dev_token', 'saimor_mode', 'saimor_role', 'saimor_tenant',
-            'last_workspace', 'last_activity', 'user_name', 'mora_session', 'last_user_name'
+            'last_workspace', 'last_activity', 'user_name', 'mora_session', 'last_user_name', 'last_user_email'
         ];
         keysToRemove.forEach(key => localStorage.removeItem(key));
 
@@ -283,6 +286,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         localStorage.setItem('saimor_role', role);
         localStorage.setItem('saimor_tenant', tenantId);
         localStorage.setItem('user_name', email.split('@')[0]);
+        localStorage.setItem('last_user_email', email);
         touchSessionActivity();
     };
 
@@ -413,6 +417,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             // Fix: Clear onboarding and session flags
             localStorage.setItem('mora_session', 'active');
             localStorage.setItem('last_user_name', email.split('@')[0]);
+            localStorage.setItem('last_user_email', email);
             localStorage.removeItem('onboarding_complete');
 
             setUser({

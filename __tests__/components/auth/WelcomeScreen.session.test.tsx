@@ -208,6 +208,54 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         });
     });
 
+    it('erkennung re-auth sends full email from last_user_email', async () => {
+        localStorage.setItem('last_activity', new Date(Date.now() - 48 * HOUR).toISOString());
+        localStorage.setItem('user_name', 'Marco');
+        localStorage.setItem('last_user_email', 'marco@example.com');
+        localStorage.setItem('saimor_role', 'owner');
+        mockReadCookie.mockImplementation((name: string) =>
+            name === 'saimor_auth' ? 'old-token' : null as any
+        );
+        // Backend says token expired
+        mockCoreGet.mockResolvedValue(null);
+
+        const mockFetch = global.fetch as jest.Mock;
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                success: true,
+                role: 'owner',
+                email: 'marco@example.com',
+                tenant_id: 'tenant-1',
+            }),
+        } as any);
+
+        renderWithStore();
+
+        // Wait for erkennung card with password prompt
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Passwort')).toBeInTheDocument();
+        });
+
+        // Type password and submit
+        fireEvent.change(screen.getByPlaceholderText('Passwort'), { target: { value: 'secret123' } });
+        fireEvent.click(screen.getByText('Bestätigen'));
+
+        // Verify login was called with full email, not just username
+        await waitFor(() => {
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/auth/core-login',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: 'marco@example.com',
+                        password: 'secret123',
+                    }),
+                })
+            );
+        });
+    });
+
     it('quick demo logs in directly without relying on pending state updates', async () => {
         const mockFetch = global.fetch as jest.Mock;
         mockCoreGet.mockResolvedValue(null);
