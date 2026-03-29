@@ -11,6 +11,7 @@ import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
 import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
 import { useContextStore } from '@/lib/store/contextStore';
+import { isAdmin } from '@/lib/auth/roles';
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -107,7 +108,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const isMember = (deptId: string): boolean => {
         // While loading (first render before API responds): show all to avoid flash
         if (!membershipsLoaded) return true;
-        if (user?.role === 'owner' || user?.role === 'admin') return true;
+        if (isAdmin(user?.role)) return true;
         // API failed: restrict to public departments only (no silent cross-scope fallback)
         if (memberships === null) return false;
         return memberships.some((m) => m.department_id === deptId);

@@ -9,6 +9,7 @@ import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, T
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
+import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const { data: session } = useSession();
@@ -43,10 +44,9 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
 
 // Phase 6.3: Role-based Tab Visibility
     // Owner & Admin & Demo get full access
-    const canManageTeam = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
-    const canViewSystem = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
-    // Workspace editing only for Owner/Admin (not demo for safety)
-    const canEditWorkspace = user?.role === 'owner' || user?.role === 'admin' || user?.role === 'demo';
+    const canManageTeam = isAdmin(user?.role) || user?.role === 'demo';
+    const canViewSystem = isAdmin(user?.role) || user?.role === 'demo';
+    const canEditWorkspace = isAdmin(user?.role) || user?.role === 'demo';
 
     // Defense-in-depth: do not allow cross-tenant writes (demo user can READ HQ, but must not WRITE HQ branding).
     const canWriteActiveCompany =
@@ -58,7 +58,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
 
     const canEditBranding =
         canWriteActiveCompany &&
-        (user?.role === 'owner' || user?.role === 'admin' || user?.role === 'system_owner');
+        isAdmin(user?.role);
 
     const tabs = [
         { id: 'profile', label: 'Profil', icon: User },
@@ -483,7 +483,7 @@ useEffect(() => {
                                         Department
                                     </button>
                                     <span className="text-xs text-white/30 px-2 py-1 bg-white/5 rounded">
-                                        {user?.role === 'owner' ? 'Owner' : user?.role === 'admin' ? 'Admin' : 'Demo'}
+                                        {roleLabel(user?.role)}
                                     </span>
                                 </div>
                             </div>

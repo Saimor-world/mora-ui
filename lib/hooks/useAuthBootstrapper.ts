@@ -46,7 +46,7 @@ export function useAuthBootstrapper() {
             // Purge legacy branding artifacts (e.g. "Foerderlogiken"/encoding artifacts) from localStorage.
             // Older builds could persist a stale "default workspace" name which causes cross-browser drift.
             try {
-                const suspect = ["foerderlogiken", "fÃ¶rderlogiken", "förderlogiken"];
+                const suspect = ["foerderlogiken", "förderlogiken"];
                 const keys: string[] = [];
                 for (let i = 0; i < localStorage.length; i += 1) {
                     const key = localStorage.key(i);

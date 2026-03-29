@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -20,9 +20,9 @@ const FOLDER_COLORS = [
 ];
 const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
 
-// Orbit speeds per ring: inner faster, outer slower Ã¢â‚¬â€ slow planetary drift.
+// Orbit speeds per ring: inner faster, outer slower — slow planetary drift.
 const RING_SPEEDS = [0.032, 0.020, 0.013];
-// Single source of truth Ã¢â‚¬â€ used by BOTH SVG orbit rings AND folder positions.
+// Single source of truth — used by BOTH SVG orbit rings AND folder positions.
 // Updated radii to guarantee clearance from the central space orb aura (which extends up to ~150px radius).
 const RING_RADII_X = [Math.max(240, 220), Math.max(370, 350), Math.max(490, 470)];
 const RING_RADII_Y = [Math.max(175, 155), Math.max(265, 245), Math.max(345, 325)];
@@ -54,7 +54,7 @@ const SpaceAtmosphere = React.memo(() => {
 });
 
 export const SpaceLayer: React.FC = () => {
-    // Granular store selectors â€” prevents rerender on unrelated store mutations
+    // Granular store selectors — prevents rerender on unrelated store mutations
     const activeSpaceId = useMoraStore(s => s.activeSpaceId);
     const activeDepartmentId = useMoraStore(s => s.activeDepartmentId);
     const activeCompanyId = useMoraStore(s => s.activeCompanyId);
@@ -137,7 +137,7 @@ export const SpaceLayer: React.FC = () => {
             if (lastTimeRef.current === 0) lastTimeRef.current = currentTime;
             const delta = (currentTime - lastTimeRef.current) / 1000;
             lastTimeRef.current = currentTime;
-            // Pause orbit when hovering ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬  folders freeze in place
+            // Pause orbit when hovering —  folders freeze in place
             if (!isAnyHoveredRef.current) {
                 orbitAccumulatorRef.current += delta;
                 if (orbitAccumulatorRef.current >= ORBIT_STEP_SECONDS) {
@@ -185,7 +185,7 @@ export const SpaceLayer: React.FC = () => {
             value = value.slice(deptName.length).replace(/^[\s&\-_:]+/, '').trim();
         }
 
-        // Strip generic words Ã¢â‚¬â€ only keep the cleaned value if meaningful.
+        // Strip generic words — only keep the cleaned value if meaningful.
         const stripped = value.replace(/\b(workspace|team space|space)\b/gi, '').trim();
         if (stripped.length > 2 && !/^\d+$/.test(stripped)) {
             return stripped;
@@ -203,11 +203,11 @@ export const SpaceLayer: React.FC = () => {
         return Math.max(0.3, Math.min(1.0, 1.0 - daysDiff / 30));
     }, []);
 
-    // Fallback color palette ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â assigned by folder index so each orb has a distinct colour
-    // Use shared ORBIT_PALETTE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â single source of truth for folder orb colours
+    // Fallback color palette — assigned by folder index so each orb has a distinct colour
+    // Use shared ORBIT_PALETTE — single source of truth for folder orb colours
 
     // Animated orbit positions in 3 rings.
-    // Uses module-level RING_RADII_X/Y/SPEEDS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â no local shadowing.
+    // Uses module-level RING_RADII_X/Y/SPEEDS — no local shadowing.
     const folderOrbitPositions = useMemo(() => {
         if (folders.length === 0) return [];
 
@@ -283,10 +283,10 @@ export const SpaceLayer: React.FC = () => {
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
 
-            {/* Depth Overlay: subtle blur to separate L3 from galaxy ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â was bg-black/40 blur-[60px], far too dark */}
+            {/* Depth Overlay: subtle blur to separate L3 from galaxy — was bg-black/40 blur-[60px], far too dark */}
             <div className="absolute inset-0 z-[-1] bg-black/18 backdrop-blur-[20px] pointer-events-none" />
 
-            {/* Vignette ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â softer than before */}
+            {/* Vignette — softer than before */}
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{ background: 'radial-gradient(circle at 50% 50%, transparent 48%, rgba(0,0,0,0.32) 100%)' }}
@@ -325,7 +325,7 @@ export const SpaceLayer: React.FC = () => {
                 </button>
                 <div className="flex flex-col items-start gap-0.5">
                     <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
-                        ZurÃƒÆ’Ã‚Â¼ck
+                        Zurück
                     </span>
                     <span className="text-sm tracking-widest font-light flex items-center gap-2">
                         <button
@@ -447,14 +447,14 @@ export const SpaceLayer: React.FC = () => {
                             </defs>
                         </svg>
 
-                        {/* Central space orb ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â L3 character: dept-colored intimate sphere */}
+                        {/* Central space orb — L3 character: dept-colored intimate sphere */}
                         <motion.div
                             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.9, ease: "easeOut" }}
                         >
-                            {/* Outer aura ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â boosted from 28/55% ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ 55/70% */}
+                            {/* Outer aura — boosted from 28/55% → 55/70% */}
                             <div
                                 className="absolute rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                                 style={{ width: 300, height: 300, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}50 0%, transparent 68%)`, opacity: 0.30 }}
@@ -464,7 +464,7 @@ export const SpaceLayer: React.FC = () => {
                                 className="absolute top-1/2 left-1/2 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                                 style={{ width: 190, height: 190, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}60 0%, transparent 68%)`, opacity: 0.22 }}
                             />
-                            {/* Core orb ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 144px ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â fixed: was ${color}25 (9% alpha) ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ now ${color}AA (67%) */}
+                            {/* Core orb — 144px — fixed: was ${color}25 (9% alpha) → now ${color}AA (67%) */}
                             <div
                                 className="relative w-36 h-36 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm pointer-events-auto cursor-pointer"
                                 style={{
@@ -483,7 +483,7 @@ export const SpaceLayer: React.FC = () => {
                                         companyId: activeCompanyId || currentDepartment?.company_id || undefined
                                     }
                                 })}
-                                title={`Finder ÃƒÂ¶ffnen: ${spaceName}`}
+                                title={`Finder öffnen: ${spaceName}`}
                             >
                                 {/* Specular */}
                                 <div className="absolute top-[16%] left-[16%] w-[18%] h-[10%] rounded-full bg-white/70 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />
@@ -493,7 +493,7 @@ export const SpaceLayer: React.FC = () => {
                                     style={{ background: `radial-gradient(circle, ${currentDepartment?.color || '#10B981'} 0%, transparent 70%)`, opacity: 0.58 }}
                                 />
                                 <span className="relative z-10 text-[11px] text-white/90 uppercase tracking-[0.14em] text-center px-4 leading-tight font-light">
-                                    {spaceName.length > 20 ? spaceName.substring(0, 18) + 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : spaceName}
+                                    {spaceName.length > 20 ? spaceName.substring(0, 18) + '…' : spaceName}
                                 </span>
                             </div>
                         </motion.div>
@@ -557,7 +557,7 @@ export const SpaceLayer: React.FC = () => {
                             </div>
                         ))}
 
-                        {/* Empty State ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â L3 with 0 folders */}
+                        {/* Empty State — L3 with 0 folders */}
                         {!isLoadingFolders && folders.length === 0 && (
                             <motion.div
                                 className="absolute inset-0 flex flex-col items-center justify-center gap-5 pointer-events-none"

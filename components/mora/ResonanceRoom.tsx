@@ -18,6 +18,7 @@ import {
     Minimize2,
     Brain
 } from "lucide-react";
+import { isAdmin as checkIsAdmin } from "@/lib/auth/roles";
 
 /**
  * RESONANCE ROOM - The Unified MORA Interface
@@ -393,7 +394,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 <div className="scale-[0.6] origin-center">
                                     <MoraOrb
                                         state={viewMode === 'demo' ? 'demo' : (moraIsThinking ? "thinking" : orbState)}
-                                        role={role === 'owner' || role === 'admin' ? 'admin' : (role === 'demo' ? 'member' : 'member')}
+                                        role={checkIsAdmin(role) ? 'admin' : 'member'}
                                         demoMode={viewMode === 'demo'}
                                     />
                                 </div>

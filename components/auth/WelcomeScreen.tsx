@@ -9,7 +9,8 @@ import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
 import { authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
-import { clearClientSessionArtifacts, isSessionResumeStale, touchSessionActivity } from '@/lib/auth/sessionLifecycle';
+import { clearClientSessionArtifacts, getSessionTier, formatAbsenceText, touchSessionActivity, type SessionTier } from '@/lib/auth/sessionLifecycle';
+import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
 import { signIn } from "next-auth/react";
 import { OnboardingWizard } from './OnboardingWizard';
@@ -47,7 +48,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('owner'); // Default owner
     const [isLoading, setIsLoading] = useState(false);
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
-    const [showSessionCard, setShowSessionCard] = useState(false);
+    const [sessionTier, setSessionTier] = useState<SessionTier | null>(null);
+    const [tokenValid, setTokenValid] = useState<boolean | null>(null); // null = not checked yet
+    const [reAuthPassword, setReAuthPassword] = useState('');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
     const prefersReducedMotion = useReducedMotion();
@@ -68,13 +71,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         store.navigateToCore();
         store.setViewMode('workspace');
         setSessionInfo(null);
-        setShowSessionCard(false);
+        setSessionTier(null);
+        setTokenValid(null);
+        setReAuthPassword('');
         if (showToast) {
             toast.info("Sitzung wurde vollständig bereinigt");
         }
     }, []);
 
-    // Check for existing session on mount
+    // Mora Erwachen — consciousness-gradient session check
     useEffect(() => {
         let cancelled = false;
 
@@ -91,35 +96,65 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null;
             const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
 
-            if (isSessionResumeStale(lastActivity)) {
-                await handleLogout(false);
+            const tier = getSessionTier(lastActivity);
+            const hasToken = !!(authToken || coreSession || devToken);
+
+            // neustart (72h+) or no token → clean slate
+            if (tier === 'neustart' || !hasToken) {
+                if (tier === 'neustart' && hasToken) {
+                    // Remember the name even though we clear everything else
+                    const rememberedName = userName;
+                    await handleLogout(false);
+                    if (cancelled) return;
+                    if (rememberedName) {
+                        setSessionInfo({ userName: rememberedName, role: savedRole || undefined });
+                        setSessionTier('neustart');
+                    }
+                }
                 return;
             }
 
-            if (authToken || coreSession || devToken) {
-                if (cancelled) return;
-                setSessionInfo({
-                    lastWorkspace: lastWorkspace || undefined,
-                    lastActivity: lastActivity || undefined,
-                    mode: (savedMode as 'user' | 'owner') || 'user',
-                    userName: userName || undefined,
-                    role: savedRole || undefined
-                });
-                setShowSessionCard(true);
-                return;
-            }
+            if (cancelled) return;
 
-            const serverSession = await coreGet('/v3/auth/session', { skipAuth: true, isOptional: true });
-            if (cancelled || !serverSession?.user_id) return;
-
-            setSessionInfo({
-                lastWorkspace: lastWorkspace || serverSession.active_company_name || undefined,
+            const info: SessionInfo = {
+                lastWorkspace: lastWorkspace || undefined,
                 lastActivity: lastActivity || undefined,
                 mode: (savedMode as 'user' | 'owner') || 'user',
-                userName: userName || serverSession.name || serverSession.email?.split('@')[0] || undefined,
-                role: savedRole || serverSession.role || undefined,
-            });
-            setShowSessionCard(true);
+                userName: userName || undefined,
+                role: savedRole || undefined,
+            };
+
+            if (tier === 'sofort') {
+                // 0–4h: auto-resume, zero friction
+                setSessionInfo(info);
+                setSessionTier('sofort');
+                return;
+            }
+
+            if (tier === 'erwachen') {
+                // 4–24h: one-click continue
+                setSessionInfo(info);
+                setSessionTier('erwachen');
+                return;
+            }
+
+            // erkennung (24–72h): validate token silently, fall back to password on any failure
+            let serverValid = false;
+            try {
+                const serverSession = await coreGet('/v3/auth/session', { skipAuth: true, isOptional: true });
+                if (cancelled) return;
+                if (serverSession?.user_id) {
+                    serverValid = true;
+                    info.userName = info.userName || serverSession.name || serverSession.email?.split('@')[0] || undefined;
+                    info.lastWorkspace = info.lastWorkspace || serverSession.active_company_name || undefined;
+                }
+            } catch {
+                // Backend unreachable — degrade gracefully to password prompt
+            }
+            if (cancelled) return;
+            setSessionInfo(info);
+            setSessionTier('erkennung');
+            setTokenValid(serverValid);
         };
 
         void checkSession();
@@ -127,6 +162,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             cancelled = true;
         };
     }, [handleLogout]);
+
+    // Tier "sofort": auto-resume with zero UI
+    useEffect(() => {
+        if (sessionTier === 'sofort' && sessionInfo && !isLoading) {
+            void handleContinueSession();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sessionTier]);
 
     useEffect(() => {
         // Clear inputs whenever mode changes to avoid "zombie" values
@@ -184,6 +227,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             onAuthenticated();
         } catch (error) {
             console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
+            if (sessionTier === 'sofort') {
+                // Auto-resume failed silently — degrade to erwachen
+                setSessionTier('erwachen');
+                setIsLoading(false);
+                return;
+            }
             await handleLogout(false);
             toast.error("Sitzung abgelaufen. Bitte erneut anmelden.");
         } finally {
@@ -191,7 +240,26 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
     };
 
-
+    /** Erkennung tier: re-authenticate with password, then resume context */
+    const handleReAuth = async () => {
+        if (!reAuthPassword) return;
+        const savedEmail = sessionInfo?.userName;
+        const userEmail = localStorage.getItem('last_user_name') || (savedEmail ? `${savedEmail}@` : '');
+        if (!userEmail) {
+            toast.error('E-Mail konnte nicht ermittelt werden');
+            setSessionTier(null);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            // Re-authenticate through the normal login flow
+            await handleLogin({ email: userEmail, password: reAuthPassword });
+        } catch {
+            toast.error('Passwort ungültig');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const saveAuthState = (role: string, email: string, tenantId: string, token?: string | null) => {
         // SECURITY: Clear ALL auth state first to prevent role pollution
@@ -365,7 +433,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
             // Routing
-            if (role === 'owner' || role === 'admin') {
+            if (isAdmin(role)) {
                 // Determine if we need onboarding (for new owner it is mandatory)
                 setRegisteredEmail(email);
                 setShowOnboarding(true);
@@ -549,72 +617,242 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </div>
                         </motion.div>
 
-                        {/* Session Card - Continue Previous Session */}
-                        {showSessionCard && sessionInfo && (
+                        {/* ═══ Tier: sofort — auto-resuming indicator ═══ */}
+                        {sessionTier === 'sofort' && (
                             <motion.div
-                                initial={{ opacity: 0, y: 10 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="w-full max-w-md flex flex-col items-center gap-4"
+                            >
+                                <motion.div
+                                    animate={{ scale: [1, 1.05, 1], opacity: [0.5, 1, 0.5] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className="text-sm text-emerald-400/80 tracking-[0.2em] font-light"
+                                >
+                                    Wird fortgesetzt...
+                                </motion.div>
+                            </motion.div>
+                        )}
+
+                        {/* ═══ Tier: erwachen — Mora wakes up, one-click continue ═══ */}
+                        {sessionTier === 'erwachen' && sessionInfo && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 15 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
+                                transition={{ delay: 0.2, duration: 0.8 }}
                                 className="w-full max-w-md relative group"
                             >
-                                {/* Glass Card with Inner Glow */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-mora-gold/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-mora-gold/20 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-700" />
                                 <div className="relative bg-[#050d0a]/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_0_rgba(16,185,129,0.1)] group-hover:border-emerald-500/30 transition-all duration-500">
-                                    {/* Inner Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-mora-gold/5 rounded-2xl pointer-events-none" />
-
                                     <div className="relative z-10">
-                                        <div className="flex items-start justify-between mb-5">
-                                            <div className="flex items-center gap-3">
-                                                <motion.div
-                                                    animate={ambientMotionEnabled ? { rotate: [0, 360] } : { rotate: 0 }}
-                                                    transition={ambientMotionEnabled ? { duration: 20, repeat: Infinity, ease: "linear" } : { duration: 0.4 }}
-                                                    className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
-                                                >
-                                                    <Clock className="w-5 h-5 text-emerald-400" />
-                                                </motion.div>
-                                                <div>
-                                                    <div className="text-sm font-medium text-emerald-100 tracking-wide">Willkommen zurück!</div>
-                                                    <div className="text-xs text-emerald-500/60 font-light tracking-wider">
-                                                        {sessionInfo.userName || 'Benutzer'}
-                                                        {sessionInfo.role && ` - ${sessionInfo.role === 'owner' ? 'Eigentümer' : 'Mitglied'}`}
-                                                    </div>
-                                                </div>
+                                        {/* Awakening headline */}
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 0.5 }}
+                                            className="text-center mb-5"
+                                        >
+                                            <div className="text-xs text-emerald-500/50 tracking-[0.3em] uppercase mb-2 font-light">
+                                                Mora erwacht
                                             </div>
-                                            <button
-                                                onClick={() => void handleLogout()}
-                                                className="text-xs text-red-400/50 hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-500/10"
-                                            >
-                                                Beenden
-                                            </button>
-                                        </div>
+                                            <div className="text-lg font-light text-emerald-100 tracking-wide">
+                                                Willkommen zurück, {sessionInfo.userName || 'Benutzer'}
+                                            </div>
+                                            <div className="text-xs text-emerald-500/40 mt-1 tracking-wider">
+                                                {formatAbsenceText(sessionInfo.lastActivity)}
+                                            </div>
+                                        </motion.div>
 
                                         {sessionInfo.lastWorkspace && (
-                                            <div className="flex items-center gap-2 text-xs mb-5 p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10">
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: 0.8 }}
+                                                className="flex items-center gap-2 text-xs mb-5 p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10"
+                                            >
                                                 <Zap className="w-3.5 h-3.5 text-mora-gold" />
-                                                <span className="text-emerald-500/70">Letzter Arbeitsbereich:</span>
+                                                <span className="text-emerald-500/70">Arbeitsbereich:</span>
                                                 <span className="text-emerald-100 font-medium">{sessionInfo.lastWorkspace}</span>
-                                            </div>
+                                            </motion.div>
                                         )}
 
-                                        <motion.button
-                                            onClick={handleContinueSession}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            className="w-full py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_0_rgba(16,185,129,0.2)]"
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 1.0 }}
+                                            className="flex gap-3"
                                         >
-                                            <Clock className="w-4 h-4 text-emerald-400" />
-                                            <span className="font-medium tracking-wide">
-                                                {sessionInfo.role === 'demo' ? 'Demo fortsetzen' : 'Sitzung fortsetzen'}
-                                            </span>
-                                        </motion.button>
+                                            <motion.button
+                                                onClick={handleContinueSession}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                disabled={isLoading}
+                                                className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] hover:shadow-[0_0_30px_0_rgba(16,185,129,0.2)] disabled:opacity-50"
+                                            >
+                                                <Sparkles className="w-4 h-4 text-emerald-400" />
+                                                <span className="font-medium tracking-wide">Fortsetzen</span>
+                                            </motion.button>
+                                            <button
+                                                onClick={() => void handleLogout()}
+                                                className="px-4 py-3.5 text-xs text-red-400/40 hover:text-red-400 border border-transparent hover:border-red-500/20 rounded-xl transition-all duration-300 hover:bg-red-500/5"
+                                            >
+                                                Abmelden
+                                            </button>
+                                        </motion.div>
                                     </div>
                                 </div>
                             </motion.div>
                         )}
 
-                        {/* Action Buttons - Only show when no session exists */}
-                        {!showSessionCard && (
+                        {/* ═══ Tier: erkennung — Mora tries to recognize you ═══ */}
+                        {sessionTier === 'erkennung' && sessionInfo && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2, duration: 0.8 }}
+                                className="w-full max-w-md relative group"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-transparent to-amber-500/15 rounded-2xl blur-xl opacity-40 transition-opacity duration-700" />
+                                <div className="relative bg-[#050d0a]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-[0_8px_32px_0_rgba(16,185,129,0.08)]">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/3 via-transparent to-amber-500/3 rounded-2xl pointer-events-none" />
+                                    <div className="relative z-10">
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 0.4 }}
+                                            className="text-center mb-5"
+                                        >
+                                            <div className="text-xs text-amber-500/50 tracking-[0.3em] uppercase mb-2 font-light">
+                                                Mora erkennt dich
+                                            </div>
+                                            <div className="text-lg font-light text-emerald-100 tracking-wide">
+                                                {sessionInfo.userName || 'Benutzer'}
+                                                {sessionInfo.role && (
+                                                    <span className="text-emerald-500/40 text-sm ml-2">
+                                                        {roleLabel(sessionInfo.role)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-amber-500/40 mt-1 tracking-wider">
+                                                {formatAbsenceText(sessionInfo.lastActivity)}
+                                            </div>
+                                        </motion.div>
+
+                                        {sessionInfo.lastWorkspace && (
+                                            <div className="flex items-center gap-2 text-xs mb-5 p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10">
+                                                <Building2 className="w-3.5 h-3.5 text-mora-gold/70" />
+                                                <span className="text-emerald-500/70">Letzter Arbeitsbereich:</span>
+                                                <span className="text-emerald-100 font-medium">{sessionInfo.lastWorkspace}</span>
+                                            </div>
+                                        )}
+
+                                        <AnimatePresence mode="wait">
+                                            {tokenValid === null && (
+                                                <motion.div
+                                                    key="checking"
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className="text-center py-4"
+                                                >
+                                                    <motion.div
+                                                        animate={{ opacity: [0.3, 1, 0.3] }}
+                                                        transition={{ duration: 1.5, repeat: Infinity }}
+                                                        className="text-xs text-emerald-500/50 tracking-widest"
+                                                    >
+                                                        Identität wird geprüft...
+                                                    </motion.div>
+                                                </motion.div>
+                                            )}
+
+                                            {tokenValid === true && (
+                                                <motion.div
+                                                    key="valid"
+                                                    initial={{ opacity: 0, y: 5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="flex gap-3"
+                                                >
+                                                    <motion.button
+                                                        onClick={handleContinueSession}
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        disabled={isLoading}
+                                                        className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] disabled:opacity-50"
+                                                    >
+                                                        <Sparkles className="w-4 h-4 text-emerald-400" />
+                                                        <span className="font-medium tracking-wide">Identität bestätigt — Fortsetzen</span>
+                                                    </motion.button>
+                                                    <button
+                                                        onClick={() => void handleLogout()}
+                                                        className="px-4 py-3.5 text-xs text-red-400/40 hover:text-red-400 border border-transparent hover:border-red-500/20 rounded-xl transition-all duration-300 hover:bg-red-500/5"
+                                                    >
+                                                        Abmelden
+                                                    </button>
+                                                </motion.div>
+                                            )}
+
+                                            {tokenValid === false && (
+                                                <motion.div
+                                                    key="reauth"
+                                                    initial={{ opacity: 0, y: 5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="space-y-3"
+                                                >
+                                                    <div className="text-xs text-amber-500/60 text-center tracking-wider mb-3">
+                                                        Bestätige kurz dein Passwort
+                                                    </div>
+                                                    <input
+                                                        type="password"
+                                                        value={reAuthPassword}
+                                                        onChange={(e) => setReAuthPassword(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleReAuth()}
+                                                        placeholder="Passwort"
+                                                        autoFocus
+                                                        className="w-full px-4 py-3 bg-[#0a1a14]/80 border border-white/10 focus:border-emerald-500/40 rounded-xl text-emerald-100 placeholder-emerald-800/60 outline-none transition-all duration-300 text-sm tracking-wide"
+                                                    />
+                                                    <div className="flex gap-3">
+                                                        <motion.button
+                                                            onClick={handleReAuth}
+                                                            whileHover={{ scale: 1.02 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                            disabled={isLoading || !reAuthPassword}
+                                                            className="flex-1 py-3 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
+                                                        >
+                                                            <LogIn className="w-4 h-4 text-emerald-400" />
+                                                            <span className="font-medium tracking-wide text-sm">Bestätigen</span>
+                                                        </motion.button>
+                                                        <button
+                                                            onClick={() => void handleLogout()}
+                                                            className="px-4 py-3 text-xs text-red-400/40 hover:text-red-400 border border-transparent hover:border-red-500/20 rounded-xl transition-all duration-300 hover:bg-red-500/5"
+                                                        >
+                                                            Abmelden
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* ═══ Tier: neustart — remembered name greeting ═══ */}
+                        {sessionTier === 'neustart' && sessionInfo?.userName && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="text-center mb-2"
+                            >
+                                <div className="text-xs text-emerald-500/30 tracking-[0.2em] font-light">
+                                    Willkommen, {sessionInfo.userName}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* Action Buttons - show when no active session tier (or neustart) */}
+                        {(!sessionTier || sessionTier === 'neustart') && (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}

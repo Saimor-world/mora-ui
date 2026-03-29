@@ -20,6 +20,7 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 // import { ActionTray } from '@/components/os/ActionTray';
 import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
+import { roleLabel } from '@/lib/auth/roles';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -383,7 +384,7 @@ export const Dock = () => {
                             </span>
                             <span className={`text-xs uppercase tracking-wider font-medium ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'
                                 }`}>
-                                {viewMode === 'demo' ? 'Demo Mode' : user?.role === 'system_owner' ? 'System Owner' : user?.role || 'Mitglied'}
+                                {viewMode === 'demo' ? 'Demo Mode' : roleLabel(user?.role)}
                             </span>
                         </div>
                         <AdminModeSwitcher />

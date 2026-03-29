@@ -9,6 +9,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { coreGet, corePost, fetchAdminUsers, patchAdminUser, patchUserCompanyBinding, AdminUser, AdminUserPatch } from '@/lib/api/coreClient';
 import { createInvite } from '@/lib/api/inviteClient';
 import { toast } from 'sonner';
+import { isAdmin as checkIsAdmin } from '@/lib/auth/roles';
 
 /**
  * UsersPane - Team & Users Management
@@ -64,7 +65,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     const { viewMode } = useMoraStore();
     const currentUser = useMoraStore(s => s.user);
     const departments = useMoraStore(s => s.departments);
-    const isAdmin = ['owner', 'admin', 'system_owner'].includes(currentUser?.role ?? '');
+    const isAdmin = checkIsAdmin(currentUser?.role);
 
     // Load team members
     useEffect(() => {

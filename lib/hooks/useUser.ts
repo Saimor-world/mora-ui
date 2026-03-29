@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { fetchUserProfile, type UserProfile } from '@/lib/api/coreClient';
 import { useAccountStore, type AccountRole } from '@/lib/auth/useAccount';
+import { isAdmin as checkIsAdmin } from '@/lib/auth/roles';
 
 export type UserRole = AccountRole;
 
@@ -91,7 +92,7 @@ export function useUser() {
         demoMode: role === 'demo',
         isLoading,
         error,
-        isAdmin: role === 'admin' || role === 'owner' || role === 'system_owner' || role === 'manager',
+        isAdmin: checkIsAdmin(role),
         refreshProfile,
         logout,
     };

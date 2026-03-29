@@ -26,6 +26,7 @@ import { useMoraStore } from "@/lib/store/moraState";
 import { useMoraContext } from "@/lib/mora/useMoraContext";
 import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { GlassPanel } from "@/components/layers/GlassPanel";
+import { isAdmin } from "@/lib/auth/roles";
 
 interface ChatMessage {
     id: string;
@@ -458,7 +459,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
 
                     {/* Tabs */}
                     <div className="flex items-center gap-2">
-                        {(user?.role === 'owner' || user?.role === 'admin' || user?.role === 'system_owner') && (
+                        {isAdmin(user?.role) && (
                             <button
                                 onClick={() => openPane({ id: 'users-main', type: 'users', title: 'Team & Users', size: { width: 980, height: 700 } })}
                                 className="px-2.5 py-1.5 rounded-lg bg-emerald-500/12 border border-emerald-500/30 text-[10px] text-emerald-300 uppercase tracking-wider hover:bg-emerald-500/20 transition-all"
