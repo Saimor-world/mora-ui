@@ -27,7 +27,6 @@ const storeState = {
     navigateToDepartment: jest.fn(),
     navigateToSpace: jest.fn(),
     navigateToFolder: jest.fn(),
-    loadNodeDetails: jest.fn(),
 };
 
 const mockGetPane = jest.fn();

@@ -189,8 +189,6 @@ interface MoraState {
     activeDepartmentId: string | null;
     activeSpaceId: string | null;
     activeFolderId: string | null;
-    // @deprecated — FolderLayer no longer drives this; used by DocumentViewer, MoraCommand, MyceliumLayer, ResonanceRoom, useIntelFeed. Remove in a future dedicated pass.
-    activeNode: CoreNode | null;
     minimizedNodes: CoreNode[]; // Phase 3: Dock Integration
 
     // Naming Conflict (409) State
@@ -260,7 +258,6 @@ interface MoraState {
     setActiveDepartment: (id: string | null) => void;
     setActiveSpace: (id: string | null) => void;
     setActiveFolder: (id: string | null) => void;
-    setActiveNode: (node: CoreNode | null) => void; // @deprecated — see activeNode
     setOrbState: (state: OrbState) => void;
     setSpeculativeState: (state: OrbState, ttlMs?: number) => void; // P1-B: Instant reaction
     clearSpeculativeState: () => void;
@@ -291,7 +288,6 @@ interface MoraState {
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
     loadNodesForFolder: (folderId: string, options?: { search?: string; type?: string; limit?: number; offset?: number }) => Promise<void>;
     loadNodesForCompany: (companyId: string) => Promise<void>;
-    loadNodeDetails: (nodeId: string) => Promise<void>; // @deprecated — see activeNode
     loadTree: (tenantId?: string, companyId?: string) => Promise<void>;
 
     // Tree Actions
@@ -334,7 +330,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     activeDepartmentId: null,
     activeSpaceId: null,
     activeFolderId: null,
-    activeNode: null,
     nameConflict: null,
 
     companies: [],
@@ -477,7 +472,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             activeDepartmentId: null,
             activeSpaceId: null,
             activeFolderId: null,
-            activeNode: null,
             viewLevel: 'core',  // reset nav depth — prevents stale dept/space scope in chat
             coreMode: 'home', // reset to Home on company switch — fresh start for new workspace
             isStandardMode: nextStandard,
@@ -498,7 +492,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     setActiveDepartment: (id) => set({ activeDepartmentId: id }),
     setActiveSpace: (id) => set({ activeSpaceId: id }),
     setActiveFolder: (id) => set({ activeFolderId: id }),
-    setActiveNode: (node) => set({ activeNode: node }),
     setOrbState: (state) => {
         const now = Date.now();
         const current = get();
@@ -682,7 +675,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             activeDepartmentId: null,
             activeSpaceId: null,
             activeFolderId: null,
-            activeNode: null,
             treeData: null,
             expandedTreeNodes: new Set<string>(),
             loadedNodes: new Set<string>(),
@@ -971,32 +963,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         }
     },
 
-    loadNodeDetails: async (nodeId: string) => {
-        // Optimistic update if we have the node in the list
-        const state = get();
-        let foundNode: CoreNode | undefined;
-
-        // Search in loaded folders
-        for (const nodes of Object.values(state.nodesByFolder)) {
-            if (!Array.isArray(nodes)) continue;
-            foundNode = nodes.find(n => n.id === nodeId);
-            if (foundNode) break;
-        }
-
-        if (foundNode) {
-            set({ activeNode: foundNode });
-        }
-
-        // Fetch fresh details
-        try {
-            const detailedNode = await fetchNodeDetails(nodeId);
-            set({ activeNode: detailedNode });
-        } catch (error: any) {
-            console.error("Failed to load node details:", error);
-            // Keep the optimistic version if available, or handle error
-        }
-    },
-
     loadTree: async (tenantId?: string, companyId?: string) => {
         // Preserve existing treeData during reload — setting null causes flash-to-empty.
         set({ isLoadingTree: true, coreError: null });
@@ -1226,7 +1192,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
             if (folderId) {
                 set(state => ({
-                    activeNode: state.activeNode?.id === id ? updatedNode : state.activeNode,
                     nodesByFolder: {
                         ...state.nodesByFolder,
                         [folderId]: (state.nodesByFolder[folderId] || []).map((n: CoreNode) =>
@@ -1247,17 +1212,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
     deleteNode: async (id) => {
         try {
-            // Get folder ID before deletion for state update
             const state = get();
-            let folderId = state.activeNode?.id === id ? state.activeNode.folder_id : null;
+            let folderId: string | null = null;
 
-            if (!folderId) {
-                // Find folder ID if not active
-                for (const [fId, nodes] of Object.entries(state.nodesByFolder)) {
-                    if (nodes.find(n => n.id === id)) {
-                        folderId = fId;
-                        break;
-                    }
+            for (const [fId, nodes] of Object.entries(state.nodesByFolder)) {
+                if (nodes.find(n => n.id === id)) {
+                    folderId = fId;
+                    break;
                 }
             }
 
@@ -1265,7 +1226,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
 
             if (folderId) {
                 set(state => ({
-                    activeNode: state.activeNode?.id === id ? null : state.activeNode,
                     nodesByFolder: {
                         ...state.nodesByFolder,
                         [folderId]: (state.nodesByFolder[folderId] || []).filter(n => n.id !== id)
@@ -1531,7 +1491,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         // Only run if minimizedNodes is defined (safety)
         const current = state.minimizedNodes || [];
         return {
-            activeNode: null,
             minimizedNodes: [...current, node]
         };
     }),
@@ -1540,7 +1499,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         const node = current.find(n => n.id === nodeId);
         if (!node) return {};
         return {
-            activeNode: node, // Restore as active
             minimizedNodes: current.filter(n => n.id !== nodeId)
         };
     }),

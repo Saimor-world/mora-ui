@@ -115,7 +115,6 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
         navigateToDepartment,
         navigateToSpace,
         navigateToFolder,
-        loadNodeDetails,
     } = useMoraStore();
     const { openPane } = usePaneStore();
     const { hilEnabled, setHilEnabled } = useHilToggle();
@@ -405,7 +404,6 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                 navigateToCore();
             }
             if (action.type === "open_node" && action.nodeId) {
-                await loadNodeDetails(action.nodeId);
                 openPane({
                     id: `doc-${action.nodeId}`,
                     type: "document",

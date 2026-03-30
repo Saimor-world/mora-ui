@@ -5,6 +5,7 @@ import { MyceliumField3D } from './MyceliumField3D';
 import { mapNodesToMycelium, type MyceliumNode } from '@/lib/utils/myceliumDataMapper';
 import { getRelationsForSpace } from '@/lib/api/relationsClient';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 import type { CoreNode } from '@/lib/types/core';
 
 /**
@@ -26,8 +27,12 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
     variant = 'space',
     onNodeClick
 }) => {
-    const { activeSpaceId, activeNode } = useMoraStore();
-    const activeNodeId = activeNode?.id ?? null;
+    const activeSpaceId = useMoraStore(s => s.activeSpaceId);
+    const activeNodeId = usePaneStore(s => {
+        if (!s.activePaneId) return null;
+        const pane = s.panes.find(p => p.id === s.activePaneId);
+        return pane?.type === 'document' ? (pane.data?.nodeId ?? null) : null;
+    });
     const [myceliumNodes, setMyceliumNodes] = useState<MyceliumNode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

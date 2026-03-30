@@ -18,17 +18,22 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
 
     // Context accessors
     const viewLevel = useMoraStore(s => s.viewLevel);
-    const activeNode = useMoraStore(s => s.activeNode);
     const setOrbState = useMoraStore(s => s.setOrbState);
 
     // Navigation actions
     const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
     const navigateToSpace = useMoraStore(s => s.navigateToSpace);
     const navigateToFolder = useMoraStore(s => s.navigateToFolder);
-    const loadNodeDetails = useMoraStore(s => s.loadNodeDetails);
 
     // Pane actions for opening documents
     const openPane = usePaneStore(s => s.openPane);
+
+    /** Derive active node ID from the focused document pane (if any) */
+    const activeNodeId = usePaneStore(s => {
+        if (!s.activePaneId) return undefined;
+        const pane = s.panes.find(p => p.id === s.activePaneId);
+        return pane?.type === 'document' ? pane.data?.nodeId : undefined;
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,7 +48,7 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
             // 1. Gather Context
             const context = {
                 view_level: viewLevel,
-                active_node_id: activeNode?.id
+                active_node_id: activeNodeId
             };
 
             // 2. Think (Backend Agency)
@@ -89,10 +94,6 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
                         } else if (plan.target.includes('folder')) {
                             navigateToFolder(plan.target);
                         } else if (plan.target.includes('node')) {
-                            // Link/Document opening
-                            await loadNodeDetails(plan.target);
-
-                            // Open Pane for visual confirmation
                             openPane({
                                 id: `doc-${plan.target}`,
                                 type: 'document',

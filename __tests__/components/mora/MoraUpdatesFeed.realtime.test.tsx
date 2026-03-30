@@ -22,7 +22,6 @@ const storeState = {
   navigateToDepartment: jest.fn(),
   navigateToSpace: jest.fn(),
   navigateToFolder: jest.fn(),
-  loadNodeDetails: jest.fn(),
 };
 
 jest.mock('@/lib/store/moraState', () => ({

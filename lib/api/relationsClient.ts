@@ -24,7 +24,7 @@ export const getRelationsForNode = async (nodeId: string): Promise<RelationEdge[
   return coreGet(`/v3/relations/node/${nodeId}`) as Promise<RelationEdge[]>;
 };
 
-// Legacy exports expected by DocumentViewer (no design changes)
+// Relation payload types
 export interface CreateRelationPayload {
   source_id: string;
   target_id: string;

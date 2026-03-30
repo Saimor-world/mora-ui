@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMoraStore } from "@/lib/store/moraState";
+import { usePaneStore } from "@/lib/store/paneStore";
 import { useUser } from "@/lib/hooks/useUser";
 import { coreGet, learnInsight } from "@/lib/api/coreClient";
 import { executeAgenticLoop } from "@/lib/api/cognitionClient";
@@ -275,7 +276,13 @@ export const ResonanceRoom: React.FC<Props> = ({
                                     store.navigateToFolder(target_id);
                                     break;
                                 case 'node':
-                                    await store.loadNodeDetails(target_id);
+                                    usePaneStore.getState().openPane({
+                                        id: `doc-${target_id}`,
+                                        type: 'document',
+                                        title: target_name || 'Document',
+                                        size: { width: 600, height: 700 },
+                                        data: { nodeId: target_id },
+                                    });
                                     break;
                             }
                             // Collect — last navigate wins if multiple fire

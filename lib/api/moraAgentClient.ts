@@ -1,5 +1,6 @@
 import { corePost, coreGet } from './coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
 
 // Types matching Backend Schema
 export interface AgentMessage {
@@ -84,7 +85,12 @@ export function buildChatContext(overrides?: ChatContext): ChatContext | undefin
             department_id: state.activeDepartmentId || undefined,
             space_id: state.activeSpaceId || undefined,
             folder_id: state.activeFolderId || undefined,
-            node_id: state.activeNode?.id || undefined,
+            node_id: (() => {
+                const ps = usePaneStore.getState();
+                if (!ps.activePaneId) return undefined;
+                const pane = ps.panes.find(p => p.id === ps.activePaneId);
+                return pane?.type === 'document' ? pane.data?.nodeId : undefined;
+            })(),
             view_level: viewLevel,
             layer: mapLayerFromViewLevel(viewLevel),
             route_path: routePath,
