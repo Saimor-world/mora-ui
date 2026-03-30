@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
-import { clearClientSessionArtifacts, isSessionResumeStale } from '@/lib/auth/sessionLifecycle';
+import { clearClientSessionArtifacts, getSessionTier } from '@/lib/auth/sessionLifecycle';
 
 const BOOTSTRAP_HEALTH_ATTEMPTS = 4;
 const BOOTSTRAP_HEALTH_RETRY_MS = 1200;
@@ -75,7 +75,7 @@ export function useAuthBootstrapper() {
             // server-side. This prevents HttpOnly sessions from being silently rejected.
             const mayHaveHttpOnlySession = status === 'unauthenticated' && pathname !== '/';
 
-            if (isSessionResumeStale(lastActivity) && pathname !== '/') {
+            if (getSessionTier(lastActivity) === 'neustart' && pathname !== '/') {
                 const teardown: Promise<unknown>[] = [authLogout()];
                 if (status === 'authenticated') {
                     teardown.push(signOut({ redirect: false }));

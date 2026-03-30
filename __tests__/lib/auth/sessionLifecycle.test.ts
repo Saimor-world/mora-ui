@@ -1,4 +1,4 @@
-import { getSessionTier, formatAbsenceText, isSessionResumeStale } from '@/lib/auth/sessionLifecycle';
+import { getSessionTier, formatAbsenceText } from '@/lib/auth/sessionLifecycle';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -67,19 +67,10 @@ describe('formatAbsenceText', () => {
     });
 });
 
-describe('isSessionResumeStale (deprecated, backward compat)', () => {
-    const now = Date.now();
-
-    it('returns false for null/undefined', () => {
-        expect(isSessionResumeStale(null)).toBe(false);
-        expect(isSessionResumeStale(undefined)).toBe(false);
-    });
-
-    it('returns true for activity older than 12 hours', () => {
-        expect(isSessionResumeStale(new Date(now - 13 * HOUR).toISOString(), now)).toBe(true);
-    });
-
-    it('returns false for activity within 12 hours', () => {
-        expect(isSessionResumeStale(new Date(now - 11 * HOUR).toISOString(), now)).toBe(false);
+describe('isSessionResumeStale removed', () => {
+    it('is no longer exported (replaced by getSessionTier)', () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('@/lib/auth/sessionLifecycle');
+        expect(mod.isSessionResumeStale).toBeUndefined();
     });
 });

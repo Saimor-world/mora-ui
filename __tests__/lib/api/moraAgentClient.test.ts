@@ -22,9 +22,7 @@ describe('moraAgentClient v3', () => {
         expect(corePost).toHaveBeenCalledWith('/v3/mora/tools/execute', payload);
     });
 
-    it('getTaskStatus exists but is deprecated (no active consumer)', async () => {
-        (coreGet as jest.Mock).mockResolvedValue({ status: 'done' });
-        await moraAgentClient.getTaskStatus('task-123');
-        expect(coreGet).toHaveBeenCalledWith(expect.stringContaining('task-123'));
+    it('getTaskStatus has been removed (no v3 endpoint, no active consumer)', () => {
+        expect((moraAgentClient as any).getTaskStatus).toBeUndefined();
     });
 });

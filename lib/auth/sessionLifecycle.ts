@@ -18,9 +18,6 @@ const TIER_BOUNDARIES_MS = {
     erkennung: 72 * 60 * 60 * 1000,   // 72 hours
 };
 
-/** @deprecated — use getSessionTier() instead */
-export const SESSION_RESUME_MAX_AGE_MS = 12 * 60 * 60 * 1000;
-
 const EXPLICIT_SESSION_KEYS = [
     'saimor_dev_token',
     'saimor_mode',
@@ -70,14 +67,6 @@ export function formatAbsenceText(lastActivity: string | null | undefined): stri
     if (hours > 0) return `${hours} Stunde${hours !== 1 ? 'n' : ''} abwesend`;
     if (minutes > 5) return `${minutes} Minuten abwesend`;
     return 'Gerade aktiv';
-}
-
-/** @deprecated — use getSessionTier() instead */
-export function isSessionResumeStale(lastActivity: string | null | undefined, now = Date.now()): boolean {
-    if (!lastActivity) return false;
-    const ts = Date.parse(lastActivity);
-    if (Number.isNaN(ts)) return false;
-    return now - ts > SESSION_RESUME_MAX_AGE_MS;
 }
 
 export function touchSessionActivity(timestamp = new Date()): void {

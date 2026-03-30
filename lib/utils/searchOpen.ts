@@ -402,20 +402,20 @@ export async function resolveSearchResults(query: string, scope: ActiveScope): P
 
     const semanticResults = semanticResponse
         .map((result) => {
-            const scopePath = (result as any).scope_path || (result as any).path || undefined;
+            const scopePath = result.scope_path || result.path || undefined;
             return {
                 id: result.node_id,
                 type: 'node' as const,
                 title: result.metadata?.title || 'Unbenannt',
                 path: scopePath,
-                subtitle: scopePath,   // location-first; no content preview in merged context
+                subtitle: scopePath,
                 icon: FileText,
                 score: result.score,
                 nodeId: result.node_id,
-                companyId: (result as any).company_id || scope.companyId || undefined,
-                folderId: (result as any).folder_id || result.metadata?.folder_id,
-                departmentId: (result as any).department_id || undefined,
-                spaceId: (result as any).space_id || result.metadata?.space_id,
+                companyId: result.company_id || scope.companyId || undefined,
+                folderId: result.folder_id || result.metadata?.folder_id,
+                departmentId: result.department_id || undefined,
+                spaceId: result.space_id || result.metadata?.space_id,
             };
         })
         .filter((result) => !!result.id);

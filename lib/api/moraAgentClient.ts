@@ -130,11 +130,6 @@ export const m = {
         };
     },
 
-    /** @deprecated — no active consumer. Do not remove until confirmed dead across all panes. */
-    getTaskStatus: async (taskId: string) => {
-        return coreGet(`/v1/mora/tools/task/${taskId}`);  // keep v1 — no v3 endpoint exists
-    },
-
     listTools: async () => {
         return coreGet('/v3/mora/tools');
     },

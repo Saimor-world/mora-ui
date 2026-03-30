@@ -40,9 +40,6 @@ export function getKeyboardShortcuts(mod?: string) {
     ];
 }
 
-/** @deprecated Use getKeyboardShortcuts() for platform-aware labels */
-export const KEYBOARD_SHORTCUTS = getKeyboardShortcuts();
-
 interface UseKeyboardShortcutsOptions {
     onToggleSpotlight: () => void;
     onOpenChat?: () => void;

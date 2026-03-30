@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
@@ -31,7 +31,8 @@ jest.mock('@/lib/api/coreClient', () => ({
 
 jest.mock('@/lib/auth/sessionLifecycle', () => ({
     clearClientSessionArtifacts: jest.fn(),
-    isSessionResumeStale: jest.requireActual('@/lib/auth/sessionLifecycle').isSessionResumeStale,
+    getSessionTier: jest.requireActual('@/lib/auth/sessionLifecycle').getSessionTier,
+    touchSessionActivity: jest.fn(),
 }));
 
 function Probe() {
@@ -43,12 +44,13 @@ describe('useAuthBootstrapper stale session handling', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         localStorage.clear();
-        localStorage.setItem('last_activity', new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString());
+        // 73h ago → neustart tier (72h+ threshold)
+        localStorage.setItem('last_activity', new Date(Date.now() - 73 * 60 * 60 * 1000).toISOString());
         (coreClient.authLogout as jest.Mock).mockResolvedValue({ success: true });
         (signOut as jest.Mock).mockResolvedValue(undefined);
     });
 
-    it('tears down auth and redirects to root when the session is stale', async () => {
+    it('tears down auth and redirects to root when the session is neustart (72h+)', async () => {
         render(<Probe />);
 
         await waitFor(() => {
@@ -57,5 +59,13 @@ describe('useAuthBootstrapper stale session handling', () => {
             expect(sessionLifecycle.clearClientSessionArtifacts).toHaveBeenCalled();
             expect(mockReplace).toHaveBeenCalledWith('/');
         });
+    });
+
+    it('does NOT tear down auth for erwachen tier (13h — under 72h threshold)', async () => {
+        localStorage.setItem('last_activity', new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString());
+        render(<Probe />);
+
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        expect(coreClient.authLogout).not.toHaveBeenCalled();
     });
 });

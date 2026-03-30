@@ -7,7 +7,7 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
-import { getSearchResolution, getSearchResultSubtitle, mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
+import { getSearchResolution, getSearchResultSubtitle, mapRawSearchResult, openSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 
 /**
@@ -20,21 +20,7 @@ import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
  * - Keyboard navigation
  */
 
-interface SearchResult {
-    id: string;
-    type: 'node' | 'space' | 'department' | 'file' | 'folder';
-    title: string;
-    subtitle?: string;
-    icon: typeof FileText | typeof Folder | typeof Building2;
-    source?: 'local' | 'mora';
-    score?: number;
-    path?: string;
-    companyId?: string;
-    departmentId?: string;
-    spaceId?: string;
-    folderId?: string;
-    nodeId?: string;
-}
+type SearchResult = OpenableSearchResult & { source?: 'local' | 'mora' };
 
 export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
@@ -203,11 +189,8 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 if (requestId !== searchRequestRef.current) return;
 
                 const mapped: SearchResult[] = semanticResults.map((result) => {
-                    const scopePath = (result as any).scope_path || (result as any).path || undefined;
+                    const scopePath = result.scope_path || result.path || undefined;
                     // Priority: scope_path > path > content preview (last resort) > type label.
-                    // Content preview retained as last resort only — SearchPane is UI-facing and
-                    // showing any context is better than a generic type label for pre-contract results.
-                    // TODO: remove (result as any) casts when SemanticSearchResult declares top-level path fields.
                     return {
                         id: result.node_id,
                         type: 'node' as const,
@@ -215,16 +198,16 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                         path: scopePath,
                         subtitle: getSearchResultSubtitle(
                             { path: scopePath, type: 'node' },
-                            result.content?.substring(0, 80),  // fallbackPreview — only used when scopePath absent
+                            result.content?.substring(0, 80),
                         ),
                         icon: FileText,
                         source: 'mora' as const,
                         score: result.score,
-                        companyId: (result as any).company_id || activeCompanyId || undefined,
+                        companyId: result.company_id || activeCompanyId || undefined,
                         nodeId: result.node_id,
-                        folderId: (result as any).folder_id || result.metadata?.folder_id,
-                        departmentId: (result as any).department_id || undefined,
-                        spaceId: (result as any).space_id || result.metadata?.space_id,
+                        folderId: result.folder_id || result.metadata?.folder_id,
+                        departmentId: result.department_id || undefined,
+                        spaceId: result.space_id || result.metadata?.space_id,
                     };
                 });
 
@@ -315,7 +298,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
             case 'folder':
             case 'file':
             case 'node':
-                await openSearchResult(result as any, openPane, { companyId: activeCompanyId || result.companyId || undefined });
+                await openSearchResult(result, openPane, { companyId: activeCompanyId || result.companyId || undefined });
                 removePane(id);
                 break;
             default:
@@ -419,9 +402,9 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             ) : results.length > 0 ? (
                                 <AmbiguityChoiceSurface
                                     query={query}
-                                    results={results as any}
+                                    results={results}
                                     selectedIndex={selectedIndex}
-                                    onPick={(result) => void handleResultClick(result as any)}
+                                    onPick={(result) => void handleResultClick(result)}
                                     onReview={() => openPane({
                                         id: 'search-main',
                                         type: 'search',

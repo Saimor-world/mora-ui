@@ -1061,6 +1061,13 @@ export interface SemanticSearchResult {
     node_id: string;
     score: number;
     content: string;
+    // Top-level path fields returned by the v3 backend alongside metadata
+    scope_path?: string | null;
+    path?: string | null;
+    company_id?: string | null;
+    folder_id?: string | null;
+    department_id?: string | null;
+    space_id?: string | null;
     metadata?: {
         title?: string;
         type?: string;

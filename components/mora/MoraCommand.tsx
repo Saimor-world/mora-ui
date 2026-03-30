@@ -24,6 +24,8 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
     const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
     const navigateToSpace = useMoraStore(s => s.navigateToSpace);
     const navigateToFolder = useMoraStore(s => s.navigateToFolder);
+    const navigateToCore = useMoraStore(s => s.navigateToCore);
+    const setActiveCompany = useMoraStore(s => s.setActiveCompany);
 
     // Pane actions for opening documents
     const openPane = usePaneStore(s => s.openPane);
@@ -102,7 +104,8 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
                                 data: { nodeId: plan.target }
                             });
                         } else if (plan.target.includes('comp') || plan.target.includes('company')) {
-                            // TODO: Company navigation
+                            setActiveCompany(plan.target);
+                            navigateToCore();
                         } else {
                             // Fallback warning
                             console.warn(`Target ${plan.target} navigation not uniquely mapped.`);
