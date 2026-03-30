@@ -83,6 +83,7 @@ class RealtimeClient {
     private isConnecting: boolean = false;
     private connectionId: string | null = null;
     private subscribedEventTypesKey: string = 'all';
+    private reconnectAttempts: number = 0;
 
     constructor() {}
 
@@ -188,6 +189,7 @@ class RealtimeClient {
             this.ws.onopen = () => {
                 console.log('[Realtime] Connected');
                 this.isConnecting = false;
+                this.reconnectAttempts = 0; // reset backoff on successful connect
                 // Lock stays set (wsLocked=true) while OPEN — prevents other instances connecting
                 if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
                 this.startHeartbeat();
@@ -243,10 +245,12 @@ class RealtimeClient {
 
     private scheduleReconnect() {
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+        // Exponential backoff: 5s, 10s, 20s, 40s … capped at 60s
+        const delay = Math.min(5000 * Math.pow(2, this.reconnectAttempts), 60_000);
+        this.reconnectAttempts++;
         this.reconnectTimer = setTimeout(() => {
-            // console.log('[Realtime] Attempting reconnect...');
             this.connect();
-        }, 5000);
+        }, delay);
     }
 
     public disconnect() {
@@ -260,6 +264,7 @@ class RealtimeClient {
             this.ws = null;
         }
         this.isConnecting = false;
+        this.reconnectAttempts = 0;
         this.subscribedEventTypesKey = 'all';
         setWsLock(false); // release global lock so future connect() calls can proceed
     }

@@ -2,9 +2,9 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Loader2, Folder, FileText, Paperclip, ChevronRight, Link, Check, X } from 'lucide-react';
-import { fetchMyContent, shareNode, shareFile, type UserContentResponse } from '@/lib/api/coreClient';
-
+import { Loader2, Folder, FileText, Paperclip, ChevronRight, Link, Check, ExternalLink } from 'lucide-react';
+import { fetchMyContent, shareNode, shareFile, getCoreBaseUrl, type UserContentResponse } from '@/lib/api/coreClient';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 
 /**
@@ -34,6 +34,7 @@ export const MeineDateienPane: React.FC = () => {
     const [content, setContent] = useState<UserContentResponse | 'error' | null>(null);
     const [loading, setLoading] = useState(true);
     const [shareStates, setShareStates] = useState<Record<string, ShareState>>({});
+    const openPane = usePaneStore(s => s.openPane);
 
     useEffect(() => {
         fetchMyContent().then((result) => {
@@ -64,6 +65,19 @@ export const MeineDateienPane: React.FC = () => {
         } else {
             setShare(fileId, { status: 'unavailable' });
         }
+    }, []);
+
+    const handleOpenFolder = useCallback((folderId: string, folderName: string) => {
+        openPane({ id: `finder-${folderId}`, type: 'finder', title: folderName, size: { width: 700, height: 560 }, data: { folderId } });
+    }, [openPane]);
+
+    const handleOpenNode = useCallback((nodeId: string, title: string) => {
+        openPane({ id: `doc-${nodeId}`, type: 'document', title, size: { width: 600, height: 700 }, data: { nodeId } });
+    }, [openPane]);
+
+    const handleOpenFile = useCallback((fileId: string, fileName: string) => {
+        const url = `${getCoreBaseUrl()}/v3/files/${fileId}/download`;
+        window.open(url, '_blank', 'noopener,noreferrer');
     }, []);
 
     if (loading) {
@@ -123,6 +137,7 @@ export const MeineDateienPane: React.FC = () => {
                             key={folder.id}
                             className="flex items-center gap-2 px-4 py-1.5 hover:bg-white/[0.02] cursor-pointer group"
                             data-testid={`folder-row-${folder.id}`}
+                            onClick={() => handleOpenFolder(folder.id, folder.name)}
                         >
                             <Folder size={12} className="text-white/25 shrink-0" />
                             <span className="text-xs text-white/45 group-hover:text-white/60 transition-colors truncate flex-1">
@@ -148,6 +163,7 @@ export const MeineDateienPane: React.FC = () => {
                                 key={node.id}
                                 className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-white/[0.03] transition-colors cursor-pointer group"
                                 data-testid={`node-row-${node.id}`}
+                                onClick={() => handleOpenNode(node.id, label)}
                             >
                                 <FileText size={13} className="text-white/30 shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
@@ -179,18 +195,21 @@ export const MeineDateienPane: React.FC = () => {
                     </div>
                     {files.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };
+                        const displayName = file.name || `Datei ${file.id.slice(0, 8)}`;
                         return (
                             <div
                                 key={file.id}
                                 className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-white/[0.03] transition-colors cursor-pointer group"
                                 data-testid={`file-row-${file.id}`}
+                                onClick={() => handleOpenFile(file.id, displayName)}
                             >
                                 <Paperclip size={13} className="text-white/25 shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors truncate">
-                                            {file.name}
+                                            {displayName}
                                         </span>
+                                        <ExternalLink size={10} className="opacity-0 group-hover:opacity-30 transition-opacity shrink-0" />
                                         {file.size != null && (
                                             <span className="text-[10px] text-white/20 shrink-0">
                                                 {formatBytes(file.size)}

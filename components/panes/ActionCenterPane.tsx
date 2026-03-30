@@ -589,7 +589,6 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
         const handleActionStatus = () => { void loadEvents({ silent: true }); };
         const handleInboxRefresh = () => { void loadEvents({ silent: true }); };
         realtime.on('action_status', handleActionStatus);
-        realtime.connect();
         window.addEventListener('saimor:inbox-refresh', handleInboxRefresh);
         const handleNavigationResult = (event: Event) => {
             const detail = (event as CustomEvent<NavigationOutcome>).detail;

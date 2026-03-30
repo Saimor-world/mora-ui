@@ -158,7 +158,6 @@ export function useActionEvents(enabled: boolean = true) {
         };
 
         realtime.on('action_status', handleActionStatus);
-        realtime.connect();
 
         const handleNavigationResult = (event: Event) => {
             const detail = (event as CustomEvent<NavigationOutcome>).detail;
