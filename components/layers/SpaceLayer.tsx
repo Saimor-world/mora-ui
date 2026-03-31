@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CoreFolder } from '@/lib/types/core';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { Plus, RefreshCw, ArrowLeft, FolderOpen } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Plus, RefreshCw, Sparkles } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
-import { motion, useReducedMotion } from 'framer-motion';
-import { Folder as FolderStar } from '@/components/mora/Folder';
+import { Folder as FolderOrb } from '@/components/mora/Folder';
 import { ORBIT_PALETTE } from '@/lib/utils/deptStyle';
 
 const FOLDER_COLORS = [
@@ -18,100 +19,209 @@ const FOLDER_COLORS = [
     { name: 'Rose', value: '#f43f5e' },
     { name: 'Cyan', value: '#06b6d4' },
 ];
-const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
 
-// Orbit speeds per ring: inner faster, outer slower — slow planetary drift.
-const RING_SPEEDS = [0.032, 0.020, 0.013];
-// Single source of truth — used by BOTH SVG orbit rings AND folder positions.
-// Updated radii to guarantee clearance from the central space orb aura (which extends up to ~150px radius).
-const RING_RADII_X = [Math.max(240, 220), Math.max(370, 350), Math.max(490, 470)];
-const RING_RADII_Y = [Math.max(175, 155), Math.max(265, 245), Math.max(345, 325)];
+const ORBIT_STEP_SECONDS = 1 / 18;
+const MAX_RENDERED_FOLDERS = 18;
 
-const SpaceAtmosphere = React.memo(() => {
-    const orbState = useMoraStore(s => s.orbState);
-    const atmosphereIntensity = React.useMemo(() => {
-        if (orbState === 'alert') return 0.95;
-        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 0.9;
-        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.85;
-        return 0.75;
-    }, [orbState]);
+type LaneKey = 'focus' | 'flow' | 'archive';
 
-    return (
-        <div
-            className="absolute inset-0 z-[-1] pointer-events-none transition-opacity duration-1000"
-            style={{
-                opacity: atmosphereIntensity,
-                background: `
-                    radial-gradient(1100px 520px at 55% 58%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
-                    radial-gradient(850px 400px at 25% 35%, rgba(6, 182, 212, 0.16) 0%, transparent 60%),
-                    radial-gradient(700px 340px at 80% 40%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
-                    radial-gradient(580px 300px at 72% 80%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
-                    radial-gradient(500px 360px at 8% 60%, rgba(139, 92, 246, 0.10) 0%, transparent 50%)
-                `
-            }}
-        />
-    );
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const LANE_CONFIG: Record<LaneKey, {
+    label: string;
+    accent: string;
+    radiusX: number;
+    radiusY: number;
+    angleStart: number;
+    angleEnd: number;
+    drift: number;
+    offsetY: number;
+    size: 'sm' | 'md' | 'lg';
+}> = {
+    focus: {
+        label: 'Focus lane',
+        accent: '#34d399',
+        radiusX: 280,
+        radiusY: 168,
+        angleStart: -0.38 * Math.PI,
+        angleEnd: 0.20 * Math.PI,
+        drift: 24,
+        offsetY: 8,
+        size: 'lg',
+    },
+    flow: {
+        label: 'Working set',
+        accent: '#22d3ee',
+        radiusX: 412,
+        radiusY: 248,
+        angleStart: -0.98 * Math.PI,
+        angleEnd: -0.18 * Math.PI,
+        drift: 28,
+        offsetY: -24,
+        size: 'md',
+    },
+    archive: {
+        label: 'Archive belt',
+        accent: '#a78bfa',
+        radiusX: 482,
+        radiusY: 296,
+        angleStart: 0.55 * Math.PI,
+        angleEnd: 1.08 * Math.PI,
+        drift: 26,
+        offsetY: -8,
+        size: 'sm',
+    },
+};
+
+const resolveLaneKey = (index: number): LaneKey => {
+    if (index < 3) return 'focus';
+    if (index < 10) return 'flow';
+    return 'archive';
+};
+
+const polarPoint = (rx: number, ry: number, angle: number) => ({
+    x: Math.cos(angle) * rx,
+    y: Math.sin(angle) * ry,
 });
 
+const describeLaneArc = (lane: LaneKey) => {
+    const config = LANE_CONFIG[lane];
+    const start = polarPoint(config.radiusX, config.radiusY, config.angleStart);
+    const end = polarPoint(config.radiusX, config.radiusY, config.angleEnd);
+    const largeArc = Math.abs(config.angleEnd - config.angleStart) > Math.PI ? 1 : 0;
+    const sweep = config.angleEnd > config.angleStart ? 1 : 0;
+    return `M ${start.x} ${start.y + config.offsetY} A ${config.radiusX} ${config.radiusY} 0 ${largeArc} ${sweep} ${end.x} ${end.y + config.offsetY}`;
+};
+
+const formatActivityLabel = (value?: string | null) => {
+    if (!value) return 'calm';
+    const days = Math.floor((Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'today';
+    if (days === 1) return '1d';
+    if (days < 7) return `${days}d`;
+    if (days < 30) return `${Math.ceil(days / 7)}w`;
+    return 'archive';
+};
+
+const getFreshnessWeight = (value?: string | null) => {
+    if (!value) return 0.32;
+    const days = (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24);
+    return clamp(1 - days / 28, 0.18, 1);
+};
+
+const formatDocCount = (count: number) => `${count} ${count === 1 ? 'doc' : 'docs'}`;
+
+type RankedFolder = {
+    folder: CoreFolder;
+    docCount: number;
+    freshness: number;
+    signal: number;
+    resolvedColor: string;
+    activityLabel: string;
+};
+
+type PositionedFolder = RankedFolder & {
+    lane: LaneKey;
+    x: number;
+    y: number;
+    intensity: number;
+    isActive: boolean;
+    size: 'sm' | 'md' | 'lg';
+    delay: number;
+};
+
 export const SpaceLayer: React.FC = () => {
-    // Granular store selectors — prevents rerender on unrelated store mutations
-    const activeSpaceId = useMoraStore(s => s.activeSpaceId);
-    const activeDepartmentId = useMoraStore(s => s.activeDepartmentId);
-    const activeCompanyId = useMoraStore(s => s.activeCompanyId);
-    const departments = useMoraStore(s => s.departments);
-    const spacesByDepartment = useMoraStore(s => s.spacesByDepartment);
-    const foldersBySpace = useMoraStore(s => s.foldersBySpace);
-    const orbState = useMoraStore(s => s.orbState);
-    const isLoadingFolders = useMoraStore(s => s.isLoadingFolders);
-    const viewLevel = useMoraStore(s => s.viewLevel);
-    const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
-    const navigateToExplore = useMoraStore(s => s.navigateToExplore);
-    const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
-    const addFolder = useMoraStore(s => s.addFolder);
-    const { openPane } = usePaneStore();
-    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
-    const safeSpaces = useMemo(() => {
-        if (!activeDepartmentId) return [];
-        const value = spacesByDepartment[activeDepartmentId];
-        return Array.isArray(value) ? value : [];
-    }, [spacesByDepartment, activeDepartmentId]);
+    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
+    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
+    const activeCompanyId = useMoraStore((state) => state.activeCompanyId);
+    const activeFolderId = useMoraStore((state) => state.activeFolderId);
+    const departments = useMoraStore((state) => state.departments);
+    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
+    const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
+    const nodesByFolder = useMoraStore((state) => state.nodesByFolder);
+    const orbState = useMoraStore((state) => state.orbState);
+    const isLoadingFolders = useMoraStore((state) => state.isLoadingFolders);
+    const viewLevel = useMoraStore((state) => state.viewLevel);
+    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
+    const navigateToExplore = useMoraStore((state) => state.navigateToExplore);
+    const navigateToFolder = useMoraStore((state) => state.navigateToFolder);
+    const loadFoldersForSpace = useMoraStore((state) => state.loadFoldersForSpace);
+    const addFolder = useMoraStore((state) => state.addFolder);
+    const openPane = usePaneStore((state) => state.openPane);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [formData, setFormData] = useState({ name: '', color: FOLDER_COLORS[0].value });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hoveredFolderId, setHoveredFolderId] = useState<string | null>(null);
     const prefersReducedMotion = useReducedMotion();
 
-    // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
     const [viewportWidth, setViewportWidth] = useState<number>(
         typeof window !== 'undefined' ? window.innerWidth : 1920
     );
+
     useEffect(() => {
         const handleResize = () => setViewportWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
     const isMobileViewport = viewportWidth < 600;
-    const isAnyHoveredRef = useRef(false);
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const safeSpaces = useMemo(() => {
+        if (!activeDepartmentId) return [];
+        const value = spacesByDepartment[activeDepartmentId];
+        return Array.isArray(value) ? value : [];
+    }, [activeDepartmentId, spacesByDepartment]);
+
+    const currentDepartment = useMemo(
+        () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
+        [safeDepartments, activeDepartmentId]
+    );
+
+    const currentSpace = useMemo(
+        () => safeSpaces.find((space) => space.id === activeSpaceId) ?? null,
+        [safeSpaces, activeSpaceId]
+    );
+
+    const folders = useMemo(() => {
+        if (!activeSpaceId) return [];
+        const value = foldersBySpace[activeSpaceId];
+        return Array.isArray(value) ? value : [];
+    }, [activeSpaceId, foldersBySpace]);
+
+    const displaySpaceName = useCallback((name: string) => {
+        const departmentName = currentDepartment?.name || '';
+        let next = (name || '').trim();
+        if (!next) return 'Workspace';
+        if (departmentName && next.toLowerCase().startsWith(departmentName.toLowerCase())) {
+            next = next.slice(departmentName.length).replace(/^[\s&\-_:]+/, '').trim();
+        }
+        const cleaned = next.replace(/\b(workspace|team space|space)\b/gi, '').trim();
+        if (cleaned.length > 2 && !/^\d+$/.test(cleaned)) return cleaned;
+        if (/^\d+$/.test(next) || /\b(workspace|team space|space)\b/i.test(next)) return 'Workspace';
+        return next || 'Workspace';
+    }, [currentDepartment?.name]);
+
     const orbitVelocity = useMemo(() => {
-        if (orbState === 'alert') return 0.9;
-        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 1.15;
-        if (orbState === 'thinking') return 1.22;
-        if (orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 1.08;
-        return 1;
+        if (orbState === 'alert') return 0.82;
+        if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 1.12;
+        if (orbState === 'thinking') return 1.18;
+        if (orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 1.05;
+        return 0.96;
     }, [orbState]);
+
     const atmosphereIntensity = useMemo(() => {
         if (orbState === 'alert') return 0.95;
         if (orbState === 'insight' || orbState === 'curious' || orbState === 'learning') return 0.9;
-        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.85;
-        return 0.75;
+        if (orbState === 'thinking' || orbState === 'focus' || orbState === 'watch' || orbState === 'watching') return 0.86;
+        return 0.74;
     }, [orbState]);
 
-    // Orbit animation pattern shared with DepartmentLayer.
     const [orbitTime, setOrbitTime] = useState(0);
     const animationRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
     const orbitAccumulatorRef = useRef<number>(0);
-
+    const isInteractionLockedRef = useRef(false);
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
 
     const clearHoverTimeout = useCallback(() => {
@@ -121,136 +231,174 @@ export const SpaceLayer: React.FC = () => {
         }
     }, []);
 
+    const setInteractionFolder = useCallback((folderId: string | null) => {
+        clearHoverTimeout();
+        setHoveredFolderId(folderId);
+        isInteractionLockedRef.current = Boolean(folderId);
+    }, [clearHoverTimeout]);
+
     const scheduleHoverClear = useCallback(() => {
         clearHoverTimeout();
         hoverClearRef.current = setTimeout(() => {
-            isAnyHoveredRef.current = false;
-        }, 80); // Debounce exit to prevent flicker
+            setHoveredFolderId(null);
+            isInteractionLockedRef.current = false;
+        }, 90);
     }, [clearHoverTimeout]);
 
     useEffect(() => () => clearHoverTimeout(), [clearHoverTimeout]);
 
     useEffect(() => {
-        // Respect prefers-reduced-motion: skip the animation loop entirely.
         if (prefersReducedMotion) return;
         const animate = (currentTime: number) => {
             if (lastTimeRef.current === 0) lastTimeRef.current = currentTime;
             const delta = (currentTime - lastTimeRef.current) / 1000;
             lastTimeRef.current = currentTime;
-            // Pause orbit when hovering —  folders freeze in place
-            if (!isAnyHoveredRef.current) {
+
+            if (!isInteractionLockedRef.current) {
                 orbitAccumulatorRef.current += delta;
                 if (orbitAccumulatorRef.current >= ORBIT_STEP_SECONDS) {
                     const step = orbitAccumulatorRef.current;
                     orbitAccumulatorRef.current = 0;
-                    setOrbitTime(prev => prev + step);
+                    setOrbitTime((previous) => previous + step);
                 }
             } else {
                 orbitAccumulatorRef.current = 0;
             }
+
             animationRef.current = requestAnimationFrame(animate);
         };
+
         animationRef.current = requestAnimationFrame(animate);
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
     }, [prefersReducedMotion]);
 
-    const currentDepartment = useMemo(() => {
-        return safeDepartments.find(d => d.id === activeDepartmentId);
-    }, [safeDepartments, activeDepartmentId]);
-
-    const currentSpace = useMemo(() => {
-        if (!activeDepartmentId || !activeSpaceId) return null;
-        return safeSpaces.find(s => s.id === activeSpaceId);
-    }, [activeDepartmentId, activeSpaceId, safeSpaces]);
-
-    const folders = useMemo(() => {
-        if (!activeSpaceId) return [];
-        const value = foldersBySpace[activeSpaceId];
-        return Array.isArray(value) ? value : [];
-    }, [activeSpaceId, foldersBySpace]);
-
-    const foldersWithContent = useMemo(() => {
-        return folders.filter((folder) => (folder.node_count || 0) > 0).length;
-    }, [folders]);
-
-    const displaySpaceName = useCallback((name: string) => {
-        const deptName = currentDepartment?.name || '';
-        let value = (name || '').trim();
-        if (!value) return 'Teamraum';
-
-        // Strip department name prefix.
-        if (deptName && value.toLowerCase().startsWith(deptName.toLowerCase())) {
-            value = value.slice(deptName.length).replace(/^[\s&\-_:]+/, '').trim();
-        }
-
-        // Strip generic words — only keep the cleaned value if meaningful.
-        const stripped = value.replace(/\b(workspace|team space|space)\b/gi, '').trim();
-        if (stripped.length > 2 && !/^\d+$/.test(stripped)) {
-            return stripped;
-        }
-        if (/^\d+$/.test(value) || /\b(workspace|team space|space)\b/i.test(value)) {
-            return 'Teamraum';
-        }
-        return value || 'Teamraum';
-    }, [currentDepartment?.name]);
-
-    // Recency weight used to bias folder prominence.
-    const getWeight = useCallback((dateStr?: string | null) => {
-        if (!dateStr) return 0.5;
-        const daysDiff = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24);
-        return Math.max(0.3, Math.min(1.0, 1.0 - daysDiff / 30));
-    }, []);
-
-    // Fallback color palette — assigned by folder index so each orb has a distinct colour
-    // Use shared ORBIT_PALETTE — single source of truth for folder orb colours
-
-    // Animated orbit positions in 3 rings.
-    // Uses module-level RING_RADII_X/Y/SPEEDS — no local shadowing.
-    const folderOrbitPositions = useMemo(() => {
-        if (folders.length === 0) return [];
-
-        const sorted = [...folders]
-            .map(f => ({ ...f, weight: getWeight(f.updated_at || f.created_at) }))
-            .sort((a, b) => b.weight - a.weight)
-            .slice(0, 18);
-
-        return sorted.map((folder, index) => {
-            const ring = Math.floor(index / 6);
-            const inRing = index % 6;
-            const ringCount = Math.min(6, sorted.length - ring * 6);
-            // Organic spacing: golden-angle offset per ring so never perfectly symmetric
-            const goldenOffset = ring * 0.618;
-            const baseAngle = ((inRing + goldenOffset) / Math.max(1, ringCount)) * Math.PI * 2 - Math.PI / 2;
-            // Animate angle over time for this ring.
-            const animAngle = baseAngle + orbitTime * RING_SPEEDS[ring] * orbitVelocity;
-            const rx = RING_RADII_X[ring];
-            const ry = RING_RADII_Y[ring];
-            // Assign a distinct fallback color when the folder has no color set
-            const resolvedColor = folder.color || ORBIT_PALETTE[index % ORBIT_PALETTE.length];
-            return {
-                folder: { ...folder, color: resolvedColor },
-                x: Math.cos(animAngle) * rx,
-                y: Math.sin(animAngle) * ry,
-                isPromoted: folder.weight >= 0.8,
-                delay: index * 0.04,
-            };
-        });
-    }, [folders, orbitTime, getWeight, orbitVelocity]);
-
     useEffect(() => {
         if (activeSpaceId && !foldersBySpace[activeSpaceId]) {
-            loadFoldersForSpace(activeSpaceId);
+            void loadFoldersForSpace(activeSpaceId);
         }
     }, [activeSpaceId, foldersBySpace, loadFoldersForSpace]);
 
-    const handleCreateFolder = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const rankedFolders = useMemo(() => {
+        const ranked = folders.map((folder, index) => {
+            const liveNodes = nodesByFolder[folder.id] || [];
+            const docCount = liveNodes.length > 0 ? liveNodes.length : (folder.node_count || 0);
+            const freshness = getFreshnessWeight(folder.updated_at || folder.created_at);
+            const activeBoost = folder.id === activeFolderId ? 4.4 : 0;
+            const signal = docCount * 0.82 + freshness * 5.2 + activeBoost;
+
+            return {
+                folder,
+                docCount,
+                freshness,
+                signal,
+                resolvedColor: folder.color || ORBIT_PALETTE[index % ORBIT_PALETTE.length],
+                activityLabel: formatActivityLabel(folder.updated_at || folder.created_at),
+            } satisfies RankedFolder;
+        });
+
+        ranked.sort((left, right) => {
+            if (right.signal !== left.signal) return right.signal - left.signal;
+            return (left.folder.name || '').localeCompare(right.folder.name || '');
+        });
+
+        const limited = ranked.slice(0, MAX_RENDERED_FOLDERS);
+        if (!activeFolderId || limited.some((entry) => entry.folder.id === activeFolderId)) {
+            return limited;
+        }
+
+        const activeEntry = ranked.find((entry) => entry.folder.id === activeFolderId);
+        if (!activeEntry) return limited;
+        return [...limited.slice(0, Math.max(0, MAX_RENDERED_FOLDERS - 1)), activeEntry];
+    }, [folders, nodesByFolder, activeFolderId]);
+
+    const laneCounts = useMemo(
+        () => rankedFolders.reduce<Record<LaneKey, number>>((accumulator, _, index) => {
+            accumulator[resolveLaneKey(index)] += 1;
+            return accumulator;
+        }, { focus: 0, flow: 0, archive: 0 }),
+        [rankedFolders]
+    );
+
+    const strongestSignal = rankedFolders[0]?.signal || 1;
+
+    const positionedFolders = useMemo(() => {
+        const laneIndexMap: Record<LaneKey, number> = { focus: 0, flow: 0, archive: 0 };
+
+        return rankedFolders.map((entry, index) => {
+            const lane = resolveLaneKey(index);
+            const laneConfig = LANE_CONFIG[lane];
+            const laneIndex = laneIndexMap[lane];
+            const laneCount = Math.max(laneCounts[lane], 1);
+            laneIndexMap[lane] += 1;
+
+            const progress = laneCount === 1 ? 0.5 : laneIndex / (laneCount - 1);
+            const baseAngle = laneConfig.angleStart + (laneConfig.angleEnd - laneConfig.angleStart) * progress;
+            const angularPulse = prefersReducedMotion ? 0 : Math.sin((orbitTime * orbitVelocity * 0.65) + index * 0.86) * 0.045;
+            const driftX = prefersReducedMotion ? 0 : Math.cos((orbitTime * orbitVelocity * 0.92) + index * 1.13) * laneConfig.drift;
+            const driftY = prefersReducedMotion ? 0 : Math.sin((orbitTime * orbitVelocity * 0.58) + index * 1.41) * laneConfig.drift * 0.46;
+            const point = polarPoint(laneConfig.radiusX, laneConfig.radiusY, baseAngle + angularPulse);
+            const isActive = entry.folder.id === activeFolderId;
+            const intensity = clamp(entry.signal / strongestSignal, 0.2, 1);
+
+            return {
+                ...entry,
+                lane,
+                x: point.x + driftX + (isActive ? 12 : 0),
+                y: point.y + driftY + laneConfig.offsetY + (isActive ? -10 : 0),
+                intensity,
+                isActive,
+                size: isActive ? 'lg' : laneConfig.size,
+                delay: index * 0.04,
+            } satisfies PositionedFolder;
+        });
+    }, [rankedFolders, laneCounts, prefersReducedMotion, orbitTime, orbitVelocity, strongestSignal, activeFolderId]);
+
+    const totalDocs = useMemo(
+        () => rankedFolders.reduce((sum, entry) => sum + entry.docCount, 0),
+        [rankedFolders]
+    );
+
+    const foldersWithDocs = useMemo(
+        () => rankedFolders.filter((entry) => entry.docCount > 0).length,
+        [rankedFolders]
+    );
+
+    const laneSummaries = useMemo(
+        () => positionedFolders.reduce<Record<LaneKey, { count: number; docs: number }>>((accumulator, entry) => {
+            accumulator[entry.lane].count += 1;
+            accumulator[entry.lane].docs += entry.docCount;
+            return accumulator;
+        }, {
+            focus: { count: 0, docs: 0 },
+            flow: { count: 0, docs: 0 },
+            archive: { count: 0, docs: 0 },
+        }),
+        [positionedFolders]
+    );
+
+    const inspectedFolder = useMemo(() => {
+        if (hoveredFolderId) {
+            return positionedFolders.find((entry) => entry.folder.id === hoveredFolderId) ?? null;
+        }
+        if (activeFolderId) {
+            return positionedFolders.find((entry) => entry.folder.id === activeFolderId) ?? null;
+        }
+        return positionedFolders[0] ?? null;
+    }, [hoveredFolderId, activeFolderId, positionedFolders]);
+
+    const handleCreateFolder = async (event: React.FormEvent) => {
+        event.preventDefault();
         if (!activeSpaceId || !formData.name.trim()) return;
+
         setIsSubmitting(true);
         try {
-            await addFolder({ space_id: activeSpaceId, name: formData.name.trim(), color: formData.color });
+            await addFolder({
+                space_id: activeSpaceId,
+                name: formData.name.trim(),
+                color: formData.color,
+            });
             setFormData({ name: '', color: FOLDER_COLORS[0].value });
             setIsCreateModalOpen(false);
         } catch (error) {
@@ -265,51 +413,72 @@ export const SpaceLayer: React.FC = () => {
         navigateToExplore();
     }, [navigateToExplore]);
 
+    const openSpaceFinder = useCallback(() => {
+        openPane({
+            id: 'finder-main',
+            type: 'finder',
+            title: displaySpaceName(currentSpace?.name || 'Workspace'),
+            size: { width: 1280, height: 820 },
+            data: {
+                spaceId: activeSpaceId,
+                departmentId: activeDepartmentId,
+                companyId: activeCompanyId || currentDepartment?.company_id || undefined,
+            },
+        });
+    }, [
+        openPane,
+        displaySpaceName,
+        currentSpace?.name,
+        activeSpaceId,
+        activeDepartmentId,
+        activeCompanyId,
+        currentDepartment?.company_id,
+    ]);
+
+    const openFocusedFolder = useCallback((folderId: string) => {
+        setInteractionFolder(folderId);
+        navigateToFolder(folderId);
+    }, [navigateToFolder, setInteractionFolder]);
+
     if (viewLevel !== 'space' || !activeSpaceId) return null;
 
     if (isMobileViewport) {
         return (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-white/60">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-4 text-white/60">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
                 </svg>
-                <p className="text-sm tracking-widest uppercase">Best viewed on desktop</p>
+                <p className="text-sm uppercase tracking-widest">Best viewed on desktop</p>
             </div>
         );
     }
 
-    const spaceName = displaySpaceName(currentSpace?.name || 'Space');
+    const spaceName = displaySpaceName(currentSpace?.name || 'Workspace');
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-transparent">
-
-            {/* Depth Overlay: subtle blur to separate L3 from galaxy — was bg-black/40 blur-[60px], far too dark */}
-            <div className="absolute inset-0 z-[-1] bg-black/18 backdrop-blur-[20px] pointer-events-none" />
-
-            {/* Vignette — softer than before */}
+        <div className="relative h-full w-full overflow-hidden bg-transparent">
+            <div className="pointer-events-none absolute inset-0 z-[-1] bg-black/18 backdrop-blur-[22px]" />
             <div
-                className="absolute inset-0 z-[-1] pointer-events-none"
-                style={{ background: 'radial-gradient(circle at 50% 50%, transparent 48%, rgba(0,0,0,0.32) 100%)' }}
-            />
-
-            {/* Galaxy overlay reused from DepartmentLayer visual language, but subdued. */}
-            <div
-                className="absolute inset-0 z-[-1] pointer-events-none"
+                className="pointer-events-none absolute inset-0 z-[-1]"
                 style={{
                     opacity: atmosphereIntensity,
                     background: `
-                        radial-gradient(1100px 520px at 55% 58%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
-                        radial-gradient(850px 400px at 25% 35%, rgba(6, 182, 212, 0.16) 0%, transparent 60%),
-                        radial-gradient(700px 340px at 80% 40%, rgba(99, 102, 241, 0.14) 0%, transparent 55%),
-                        radial-gradient(580px 300px at 72% 80%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
-                        radial-gradient(500px 360px at 8% 60%, rgba(139, 92, 246, 0.10) 0%, transparent 50%)
-                    `
+                        radial-gradient(1150px 600px at 54% 56%, rgba(16, 185, 129, 0.24) 0%, transparent 64%),
+                        radial-gradient(900px 420px at 24% 28%, rgba(34, 211, 238, 0.16) 0%, transparent 58%),
+                        radial-gradient(760px 360px at 80% 34%, rgba(99, 102, 241, 0.14) 0%, transparent 56%),
+                        radial-gradient(700px 320px at 18% 76%, rgba(167, 139, 250, 0.14) 0%, transparent 54%),
+                        radial-gradient(640px 300px at 74% 82%, rgba(245, 158, 11, 0.11) 0%, transparent 50%)
+                    `,
                 }}
             />
+            <div
+                className="pointer-events-none absolute inset-0 z-[-1]"
+                style={{ background: 'radial-gradient(circle at 50% 52%, transparent 44%, rgba(0,0,0,0.38) 100%)' }}
+            />
 
-            {/* Breadcrumb Back Button style */}
             <motion.div
-                className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50"
+                className="absolute left-8 top-8 z-50 flex items-center gap-3 text-white/50"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
             >
@@ -317,22 +486,22 @@ export const SpaceLayer: React.FC = () => {
                     type="button"
                     data-testid="nav-back-to-department"
                     onClick={() => activeDepartmentId && navigateToDepartment(activeDepartmentId)}
-                    className="group flex items-center gap-3 text-white/50 hover:text-white transition-colors"
+                    className="group flex items-center gap-3 text-white/50 transition-colors hover:text-white"
                 >
-                    <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 border border-white/5 transition-colors">
+                    <div className="rounded-full border border-white/5 bg-white/5 p-2 transition-colors group-hover:bg-white/10">
                         <ArrowLeft size={16} />
                     </div>
                 </button>
                 <div className="flex flex-col items-start gap-0.5">
-                    <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
-                        Zurück
+                    <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-emerald-500/70">
+                        Zurueck
                     </span>
-                    <span className="text-sm tracking-widest font-light flex items-center gap-2">
+                    <span className="flex items-center gap-2 text-sm font-light tracking-widest">
                         <button
                             type="button"
                             data-testid="nav-root-to-universe"
                             onClick={handleNavigateToExplore}
-                            className="text-white/40 hover:text-emerald-100/90 transition-colors"
+                            className="text-white/40 transition-colors hover:text-emerald-100/90"
                         >
                             UNIVERSE
                         </button>
@@ -344,23 +513,22 @@ export const SpaceLayer: React.FC = () => {
                 </div>
             </motion.div>
 
-            {/* Top-right actions: minimal floating controls */}
             <motion.div
-                className="absolute top-8 right-8 z-50 flex items-center gap-3"
+                className="absolute right-8 top-8 z-50 flex items-center gap-3"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
             >
                 <button
                     onClick={() => activeSpaceId && loadFoldersForSpace(activeSpaceId)}
-                    className="p-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-white/40 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
-                    title="Refresh"
+                    className="rounded-full border border-white/5 bg-white/5 p-2 text-white/40 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+                    title="Ordner aktualisieren"
                     aria-label="Ordner aktualisieren"
                 >
                     <RefreshCw size={16} />
                 </button>
                 <motion.button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 transition-all text-sm tracking-widest font-light"
+                    className="flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-sm font-light tracking-widest text-emerald-300 transition-all hover:bg-emerald-500/20 hover:text-emerald-200"
                     whileHover={{ scale: 1.04 }}
                     whileTap={{ scale: 0.97 }}
                 >
@@ -370,224 +538,318 @@ export const SpaceLayer: React.FC = () => {
             </motion.div>
 
             <motion.div
-                className="absolute top-32 left-8 z-40 glass-panel border-emerald-400/20 px-4 py-3 min-w-[220px]"
+                className="glass-panel absolute left-8 top-32 z-40 min-w-[308px] border-emerald-400/20 px-4 py-4"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
             >
-                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80 mb-2">
-                    {currentSpace?.name || 'Workspace'}
+                <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80">
+                        {currentSpace?.name || 'Workspace'}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={openSpaceFinder}
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
+                    >
+                        Open finder
+                    </button>
                 </div>
+
                 <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Folders</div>
-                        <div className="text-lg leading-none text-emerald-200">{folders.length}</div>
+                        <div className="text-[9px] uppercase tracking-wide text-white/40">Folders</div>
+                        <div className="text-lg leading-none text-emerald-200">{rankedFolders.length}</div>
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Aktiv</div>
-                        <div className="text-lg leading-none text-emerald-200">{foldersWithContent}</div>
+                        <div className="text-[9px] uppercase tracking-wide text-white/40">Active</div>
+                        <div className="text-lg leading-none text-emerald-200">{foldersWithDocs}</div>
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Files</div>
-                        <div className="text-lg leading-none text-violet-200">
-                            {folders.reduce((sum, folder) => {
-                                const realNodes = useMoraStore.getState().nodesByFolder[folder.id];
-                                return sum + (realNodes ? realNodes.length : (folder.node_count || 0));
-                            }, 0)}
+                        <div className="text-[9px] uppercase tracking-wide text-white/40">Docs</div>
+                        <div className="text-lg leading-none text-violet-200">{totalDocs}</div>
+                    </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                    {(['focus', 'flow', 'archive'] as LaneKey[]).map((lane) => (
+                        <div
+                            key={lane}
+                            className="rounded-xl border border-white/10 bg-black/15 px-2.5 py-2"
+                        >
+                            <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">
+                                {LANE_CONFIG[lane].label}
+                            </div>
+                            <div className="mt-1 text-sm text-white/82">
+                                {laneSummaries[lane].count}
+                            </div>
+                            <div className="mt-1 text-[10px] text-white/42">
+                                {formatDocCount(laneSummaries[lane].docs)}
+                            </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
             </motion.div>
 
-            {/* Universe content rendered full screen, no panel shell. */}
-            <div className="absolute inset-0 flex items-center justify-center z-10">
+            {inspectedFolder && (
+                <motion.div
+                    className="absolute bottom-28 left-8 z-40 w-[312px] overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(160deg,rgba(12,18,26,0.9),rgba(3,6,10,0.78))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, delay: 0.14 }}
+                >
+                    <div
+                        className="pointer-events-none absolute inset-x-0 top-0 h-24"
+                        style={{
+                            background: `radial-gradient(circle at top, ${inspectedFolder.resolvedColor}2e 0%, transparent 72%)`,
+                        }}
+                    />
+                    <div className="relative">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
+                                    <Sparkles size={12} className="text-emerald-300/72" />
+                                    {inspectedFolder.isActive ? 'Active folder' : LANE_CONFIG[inspectedFolder.lane].label}
+                                </div>
+                                <div className="mt-2 truncate text-base text-white/88">
+                                    {inspectedFolder.folder.name}
+                                </div>
+                                <div className="mt-1 text-xs text-white/42">
+                                    {inspectedFolder.activityLabel} activity
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => openFocusedFolder(inspectedFolder.folder.id)}
+                                className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 transition-colors hover:bg-emerald-500/16"
+                            >
+                                Open
+                            </button>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Signal</div>
+                                <div className="mt-1 text-sm text-white/82">{Math.round(inspectedFolder.intensity * 100)}%</div>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Density</div>
+                                <div className="mt-1 text-sm text-white/82">{formatDocCount(inspectedFolder.docCount)}</div>
+                            </div>
+                        </div>
+
+                        <p className="mt-4 text-[11px] leading-relaxed text-white/44">
+                            Folder clicks now stay in the shell as a live focus. Finder and layer context stay in sync instead of dropping the state into a separate dead-end.
+                        </p>
+                    </div>
+                </motion.div>
+            )}
+
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
                 {isLoadingFolders ? (
                     <LoadingState message="Scanning Space..." />
                 ) : (
-                    <div className="relative w-full h-full pb-16">
-
-                        {/* Connection lines center -> folder nodes for constellation clarity */}
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
-                            {folderOrbitPositions.map(({ folder, x, y }) => (
-                                <line
-                                    key={`link-${folder.id}`}
-                                    x1="50%"
-                                    y1="50%"
-                                    x2={`calc(50% + ${x}px)`}
-                                    y2={`calc(50% + ${y}px)`}
-                                    stroke="rgba(16,185,129,0.14)"
-                                    strokeWidth="1"
-                                    strokeDasharray="3 8"
-                                />
-                            ))}
-                        </svg>
-
-                        {/* Orbit track rings */}
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25 z-0">
-                            {RING_RADII_X.slice(0, Math.min(3, Math.ceil(folders.length / 6) + 1)).map((rx, i) => (
-                                <ellipse
-                                    key={`orbit-ring-${i}`}
-                                    cx="50%"
-                                    cy="50%"
-                                    rx={rx}
-                                    ry={RING_RADII_Y[i]}
-                                    fill="none"
-                                    stroke="url(#spaceRingGradient)"
-                                    strokeWidth="1"
-                                    strokeDasharray="5 9"
-                                    opacity={0.3 - i * 0.07}
-                                />
-                            ))}
-                            <defs>
-                                <linearGradient id="spaceRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="rgba(16,185,129,0.6)" />
-                                    <stop offset="50%" stopColor="rgba(6,182,212,0.25)" />
-                                    <stop offset="100%" stopColor="rgba(16,185,129,0.6)" />
-                                </linearGradient>
-                            </defs>
-                        </svg>
-
-                        {/* Central space orb — L3 character: dept-colored intimate sphere */}
-                        <motion.div
-                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-20"
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ duration: 0.9, ease: "easeOut" }}
+                    <div className="relative h-full w-full pb-16">
+                        <svg
+                            className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+                            viewBox="-640 -420 1280 840"
+                            preserveAspectRatio="xMidYMid meet"
                         >
-                            {/* Outer aura — boosted from 28/55% → 55/70% */}
-                            <div
-                                className="absolute rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                                style={{ width: 300, height: 300, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}50 0%, transparent 68%)`, opacity: 0.30 }}
-                            />
-                            {/* Mid aura */}
-                            <div
-                                className="absolute top-1/2 left-1/2 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                                style={{ width: 190, height: 190, background: `radial-gradient(circle, ${currentDepartment?.color || '#10b981'}60 0%, transparent 68%)`, opacity: 0.22 }}
-                            />
-                            {/* Core orb — 144px — fixed: was ${color}25 (9% alpha) → now ${color}AA (67%) */}
-                            <div
-                                className="relative w-36 h-36 rounded-full flex items-center justify-center overflow-hidden backdrop-blur-sm pointer-events-auto cursor-pointer"
-                                style={{
-                                    background: `radial-gradient(145% 145% at 28% 26%, rgba(255,255,255,0.22) 0%, ${currentDepartment?.color || '#10b981'}AA 45%, rgba(0,0,0,0.30) 100%)`,
-                                    border: `1.5px solid ${currentDepartment?.color || '#10b981'}99`,
-                                    boxShadow: `0 0 80px ${currentDepartment?.color || '#10b981'}60, 0 0 160px ${currentDepartment?.color || '#10b981'}28, inset 2px 2px 8px rgba(255,255,255,0.30)`,
-                                }}
-                                onClick={() => openPane({
-                                    id: 'finder-main',
-                                    type: 'finder',
-                                    title: spaceName,
-                                    size: { width: 1280, height: 820 },
-                                    data: {
-                                        spaceId: activeSpaceId,
-                                        departmentId: activeDepartmentId,
-                                        companyId: activeCompanyId || currentDepartment?.company_id || undefined
-                                    }
-                                })}
-                                title={`Finder öffnen: ${spaceName}`}
-                            >
-                                {/* Specular */}
-                                <div className="absolute top-[16%] left-[16%] w-[18%] h-[10%] rounded-full bg-white/70 blur-[1px]" style={{ transform: 'rotate(-45deg)' }} />
-                                {/* Inner glow */}
-                                <div
-                                    className="absolute inset-[20%] rounded-full mix-blend-overlay blur-md pointer-events-none"
-                                    style={{ background: `radial-gradient(circle, ${currentDepartment?.color || '#10B981'} 0%, transparent 70%)`, opacity: 0.58 }}
+                            <defs>
+                                {(['focus', 'flow', 'archive'] as LaneKey[]).map((lane) => (
+                                    <linearGradient key={`lane-${lane}`} id={`space-lane-${lane}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor={LANE_CONFIG[lane].accent} stopOpacity="0.08" />
+                                        <stop offset="50%" stopColor={LANE_CONFIG[lane].accent} stopOpacity="0.34" />
+                                        <stop offset="100%" stopColor={LANE_CONFIG[lane].accent} stopOpacity="0.08" />
+                                    </linearGradient>
+                                ))}
+                            </defs>
+
+                            {(['focus', 'flow', 'archive'] as LaneKey[]).map((lane) => (
+                                <path
+                                    key={`lane-arc-${lane}`}
+                                    d={describeLaneArc(lane)}
+                                    fill="none"
+                                    stroke={`url(#space-lane-${lane})`}
+                                    strokeWidth={lane === 'focus' ? 1.6 : 1.2}
+                                    strokeDasharray={lane === 'focus' ? '6 10' : '5 11'}
+                                    opacity={inspectedFolder?.lane === lane ? 0.75 : 0.34}
                                 />
-                                <span className="relative z-10 text-[11px] text-white/90 uppercase tracking-[0.14em] text-center px-4 leading-tight font-light">
-                                    {spaceName.length > 20 ? spaceName.substring(0, 18) + '…' : spaceName}
+                            ))}
+
+                            {positionedFolders.map((entry) => (
+                                <line
+                                    key={`beam-${entry.folder.id}`}
+                                    x1="0"
+                                    y1="0"
+                                    x2={entry.x}
+                                    y2={entry.y}
+                                    stroke={entry.resolvedColor}
+                                    strokeWidth={entry.isActive ? 2 : 0.8 + entry.intensity * 1.15}
+                                    strokeDasharray={entry.isActive ? 'none' : '4 8'}
+                                    opacity={entry.isActive ? 0.54 : 0.14 + entry.intensity * 0.26}
+                                />
+                            ))}
+
+                            {positionedFolders.filter((entry) => entry.isActive).map((entry) => (
+                                <circle
+                                    key={`focus-ring-${entry.folder.id}`}
+                                    cx={entry.x}
+                                    cy={entry.y}
+                                    r="56"
+                                    fill="none"
+                                    stroke={entry.resolvedColor}
+                                    strokeWidth="1.2"
+                                    strokeDasharray="7 8"
+                                    opacity="0.42"
+                                />
+                            ))}
+                        </svg>
+
+                        <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+                            <div
+                                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
+                                style={{
+                                    width: 320,
+                                    height: 320,
+                                    background: `radial-gradient(circle, ${(currentDepartment?.color || '#10b981')}44 0%, transparent 70%)`,
+                                    opacity: 0.34,
+                                }}
+                            />
+                            <div
+                                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                                style={{
+                                    width: 210,
+                                    height: 210,
+                                    background: `radial-gradient(circle, ${(currentDepartment?.color || '#10b981')}52 0%, transparent 70%)`,
+                                    opacity: 0.24,
+                                }}
+                            />
+                            <div
+                                className="pointer-events-auto relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-full backdrop-blur-sm"
+                                style={{
+                                    background: `radial-gradient(145% 145% at 30% 24%, rgba(255,255,255,0.22) 0%, ${(currentDepartment?.color || '#10b981')}bb 45%, rgba(0,0,0,0.30) 100%)`,
+                                    border: `1.5px solid ${(currentDepartment?.color || '#10b981')}99`,
+                                    boxShadow: `0 0 90px ${(currentDepartment?.color || '#10b981')}55, 0 0 180px ${(currentDepartment?.color || '#10b981')}26, inset 2px 2px 8px rgba(255,255,255,0.28)`,
+                                }}
+                                onClick={openSpaceFinder}
+                                title={`Finder oeffnen: ${spaceName}`}
+                            >
+                                <div
+                                    className="absolute left-[17%] top-[15%] h-[10%] w-[20%] rounded-full bg-white/70 blur-[1px]"
+                                    style={{ transform: 'rotate(-45deg)' }}
+                                />
+                                <div
+                                    className="pointer-events-none absolute inset-[21%] rounded-full mix-blend-overlay blur-md"
+                                    style={{
+                                        background: `radial-gradient(circle, ${(currentDepartment?.color || '#10b981')} 0%, transparent 70%)`,
+                                        opacity: 0.6,
+                                    }}
+                                />
+                                <span className="relative z-10 px-4 text-center text-[11px] font-light uppercase leading-tight tracking-[0.14em] text-white/92">
+                                    {spaceName.length > 22 ? `${spaceName.slice(0, 20)}...` : spaceName}
                                 </span>
                             </div>
-                        </motion.div>
+                        </div>
 
-                        {/* Folder orbs orbit the space core */}
-                        {folderOrbitPositions.map(({ folder, x, y, isPromoted, delay }) => (
-                            <div
-                                key={`folder-${folder.id}`}
-                                data-testid={`folder-${folder.id}`}
-                                data-folder-name={folder.name}
-                                className="absolute pointer-events-auto flex flex-col items-center"
-                                style={{
-                                    left: `calc(50% + ${x}px)`,
-                                    top: `calc(50% + ${y}px)`,
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: y > 0 ? 30 : 10,
-                                }}
-                            >
-                                <FolderStar
-                                    folder={{
-                                        id: folder.id,
-                                        name: folder.name,
-                                        space_id: folder.space_id,
-                                        color: folder.color || undefined,
-                                        node_count: folder.node_count
+                        {positionedFolders.map((entry) => {
+                            const isInspected = inspectedFolder?.folder.id === entry.folder.id;
+                            const laneConfig = LANE_CONFIG[entry.lane];
+
+                            return (
+                                <motion.div
+                                    key={`folder-${entry.folder.id}`}
+                                    data-testid={`folder-${entry.folder.id}`}
+                                    data-folder-name={entry.folder.name}
+                                    className="absolute flex flex-col items-center"
+                                    style={{
+                                        left: `calc(50% + ${entry.x}px)`,
+                                        top: `calc(50% + ${entry.y}px)`,
+                                        transform: 'translate(-50%, -50%)',
+                                        zIndex: entry.isActive ? 46 : (isInspected ? 44 : 30),
                                     }}
-                                    position={{ x: 0, y: 0 }}
-                                    size="lg"
-                                    orbitActive
-                                    isPromoted={isPromoted}
-                                    delay={delay}
-                                    onHover={(hovered) => {
-                                        if (hovered) {
-                                            clearHoverTimeout();
-                                            isAnyHoveredRef.current = true;
-                                        } else {
-                                            scheduleHoverClear();
-                                        }
-                                    }}
-                                    onClick={() => {
-                                        openPane({
-                                            id: 'finder-main',
-                                            type: 'finder',
-                                            title: folder.name,
-                                            size: { width: 1280, height: 820 },
-                                            data: {
-                                                folderId: folder.id,
-                                                spaceId: activeSpaceId,
-                                                departmentId: activeDepartmentId,
-                                                companyId: activeCompanyId || currentDepartment?.company_id || undefined
+                                    initial={{ opacity: 0, scale: 0.85 }}
+                                    animate={{ opacity: 1, scale: entry.isActive ? 1.04 : 1 }}
+                                    transition={{ delay: entry.delay, duration: 0.45 }}
+                                    onMouseEnter={() => setInteractionFolder(entry.folder.id)}
+                                    onMouseLeave={scheduleHoverClear}
+                                    onClick={() => openFocusedFolder(entry.folder.id)}
+                                >
+                                    <FolderOrb
+                                        folder={{
+                                            id: entry.folder.id,
+                                            name: entry.folder.name,
+                                            space_id: entry.folder.space_id,
+                                            color: entry.resolvedColor,
+                                            node_count: entry.docCount,
+                                        }}
+                                        position={{ x: 0, y: 0 }}
+                                        size={entry.size}
+                                        orbitActive
+                                        isPromoted={entry.lane === 'focus' || entry.isActive}
+                                        delay={entry.delay}
+                                        onHover={(hovered) => {
+                                            if (hovered) {
+                                                setInteractionFolder(entry.folder.id);
+                                                return;
                                             }
-                                        });
-                                    }}
-                                />
-                                {/* Persistent label below orb */}
-                                <div className="mt-1.5 whitespace-nowrap pointer-events-none">
-                                    <span className="text-[11px] text-white/60 font-light tracking-wide max-w-[110px] truncate block text-center">
-                                        {folder.name}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+                                            scheduleHoverClear();
+                                        }}
+                                    />
 
-                        {/* Empty State — L3 with 0 folders */}
+                                    <div
+                                        className="mt-2 min-w-[112px] rounded-2xl border px-3 py-2 text-center backdrop-blur-xl"
+                                        style={{
+                                            background: isInspected
+                                                ? `linear-gradient(160deg, ${entry.resolvedColor}22, rgba(3,6,10,0.74))`
+                                                : 'linear-gradient(160deg, rgba(8,12,18,0.78), rgba(3,6,10,0.62))',
+                                            borderColor: isInspected ? `${entry.resolvedColor}55` : 'rgba(255,255,255,0.08)',
+                                            boxShadow: isInspected ? `0 0 28px ${entry.resolvedColor}24` : 'none',
+                                        }}
+                                    >
+                                        <div className="max-w-[140px] truncate text-[11px] tracking-wide text-white/86">
+                                            {entry.folder.name}
+                                        </div>
+                                        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/44">
+                                            <span>{formatDocCount(entry.docCount)}</span>
+                                            <span className="text-white/24">|</span>
+                                            <span style={{ color: laneConfig.accent }}>{entry.activityLabel}</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+
                         {!isLoadingFolders && folders.length === 0 && (
                             <motion.div
-                                className="absolute inset-0 flex flex-col items-center justify-center gap-5 pointer-events-none"
+                                className="absolute inset-0 flex flex-col items-center justify-center gap-5"
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5, duration: 0.6 }}
+                                transition={{ delay: 0.45, duration: 0.6 }}
                             >
-                                {/* Icon */}
                                 <div className="relative">
-                                    <div className="w-16 h-16 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-center">
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
                                         <FolderOpen size={28} className="text-emerald-400/50" />
                                     </div>
-                                    {/* Subtle glow ring */}
-                                    <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: '0 0 30px rgba(16,185,129,0.12)' }} />
+                                    <div
+                                        className="absolute inset-0 rounded-2xl"
+                                        style={{ boxShadow: '0 0 30px rgba(16,185,129,0.12)' }}
+                                    />
                                 </div>
 
-                                {/* Label */}
                                 <div className="flex flex-col items-center gap-1.5">
-                                    <p className="text-white/55 text-sm font-light tracking-widest uppercase">
+                                    <p className="text-sm font-light uppercase tracking-widest text-white/55">
                                         Noch keine Ordner
                                     </p>
-                                    <p className="text-white/45 text-xs font-light text-center max-w-[220px] leading-relaxed">
-                                        Erstelle deinen ersten Ordner,<br />um Dokumente zu organisieren.
+                                    <p className="max-w-[240px] text-center text-xs font-light leading-relaxed text-white/45">
+                                        Create the first folder to turn this space into a live working set.
                                     </p>
                                 </div>
 
-                                {/* CTA */}
                                 <motion.button
                                     onClick={() => setIsCreateModalOpen(true)}
-                                    className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 rounded-full border border-emerald-500/30 bg-emerald-500/8 text-emerald-300/80 hover:text-emerald-200 hover:border-emerald-400/50 hover:bg-emerald-500/15 text-xs tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+                                    className="pointer-events-auto flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/8 px-6 py-2.5 text-xs tracking-widest text-emerald-300/80 transition-all hover:border-emerald-400/50 hover:bg-emerald-500/15 hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
                                     whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
                                     whileTap={{ scale: prefersReducedMotion ? 1 : 0.97 }}
                                 >
@@ -600,7 +862,6 @@ export const SpaceLayer: React.FC = () => {
                 )}
             </div>
 
-            {/* Create Folder Modal */}
             <CreateModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
@@ -608,25 +869,25 @@ export const SpaceLayer: React.FC = () => {
             >
                 <form onSubmit={handleCreateFolder} className="space-y-6">
                     <div>
-                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">NAME</label>
+                        <label className="mb-2 block text-sm tracking-wider text-emerald-400/70">NAME</label>
                         <input
                             type="text"
                             value={formData.name}
-                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 text-white focus:border-emerald-500/50 outline-none"
+                            onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-emerald-500/50"
                             autoFocus
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm text-emerald-400/70 mb-2 tracking-wider">COLOR</label>
+                        <label className="mb-2 block text-sm tracking-wider text-emerald-400/70">COLOR</label>
                         <div className="grid grid-cols-6 gap-2">
                             {FOLDER_COLORS.map((color) => (
                                 <button
                                     key={color.value}
                                     type="button"
                                     onClick={() => setFormData({ ...formData, color: color.value })}
-                                    className={`w-full aspect-square rounded-lg border-2 transition-all ${formData.color === color.value ? 'border-white scale-110' : 'border-white/20 hover:border-white/40'}`}
+                                    className={`aspect-square w-full rounded-lg border-2 transition-all ${formData.color === color.value ? 'scale-110 border-white' : 'border-white/20 hover:border-white/40'}`}
                                     style={{ backgroundColor: color.value }}
                                     title={color.name}
                                 />
@@ -634,17 +895,23 @@ export const SpaceLayer: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex gap-3 pt-4">
-                        <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 hover:bg-white/5">Cancel</button>
-                        <button type="submit" disabled={isSubmitting} className="flex-1 py-3 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 disabled:opacity-50">
+                        <button
+                            type="button"
+                            onClick={() => setIsCreateModalOpen(false)}
+                            className="flex-1 rounded-xl border border-white/10 py-3 text-white/60 hover:bg-white/5"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 rounded-xl border border-emerald-500/30 bg-emerald-600/20 py-3 text-emerald-400 hover:bg-emerald-600/30 disabled:opacity-50"
+                        >
                             {isSubmitting ? 'Creating...' : 'Create'}
                         </button>
                     </div>
                 </form>
             </CreateModal>
-        </div >
+        </div>
     );
 };
-
-
-
-

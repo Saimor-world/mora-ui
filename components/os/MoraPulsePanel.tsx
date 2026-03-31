@@ -200,7 +200,7 @@ export const MoraPulsePanel: React.FC = () => {
                 subtitle: activeSpace.name,
                 metricA: `${activeFolder.node_count || 0} docs`,
                 metricB: `${activeFolders.length} folders im Space`,
-                note: 'Der Space-Hintergrund bleibt offen, waehrend du im Finder tiefer gehst.',
+                note: 'Der aktive Folder bleibt jetzt als Live-Fokus im Space sichtbar, waehrend Finder und Shell denselben Kontext halten.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -225,7 +225,7 @@ export const MoraPulsePanel: React.FC = () => {
                 subtitle: activeDepartment?.name || activeCompany?.name || 'Workspace',
                 metricA: `${activeFolders.length} folders`,
                 metricB: `${docs} docs`,
-                note: 'Folder-Orbits arretieren beim Hover und oeffnen direkt in den Finder.',
+                note: 'Folder werden jetzt in Focus Lane, Working Set und Archive Belt priorisiert statt nur als gleichmaessige Orbits gezeigt.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
