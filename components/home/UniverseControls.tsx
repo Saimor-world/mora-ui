@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, ArrowUpRight, Globe, LayoutGrid, PanelTopOpen, Shield, Sparkles } from 'lucide-react';
+import { Activity, Globe, LayoutGrid, PanelTopOpen, Shield } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { usePaneStore } from '@/lib/store/paneStore';
 import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 
@@ -36,10 +35,6 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     const activeFolderId = useMoraStore((state) => state.activeFolderId);
     const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
     const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
-    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
-    const navigateToSpace = useMoraStore((state) => state.navigateToSpace);
-    const navigateToFolder = useMoraStore((state) => state.navigateToFolder);
-    const openPane = usePaneStore((state) => state.openPane);
 
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const activeDepartment = useMemo(
@@ -104,28 +99,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         requestCommandDeckOpen({ pinned: true });
     };
 
-    const handleNextMove = () => {
-        switch (shellContext.nextTarget.kind) {
-            case 'folder':
-                if (shellContext.nextTarget.id) navigateToFolder(shellContext.nextTarget.id);
-                return;
-            case 'space':
-                if (shellContext.nextTarget.id) navigateToSpace(shellContext.nextTarget.id);
-                return;
-            case 'department':
-                if (shellContext.nextTarget.id) navigateToDepartment(shellContext.nextTarget.id);
-                return;
-            case 'settings':
-                openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
-                return;
-            case 'company':
-            default:
-                handleOpenContextBridge();
-        }
-    };
-
     return (
-        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-3 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+        <div className="fixed top-5 left-1/2 z-50 flex w-[min(1024px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-2 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.72),rgba(0,0,0,0.5))] px-3 py-2.5 text-white shadow-[0_18px_56px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
             <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">
                 {visibleModes.includes('owner') && (
                     <ControlButton
@@ -167,7 +142,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
-                className="min-w-0 flex-1 rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
+                className="min-w-0 flex-1 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
             >
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
                     <span>Layer {shellContext.scopeLabel}</span>
@@ -180,28 +155,10 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </div>
             </button>
 
-            <button
-                type="button"
-                onClick={handleNextMove}
-                className="hidden shrink-0 rounded-[24px] border border-emerald-400/18 bg-emerald-500/[0.1] px-4 py-3 text-left transition-colors hover:border-emerald-400/28 hover:bg-emerald-500/[0.14] xl:block"
-            >
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200/72">
-                    <Sparkles size={12} />
-                    Next Move
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-sm text-white/88">
-                    <span className="max-w-[220px] truncate">{shellContext.nextMoveLabel}</span>
-                    <ArrowUpRight size={14} className="shrink-0 text-emerald-200/72" />
-                </div>
-                <div className="mt-1 max-w-[260px] truncate text-[11px] text-white/42">
-                    {shellContext.nextMoveHint}
-                </div>
-            </button>
-
             {activeCompany && (
                 <div
                     onClick={handleContextClick}
-                    className={`hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 md:flex ${companies.length > 1 ? 'cursor-pointer opacity-82 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 hover:opacity-100' : 'cursor-default opacity-60'}`}
+                    className={`hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 xl:flex ${companies.length > 1 ? 'cursor-pointer opacity-82 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 hover:opacity-100' : 'cursor-default opacity-60'}`}
                     role={companies.length > 1 ? 'button' : 'status'}
                     title={companies.length > 1 ? 'Kontext wechseln' : 'Aktueller Kontext'}
                 >

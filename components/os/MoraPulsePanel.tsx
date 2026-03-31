@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    ArrowUpRight,
     FileText,
     FolderOpen,
     PanelTopOpen,
@@ -59,9 +58,6 @@ export const MoraPulsePanel: React.FC = () => {
     const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
     const orbState = useMoraStore((state) => state.orbState);
     const viewLevel = useMoraStore((state) => state.viewLevel);
-    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
-    const navigateToSpace = useMoraStore((state) => state.navigateToSpace);
-    const navigateToFolder = useMoraStore((state) => state.navigateToFolder);
     const openPane = usePaneStore((state) => state.openPane);
 
     const [now, setNow] = useState(() => new Date());
@@ -202,30 +198,10 @@ export const MoraPulsePanel: React.FC = () => {
         });
     };
 
-    const handleNextMove = () => {
-        switch (shellContext.nextTarget.kind) {
-            case 'folder':
-                if (shellContext.nextTarget.id) navigateToFolder(shellContext.nextTarget.id);
-                return;
-            case 'space':
-                if (shellContext.nextTarget.id) navigateToSpace(shellContext.nextTarget.id);
-                return;
-            case 'department':
-                if (shellContext.nextTarget.id) navigateToDepartment(shellContext.nextTarget.id);
-                return;
-            case 'settings':
-                openSettings();
-                return;
-            case 'company':
-            default:
-                requestCommandDeckOpen({ pinned: true });
-        }
-    };
-
     return (
         <div className="pointer-events-none fixed right-6 top-6 z-[78] hidden lg:block">
             <div
-                className={`pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.22),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl transition-all duration-300 ${isDeckOpen ? 'w-[250px] opacity-55' : 'w-[312px]'}`}
+                className={`pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.22),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl transition-all duration-300 ${isDeckOpen ? 'w-[228px] opacity-50' : 'w-[286px]'}`}
             >
                 <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(16,185,129,0.08),transparent_45%,rgba(34,211,238,0.08))]" />
                 <div className="absolute -right-10 top-0 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
@@ -269,7 +245,7 @@ export const MoraPulsePanel: React.FC = () => {
                                 onClick={() => requestCommandDeckOpen({ pinned: true })}
                                 className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200 transition-colors hover:bg-emerald-500/16"
                             >
-                                Control Center
+                                Oeffnen
                             </button>
                         </div>
 
@@ -277,30 +253,13 @@ export const MoraPulsePanel: React.FC = () => {
                             {shellContext.signalA} / {shellContext.signalB}
                         </div>
 
-                        <button
-                            onClick={handleNextMove}
-                            className="mt-3 w-full rounded-2xl border border-emerald-400/15 bg-emerald-500/10 px-3 py-3 text-left transition-colors hover:border-emerald-400/24 hover:bg-emerald-500/14"
-                        >
-                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-emerald-200/72">
-                                <Sparkles size={12} />
-                                Next move
-                            </div>
-                            <div className="mt-1 flex items-center justify-between gap-2 text-sm text-white/86">
-                                <span className="truncate">{shellContext.nextMoveLabel}</span>
-                                <ArrowUpRight size={14} className="shrink-0 text-emerald-200/72" />
-                            </div>
-                            <div className="mt-1 text-[11px] leading-relaxed text-white/42">
-                                {shellContext.nextMoveHint}
-                            </div>
-                        </button>
-
                         <div className="mt-3 grid grid-cols-2 gap-2">
                             <button
                                 onClick={handleOpenContext}
                                 className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
                             >
                                 <FolderOpen size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
-                                <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Context</div>
+                                <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Kontext</div>
                             </button>
                             <button
                                 onClick={openSettings}

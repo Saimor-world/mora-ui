@@ -1192,7 +1192,7 @@ export const Dock = () => {
                                     aria-pressed={isCommandDeckOpen}
                                     title={isCommandDeckOpen ? 'Control Center schliessen' : 'Control Center oeffnen'}
                                     onClick={toggleCommandDeck}
-                                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isStandardMode
+                                    className={`flex min-w-[210px] items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isStandardMode
                                         ? isCommandDeckOpen
                                             ? 'border-[#0078D4]/35 bg-white text-[#0078D4]'
                                             : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
@@ -1216,10 +1216,10 @@ export const Dock = () => {
                                             Control Center
                                         </div>
                                         <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                                            {scopeLabel} / {shellContext.contextLabel}
+                                            {controlCenterNextMove.label}
                                         </div>
                                         <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                                            {isCommandDeckOpen ? 'Im Dock geoeffnet' : controlCenterNextMove.label}
+                                            {isCommandDeckOpen ? `${scopeLabel} / ${shellContext.contextLabel}` : `${scopeLabel} / Aktionen und Szene`}
                                         </div>
                                     </div>
                                 </button>

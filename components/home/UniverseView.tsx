@@ -493,6 +493,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => new Set(focusedSemanticLinks.map((link) => link.pathId)),
         [focusedSemanticLinks]
     );
+    const semanticCalloutPaths = useMemo(() => {
+        if (semanticPreviewPath) return [semanticPreviewPath];
+        if (!focusedPlanetId) return [];
+
+        return semanticPaths
+            .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id))
+            .sort((left, right) => right.strength - left.strength)
+            .slice(0, 1);
+    }, [focusedPlanetId, focusedSemanticPathIds, semanticPaths, semanticPreviewPath]);
 
     useEffect(() => {
         setSemanticPreviewPathId(null);
@@ -728,9 +737,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </svg>
 
             <div className="pointer-events-none absolute inset-0 z-[18]">
-                {semanticPaths
-                    .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id || path.strength >= 0.78)
-                    .map((path) => {
+                {semanticCalloutPaths.map((path) => {
                         const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                         const labelTitle = path.focusPeerName || `${path.fromName} / ${path.toName}`;
                         const isInteractive = Boolean(path.focusPeerId);
@@ -805,9 +812,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     title={focusedPlanet.name}
                     badge={isLocked(focusedPlanet) ? 'Visible' : 'Member'}
                     accent={focusedPlanet.color || '#34d399'}
-                    collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
-                    forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
+                    collapsedHint={hoverPlanetId ? 'Kompakter Fokus. Klick oeffnet Analyse.' : 'Fokus halten oder oeffnen fuer Analyse.'}
+                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Die Linien bleiben sichtbar, die Detailkarte zeigt nur die aktuell staerkste oder aktiv previewte Route.`}
+                    forceExpanded={Boolean(semanticPreviewPathId)}
                     metrics={[
                         { label: 'Spaces', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
                         { label: 'Folders', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
@@ -842,7 +849,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                         {focusedSemanticLinks.length > 0 && (
                             <div className="mt-3 space-y-2">
-                                {focusedSemanticLinks.slice(0, 3).map((link) => {
+                                {focusedSemanticLinks.slice(0, 2).map((link) => {
                                     const driverMeta = SEMANTIC_DRIVER_META[link.dominantDriver];
 
                                     return (
@@ -864,7 +871,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                                     className="mt-1 text-[10px] uppercase tracking-[0.16em]"
                                                     style={{ color: driverMeta.accent }}
                                                 >
-                                                    {driverMeta.label} · {driverMeta.reason}
+                                                    {driverMeta.label} / {driverMeta.reason}
                                                 </div>
                                             </div>
                                             <div className="ml-3 text-right">

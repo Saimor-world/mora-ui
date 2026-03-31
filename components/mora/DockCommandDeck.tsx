@@ -147,7 +147,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className="relative">
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Sparkles size={12} />
-                            Live Context
+                            Aktiver Kontext
                         </div>
                         <div className="mt-3 flex items-start justify-between gap-4">
                             <div className="min-w-0">
@@ -168,7 +168,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 onClick={onOpenContext}
                                 className={`shrink-0 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-[#0078D4]/25 bg-white text-[#0078D4] hover:border-[#0078D4]/45' : 'border-white/10 bg-white/[0.05] text-white/76 hover:border-emerald-400/25 hover:text-emerald-200'}`}
                             >
-                                Open Context
+                                Kontext oeffnen
                             </button>
                         </div>
 
@@ -188,7 +188,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                             className={`mt-4 w-full rounded-2xl border px-4 py-3 text-left transition-colors ${isStandardMode ? 'border-[#0078D4]/18 bg-[#0078D4]/8 hover:border-[#0078D4]/38' : 'border-emerald-400/18 bg-emerald-500/[0.08] hover:border-emerald-400/28 hover:bg-emerald-500/[0.12]'}`}
                         >
                             <div className={`text-[10px] uppercase tracking-[0.2em] ${accentText}`}>
-                                Next Move
+                                Naechster Schritt
                             </div>
                             <div className={`mt-2 text-sm ${primaryText}`}>{nextMoveLabel}</div>
                             <div className={`mt-1 text-[11px] leading-relaxed ${secondaryText}`}>{nextMoveHint}</div>
