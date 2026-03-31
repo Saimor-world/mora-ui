@@ -37,6 +37,7 @@ import {
     persistRitualSettings,
     resolveRitualSettings,
 } from '@/lib/os/ritualMode';
+import { SAIMOR_COMMAND_DECK_EVENT } from '@/lib/os/commandDeck';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -511,6 +512,16 @@ export const Dock = () => {
         window.addEventListener('mousedown', handlePointerDown);
         return () => window.removeEventListener('mousedown', handlePointerDown);
     }, [isCommandDeckOpen, closeCommandDeck]);
+
+    useEffect(() => {
+        const handleCommandDeckRequest = (event: Event) => {
+            const detail = (event as CustomEvent<{ pinned?: boolean }>).detail;
+            openCommandDeck(!!detail?.pinned);
+        };
+
+        window.addEventListener(SAIMOR_COMMAND_DECK_EVENT, handleCommandDeckRequest as EventListener);
+        return () => window.removeEventListener(SAIMOR_COMMAND_DECK_EVENT, handleCommandDeckRequest as EventListener);
+    }, [openCommandDeck]);
 
     const openAudioSettings = useCallback(() => {
         openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
