@@ -557,6 +557,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     title={focusedPlanet.name}
                     badge={isLocked(focusedPlanet) ? 'Visible' : 'Member'}
                     accent={focusedPlanet.color || '#34d399'}
+                    collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
                     summary={`${focusedPlanetLinkCount} semantische Verbindungen bleiben sichtbar, aber die volle Analyse klappt erst bei Hover oder echtem Fokus auf.`}
                     forceExpanded={Boolean(hoverPlanetId)}
                     metrics={[

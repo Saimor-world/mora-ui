@@ -19,6 +19,9 @@ interface LayerInsightRailProps {
     accent?: string;
     metrics: LayerInsightMetric[];
     forceExpanded?: boolean;
+    collapsedHint?: string;
+    onPointerEnter?: () => void;
+    onPointerLeave?: () => void;
     children?: React.ReactNode;
 }
 
@@ -31,20 +34,23 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
     accent = '#34d399',
     metrics,
     forceExpanded = false,
+    collapsedHint = 'Mehr bei Fokus.',
+    onPointerEnter,
+    onPointerLeave,
     children,
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    const isExpanded = forceExpanded || isHovered;
-    const compactMetrics = metrics.slice(0, 3);
+    const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
+    const isExpanded = forceExpanded || isManuallyExpanded;
+    const compactMetrics = metrics.slice(0, 2);
 
     return (
         <motion.div
-            className={`pointer-events-auto absolute overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,12,11,0.82),rgba(0,0,0,0.48))] shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl ${className}`}
+            className={`pointer-events-auto absolute overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,12,11,0.84),rgba(0,0,0,0.52))] shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl ${className}`}
             initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0, width: isExpanded ? 320 : 214 }}
-            transition={{ duration: 0.34, ease: 'easeOut' }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            animate={{ opacity: 1, x: 0, width: isExpanded ? 328 : 214 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            onMouseEnter={onPointerEnter}
+            onMouseLeave={onPointerLeave}
         >
             <div
                 className="pointer-events-none absolute inset-x-0 top-0 h-24"
@@ -76,12 +82,17 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                                 {badge}
                             </div>
                         )}
-                        <div className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38'}`}>
+                        <button
+                            type="button"
+                            aria-label={isExpanded ? 'Insight schliessen' : 'Insight oeffnen'}
+                            onClick={() => setIsManuallyExpanded((current) => !current)}
+                            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38 hover:border-white/14 hover:text-white/68'}`}
+                        >
                             <ChevronRight
                                 size={14}
                                 className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
                             />
-                        </div>
+                        </button>
                     </div>
                 </div>
 
@@ -101,9 +112,9 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                             ))}
                         </div>
 
-                        <p className="mt-3 text-[11px] leading-relaxed text-white/44">
-                            {summary}
-                        </p>
+                        <div className="mt-3 text-[11px] text-white/38">
+                            {collapsedHint}
+                        </div>
                     </>
                 )}
 
