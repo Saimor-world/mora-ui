@@ -3,16 +3,27 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
- * STAR FIELD - V10 COLORFUL CONSTELLATIONS
+ * StarField — Living Ambient Deep Space Background
  *
- * Features:
- * - Denser, more colorful stars (Green, Blue, Gold, White)
- * - Faint semantic constellation lines (automatic clustering)
- * - Parallax horizontal drift
- * - Organic twinkling
+ * Three parallax depth layers give genuine 3D depth:
+ *   far   — 500 tiny dim stars, near-zero drift  (depth illusion: very distant)
+ *   mid   — 280 medium stars, slow drift
+ *   near  — 120 bright large stars, faster drift  (depth illusion: close-in)
+ *
+ * Each layer scrolls at a different speed so the field breathes as a volume,
+ * not a flat plane.  Stars wrap at edges.
+ *
+ * Nebula: 4 slow-moving radial gradients in deep-space palette
+ * (indigo / violet / teal / black).  They oscillate on different phase
+ * offsets so the colour field shifts over ~90-second cycles.
+ *
+ * Shooting stars: random, short-lived streaks across the upper half.
+ *
+ * Performance: single Canvas, one rAF loop, paused when tab is hidden
+ * or when the paused prop is true.
  */
 
-interface Star {
+interface StarLayer {
     x: number;
     y: number;
     size: number;
@@ -20,67 +31,70 @@ interface Star {
     twinkleSpeed: number;
     twinklePhase: number;
     color: string;
-    clusterId?: number;
+    driftX: number;   // pixels per frame
+    driftY: number;
+}
+
+interface ShootingStar {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;      // 0..1
+    maxLife: number;
+    length: number;
 }
 
 interface StarFieldProps {
     warp?: boolean;
     density?: 'low' | 'medium' | 'high';
     opacity?: number;
-    /**
-     * When true, the rAF render loop is fully stopped.
-     * Use this to pause the starfield when it is visually occluded
-     * or when higher-priority interaction layers are active.
-     */
     paused?: boolean;
 }
 
-export const StarField: React.FC<StarFieldProps> = ({ warp = false, density = 'medium', opacity = 0.9, paused = false }) => {
+// Deep space palette — avoid green, lean into indigo/violet/teal
+const FAR_COLORS  = ['#FFFFFF', '#E8E8FF', '#D4D4F8', '#C8D8FF'];
+const MID_COLORS  = ['#FFFFFF', '#F0F0FF', '#B8C8FF', '#E0D8FF', '#C8F0F8'];
+const NEAR_COLORS = ['#FFFFFF', '#FFFFFF', '#FFE8C8', '#C8E8FF', '#E8C8FF'];
+
+const NEBULA_DEFS = [
+    { rx: 0.15, ry: 0.25, color: [88,  28, 135] as [number,number,number], phase: 0    },  // deep violet
+    { rx: 0.82, ry: 0.65, color: [15,  23, 110] as [number,number,number], phase: 1.3  },  // indigo navy
+    { rx: 0.45, ry: 0.55, color: [7,   89, 133] as [number,number,number], phase: 2.6  },  // deep teal
+    { rx: 0.78, ry: 0.22, color: [76,   5, 107] as [number,number,number], phase: 0.8  },  // dark magenta
+];
+
+function makeLayer(
+    width: number,
+    height: number,
+    count: number,
+    sizeMin: number,
+    sizeMax: number,
+    briMin: number,
+    briMax: number,
+    driftXBase: number,
+    colors: string[],
+): StarLayer[] {
+    return Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * (sizeMax - sizeMin) + sizeMin,
+        brightness: Math.random() * (briMax - briMin) + briMin,
+        twinkleSpeed: Math.random() * 0.018 + 0.002,
+        twinklePhase: Math.random() * Math.PI * 2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        driftX: driftXBase * (0.7 + Math.random() * 0.6),
+        driftY: (Math.random() - 0.5) * 0.012,
+    }));
+}
+
+export const StarField: React.FC<StarFieldProps> = ({
+    warp = false,
+    density = 'medium',
+    opacity = 0.92,
+    paused = false,
+}) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const speedRef = useRef(0.04);
-    const starsRef = useRef<Star[]>([]);
-    const sizeRef = useRef({ width: 0, height: 0 });
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const init = () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-            sizeRef.current = { width, height };
-
-            const densityMap = { low: 260, medium: 700, high: 1200 };
-            const starCount = densityMap[density] || 700;
-            const colors = [
-                '#FFFFFF',
-                '#FFFFFF',
-                '#E0F2FE',
-                '#FFFBEB',
-                '#F0FDFA',
-            ];
-
-            starsRef.current = Array.from({ length: starCount }, () => {
-                const clusterId = Math.random() > 0.965 ? Math.floor(Math.random() * 40) : undefined;
-                return {
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    size: Math.random() * 2.0 + 0.3,
-                    brightness: Math.random() * 0.9 + 0.1,
-                    twinkleSpeed: Math.random() * 0.02 + 0.002,
-                    twinklePhase: Math.random() * Math.PI * 2,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    clusterId
-                };
-            });
-        };
-
-        init();
-        window.addEventListener('resize', init);
-        return () => window.removeEventListener('resize', init);
-    }, [density]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -88,158 +102,194 @@ export const StarField: React.FC<StarFieldProps> = ({ warp = false, density = 'm
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        let animationFrameId = 0;
-        let isPaused = paused || document.hidden;
+        const densityScale = density === 'low' ? 0.45 : density === 'high' ? 1.8 : 1.0;
 
-        const stop = () => {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = 0;
-            }
+        let farLayer:  StarLayer[] = [];
+        let midLayer:  StarLayer[] = [];
+        let nearLayer: StarLayer[] = [];
+        let shooters:  ShootingStar[] = [];
+        let w = 0, h = 0;
+
+        const init = () => {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width  = w;
+            canvas.height = h;
+
+            const far  = Math.round(500 * densityScale);
+            const mid  = Math.round(280 * densityScale);
+            const near = Math.round(120 * densityScale);
+
+            farLayer  = makeLayer(w, h, far,  0.2, 0.8, 0.08, 0.45, 0.008, FAR_COLORS);
+            midLayer  = makeLayer(w, h, mid,  0.6, 1.4, 0.20, 0.70, 0.028, MID_COLORS);
+            nearLayer = makeLayer(w, h, near, 1.2, 2.4, 0.45, 0.95, 0.065, NEAR_COLORS);
+            shooters  = [];
         };
 
-        const render = () => {
-            if (isPaused) {
-                stop();
-                return;
-            }
+        init();
+        window.addEventListener('resize', init);
 
-            const { width, height } = sizeRef.current;
-            const stars = starsRef.current;
-            if (!width || !height || stars.length === 0) {
-                animationFrameId = requestAnimationFrame(render);
-                return;
-            }
+        let rafId = 0;
+        let running = false;
 
-            ctx.clearRect(0, 0, width, height);
-
-            const targetSpeed = warp ? 15 : 0.005;
-            speedRef.current += (targetSpeed - speedRef.current) * 0.03;
-
-            const time = Date.now() * 0.0001;
-            const nebulas = [
-                { x: width * 0.2, y: height * 0.3, r: 650, color: 'rgba(16, 185, 129, 0.14)' },
-                { x: width * 0.8, y: height * 0.7, r: 750, color: 'rgba(5, 150, 105, 0.12)' },
-                { x: width * 0.5, y: height * 0.5, r: 900, color: 'rgba(6, 182, 212, 0.10)' },
-            ];
-
-            nebulas.forEach((neb, i) => {
-                const moveX = Math.sin(time + i) * 100;
-                const moveY = Math.cos(time + i * 1.5) * 50;
-                const gradient = ctx.createRadialGradient(neb.x + moveX, neb.y + moveY, 0, neb.x + moveX, neb.y + moveY, neb.r);
-                gradient.addColorStop(0, neb.color);
-                gradient.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, 0, width, height);
+        const spawnShooter = () => {
+            const angle = (Math.random() * 30 + 15) * (Math.PI / 180); // 15-45° downward
+            const speed = Math.random() * 8 + 6;
+            const life  = Math.random() * 40 + 30;
+            shooters.push({
+                x: Math.random() * w,
+                y: Math.random() * h * 0.6,
+                vx: -Math.cos(angle) * speed,
+                vy:  Math.sin(angle) * speed,
+                life,
+                maxLife: life,
+                length: Math.random() * 180 + 80,
             });
+        };
 
-            const clusters: Record<number, Star[]> = {};
-            stars.forEach((star) => {
-                if (star.clusterId === undefined) return;
-                if (!clusters[star.clusterId]) clusters[star.clusterId] = [];
-                clusters[star.clusterId].push(star);
+        const drawNebula = (t: number) => {
+            const nebulaR = Math.min(w, h) * 0.65;
+            NEBULA_DEFS.forEach((n) => {
+                const driftX = Math.sin(t * 0.00008 + n.phase) * 120;
+                const driftY = Math.cos(t * 0.00006 + n.phase * 0.7) * 60;
+                const cx = w * n.rx + driftX;
+                const cy = h * n.ry + driftY;
+                const alpha = 0.09 + Math.sin(t * 0.00004 + n.phase) * 0.03;
+                const [r, g, b] = n.color;
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, nebulaR);
+                grad.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+                grad.addColorStop(0.5, `rgba(${r},${g},${b},${alpha * 0.4})`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
             });
+        };
 
-            ctx.lineWidth = 0.45;
-            ctx.setLineDash([2, 6]);
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = 'transparent';
+        const drawLayer = (layer: StarLayer[], t: number, warpStreak: number) => {
+            layer.forEach((s) => {
+                s.twinklePhase += s.twinkleSpeed;
+                const twinkle = 0.35 + Math.sin(s.twinklePhase) * 0.65;
+                const alpha = twinkle * s.brightness;
 
-            if (density !== 'low') {
-                Object.values(clusters).forEach((clusterStars) => {
-                    if (clusterStars.length < 3) return;
+                ctx.globalAlpha = Math.min(alpha, 1);
+                ctx.fillStyle = s.color;
 
+                if (warpStreak > 0) {
+                    const streak = warpStreak * s.size * 18 * s.brightness;
                     ctx.beginPath();
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-                    ctx.moveTo(clusterStars[0].x, clusterStars[0].y);
-
-                    for (let i = 1; i < clusterStars.length; i += 1) {
-                        const dx = clusterStars[i].x - clusterStars[i - 1].x;
-                        const dy = clusterStars[i].y - clusterStars[i - 1].y;
-                        if ((dx * dx + dy * dy) < 80000) {
-                            ctx.lineTo(clusterStars[i].x, clusterStars[i].y);
-                        } else {
-                            ctx.moveTo(clusterStars[i].x, clusterStars[i].y);
-                        }
-                    }
-
-                    ctx.stroke();
-                });
-            }
-
-            ctx.shadowBlur = 0;
-            ctx.setLineDash([]);
-
-            stars.forEach((star) => {
-                star.twinklePhase += star.twinkleSpeed * 0.8;
-                const twinkleAlpha = 0.4 + (Math.sin(star.twinklePhase) * 0.6);
-                const finalAlpha = twinkleAlpha * star.brightness;
-
-                ctx.fillStyle = star.color;
-                ctx.globalAlpha = finalAlpha * 0.9;
-
-                if (warp) {
-                    const streakLen = 40 * star.brightness;
-                    ctx.beginPath();
-                    ctx.ellipse(star.x + streakLen / 2, star.y, streakLen, star.size / 2, 0, 0, Math.PI * 2);
+                    ctx.ellipse(s.x + streak * 0.5, s.y, streak, s.size * 0.35, 0, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
                     ctx.beginPath();
-                    ctx.arc(star.x, star.y, star.size * 0.9, 0, Math.PI * 2);
+                    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                     ctx.fill();
+
+                    // Glow for bright near stars
+                    if (s.size > 1.6 && alpha > 0.6) {
+                        const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size * 3.5);
+                        glow.addColorStop(0, `${s.color}30`);
+                        glow.addColorStop(1, 'transparent');
+                        ctx.fillStyle = glow;
+                        ctx.beginPath();
+                        ctx.arc(s.x, s.y, s.size * 3.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
 
-                const driftSpeed = warp ? 20 : 0.05;
-                star.x -= driftSpeed * (star.size * 0.5);
-                star.y += Math.sin(Date.now() * 0.0005 + star.x * 0.01) * 0.05;
-
-                if (star.x < 0) {
-                    star.x = width;
-                    star.y = Math.random() * height;
-                }
+                // Drift + wrap
+                const driftMul = warpStreak > 0 ? 12 : 1;
+                s.x -= s.driftX * driftMul;
+                s.y += s.driftY;
+                if (s.x < -4) { s.x = w + 4; s.y = Math.random() * h; }
+                if (s.x > w + 4) s.x = -4;
+                if (s.y < 0) s.y = h;
+                if (s.y > h) s.y = 0;
             });
+        };
 
-            if (!warp && Math.random() > 0.995) {
+        const drawShooters = () => {
+            shooters = shooters.filter((s) => s.life > 0);
+            shooters.forEach((s) => {
+                const progress = s.life / s.maxLife;
+                const alpha = progress < 0.3 ? progress / 0.3 : progress > 0.7 ? (1 - progress) / 0.3 : 1;
+                const tailX = s.x - (s.vx / Math.hypot(s.vx, s.vy)) * s.length * progress;
+                const tailY = s.y - (s.vy / Math.hypot(s.vx, s.vy)) * s.length * progress;
+                const grad = ctx.createLinearGradient(tailX, tailY, s.x, s.y);
+                grad.addColorStop(0, 'rgba(220,240,255,0)');
+                grad.addColorStop(0.6, `rgba(220,240,255,${alpha * 0.5})`);
+                grad.addColorStop(1, `rgba(255,255,255,${alpha * 0.9})`);
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([]);
                 ctx.beginPath();
-                const sx = Math.random() * width;
-                const sy = Math.random() * height * 0.5;
-                const length = Math.random() * 200 + 100;
-                const gradient = ctx.createLinearGradient(sx, sy, sx - length, sy + length);
-                gradient.addColorStop(0, 'rgba(255,255,255,0)');
-                gradient.addColorStop(0.5, 'rgba(220,250,255,0.6)');
-                gradient.addColorStop(1, 'rgba(255,255,255,0)');
-                ctx.strokeStyle = gradient;
-                ctx.lineWidth = 1.5;
-                ctx.moveTo(sx, sy);
-                ctx.lineTo(sx - length, sy + length);
+                ctx.moveTo(tailX, tailY);
+                ctx.lineTo(s.x, s.y);
                 ctx.stroke();
-            }
+                s.x += s.vx;
+                s.y += s.vy;
+                s.life -= 1;
+            });
+        };
 
-            ctx.globalAlpha = 1.0;
-            animationFrameId = requestAnimationFrame(render);
+        let warpSpeed = 0;
+        let frameCount = 0;
+
+        const render = () => {
+            if (!running) return;
+
+            const t = Date.now();
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Nebula first (background)
+            drawNebula(t);
+
+            // Warp interpolation
+            const targetWarp = warp ? 1 : 0;
+            warpSpeed += (targetWarp - warpSpeed) * 0.04;
+
+            ctx.globalAlpha = 1;
+            ctx.setLineDash([]);
+
+            // Three depth layers — far drawn first (dimmest, slowest)
+            drawLayer(farLayer,  t, warpSpeed);
+            drawLayer(midLayer,  t, warpSpeed);
+            drawLayer(nearLayer, t, warpSpeed);
+
+            // Shooting stars
+            drawShooters();
+            frameCount++;
+            if (!warp && frameCount % 380 === 0 && Math.random() > 0.35) spawnShooter();
+
+            ctx.globalAlpha = 1;
+            rafId = requestAnimationFrame(render);
         };
 
         const start = () => {
-            if (animationFrameId || isPaused) return;
-            animationFrameId = requestAnimationFrame(render);
+            if (running) return;
+            running = true;
+            rafId = requestAnimationFrame(render);
         };
 
-        const handleVisibilityChange = () => {
-            isPaused = paused || document.hidden;
-            if (isPaused) {
-                stop();
-                return;
-            }
-            start();
+        const stop = () => {
+            running = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
         };
 
-        handleVisibilityChange();
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        const handleVisibility = () => {
+            if (paused || document.hidden) stop(); else start();
+        };
+
+        handleVisibility();
+        document.addEventListener('visibilitychange', handleVisibility);
 
         return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener('visibilitychange', handleVisibility);
+            window.removeEventListener('resize', init);
             stop();
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [warp, density, paused]);
 
     return (
