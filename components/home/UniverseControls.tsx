@@ -1,15 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import {
-    Activity,
-    Building2,
-    Globe,
-    LayoutGrid,
-    Layers3,
-    Shield,
-    type LucideIcon,
-} from 'lucide-react';
+import { Activity, ArrowUpRight, Globe, LayoutGrid, PanelTopOpen, Shield, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
+import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
@@ -24,13 +19,6 @@ interface UniverseControlsProps {
     scopeLabel?: string;
 }
 
-interface ContextHero {
-    eyebrow: string;
-    title: string;
-    subtitle: string;
-    icon: LucideIcon;
-}
-
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
     viewMode,
     setViewMode,
@@ -39,76 +27,67 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     onSwitchCompany,
     visibleModes = ['owner', 'workspace', 'demo'],
     workspaceLabel = 'Workspace',
-    scopeLabel = 'Universe',
 }) => {
+    const user = useMoraStore((state) => state.user);
     const viewLevel = useMoraStore((state) => state.viewLevel);
+    const departments = useMoraStore((state) => state.departments);
     const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
     const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
     const activeFolderId = useMoraStore((state) => state.activeFolderId);
-    const departments = useMoraStore((state) => state.departments);
     const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
     const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
+    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
+    const navigateToSpace = useMoraStore((state) => state.navigateToSpace);
+    const navigateToFolder = useMoraStore((state) => state.navigateToFolder);
+    const openPane = usePaneStore((state) => state.openPane);
 
-    const safeDepartments = React.useMemo(
-        () => (Array.isArray(departments) ? departments : []),
-        [departments]
-    );
-    const currentDepartment = React.useMemo(
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const activeDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
         [safeDepartments, activeDepartmentId]
     );
-    const currentSpace = React.useMemo(
-        () => (activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : []).find((space) => space.id === activeSpaceId) ?? null,
-        [activeDepartmentId, activeSpaceId, spacesByDepartment]
+    const activeSpaces = useMemo(
+        () => activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [],
+        [activeDepartmentId, spacesByDepartment]
     );
-    const currentFolder = React.useMemo(
-        () => (activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : []).find((folder) => folder.id === activeFolderId) ?? null,
-        [activeFolderId, activeSpaceId, foldersBySpace]
+    const activeSpace = useMemo(
+        () => activeSpaces.find((space) => space.id === activeSpaceId) ?? null,
+        [activeSpaces, activeSpaceId]
+    );
+    const activeFolders = useMemo(
+        () => activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [],
+        [activeSpaceId, foldersBySpace]
+    );
+    const activeFolder = useMemo(
+        () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
+        [activeFolders, activeFolderId]
     );
 
-    const isLayerFocus = viewLevel === 'department' || viewLevel === 'space' || viewLevel === 'folder';
-
-    const contextHero = React.useMemo<ContextHero>(() => {
-        if (viewLevel === 'folder' && currentFolder) {
-            return {
-                eyebrow: `${scopeLabel} focus`,
-                title: currentFolder.name,
-                subtitle: [currentSpace?.name, currentDepartment?.name].filter(Boolean).join(' / '),
-                icon: Layers3,
-            };
-        }
-
-        if (viewLevel === 'space' && currentSpace) {
-            return {
-                eyebrow: `${scopeLabel} focus`,
-                title: currentSpace.name,
-                subtitle: currentDepartment?.name || activeCompany?.name || 'Workspace',
-                icon: LayoutGrid,
-            };
-        }
-
-        if (viewLevel === 'department' && currentDepartment) {
-            return {
-                eyebrow: `${scopeLabel} focus`,
-                title: currentDepartment.name,
-                subtitle: activeCompany?.name || 'Workspace',
-                icon: Building2,
-            };
-        }
-
-        return {
-            eyebrow: 'Layer',
-            title: scopeLabel,
-            subtitle: activeCompany?.name || 'Workspace',
-            icon: Globe,
-        };
-    }, [
-        activeCompany?.name,
-        currentDepartment,
-        currentFolder,
-        currentSpace,
-        scopeLabel,
+    const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
+        activeCompany,
+        activeDepartment,
+        activeSpace,
+        activeFolder,
+        activeSpaces,
+        activeFolders,
+        foldersBySpace,
+        companyCount: companies.length,
+        departmentCount: safeDepartments.length,
+        userCompanyName: user?.active_company_name,
+        accent: activeDepartment?.color || '#10B981',
+    }), [
+        viewLevel,
+        activeCompany,
+        activeDepartment,
+        activeSpace,
+        activeFolder,
+        activeSpaces,
+        activeFolders,
+        foldersBySpace,
+        companies.length,
+        safeDepartments.length,
+        user?.active_company_name,
     ]);
 
     const handleContextClick = () => {
@@ -117,21 +96,39 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         const currentIndex = companies.findIndex((company) => company.id === activeCompany.id);
         const nextIndex = (currentIndex + 1) % companies.length;
         const nextCompany = companies[nextIndex];
-        if (!nextCompany) return;
 
         onSwitchCompany(nextCompany.id);
     };
 
+    const handleOpenContextBridge = () => {
+        requestCommandDeckOpen({ pinned: true });
+    };
+
+    const handleNextMove = () => {
+        switch (shellContext.nextTarget.kind) {
+            case 'folder':
+                if (shellContext.nextTarget.id) navigateToFolder(shellContext.nextTarget.id);
+                return;
+            case 'space':
+                if (shellContext.nextTarget.id) navigateToSpace(shellContext.nextTarget.id);
+                return;
+            case 'department':
+                if (shellContext.nextTarget.id) navigateToDepartment(shellContext.nextTarget.id);
+                return;
+            case 'settings':
+                openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                return;
+            case 'company':
+            default:
+                handleOpenContextBridge();
+        }
+    };
+
     return (
-        <motion.div
-            layout
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className={`fixed left-1/2 top-6 z-50 flex max-w-[min(920px,calc(100vw-2rem))] -translate-x-1/2 items-center rounded-full border border-white/10 bg-black/45 text-white shadow-2xl backdrop-blur-xl ${isLayerFocus ? 'gap-3 px-3 py-2.5' : 'gap-2 px-4 py-2'}`}
-        >
-            <div className={`flex items-center ${isLayerFocus ? 'gap-1' : 'gap-2'}`}>
+        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-3 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+            <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">
                 {visibleModes.includes('owner') && (
                     <ControlButton
-                        compact={isLayerFocus}
                         isActive={viewMode === 'owner'}
                         onClick={() => setViewMode('owner')}
                         icon={Shield}
@@ -139,13 +136,12 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     />
                 )}
 
-                {!isLayerFocus && visibleModes.includes('owner') && visibleModes.includes('workspace') && (
-                    <div className="mx-1 h-4 w-px bg-white/20" />
+                {visibleModes.includes('owner') && visibleModes.includes('workspace') && (
+                    <div className="h-5 w-px bg-white/12" />
                 )}
 
                 {visibleModes.includes('workspace') && (
                     <ControlButton
-                        compact={isLayerFocus}
                         isActive={viewMode === 'workspace'}
                         onClick={() => setViewMode('workspace')}
                         icon={LayoutGrid}
@@ -153,111 +149,107 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     />
                 )}
 
-                {!isLayerFocus && visibleModes.includes('workspace') && visibleModes.includes('demo') && (
-                    <div className="mx-1 h-4 w-px bg-white/20" />
+                {visibleModes.includes('workspace') && visibleModes.includes('demo') && (
+                    <div className="h-5 w-px bg-white/12" />
                 )}
 
                 {visibleModes.includes('demo') && (
                     <ControlButton
-                        compact={isLayerFocus}
                         isActive={viewMode === 'demo'}
                         onClick={() => setViewMode('demo')}
                         icon={Activity}
                         label="Demo"
-                        showLabelAlways={!isLayerFocus}
+                        showLabelAlways={true}
                     />
                 )}
             </div>
 
-            {isLayerFocus ? (
-                <motion.div
-                    layout
-                    className="flex min-w-[240px] flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2"
-                >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-400/18 bg-cyan-500/10 text-cyan-200">
-                        <contextHero.icon size={15} />
-                    </div>
-                    <div className="min-w-0">
-                        <div className="text-[9px] uppercase tracking-[0.2em] text-white/40">
-                            {contextHero.eyebrow}
-                        </div>
-                        <div className="truncate text-sm text-white/86">
-                            {contextHero.title}
-                        </div>
-                        <div className="truncate text-[10px] text-white/42">
-                            {contextHero.subtitle}
-                        </div>
-                    </div>
-                </motion.div>
-            ) : (
-                <div className="ml-1 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1">
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-white/55">Layer</span>
-                    <span className="ml-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">{scopeLabel}</span>
+            <button
+                type="button"
+                onClick={handleOpenContextBridge}
+                className="min-w-0 flex-1 rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
+            >
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
+                    <span>Layer {shellContext.scopeLabel}</span>
+                    <span className="text-white/18">/</span>
+                    <span style={{ color: shellContext.accent }}>{shellContext.contextLabel}</span>
                 </div>
-            )}
+                <div className="mt-1 truncate text-sm text-white/86">{shellContext.title}</div>
+                <div className="mt-1 truncate text-[11px] text-white/44">
+                    {shellContext.signalA} / {shellContext.signalB}
+                </div>
+            </button>
+
+            <button
+                type="button"
+                onClick={handleNextMove}
+                className="hidden shrink-0 rounded-[24px] border border-emerald-400/18 bg-emerald-500/[0.1] px-4 py-3 text-left transition-colors hover:border-emerald-400/28 hover:bg-emerald-500/[0.14] xl:block"
+            >
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200/72">
+                    <Sparkles size={12} />
+                    Next Move
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-sm text-white/88">
+                    <span className="max-w-[220px] truncate">{shellContext.nextMoveLabel}</span>
+                    <ArrowUpRight size={14} className="shrink-0 text-emerald-200/72" />
+                </div>
+                <div className="mt-1 max-w-[260px] truncate text-[11px] text-white/42">
+                    {shellContext.nextMoveHint}
+                </div>
+            </button>
 
             {activeCompany && (
                 <div
                     onClick={handleContextClick}
-                    className={`min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] transition-colors ${isLayerFocus ? 'flex max-w-[220px] px-3 py-2' : 'ml-2 hidden pl-3 md:flex'} ${companies.length > 1 ? 'cursor-pointer hover:border-emerald-400/20 hover:text-emerald-300' : 'opacity-65 cursor-default'}`}
+                    className={`hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 md:flex ${companies.length > 1 ? 'cursor-pointer opacity-82 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 hover:opacity-100' : 'cursor-default opacity-60'}`}
                     role={companies.length > 1 ? 'button' : 'status'}
-                    title={companies.length > 1 ? 'Switch workspace' : 'Current workspace'}
+                    title={companies.length > 1 ? 'Kontext wechseln' : 'Aktueller Kontext'}
                 >
-                    <Globe className="h-3 w-3 shrink-0" />
-                    <div className="min-w-0">
-                        <span className="block truncate text-[10px] font-mono uppercase tracking-wider select-none">
+                    <Globe className="h-3 w-3" />
+                    <div className="flex flex-col">
+                        <span className="max-w-[168px] truncate text-[10px] uppercase tracking-[0.18em] text-white/78">
                             {activeCompany.name}
                         </span>
-                        <span className="block text-[8px] uppercase tracking-[0.2em] text-white/38">
-                            {viewMode === 'demo'
-                                ? 'Demo'
-                                : companies.length > 1
-                                    ? isLayerFocus ? 'Switch' : 'TAB'
-                                    : 'Active'}
+                        <span className="text-[10px] text-white/34">
+                            {viewMode === 'demo' ? 'Demo workspace' : shellContext.subtitle}
                         </span>
                     </div>
+                    {companies.length > 1 && (
+                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/58">
+                            Tab
+                        </span>
+                    )}
                 </div>
             )}
-        </motion.div>
+
+            <button
+                type="button"
+                onClick={handleOpenContextBridge}
+                className="flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white/58 transition-colors hover:border-emerald-400/20 hover:bg-emerald-500/[0.08] hover:text-emerald-200 xl:hidden"
+                title="Control Center oeffnen"
+            >
+                <PanelTopOpen size={16} />
+            </button>
+        </div>
     );
 };
 
-const ControlButton: React.FC<{
-    compact?: boolean;
-    isActive: boolean;
-    onClick: () => void;
-    icon: LucideIcon;
-    label: string;
-    showLabelAlways?: boolean;
-}> = ({
-    compact = false,
-    isActive,
-    onClick,
-    icon: Icon,
-    label,
-    showLabelAlways = false,
+const ControlButton: React.FC<{ isActive: boolean; onClick: () => void; icon: any; label: string; showLabelAlways?: boolean }> = ({
+    isActive, onClick, icon: Icon, label, showLabelAlways = false
 }) => (
     <button
         onClick={onClick}
-        className={`relative group flex items-center justify-center rounded-lg transition-all duration-300 ${compact ? 'px-2.5 py-2' : 'p-2'} ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/50 hover:bg-white/5 hover:text-white'}`}
+        className={`relative group flex items-center justify-center rounded-xl p-2 transition-all duration-300 ${isActive ? 'bg-emerald-500/20 text-emerald-300' : 'text-white/54 hover:bg-white/6 hover:text-white'}`}
     >
         <Icon className={`h-4 w-4 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-        <span
-            className={`overflow-hidden text-[10px] font-medium transition-all duration-300 ${compact ? 'ml-0' : 'ml-2'} ${(isActive || showLabelAlways)
-                ? compact
-                    ? 'max-w-0 opacity-0'
-                    : 'max-w-[54px] opacity-100'
-                : compact
-                    ? 'max-w-0 opacity-0'
-                    : 'max-w-0 opacity-0 group-hover:max-w-[54px] group-hover:opacity-100'}`}
-        >
+        <span className={`ml-2 overflow-hidden text-[10px] font-medium transition-all duration-300 ${(isActive || showLabelAlways) ? 'max-w-[52px] opacity-100' : 'max-w-0 opacity-0 group-hover:max-w-[52px] group-hover:opacity-100'}`}>
             {label}
         </span>
 
         {isActive && (
             <motion.div
                 layoutId="activeTab"
-                className="absolute inset-0 rounded-lg border border-emerald-500/30"
+                className="absolute inset-0 rounded-xl border border-emerald-500/30"
                 initial={false}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             />

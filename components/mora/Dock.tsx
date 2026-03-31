@@ -38,6 +38,7 @@ import {
     resolveRitualSettings,
 } from '@/lib/os/ritualMode';
 import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/commandDeck';
+import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -60,14 +61,6 @@ interface DockItem {
     badge?: number;
     hidden?: boolean;
 }
-
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-const getFreshnessWeight = (value?: string | null) => {
-    if (!value) return 0.32;
-    const days = (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24);
-    return clamp(1 - days / 28, 0.18, 1);
-};
 
 // ─── Magnetic Dock Icon ──────────────────────────────────────────────────────
 interface MagneticDockIconProps {
@@ -351,6 +344,7 @@ const DockPod: React.FC<DockPodProps> = ({
 
 export const Dock = () => {
     const navigateToCore = useMoraStore((s) => s.navigateToCore);
+    const navigateToDepartment = useMoraStore((s) => s.navigateToDepartment);
     const navigateToSpace = useMoraStore((s) => s.navigateToSpace);
     const navigateToFolder = useMoraStore((s) => s.navigateToFolder);
     const orbState = useMoraStore((s) => s.orbState);
@@ -482,14 +476,6 @@ export const Dock = () => {
         }))
     , [mod, DOCK_ICON_MAP]);
 
-    const scopeLabel = useMemo(() => {
-        if (viewLevel === 'company') return 'Portfolio';
-        if (viewLevel === 'department') return 'Department';
-        if (viewLevel === 'space') return 'Space';
-        if (viewLevel === 'folder') return 'Folder';
-        return 'Universe';
-    }, [viewLevel]);
-
     const orbStateLabel = useMemo(() => {
         switch (orbState) {
             case 'focus': return 'Focus';
@@ -511,27 +497,76 @@ export const Dock = () => {
         });
     }, [openPane]);
 
-    const leadingSpace = useMemo(() => {
-        if (activeSpaces.length === 0) return null;
+    const shellContext = useMemo(() => buildShellContextSnapshot({
+        viewLevel,
+        activeCompany,
+        activeDepartment,
+        activeSpace,
+        activeFolder,
+        activeSpaces,
+        activeFolders,
+        foldersBySpace,
+        companyCount: safeCompanies.length,
+        departmentCount: safeDepartments.length,
+        userCompanyName: user?.active_company_name,
+        accent,
+    }), [
+        viewLevel,
+        activeCompany,
+        activeDepartment,
+        activeSpace,
+        activeFolder,
+        activeSpaces,
+        activeFolders,
+        foldersBySpace,
+        safeCompanies.length,
+        safeDepartments.length,
+        user?.active_company_name,
+        accent,
+    ]);
 
-        return [...activeSpaces].sort((left, right) => {
-            const leftFolders = foldersBySpace[left.id] || [];
-            const rightFolders = foldersBySpace[right.id] || [];
-            const leftSignal = Math.max(left.folder_count ?? 0, leftFolders.length) + leftFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0) * 0.35;
-            const rightSignal = Math.max(right.folder_count ?? 0, rightFolders.length) + rightFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0) * 0.35;
-            return rightSignal - leftSignal;
-        })[0] ?? null;
-    }, [activeSpaces, foldersBySpace]);
+    const scopeLabel = shellContext.scopeLabel;
 
-    const leadingFolder = useMemo(() => {
-        if (activeFolders.length === 0) return null;
+    const handleOpenContext = useCallback(() => {
+        if (activeFolder && activeSpace) {
+            openFinderContext(activeFolder.name, {
+                folderId: activeFolder.id,
+                spaceId: activeSpace.id,
+                departmentId: activeDepartmentId || undefined,
+                companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+            });
+            return;
+        }
 
-        return [...activeFolders].sort((left, right) => {
-            const leftSignal = (left.node_count || 0) * 0.82 + getFreshnessWeight(left.updated_at || left.created_at) * 5.2;
-            const rightSignal = (right.node_count || 0) * 0.82 + getFreshnessWeight(right.updated_at || right.created_at) * 5.2;
-            return rightSignal - leftSignal;
-        })[0] ?? null;
-    }, [activeFolders]);
+        if (activeSpace) {
+            openFinderContext(activeSpace.name, {
+                spaceId: activeSpace.id,
+                departmentId: activeDepartmentId || undefined,
+                companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+            });
+            return;
+        }
+
+        if (activeDepartment) {
+            openFinderContext(activeDepartment.name, {
+                departmentId: activeDepartment.id,
+                companyId: activeCompanyId || activeDepartment.company_id || undefined,
+            });
+            return;
+        }
+
+        openFinderContext(activeCompany?.name || 'Workspace', {
+            companyId: activeCompanyId || undefined,
+        });
+    }, [
+        activeCompany?.name,
+        activeCompanyId,
+        activeDepartment,
+        activeDepartmentId,
+        activeFolder,
+        activeSpace,
+        openFinderContext,
+    ]);
 
     const contextDeck = useMemo(() => {
         if (activeFolder && activeSpace) {
@@ -617,6 +652,53 @@ export const Dock = () => {
         user?.active_company_name,
     ]);
 
+    const handleShellNextMove = useCallback(() => {
+        switch (shellContext.nextTarget.kind) {
+            case 'folder':
+                if (shellContext.nextTarget.id) {
+                    navigateToFolder(shellContext.nextTarget.id);
+                }
+                return;
+            case 'space':
+                if (shellContext.nextTarget.id) {
+                    navigateToSpace(shellContext.nextTarget.id);
+                }
+                return;
+            case 'department':
+                if (shellContext.nextTarget.id) {
+                    navigateToDepartment(shellContext.nextTarget.id);
+                }
+                return;
+            case 'settings':
+                handleDockClick('settings');
+                return;
+            case 'company':
+            default:
+                handleOpenContext();
+        }
+    }, [
+        handleDockClick,
+        handleOpenContext,
+        navigateToDepartment,
+        navigateToFolder,
+        navigateToSpace,
+        shellContext.nextTarget,
+    ]);
+
+    const controlCenterNextMove = useMemo(() => {
+        if (shellContext.nextTarget.kind === 'company') {
+            return {
+                label: 'Open Workspace',
+                hint: 'Direkt in Dateien und Strukturen dieses Workspaces springen.',
+            };
+        }
+
+        return {
+            label: shellContext.nextMoveLabel,
+            hint: shellContext.nextMoveHint,
+        };
+    }, [shellContext.nextMoveHint, shellContext.nextMoveLabel, shellContext.nextTarget.kind]);
+
     const openCommandDeck = useCallback((pin = false) => {
         setIsCommandDeckOpen(true);
         if (pin) {
@@ -657,7 +739,14 @@ export const Dock = () => {
                     label: 'Open Finder',
                     description: 'Bleib im aktiven Folder und zieh Dateien direkt weiter.',
                     icon: FolderOpen,
-                    onClick: closeAfter(contextDeck.onOpen),
+                    onClick: closeAfter(handleOpenContext),
+                },
+                {
+                    id: 'folder-next',
+                    label: controlCenterNextMove.label,
+                    description: controlCenterNextMove.hint,
+                    icon: Sparkles,
+                    onClick: closeAfter(handleShellNextMove),
                 },
                 {
                     id: 'folder-chat',
@@ -665,13 +754,6 @@ export const Dock = () => {
                     description: 'Sprich mit Mora aus genau diesem Folder-Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
-                },
-                {
-                    id: 'folder-space',
-                    label: 'Back To Space',
-                    description: 'Spring zur Space-Ebene zurueck, ohne den Fokus zu verlieren.',
-                    icon: Home,
-                    onClick: closeAfter(() => activeSpaceId && navigateToSpace(activeSpaceId)),
                 },
                 {
                     id: 'folder-notes',
@@ -690,14 +772,14 @@ export const Dock = () => {
                     label: 'Open Space',
                     description: 'Gehe direkt in den Finder mit diesem Space als Root.',
                     icon: FolderOpen,
-                    onClick: closeAfter(contextDeck.onOpen),
+                    onClick: closeAfter(handleOpenContext),
                 },
                 {
                     id: 'space-focus',
-                    label: 'Focus Top Folder',
-                    description: 'Nimm den staerksten Folder als naechsten Arbeitsknoten.',
+                    label: controlCenterNextMove.label,
+                    description: controlCenterNextMove.hint,
                     icon: Sparkles,
-                    onClick: closeAfter(() => leadingFolder && navigateToFolder(leadingFolder.id)),
+                    onClick: closeAfter(handleShellNextMove),
                 },
                 {
                     id: 'space-chat',
@@ -723,14 +805,14 @@ export const Dock = () => {
                     label: 'Open Department',
                     description: 'Oeffne die Department-Struktur im Finder.',
                     icon: FolderOpen,
-                    onClick: closeAfter(contextDeck.onOpen),
+                    onClick: closeAfter(handleOpenContext),
                 },
                 {
                     id: 'department-zoom',
-                    label: 'Enter Lead Space',
-                    description: 'Zoome in den semantisch staerksten Space dieses Departments.',
+                    label: controlCenterNextMove.label,
+                    description: controlCenterNextMove.hint,
                     icon: Sparkles,
-                    onClick: closeAfter(() => leadingSpace && navigateToSpace(leadingSpace.id)),
+                    onClick: closeAfter(handleShellNextMove),
                 },
                 {
                     id: 'department-team',
@@ -757,13 +839,13 @@ export const Dock = () => {
                 icon: Home,
                 onClick: closeAfter(() => handleDockClick('home')),
             },
-            {
-                id: 'universe-finder',
-                label: 'Open Finder',
-                description: 'Direkt in Dateien und Strukturen einsteigen.',
-                icon: FolderOpen,
-                onClick: closeAfter(contextDeck.onOpen),
-            },
+                {
+                    id: 'universe-finder',
+                    label: 'Open Finder',
+                    description: 'Direkt in Dateien und Strukturen einsteigen.',
+                    icon: FolderOpen,
+                    onClick: closeAfter(handleOpenContext),
+                },
             {
                 id: 'universe-chat',
                 label: 'Mora',
@@ -783,15 +865,13 @@ export const Dock = () => {
         activeDepartment,
         activeFolder,
         activeSpace,
-        activeSpaceId,
         closeCommandDeck,
-        contextDeck,
+        controlCenterNextMove.hint,
+        controlCenterNextMove.label,
         handleDockClick,
+        handleOpenContext,
+        handleShellNextMove,
         isCommandDeckPinned,
-        leadingFolder,
-        leadingSpace,
-        navigateToFolder,
-        navigateToSpace,
     ]);
 
     useEffect(() => {
@@ -947,17 +1027,20 @@ export const Dock = () => {
                                     orbStateLabel={orbStateLabel}
                                     scopeLabel={scopeLabel}
                                     workspaceName={activeCompany?.name || user?.active_company_name || 'Workspace'}
-                                    contextLabel={contextDeck.label}
-                                    contextTitle={contextDeck.title}
-                                    contextDescription={contextDeck.description}
-                                    contextSignalA={contextDeck.signalA}
-                                    contextSignalB={contextDeck.signalB}
-                                    contextActionLabel={contextDeck.actionLabel}
-                                    contextAccent={contextDeck.accent}
+                                    contextLabel={shellContext.contextLabel}
+                                    contextTitle={shellContext.title}
+                                    contextSubtitle={shellContext.subtitle}
+                                    contextDescription={shellContext.description}
+                                    contextSignalA={shellContext.signalA}
+                                    contextSignalB={shellContext.signalB}
+                                    contextAccent={contextDeck.accent || shellContext.accent}
+                                    nextMoveLabel={controlCenterNextMove.label}
+                                    nextMoveHint={controlCenterNextMove.hint}
                                     sceneLabel={ritualScene.label}
                                     sceneDescription={ritualScene.description}
                                     autoSceneEnabled={ritualSettings.autoTime}
-                                    onOpenContext={contextDeck.onOpen}
+                                    onOpenContext={handleOpenContext}
+                                    onNextMove={handleShellNextMove}
                                     onTogglePinned={toggleCommandDeckPinned}
                                     onToggleAutoScene={handleToggleRitualAuto}
                                     onCycleScene={handleCycleRitualScene}
@@ -1130,13 +1213,13 @@ export const Dock = () => {
                                     </div>
                                     <div className="min-w-0 text-left">
                                         <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                            Center
+                                            Control Center
                                         </div>
                                         <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                                            {scopeLabel} / {contextDeck.label}
+                                            {scopeLabel} / {shellContext.contextLabel}
                                         </div>
                                         <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                                            {isCommandDeckOpen ? 'Im Dock geoeffnet' : 'Kontext, Szene und Aktionen'}
+                                            {isCommandDeckOpen ? 'Im Dock geoeffnet' : controlCenterNextMove.label}
                                         </div>
                                     </div>
                                 </button>

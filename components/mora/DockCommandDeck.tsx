@@ -31,15 +31,18 @@ interface DockCommandDeckProps {
     workspaceName: string;
     contextLabel: string;
     contextTitle: string;
+    contextSubtitle: string;
     contextDescription: string;
     contextSignalA: string;
     contextSignalB: string;
-    contextActionLabel: string;
     contextAccent: string;
+    nextMoveLabel: string;
+    nextMoveHint: string;
     sceneLabel: string;
     sceneDescription: string;
     autoSceneEnabled: boolean;
     onOpenContext: () => void;
+    onNextMove: () => void;
     onTogglePinned: () => void;
     onToggleAutoScene: () => void;
     onCycleScene: () => void;
@@ -60,15 +63,18 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     workspaceName,
     contextLabel,
     contextTitle,
+    contextSubtitle,
     contextDescription,
     contextSignalA,
     contextSignalB,
-    contextActionLabel,
     contextAccent,
+    nextMoveLabel,
+    nextMoveHint,
     sceneLabel,
     sceneDescription,
     autoSceneEnabled,
     onOpenContext,
+    onNextMove,
     onTogglePinned,
     onToggleAutoScene,
     onCycleScene,
@@ -151,6 +157,9 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 <div className={`mt-2 text-lg ${primaryText}`}>
                                     {contextTitle}
                                 </div>
+                                <div className={`mt-2 text-sm ${secondaryText}`}>
+                                    {contextSubtitle}
+                                </div>
                                 <p className={`mt-3 max-w-[44ch] text-sm leading-relaxed ${secondaryText}`}>
                                     {contextDescription}
                                 </p>
@@ -159,7 +168,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 onClick={onOpenContext}
                                 className={`shrink-0 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-[#0078D4]/25 bg-white text-[#0078D4] hover:border-[#0078D4]/45' : 'border-white/10 bg-white/[0.05] text-white/76 hover:border-emerald-400/25 hover:text-emerald-200'}`}
                             >
-                                {contextActionLabel}
+                                Open Context
                             </button>
                         </div>
 
@@ -173,6 +182,17 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 <div className={`mt-1 text-sm ${primaryText}`}>{contextSignalB}</div>
                             </div>
                         </div>
+
+                        <button
+                            onClick={onNextMove}
+                            className={`mt-4 w-full rounded-2xl border px-4 py-3 text-left transition-colors ${isStandardMode ? 'border-[#0078D4]/18 bg-[#0078D4]/8 hover:border-[#0078D4]/38' : 'border-emerald-400/18 bg-emerald-500/[0.08] hover:border-emerald-400/28 hover:bg-emerald-500/[0.12]'}`}
+                        >
+                            <div className={`text-[10px] uppercase tracking-[0.2em] ${accentText}`}>
+                                Next Move
+                            </div>
+                            <div className={`mt-2 text-sm ${primaryText}`}>{nextMoveLabel}</div>
+                            <div className={`mt-1 text-[11px] leading-relaxed ${secondaryText}`}>{nextMoveHint}</div>
+                        </button>
                     </div>
                 </div>
 
