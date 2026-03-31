@@ -577,10 +577,21 @@ export const DepartmentLayer: React.FC = () => {
                 title={hoveredSpaceDetails?.displayName || deptTitle || 'Department'}
                 badge={hoveredSpaceDetails ? 'Space focus' : 'Layer 2'}
                 accent={hoveredSpaceDetails?.color || deptColor}
+                collapsedHint={hoveredSpaceDetails ? 'Space bleibt gehalten.' : 'Space fokussieren fuer Blueprint.'}
                 summary={hoveredSpaceDetails
                     ? `${hoveredSpaceDetails.folderTotal} folders und ${hoveredSpaceDetails.docTotal} docs bleiben fokussierbar, aber die tieferen Lane-Signale klappen erst bei echtem Hover auf.`
                     : 'Der Department-Layer bleibt jetzt ruhig. Hover ueber einen Space, um sein Blueprint gezielt aufzuziehen.'}
                 forceExpanded={Boolean(hoveredSpaceDetails)}
+                onPointerEnter={() => {
+                    if (hoveredSpaceId) {
+                        clearHoverTimeout();
+                    }
+                }}
+                onPointerLeave={() => {
+                    if (hoveredSpaceId) {
+                        scheduleHoverClear();
+                    }
+                }}
                 metrics={[
                     { label: 'Spaces', value: spaces.length, toneClassName: 'text-emerald-200' },
                     { label: 'Folders', value: totalFolders, toneClassName: 'text-cyan-200' },

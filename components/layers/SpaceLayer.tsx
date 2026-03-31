@@ -544,6 +544,7 @@ export const SpaceLayer: React.FC = () => {
                 title={currentSpace?.name || 'Workspace'}
                 badge={activeFolderId ? 'Live focus' : 'Layer 3'}
                 accent={currentSpace?.color || '#34d399'}
+                collapsedHint="Folder oeffnen oder Deck nutzen."
                 summary={`${laneSummaries.focus.count} focus, ${laneSummaries.flow.count} working set und ${laneSummaries.archive.count} archive bleiben als stiller Strukturhinweis sichtbar.`}
                 metrics={[
                     { label: 'Folders', value: rankedFolders.length, toneClassName: 'text-emerald-200' },

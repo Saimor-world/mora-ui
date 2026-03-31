@@ -104,7 +104,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                 <div className="min-w-0">
                     <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.24em] ${isStandardMode ? 'border-[#0078D4]/20 bg-[#0078D4]/8 text-[#0078D4]' : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200/80'}`}>
                         <PanelTopOpen size={12} />
-                        Command Deck
+                        Control Center
                     </div>
                     <div className={`mt-4 text-xl font-light tracking-[0.08em] ${primaryText}`}>
                         {workspaceName}
