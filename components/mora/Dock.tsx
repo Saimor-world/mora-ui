@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
-    Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart
+    Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
+    Music2, Pause, Play, SkipForward
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -21,6 +22,13 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
 import { roleLabel } from '@/lib/auth/roles';
+import {
+    AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT,
+    listAmbientAudioTracks,
+    persistAmbientAudioSettings,
+    resolveAmbientAudioSettings,
+    type AmbientAudioTrackMeta,
+} from '@/lib/audio/ambientAudio';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -169,6 +177,93 @@ const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
     settings: Settings,
 };
 
+interface DockNowPlayingProps {
+    isStandardMode: boolean;
+    trackName: string | null;
+    trackCount: number;
+    isPlaying: boolean;
+    onToggle: () => void;
+    onNext: () => void;
+    onOpen: () => void;
+}
+
+const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
+    isStandardMode,
+    trackName,
+    trackCount,
+    isPlaying,
+    onToggle,
+    onNext,
+    onOpen,
+}) => {
+    return (
+        <div className={`hidden xl:flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${isStandardMode
+            ? 'border-gray-200 bg-gray-100'
+            : 'border-white/10 bg-white/[0.04]'
+            }`}>
+            <button
+                onClick={onOpen}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${isStandardMode
+                    ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
+                    : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
+                    }`}
+                title="Audio-Einstellungen öffnen"
+            >
+                <Music2 size={16} />
+            </button>
+
+            <button onClick={onOpen} className="min-w-0 text-left">
+                <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                    Now Playing
+                </div>
+                <div className={`mt-1 max-w-[180px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
+                    {trackName || 'Atmosphäre konfigurieren'}
+                </div>
+                <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
+                    {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Noch keine Library'}
+                </div>
+            </button>
+
+            <div className="flex items-end gap-1 pr-1">
+                {[10, 18, 12, 20, 14].map((height, index) => (
+                    <span
+                        key={`${height}-${index}`}
+                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#0078D4]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'} ${isPlaying ? 'animate-pulse' : 'opacity-30'}`}
+                        style={{
+                            height,
+                            animationDelay: `${index * 0.1}s`,
+                            animationDuration: `${1 + index * 0.08}s`,
+                        }}
+                    />
+                ))}
+            </div>
+
+            <div className="flex items-center gap-1">
+                <button
+                    onClick={onToggle}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
+                        ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
+                        : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
+                        }`}
+                    title={isPlaying ? 'Musik pausieren' : 'Musik abspielen'}
+                >
+                    {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                </button>
+                <button
+                    onClick={onNext}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
+                        ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
+                        : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
+                        }`}
+                    title="Nächsten Track wählen"
+                >
+                    <SkipForward size={14} />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export const Dock = () => {
     const navigateToCore = useMoraStore((s) => s.navigateToCore);
     const orbState = useMoraStore((s) => s.orbState);
@@ -178,6 +273,7 @@ export const Dock = () => {
     const setActiveCompany = useMoraStore((s) => s.setActiveCompany);
     const viewMode = useMoraStore((s) => s.viewMode);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
+    const updateUserSettings = useMoraStore((s) => s.updateUserSettings);
 
     const panes = usePaneStore((s) => s.panes);
     const restorePane = usePaneStore((s) => s.restorePane);
@@ -188,12 +284,18 @@ export const Dock = () => {
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
+    const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const ambientAudio = useMemo(() => resolveAmbientAudioSettings(user?.settings), [user?.settings]);
 
     const activeCompany = useMemo(
         () => safeCompanies.find(c => c.id === activeCompanyId),
         [safeCompanies, activeCompanyId]
+    );
+    const activeTrack = useMemo(
+        () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
+        [ambientTracks, ambientAudio.trackId]
     );
 
     const accent = useMemo(() => {
@@ -260,6 +362,67 @@ export const Dock = () => {
             action:      entry.action,
         }))
     , [mod, DOCK_ICON_MAP]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadTracks = async () => {
+            try {
+                const tracks = await listAmbientAudioTracks();
+                if (!cancelled) {
+                    setAmbientTracks(tracks);
+                }
+            } catch (error) {
+                console.error('[Dock] Failed to load ambient tracks:', error);
+            }
+        };
+
+        loadTracks();
+        window.addEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, loadTracks);
+        return () => {
+            cancelled = true;
+            window.removeEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, loadTracks);
+        };
+    }, []);
+
+    const openAudioSettings = useCallback(() => {
+        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+    }, [openPane]);
+
+    const handleAmbientToggle = useCallback(() => {
+        if (!ambientAudio.trackId) {
+            const firstTrack = ambientTracks[0];
+            if (!firstTrack) {
+                openAudioSettings();
+                return;
+            }
+
+            persistAmbientAudioSettings(updateUserSettings, {
+                ambientAudioTrackId: firstTrack.id,
+                ambientAudioEnabled: true,
+            });
+            return;
+        }
+
+        persistAmbientAudioSettings(updateUserSettings, {
+            ambientAudioEnabled: !ambientAudio.enabled,
+        });
+    }, [ambientAudio.enabled, ambientAudio.trackId, ambientTracks, openAudioSettings, updateUserSettings]);
+
+    const handleAmbientNext = useCallback(() => {
+        if (ambientTracks.length === 0) {
+            openAudioSettings();
+            return;
+        }
+
+        const currentIndex = ambientTracks.findIndex((track) => track.id === ambientAudio.trackId);
+        const nextTrack = ambientTracks[(currentIndex + 1 + ambientTracks.length) % ambientTracks.length];
+
+        persistAmbientAudioSettings(updateUserSettings, {
+            ambientAudioTrackId: nextTrack.id,
+            ambientAudioEnabled: true,
+        });
+    }, [ambientAudio.trackId, ambientTracks, openAudioSettings, updateUserSettings]);
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
@@ -462,6 +625,20 @@ export const Dock = () => {
 
                     {/* DIVIDER - Glowing */}
                     <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                        }`} />
+
+                    <DockNowPlaying
+                        isStandardMode={isStandardMode}
+                        trackName={activeTrack?.name || null}
+                        trackCount={ambientTracks.length}
+                        isPlaying={ambientAudio.enabled}
+                        onToggle={handleAmbientToggle}
+                        onNext={handleAmbientNext}
+                        onOpen={openAudioSettings}
+                    />
+
+                    {/* DIVIDER - Glowing */}
+                    <div className={`hidden xl:block w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
 
                     {/* RIGHT SECTION: Notifications + Company */}

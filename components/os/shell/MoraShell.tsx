@@ -89,6 +89,9 @@ import { SystemStats } from '@/components/ui/SystemStats';
 // V13: OS Features - Notification Center, Focus Mode, Quick Preview, Window Snapping, Memory Sidebar
 import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
+import { AmbientAudioController } from '@/components/os/AmbientAudioController';
+import { MoraPulsePanel } from '@/components/os/MoraPulsePanel';
+import { TemporalAtmosphere } from '@/components/os/TemporalAtmosphere';
 // 1.0 gated (future-tier: memory sidebar)
 // import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
@@ -630,6 +633,8 @@ export const MoraShell: React.FC = () => {
             onDragLeave={handleShellDragLeave}
             onDrop={handleShellDrop}
         >
+            <AmbientAudioController />
+            {!hasFullscreenPane && <MoraPulsePanel />}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
@@ -644,6 +649,7 @@ export const MoraShell: React.FC = () => {
             {/* Deep Void Foundation + Living Background */}
             <div className="fixed inset-0 bg-black z-[-10]" />
             <MoraLivingBackground />
+            <TemporalAtmosphere />
 
             {/* Background Layers */}
             <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />

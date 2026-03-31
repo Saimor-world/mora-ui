@@ -1,15 +1,29 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSession } from "next-auth/react";
 import { useMoraStore } from '@/lib/store/moraState';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2 } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2 } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
+import {
+    AMBIENT_AUDIO_STORAGE_KEYS,
+    DEFAULT_AMBIENT_AUDIO_VOLUME,
+    clampAmbientAudioVolume,
+    formatAmbientTrackSize,
+    listAmbientAudioTracks,
+    removeAmbientAudioTrack,
+    resolveAmbientAudioSettings,
+    storeAmbientAudioFiles,
+    type AmbientAudioTrackMeta,
+} from '@/lib/audio/ambientAudio';
+
+const MAX_AMBIENT_AUDIO_TRACKS = 6;
+const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const { data: session } = useSession();
@@ -34,7 +48,18 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const [language, setLanguage] = useState('en');
     const [reducedMotion, setReducedMotion] = useState(false);
     const [interfaceScale, setInterfaceScale] = useState(1);
+    const [ambientAudioEnabled, setAmbientAudioEnabled] = useState(false);
+    const [ambientAudioVolume, setAmbientAudioVolume] = useState(DEFAULT_AMBIENT_AUDIO_VOLUME);
+    const [ambientAudioTrackId, setAmbientAudioTrackId] = useState<string | null>(null);
+    const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
+    const [ambientTracksLoading, setAmbientTracksLoading] = useState(true);
+    const [ambientTracksUploading, setAmbientTracksUploading] = useState(false);
+    const ambientUploadInputRef = useRef<HTMLInputElement | null>(null);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const selectedAmbientTrack = useMemo(
+        () => ambientTracks.find((track) => track.id === ambientAudioTrackId) ?? null,
+        [ambientTracks, ambientAudioTrackId]
+    );
 
     const [brandingName, setBrandingName] = useState('');
     const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
@@ -63,6 +88,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const tabs = [
         { id: 'profile', label: 'Profil', icon: User },
         { id: 'appearance', label: 'Design', icon: Palette },
+        { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
         ...(canEditWorkspace ? [{ id: 'workspace', label: 'Workspace', icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
@@ -89,6 +115,10 @@ useEffect(() => {
             setLanguage(user.settings.language || 'en');
             setReducedMotion(user.settings.reduced_motion || false);
             setInterfaceScale(user.settings.scale || 1);
+            const ambientAudio = resolveAmbientAudioSettings(user.settings);
+            setAmbientAudioEnabled(ambientAudio.enabled);
+            setAmbientAudioVolume(ambientAudio.volume);
+            setAmbientAudioTrackId(ambientAudio.trackId);
             return;
         }
         if (typeof window !== 'undefined') {
@@ -96,8 +126,39 @@ useEffect(() => {
             setLanguage(localStorage.getItem('saimor_language') || 'en');
             setReducedMotion(localStorage.getItem('saimor_reduced_motion') === 'true');
             setInterfaceScale(parseFloat(localStorage.getItem('saimor_scale') || '1'));
+            const ambientAudio = resolveAmbientAudioSettings();
+            setAmbientAudioEnabled(ambientAudio.enabled);
+            setAmbientAudioVolume(ambientAudio.volume);
+            setAmbientAudioTrackId(ambientAudio.trackId);
         }
     }, [user?.settings]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadAmbientTracks = async () => {
+            try {
+                const tracks = await listAmbientAudioTracks();
+                if (!isMounted) return;
+                setAmbientTracks(tracks);
+            } catch (error) {
+                console.error('[Settings] Failed to load ambient audio library:', error);
+                if (isMounted) {
+                    toast.error('Audio-Bibliothek konnte nicht geladen werden');
+                }
+            } finally {
+                if (isMounted) {
+                    setAmbientTracksLoading(false);
+                }
+            }
+        };
+
+        loadAmbientTracks();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const saveSetting = (updates: Record<string, any>) => {
         try {
@@ -113,6 +174,26 @@ useEffect(() => {
                 }
                 if (typeof updates.scale === 'number') {
                     localStorage.setItem('saimor_scale', String(updates.scale));
+                }
+                if (typeof updates.ambientAudioEnabled === 'boolean') {
+                    localStorage.setItem(AMBIENT_AUDIO_STORAGE_KEYS.enabled, String(updates.ambientAudioEnabled));
+                    setAmbientAudioEnabled(updates.ambientAudioEnabled);
+                }
+                if (typeof updates.ambientAudioVolume === 'number') {
+                    const clampedVolume = clampAmbientAudioVolume(updates.ambientAudioVolume);
+                    localStorage.setItem(AMBIENT_AUDIO_STORAGE_KEYS.volume, String(clampedVolume));
+                    setAmbientAudioVolume(clampedVolume);
+                }
+                if (Object.prototype.hasOwnProperty.call(updates, 'ambientAudioTrackId')) {
+                    const nextTrackId = typeof updates.ambientAudioTrackId === 'string' && updates.ambientAudioTrackId
+                        ? updates.ambientAudioTrackId
+                        : null;
+                    if (nextTrackId) {
+                        localStorage.setItem(AMBIENT_AUDIO_STORAGE_KEYS.trackId, nextTrackId);
+                    } else {
+                        localStorage.removeItem(AMBIENT_AUDIO_STORAGE_KEYS.trackId);
+                    }
+                    setAmbientAudioTrackId(nextTrackId);
                 }
             } catch (storageError) {
                 console.warn('[Settings] localStorage unavailable:', storageError);
@@ -131,6 +212,114 @@ useEffect(() => {
         } catch (error) {
             console.error('[Settings] Failed to save settings:', error);
             toast.error('Einstellungen konnten nicht gespeichert werden');
+        }
+    };
+
+    const promptAmbientAudioUpload = () => {
+        ambientUploadInputRef.current?.click();
+    };
+
+    const handleAmbientAudioToggle = () => {
+        if (!ambientAudioTrackId) {
+            const fallbackTrack = ambientTracks[0];
+            if (!fallbackTrack) {
+                toast.error('Lade zuerst mindestens einen Song hoch');
+                return;
+            }
+            saveSetting({
+                ambientAudioTrackId: fallbackTrack.id,
+                ambientAudioEnabled: true,
+            });
+            toast.success(`"${fallbackTrack.name}" startet als Hintergrundsong`);
+            return;
+        }
+
+        const nextEnabled = !ambientAudioEnabled;
+        saveSetting({ ambientAudioEnabled: nextEnabled });
+        toast.info(nextEnabled ? 'Hintergrundmusik aktiviert' : 'Hintergrundmusik pausiert');
+    };
+
+    const handleAmbientVolumeChange = (rawValue: number) => {
+        const nextVolume = clampAmbientAudioVolume(rawValue);
+        saveSetting({ ambientAudioVolume: nextVolume });
+    };
+
+    const handleAmbientTrackSelect = (trackId: string) => {
+        saveSetting({ ambientAudioTrackId: trackId });
+    };
+
+    const handleAmbientTrackDelete = async (trackId: string) => {
+        try {
+            await removeAmbientAudioTrack(trackId);
+            const remainingTracks = ambientTracks.filter((track) => track.id !== trackId);
+            setAmbientTracks(remainingTracks);
+
+            if (ambientAudioTrackId === trackId) {
+                const nextTrackId = remainingTracks[0]?.id ?? null;
+                saveSetting({
+                    ambientAudioTrackId: nextTrackId,
+                    ambientAudioEnabled: nextTrackId ? ambientAudioEnabled : false,
+                });
+            }
+
+            toast.info('Song aus der Bibliothek entfernt');
+        } catch (error) {
+            console.error('[Settings] Failed to remove ambient audio track:', error);
+            toast.error('Song konnte nicht entfernt werden');
+        }
+    };
+
+    const handleAmbientAudioUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = Array.from(event.target.files ?? []);
+        event.target.value = '';
+
+        if (selectedFiles.length === 0) return;
+
+        const audioFiles = selectedFiles.filter((file) =>
+            file.type.startsWith('audio/') || /\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(file.name)
+        );
+
+        if (audioFiles.length === 0) {
+            toast.error('Bitte nur Audiodateien hochladen');
+            return;
+        }
+
+        if (ambientTracks.length + audioFiles.length > MAX_AMBIENT_AUDIO_TRACKS) {
+            toast.error(`Maximal ${MAX_AMBIENT_AUDIO_TRACKS} Songs gleichzeitig speichern`);
+            return;
+        }
+
+        const oversizedFile = audioFiles.find((file) => file.size > MAX_AMBIENT_AUDIO_FILE_BYTES);
+        if (oversizedFile) {
+            toast.error(`"${oversizedFile.name}" ist größer als 25 MB`);
+            return;
+        }
+
+        setAmbientTracksUploading(true);
+
+        try {
+            const storedTracks = await storeAmbientAudioFiles(audioFiles);
+            const nextTracks = await listAmbientAudioTracks();
+            setAmbientTracks(nextTracks);
+
+            if (!ambientAudioTrackId && storedTracks[0]) {
+                saveSetting({ ambientAudioTrackId: storedTracks[0].id });
+            }
+
+            if (audioFiles.length !== selectedFiles.length) {
+                toast.info('Nur Audiodateien wurden übernommen');
+            }
+
+            toast.success(
+                storedTracks.length === 1
+                    ? `"${storedTracks[0].name}" wurde zur Audio-Bibliothek hinzugefügt`
+                    : `${storedTracks.length} Songs wurden zur Audio-Bibliothek hinzugefügt`
+            );
+        } catch (error) {
+            console.error('[Settings] Failed to store ambient audio files:', error);
+            toast.error('Songs konnten nicht gespeichert werden');
+        } finally {
+            setAmbientTracksUploading(false);
         }
     };
 
@@ -343,6 +532,174 @@ useEffect(() => {
                                             ? 'left-5 bg-emerald-400'
                                             : 'left-0.5 bg-white/40'}`} />
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'audio' && (
+                        <div className="space-y-6">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg text-white font-light">Hintergrundmusik</h3>
+                                    <p className="mt-2 text-sm text-white/45 max-w-xl">
+                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik läuft weiter,
+                                        solange SAIMOR OS geöffnet ist, auch wenn du in andere Panes wechselst.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={handleAmbientAudioToggle}
+                                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all ${ambientAudioEnabled
+                                        ? 'bg-emerald-500/18 border-emerald-500/40 text-emerald-300'
+                                        : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    {ambientAudioEnabled ? <Pause size={15} /> : <Play size={15} />}
+                                    {ambientAudioEnabled ? 'Pausieren' : 'Abspielen'}
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <div className="text-sm text-white/80 font-medium">Aktiver Song</div>
+                                            <div className="text-xs text-white/40 mt-1">
+                                                {selectedAmbientTrack
+                                                    ? `${selectedAmbientTrack.name} • ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
+                                                    : 'Noch kein Song ausgewählt'}
+                                            </div>
+                                        </div>
+                                        <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] uppercase tracking-[0.18em] text-white/45">
+                                            Loop
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-xs uppercase tracking-wider text-white/40">
+                                            <span className="inline-flex items-center gap-2">
+                                                <Volume2 size={14} />
+                                                Lautstärke
+                                            </span>
+                                            <span>{Math.round(ambientAudioVolume * 100)}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            value={Math.round(ambientAudioVolume * 100)}
+                                            onChange={(event) => handleAmbientVolumeChange(Number(event.target.value) / 100)}
+                                            className="w-full accent-emerald-400"
+                                        />
+                                    </div>
+
+                                    <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/45 leading-relaxed">
+                                        Songs bleiben lokal in diesem Browser gespeichert. Kein Upload zum Server.
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <div className="text-sm text-white/80 font-medium">Bibliothek</div>
+                                            <div className="text-xs text-white/40 mt-1">
+                                                Bis zu {MAX_AMBIENT_AUDIO_TRACKS} lokale Songs
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={promptAmbientAudioUpload}
+                                            disabled={ambientTracksUploading || ambientTracks.length >= MAX_AMBIENT_AUDIO_TRACKS}
+                                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-500/12 border border-cyan-400/25 text-cyan-200 text-sm transition-all hover:bg-cyan-500/18 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {ambientTracksUploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+                                            Song hochladen
+                                        </button>
+                                    </div>
+
+                                    <input
+                                        ref={ambientUploadInputRef}
+                                        type="file"
+                                        accept="audio/*,.mp3,.wav,.m4a,.ogg,.aac,.flac"
+                                        multiple
+                                        onChange={handleAmbientAudioUpload}
+                                        className="hidden"
+                                    />
+
+                                    {ambientTracksLoading ? (
+                                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-white/50">
+                                            <Loader2 size={16} className="animate-spin" />
+                                            Audio-Bibliothek wird geladen...
+                                        </div>
+                                    ) : ambientTracks.length === 0 ? (
+                                        <div className="rounded-xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center">
+                                            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                                                <Music size={18} className="text-white/55" />
+                                            </div>
+                                            <div className="text-sm text-white/75">Noch keine Songs in deiner Library</div>
+                                            <div className="mt-1 text-xs text-white/40">
+                                                Lade MP3, WAV, M4A, OGG, AAC oder FLAC hoch.
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {ambientTracks.map((track) => {
+                                                const isSelected = track.id === ambientAudioTrackId;
+
+                                                return (
+                                                    <div
+                                                        key={track.id}
+                                                        className={`w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-all ${isSelected
+                                                            ? 'border-emerald-500/35 bg-emerald-500/12'
+                                                            : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.06]'
+                                                            }`}
+                                                    >
+                                                        <button
+                                                            onClick={() => handleAmbientTrackSelect(track.id)}
+                                                            className="min-w-0 flex-1 text-left"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-sm font-medium ${isSelected ? 'text-emerald-200' : 'text-white/80'}`}>
+                                                                    {track.name}
+                                                                </span>
+                                                                {isSelected && (
+                                                                    <span className="rounded-full bg-emerald-500/18 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-emerald-300">
+                                                                        aktiv
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="mt-1 text-xs text-white/40">
+                                                                {formatAmbientTrackSize(track.size)}
+                                                            </div>
+                                                        </button>
+
+                                                        <div className="flex items-center gap-2">
+                                                            {isSelected && ambientAudioEnabled ? (
+                                                                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-400/25 bg-emerald-500/12 text-emerald-200">
+                                                                    <Pause size={14} />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60">
+                                                                    <Play size={14} />
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation();
+                                                                    handleAmbientTrackDelete(track.id);
+                                                                }}
+                                                                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 transition-colors hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-300"
+                                                                aria-label={`${track.name} entfernen`}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
