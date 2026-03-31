@@ -129,15 +129,26 @@ export const HomeSurface: React.FC = () => {
 
     const firstName = user?.name?.split(' ')[0] ?? null;
 
+    const greeting = (() => {
+        const h = new Date().getHours();
+        if (h < 5)  return 'Gute Nacht';
+        if (h < 11) return 'Guten Morgen';
+        if (h < 14) return 'Guten Mittag';
+        if (h < 18) return 'Guten Tag';
+        return 'Guten Abend';
+    })();
+
+    const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+
     return (
         <div className="absolute inset-0 overflow-auto">
             <div className="mx-auto max-w-3xl px-6 py-12 flex flex-col gap-10">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>
-                            {firstName ? `Guten Tag, ${firstName}.` : 'Arbeitsplatz'}
+                            {firstName ? `${greeting}, ${firstName}.` : greeting + '.'}
                         </h1>
-                        <p className={`mt-1 text-sm ${t.sub}`}>Was moechtest du heute tun?</p>
+                        <p className={`mt-1 text-sm ${t.sub}`}>{todayLabel}</p>
                     </div>
                     <button
                         type="button"

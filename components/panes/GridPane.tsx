@@ -6,6 +6,7 @@ import { Grid, FileText, Image, Video, File, Folder, Search, Filter, RefreshCw, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchNodesByCompany } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
+import { toast } from '@/lib/toast';
 
 const getNodeIcon = (type: string) => {
     switch (type) {
@@ -29,7 +30,7 @@ const getNodeColor = (type: string) => {
 
 export const GridPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
-    const { activeCompanyId, nodesByCompany } = useMoraStore();
+    const { activeCompanyId } = useMoraStore();
     const pane = getPane(id);
 
     const [nodes, setNodes] = useState<CoreNode[]>([]);
@@ -44,10 +45,8 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
             const data = await fetchNodesByCompany(activeCompanyId);
             setNodes(data || []);
         } catch (e) {
-            console.warn('Failed to load nodes', e);
-            // Fallback to store data
-            const storeNodes = nodesByCompany[activeCompanyId] || [];
-            setNodes(storeNodes as any);
+            toast.error('Inhalte konnten nicht geladen werden');
+            setNodes([]);
         } finally {
             setIsLoading(false);
         }

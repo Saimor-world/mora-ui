@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { VisibilityModal } from '@/components/content/VisibilityModal';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
+import type { NodeVisibility } from '@/lib/types/core';
 import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient';
 import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -180,6 +182,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [isBatchProcessing, setIsBatchProcessing] = useState(false);
     const [routeOptions, setRouteOptions] = useState<RouteOverrideOption[]>([]);
+    const [visibilityModalOpen, setVisibilityModalOpen] = useState(false);
+    const [batchVisibility, setBatchVisibility] = useState<NodeVisibility>('company');
     const seededBatchIdsRef = React.useRef<Set<string>>(new Set());
     const autoOpenedBatchRef = React.useRef<string | null>(null);
     const reportedBatchRef = React.useRef<string | null>(null);
@@ -397,8 +401,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         return 'Eingeordnet';
     }, []);
 
-    const confirmPendingAction = useCallback(async (active: PendingAction) => {
-        const result = await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id });
+    const confirmPendingAction = useCallback(async (active: PendingAction, visibilityScope?: string) => {
+        const result = await confirmCreateNodeFromFile(active.file_id, active.confirmation_token, { folderId: active.folder_id, visibilityScope });
         const confirmedFolderId = await resolveDestinationFolderId(active, result);
         const confirmedNodeId = await resolveDestinationNodeId(active, result);
         const resultText = buildResolvedResultText(
@@ -532,10 +536,11 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         }
     };
 
-    const processAllPending = async () => {
+    const processAllPendingWithVisibility = async (visibility: NodeVisibility) => {
         const pending = files.filter(f => f.status === 'pending');
         if (pending.length === 0) return;
 
+        setBatchVisibility(visibility);
         setIsBatchProcessing(true);
         try {
             for (const file of pending) {
@@ -544,6 +549,12 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         } finally {
             setIsBatchProcessing(false);
         }
+    };
+
+    const handleUploadAllClick = () => {
+        const pending = files.filter(f => f.status === 'pending');
+        if (pending.length === 0) return;
+        setVisibilityModalOpen(true);
     };
 
     const removeFile = (fileId: string) => {
@@ -802,7 +813,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         try {
             const snapshot = [...pendingActions];
             for (const action of snapshot) {
-                await confirmPendingAction(action);
+                await confirmPendingAction(action, batchVisibility);
             }
             setPendingActions([]);
             toast.success(snapshot.length === 1 ? 'Datei eingeordnet' : `${snapshot.length} Dateien eingeordnet`);
@@ -835,6 +846,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     if (!pane) return null;
 
     return (
+        <>
         <GlassPanel
             title="Scanner"
             width={pane.size.width}
@@ -923,7 +935,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         </span>
                         {pendingCount > 0 && (
                             <button
-                                onClick={processAllPending}
+                                onClick={handleUploadAllClick}
                                 disabled={isBatchProcessing}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors"
                             >
@@ -1301,5 +1313,18 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
             </div>
         </GlassPanel>
+
+        {visibilityModalOpen && (
+            <VisibilityModal
+                fileName={`${files.filter(f => f.status === 'pending').length} Datei(en)`}
+                defaultVisibility={batchVisibility}
+                onConfirm={(visibility) => {
+                    setVisibilityModalOpen(false);
+                    void processAllPendingWithVisibility(visibility);
+                }}
+                onCancel={() => setVisibilityModalOpen(false)}
+            />
+        )}
+        </>
     );
 };

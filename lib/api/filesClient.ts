@@ -248,11 +248,12 @@ export const requestCreateNodeFromFile = async (
 export const confirmCreateNodeFromFile = async (
     fileId: string,
     confirmationToken: string,
-    options?: { folderId?: string }
+    options?: { folderId?: string; visibilityScope?: string }
 ): Promise<FileCreateNodeResponse> => {
     return corePost(`/v3/files/${fileId}/confirm-node`, {
         confirmation_token: confirmationToken,
         folder_id: options?.folderId,
+        visibility_scope: options?.visibilityScope,
     }) as Promise<FileCreateNodeResponse>;
 };
 
