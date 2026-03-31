@@ -89,6 +89,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
+    const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
@@ -374,6 +375,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             ? from.name
                             : null
                     : null;
+                const focusPeerId = focusedPlanetId
+                    ? edge.fromId === focusedPlanetId
+                        ? to.id
+                        : edge.toId === focusedPlanetId
+                            ? from.id
+                            : null
+                    : null;
 
                 return {
                     id: pathId,
@@ -388,6 +396,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     labelX,
                     labelY,
                     focusPeerName,
+                    focusPeerId,
                     highlighted:
                         hoverPlanetId === from.id ||
                         hoverPlanetId === to.id ||
@@ -408,9 +417,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 labelX: number;
                 labelY: number;
                 focusPeerName: string | null;
+                focusPeerId: string | null;
                 highlighted: boolean;
             } => value !== null);
     }, [semanticConnections, visiblePlanets, hoverPlanetId, activeDepartmentId, focusedPlanetId]);
+
+    const semanticPreviewPath = useMemo(
+        () => semanticPaths.find((path) => path.id === semanticPreviewPathId) || null,
+        [semanticPaths, semanticPreviewPathId]
+    );
+    const semanticPreviewPlanetIds = useMemo(
+        () => new Set(semanticPreviewPath ? [semanticPreviewPath.fromId, semanticPreviewPath.toId] : []),
+        [semanticPreviewPath]
+    );
 
     const coreConnections = useMemo(() => (
         visiblePlanets.map((planet) => {
@@ -421,10 +440,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 x: planet.x,
                 y: planet.y,
                 intensity: Math.max(0.16, Math.min(1, loadSignal / Math.max(1, maxNodes * 0.45 + 12))),
-                highlighted: hoverPlanetId === planet.id || activeDepartmentId === planet.id,
+                highlighted:
+                    hoverPlanetId === planet.id ||
+                    activeDepartmentId === planet.id ||
+                    semanticPreviewPlanetIds.has(planet.id),
             };
         })
-    ), [visiblePlanets, departmentMetrics, hoverPlanetId, activeDepartmentId, maxNodes]);
+    ), [visiblePlanets, departmentMetrics, hoverPlanetId, activeDepartmentId, maxNodes, semanticPreviewPlanetIds]);
 
     const focusedPlanet = useMemo(() => {
         if (!focusedPlanetId) return null;
@@ -448,6 +470,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 return {
                     id: `${focusedPlanet.id}:${otherPlanetId}`,
                     pathId: buildSemanticEdgeKey(focusedPlanet.id, otherPlanetId),
+                    targetDepartmentId: otherPlanetId,
                     name: otherPlanet.name,
                     strength: edge.strength,
                     semanticAffinity: edge.semanticAffinity,
@@ -457,6 +480,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             .filter((value): value is {
                 id: string;
                 pathId: string;
+                targetDepartmentId: string;
                 name: string;
                 strength: number;
                 semanticAffinity: number;
@@ -469,6 +493,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => new Set(focusedSemanticLinks.map((link) => link.pathId)),
         [focusedSemanticLinks]
     );
+
+    useEffect(() => {
+        setSemanticPreviewPathId(null);
+    }, [activeDepartmentId, hoverPlanetId, focusedPlanetId]);
+
+    const handleSemanticPreview = (pathId: string | null) => {
+        setSemanticPreviewPathId(pathId);
+    };
+
+    const handleSemanticNavigate = (departmentId: string) => {
+        setSemanticPreviewPathId(null);
+        navigateToDepartment(departmentId);
+    };
 
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
@@ -640,7 +677,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 {semanticPaths.map((path) => {
                     const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
-                    const baseOpacity = path.highlighted
+                    const isPreviewedPath = semanticPreviewPathId === path.id;
+                    const baseOpacity = path.highlighted || isPreviewedPath
                         ? 0.9
                         : isFocusedPath
                             ? 0.7
@@ -691,10 +729,43 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
             <div className="pointer-events-none absolute inset-0 z-[18]">
                 {semanticPaths
-                    .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || path.strength >= 0.78)
+                    .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id || path.strength >= 0.78)
                     .map((path) => {
                         const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                         const labelTitle = path.focusPeerName || `${path.fromName} / ${path.toName}`;
+                        const isInteractive = Boolean(path.focusPeerId);
+                        const isPreviewedPath = semanticPreviewPathId === path.id;
+
+                        const labelContent = (
+                            <div className="min-w-[140px]">
+                                <div className="truncate text-[11px] uppercase tracking-[0.18em] text-white/46">
+                                    Semantischer Link
+                                </div>
+                                <div className="mt-1 truncate text-sm text-white/88">
+                                    {labelTitle}
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span
+                                        className="h-2 w-2 rounded-full"
+                                        style={{ background: driverMeta.accent, boxShadow: `0 0 10px ${driverMeta.accent}` }}
+                                    />
+                                    <span
+                                        className="text-[10px] uppercase tracking-[0.18em]"
+                                        style={{ color: driverMeta.accent }}
+                                    >
+                                        {driverMeta.label}
+                                    </span>
+                                    <span className="text-[11px] text-white/74">
+                                        {Math.round(path.semanticAffinity * 100)}%
+                                    </span>
+                                </div>
+                                {isInteractive && (
+                                    <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/42">
+                                        Hover preview, Klick fuer Zoom
+                                    </div>
+                                )}
+                            </div>
+                        );
 
                         return (
                             <motion.div
@@ -706,32 +777,22 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     boxShadow: `0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px ${driverMeta.accent}22`,
                                 }}
                                 initial={{ opacity: 0, scale: 0.92 }}
-                                animate={{ opacity: path.highlighted || focusedSemanticPathIds.has(path.id) ? 0.96 : 0.78, scale: 1 }}
+                                animate={{ opacity: path.highlighted || focusedSemanticPathIds.has(path.id) || isPreviewedPath ? 0.96 : 0.78, scale: 1 }}
                                 transition={{ duration: 0.28, ease: 'easeOut' }}
                             >
-                                <div className="min-w-[140px]">
-                                    <div className="truncate text-[11px] uppercase tracking-[0.18em] text-white/46">
-                                        Semantischer Link
-                                    </div>
-                                    <div className="mt-1 truncate text-sm text-white/88">
-                                        {labelTitle}
-                                    </div>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <span
-                                            className="h-2 w-2 rounded-full"
-                                            style={{ background: driverMeta.accent, boxShadow: `0 0 10px ${driverMeta.accent}` }}
-                                        />
-                                        <span
-                                            className="text-[10px] uppercase tracking-[0.18em]"
-                                            style={{ color: driverMeta.accent }}
-                                        >
-                                            {driverMeta.label}
-                                        </span>
-                                        <span className="text-[11px] text-white/74">
-                                            {Math.round(path.semanticAffinity * 100)}%
-                                        </span>
-                                    </div>
-                                </div>
+                                {isInteractive ? (
+                                    <button
+                                        type="button"
+                                        className="pointer-events-auto text-left"
+                                        onMouseEnter={() => handleSemanticPreview(path.id)}
+                                        onMouseLeave={() => handleSemanticPreview(null)}
+                                        onClick={() => handleSemanticNavigate(path.focusPeerId!)}
+                                    >
+                                        {labelContent}
+                                    </button>
+                                ) : (
+                                    labelContent
+                                )}
                             </motion.div>
                         );
                     })}
@@ -745,8 +806,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     badge={isLocked(focusedPlanet) ? 'Visible' : 'Member'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Farben und Linienart zeigen, warum die Departments zusammenhaengen.`}
-                    forceExpanded={Boolean(hoverPlanetId)}
+                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
+                    forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
                     metrics={[
                         { label: 'Spaces', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
                         { label: 'Folders', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
@@ -785,9 +846,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     const driverMeta = SEMANTIC_DRIVER_META[link.dominantDriver];
 
                                     return (
-                                        <div
+                                        <button
+                                            type="button"
                                             key={link.id}
-                                            className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
+                                            onMouseEnter={() => handleSemanticPreview(link.pathId)}
+                                            onMouseLeave={() => handleSemanticPreview(null)}
+                                            onClick={() => handleSemanticNavigate(link.targetDepartmentId)}
+                                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
+                                                semanticPreviewPathId === link.pathId
+                                                    ? 'border-white/18 bg-white/[0.07]'
+                                                    : 'border-white/10 bg-white/[0.03] hover:border-white/16 hover:bg-white/[0.05]'
+                                            }`}
                                         >
                                             <div className="min-w-0">
                                                 <div className="truncate text-xs text-white/84">{link.name}</div>
@@ -798,10 +867,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                                     {driverMeta.label} · {driverMeta.reason}
                                                 </div>
                                             </div>
-                                            <div className="text-[11px] text-white/66">
-                                                {Math.round(link.semanticAffinity * 100)}%
+                                            <div className="ml-3 text-right">
+                                                <div className="text-[11px] text-white/66">
+                                                    {Math.round(link.semanticAffinity * 100)}%
+                                                </div>
+                                                <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/34">
+                                                    Zoom
+                                                </div>
                                             </div>
-                                        </div>
+                                        </button>
                                     );
                                 })}
                             </div>
@@ -836,6 +910,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const health = healthFromAPI ?? Math.min(100, (spaceCount > 0 ? 40 : 0) + (folderCount > 0 ? 30 : 0) + (nodeCount > 0 ? 30 : 0));
 
                     const locked = isLocked(p);
+                    const isSemanticPreviewPlanet = semanticPreviewPlanetIds.has(p.id);
 
                     return (
                         <React.Fragment key={p.id}>
@@ -848,7 +923,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     <Planet
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                        isActive={activeDepartmentId === p.id}
+                                        isActive={activeDepartmentId === p.id || isSemanticPreviewPlanet}
                                         onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
                                         onClick={() => {
                                             // Locked: outer wrapper handles click (tooltip). Block navigation.
@@ -862,7 +937,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <Planet
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                    isActive={activeDepartmentId === p.id}
+                                    isActive={activeDepartmentId === p.id || isSemanticPreviewPlanet}
                                     onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
                                     onClick={() => {
                                         navigateToDepartment(p.id);
