@@ -544,21 +544,7 @@ export const Dock = () => {
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="border-t border-white/5 p-2">
-                                        <button
-                                            onClick={() => {
-                                                handleDockClick('integrations');
-                                                setShowCompanySwitcher(false);
-                                            }}
-                                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all text-white/70 hover:bg-white/5 hover:text-white"
-                                        >
-                                            <Settings size={14} className="text-white/40" />
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-xs font-medium truncate">Integrationen</div>
-                                                <div className="text-[9px] text-white/35">Mail, Kalender, externe Verbindungen</div>
-                                            </div>
-                                        </button>
-                                    </div>
+                                    {/* Integrationen — 1.0 gated (future-tier: no backend) */}
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -571,7 +557,7 @@ export const Dock = () => {
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
                     <div className="flex items-center gap-4 pl-2">
                         <button
-                            onClick={() => handleDockClick('mora-hub')}
+                            onClick={() => handleDockClick('chat')}
                             data-mora-home="true"
                             className={`relative w-16 h-16 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
                                 ? 'bg-white shadow-lg'
