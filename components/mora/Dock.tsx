@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward, Sparkles
+    Music2, Pause, Play, Sparkles
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -37,7 +37,7 @@ import {
     persistRitualSettings,
     resolveRitualSettings,
 } from '@/lib/os/ritualMode';
-import { SAIMOR_COMMAND_DECK_EVENT } from '@/lib/os/commandDeck';
+import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/commandDeck';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -60,6 +60,14 @@ interface DockItem {
     badge?: number;
     hidden?: boolean;
 }
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const getFreshnessWeight = (value?: string | null) => {
+    if (!value) return 0.32;
+    const days = (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24);
+    return clamp(1 - days / 28, 0.18, 1);
+};
 
 // ─── Magnetic Dock Icon ──────────────────────────────────────────────────────
 interface MagneticDockIconProps {
@@ -188,25 +196,29 @@ const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
 
 interface DockNowPlayingProps {
     isStandardMode: boolean;
+    isDeckOpen: boolean;
     trackName: string | null;
     trackCount: number;
     isPlaying: boolean;
     onToggle: () => void;
-    onNext: () => void;
     onOpen: () => void;
 }
 
 const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     isStandardMode,
+    isDeckOpen,
     trackName,
     trackCount,
     isPlaying,
     onToggle,
-    onNext,
     onOpen,
 }) => {
+    if (isDeckOpen || trackCount === 0) {
+        return null;
+    }
+
     return (
-        <div className={`hidden xl:flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${isStandardMode
+        <div className={`hidden xl:flex items-center gap-3 rounded-2xl border px-3 py-2 ${isStandardMode
             ? 'border-gray-200 bg-gray-100'
             : 'border-white/10 bg-white/[0.04]'
             }`}>
@@ -216,24 +228,21 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                     : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
                     }`}
-                title="Audio-Einstellungen öffnen"
+                title="Audio-Einstellungen oeffnen"
             >
                 <Music2 size={16} />
             </button>
 
             <button onClick={onOpen} className="min-w-0 text-left">
                 <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                    Now Playing
+                    Atmosphere
                 </div>
-                <div className={`mt-1 max-w-[180px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
-                    {trackName || 'Atmosphäre konfigurieren'}
-                </div>
-                <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                    {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Noch keine Library'}
+                <div className={`mt-1 max-w-[160px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
+                    {trackName || `${trackCount} lokale Tracks`}
                 </div>
             </button>
 
-            <div className="flex items-end gap-1 pr-1">
+            <div className="flex items-end gap-1 px-1">
                 {[10, 18, 12, 20, 14].map((height, index) => (
                     <span
                         key={`${height}-${index}`}
@@ -247,7 +256,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 ))}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center">
                 <button
                     onClick={onToggle}
                     className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
@@ -258,16 +267,6 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 >
                     {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                 </button>
-                <button
-                    onClick={onNext}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
-                        ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
-                        : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
-                        }`}
-                    title="Nächsten Track wählen"
-                >
-                    <SkipForward size={14} />
-                </button>
             </div>
         </div>
     );
@@ -275,10 +274,18 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
 
 export const Dock = () => {
     const navigateToCore = useMoraStore((s) => s.navigateToCore);
+    const navigateToSpace = useMoraStore((s) => s.navigateToSpace);
+    const navigateToFolder = useMoraStore((s) => s.navigateToFolder);
     const orbState = useMoraStore((s) => s.orbState);
     const user = useMoraStore((s) => s.user);
     const companies = useMoraStore((s) => s.companies);
+    const departments = useMoraStore((s) => s.departments);
+    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
+    const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useMoraStore((s) => s.activeSpaceId);
+    const activeFolderId = useMoraStore((s) => s.activeFolderId);
     const setActiveCompany = useMoraStore((s) => s.setActiveCompany);
     const viewMode = useMoraStore((s) => s.viewMode);
     const viewLevel = useMoraStore((s) => s.viewLevel);
@@ -300,6 +307,7 @@ export const Dock = () => {
     const inputRef = useRef<HTMLInputElement>(null);
     const commandDeckCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
+    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const ambientAudio = useMemo(() => resolveAmbientAudioSettings(user?.settings), [user?.settings]);
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualSceneId = useMemo(() => getEffectiveRitualScene(ritualSettings), [ritualSettings]);
@@ -312,6 +320,26 @@ export const Dock = () => {
     const activeTrack = useMemo(
         () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
         [ambientTracks, ambientAudio.trackId]
+    );
+    const activeDepartment = useMemo(
+        () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
+        [safeDepartments, activeDepartmentId]
+    );
+    const activeSpaces = useMemo(
+        () => activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [],
+        [activeDepartmentId, spacesByDepartment]
+    );
+    const activeSpace = useMemo(
+        () => activeSpaces.find((space) => space.id === activeSpaceId) ?? null,
+        [activeSpaces, activeSpaceId]
+    );
+    const activeFolders = useMemo(
+        () => activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [],
+        [activeSpaceId, foldersBySpace]
+    );
+    const activeFolder = useMemo(
+        () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
+        [activeFolders, activeFolderId]
     );
 
     const accent = useMemo(() => {
@@ -398,6 +426,122 @@ export const Dock = () => {
         }
     }, [orbState]);
 
+    const openFinderContext = useCallback((title: string, data: Record<string, unknown>) => {
+        openPane({
+            id: 'finder-main',
+            type: 'finder',
+            title,
+            size: { width: 1280, height: 820 },
+            data,
+        });
+    }, [openPane]);
+
+    const leadingSpace = useMemo(() => {
+        if (activeSpaces.length === 0) return null;
+
+        return [...activeSpaces].sort((left, right) => {
+            const leftFolders = foldersBySpace[left.id] || [];
+            const rightFolders = foldersBySpace[right.id] || [];
+            const leftSignal = Math.max(left.folder_count ?? 0, leftFolders.length) + leftFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0) * 0.35;
+            const rightSignal = Math.max(right.folder_count ?? 0, rightFolders.length) + rightFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0) * 0.35;
+            return rightSignal - leftSignal;
+        })[0] ?? null;
+    }, [activeSpaces, foldersBySpace]);
+
+    const leadingFolder = useMemo(() => {
+        if (activeFolders.length === 0) return null;
+
+        return [...activeFolders].sort((left, right) => {
+            const leftSignal = (left.node_count || 0) * 0.82 + getFreshnessWeight(left.updated_at || left.created_at) * 5.2;
+            const rightSignal = (right.node_count || 0) * 0.82 + getFreshnessWeight(right.updated_at || right.created_at) * 5.2;
+            return rightSignal - leftSignal;
+        })[0] ?? null;
+    }, [activeFolders]);
+
+    const contextDeck = useMemo(() => {
+        if (activeFolder && activeSpace) {
+            return {
+                label: 'Folder focus',
+                title: activeFolder.name,
+                description: 'Der Dock kennt jetzt deinen aktiven Arbeitsknoten und bietet direkte naechste Schritte fuer Review, Chat und Ruecksprung an.',
+                signalA: `${activeFolder.node_count || 0} docs`,
+                signalB: `${activeSpace.name} · ${activeFolders.length} folders`,
+                actionLabel: 'Open folder',
+                accent: activeFolder.color || activeDepartment?.color || accent,
+                onOpen: () => openFinderContext(activeFolder.name, {
+                    folderId: activeFolder.id,
+                    spaceId: activeSpace.id,
+                    departmentId: activeDepartmentId || undefined,
+                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+                }),
+            };
+        }
+
+        if (activeSpace) {
+            const docCount = activeFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
+            return {
+                label: 'Space focus',
+                title: activeSpace.name,
+                description: 'Der Command Deck schlaegt dir jetzt den staerksten Folder und die passendsten naechsten Oberflaechen fuer diesen Space vor.',
+                signalA: `${activeFolders.length} folders`,
+                signalB: `${docCount} docs`,
+                actionLabel: 'Open space',
+                accent: activeSpace.color || activeDepartment?.color || accent,
+                onOpen: () => openFinderContext(activeSpace.name, {
+                    spaceId: activeSpace.id,
+                    departmentId: activeDepartmentId || undefined,
+                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+                }),
+            };
+        }
+
+        if (activeDepartment) {
+            const folderCount = activeSpaces.reduce((sum, space) => sum + Math.max(space.folder_count ?? 0, (foldersBySpace[space.id] || []).length), 0);
+            const docCount = activeSpaces.reduce((sum, space) => sum + (foldersBySpace[space.id] || []).reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0), 0);
+            return {
+                label: 'Department focus',
+                title: activeDepartment.name,
+                description: 'Der Dock wird hier zur Leitstelle und zeigt, welcher Space als naechster Zoom Sinn ergibt, statt nur universelle Buttons zu duplizieren.',
+                signalA: `${activeSpaces.length} spaces`,
+                signalB: `${folderCount} folders · ${docCount} docs`,
+                actionLabel: 'Open department',
+                accent: activeDepartment.color || accent,
+                onOpen: () => openFinderContext(activeDepartment.name, {
+                    departmentId: activeDepartment.id,
+                    companyId: activeCompanyId || activeDepartment.company_id || undefined,
+                }),
+            };
+        }
+
+        return {
+            label: 'Universe',
+            title: activeCompany?.name || user?.active_company_name || 'Workspace',
+            description: 'Im Universe-Modus bleibt der Deck breit und ruhig, aber bietet dir jetzt klar den naechsten Einstieg statt statischer App-Kacheln.',
+            signalA: `${safeDepartments.length} departments`,
+            signalB: `${safeCompanies.length} workspaces`,
+            actionLabel: 'Open workspace',
+            accent,
+            onOpen: () => openFinderContext(activeCompany?.name || 'Workspace', {
+                companyId: activeCompanyId || undefined,
+            }),
+        };
+    }, [
+        activeCompany,
+        activeCompanyId,
+        activeDepartment,
+        activeDepartmentId,
+        activeFolder,
+        activeFolders,
+        activeSpace,
+        activeSpaces,
+        accent,
+        foldersBySpace,
+        openFinderContext,
+        safeCompanies.length,
+        safeDepartments.length,
+        user?.active_company_name,
+    ]);
+
     const clearCommandDeckCloseTimer = useCallback(() => {
         if (commandDeckCloseTimerRef.current) {
             clearTimeout(commandDeckCloseTimerRef.current);
@@ -433,48 +577,154 @@ export const Dock = () => {
         setIsCommandDeckPinned((current) => !current);
     }, [clearCommandDeckCloseTimer]);
 
-    const commandDeckActions = useMemo<DockCommandDeckAction[]>(() => ([
-        {
-            id: 'chat',
-            label: 'Mora',
-            description: 'Direkt in den Dialog springen.',
-            icon: MessageCircle,
-            onClick: () => {
-                handleDockClick('chat');
-                closeCommandDeck();
+    const commandDeckActions = useMemo<DockCommandDeckAction[]>(() => {
+        const closeAfter = (callback: () => void) => () => {
+            callback();
+            closeCommandDeck();
+        };
+
+        if (activeFolder && activeSpace) {
+            return [
+                {
+                    id: 'folder-open',
+                    label: 'Open Finder',
+                    description: 'Bleib im aktiven Folder und zieh Dateien direkt weiter.',
+                    icon: FolderOpen,
+                    onClick: closeAfter(contextDeck.onOpen),
+                },
+                {
+                    id: 'folder-chat',
+                    label: 'Chat In Context',
+                    description: 'Sprich mit Mora aus genau diesem Folder-Kontext.',
+                    icon: MessageCircle,
+                    onClick: closeAfter(() => handleDockClick('chat')),
+                },
+                {
+                    id: 'folder-space',
+                    label: 'Back To Space',
+                    description: 'Spring zur Space-Ebene zurueck, ohne den Fokus zu verlieren.',
+                    icon: Home,
+                    onClick: closeAfter(() => activeSpaceId && navigateToSpace(activeSpaceId)),
+                },
+                {
+                    id: 'folder-notes',
+                    label: 'Capture Note',
+                    description: 'Lege schnell Review- oder Arbeitsnotizen daneben an.',
+                    icon: FileText,
+                    onClick: closeAfter(() => handleDockClick('notes')),
+                },
+            ];
+        }
+
+        if (activeSpace) {
+            return [
+                {
+                    id: 'space-open',
+                    label: 'Open Space',
+                    description: 'Gehe direkt in den Finder mit diesem Space als Root.',
+                    icon: FolderOpen,
+                    onClick: closeAfter(contextDeck.onOpen),
+                },
+                {
+                    id: 'space-focus',
+                    label: 'Focus Top Folder',
+                    description: 'Nimm den staerksten Folder als naechsten Arbeitsknoten.',
+                    icon: Sparkles,
+                    onClick: closeAfter(() => leadingFolder && navigateToFolder(leadingFolder.id)),
+                },
+                {
+                    id: 'space-chat',
+                    label: 'Space Chat',
+                    description: 'Oeffne Mora und bleib in diesem Raum-Kontext.',
+                    icon: MessageCircle,
+                    onClick: closeAfter(() => handleDockClick('chat')),
+                },
+                {
+                    id: 'space-settings',
+                    label: 'Shell Tuning',
+                    description: 'Passe Dock, Audio oder Atmosphaere direkt an.',
+                    icon: Settings,
+                    onClick: closeAfter(() => handleDockClick('settings')),
+                },
+            ];
+        }
+
+        if (activeDepartment) {
+            return [
+                {
+                    id: 'department-open',
+                    label: 'Open Department',
+                    description: 'Oeffne die Department-Struktur im Finder.',
+                    icon: FolderOpen,
+                    onClick: closeAfter(contextDeck.onOpen),
+                },
+                {
+                    id: 'department-zoom',
+                    label: 'Enter Lead Space',
+                    description: 'Zoome in den semantisch staerksten Space dieses Departments.',
+                    icon: Sparkles,
+                    onClick: closeAfter(() => leadingSpace && navigateToSpace(leadingSpace.id)),
+                },
+                {
+                    id: 'department-team',
+                    label: 'Team Surface',
+                    description: 'Wechsle direkt zur Team-Oberflaeche fuer diesen Arbeitsbereich.',
+                    icon: Users,
+                    onClick: closeAfter(() => handleDockClick('team')),
+                },
+                {
+                    id: 'department-chat',
+                    label: 'Strategy Chat',
+                    description: 'Starte Mora mit Department-Fokus statt globalem Kontext.',
+                    icon: MessageCircle,
+                    onClick: closeAfter(() => handleDockClick('chat')),
+                },
+            ];
+        }
+
+        return [
+            {
+                id: 'universe-home',
+                label: 'Return Home',
+                description: 'Zurueck auf die zentrale Core-Oberflaeche.',
+                icon: Home,
+                onClick: closeAfter(() => handleDockClick('home')),
             },
-        },
-        {
-            id: 'finder',
-            label: 'Finder',
-            description: 'Dateien und Strukturen weiterziehen.',
-            icon: FolderOpen,
-            onClick: () => {
-                handleDockClick('finder');
-                closeCommandDeck();
+            {
+                id: 'universe-finder',
+                label: 'Open Finder',
+                description: 'Direkt in Dateien und Strukturen einsteigen.',
+                icon: FolderOpen,
+                onClick: closeAfter(contextDeck.onOpen),
             },
-        },
-        {
-            id: 'notes',
-            label: 'Notizen',
-            description: 'Gedanken festhalten oder Review bauen.',
-            icon: FileText,
-            onClick: () => {
-                handleDockClick('notes');
-                closeCommandDeck();
+            {
+                id: 'universe-chat',
+                label: 'Mora',
+                description: 'Direkt in den Dialog springen.',
+                icon: MessageCircle,
+                onClick: closeAfter(() => handleDockClick('chat')),
             },
-        },
-        {
-            id: 'settings',
-            label: 'Settings',
-            description: 'Audio, Scenes und Shell feinjustieren.',
-            icon: Settings,
-            onClick: () => {
-                handleDockClick('settings');
-                closeCommandDeck();
+            {
+                id: 'universe-settings',
+                label: 'Settings',
+                description: 'Audio, Scenes und Shell feinjustieren.',
+                icon: Settings,
+                onClick: closeAfter(() => handleDockClick('settings')),
             },
-        },
-    ]), [closeCommandDeck, handleDockClick]);
+        ];
+    }, [
+        activeDepartment,
+        activeFolder,
+        activeSpace,
+        activeSpaceId,
+        closeCommandDeck,
+        contextDeck,
+        handleDockClick,
+        leadingFolder,
+        leadingSpace,
+        navigateToFolder,
+        navigateToSpace,
+    ]);
 
     useEffect(() => {
         let cancelled = false;
@@ -522,6 +772,10 @@ export const Dock = () => {
         window.addEventListener(SAIMOR_COMMAND_DECK_EVENT, handleCommandDeckRequest as EventListener);
         return () => window.removeEventListener(SAIMOR_COMMAND_DECK_EVENT, handleCommandDeckRequest as EventListener);
     }, [openCommandDeck]);
+
+    useEffect(() => {
+        publishCommandDeckState({ open: isCommandDeckOpen, pinned: isCommandDeckPinned });
+    }, [isCommandDeckOpen, isCommandDeckPinned]);
 
     const openAudioSettings = useCallback(() => {
         openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
@@ -621,9 +875,17 @@ export const Dock = () => {
                                     orbStateLabel={orbStateLabel}
                                     scopeLabel={scopeLabel}
                                     workspaceName={activeCompany?.name || user?.active_company_name || 'Workspace'}
+                                    contextLabel={contextDeck.label}
+                                    contextTitle={contextDeck.title}
+                                    contextDescription={contextDeck.description}
+                                    contextSignalA={contextDeck.signalA}
+                                    contextSignalB={contextDeck.signalB}
+                                    contextActionLabel={contextDeck.actionLabel}
+                                    contextAccent={contextDeck.accent}
                                     sceneLabel={ritualScene.label}
                                     sceneDescription={ritualScene.description}
                                     autoSceneEnabled={ritualSettings.autoTime}
+                                    onOpenContext={contextDeck.onOpen}
                                     onTogglePinned={toggleCommandDeckPinned}
                                     onToggleAutoScene={handleToggleRitualAuto}
                                     onCycleScene={handleCycleRitualScene}
@@ -825,10 +1087,13 @@ export const Dock = () => {
                             </div>
                             <div className="min-w-0 text-left">
                                 <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                    Control Center
+                                    Deck
                                 </div>
                                 <div className={`mt-1 text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                                    {ritualScene.shortLabel} · {scopeLabel}
+                                    {scopeLabel} · {contextDeck.label}
+                                </div>
+                                <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
+                                    {ritualScene.shortLabel} scene
                                 </div>
                             </div>
                         </button>
@@ -850,23 +1115,25 @@ export const Dock = () => {
                         ))}
                     </div>
 
-                    {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                        }`} />
+                    {ambientTracks.length > 0 && !isCommandDeckOpen && (
+                        <>
+                            <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                                }`} />
 
-                    <DockNowPlaying
-                        isStandardMode={isStandardMode}
-                        trackName={activeTrack?.name || null}
-                        trackCount={ambientTracks.length}
-                        isPlaying={ambientAudio.enabled}
-                        onToggle={handleAmbientToggle}
-                        onNext={handleAmbientNext}
-                        onOpen={openAudioSettings}
-                    />
+                            <DockNowPlaying
+                                isStandardMode={isStandardMode}
+                                isDeckOpen={isCommandDeckOpen}
+                                trackName={activeTrack?.name || null}
+                                trackCount={ambientTracks.length}
+                                isPlaying={ambientAudio.enabled}
+                                onToggle={handleAmbientToggle}
+                                onOpen={openAudioSettings}
+                            />
 
-                    {/* DIVIDER - Glowing */}
-                    <div className={`hidden xl:block w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                        }`} />
+                            <div className={`hidden xl:block w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                                }`} />
+                        </>
+                    )}
 
                     {/* RIGHT SECTION: Notifications + Company */}
                     <div className="flex items-center gap-2">

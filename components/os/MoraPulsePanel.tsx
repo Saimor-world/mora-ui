@@ -2,33 +2,20 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Clock3,
-    Compass,
     FileText,
     FolderOpen,
-    Music2,
     PanelTopOpen,
-    Pause,
-    Play,
     Settings2,
-    SkipForward,
     Sparkles,
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
-    AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT,
-    listAmbientAudioTracks,
-    persistAmbientAudioSettings,
-    resolveAmbientAudioSettings,
-    type AmbientAudioTrackMeta,
-} from '@/lib/audio/ambientAudio';
-import {
     RITUAL_SCENES,
     getEffectiveRitualScene,
     resolveRitualSettings,
 } from '@/lib/os/ritualMode';
-import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
+import { requestCommandDeckOpen, SAIMOR_COMMAND_DECK_STATE_EVENT } from '@/lib/os/commandDeck';
 
 const ORB_LABELS: Record<string, string> = {
     idle: 'Standby',
@@ -70,13 +57,11 @@ export const MoraPulsePanel: React.FC = () => {
     const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
     const orbState = useMoraStore((state) => state.orbState);
     const viewLevel = useMoraStore((state) => state.viewLevel);
-    const updateUserSettings = useMoraStore((state) => state.updateUserSettings);
     const openPane = usePaneStore((state) => state.openPane);
 
     const [now, setNow] = useState(() => new Date());
-    const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
+    const [isDeckOpen, setIsDeckOpen] = useState(false);
 
-    const ambientAudio = useMemo(() => resolveAmbientAudioSettings(user?.settings), [user?.settings]);
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualScene = useMemo(
         () => RITUAL_SCENES[getEffectiveRitualScene(ritualSettings)],
@@ -109,10 +94,6 @@ export const MoraPulsePanel: React.FC = () => {
         () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
         [activeFolders, activeFolderId]
     );
-    const activeTrack = useMemo(
-        () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
-        [ambientTracks, ambientAudio.trackId]
-    );
 
     useEffect(() => {
         const timer = window.setInterval(() => setNow(new Date()), 30000);
@@ -120,66 +101,17 @@ export const MoraPulsePanel: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        let cancelled = false;
-
-        const loadTracks = async () => {
-            try {
-                const tracks = await listAmbientAudioTracks();
-                if (!cancelled) {
-                    setAmbientTracks(tracks);
-                }
-            } catch (error) {
-                console.error('[PulsePanel] Failed to load ambient tracks:', error);
-            }
+        const handleDeckState = (event: Event) => {
+            const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+            setIsDeckOpen(Boolean(detail?.open));
         };
 
-        loadTracks();
-        window.addEventListener('focus', loadTracks);
-        window.addEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, loadTracks);
-        return () => {
-            cancelled = true;
-            window.removeEventListener('focus', loadTracks);
-            window.removeEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, loadTracks);
-        };
+        window.addEventListener(SAIMOR_COMMAND_DECK_STATE_EVENT, handleDeckState as EventListener);
+        return () => window.removeEventListener(SAIMOR_COMMAND_DECK_STATE_EVENT, handleDeckState as EventListener);
     }, []);
 
-    const openAudioSettings = () => {
+    const openSettings = () => {
         openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
-    };
-
-    const handleAmbientToggle = () => {
-        if (!ambientAudio.trackId) {
-            const firstTrack = ambientTracks[0];
-            if (!firstTrack) {
-                openAudioSettings();
-                return;
-            }
-
-            persistAmbientAudioSettings(updateUserSettings, {
-                ambientAudioTrackId: firstTrack.id,
-                ambientAudioEnabled: true,
-            });
-            return;
-        }
-
-        persistAmbientAudioSettings(updateUserSettings, {
-            ambientAudioEnabled: !ambientAudio.enabled,
-        });
-    };
-
-    const handleAmbientNext = () => {
-        if (ambientTracks.length === 0) {
-            openAudioSettings();
-            return;
-        }
-
-        const currentIndex = ambientTracks.findIndex((track) => track.id === ambientAudio.trackId);
-        const nextTrack = ambientTracks[(currentIndex + 1 + ambientTracks.length) % ambientTracks.length];
-
-        persistAmbientAudioSettings(updateUserSettings, {
-            ambientAudioTrackId: nextTrack.id,
-            ambientAudioEnabled: true,
-        });
     };
 
     const departmentFolderCount = useMemo(
@@ -198,9 +130,8 @@ export const MoraPulsePanel: React.FC = () => {
                 label: 'Folder',
                 title: activeFolder.name,
                 subtitle: activeSpace.name,
-                metricA: `${activeFolder.node_count || 0} docs`,
-                metricB: `${activeFolders.length} folders im Space`,
-                note: 'Der aktive Folder bleibt jetzt als Live-Fokus im Space sichtbar, waehrend Finder und Shell denselben Kontext halten.',
+                signalLine: `${activeFolder.node_count || 0} docs · ${activeFolders.length} folders im Space`,
+                note: 'Aktiver Folder bleibt im Space als Live-Fokus sichtbar, waehrend der Deck die naechsten Schritte uebernimmt.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -218,14 +149,12 @@ export const MoraPulsePanel: React.FC = () => {
 
         if (activeSpace) {
             const docs = activeFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
-
             return {
                 label: 'Space',
                 title: activeSpace.name,
                 subtitle: activeDepartment?.name || activeCompany?.name || 'Workspace',
-                metricA: `${activeFolders.length} folders`,
-                metricB: `${docs} docs`,
-                note: 'Folder werden jetzt in Focus Lane, Working Set und Archive Belt priorisiert statt nur als gleichmaessige Orbits gezeigt.',
+                signalLine: `${activeFolders.length} folders · ${docs} docs`,
+                note: 'Space-Fokus bleibt lesbar, aber der eigentliche Arbeitswechsel passiert jetzt im Deck statt in einer zweiten HUD-Spalte.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -245,9 +174,8 @@ export const MoraPulsePanel: React.FC = () => {
                 label: 'Department',
                 title: activeDepartment.name,
                 subtitle: activeCompany?.name || user?.active_company_name || 'Workspace',
-                metricA: `${activeSpaces.length} spaces`,
-                metricB: `${departmentFolderCount} folders / ${departmentDocCount} docs`,
-                note: 'Space-Hover klappt jetzt ein semantisches Blueprint fuer Focus, Flow und Archive aus, bevor du in Layer 3 springst.',
+                signalLine: `${activeSpaces.length} spaces · ${departmentFolderCount} folders · ${departmentDocCount} docs`,
+                note: 'Department-Hover klappt jetzt ein Blueprint aus. Der Deck fuehrt den naechsten Zoom, die Pulse-Leiste nur noch die Orientierung.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -265,9 +193,8 @@ export const MoraPulsePanel: React.FC = () => {
             label: 'Universe',
             title: activeCompany?.name || user?.active_company_name || 'SAIMOR Universe',
             subtitle: 'Live topography',
-            metricA: `${safeDepartments.length} departments`,
-            metricB: `${safeCompanies.length} workspaces`,
-            note: 'Layer 1 verbindet Departments jetzt nach semantischer Naehe statt nach Kreisfolge.',
+            signalLine: `${safeDepartments.length} departments · ${safeCompanies.length} workspaces`,
+            note: 'Die rechte Seite ist jetzt nur noch Orientierung. Deck und Layer uebernehmen die eigentliche Arbeit.',
             onOpen: () => openPane({
                 id: 'finder-main',
                 type: 'finder',
@@ -283,8 +210,8 @@ export const MoraPulsePanel: React.FC = () => {
         activeCompanyId,
         activeDepartment,
         activeDepartmentId,
-        activeFolders,
         activeFolder,
+        activeFolders,
         activeSpace,
         activeSpaces,
         departmentDocCount,
@@ -296,22 +223,23 @@ export const MoraPulsePanel: React.FC = () => {
     ]);
 
     return (
-        <div className="pointer-events-none fixed right-6 top-6 z-[78] hidden w-[360px] lg:block">
-            <div className="pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.24),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
+        <div className="pointer-events-none fixed right-6 top-6 z-[78] hidden lg:block">
+            <div
+                className={`pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.22),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl transition-all duration-300 ${isDeckOpen ? 'w-[250px] opacity-55' : 'w-[312px]'}`}
+            >
                 <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(16,185,129,0.08),transparent_45%,rgba(34,211,238,0.08))]" />
                 <div className="absolute -right-10 top-0 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
-                <div className="absolute left-0 top-20 h-24 w-24 rounded-full bg-cyan-400/10 blur-3xl" />
 
-                <div className="relative space-y-5 p-5">
-                    <div className="flex items-start justify-between gap-4">
+                <div className="relative space-y-3 p-4">
+                    <div className="flex items-start justify-between gap-3">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-200/80">
                                 <Sparkles size={12} />
                                 {ritualScene.shortLabel} scene
                             </div>
-                            <div className="mt-4 flex items-end gap-3">
-                                <div className="text-3xl font-light tracking-tight text-white">{formatClock(now)}</div>
-                                <div className="pb-1 text-xs uppercase tracking-[0.22em] text-white/35">{formatDateLabel(now)}</div>
+                            <div className="mt-3 flex items-end gap-2">
+                                <div className="text-[32px] font-light tracking-tight text-white">{formatClock(now)}</div>
+                                <div className="pb-1 text-[10px] uppercase tracking-[0.22em] text-white/35">{formatDateLabel(now)}</div>
                             </div>
                         </div>
 
@@ -322,143 +250,70 @@ export const MoraPulsePanel: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
-                                <Compass size={12} />
-                                Workspace
-                            </div>
-                            <div className="mt-2 truncate text-sm text-white/80">
-                                {activeCompany?.name || user?.active_company_name || 'SAIMOR Universe'}
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
-                                <Clock3 size={12} />
-                                Scene
-                            </div>
-                            <div className="mt-2 text-sm text-white/80">
-                                {ritualScene.label}
-                            </div>
-                            <div className="mt-1 text-[11px] text-white/40">
-                                {ritualSettings.autoTime ? 'Auto time' : 'Manual'}
-                            </div>
-                        </div>
-                    </div>
-
                     <div className="rounded-[24px] border border-white/10 bg-black/25 p-4">
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
                                     <FileText size={12} />
-                                    Layer Inspector
+                                    {currentContext.label}
                                 </div>
                                 <div className="mt-2 truncate text-sm text-white/85">
                                     {currentContext.title}
                                 </div>
                                 <div className="mt-1 text-xs text-white/45">
-                                    {currentContext.label} · {currentContext.subtitle}
+                                    {currentContext.subtitle}
                                 </div>
                             </div>
 
                             <button
-                                onClick={currentContext.onOpen}
+                                onClick={() => requestCommandDeckOpen({ pinned: true })}
                                 className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200 transition-colors hover:bg-emerald-500/16"
                             >
-                                Open context
+                                Deck
                             </button>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                                <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Signal A</div>
-                                <div className="mt-1 text-sm text-white/82">{currentContext.metricA}</div>
-                            </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                                <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Signal B</div>
-                                <div className="mt-1 text-sm text-white/82">{currentContext.metricB}</div>
-                            </div>
+                        <div className="mt-3 text-[11px] text-white/50">
+                            {currentContext.signalLine}
                         </div>
 
-                        <p className="mt-4 text-[11px] leading-relaxed text-white/42">
-                            {currentContext.note}
-                        </p>
-                    </div>
+                        {!isDeckOpen && (
+                            <p className="mt-3 text-[11px] leading-relaxed text-white/42">
+                                {currentContext.note}
+                            </p>
+                        )}
 
-                    <div className="rounded-[24px] border border-white/10 bg-black/25 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
-                                    <Music2 size={12} />
-                                    Atmosphere
-                                </div>
-                                <div className="mt-2 truncate text-sm text-white/82">
-                                    {activeTrack?.name || 'Noch keine Library geladen'}
-                                </div>
-                                <div className="mt-1 flex items-center gap-2 text-xs text-white/40">
-                                    <span>{ambientTracks.length} lokale Tracks</span>
-                                    <span>·</span>
-                                    <span>{Math.round(ambientAudio.volume * 100)}% volume</span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleAmbientToggle}
-                                    className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/22 bg-emerald-500/12 text-emerald-100 transition-colors hover:bg-emerald-500/20"
-                                    aria-label={ambientAudio.enabled ? 'Musik pausieren' : 'Musik abspielen'}
-                                >
-                                    {ambientAudio.enabled ? <Pause size={15} /> : <Play size={15} />}
-                                </button>
-                                <button
-                                    onClick={handleAmbientNext}
-                                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
-                                    aria-label="Naechsten Track waehlen"
-                                >
-                                    <SkipForward size={15} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 flex items-end gap-1">
-                            {[14, 28, 20, 34, 18, 26].map((height, index) => (
-                                <span
-                                    key={`${height}-${index}`}
-                                    className={`w-1.5 rounded-full bg-gradient-to-t from-emerald-400/35 to-cyan-300/75 ${ambientAudio.enabled ? 'animate-pulse' : 'opacity-30'}`}
-                                    style={{
-                                        height,
-                                        animationDelay: `${index * 0.12}s`,
-                                        animationDuration: `${1.1 + index * 0.08}s`,
-                                    }}
-                                />
-                            ))}
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                            <button
+                                onClick={currentContext.onOpen}
+                                className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
+                            >
+                                <FolderOpen size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
+                                <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Context</div>
+                            </button>
+                            <button
+                                onClick={openSettings}
+                                className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
+                            >
+                                <Settings2 size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
+                                <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Settings</div>
+                            </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
-                        <button
-                            onClick={() => requestCommandDeckOpen({ pinned: true })}
-                            className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
-                        >
-                            <PanelTopOpen size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
-                            <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Deck</div>
-                        </button>
-                        <button
-                            onClick={currentContext.onOpen}
-                            className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
-                        >
-                            <FolderOpen size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
-                            <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Context</div>
-                        </button>
-                        <button
-                            onClick={openAudioSettings}
-                            className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
-                        >
-                            <Settings2 size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
-                            <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Settings</div>
-                        </button>
-                    </div>
+                    {!isDeckOpen && (
+                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/42">
+                            <span className="truncate">{activeCompany?.name || user?.active_company_name || 'Workspace'}</span>
+                            <span>{ritualSettings.autoTime ? 'Auto time' : 'Manual'}</span>
+                        </div>
+                    )}
+
+                    {isDeckOpen && (
+                        <div className="flex items-center gap-2 rounded-2xl border border-emerald-400/15 bg-emerald-500/8 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-emerald-100/75">
+                            <PanelTopOpen size={13} />
+                            Deck active
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
