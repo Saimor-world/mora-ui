@@ -8,6 +8,7 @@ import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 
@@ -570,90 +571,77 @@ export const DepartmentLayer: React.FC = () => {
                 NEW SPACE
             </motion.button>
 
-            <motion.div
-                className="absolute top-32 left-8 z-40 glass-panel border-emerald-400/20 px-4 py-3 min-w-[220px]"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+            <LayerInsightRail
+                className="left-8 top-32 z-40"
+                eyebrow={deptTitle || 'Department'}
+                title={hoveredSpaceDetails?.displayName || deptTitle || 'Department'}
+                badge={hoveredSpaceDetails ? 'Space focus' : 'Layer 2'}
+                accent={hoveredSpaceDetails?.color || deptColor}
+                summary={hoveredSpaceDetails
+                    ? `${hoveredSpaceDetails.folderTotal} folders und ${hoveredSpaceDetails.docTotal} docs bleiben fokussierbar, aber die tieferen Lane-Signale klappen erst bei echtem Hover auf.`
+                    : 'Der Department-Layer bleibt jetzt ruhig. Hover ueber einen Space, um sein Blueprint gezielt aufzuziehen.'}
+                forceExpanded={Boolean(hoveredSpaceDetails)}
+                metrics={[
+                    { label: 'Spaces', value: spaces.length, toneClassName: 'text-emerald-200' },
+                    { label: 'Folders', value: totalFolders, toneClassName: 'text-cyan-200' },
+                    { label: 'Docs', value: docsCount, toneClassName: 'text-violet-200' },
+                ]}
             >
-                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80 mb-2">
-                    {deptTitle || 'Department'}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Spaces</div>
-                        <div className="text-lg leading-none text-emerald-200">{spaces.length}</div>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Folders</div>
-                        <div className="text-lg leading-none text-cyan-200">{totalFolders}</div>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wide">Docs</div>
-                        <div className="text-lg leading-none text-violet-200">{docsCount}</div>
-                    </div>
-                </div>
-                <div className="mt-3 border-t border-white/8 pt-3">
-                    {hoveredSpaceDetails ? (
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="min-w-0">
-                                    <div className="text-[9px] uppercase tracking-[0.22em] text-white/35">Focused Space</div>
-                                    <div className="mt-1 truncate text-sm text-white/85">{hoveredSpaceDetails.displayName}</div>
-                                </div>
-                                <div
-                                    className="h-2.5 w-2.5 rounded-full"
-                                    style={{
-                                        background: hoveredSpaceDetails.color,
-                                        boxShadow: `0 0 12px ${hoveredSpaceDetails.color}`,
-                                    }}
-                                />
+                {hoveredSpaceDetails ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="text-[9px] uppercase tracking-[0.22em] text-white/35">Focused Space</div>
+                                <div className="mt-1 truncate text-sm text-white/85">{hoveredSpaceDetails.displayName}</div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
-                                    <div className="text-[9px] uppercase tracking-wide text-white/35">Folders</div>
-                                    <div className="mt-1 text-base leading-none text-cyan-200">{hoveredSpaceDetails.folderTotal}</div>
-                                </div>
-                                <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
-                                    <div className="text-[9px] uppercase tracking-wide text-white/35">Docs</div>
-                                    <div className="mt-1 text-base leading-none text-violet-200">{hoveredSpaceDetails.docTotal}</div>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                {(['focus', 'flow', 'archive'] as PreviewLane[]).map((lane) => (
-                                    <div key={lane} className="rounded-lg border border-white/10 bg-black/20 px-2 py-2">
-                                        <div className="text-[8px] uppercase tracking-[0.18em] text-white/35">
-                                            {PREVIEW_LANE_META[lane].label}
-                                        </div>
-                                        <div className="mt-1 text-sm leading-none" style={{ color: PREVIEW_LANE_META[lane].accent }}>
-                                            {hoveredLaneSummary[lane].count}
-                                        </div>
+                            <div
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{
+                                    background: hoveredSpaceDetails.color,
+                                    boxShadow: `0 0 12px ${hoveredSpaceDetails.color}`,
+                                }}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['focus', 'flow', 'archive'] as PreviewLane[]).map((lane) => (
+                                <div key={lane} className="rounded-xl border border-white/10 bg-black/20 px-2.5 py-2">
+                                    <div className="text-[8px] uppercase tracking-[0.18em] text-white/35">
+                                        {PREVIEW_LANE_META[lane].label}
                                     </div>
+                                    <div className="mt-1 text-sm leading-none" style={{ color: PREVIEW_LANE_META[lane].accent }}>
+                                        {hoveredLaneSummary[lane].count}
+                                    </div>
+                                    <div className="mt-1 text-[10px] text-white/40">
+                                        {hoveredLaneSummary[lane].docs} docs
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {hoveredSpaceDetails.leadFolders.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {hoveredSpaceDetails.leadFolders.map((folderName) => (
+                                    <span
+                                        key={folderName}
+                                        className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/55"
+                                    >
+                                        {folderName}
+                                    </span>
                                 ))}
                             </div>
-                            {hoveredSpaceDetails.leadFolders.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {hoveredSpaceDetails.leadFolders.map((folderName) => (
-                                        <span
-                                            key={folderName}
-                                            className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/55"
-                                        >
-                                            {folderName}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                            <p className="text-[11px] leading-relaxed text-white/45">
-                                {hoveredSpaceDetails.description || 'Das Blueprint klappt jetzt als semantischer Arbeitsfokus auf, bevor du in Layer 3 springst.'}
-                            </p>
-                        </div>
-                    ) : (
-                        <p className="text-[11px] leading-relaxed text-white/40">
-                            Hover ueber einen Space, um seine Folder-Konstellation zu arretieren und direkt in die Struktur zu springen.
+                        )}
+
+                        <p className="text-[11px] leading-relaxed text-white/45">
+                            {hoveredSpaceDetails.description || 'Das Blueprint klappt jetzt als semantischer Arbeitsfokus auf, bevor du in Layer 3 springst.'}
                         </p>
-                    )}
-                </div>
-            </motion.div>
+                    </div>
+                ) : (
+                    <p className="text-[11px] leading-relaxed text-white/40">
+                        Hover ueber einen Space, um seine Folder-Konstellation zu arretieren und direkt in die Struktur zu springen.
+                    </p>
+                )}
+            </LayerInsightRail>
 
             <div className="absolute inset-0 flex items-center justify-center z-10">
                 {isLoadingSpaces ? (

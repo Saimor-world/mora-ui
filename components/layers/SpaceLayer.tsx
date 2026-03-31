@@ -8,6 +8,7 @@ import { ArrowLeft, FolderOpen, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { Folder as FolderOrb } from '@/components/mora/Folder';
 import { ORBIT_PALETTE } from '@/lib/utils/deptStyle';
 
@@ -537,41 +538,20 @@ export const SpaceLayer: React.FC = () => {
                 </motion.button>
             </motion.div>
 
-            <motion.div
-                className="glass-panel absolute left-8 top-32 z-40 min-w-[308px] border-emerald-400/20 px-4 py-4"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+            <LayerInsightRail
+                className="left-8 top-32 z-40"
+                eyebrow="Space"
+                title={currentSpace?.name || 'Workspace'}
+                badge={activeFolderId ? 'Live focus' : 'Layer 3'}
+                accent={currentSpace?.color || '#34d399'}
+                summary={`${laneSummaries.focus.count} focus, ${laneSummaries.flow.count} working set und ${laneSummaries.archive.count} archive bleiben als stiller Strukturhinweis sichtbar.`}
+                metrics={[
+                    { label: 'Folders', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
+                    { label: 'Active', value: foldersWithDocs, toneClassName: 'text-cyan-200' },
+                    { label: 'Docs', value: totalDocs, toneClassName: 'text-violet-200' },
+                ]}
             >
-                <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/80">
-                        {currentSpace?.name || 'Workspace'}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={openSpaceFinder}
-                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
-                    >
-                        Open finder
-                    </button>
-                </div>
-
                 <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] uppercase tracking-wide text-white/40">Folders</div>
-                        <div className="text-lg leading-none text-emerald-200">{rankedFolders.length}</div>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] uppercase tracking-wide text-white/40">Active</div>
-                        <div className="text-lg leading-none text-emerald-200">{foldersWithDocs}</div>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5">
-                        <div className="text-[9px] uppercase tracking-wide text-white/40">Docs</div>
-                        <div className="text-lg leading-none text-violet-200">{totalDocs}</div>
-                    </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-3 gap-2">
                     {(['focus', 'flow', 'archive'] as LaneKey[]).map((lane) => (
                         <div
                             key={lane}
@@ -580,7 +560,7 @@ export const SpaceLayer: React.FC = () => {
                             <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">
                                 {LANE_CONFIG[lane].label}
                             </div>
-                            <div className="mt-1 text-sm text-white/82">
+                            <div className="mt-1 text-sm" style={{ color: LANE_CONFIG[lane].accent }}>
                                 {laneSummaries[lane].count}
                             </div>
                             <div className="mt-1 text-[10px] text-white/42">
@@ -589,7 +569,15 @@ export const SpaceLayer: React.FC = () => {
                         </div>
                     ))}
                 </div>
-            </motion.div>
+
+                <button
+                    type="button"
+                    onClick={openSpaceFinder}
+                    className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
+                >
+                    Open finder
+                </button>
+            </LayerInsightRail>
 
             {inspectedFolder && (
                 <motion.div

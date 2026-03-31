@@ -10,6 +10,7 @@ import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
 import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
+import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 
@@ -356,6 +357,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const focusedPlanetMetrics = focusedPlanet
         ? (departmentMetrics[focusedPlanet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 })
         : null;
+    const focusedPlanetLinkCount = focusedPlanet
+        ? semanticConnections.filter((edge) => edge.fromId === focusedPlanet.id || edge.toId === focusedPlanet.id).length
+        : 0;
 
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
@@ -547,55 +551,31 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </svg>
 
             {focusedPlanet && focusedPlanetMetrics && (
-                <motion.div
-                    className="absolute left-8 top-28 z-30 w-[280px] rounded-[28px] border border-white/10 bg-black/35 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.55, ease: "easeOut" }}
+                <LayerInsightRail
+                    className="left-8 top-28 z-30"
+                    eyebrow={hoverPlanetId ? 'Live Focus' : 'Department Signal'}
+                    title={focusedPlanet.name}
+                    badge={isLocked(focusedPlanet) ? 'Visible' : 'Member'}
+                    accent={focusedPlanet.color || '#34d399'}
+                    summary={`${focusedPlanetLinkCount} semantische Verbindungen bleiben sichtbar, aber die volle Analyse klappt erst bei Hover oder echtem Fokus auf.`}
+                    forceExpanded={Boolean(hoverPlanetId)}
+                    metrics={[
+                        { label: 'Spaces', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
+                        { label: 'Folders', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
+                        { label: 'Docs', value: focusedPlanetMetrics.nodes, toneClassName: 'text-violet-200' },
+                        { label: 'Health', value: `${focusedPlanetMetrics.health}%`, toneClassName: 'text-amber-200' },
+                    ]}
                 >
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <div className="text-[10px] uppercase tracking-[0.26em] text-emerald-300/70">
-                                {hoverPlanetId ? 'Live Focus' : 'Department Signal'}
-                            </div>
-                            <div className="mt-2 truncate text-lg font-light tracking-[0.08em] text-white/90">
-                                {focusedPlanet.name}
-                            </div>
-                        </div>
-                        <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/45">
-                            {isLocked(focusedPlanet) ? 'Visible' : 'Member'}
-                        </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Spaces</div>
-                            <div className="mt-1 text-xl leading-none text-emerald-200">{focusedPlanetMetrics.spaces}</div>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Folders</div>
-                            <div className="mt-1 text-xl leading-none text-cyan-200">{focusedPlanetMetrics.folders}</div>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Docs</div>
-                            <div className="mt-1 text-xl leading-none text-violet-200">{focusedPlanetMetrics.nodes}</div>
-                        </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Health</div>
-                            <div className="mt-1 text-xl leading-none text-amber-200">{focusedPlanetMetrics.health}%</div>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                         <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-white/35">
                             <span>Semantic Links</span>
-                            <span>{semanticConnections.filter((edge) => edge.fromId === focusedPlanet.id || edge.toId === focusedPlanet.id).length}</span>
+                            <span>{focusedPlanetLinkCount}</span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-white/45">
                             Verbindungen richten sich jetzt nach echter Department-Aehnlichkeit in Docs, Spaces, Folders und Health statt nach reiner Orbit-Reihenfolge.
                         </p>
                     </div>
-                </motion.div>
+                </LayerInsightRail>
             )}
 
             {/* 3. PLANET LAYER (Managed by Store Data) */}
