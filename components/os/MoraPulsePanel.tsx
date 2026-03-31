@@ -247,7 +247,7 @@ export const MoraPulsePanel: React.FC = () => {
                 subtitle: activeCompany?.name || user?.active_company_name || 'Workspace',
                 metricA: `${activeSpaces.length} spaces`,
                 metricB: `${departmentFolderCount} folders / ${departmentDocCount} docs`,
-                note: 'Space-Beams und Links reagieren jetzt auf echte Struktur statt auf reine Orbit-Geometrie.',
+                note: 'Space-Hover klappt jetzt ein semantisches Blueprint fuer Focus, Flow und Archive aus, bevor du in Layer 3 springst.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',

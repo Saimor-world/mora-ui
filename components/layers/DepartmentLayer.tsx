@@ -14,6 +14,28 @@ import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
 const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
 
+type PreviewLane = 'focus' | 'flow' | 'archive';
+
+const PREVIEW_LANE_META: Record<PreviewLane, { label: string; accent: string; distance: number; spread: number }> = {
+    focus: { label: 'Focus', accent: '#34D399', distance: 126, spread: 72 },
+    flow: { label: 'Flow', accent: '#22D3EE', distance: 188, spread: 64 },
+    archive: { label: 'Archive', accent: '#A78BFA', distance: 250, spread: 58 },
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const resolvePreviewLane = (index: number): PreviewLane => {
+    if (index < 2) return 'focus';
+    if (index < 6) return 'flow';
+    return 'archive';
+};
+
+const getFreshnessWeight = (value?: string | null) => {
+    if (!value) return 0.32;
+    const days = (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24);
+    return clamp(1 - days / 28, 0.18, 1);
+};
+
 /**
  * DEPARTMENT LAYER (L2)
  * Visual language aligned with L1 while staying distinct from L3.
@@ -33,6 +55,7 @@ export const DepartmentLayer: React.FC = () => {
     const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
     const navigateToExplore = useMoraStore(s => s.navigateToExplore);
     const navigateToSpace = useMoraStore(s => s.navigateToSpace);
+    const navigateToFolder = useMoraStore(s => s.navigateToFolder);
     const addSpace = useMoraStore(s => s.addSpace);
     const setActiveSpace = useMoraStore(s => s.setActiveSpace);
     const { openPane } = usePaneStore();
@@ -299,25 +322,61 @@ export const DepartmentLayer: React.FC = () => {
         }
     }, [hoveredSpaceId, foldersBySpace, loadFoldersForSpace]);
 
-    const hoveredFolderPositions = useMemo(() => {
+    const hoveredPreviewFolders = useMemo(() => {
         if (!hoveredSpaceId || !hoveredSpacePosition || hoveredFolders.length === 0) return [];
-        const count = Math.max(hoveredFolders.length, 1);
-        const perRing = 8;
-        // Increased base radius from 88 to 110 so hovered folders clear the space moon
-        const baseRadius = 110;
-        const ringGap = 36;
-        return hoveredFolders.map((folder, i) => {
-            const ring = Math.floor(i / perRing);
-            const indexInRing = i % perRing;
-            const ringCount = Math.min(perRing, count - ring * perRing);
-            const angle = (indexInRing / Math.max(1, ringCount)) * Math.PI * 2 - Math.PI / 2;
-            const radius = baseRadius + ring * ringGap;
+
+        const distance = Math.hypot(hoveredSpacePosition.x, hoveredSpacePosition.y) || 1;
+        const outward = {
+            x: hoveredSpacePosition.x / distance,
+            y: hoveredSpacePosition.y / distance,
+        };
+        const perpendicular = { x: -outward.y, y: outward.x };
+
+        const ranked = [...hoveredFolders]
+            .map((folder, index) => {
+                const nodeCount = folder.node_count || 0;
+                const freshness = getFreshnessWeight(folder.updated_at || folder.created_at);
+                const signal = nodeCount * 0.82 + freshness * 4.8;
+                return {
+                    folder,
+                    nodeCount,
+                    freshness,
+                    signal,
+                    color: folder.color || MOON_COLORS[index % MOON_COLORS.length],
+                };
+            })
+            .sort((left, right) => {
+                if (right.signal !== left.signal) return right.signal - left.signal;
+                return (left.folder.name || '').localeCompare(right.folder.name || '');
+            })
+            .slice(0, 10);
+
+        const laneCounts = ranked.reduce<Record<PreviewLane, number>>((accumulator, _, index) => {
+            accumulator[resolvePreviewLane(index)] += 1;
+            return accumulator;
+        }, { focus: 0, flow: 0, archive: 0 });
+        const laneOffsets: Record<PreviewLane, number> = { focus: 0, flow: 0, archive: 0 };
+        const strongestSignal = Math.max(1, ...ranked.map((entry) => entry.signal));
+
+        return ranked.map((entry, index) => {
+            const lane = resolvePreviewLane(index);
+            const laneMeta = PREVIEW_LANE_META[lane];
+            const laneIndex = laneOffsets[lane];
+            const laneCount = Math.max(laneCounts[lane], 1);
+            laneOffsets[lane] += 1;
+
+            const centeredIndex = laneCount === 1 ? 0 : laneIndex - (laneCount - 1) / 2;
+            const lateralDistance = centeredIndex * laneMeta.spread;
+            const x = hoveredSpacePosition.x + outward.x * laneMeta.distance + perpendicular.x * lateralDistance;
+            const y = hoveredSpacePosition.y + outward.y * laneMeta.distance + perpendicular.y * lateralDistance;
+
             return {
-                folder,
-                x: hoveredSpacePosition.x + Math.cos(angle) * radius,
-                y: hoveredSpacePosition.y + Math.sin(angle) * radius,
-                angle,
-                radius
+                ...entry,
+                lane,
+                x,
+                y,
+                distance: Math.hypot(x - hoveredSpacePosition.x, y - hoveredSpacePosition.y),
+                lineStrength: Math.max(0.28, Math.min(1, 0.24 + entry.signal / strongestSignal * 0.76)),
             };
         });
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders]);
@@ -357,6 +416,19 @@ export const DepartmentLayer: React.FC = () => {
         ]));
     }, [spaces, foldersBySpace]);
 
+    const hoveredLaneSummary = useMemo(
+        () => hoveredPreviewFolders.reduce<Record<PreviewLane, { count: number; docs: number }>>((accumulator, entry) => {
+            accumulator[entry.lane].count += 1;
+            accumulator[entry.lane].docs += entry.nodeCount;
+            return accumulator;
+        }, {
+            focus: { count: 0, docs: 0 },
+            flow: { count: 0, docs: 0 },
+            archive: { count: 0, docs: 0 },
+        }),
+        [hoveredPreviewFolders]
+    );
+
     const hoveredSpaceDetails = useMemo(() => {
         if (!hoveredSpaceId) return null;
         const meta = spaceMeta.find((entry) => entry.space.id === hoveredSpaceId);
@@ -377,19 +449,20 @@ export const DepartmentLayer: React.FC = () => {
             folderTotal: signal.folderTotal,
             docTotal: signal.docTotal,
             intensity: signal.intensity,
+            leadFolders: hoveredPreviewFolders.slice(0, 3).map((entry) => entry.folder.name),
         };
-    }, [hoveredSpaceId, spaceMeta, spaceSignals]);
+    }, [hoveredSpaceId, spaceMeta, spaceSignals, hoveredPreviewFolders]);
 
     const hoveredClusterRadius = useMemo(() => {
-        if (hoveredFolderPositions.length === 0) {
+        if (hoveredPreviewFolders.length === 0) {
             return 134;
         }
 
         return Math.max(
-            150,
-            ...hoveredFolderPositions.map(({ radius }) => radius + 74)
+            230,
+            ...hoveredPreviewFolders.map((entry) => entry.distance + 92)
         );
-    }, [hoveredFolderPositions]);
+    }, [hoveredPreviewFolders]);
 
     const totalFolders = useMemo(
         () => spaces.reduce((sum, space) => sum + (space.folder_count ?? (foldersBySpace[space.id] || []).length), 0),
@@ -411,6 +484,11 @@ export const DepartmentLayer: React.FC = () => {
     const handleNavigateToExplore = useCallback(() => {
         navigateToExplore();
     }, [navigateToExplore]);
+
+    const handlePreviewFolderOpen = useCallback((spaceId: string, folderId: string) => {
+        setActiveSpace(spaceId);
+        navigateToFolder(folderId);
+    }, [setActiveSpace, navigateToFolder]);
 
     if (!activeDepartmentId) return null;
 
@@ -541,8 +619,32 @@ export const DepartmentLayer: React.FC = () => {
                                     <div className="mt-1 text-base leading-none text-violet-200">{hoveredSpaceDetails.docTotal}</div>
                                 </div>
                             </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(['focus', 'flow', 'archive'] as PreviewLane[]).map((lane) => (
+                                    <div key={lane} className="rounded-lg border border-white/10 bg-black/20 px-2 py-2">
+                                        <div className="text-[8px] uppercase tracking-[0.18em] text-white/35">
+                                            {PREVIEW_LANE_META[lane].label}
+                                        </div>
+                                        <div className="mt-1 text-sm leading-none" style={{ color: PREVIEW_LANE_META[lane].accent }}>
+                                            {hoveredLaneSummary[lane].count}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {hoveredSpaceDetails.leadFolders.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {hoveredSpaceDetails.leadFolders.map((folderName) => (
+                                        <span
+                                            key={folderName}
+                                            className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] text-white/55"
+                                        >
+                                            {folderName}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                             <p className="text-[11px] leading-relaxed text-white/45">
-                                {hoveredSpaceDetails.description || 'Die Verbindung bleibt offen, damit du direkt in die Folder-Konstellation greifen kannst.'}
+                                {hoveredSpaceDetails.description || 'Das Blueprint klappt jetzt als semantischer Arbeitsfokus auf, bevor du in Layer 3 springst.'}
                             </p>
                         </div>
                     ) : (
@@ -743,15 +845,14 @@ export const DepartmentLayer: React.FC = () => {
                             />
                         )}
 
-                        {hoveredSpacePosition && hoveredFolderPositions.length > 0 && (
+                        {hoveredSpacePosition && hoveredPreviewFolders.length > 0 && (
                             <div className="absolute inset-0 pointer-events-none">
-                                {hoveredFolderPositions.map(({ folder, x, y }) => {
+                                {hoveredPreviewFolders.map(({ folder, x, y, lineStrength, lane }) => {
                                     const dx = x - hoveredSpacePosition.x;
                                     const dy = y - hoveredSpacePosition.y;
                                     const length = Math.hypot(dx, dy);
                                     const angle = Math.atan2(dy, dx);
-                                    const nodeCount = folder.node_count || 0;
-                                    const lineStrength = Math.max(0.28, Math.min(1, 0.28 + nodeCount / 10));
+                                    const laneAccent = PREVIEW_LANE_META[lane].accent;
 
                                     return (
                                         <div
@@ -764,8 +865,8 @@ export const DepartmentLayer: React.FC = () => {
                                                 height: `${1 + lineStrength}px`,
                                                 transform: `translate(-50%, -50%) translate(${hoveredSpacePosition.x}px, ${hoveredSpacePosition.y}px) rotate(${angle}rad)`,
                                                 transformOrigin: '0 50%',
-                                                background: `linear-gradient(90deg, rgba(16,185,129,${0.22 + lineStrength * 0.35}), rgba(6,182,212,${0.06 + lineStrength * 0.18}))`,
-                                                boxShadow: `0 0 12px rgba(16,185,129,${0.12 + lineStrength * 0.18})`,
+                                                background: `linear-gradient(90deg, ${laneAccent}${Math.round((0.42 + lineStrength * 0.22) * 255).toString(16).padStart(2, '0')}, rgba(255,255,255,0.02))`,
+                                                boxShadow: `0 0 14px ${laneAccent}${Math.round((0.14 + lineStrength * 0.16) * 255).toString(16).padStart(2, '0')}`,
                                                 opacity: 0.58 + lineStrength * 0.32,
                                             }}
                                         />
@@ -774,7 +875,7 @@ export const DepartmentLayer: React.FC = () => {
                             </div>
                         )}
 
-                        {hoveredFolderPositions.map(({ folder, x, y }, i) => (
+                        {hoveredPreviewFolders.map(({ folder, x, y, lane, nodeCount, color }, i) => (
                             <div
                                 key={`folder-${folder.id}`}
                                 className="absolute pointer-events-auto"
@@ -785,41 +886,33 @@ export const DepartmentLayer: React.FC = () => {
                                     zIndex: 35,
                                 }}
                             >
-                                <Folder
-                                    folder={{
-                                        id: folder.id,
-                                        name: folder.name,
-                                        space_id: folder.space_id,
-                                        color: folder.color ?? MOON_COLORS[i % MOON_COLORS.length],
-                                        node_count: folder.node_count
-                                    }}
-                                    position={{ x: 0, y: 0 }}
-                                    size="sm"
-                                    orbitActive
-                                    isPromoted={false}
-                                    delay={i * 0.05}
-                                    onClick={() => {
-                                        openPane({
-                                            id: 'finder-main',
-                                            type: 'finder',
-                                            title: folder.name,
-                                            data: {
-                                                folderId: folder.id,
-                                                spaceId: folder.space_id,
-                                                departmentId: activeDepartmentId,
-                                                companyId: activeCompanyId || currentDepartment?.company_id || undefined
-                                            },
-                                            size: { width: 1280, height: 820 }
-                                        });
-                                    }}
-                                    onHover={(hovered) => {
-                                        if (hovered) {
-                                            clearHoverTimeout();
-                                        } else {
-                                            scheduleHoverClear();
-                                        }
-                                    }}
-                                />
+                                <div className="flex flex-col items-center">
+                                    <Folder
+                                        folder={{
+                                            id: folder.id,
+                                            name: folder.name,
+                                            space_id: folder.space_id,
+                                            color,
+                                            node_count: nodeCount
+                                        }}
+                                        position={{ x: 0, y: 0 }}
+                                        size={lane === 'focus' ? 'md' : 'sm'}
+                                        orbitActive
+                                        isPromoted={lane === 'focus'}
+                                        delay={i * 0.05}
+                                        onClick={() => handlePreviewFolderOpen(folder.space_id, folder.id)}
+                                        onHover={(hovered) => {
+                                            if (hovered) {
+                                                clearHoverTimeout();
+                                            } else {
+                                                scheduleHoverClear();
+                                            }
+                                        }}
+                                    />
+                                    <div className="mt-1 rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-white/52">
+                                        {PREVIEW_LANE_META[lane].label} · {nodeCount}
+                                    </div>
+                                </div>
                             </div>
                         ))}
 

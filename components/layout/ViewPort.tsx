@@ -21,7 +21,6 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
  */
 export const ViewPort: React.FC = () => {
     const viewLevel = useMoraStore((state) => state.viewLevel);
-    const viewMode = useMoraStore((state) => state.viewMode);
     const prefersReducedMotion = useReducedMotion();
     const effectiveViewLevel = viewLevel === 'folder' ? 'space' : viewLevel;
 
@@ -43,10 +42,10 @@ export const ViewPort: React.FC = () => {
                 {effectiveViewLevel === 'core' && (
                     <motion.div
                         key="core"
-                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.95 }}
-                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1 }}
-                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
-                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.985, filter: 'blur(6px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.04, filter: 'blur(12px)', transition: { duration: 0.32, ease: [0.4, 0, 0.2, 1] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0"
                     >
                         <CoreLayer />
@@ -57,10 +56,10 @@ export const ViewPort: React.FC = () => {
                 {effectiveViewLevel === 'department' && (
                     <motion.div
                         key="department"
-                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
                         animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
-                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.08, filter: 'blur(12px)', transition: { duration: 0.32, ease: [0.4, 0, 0.2, 1] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0 preserve-3d"
                     >
                         <DepartmentLayer />
@@ -71,10 +70,10 @@ export const ViewPort: React.FC = () => {
                 {effectiveViewLevel === 'space' && (
                     <motion.div
                         key="space"
-                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.94, filter: 'blur(6px)' }}
                         animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 2.85, filter: 'blur(16px)', transition: { duration: 0.35, ease: [0.6, 0.05, 0, 0.9] } }}
-                        transition={rmVariants?.transition ?? { duration: 0.8, ease: [0.6, 0.05, 0, 0.9] }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.08, filter: 'blur(10px)', transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.56, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0 preserve-3d"
                     >
                         <SpaceLayer />
