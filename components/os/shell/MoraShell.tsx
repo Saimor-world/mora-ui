@@ -653,7 +653,11 @@ export const MoraShell: React.FC = () => {
 
             {/* Background Layers */}
             <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
-            <StarField density={viewLevel === 'core' ? 'medium' : 'low'} paused={pauseHeavyBackground} />
+            <StarField
+                density={viewLevel === 'core' ? 'high' : 'medium'}
+                opacity={0.97}
+                paused={pauseHeavyBackground}
+            />
 
             {/* ================================================================
                 LAYER 2: MAIN CONTENT

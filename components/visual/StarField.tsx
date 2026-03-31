@@ -58,10 +58,10 @@ const MID_COLORS  = ['#FFFFFF', '#F0F0FF', '#B8C8FF', '#E0D8FF', '#C8F0F8'];
 const NEAR_COLORS = ['#FFFFFF', '#FFFFFF', '#FFE8C8', '#C8E8FF', '#E8C8FF'];
 
 const NEBULA_DEFS = [
-    { rx: 0.15, ry: 0.25, color: [88,  28, 135] as [number,number,number], phase: 0    },  // deep violet
-    { rx: 0.82, ry: 0.65, color: [15,  23, 110] as [number,number,number], phase: 1.3  },  // indigo navy
-    { rx: 0.45, ry: 0.55, color: [7,   89, 133] as [number,number,number], phase: 2.6  },  // deep teal
-    { rx: 0.78, ry: 0.22, color: [76,   5, 107] as [number,number,number], phase: 0.8  },  // dark magenta
+    { rx: 0.15, ry: 0.25, color: [110,  38, 160] as [number,number,number], phase: 0    },  // deep violet
+    { rx: 0.82, ry: 0.65, color: [20,   33, 140] as [number,number,number], phase: 1.3  },  // indigo navy
+    { rx: 0.45, ry: 0.55, color: [10,  110, 160] as [number,number,number], phase: 2.6  },  // deep teal
+    { rx: 0.78, ry: 0.22, color: [100,  10, 130] as [number,number,number], phase: 0.8  },  // dark magenta
 ];
 
 function makeLayer(
@@ -120,9 +120,9 @@ export const StarField: React.FC<StarFieldProps> = ({
             const mid  = Math.round(280 * densityScale);
             const near = Math.round(120 * densityScale);
 
-            farLayer  = makeLayer(w, h, far,  0.2, 0.8, 0.08, 0.45, 0.008, FAR_COLORS);
-            midLayer  = makeLayer(w, h, mid,  0.6, 1.4, 0.20, 0.70, 0.028, MID_COLORS);
-            nearLayer = makeLayer(w, h, near, 1.2, 2.4, 0.45, 0.95, 0.065, NEAR_COLORS);
+            farLayer  = makeLayer(w, h, far,  0.3, 1.0, 0.15, 0.60, 0.008, FAR_COLORS);
+            midLayer  = makeLayer(w, h, mid,  0.7, 1.6, 0.35, 0.85, 0.028, MID_COLORS);
+            nearLayer = makeLayer(w, h, near, 1.4, 2.8, 0.60, 1.00, 0.065, NEAR_COLORS);
             shooters  = [];
         };
 
@@ -154,7 +154,7 @@ export const StarField: React.FC<StarFieldProps> = ({
                 const driftY = Math.cos(t * 0.00006 + n.phase * 0.7) * 60;
                 const cx = w * n.rx + driftX;
                 const cy = h * n.ry + driftY;
-                const alpha = 0.09 + Math.sin(t * 0.00004 + n.phase) * 0.03;
+                const alpha = 0.16 + Math.sin(t * 0.00004 + n.phase) * 0.06;
                 const [r, g, b] = n.color;
                 const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, nebulaR);
                 grad.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
@@ -185,7 +185,7 @@ export const StarField: React.FC<StarFieldProps> = ({
                     ctx.fill();
 
                     // Glow for bright near stars
-                    if (s.size > 1.6 && alpha > 0.6) {
+                    if (s.size > 1.2 && alpha > 0.45) {
                         const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size * 3.5);
                         glow.addColorStop(0, `${s.color}30`);
                         glow.addColorStop(1, 'transparent');
