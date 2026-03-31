@@ -131,7 +131,7 @@ export const MoraPulsePanel: React.FC = () => {
                 title: activeFolder.name,
                 subtitle: activeSpace.name,
                 signalLine: `${activeFolder.node_count || 0} docs · ${activeFolders.length} folders im Space`,
-                note: 'Aktiver Folder bleibt im Space als Live-Fokus sichtbar, waehrend der Command Deck die naechsten Schritte uebernimmt.',
+                note: 'Aktiver Folder bleibt im Space als Live-Fokus sichtbar, waehrend das Control Center die naechsten Schritte uebernimmt.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -154,7 +154,7 @@ export const MoraPulsePanel: React.FC = () => {
                 title: activeSpace.name,
                 subtitle: activeDepartment?.name || activeCompany?.name || 'Workspace',
                 signalLine: `${activeFolders.length} folders · ${docs} docs`,
-                note: 'Space-Fokus bleibt lesbar, aber der eigentliche Arbeitswechsel passiert jetzt im Command Deck statt in einer zweiten HUD-Spalte.',
+                note: 'Space-Fokus bleibt lesbar, aber der eigentliche Arbeitswechsel passiert jetzt im Control Center statt in einer zweiten HUD-Spalte.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -175,7 +175,7 @@ export const MoraPulsePanel: React.FC = () => {
                 title: activeDepartment.name,
                 subtitle: activeCompany?.name || user?.active_company_name || 'Workspace',
                 signalLine: `${activeSpaces.length} spaces · ${departmentFolderCount} folders · ${departmentDocCount} docs`,
-                note: 'Department-Hover klappt jetzt ein Blueprint aus. Der Command Deck fuehrt den naechsten Zoom, die Pulse-Leiste nur noch die Orientierung.',
+                note: 'Department-Hover klappt jetzt ein Blueprint aus. Das Control Center fuehrt den naechsten Zoom, die Pulse-Leiste nur noch die Orientierung.',
                 onOpen: () => openPane({
                     id: 'finder-main',
                     type: 'finder',
@@ -194,7 +194,7 @@ export const MoraPulsePanel: React.FC = () => {
             title: activeCompany?.name || user?.active_company_name || 'SAIMOR Universe',
             subtitle: 'Live topography',
             signalLine: `${safeDepartments.length} departments · ${safeCompanies.length} workspaces`,
-            note: 'Die rechte Seite ist jetzt nur noch Orientierung. Command Deck und Layer uebernehmen die eigentliche Arbeit.',
+            note: 'Die rechte Seite ist jetzt nur noch Orientierung. Control Center und Layer uebernehmen die eigentliche Arbeit.',
             onOpen: () => openPane({
                 id: 'finder-main',
                 type: 'finder',
@@ -269,7 +269,7 @@ export const MoraPulsePanel: React.FC = () => {
                                 onClick={() => requestCommandDeckOpen({ pinned: true })}
                                 className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200 transition-colors hover:bg-emerald-500/16"
                             >
-                                Command Deck
+                                Control Center
                             </button>
                         </div>
 
@@ -311,7 +311,7 @@ export const MoraPulsePanel: React.FC = () => {
                     {isDeckOpen && (
                         <div className="flex items-center gap-2 rounded-2xl border border-emerald-400/15 bg-emerald-500/8 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-emerald-100/75">
                             <PanelTopOpen size={13} />
-                            Command Deck aktiv
+                            Control Center aktiv
                         </div>
                     )}
                 </div>

@@ -128,10 +128,16 @@ export const HomeSurface: React.FC = () => {
     };
 
     const firstName = user?.name?.split(' ')[0] ?? null;
+    const personalSpaceLabel = myContent?.space?.name || 'Persoenlicher Space';
+    const personalLatestLabel =
+        myContent?.nodes?.[0]?.title ||
+        myContent?.files?.[0]?.name ||
+        myContent?.folders?.[0]?.name ||
+        null;
 
     return (
         <div className="absolute inset-0 overflow-auto">
-            <div className="mx-auto max-w-3xl px-6 py-12 flex flex-col gap-10">
+            <div className="mx-auto flex max-w-3xl flex-col gap-10 px-6 pb-[13rem] pt-12 md:pb-[16rem]">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>
@@ -231,25 +237,42 @@ export const HomeSurface: React.FC = () => {
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
                             Persoenlicher Bereich
                         </h2>
-                        <button
-                            data-testid="my-content-card"
-                            onClick={openMeineDateien}
-                            className={`w-full flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${t.card}`}
-                        >
-                            <FolderHeart size={20} className={t.qaIcon} />
-                            <div className="flex-1 min-w-0">
-                                <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
-                                {myContent.counts && (
-                                    <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
-                                        {[
-                                            myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
-                                            myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
-                                            myContent.counts.files != null && `${myContent.counts.files} Dateien`,
-                                        ].filter(Boolean).join(' · ')}
-                                    </div>
-                                )}
+                        <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
+                            <button
+                                data-testid="my-content-card"
+                                onClick={openMeineDateien}
+                                className={`w-full flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${t.card}`}
+                            >
+                                <FolderHeart size={20} className={t.qaIcon} />
+                                <div className="min-w-0 flex-1">
+                                    <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
+                                    {myContent.counts && (
+                                        <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
+                                            {[
+                                                myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
+                                                myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
+                                                myContent.counts.files != null && `${myContent.counts.files} Dateien`,
+                                            ].filter(Boolean).join(' · ')}
+                                        </div>
+                                    )}
+                                </div>
+                            </button>
+
+                            <div className={`rounded-2xl border px-5 py-4 ${t.card.replace('hover:border-gray-300', '').replace('hover:border-white/18', '')}`}>
+                                <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
+                                    Personal Space
+                                </div>
+                                <div className={`mt-2 truncate text-sm font-medium ${t.cardText}`}>
+                                    {personalSpaceLabel}
+                                </div>
+                                <div className={`mt-4 text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
+                                    Neueste Spur
+                                </div>
+                                <div className={`mt-2 text-sm ${t.cardText}`}>
+                                    {personalLatestLabel || 'Noch keine privaten Inhalte sichtbar.'}
+                                </div>
                             </div>
-                        </button>
+                        </div>
                     </section>
                 )}
             </div>

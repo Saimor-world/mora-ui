@@ -220,7 +220,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     }
 
     return (
-        <div className={`hidden xl:flex max-w-[296px] items-center gap-3 rounded-2xl border px-3 py-2 ${isStandardMode
+        <div className={`hidden xl:flex max-w-[276px] items-center gap-3 rounded-2xl border px-3 py-2 ${isStandardMode
             ? 'border-gray-200 bg-gray-100'
             : 'border-white/10 bg-white/[0.04]'
             }`}>
@@ -239,7 +239,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
                     Audio
                 </div>
-                <div className={`mt-1 max-w-[136px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
+                <div className={`mt-1 max-w-[118px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
                     {trackName || 'Track auswaehlen'}
                 </div>
                 <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
@@ -303,7 +303,7 @@ const DockSearchLauncher: React.FC<DockSearchLauncherProps> = ({
     <button
         type="button"
         onClick={onOpen}
-        className={`hidden xl:flex min-w-[176px] max-w-[196px] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${isStandardMode
+        className={`hidden xl:flex min-w-[156px] max-w-[176px] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${isStandardMode
             ? 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
             : `border-white/10 ${isActive ? 'bg-emerald-500/[0.1] text-emerald-200' : 'bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'}`
             }`}
@@ -319,13 +319,34 @@ const DockSearchLauncher: React.FC<DockSearchLauncherProps> = ({
                 Search
             </div>
             <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                System durchsuchen
+                System suchen
             </div>
         </div>
         <kbd className={`rounded-lg px-2 py-1 text-[10px] font-mono ${isStandardMode ? 'bg-white text-gray-500' : 'bg-white/10 text-white/40'}`}>
             {shortcutLabel}
         </kbd>
     </button>
+);
+
+interface DockPodProps {
+    isStandardMode: boolean;
+    className?: string;
+    children: React.ReactNode;
+}
+
+const DockPod: React.FC<DockPodProps> = ({
+    isStandardMode,
+    className = '',
+    children,
+}) => (
+    <div
+        className={`rounded-[24px] border ${isStandardMode
+            ? 'border-gray-200 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]'
+            : 'border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.18))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl'
+            } ${className}`}
+    >
+        {children}
+    </div>
 );
 
 export const Dock = () => {
@@ -536,7 +557,7 @@ export const Dock = () => {
             return {
                 label: 'Space focus',
                 title: activeSpace.name,
-                description: 'Der Command Deck schlaegt dir jetzt den staerksten Folder und die passendsten naechsten Oberflaechen fuer diesen Space vor.',
+                description: 'Das Control Center schlaegt dir jetzt den staerksten Folder und die passendsten naechsten Oberflaechen fuer diesen Space vor.',
                 signalA: `${activeFolders.length} folders`,
                 signalB: `${docCount} docs`,
                 actionLabel: 'Open space',
@@ -570,7 +591,7 @@ export const Dock = () => {
         return {
             label: 'Universe',
             title: activeCompany?.name || user?.active_company_name || 'Workspace',
-            description: 'Im Universe-Modus bleibt der Command Deck breit und ruhig, aber bietet dir jetzt klar den naechsten Einstieg statt statischer App-Kacheln.',
+            description: 'Im Universe-Modus bleibt das Control Center breit und ruhig, aber bietet dir jetzt klar den naechsten Einstieg statt statischer App-Kacheln.',
             signalA: `${safeDepartments.length} departments`,
             signalB: `${safeCompanies.length} workspaces`,
             actionLabel: 'Open workspace',
@@ -954,7 +975,7 @@ export const Dock = () => {
                 </AnimatePresence>
 
                 <div
-                    className={`relative flex items-center gap-4 px-5 py-4 ${isStandardMode
+                    className={`relative flex items-center gap-3 overflow-hidden px-4 py-3.5 ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
                         : 'rounded-3xl backdrop-blur-2xl'
                         }`}
@@ -981,8 +1002,8 @@ export const Dock = () => {
                         </>
                     )}
 
-                    {/* LEFT: AVATAR - Premium Design */}
-                    <div className={`flex items-center gap-4 pr-4 border-r ${isStandardMode ? 'border-gray-200' : 'border-white/10'}`}>
+                    {/* LEFT: IDENTITY POD */}
+                    <DockPod className="flex shrink-0 items-center gap-4 px-4 py-3" isStandardMode={isStandardMode}>
                         <div
                             className="relative w-14 h-14 rounded-full shrink-0"
                             title={user?.name || 'Benutzer'}
@@ -1067,111 +1088,96 @@ export const Dock = () => {
                         >
                             <FolderHeart size={18} />
                         </button>
-                    </div>
+                    </DockPod>
 
-                    <div className="mx-2 flex min-w-0 flex-1 items-center justify-between gap-4">
-                        <div className="flex min-w-0 items-center gap-3">
-                        <DockSearchLauncher
-                            isStandardMode={isStandardMode}
-                            shortcutLabel={`${mod}+K`}
-                            isActive={searchPopupOpen}
-                            onOpen={() => setSearchPopupOpen(true)}
-                        />
-
-                    <div
-                        data-dock-command-center="true"
-                        className="relative hidden xl:block shrink-0"
-                    >
-                        <button
-                            type="button"
-                            aria-expanded={isCommandDeckOpen}
-                            aria-pressed={isCommandDeckOpen}
-                            title={isCommandDeckOpen ? 'Command Deck schliessen' : 'Command Deck oeffnen'}
-                            onClick={toggleCommandDeck}
-                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isStandardMode
-                                ? isCommandDeckOpen
-                                    ? 'border-[#0078D4]/35 bg-white text-[#0078D4]'
-                                    : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                : isCommandDeckOpen
-                                    ? 'border-emerald-400/28 bg-emerald-500/[0.12] text-emerald-200'
-                                    : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'
-                                }`}
-                        >
-                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
-                                ? isCommandDeckOpen
-                                    ? 'border-[#0078D4]/22 bg-[#0078D4]/10 text-[#0078D4]'
-                                    : 'border-[#0078D4]/15 bg-white text-[#0078D4]'
-                                : isCommandDeckOpen
-                                    ? 'border-emerald-400/28 bg-emerald-500/16 text-emerald-100'
-                                    : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
-                                }`}>
-                                <Sparkles size={15} />
-                            </div>
-                            <div className="min-w-0 text-left">
-                                <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                    Command Deck
-                                </div>
-                                <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                                    {scopeLabel} / {contextDeck.label}
-                                </div>
-                                <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                                    {isCommandDeckOpen ? 'Im Dock geoeffnet' : 'Kontext, Szene und Aktionen'}
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-                        </div>
-
-                        <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
-                    {/* DIVIDER - Glowing */}
-                    <div className={`hidden xl:block w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                        }`} />
-
-                    {/* CENTER: DOCK APPS — Magnetic Icons */}
-                    <div className="flex items-center gap-2">
-                        {dockItems.map((item) => (
-                            <MagneticDockIconMemo
-                                key={item.action}
-                                item={item}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <DockPod className="hidden shrink-0 items-center gap-3 px-3 py-2.5 xl:flex" isStandardMode={isStandardMode}>
+                            <DockSearchLauncher
                                 isStandardMode={isStandardMode}
-                                onAction={handleDockClick}
-                            />
-                        ))}
-                    </div>
-
-                    {ambientTracks.length > 0 && !isCommandDeckOpen && (
-                        <>
-                            <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                                }`} />
-
-                            <DockNowPlaying
-                                isStandardMode={isStandardMode}
-                                isDeckOpen={isCommandDeckOpen}
-                                trackName={activeTrack?.name || null}
-                                trackCount={ambientTracks.length}
-                                isPlaying={ambientAudio.enabled}
-                                onToggle={handleAmbientToggle}
-                                onNext={handleAmbientNext}
-                                onOpen={openAudioSettings}
+                                shortcutLabel={`${mod}+K`}
+                                isActive={searchPopupOpen}
+                                onOpen={() => setSearchPopupOpen(true)}
                             />
 
-                            <div className={`hidden xl:block w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                                }`} />
-                        </>
-                    )}
+                            <div
+                                data-dock-command-center="true"
+                                className="relative shrink-0"
+                            >
+                                <button
+                                    type="button"
+                                    aria-expanded={isCommandDeckOpen}
+                                    aria-pressed={isCommandDeckOpen}
+                                    title={isCommandDeckOpen ? 'Control Center schliessen' : 'Control Center oeffnen'}
+                                    onClick={toggleCommandDeck}
+                                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isStandardMode
+                                        ? isCommandDeckOpen
+                                            ? 'border-[#0078D4]/35 bg-white text-[#0078D4]'
+                                            : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
+                                        : isCommandDeckOpen
+                                            ? 'border-emerald-400/28 bg-emerald-500/[0.12] text-emerald-200'
+                                            : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'
+                                        }`}
+                                >
+                                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
+                                        ? isCommandDeckOpen
+                                            ? 'border-[#0078D4]/22 bg-[#0078D4]/10 text-[#0078D4]'
+                                            : 'border-[#0078D4]/15 bg-white text-[#0078D4]'
+                                        : isCommandDeckOpen
+                                            ? 'border-emerald-400/28 bg-emerald-500/16 text-emerald-100'
+                                            : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+                                        }`}>
+                                        <Sparkles size={15} />
+                                    </div>
+                                    <div className="min-w-0 text-left">
+                                        <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                                            Center
+                                        </div>
+                                        <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
+                                            {scopeLabel} / {contextDeck.label}
+                                        </div>
+                                        <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
+                                            {isCommandDeckOpen ? 'Im Dock geoeffnet' : 'Kontext, Szene und Aktionen'}
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </DockPod>
 
-                        </div>
+                        <DockPod className="flex min-w-0 flex-1 items-center justify-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
+                            <div className="flex min-w-0 items-center gap-1 xl:gap-2">
+                                {dockItems.map((item) => (
+                                    <MagneticDockIconMemo
+                                        key={item.action}
+                                        item={item}
+                                        isStandardMode={isStandardMode}
+                                        onAction={handleDockClick}
+                                    />
+                                ))}
+                            </div>
 
-                        <div className="flex shrink-0 items-center gap-3">
+                            {ambientTracks.length > 0 && !isCommandDeckOpen && (
+                                <>
+                                    <div className={`hidden xl:block h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'}`} />
+                                    <DockNowPlaying
+                                        isStandardMode={isStandardMode}
+                                        isDeckOpen={isCommandDeckOpen}
+                                        trackName={activeTrack?.name || null}
+                                        trackCount={ambientTracks.length}
+                                        isPlaying={ambientAudio.enabled}
+                                        onToggle={handleAmbientToggle}
+                                        onNext={handleAmbientNext}
+                                        onOpen={openAudioSettings}
+                                    />
+                                </>
+                            )}
+                        </DockPod>
+
+                        <DockPod className="flex shrink-0 items-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
                     {/* RIGHT SECTION: Notifications + Company */}
                     <div className="flex items-center gap-2">
                         {/* Notification Center */}
                         <NotificationCenter />
                     </div>
-
-                    {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                        }`} />
 
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
                     <div className="relative">
@@ -1250,7 +1256,7 @@ export const Dock = () => {
                     </div>
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`w-[1px] h-10 mx-2 ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    <div className={`h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
@@ -1323,9 +1329,8 @@ export const Dock = () => {
                             </div>
                         </div>
                     </div>
+                </DockPod>
                 </div>
-            </div>
-            </div>
             </div>
 
             {/* SEARCH POPUP */}
@@ -1336,6 +1341,7 @@ export const Dock = () => {
                 onQueryChange={setChatInput}
                 onMoraChat={() => { }}
             />
+        </div>
         </div>
     );
 };

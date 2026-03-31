@@ -14,20 +14,54 @@ import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 
+type DepartmentMetricSet = {
+    nodes: number;
+    spaces: number;
+    folders: number;
+    health: number;
+};
+
+type SemanticDriver = 'content' | 'structure' | 'health';
+
+type SemanticDriverMeta = {
+    label: string;
+    accent: string;
+    dashArray: string;
+    reason: string;
+};
+
 const metricAffinity = (left: number, right: number) => {
     const baseline = Math.max(1, left, right);
     return Math.max(0, 1 - Math.abs(left - right) / baseline);
 };
 
-const resolveDepartmentSimilarity = (
-    left: { nodes: number; spaces: number; folders: number; health: number },
-    right: { nodes: number; spaces: number; folders: number; health: number }
-) => (
-    metricAffinity(left.nodes, right.nodes) * 0.4 +
-    metricAffinity(left.spaces, right.spaces) * 0.2 +
-    metricAffinity(left.folders, right.folders) * 0.25 +
-    metricAffinity(left.health, right.health) * 0.15
-);
+const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
+    content: { label: 'Dokumente', accent: '#38bdf8', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
+    structure: { label: 'Struktur', accent: '#34d399', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
+    health: { label: 'Health', accent: '#f59e0b', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
+};
+
+const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');
+
+const resolveDepartmentSimilarityProfile = (
+    left: DepartmentMetricSet,
+    right: DepartmentMetricSet
+) => {
+    const contributions: Record<SemanticDriver, number> = {
+        content: metricAffinity(left.nodes, right.nodes) * 0.4,
+        structure: metricAffinity(left.spaces, right.spaces) * 0.2 + metricAffinity(left.folders, right.folders) * 0.25,
+        health: metricAffinity(left.health, right.health) * 0.15,
+    };
+
+    const dominantDriver = (Object.entries(contributions).sort((leftEntry, rightEntry) => rightEntry[1] - leftEntry[1])[0]?.[0] || 'content') as SemanticDriver;
+    const semanticAffinity = contributions.content + contributions.structure + contributions.health;
+
+    return {
+        semanticAffinity,
+        dominantDriver,
+        contributions,
+    };
+};
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -266,11 +300,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, membershipsLoaded, memberships, user?.role]
     );
+    const focusedPlanetId = hoverPlanetId || activeDepartmentId || visiblePlanets[0]?.id || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
 
-        const edges = new Map<string, { fromId: string; toId: string; strength: number }>();
+        const edges = new Map<string, {
+            fromId: string;
+            toId: string;
+            strength: number;
+            semanticAffinity: number;
+            dominantDriver: SemanticDriver;
+        }>();
 
         visiblePlanets.forEach((planet) => {
             const sourceMetrics = departmentMetrics[planet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
@@ -279,26 +320,30 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 .filter((candidate) => candidate.id !== planet.id)
                 .map((candidate) => {
                     const targetMetrics = departmentMetrics[candidate.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
-                    const semanticAffinity = resolveDepartmentSimilarity(sourceMetrics, targetMetrics);
+                    const { semanticAffinity, dominantDriver } = resolveDepartmentSimilarityProfile(sourceMetrics, targetMetrics);
                     const ringAffinity = Math.max(0, 1 - Math.abs(planet.ringIndex - candidate.ringIndex) / 2);
                     const spatialAffinity = Math.max(0, 1 - Math.hypot(planet.x - candidate.x, planet.y - candidate.y) / 100);
 
                     return {
                         candidateId: candidate.id,
-                        strength: semanticAffinity * 0.65 + ringAffinity * 0.2 + spatialAffinity * 0.15,
+                        semanticAffinity,
+                        dominantDriver,
+                        strength: semanticAffinity * 0.82 + ringAffinity * 0.08 + spatialAffinity * 0.10,
                     };
                 })
                 .sort((left, right) => right.strength - left.strength)
                 .slice(0, 2)
-                .filter((edge) => edge.strength >= 0.42)
+                .filter((edge) => edge.strength >= 0.46)
                 .forEach((edge) => {
-                    const key = [planet.id, edge.candidateId].sort().join(':');
+                    const key = buildSemanticEdgeKey(planet.id, edge.candidateId);
                     const current = edges.get(key);
                     if (!current || edge.strength > current.strength) {
                         edges.set(key, {
                             fromId: planet.id,
                             toId: edge.candidateId,
                             strength: edge.strength,
+                            semanticAffinity: edge.semanticAffinity,
+                            dominantDriver: edge.dominantDriver,
                         });
                     }
                 });
@@ -319,11 +364,30 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 if (!from || !to) return null;
 
                 const midY = 54 - Math.min(12, Math.abs(from.ringIndex - to.ringIndex) * 4 + 5);
+                const labelX = (from.x * 0.25) + 25 + (to.x * 0.25);
+                const labelY = (from.y * 0.25) + (midY * 0.5) + (to.y * 0.25);
+                const pathId = buildSemanticEdgeKey(edge.fromId, edge.toId);
+                const focusPeerName = focusedPlanetId
+                    ? edge.fromId === focusedPlanetId
+                        ? to.name
+                        : edge.toId === focusedPlanetId
+                            ? from.name
+                            : null
+                    : null;
 
                 return {
-                    id: `${edge.fromId}-${edge.toId}`,
+                    id: pathId,
                     d: `M ${from.x} ${from.y} Q 50 ${midY} ${to.x} ${to.y}`,
+                    fromId: from.id,
+                    fromName: from.name,
+                    toId: to.id,
+                    toName: to.name,
                     strength: edge.strength,
+                    semanticAffinity: edge.semanticAffinity,
+                    dominantDriver: edge.dominantDriver,
+                    labelX,
+                    labelY,
+                    focusPeerName,
                     highlighted:
                         hoverPlanetId === from.id ||
                         hoverPlanetId === to.id ||
@@ -331,8 +395,22 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         activeDepartmentId === to.id,
                 };
             })
-            .filter((value): value is { id: string; d: string; strength: number; highlighted: boolean } => value !== null);
-    }, [semanticConnections, visiblePlanets, hoverPlanetId, activeDepartmentId]);
+            .filter((value): value is {
+                id: string;
+                d: string;
+                fromId: string;
+                fromName: string;
+                toId: string;
+                toName: string;
+                strength: number;
+                semanticAffinity: number;
+                dominantDriver: SemanticDriver;
+                labelX: number;
+                labelY: number;
+                focusPeerName: string | null;
+                highlighted: boolean;
+            } => value !== null);
+    }, [semanticConnections, visiblePlanets, hoverPlanetId, activeDepartmentId, focusedPlanetId]);
 
     const coreConnections = useMemo(() => (
         visiblePlanets.map((planet) => {
@@ -349,17 +427,48 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     ), [visiblePlanets, departmentMetrics, hoverPlanetId, activeDepartmentId, maxNodes]);
 
     const focusedPlanet = useMemo(() => {
-        const focusedId = hoverPlanetId || activeDepartmentId || visiblePlanets[0]?.id || null;
-        if (!focusedId) return null;
-        return visiblePlanets.find((planet) => planet.id === focusedId) || null;
-    }, [hoverPlanetId, activeDepartmentId, visiblePlanets]);
+        if (!focusedPlanetId) return null;
+        return visiblePlanets.find((planet) => planet.id === focusedPlanetId) || null;
+    }, [focusedPlanetId, visiblePlanets]);
 
     const focusedPlanetMetrics = focusedPlanet
         ? (departmentMetrics[focusedPlanet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 })
         : null;
-    const focusedPlanetLinkCount = focusedPlanet
-        ? semanticConnections.filter((edge) => edge.fromId === focusedPlanet.id || edge.toId === focusedPlanet.id).length
-        : 0;
+    const focusedSemanticLinks = useMemo(() => {
+        if (!focusedPlanet) return [];
+
+        const planetMap = new Map(visiblePlanets.map((planet) => [planet.id, planet]));
+        return semanticConnections
+            .filter((edge) => edge.fromId === focusedPlanet.id || edge.toId === focusedPlanet.id)
+            .map((edge) => {
+                const otherPlanetId = edge.fromId === focusedPlanet.id ? edge.toId : edge.fromId;
+                const otherPlanet = planetMap.get(otherPlanetId);
+                if (!otherPlanet) return null;
+
+                return {
+                    id: `${focusedPlanet.id}:${otherPlanetId}`,
+                    pathId: buildSemanticEdgeKey(focusedPlanet.id, otherPlanetId),
+                    name: otherPlanet.name,
+                    strength: edge.strength,
+                    semanticAffinity: edge.semanticAffinity,
+                    dominantDriver: edge.dominantDriver,
+                };
+            })
+            .filter((value): value is {
+                id: string;
+                pathId: string;
+                name: string;
+                strength: number;
+                semanticAffinity: number;
+                dominantDriver: SemanticDriver;
+            } => value !== null)
+            .sort((left, right) => right.strength - left.strength);
+    }, [focusedPlanet, visiblePlanets, semanticConnections]);
+    const focusedPlanetLinkCount = focusedSemanticLinks.length;
+    const focusedSemanticPathIds = useMemo(
+        () => new Set(focusedSemanticLinks.map((link) => link.pathId)),
+        [focusedSemanticLinks]
+    );
 
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
@@ -528,27 +637,105 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
 
                 {/* Semantic silk paths */}
-                {semanticPaths.map((path) => (
-                    <motion.path
-                        key={path.id}
-                        d={path.d}
-                        fill="none"
-                        stroke="url(#orbitGrad)"
-                        strokeWidth={0.18 + path.strength * 0.32}
-                        strokeDasharray={path.highlighted ? '0 0' : '4 5'}
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{
-                            pathLength: 1,
-                            opacity: path.highlighted ? 0.56 : 0.16 + path.strength * 0.22,
-                        }}
-                        transition={{
-                            pathLength: { duration: 2.4, ease: "easeInOut" },
-                            opacity: { duration: 0.35, ease: "easeOut" }
-                        }}
-                        filter="url(#silkGlow)"
-                    />
-                ))}
+                {semanticPaths.map((path) => {
+                    const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
+                    const isFocusedPath = focusedSemanticPathIds.has(path.id);
+                    const baseOpacity = path.highlighted
+                        ? 0.9
+                        : isFocusedPath
+                            ? 0.7
+                            : 0.2 + path.strength * 0.22;
+
+                    return (
+                        <g key={path.id}>
+                            <motion.path
+                                d={path.d}
+                                fill="none"
+                                stroke={driverMeta.accent}
+                                strokeWidth={0.44 + path.strength * 0.72}
+                                strokeDasharray={driverMeta.dashArray}
+                                strokeLinecap="round"
+                                initial={{ pathLength: 0, opacity: 0 }}
+                                animate={{
+                                    pathLength: 1,
+                                    opacity: baseOpacity * 0.45,
+                                }}
+                                transition={{
+                                    pathLength: { duration: 2.1, ease: "easeInOut" },
+                                    opacity: { duration: 0.35, ease: "easeOut" }
+                                }}
+                                filter="url(#beamGlow)"
+                            />
+                            <motion.path
+                                d={path.d}
+                                fill="none"
+                                stroke={driverMeta.accent}
+                                strokeWidth={0.18 + path.strength * 0.36}
+                                strokeDasharray={driverMeta.dashArray}
+                                strokeLinecap="round"
+                                initial={{ pathLength: 0, opacity: 0 }}
+                                animate={{
+                                    pathLength: 1,
+                                    opacity: baseOpacity,
+                                }}
+                                transition={{
+                                    pathLength: { duration: 1.8, ease: "easeInOut" },
+                                    opacity: { duration: 0.35, ease: "easeOut" }
+                                }}
+                                filter="url(#silkGlow)"
+                            />
+                        </g>
+                    );
+                })}
             </svg>
+
+            <div className="pointer-events-none absolute inset-0 z-[18]">
+                {semanticPaths
+                    .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || path.strength >= 0.78)
+                    .map((path) => {
+                        const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
+                        const labelTitle = path.focusPeerName || `${path.fromName} / ${path.toName}`;
+
+                        return (
+                            <motion.div
+                                key={`${path.id}-label`}
+                                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-black/55 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+                                style={{
+                                    left: `${path.labelX}%`,
+                                    top: `${path.labelY}%`,
+                                    boxShadow: `0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px ${driverMeta.accent}22`,
+                                }}
+                                initial={{ opacity: 0, scale: 0.92 }}
+                                animate={{ opacity: path.highlighted || focusedSemanticPathIds.has(path.id) ? 0.96 : 0.78, scale: 1 }}
+                                transition={{ duration: 0.28, ease: 'easeOut' }}
+                            >
+                                <div className="min-w-[140px]">
+                                    <div className="truncate text-[11px] uppercase tracking-[0.18em] text-white/46">
+                                        Semantischer Link
+                                    </div>
+                                    <div className="mt-1 truncate text-sm text-white/88">
+                                        {labelTitle}
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <span
+                                            className="h-2 w-2 rounded-full"
+                                            style={{ background: driverMeta.accent, boxShadow: `0 0 10px ${driverMeta.accent}` }}
+                                        />
+                                        <span
+                                            className="text-[10px] uppercase tracking-[0.18em]"
+                                            style={{ color: driverMeta.accent }}
+                                        >
+                                            {driverMeta.label}
+                                        </span>
+                                        <span className="text-[11px] text-white/74">
+                                            {Math.round(path.semanticAffinity * 100)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+            </div>
 
             {focusedPlanet && focusedPlanetMetrics && (
                 <LayerInsightRail
@@ -558,7 +745,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     badge={isLocked(focusedPlanet) ? 'Visible' : 'Member'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Verbindungen bleiben sichtbar, aber die volle Analyse klappt erst bei Hover oder echtem Fokus auf.`}
+                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Farben und Linienart zeigen, warum die Departments zusammenhaengen.`}
                     forceExpanded={Boolean(hoverPlanetId)}
                     metrics={[
                         { label: 'Spaces', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
@@ -573,8 +760,52 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <span>{focusedPlanetLinkCount}</span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                            Verbindungen richten sich jetzt nach echter Department-Aehnlichkeit in Docs, Spaces, Folders und Health statt nach reiner Orbit-Reihenfolge.
+                            Verbindungen richten sich nach echter Department-Aehnlichkeit statt nach Orbit-Reihenfolge. Farbe und Linienstil zeigen den staerksten Treiber.
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {Object.values(SEMANTIC_DRIVER_META).map((driver) => (
+                                <div
+                                    key={driver.label}
+                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1"
+                                >
+                                    <span
+                                        className="h-2 w-2 rounded-full"
+                                        style={{ background: driver.accent, boxShadow: `0 0 10px ${driver.accent}` }}
+                                    />
+                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">
+                                        {driver.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {focusedSemanticLinks.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                                {focusedSemanticLinks.slice(0, 3).map((link) => {
+                                    const driverMeta = SEMANTIC_DRIVER_META[link.dominantDriver];
+
+                                    return (
+                                        <div
+                                            key={link.id}
+                                            className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2"
+                                        >
+                                            <div className="min-w-0">
+                                                <div className="truncate text-xs text-white/84">{link.name}</div>
+                                                <div
+                                                    className="mt-1 text-[10px] uppercase tracking-[0.16em]"
+                                                    style={{ color: driverMeta.accent }}
+                                                >
+                                                    {driverMeta.label} · {driverMeta.reason}
+                                                </div>
+                                            </div>
+                                            <div className="text-[11px] text-white/66">
+                                                {Math.round(link.semanticAffinity * 100)}%
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </LayerInsightRail>
             )}
