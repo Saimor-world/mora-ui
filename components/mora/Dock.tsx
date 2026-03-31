@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward
+    Music2, Pause, Play, SkipForward, Sparkles
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -21,6 +21,7 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 // import { ActionTray } from '@/components/os/ActionTray';
 import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
+import { DockCommandDeck, type DockCommandDeckAction } from './DockCommandDeck';
 import { roleLabel } from '@/lib/auth/roles';
 import {
     AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT,
@@ -29,6 +30,13 @@ import {
     resolveAmbientAudioSettings,
     type AmbientAudioTrackMeta,
 } from '@/lib/audio/ambientAudio';
+import {
+    RITUAL_SCENES,
+    cycleRitualScene,
+    getEffectiveRitualScene,
+    persistRitualSettings,
+    resolveRitualSettings,
+} from '@/lib/os/ritualMode';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -272,6 +280,7 @@ export const Dock = () => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const setActiveCompany = useMoraStore((s) => s.setActiveCompany);
     const viewMode = useMoraStore((s) => s.viewMode);
+    const viewLevel = useMoraStore((s) => s.viewLevel);
     const isStandardMode = useMoraStore((s) => s.isStandardMode);
     const updateUserSettings = useMoraStore((s) => s.updateUserSettings);
 
@@ -284,10 +293,16 @@ export const Dock = () => {
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
+    const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
+    const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
+    const commandDeckCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const ambientAudio = useMemo(() => resolveAmbientAudioSettings(user?.settings), [user?.settings]);
+    const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
+    const ritualSceneId = useMemo(() => getEffectiveRitualScene(ritualSettings), [ritualSettings]);
+    const ritualScene = RITUAL_SCENES[ritualSceneId];
 
     const activeCompany = useMemo(
         () => safeCompanies.find(c => c.id === activeCompanyId),
@@ -363,6 +378,103 @@ export const Dock = () => {
         }))
     , [mod, DOCK_ICON_MAP]);
 
+    const scopeLabel = useMemo(() => {
+        if (viewLevel === 'company') return 'Portfolio';
+        if (viewLevel === 'department') return 'Department';
+        if (viewLevel === 'space') return 'Space';
+        if (viewLevel === 'folder') return 'Folder';
+        return 'Universe';
+    }, [viewLevel]);
+
+    const orbStateLabel = useMemo(() => {
+        switch (orbState) {
+            case 'focus': return 'Focus';
+            case 'thinking': return 'Thinking';
+            case 'alert': return 'Alert';
+            case 'insight': return 'Insight';
+            case 'demo': return 'Demo';
+            default: return 'Ready';
+        }
+    }, [orbState]);
+
+    const clearCommandDeckCloseTimer = useCallback(() => {
+        if (commandDeckCloseTimerRef.current) {
+            clearTimeout(commandDeckCloseTimerRef.current);
+            commandDeckCloseTimerRef.current = null;
+        }
+    }, []);
+
+    const openCommandDeck = useCallback((pin = false) => {
+        clearCommandDeckCloseTimer();
+        setIsCommandDeckOpen(true);
+        if (pin) {
+            setIsCommandDeckPinned(true);
+        }
+    }, [clearCommandDeckCloseTimer]);
+
+    const scheduleCommandDeckClose = useCallback(() => {
+        clearCommandDeckCloseTimer();
+        if (isCommandDeckPinned) return;
+        commandDeckCloseTimerRef.current = setTimeout(() => {
+            setIsCommandDeckOpen(false);
+        }, 180);
+    }, [clearCommandDeckCloseTimer, isCommandDeckPinned]);
+
+    const closeCommandDeck = useCallback(() => {
+        clearCommandDeckCloseTimer();
+        setIsCommandDeckOpen(false);
+        setIsCommandDeckPinned(false);
+    }, [clearCommandDeckCloseTimer]);
+
+    const toggleCommandDeckPinned = useCallback(() => {
+        clearCommandDeckCloseTimer();
+        setIsCommandDeckOpen(true);
+        setIsCommandDeckPinned((current) => !current);
+    }, [clearCommandDeckCloseTimer]);
+
+    const commandDeckActions = useMemo<DockCommandDeckAction[]>(() => ([
+        {
+            id: 'chat',
+            label: 'Mora',
+            description: 'Direkt in den Dialog springen.',
+            icon: MessageCircle,
+            onClick: () => {
+                handleDockClick('chat');
+                closeCommandDeck();
+            },
+        },
+        {
+            id: 'finder',
+            label: 'Finder',
+            description: 'Dateien und Strukturen weiterziehen.',
+            icon: FolderOpen,
+            onClick: () => {
+                handleDockClick('finder');
+                closeCommandDeck();
+            },
+        },
+        {
+            id: 'notes',
+            label: 'Notizen',
+            description: 'Gedanken festhalten oder Review bauen.',
+            icon: FileText,
+            onClick: () => {
+                handleDockClick('notes');
+                closeCommandDeck();
+            },
+        },
+        {
+            id: 'settings',
+            label: 'Settings',
+            description: 'Audio, Scenes und Shell feinjustieren.',
+            icon: Settings,
+            onClick: () => {
+                handleDockClick('settings');
+                closeCommandDeck();
+            },
+        },
+    ]), [closeCommandDeck, handleDockClick]);
+
     useEffect(() => {
         let cancelled = false;
 
@@ -384,6 +496,21 @@ export const Dock = () => {
             window.removeEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, loadTracks);
         };
     }, []);
+
+    useEffect(() => () => clearCommandDeckCloseTimer(), [clearCommandDeckCloseTimer]);
+
+    useEffect(() => {
+        if (!isCommandDeckOpen) return undefined;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!(event.target instanceof Element)) return;
+            if (event.target.closest('[data-dock-command-center="true"]')) return;
+            closeCommandDeck();
+        };
+
+        window.addEventListener('mousedown', handlePointerDown);
+        return () => window.removeEventListener('mousedown', handlePointerDown);
+    }, [isCommandDeckOpen, closeCommandDeck]);
 
     const openAudioSettings = useCallback(() => {
         openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
@@ -424,6 +551,22 @@ export const Dock = () => {
         });
     }, [ambientAudio.trackId, ambientTracks, openAudioSettings, updateUserSettings]);
 
+    const handleCycleRitualScene = useCallback(() => {
+        const currentSceneId = ritualSettings.autoTime ? ritualSceneId : ritualSettings.sceneId;
+        const nextSceneId = cycleRitualScene(currentSceneId);
+
+        persistRitualSettings(updateUserSettings, {
+            ritualSceneId: nextSceneId,
+            ritualAutoTime: false,
+        });
+    }, [ritualSceneId, ritualSettings.autoTime, ritualSettings.sceneId, updateUserSettings]);
+
+    const handleToggleRitualAuto = useCallback(() => {
+        persistRitualSettings(updateUserSettings, {
+            ritualAutoTime: !ritualSettings.autoTime,
+        });
+    }, [ritualSettings.autoTime, updateUserSettings]);
+
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
             {/* MINIMIZED PANES - Floating above dock */}
@@ -450,6 +593,42 @@ export const Dock = () => {
 
             {/* MAIN DOCK BAR */}
             <div className="w-[calc(100vw-32px)] max-w-none mx-auto mb-4 px-3 pointer-events-auto">
+                <AnimatePresence>
+                    {isCommandDeckOpen && (
+                        <div
+                            data-dock-command-center="true"
+                            className="mb-3 flex justify-center px-3 pointer-events-none"
+                        >
+                            <div
+                                className="pointer-events-auto"
+                                onMouseEnter={() => openCommandDeck()}
+                                onMouseLeave={scheduleCommandDeckClose}
+                            >
+                                <DockCommandDeck
+                                    isStandardMode={isStandardMode}
+                                    isPinned={isCommandDeckPinned}
+                                    orbStateLabel={orbStateLabel}
+                                    scopeLabel={scopeLabel}
+                                    workspaceName={activeCompany?.name || user?.active_company_name || 'Workspace'}
+                                    sceneLabel={ritualScene.label}
+                                    sceneDescription={ritualScene.description}
+                                    autoSceneEnabled={ritualSettings.autoTime}
+                                    onTogglePinned={toggleCommandDeckPinned}
+                                    onToggleAutoScene={handleToggleRitualAuto}
+                                    onCycleScene={handleCycleRitualScene}
+                                    trackName={activeTrack?.name || null}
+                                    trackCount={ambientTracks.length}
+                                    isPlaying={ambientAudio.enabled}
+                                    onToggleAudio={handleAmbientToggle}
+                                    onNextTrack={handleAmbientNext}
+                                    onOpenAudio={openAudioSettings}
+                                    actions={commandDeckActions}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </AnimatePresence>
+
                 <div
                     className={`relative flex items-center gap-4 px-5 py-4 ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
@@ -605,6 +784,43 @@ export const Dock = () => {
                             }`}>
                             {mod}+K
                         </kbd>
+                    </div>
+
+                    <div
+                        data-dock-command-center="true"
+                        className="relative hidden xl:block"
+                        onMouseEnter={() => openCommandDeck()}
+                        onMouseLeave={scheduleCommandDeckClose}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (isCommandDeckPinned) {
+                                    closeCommandDeck();
+                                    return;
+                                }
+                                openCommandDeck(true);
+                            }}
+                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isStandardMode
+                                ? 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
+                                : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'
+                                }`}
+                        >
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
+                                ? 'border-[#0078D4]/15 bg-white text-[#0078D4]'
+                                : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+                                }`}>
+                                <Sparkles size={15} />
+                            </div>
+                            <div className="min-w-0 text-left">
+                                <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                                    Control Center
+                                </div>
+                                <div className={`mt-1 text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
+                                    {ritualScene.shortLabel} · {scopeLabel}
+                                </div>
+                            </div>
+                        </button>
                     </div>
 
                     {/* DIVIDER - Glowing */}

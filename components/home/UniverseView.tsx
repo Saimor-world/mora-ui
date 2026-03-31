@@ -13,6 +13,21 @@ import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 
+const metricAffinity = (left: number, right: number) => {
+    const baseline = Math.max(1, left, right);
+    return Math.max(0, 1 - Math.abs(left - right) / baseline);
+};
+
+const resolveDepartmentSimilarity = (
+    left: { nodes: number; spaces: number; folders: number; health: number },
+    right: { nodes: number; spaces: number; folders: number; health: number }
+) => (
+    metricAffinity(left.nodes, right.nodes) * 0.4 +
+    metricAffinity(left.spaces, right.spaces) * 0.2 +
+    metricAffinity(left.folders, right.folders) * 0.25 +
+    metricAffinity(left.health, right.health) * 0.15
+);
+
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
  * VISION: A living, breathing autonomous business workspace.
@@ -246,39 +261,101 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [safeDepartments, rings]);
 
     // ─── SILK DRIFT PATHS (V10.6) ───
-    const connectionPath = useMemo(() => {
-        if (planetPositions.length < 2) return '';
-        // Connect in order of the ring hierarchy for a "Web" feel
-        const sorted = [...planetPositions].sort((a, b) => (a.ringIndex - b.ringIndex) || (a.angle - b.angle));
+    const visiblePlanets = useMemo(
+        () => planetPositions.filter((planet) => shouldRender(planet)),
+        [planetPositions, membershipsLoaded, memberships, user?.role]
+    );
 
-        let path = '';
-        sorted.forEach((p, i) => {
-            // Connect to next planet
-            const next = sorted[(i + 1) % sorted.length];
+    const semanticConnections = useMemo(() => {
+        if (visiblePlanets.length < 2) return [];
 
-            // Simple curved line
-            path += i === 0 ? `M ${p.x} ${p.y}` : '';
-            path += ` L ${next.x} ${next.y}`; // Clean straight lines for "Corporate" feel, or loose curves?
-            // User wanted "Calm", straight lines or slight curves are calmer than wild swings.
-            // Let's stick to the previous curved logic but toned down.
+        const edges = new Map<string, { fromId: string; toId: string; strength: number }>();
+
+        visiblePlanets.forEach((planet) => {
+            const sourceMetrics = departmentMetrics[planet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
+
+            visiblePlanets
+                .filter((candidate) => candidate.id !== planet.id)
+                .map((candidate) => {
+                    const targetMetrics = departmentMetrics[candidate.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
+                    const semanticAffinity = resolveDepartmentSimilarity(sourceMetrics, targetMetrics);
+                    const ringAffinity = Math.max(0, 1 - Math.abs(planet.ringIndex - candidate.ringIndex) / 2);
+                    const spatialAffinity = Math.max(0, 1 - Math.hypot(planet.x - candidate.x, planet.y - candidate.y) / 100);
+
+                    return {
+                        candidateId: candidate.id,
+                        strength: semanticAffinity * 0.65 + ringAffinity * 0.2 + spatialAffinity * 0.15,
+                    };
+                })
+                .sort((left, right) => right.strength - left.strength)
+                .slice(0, 2)
+                .filter((edge) => edge.strength >= 0.42)
+                .forEach((edge) => {
+                    const key = [planet.id, edge.candidateId].sort().join(':');
+                    const current = edges.get(key);
+                    if (!current || edge.strength > current.strength) {
+                        edges.set(key, {
+                            fromId: planet.id,
+                            toId: edge.candidateId,
+                            strength: edge.strength,
+                        });
+                    }
+                });
         });
 
-        // Re-implementing the curve logic but simpler
-        return planetPositions.map((p, i) => {
-            const next = planetPositions[(i + 1) % planetPositions.length];
-            // Control points for gentle arc
-            const mx = (p.x + next.x) / 2;
-            const my = (p.y + next.y) / 2;
-            return `M ${p.x} ${p.y} Q ${50} ${50} ${next.x} ${next.y}`;
-        }).join(' ');
+        return Array.from(edges.values());
+    }, [visiblePlanets, departmentMetrics]);
 
-    }, [planetPositions]);
+    const semanticPaths = useMemo(() => {
+        if (semanticConnections.length === 0) return [];
 
-    const coreConnectionsPath = useMemo(() => {
-        if (planetPositions.length === 0) return '';
-        return planetPositions.map((p) => `M 50 50 L ${p.x} ${p.y}`).join(' ');
-    }, [planetPositions]);
-    const highlightOrbitThreads = !!hoverPlanetId;
+        const planetMap = new Map(visiblePlanets.map((planet) => [planet.id, planet]));
+
+        return semanticConnections
+            .map((edge) => {
+                const from = planetMap.get(edge.fromId);
+                const to = planetMap.get(edge.toId);
+                if (!from || !to) return null;
+
+                const midY = 54 - Math.min(12, Math.abs(from.ringIndex - to.ringIndex) * 4 + 5);
+
+                return {
+                    id: `${edge.fromId}-${edge.toId}`,
+                    d: `M ${from.x} ${from.y} Q 50 ${midY} ${to.x} ${to.y}`,
+                    strength: edge.strength,
+                    highlighted:
+                        hoverPlanetId === from.id ||
+                        hoverPlanetId === to.id ||
+                        activeDepartmentId === from.id ||
+                        activeDepartmentId === to.id,
+                };
+            })
+            .filter((value): value is { id: string; d: string; strength: number; highlighted: boolean } => value !== null);
+    }, [semanticConnections, visiblePlanets, hoverPlanetId, activeDepartmentId]);
+
+    const coreConnections = useMemo(() => (
+        visiblePlanets.map((planet) => {
+            const metrics = departmentMetrics[planet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
+            const loadSignal = metrics.nodes * 0.35 + metrics.folders * 1.1 + metrics.spaces * 1.4;
+            return {
+                id: planet.id,
+                x: planet.x,
+                y: planet.y,
+                intensity: Math.max(0.16, Math.min(1, loadSignal / Math.max(1, maxNodes * 0.45 + 12))),
+                highlighted: hoverPlanetId === planet.id || activeDepartmentId === planet.id,
+            };
+        })
+    ), [visiblePlanets, departmentMetrics, hoverPlanetId, activeDepartmentId, maxNodes]);
+
+    const focusedPlanet = useMemo(() => {
+        const focusedId = hoverPlanetId || activeDepartmentId || visiblePlanets[0]?.id || null;
+        if (!focusedId) return null;
+        return visiblePlanets.find((planet) => planet.id === focusedId) || null;
+    }, [hoverPlanetId, activeDepartmentId, visiblePlanets]);
+
+    const focusedPlanetMetrics = focusedPlanet
+        ? (departmentMetrics[focusedPlanet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 })
+        : null;
 
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
@@ -429,39 +506,97 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
 
                 {/* Core-to-Planet Light Threads */}
-                {coreConnectionsPath && (
-                    <motion.path
-                        d={coreConnectionsPath}
-                        fill="none"
+                {coreConnections.map((connection) => (
+                    <motion.line
+                        key={`core-${connection.id}`}
+                        x1="50"
+                        y1="54"
+                        x2={connection.x}
+                        y2={connection.y}
                         stroke="url(#coreBeam)"
-                        strokeWidth="0.25"
-                        strokeDasharray="2 8"
+                        strokeWidth={0.14 + connection.intensity * 0.36}
+                        strokeDasharray={connection.highlighted ? '3 4' : '2 8'}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: hoverPlanetId ? 0.35 : 0.12 }}
+                        animate={{ opacity: connection.highlighted ? 0.58 : 0.12 + connection.intensity * 0.16 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
-                )}
+                ))}
 
-                {/* Dynamic Silk Path (Subtle, highlight-driven) */}
-                <motion.path
-                    d={connectionPath}
-                    fill="none"
-                    stroke="url(#orbitGrad)"
-                    strokeWidth="0.35"
-                    strokeDasharray="4 4"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{
-                        pathLength: 1,
-                        opacity: highlightOrbitThreads ? 0.42 : 0.18
-                    }}
-                    transition={{
-                        pathLength: { duration: 3, ease: "easeInOut" },
-                        opacity: { duration: 0.35, ease: "easeOut" }
-                    }}
-                    filter="url(#silkGlow)"
-                />
+                {/* Semantic silk paths */}
+                {semanticPaths.map((path) => (
+                    <motion.path
+                        key={path.id}
+                        d={path.d}
+                        fill="none"
+                        stroke="url(#orbitGrad)"
+                        strokeWidth={0.18 + path.strength * 0.32}
+                        strokeDasharray={path.highlighted ? '0 0' : '4 5'}
+                        initial={{ pathLength: 0, opacity: 0 }}
+                        animate={{
+                            pathLength: 1,
+                            opacity: path.highlighted ? 0.56 : 0.16 + path.strength * 0.22,
+                        }}
+                        transition={{
+                            pathLength: { duration: 2.4, ease: "easeInOut" },
+                            opacity: { duration: 0.35, ease: "easeOut" }
+                        }}
+                        filter="url(#silkGlow)"
+                    />
+                ))}
             </svg>
+
+            {focusedPlanet && focusedPlanetMetrics && (
+                <motion.div
+                    className="absolute left-8 top-28 z-30 w-[280px] rounded-[28px] border border-white/10 bg-black/35 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.55, ease: "easeOut" }}
+                >
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                            <div className="text-[10px] uppercase tracking-[0.26em] text-emerald-300/70">
+                                {hoverPlanetId ? 'Live Focus' : 'Department Signal'}
+                            </div>
+                            <div className="mt-2 truncate text-lg font-light tracking-[0.08em] text-white/90">
+                                {focusedPlanet.name}
+                            </div>
+                        </div>
+                        <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-white/45">
+                            {isLocked(focusedPlanet) ? 'Visible' : 'Member'}
+                        </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Spaces</div>
+                            <div className="mt-1 text-xl leading-none text-emerald-200">{focusedPlanetMetrics.spaces}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Folders</div>
+                            <div className="mt-1 text-xl leading-none text-cyan-200">{focusedPlanetMetrics.folders}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Docs</div>
+                            <div className="mt-1 text-xl leading-none text-violet-200">{focusedPlanetMetrics.nodes}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/35">Health</div>
+                            <div className="mt-1 text-xl leading-none text-amber-200">{focusedPlanetMetrics.health}%</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-white/35">
+                            <span>Semantic Links</span>
+                            <span>{semanticConnections.filter((edge) => edge.fromId === focusedPlanet.id || edge.toId === focusedPlanet.id).length}</span>
+                        </div>
+                        <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                            Verbindungen richten sich jetzt nach echter Department-Aehnlichkeit in Docs, Spaces, Folders und Health statt nach reiner Orbit-Reihenfolge.
+                        </p>
+                    </div>
+                </motion.div>
+            )}
 
             {/* 3. PLANET LAYER (Managed by Store Data) */}
             {/*
@@ -470,10 +605,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
              * renders position:absolute (out of flow), making top:X% resolve to 0px.
              * Fragment creates no DOM box — absolute planets resolve against the
              * absolute inset-0 container which correctly fills the full viewport.
-             */}
+            */}
             <div className="absolute inset-0 z-30 pointer-events-none">
-                {planetPositions
-                    .filter((p) => shouldRender(p))
+                {visiblePlanets
                     .map((p, idx) => {
                     // REAL METRICS from API or tree data
                     const deptStats = departmentMetrics[p.id];

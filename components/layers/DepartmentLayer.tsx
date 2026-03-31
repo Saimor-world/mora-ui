@@ -322,6 +322,75 @@ export const DepartmentLayer: React.FC = () => {
         });
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders]);
 
+    useEffect(() => {
+        const preloadableSpaces = spaces
+            .filter((space) => !foldersBySpace[space.id] && (space.folder_count ?? 0) > 0)
+            .slice(0, 8);
+
+        preloadableSpaces.forEach((space) => {
+            void loadFoldersForSpace(space.id);
+        });
+    }, [spaces, foldersBySpace, loadFoldersForSpace]);
+
+    const spaceSignals = useMemo(() => {
+        const entries = spaces.map((space) => {
+            const loadedFolders = foldersBySpace[space.id] || [];
+            const folderTotal = Math.max(space.folder_count ?? 0, loadedFolders.length);
+            const docTotal = loadedFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
+            const signal = folderTotal * 1.25 + docTotal * 0.32;
+
+            return [space.id, {
+                folderTotal,
+                docTotal,
+                signal,
+            }] as const;
+        });
+
+        const strongestSignal = Math.max(1, ...entries.map(([, value]) => value.signal));
+
+        return Object.fromEntries(entries.map(([spaceId, value]) => [
+            spaceId,
+            {
+                ...value,
+                intensity: Math.max(0.18, Math.min(1, value.signal / strongestSignal)),
+            },
+        ]));
+    }, [spaces, foldersBySpace]);
+
+    const hoveredSpaceDetails = useMemo(() => {
+        if (!hoveredSpaceId) return null;
+        const meta = spaceMeta.find((entry) => entry.space.id === hoveredSpaceId);
+        if (!meta) return null;
+
+        const signal = spaceSignals[hoveredSpaceId] ?? {
+            folderTotal: meta.space.folder_count ?? 0,
+            docTotal: 0,
+            signal: 0,
+            intensity: 0.18,
+        };
+
+        return {
+            id: meta.space.id,
+            displayName: meta.displayName,
+            description: meta.space.description || null,
+            color: meta.color,
+            folderTotal: signal.folderTotal,
+            docTotal: signal.docTotal,
+            intensity: signal.intensity,
+        };
+    }, [hoveredSpaceId, spaceMeta, spaceSignals]);
+
+    const hoveredClusterRadius = useMemo(() => {
+        if (hoveredFolderPositions.length === 0) {
+            return 134;
+        }
+
+        return Math.max(
+            150,
+            ...hoveredFolderPositions.map(({ radius }) => radius + 74)
+        );
+    }, [hoveredFolderPositions]);
+
     const totalFolders = useMemo(
         () => spaces.reduce((sum, space) => sum + (space.folder_count ?? (foldersBySpace[space.id] || []).length), 0),
         [spaces, foldersBySpace]
@@ -446,6 +515,42 @@ export const DepartmentLayer: React.FC = () => {
                         <div className="text-lg leading-none text-violet-200">{docsCount}</div>
                     </div>
                 </div>
+                <div className="mt-3 border-t border-white/8 pt-3">
+                    {hoveredSpaceDetails ? (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="text-[9px] uppercase tracking-[0.22em] text-white/35">Focused Space</div>
+                                    <div className="mt-1 truncate text-sm text-white/85">{hoveredSpaceDetails.displayName}</div>
+                                </div>
+                                <div
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{
+                                        background: hoveredSpaceDetails.color,
+                                        boxShadow: `0 0 12px ${hoveredSpaceDetails.color}`,
+                                    }}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+                                    <div className="text-[9px] uppercase tracking-wide text-white/35">Folders</div>
+                                    <div className="mt-1 text-base leading-none text-cyan-200">{hoveredSpaceDetails.folderTotal}</div>
+                                </div>
+                                <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+                                    <div className="text-[9px] uppercase tracking-wide text-white/35">Docs</div>
+                                    <div className="mt-1 text-base leading-none text-violet-200">{hoveredSpaceDetails.docTotal}</div>
+                                </div>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-white/45">
+                                {hoveredSpaceDetails.description || 'Die Verbindung bleibt offen, damit du direkt in die Folder-Konstellation greifen kannst.'}
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="text-[11px] leading-relaxed text-white/40">
+                            Hover ueber einen Space, um seine Folder-Konstellation zu arretieren und direkt in die Struktur zu springen.
+                        </p>
+                    )}
+                </div>
             </motion.div>
 
             <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -477,18 +582,24 @@ export const DepartmentLayer: React.FC = () => {
                         </svg>
 
                         <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                            {moonPositions.map(({ space, x, y }) => (
-                                <line
-                                    key={`beam-${space.id}`}
-                                    x1="50%"
-                                    y1="50%"
-                                    x2={`calc(50% + ${x}px)`}
-                                    y2={`calc(50% + ${y}px)`}
-                                    stroke="url(#deptBeamGradient)"
-                                    strokeWidth="1.1"
-                                    strokeDasharray="4 10"
-                                />
-                            ))}
+                            {moonPositions.map(({ space, x, y }) => {
+                                const signal = spaceSignals[space.id] ?? { intensity: 0.18 };
+                                const isFocused = hoveredSpaceId === space.id;
+
+                                return (
+                                    <line
+                                        key={`beam-${space.id}`}
+                                        x1="50%"
+                                        y1="50%"
+                                        x2={`calc(50% + ${x}px)`}
+                                        y2={`calc(50% + ${y}px)`}
+                                        stroke="url(#deptBeamGradient)"
+                                        strokeWidth={1 + signal.intensity * 1.8}
+                                        strokeDasharray={isFocused ? undefined : '4 10'}
+                                        opacity={isFocused ? 0.95 : 0.24 + signal.intensity * 0.48}
+                                    />
+                                );
+                            })}
                             <defs>
                                 <linearGradient id="deptBeamGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="rgba(6,182,212,0.55)" />
@@ -610,6 +721,28 @@ export const DepartmentLayer: React.FC = () => {
                             );
                         })}
 
+                        {hoveredSpacePosition && hoveredSpaceId && (
+                            <div
+                                className="absolute rounded-full pointer-events-auto"
+                                style={{
+                                    left: `calc(50% + ${hoveredSpacePosition.x}px)`,
+                                    top: `calc(50% + ${hoveredSpacePosition.y}px)`,
+                                    width: hoveredClusterRadius * 2,
+                                    height: hoveredClusterRadius * 2,
+                                    transform: 'translate(-50%, -50%)',
+                                    zIndex: 29,
+                                }}
+                                onMouseEnter={() => {
+                                    setHoverSpace(hoveredSpaceId, {
+                                        id: hoveredSpaceId,
+                                        x: hoveredSpacePosition.x,
+                                        y: hoveredSpacePosition.y,
+                                    });
+                                }}
+                                onMouseLeave={() => scheduleHoverClear()}
+                            />
+                        )}
+
                         {hoveredSpacePosition && hoveredFolderPositions.length > 0 && (
                             <div className="absolute inset-0 pointer-events-none">
                                 {hoveredFolderPositions.map(({ folder, x, y }) => {
@@ -617,6 +750,9 @@ export const DepartmentLayer: React.FC = () => {
                                     const dy = y - hoveredSpacePosition.y;
                                     const length = Math.hypot(dx, dy);
                                     const angle = Math.atan2(dy, dx);
+                                    const nodeCount = folder.node_count || 0;
+                                    const lineStrength = Math.max(0.28, Math.min(1, 0.28 + nodeCount / 10));
+
                                     return (
                                         <div
                                             key={`link-${folder.id}`}
@@ -625,12 +761,12 @@ export const DepartmentLayer: React.FC = () => {
                                                 left: '50%',
                                                 top: '50%',
                                                 width: `${length}px`,
-                                                height: '1px',
+                                                height: `${1 + lineStrength}px`,
                                                 transform: `translate(-50%, -50%) translate(${hoveredSpacePosition.x}px, ${hoveredSpacePosition.y}px) rotate(${angle}rad)`,
                                                 transformOrigin: '0 50%',
-                                                background: 'linear-gradient(90deg, rgba(16,185,129,0.40), rgba(6,182,212,0.10))',
-                                                boxShadow: '0 0 10px rgba(16,185,129,0.2)',
-                                                opacity: 0.85
+                                                background: `linear-gradient(90deg, rgba(16,185,129,${0.22 + lineStrength * 0.35}), rgba(6,182,212,${0.06 + lineStrength * 0.18}))`,
+                                                boxShadow: `0 0 12px rgba(16,185,129,${0.12 + lineStrength * 0.18})`,
+                                                opacity: 0.58 + lineStrength * 0.32,
                                             }}
                                         />
                                     );

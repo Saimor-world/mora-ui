@@ -676,10 +676,12 @@ export const MoraShell: React.FC = () => {
                 />
 
                 {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}
-                <ShellBreadcrumb />
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
                 <div className="flex-1 relative h-full w-full">
+                    <div className="pointer-events-none absolute left-6 bottom-28 z-30">
+                        <ShellBreadcrumb />
+                    </div>
                     {isAdminMode ? (
                         <AdminHome />
                     ) : (

@@ -50,7 +50,7 @@ export const ShellBreadcrumb: React.FC = () => {
         <nav
             data-testid="shell-breadcrumb"
             aria-label="Navigation"
-            className="flex items-center gap-1 px-4 py-2 text-[11px] text-white/35 select-none pointer-events-auto shrink-0"
+            className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-[11px] text-white/35 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl select-none pointer-events-auto"
         >
             {/* Root — always Universe / Explore */}
             <button
