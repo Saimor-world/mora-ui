@@ -1,11 +1,9 @@
-import { useEffect } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useState, useEffect } from 'react';
 
 const HIL_TOGGLE_KEY = 'mora_hil_enabled';
 
 export function useHilToggle() {
-    const hilEnabled = useMoraStore((state) => state.hilEnabled);
-    const setHilEnabled = useMoraStore((state) => state.setHilEnabled);
+    const [hilEnabled, setHilEnabled] = useState(true);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -13,7 +11,7 @@ export function useHilToggle() {
         if (stored === 'true' || stored === 'false') {
             setHilEnabled(stored === 'true');
         }
-    }, [setHilEnabled]);
+    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;

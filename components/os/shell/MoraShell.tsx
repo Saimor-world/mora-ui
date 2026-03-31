@@ -62,8 +62,9 @@ import { Dock } from '@/components/mora/Dock';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOverlay';
 import { LockScreen } from '@/components/auth/LockScreen';
-import { MoraInsightPopup } from '@/components/mora/MoraInsightPopup';
-import { useMindLoopInsights } from '@/lib/hooks/useMindLoopInsights';
+// 1.0 gated (future-tier: insight popup)
+// import { MoraInsightPopup } from '@/components/mora/MoraInsightPopup';
+// import { useMindLoopInsights } from '@/lib/hooks/useMindLoopInsights';
 
 // Premium Intelligence Layer
 // Intelligence is shown through Mora Nexus and Dock command center.
@@ -334,7 +335,6 @@ export const MoraShell: React.FC = () => {
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
-    const { currentInsight, confirmInsight, dismissInsight } = useMindLoopInsights();
     // Destructure stable callbacks so the effect below doesn't fire on every render.
     // (The whole windowSnapping object is a new reference each render even though the
     //  underlying functions are stable after the cfg useMemo fix.)
@@ -691,12 +691,7 @@ export const MoraShell: React.FC = () => {
 
             {/* Resonance Room — 1.0 gated (future-tier surface) */}
 
-            {/* Mora Insight Popup -- surfaces MindLoop insight events above the Dock */}
-            <MoraInsightPopup
-                insight={currentInsight}
-                onConfirm={(insight) => confirmInsight(insight.id)}
-                onDismiss={(insight) => dismissInsight(insight.id)}
-            />
+            {/* MoraInsightPopup — 1.0 gated (future-tier: insight events surface) */}
 
             {/* Dock (Bottom Navigation) */}
             {!hasFullscreenPane && <Dock />}

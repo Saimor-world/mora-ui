@@ -11,14 +11,12 @@
 import { useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import type { MoraPresenceDetail } from '@/lib/mora/presenceEvents';
 
 interface UseShellEventsOptions {
     // onOpenResonance — 1.0 gated with ResonanceRoom surface
 }
 
 export function useShellEvents(_options: UseShellEventsOptions) {
-    const { setCursorAgent } = useMoraStore();
     const { focusPane, openPane } = usePaneStore();
 
     // mora:open-resonance — 1.0 gated: ResonanceRoom not mounted in 1.0
@@ -97,76 +95,5 @@ export function useShellEvents(_options: UseShellEventsOptions) {
         return () => window.removeEventListener('open-node-detail', handler as EventListener);
     }, [openPane]);
 
-    // Unified Mora presence handler.
-    // Canonical event is `mora:cursor`; legacy `mora-ai-action` remains supported during transition.
-    useEffect(() => {
-        const resolveTargetPosition = (detail: Record<string, any>) => {
-            const { targetId, targetSelector, targetPosition, position } = detail;
-            let targetPos = (targetPosition || position) as { x: number; y: number } | undefined;
-            if (!targetPos) {
-                let el: Element | null = null;
-                if (typeof targetSelector === 'string' && targetSelector.length > 0) {
-                    el = document.querySelector(targetSelector);
-                    if (!el && !targetSelector.startsWith('#') && !targetSelector.startsWith('.')) {
-                        el = document.getElementById(targetSelector);
-                    }
-                }
-                if (!el && typeof targetId === 'string' && targetId.length > 0) {
-                    el = document.getElementById(targetId) || document.querySelector(`[data-agency-id="${targetId}"]`);
-                }
-                if (el) {
-                    const rect = el.getBoundingClientRect();
-                    targetPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-                }
-            }
-            return targetPos;
-        };
-
-        const activateCursor = (detail: MoraPresenceDetail | Record<string, any>, fallbackType?: 'highlight' | 'point') => {
-            const rawType = (detail as Record<string, any>).type;
-            const rawAction = detail.action || rawType || fallbackType;
-            const action = rawAction === 'highlight'
-                ? 'highlight'
-                : rawAction === 'point' || rawAction === 'navigate'
-                    ? 'point'
-                    : rawAction === 'activate'
-                        ? 'idle'
-                        : rawAction;
-
-            if (action === 'deactivate' || action === 'return') {
-                setCursorAgent({ active: true, action: 'return', target: undefined, message: null });
-                return;
-            }
-
-            if (action === 'idle') {
-                setCursorAgent({ active: false, action: 'idle', target: undefined, message: null });
-                return;
-            }
-
-            const targetPos = resolveTargetPosition(detail);
-            if (action !== 'idle' && !targetPos) return;
-
-            setCursorAgent({
-                active: true,
-                action,
-                target: targetPos,
-                message: typeof detail.message === 'string' && detail.message.length > 0 ? detail.message : null
-            });
-
-            const timeoutMs = typeof detail.duration === 'number' ? detail.duration : 2500;
-            window.setTimeout(() => {
-                setCursorAgent({ active: true, action: 'return', target: undefined, message: null });
-            }, timeoutMs);
-        };
-
-        const handlePresenceAction = (e: CustomEvent<MoraPresenceDetail>) => activateCursor(e.detail);
-        const handleLegacyAIAction = (e: CustomEvent) => activateCursor(e.detail);
-
-        window.addEventListener('mora:cursor' as any, handlePresenceAction as any);
-        window.addEventListener('mora-ai-action' as any, handleLegacyAIAction as any);
-        return () => {
-            window.removeEventListener('mora:cursor' as any, handlePresenceAction as any);
-            window.removeEventListener('mora-ai-action' as any, handleLegacyAIAction as any);
-        };
-    }, [setCursorAgent]);
+    // mora:cursor / mora-ai-action — 1.0 gated (CursorAgent component is future-tier)
 }

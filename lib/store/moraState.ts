@@ -189,8 +189,6 @@ interface MoraState {
     activeDepartmentId: string | null;
     activeSpaceId: string | null;
     activeFolderId: string | null;
-    minimizedNodes: CoreNode[]; // Phase 3: Dock Integration
-
     // Naming Conflict (409) State
     nameConflict: NameConflictState | null;
 
@@ -222,15 +220,8 @@ interface MoraState {
     // Orb Awareness - UPGRADE A1: Five awareness modes (Phase 7.1)
     orbState: OrbState;
     orbNotifications: Array<{ id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }>;
-    cursorAgent: {
-        active: boolean;
-        action: 'idle' | 'highlight' | 'point' | 'navigate' | 'return' | 'roam';
-        target?: { x: number, y: number };
-        message?: string | null;
-    };
     hasBooted: boolean;
     isLoggingOut: boolean;
-    hilEnabled: boolean;
 
     // P1-B: Speculative Orb Awareness (Zero Latency)
     speculativeState?: OrbState;
@@ -269,13 +260,8 @@ interface MoraState {
     ) => void;
     addOrbNotification: (notification: { id: string, type: 'task' | 'email' | 'insight' | 'alert', message: string }) => void;
     clearOrbNotifications: () => void;
-    setCursorAgent: (agent: Partial<{ active: boolean; action: string; target?: { x: number, y: number }; message?: string | null }>) => void;
     setHasBooted: (hasBooted: boolean) => void;
     setIsLoggingOut: (isLoggingOut: boolean) => void;
-    setHilEnabled: (enabled: boolean) => void;
-    minimizeNode: (node: CoreNode) => void;
-    restoreNode: (nodeId: string) => void;
-    closeNode: (nodeId: string) => void;
     setUser: (user: User | null) => void; // Phase 6.3: Set user with role
     patchOperationalSession: (patch: OperationalSessionPatch) => void;
     updateUserSettings: (settings: Record<string, any>) => void;
@@ -354,16 +340,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
     speculativeState: undefined,
     speculativeUntil: undefined,
     orbNotifications: [],
-    minimizedNodes: [],
-    cursorAgent: {
-        active: false,
-        action: 'idle',
-        target: undefined,
-        message: null
-    },
     hasBooted: false,
     isLoggingOut: false,
-    hilEnabled: true,
     lastChatScope: null,
     lastAnswerSource: null,
     lastAnswerSourceMode: null,
@@ -550,12 +528,8 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         orbNotifications: [...state.orbNotifications, notification]
     })),
     clearOrbNotifications: () => set({ orbNotifications: [] }),
-    setCursorAgent: (agent) => set((state) => ({
-        cursorAgent: { ...state.cursorAgent, ...agent } as MoraState['cursorAgent']
-    })),
     setHasBooted: (hasBooted) => set({ hasBooted }),
     setIsLoggingOut: (isLoggingOut) => set({ isLoggingOut }),
-    setHilEnabled: (enabled) => set({ hilEnabled: enabled }),
 
     // Phase 6.3: Set user and auto-compute permissions from role
     setUser: (user) => {
@@ -678,7 +652,6 @@ export const useMoraStore = create<MoraState>((set, get) => ({
             treeData: null,
             expandedTreeNodes: new Set<string>(),
             loadedNodes: new Set<string>(),
-            minimizedNodes: [],
             viewMode: 'workspace',
             viewLevel: 'core',
             coreMode: 'home',
@@ -1484,25 +1457,4 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         });
     },
 
-    // Window Management
-    minimizeNode: (node) => set((state) => {
-        // Avoid duplicates
-        if (state.minimizedNodes.find(n => n.id === node.id)) return {};
-        // Only run if minimizedNodes is defined (safety)
-        const current = state.minimizedNodes || [];
-        return {
-            minimizedNodes: [...current, node]
-        };
-    }),
-    restoreNode: (nodeId) => set((state) => {
-        const current = state.minimizedNodes || [];
-        const node = current.find(n => n.id === nodeId);
-        if (!node) return {};
-        return {
-            minimizedNodes: current.filter(n => n.id !== nodeId)
-        };
-    }),
-    closeNode: (nodeId) => set((state) => ({
-        minimizedNodes: (state.minimizedNodes || []).filter(n => n.id !== nodeId)
-    })),
 }));

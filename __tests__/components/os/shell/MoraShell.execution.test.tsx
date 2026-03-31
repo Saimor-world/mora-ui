@@ -36,8 +36,6 @@ jest.mock('@/lib/store/moraState', () => ({
     useMoraStore: (selector?: any) => {
         const store = {
             user: { role: 'admin', tenant_id: 'tenant-1' },
-            setCursorAgent: jest.fn(),
-            cursorAgent: { active: false, action: null, target: null, message: null },
             viewMode: 'workspace',
             viewLevel: 'company',
             orbState: 'idle',
