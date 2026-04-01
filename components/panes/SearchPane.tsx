@@ -414,13 +414,13 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                     })}
                                     tone={results.length > 1 ? 'amber' : 'cyan'}
                                     body={results.length > 1
-                                        ? 'Mehrere plausible Treffer. Waehle einen Eintrag.'
-                                        : 'Ein klarer Treffer. Du kannst ihn direkt oeffnen.'}
+                                        ? 'Mehrere plausible Treffer. Wähle einen Eintrag.'
+                                        : 'Ein klarer Treffer. Du kannst ihn direkt öffnen.'}
                                 />
                             ) : (
                                 <div className="text-center py-8 text-white/40">
                                     <Search size={32} className="mx-auto mb-2 opacity-50" />
-                                    <p>Kein klarer Treffer fuer &quot;{query}&quot;</p>
+                                    <p>Kein klarer Treffer für &quot;{query}&quot;</p>
                                     <button
                                         onClick={() => openPane({
                                             id: 'search-main',
@@ -432,7 +432,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                                         className="mt-3 text-sm flex items-center gap-2 mx-auto text-emerald-400 hover:text-emerald-300"
                                     >
                                         <Sparkles size={14} />
-                                        Suche pruefen
+                                        Suche prüfen
                                     </button>
                                 </div>
                             )}

@@ -173,7 +173,7 @@ export const HomeSurface: React.FC = () => {
     })();
 
     const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const personalSpaceLabel = myContent?.space?.name || 'Persoenlicher Space';
+    const personalSpaceLabel = myContent?.space?.name || 'Persönlicher Space';
     const personalLatestLabel =
         myContent?.nodes?.[0]?.title ||
         myContent?.files?.[0]?.name ||
@@ -247,11 +247,11 @@ export const HomeSurface: React.FC = () => {
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt geoeffnet
+                            Zuletzt geöffnet
                         </h2>
                         {recentDocs.length === 0 ? (
                             <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
-                                Noch keine Dokumente - oeffne den Finder, um loszulegen.
+                                Noch keine Dokumente – öffne den Finder, um loszulegen.
                             </p>
                         ) : (
                             <ul className="flex flex-col gap-1">
@@ -289,7 +289,7 @@ export const HomeSurface: React.FC = () => {
                                     <span className="flex-1 text-sm leading-snug">
                                         {evt.payload.summary || (evt.payload.new_nodes != null
                                             ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
-                                            : 'Workspace-Aktivitaet erkannt')}
+                                            : 'Workspace-Aktivität erkannt')}
                                     </span>
                                     <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
                                         {relativeTime(evt.timestamp)}
@@ -303,7 +303,7 @@ export const HomeSurface: React.FC = () => {
                 {myContent && (
                     <section data-testid="personal-area-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Persoenlicher Bereich
+                            Persönlicher Bereich
                         </h2>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
