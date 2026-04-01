@@ -444,9 +444,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 setFiles(prev => prev.map(f => f.id === fileId ? { ...f, fileRecordId: uploaded.id } : f));
 
             // Global Mycelium intake must stay reviewable; silent auto-execution hides routing decisions.
+            // Default to false — require review unless user has explicitly enabled auto-execution.
             const autoExecute = intakeSeed.source === 'mycelium'
                 ? false
-                : (user?.settings?.autoExecuteActions || true);
+                : (user?.settings?.autoExecuteActions ?? false);
             const response: FileCreateNodeResponse = await requestCreateNodeFromFile(uploaded.id, {
                 autoExecute,
                 batchId: intakeSeed.batchId,
@@ -1216,6 +1217,30 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         {activePendingAction.intake_context?.route_confidence_label && (
                             <div className="px-1 text-[11px] text-white/45">
                                 {buildConfidenceText(activePendingAction.intake_context)}
+                            </div>
+                        )}
+                        {activePendingAction.intake_context?.route_explanation?.reason && (
+                            <div className="rounded-xl border border-white/8 bg-black/15 px-3 py-3 space-y-1.5">
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">
+                                    Warum dort
+                                </div>
+                                {activePendingAction.intake_context.route_explanation.headline && (
+                                    <div className="text-sm text-white/75">
+                                        {activePendingAction.intake_context.route_explanation.headline}
+                                    </div>
+                                )}
+                                <div className="text-xs text-white/50 leading-relaxed">
+                                    {activePendingAction.intake_context.route_explanation.reason}
+                                </div>
+                                {(activePendingAction.intake_context.route_explanation.signal_labels?.length ?? 0) > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {activePendingAction.intake_context.route_explanation.signal_labels!.map((signal) => (
+                                            <span key={signal} className="rounded-full border border-cyan-400/15 bg-cyan-500/8 px-2 py-0.5 text-[10px] text-cyan-200/70">
+                                                {signal}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                         {activePendingAction.route_resolution === 'choose' && activeChoiceResults.length > 0 && (
