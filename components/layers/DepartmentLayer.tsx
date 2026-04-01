@@ -101,11 +101,20 @@ export const DepartmentLayer: React.FC = () => {
     const [viewportWidth, setViewportWidth] = useState<number>(
         typeof window !== 'undefined' ? window.innerWidth : 1920
     );
+    const [orbitFrame, setOrbitFrame] = useState({ width: 1120, height: 780 });
     const [departmentDocsFromApi, setDepartmentDocsFromApi] = useState<number | null>(null);
     useEffect(() => {
-        const handleResize = () => setViewportWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        const updateFrame = () => {
+            setViewportWidth(window.innerWidth);
+            const rect = orbitContainerRef.current?.getBoundingClientRect();
+            if (rect?.width && rect?.height) {
+                setOrbitFrame({ width: rect.width, height: rect.height });
+            }
+        };
+
+        updateFrame();
+        window.addEventListener('resize', updateFrame);
+        return () => window.removeEventListener('resize', updateFrame);
     }, []);
     const isMobileViewport = viewportWidth < 600;
     const hoverClearRef = useRef<NodeJS.Timeout | null>(null);
@@ -312,6 +321,18 @@ export const DepartmentLayer: React.FC = () => {
         return moonPositions.find((m) => m.space.id === hoveredSpaceId) || null;
     }, [hoveredSpaceId, hoveredSpaceAnchor, moonPositions]);
 
+    const previewSafeBounds = useMemo(() => {
+        const halfWidth = orbitFrame.width / 2;
+        const halfHeight = orbitFrame.height / 2;
+
+        return {
+            minX: -halfWidth + 184,
+            maxX: halfWidth - 184,
+            minY: -halfHeight + 176,
+            maxY: halfHeight - 172,
+        };
+    }, [orbitFrame.height, orbitFrame.width]);
+
     const hoveredFolders = useMemo(() => (
         hoveredSpaceId ? (foldersBySpace[hoveredSpaceId] || []) : []
     ), [hoveredSpaceId, foldersBySpace]);
@@ -327,9 +348,31 @@ export const DepartmentLayer: React.FC = () => {
         if (!hoveredSpaceId || !hoveredSpacePosition || hoveredFolders.length === 0) return [];
 
         const distance = Math.hypot(hoveredSpacePosition.x, hoveredSpacePosition.y) || 1;
-        const outward = {
+        let outward = {
             x: hoveredSpacePosition.x / distance,
             y: hoveredSpacePosition.y / distance,
+        };
+        const topPressure = hoveredSpacePosition.y < previewSafeBounds.minY + 156;
+        const bottomPressure = hoveredSpacePosition.y > previewSafeBounds.maxY - 156;
+        const leftPressure = hoveredSpacePosition.x < previewSafeBounds.minX + 172;
+        const rightPressure = hoveredSpacePosition.x > previewSafeBounds.maxX - 172;
+
+        if (topPressure) {
+            outward.y = Math.abs(outward.y) + 0.82;
+        } else if (bottomPressure) {
+            outward.y = -Math.abs(outward.y) - 0.78;
+        }
+
+        if (leftPressure) {
+            outward.x = Math.abs(outward.x) + 0.36;
+        } else if (rightPressure) {
+            outward.x = -Math.abs(outward.x) - 0.36;
+        }
+
+        const outwardLength = Math.hypot(outward.x, outward.y) || 1;
+        outward = {
+            x: outward.x / outwardLength,
+            y: outward.y / outwardLength,
         };
         const perpendicular = { x: -outward.y, y: outward.x };
 
@@ -368,8 +411,10 @@ export const DepartmentLayer: React.FC = () => {
 
             const centeredIndex = laneCount === 1 ? 0 : laneIndex - (laneCount - 1) / 2;
             const lateralDistance = centeredIndex * laneMeta.spread;
-            const x = hoveredSpacePosition.x + outward.x * laneMeta.distance + perpendicular.x * lateralDistance;
-            const y = hoveredSpacePosition.y + outward.y * laneMeta.distance + perpendicular.y * lateralDistance;
+            const rawX = hoveredSpacePosition.x + outward.x * laneMeta.distance + perpendicular.x * lateralDistance;
+            const rawY = hoveredSpacePosition.y + outward.y * laneMeta.distance + perpendicular.y * lateralDistance;
+            const x = clamp(rawX, previewSafeBounds.minX, previewSafeBounds.maxX);
+            const y = clamp(rawY, previewSafeBounds.minY, previewSafeBounds.maxY);
 
             return {
                 ...entry,
@@ -380,7 +425,7 @@ export const DepartmentLayer: React.FC = () => {
                 lineStrength: Math.max(0.28, Math.min(1, 0.24 + entry.signal / strongestSignal * 0.76)),
             };
         });
-    }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders]);
+    }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders, previewSafeBounds]);
 
     useEffect(() => {
         const preloadableSpaces = spaces

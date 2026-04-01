@@ -3,13 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     FileText,
-    FolderOpen,
     PanelTopOpen,
-    Settings2,
     Sparkles,
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
-import { usePaneStore } from '@/lib/store/paneStore';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import {
     RITUAL_SCENES,
@@ -58,7 +55,6 @@ export const MoraPulsePanel: React.FC = () => {
     const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
     const orbState = useMoraStore((state) => state.orbState);
     const viewLevel = useMoraStore((state) => state.viewLevel);
-    const openPane = usePaneStore((state) => state.openPane);
 
     const [now, setNow] = useState(() => new Date());
     const [isDeckOpen, setIsDeckOpen] = useState(false);
@@ -111,10 +107,6 @@ export const MoraPulsePanel: React.FC = () => {
         return () => window.removeEventListener(SAIMOR_COMMAND_DECK_STATE_EVENT, handleDeckState as EventListener);
     }, []);
 
-    const openSettings = () => {
-        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
-    };
-
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
         activeCompany,
@@ -141,67 +133,10 @@ export const MoraPulsePanel: React.FC = () => {
         viewLevel,
     ]);
 
-    const handleOpenContext = () => {
-        if (activeFolder && activeSpace) {
-            openPane({
-                id: 'finder-main',
-                type: 'finder',
-                title: activeFolder.name,
-                size: { width: 1280, height: 820 },
-                data: {
-                    folderId: activeFolder.id,
-                    spaceId: activeSpace.id,
-                    departmentId: activeDepartmentId,
-                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
-                },
-            });
-            return;
-        }
-
-        if (activeSpace) {
-            openPane({
-                id: 'finder-main',
-                type: 'finder',
-                title: activeSpace.name,
-                size: { width: 1280, height: 820 },
-                data: {
-                    spaceId: activeSpace.id,
-                    departmentId: activeDepartmentId,
-                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
-                },
-            });
-            return;
-        }
-
-        if (activeDepartment) {
-            openPane({
-                id: 'finder-main',
-                type: 'finder',
-                title: activeDepartment.name,
-                size: { width: 1280, height: 820 },
-                data: {
-                    departmentId: activeDepartment.id,
-                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
-                },
-            });
-            return;
-        }
-
-        openPane({
-            id: 'finder-main',
-            type: 'finder',
-            title: activeCompany?.name || 'Workspace',
-            size: { width: 1280, height: 820 },
-            data: {
-                companyId: activeCompanyId || undefined,
-            },
-        });
-    };
-
     return (
         <div className="pointer-events-none fixed right-6 top-6 z-[78] hidden lg:block">
             <div
-                className={`pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.22),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl transition-all duration-300 ${isDeckOpen ? 'w-[250px] opacity-55' : 'w-[312px]'}`}
+                className={`pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.22),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl transition-all duration-300 ${isDeckOpen ? 'w-[232px] opacity-50' : 'w-[284px]'}`}
             >
                 <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(16,185,129,0.08),transparent_45%,rgba(34,211,238,0.08))]" />
                 <div className="absolute -right-10 top-0 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
@@ -243,31 +178,18 @@ export const MoraPulsePanel: React.FC = () => {
 
                             <button
                                 onClick={() => requestCommandDeckOpen({ pinned: true })}
-                                className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200 transition-colors hover:bg-emerald-500/16"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/10 text-emerald-200 transition-colors hover:bg-emerald-500/16"
+                                title="Control Center oeffnen"
                             >
-                                Control Center
+                                <PanelTopOpen size={14} />
                             </button>
                         </div>
 
                         <div className="mt-3 text-[11px] text-white/50">
                             {shellContext.signalA} / {shellContext.signalB}
                         </div>
-
-                        <div className="mt-3 grid grid-cols-2 gap-2">
-                            <button
-                                onClick={handleOpenContext}
-                                className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
-                            >
-                                <FolderOpen size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
-                                <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Context</div>
-                            </button>
-                            <button
-                                onClick={openSettings}
-                                className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
-                            >
-                                <Settings2 size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />
-                                <div className="mt-3 text-xs uppercase tracking-[0.18em] text-white/45">Settings</div>
-                            </button>
+                        <div className="mt-3 text-[11px] leading-relaxed text-white/38">
+                            {shellContext.description}
                         </div>
                     </div>
 

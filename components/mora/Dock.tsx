@@ -1174,13 +1174,29 @@ export const Dock = () => {
                     </DockPod>
 
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                        <DockPod className="hidden shrink-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
+                        <DockPod className="hidden min-w-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
                             <DockSearchLauncher
                                 isStandardMode={isStandardMode}
                                 shortcutLabel={`${mod}+K`}
                                 isActive={searchPopupOpen}
                                 onOpen={() => setSearchPopupOpen(true)}
                             />
+
+                            {ambientTracks.length > 0 && !isCommandDeckOpen && (
+                                <>
+                                    <div className={`hidden 2xl:block h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
+                                    <DockNowPlaying
+                                        isStandardMode={isStandardMode}
+                                        isDeckOpen={isCommandDeckOpen}
+                                        trackName={activeTrack?.name || null}
+                                        trackCount={ambientTracks.length}
+                                        isPlaying={ambientAudio.enabled}
+                                        onToggle={handleAmbientToggle}
+                                        onNext={handleAmbientNext}
+                                        onOpen={openAudioSettings}
+                                    />
+                                </>
+                            )}
 
                             <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
 
@@ -1239,24 +1255,8 @@ export const Dock = () => {
                         </DockPod>
 
                         <DockPod className="flex shrink-0 items-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
-                    {/* RIGHT SECTION: Utilities + Context */}
+                    {/* RIGHT SECTION: Status + Context */}
                     <div className="flex items-center gap-2">
-                        {ambientTracks.length > 0 && !isCommandDeckOpen && (
-                            <>
-                                <DockNowPlaying
-                                    isStandardMode={isStandardMode}
-                                    isDeckOpen={isCommandDeckOpen}
-                                    trackName={activeTrack?.name || null}
-                                    trackCount={ambientTracks.length}
-                                    isPlaying={ambientAudio.enabled}
-                                    onToggle={handleAmbientToggle}
-                                    onNext={handleAmbientNext}
-                                    onOpen={openAudioSettings}
-                                />
-                                <div className={`hidden 2xl:block h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'}`} />
-                            </>
-                        )}
-
                         <NotificationCenter />
                     </div>
 

@@ -100,7 +100,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     };
 
     return (
-        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1180px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-3 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1040px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-2.5 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
             <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">
                 {visibleModes.includes('owner') && (
                     <ControlButton
@@ -142,7 +142,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
-                className="min-w-0 flex-1 rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
+                className="min-w-0 flex-1 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
             >
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
                     <span>Layer {shellContext.scopeLabel}</span>
@@ -155,28 +155,21 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </div>
             </button>
 
-            {activeCompany && (
-                <div
+            {activeCompany && companies.length > 1 && (
+                <button
+                    type="button"
                     onClick={handleContextClick}
-                    className={`hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 md:flex ${companies.length > 1 ? 'cursor-pointer opacity-82 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 hover:opacity-100' : 'cursor-default opacity-60'}`}
-                    role={companies.length > 1 ? 'button' : 'status'}
-                    title={companies.length > 1 ? 'Kontext wechseln' : 'Aktueller Kontext'}
+                    className="hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-white/74 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 md:flex"
+                    title="Workspace wechseln"
                 >
                     <Globe className="h-3 w-3" />
-                    <div className="flex flex-col">
-                        <span className="max-w-[168px] truncate text-[10px] uppercase tracking-[0.18em] text-white/78">
-                            {activeCompany.name}
-                        </span>
-                        <span className="text-[10px] text-white/34">
-                            {viewMode === 'demo' ? 'Demo workspace' : shellContext.subtitle}
-                        </span>
-                    </div>
-                    {companies.length > 1 && (
-                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/58">
-                            Tab
-                        </span>
-                    )}
-                </div>
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-white/56">
+                        Tab
+                    </span>
+                    <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/68">
+                        {companies.length}
+                    </span>
+                </button>
             )}
 
             <button

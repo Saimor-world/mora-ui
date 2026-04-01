@@ -428,6 +428,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => new Set(semanticPreviewPath ? [semanticPreviewPath.fromId, semanticPreviewPath.toId] : []),
         [semanticPreviewPath]
     );
+    const semanticCalloutPaths = useMemo(
+        () => semanticPreviewPath ? [semanticPreviewPath] : [],
+        [semanticPreviewPath]
+    );
 
     const coreConnections = useMemo(() => (
         visiblePlanets.map((planet) => {
@@ -725,9 +729,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </svg>
 
             <div className="pointer-events-none absolute inset-0 z-[18]">
-                {semanticPaths
-                    .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id || path.strength >= 0.78)
-                    .map((path) => {
+                {semanticCalloutPaths.map((path) => {
                         const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                         const labelTitle = path.focusPeerName || `${path.fromName} / ${path.toName}`;
                         const isInteractive = Boolean(path.focusPeerId);
