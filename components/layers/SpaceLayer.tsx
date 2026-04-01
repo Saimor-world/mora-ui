@@ -40,7 +40,7 @@ const LANE_CONFIG: Record<LaneKey, {
     size: 'sm' | 'md' | 'lg';
 }> = {
     focus: {
-        label: 'Focus lane',
+        label: 'Fokus',
         accent: '#34d399',
         radiusX: 280,
         radiusY: 168,
@@ -51,7 +51,7 @@ const LANE_CONFIG: Record<LaneKey, {
         size: 'lg',
     },
     flow: {
-        label: 'Working set',
+        label: 'Aktiv',
         accent: '#22d3ee',
         radiusX: 412,
         radiusY: 248,
@@ -62,7 +62,7 @@ const LANE_CONFIG: Record<LaneKey, {
         size: 'md',
     },
     archive: {
-        label: 'Archive belt',
+        label: 'Älter',
         accent: '#a78bfa',
         radiusX: 482,
         radiusY: 296,
@@ -95,13 +95,13 @@ const describeLaneArc = (lane: LaneKey) => {
 };
 
 const formatActivityLabel = (value?: string | null) => {
-    if (!value) return 'calm';
+    if (!value) return 'ohne Datum';
     const days = Math.floor((Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24));
-    if (days <= 0) return 'today';
-    if (days === 1) return '1d';
-    if (days < 7) return `${days}d`;
-    if (days < 30) return `${Math.ceil(days / 7)}w`;
-    return 'archive';
+    if (days <= 0) return 'heute';
+    if (days === 1) return 'vor 1 Tg.';
+    if (days < 7) return `vor ${days} Tg.`;
+    if (days < 30) return `vor ${Math.ceil(days / 7)} Wo.`;
+    return `vor ${Math.ceil(days / 30)} Mon.`;
 };
 
 const getFreshnessWeight = (value?: string | null) => {
@@ -110,7 +110,7 @@ const getFreshnessWeight = (value?: string | null) => {
     return clamp(1 - days / 28, 0.18, 1);
 };
 
-const formatDocCount = (count: number) => `${count} ${count === 1 ? 'doc' : 'docs'}`;
+const formatDocCount = (count: number) => `${count} ${count === 1 ? 'Dokument' : 'Dokumente'}`;
 
 type RankedFolder = {
     folder: CoreFolder;
@@ -193,14 +193,14 @@ export const SpaceLayer: React.FC = () => {
     const displaySpaceName = useCallback((name: string) => {
         const departmentName = currentDepartment?.name || '';
         let next = (name || '').trim();
-        if (!next) return 'Workspace';
+        if (!next) return 'Bereich';
         if (departmentName && next.toLowerCase().startsWith(departmentName.toLowerCase())) {
             next = next.slice(departmentName.length).replace(/^[\s&\-_:]+/, '').trim();
         }
         const cleaned = next.replace(/\b(workspace|team space|space)\b/gi, '').trim();
         if (cleaned.length > 2 && !/^\d+$/.test(cleaned)) return cleaned;
-        if (/^\d+$/.test(next) || /\b(workspace|team space|space)\b/i.test(next)) return 'Workspace';
-        return next || 'Workspace';
+        if (/^\d+$/.test(next) || /\b(workspace|team space|space)\b/i.test(next)) return 'Bereich';
+        return next || 'Bereich';
     }, [currentDepartment?.name]);
 
     const orbitVelocity = useMemo(() => {
@@ -418,7 +418,7 @@ export const SpaceLayer: React.FC = () => {
         openPane({
             id: 'finder-main',
             type: 'finder',
-            title: displaySpaceName(currentSpace?.name || 'Workspace'),
+            title: displaySpaceName(currentSpace?.name || 'Bereich'),
             size: { width: 1280, height: 820 },
             data: {
                 spaceId: activeSpaceId,
@@ -455,7 +455,7 @@ export const SpaceLayer: React.FC = () => {
         );
     }
 
-    const spaceName = displaySpaceName(currentSpace?.name || 'Workspace');
+    const spaceName = displaySpaceName(currentSpace?.name || 'Bereich');
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-transparent">
@@ -534,22 +534,22 @@ export const SpaceLayer: React.FC = () => {
                     whileTap={{ scale: 0.97 }}
                 >
                     <Plus size={15} />
-                    NEW FOLDER
+                    NEUER ORDNER
                 </motion.button>
             </motion.div>
 
             <LayerInsightRail
                 className="left-8 top-32 z-40"
-                eyebrow="Space"
-                title={currentSpace?.name || 'Workspace'}
-                badge={activeFolderId ? 'Live focus' : 'Layer 3'}
+                eyebrow="Bereich"
+                title={currentSpace?.name || 'Bereich'}
+                badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
-                collapsedHint="Folder oeffnen oder Deck nutzen."
-                summary={`${laneSummaries.focus.count} focus, ${laneSummaries.flow.count} working set und ${laneSummaries.archive.count} archive bleiben als stiller Strukturhinweis sichtbar.`}
+                collapsedHint="Ordner oeffnen oder Control Center nutzen."
+                summary={`${laneSummaries.focus.count} starke, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} ältere Ordner werden aus echter Dokumentdichte und Aktualität abgeleitet.`}
                 metrics={[
-                    { label: 'Folders', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
-                    { label: 'Active', value: foldersWithDocs, toneClassName: 'text-cyan-200' },
-                    { label: 'Docs', value: totalDocs, toneClassName: 'text-violet-200' },
+                    { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
+                    { label: 'Mit Inhalt', value: foldersWithDocs, toneClassName: 'text-cyan-200' },
+                    { label: 'Dokumente', value: totalDocs, toneClassName: 'text-violet-200' },
                 ]}
             >
                 <div className="grid grid-cols-3 gap-2">
@@ -576,7 +576,7 @@ export const SpaceLayer: React.FC = () => {
                     onClick={openSpaceFinder}
                     className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
                 >
-                    Open finder
+                    Finder öffnen
                 </button>
             </LayerInsightRail>
 
@@ -598,13 +598,13 @@ export const SpaceLayer: React.FC = () => {
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
                                     <Sparkles size={12} className="text-emerald-300/72" />
-                                    {inspectedFolder.isActive ? 'Active folder' : LANE_CONFIG[inspectedFolder.lane].label}
+                                    {inspectedFolder.isActive ? 'Aktiver Ordner' : LANE_CONFIG[inspectedFolder.lane].label}
                                 </div>
                                 <div className="mt-2 truncate text-base text-white/88">
                                     {inspectedFolder.folder.name}
                                 </div>
                                 <div className="mt-1 text-xs text-white/42">
-                                    {inspectedFolder.activityLabel} activity
+                                    Letztes Update {inspectedFolder.activityLabel}
                                 </div>
                             </div>
 
@@ -613,23 +613,23 @@ export const SpaceLayer: React.FC = () => {
                                 onClick={() => openFocusedFolder(inspectedFolder.folder.id)}
                                 className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 transition-colors hover:bg-emerald-500/16"
                             >
-                                Open
+                                Öffnen
                             </button>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-2">
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Signal</div>
+                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Relevanz</div>
                                 <div className="mt-1 text-sm text-white/82">{Math.round(inspectedFolder.intensity * 100)}%</div>
                             </div>
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Density</div>
+                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Dokumente</div>
                                 <div className="mt-1 text-sm text-white/82">{formatDocCount(inspectedFolder.docCount)}</div>
                             </div>
                         </div>
 
                         <p className="mt-4 text-[11px] leading-relaxed text-white/44">
-                            Folder clicks now stay in the shell as a live focus. Finder and layer context stay in sync instead of dropping the state into a separate dead-end.
+                            Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualität und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>
                 </motion.div>
@@ -637,7 +637,7 @@ export const SpaceLayer: React.FC = () => {
 
             <div className="absolute inset-0 z-10 flex items-center justify-center">
                 {isLoadingFolders ? (
-                    <LoadingState message="Scanning Space..." />
+                    <LoadingState message="Bereich wird geladen..." />
                 ) : (
                     <div className="relative h-full w-full pb-16">
                         <svg
@@ -742,9 +742,10 @@ export const SpaceLayer: React.FC = () => {
                             </div>
                         </div>
 
-                        {positionedFolders.map((entry) => {
+                        {positionedFolders.map((entry, index) => {
                             const isInspected = inspectedFolder?.folder.id === entry.folder.id;
                             const laneConfig = LANE_CONFIG[entry.lane];
+                            const showInlineCard = isInspected || entry.isActive || (entry.lane === 'focus' && index === 0);
 
                             return (
                                 <motion.div
@@ -787,25 +788,27 @@ export const SpaceLayer: React.FC = () => {
                                         }}
                                     />
 
-                                    <div
-                                        className="mt-2 min-w-[112px] rounded-2xl border px-3 py-2 text-center backdrop-blur-xl"
-                                        style={{
-                                            background: isInspected
-                                                ? `linear-gradient(160deg, ${entry.resolvedColor}22, rgba(3,6,10,0.74))`
-                                                : 'linear-gradient(160deg, rgba(8,12,18,0.78), rgba(3,6,10,0.62))',
-                                            borderColor: isInspected ? `${entry.resolvedColor}55` : 'rgba(255,255,255,0.08)',
-                                            boxShadow: isInspected ? `0 0 28px ${entry.resolvedColor}24` : 'none',
-                                        }}
-                                    >
-                                        <div className="max-w-[140px] truncate text-[11px] tracking-wide text-white/86">
-                                            {entry.folder.name}
+                                    {showInlineCard && (
+                                        <div
+                                            className="mt-2 min-w-[112px] rounded-2xl border px-3 py-2 text-center backdrop-blur-xl"
+                                            style={{
+                                                background: isInspected
+                                                    ? `linear-gradient(160deg, ${entry.resolvedColor}22, rgba(3,6,10,0.74))`
+                                                    : 'linear-gradient(160deg, rgba(8,12,18,0.78), rgba(3,6,10,0.62))',
+                                                borderColor: isInspected ? `${entry.resolvedColor}55` : 'rgba(255,255,255,0.08)',
+                                                boxShadow: isInspected ? `0 0 28px ${entry.resolvedColor}24` : 'none',
+                                            }}
+                                        >
+                                            <div className="max-w-[140px] truncate text-[11px] tracking-wide text-white/86">
+                                                {entry.folder.name}
+                                            </div>
+                                            <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/44">
+                                                <span>{formatDocCount(entry.docCount)}</span>
+                                                <span className="text-white/24">|</span>
+                                                <span style={{ color: laneConfig.accent }}>{entry.activityLabel}</span>
+                                            </div>
                                         </div>
-                                        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/44">
-                                            <span>{formatDocCount(entry.docCount)}</span>
-                                            <span className="text-white/24">|</span>
-                                            <span style={{ color: laneConfig.accent }}>{entry.activityLabel}</span>
-                                        </div>
-                                    </div>
+                                    )}
                                 </motion.div>
                             );
                         })}
@@ -832,7 +835,7 @@ export const SpaceLayer: React.FC = () => {
                                         Noch keine Ordner
                                     </p>
                                     <p className="max-w-[240px] text-center text-xs font-light leading-relaxed text-white/45">
-                                        Create the first folder to turn this space into a live working set.
+                                        Lege den ersten Ordner an, damit dieser Bereich zu einer echten Arbeitsstruktur wird.
                                     </p>
                                 </div>
 
@@ -854,7 +857,7 @@ export const SpaceLayer: React.FC = () => {
             <CreateModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
-                title="Create New Folder"
+                title="Neuen Ordner erstellen"
             >
                 <form onSubmit={handleCreateFolder} className="space-y-6">
                     <div>
@@ -869,7 +872,7 @@ export const SpaceLayer: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="mb-2 block text-sm tracking-wider text-emerald-400/70">COLOR</label>
+                        <label className="mb-2 block text-sm tracking-wider text-emerald-400/70">FARBE</label>
                         <div className="grid grid-cols-6 gap-2">
                             {FOLDER_COLORS.map((color) => (
                                 <button
@@ -889,14 +892,14 @@ export const SpaceLayer: React.FC = () => {
                             onClick={() => setIsCreateModalOpen(false)}
                             className="flex-1 rounded-xl border border-white/10 py-3 text-white/60 hover:bg-white/5"
                         >
-                            Cancel
+                            Abbrechen
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
                             className="flex-1 rounded-xl border border-emerald-500/30 bg-emerald-600/20 py-3 text-emerald-400 hover:bg-emerald-600/30 disabled:opacity-50"
                         >
-                            {isSubmitting ? 'Creating...' : 'Create'}
+                            {isSubmitting ? 'Erstelle...' : 'Erstellen'}
                         </button>
                     </div>
                 </form>

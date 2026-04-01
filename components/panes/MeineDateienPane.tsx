@@ -37,10 +37,22 @@ export const MeineDateienPane: React.FC = () => {
     const openPane = usePaneStore(s => s.openPane);
 
     useEffect(() => {
-        fetchMyContent().then((result) => {
-            setContent(result === null ? 'error' : result);
-            setLoading(false);
-        });
+        let cancelled = false;
+        fetchMyContent()
+            .then((result) => {
+                if (cancelled) return;
+                setContent(result === null || typeof result !== 'object' ? 'error' : result);
+                setLoading(false);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setContent('error');
+                setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const setShare = (id: string, state: ShareState) =>
@@ -100,10 +112,10 @@ export const MeineDateienPane: React.FC = () => {
         );
     }
 
-    const folders = content.folders ?? [];
-    const nodes = content.nodes ?? [];
-    const files = content.files ?? [];
-    const counts = content.counts;
+    const folders = Array.isArray(content.folders) ? content.folders : [];
+    const nodes = Array.isArray(content.nodes) ? content.nodes : [];
+    const files = Array.isArray(content.files) ? content.files : [];
+    const counts = content.counts && typeof content.counts === 'object' ? content.counts : undefined;
 
     const isEmpty = folders.length === 0 && nodes.length === 0 && files.length === 0;
 
@@ -210,10 +222,10 @@ export const MeineDateienPane: React.FC = () => {
                                             {displayName}
                                         </span>
                                         <ExternalLink size={10} className="opacity-0 group-hover:opacity-30 transition-opacity shrink-0" />
-                                        {file.size != null && (
-                                            <span className="text-[10px] text-white/20 shrink-0">
-                                                {formatBytes(file.size)}
-                                            </span>
+                                                {typeof file.size === 'number' && (
+                                                    <span className="text-[10px] text-white/20 shrink-0">
+                                                        {formatBytes(file.size)}
+                                                    </span>
                                         )}
                                         {file.visibility && (
                                             <VisibilityBadge visibility={file.visibility} size={11} />

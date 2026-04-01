@@ -17,7 +17,7 @@ const CONFIG: Record<NodeVisibility, {
 };
 
 interface VisibilityBadgeProps {
-    visibility: NodeVisibility;
+    visibility: NodeVisibility | string;
     size?: number;
     showLabel?: boolean;
     className?: string;
@@ -29,7 +29,12 @@ export const VisibilityBadge: React.FC<VisibilityBadgeProps> = ({
     showLabel = false,
     className = '',
 }) => {
-    const { icon: Icon, label, color } = CONFIG[visibility];
+    const resolvedConfig = CONFIG[visibility as NodeVisibility] ?? {
+        icon: Lock,
+        label: visibility || 'Privat',
+        color: 'text-white/35',
+    };
+    const { icon: Icon, label, color } = resolvedConfig;
     return (
         <span
             className={`inline-flex items-center gap-1 ${color} ${className}`}

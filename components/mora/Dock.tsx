@@ -213,7 +213,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     }
 
     return (
-        <div className={`hidden 2xl:flex max-w-[240px] items-center gap-2.5 rounded-[20px] border px-3 py-2 ${isStandardMode
+        <div className={`hidden xl:flex max-w-[280px] items-center gap-2.5 rounded-[20px] border px-3 py-2 ${isStandardMode
             ? 'border-gray-200 bg-gray-100'
             : 'border-white/10 bg-white/[0.04]'
             }`}>
@@ -232,7 +232,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
                     Audio
                 </div>
-                <div className={`mt-1 max-w-[104px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
+                <div className={`mt-1 max-w-[132px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
                     {trackName || 'Track auswaehlen'}
                 </div>
                 <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
@@ -296,7 +296,7 @@ const DockSearchLauncher: React.FC<DockSearchLauncherProps> = ({
     <button
         type="button"
         onClick={onOpen}
-        className={`hidden xl:flex min-w-[128px] max-w-[138px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all ${isStandardMode
+        className={`hidden xl:flex min-w-[154px] max-w-[182px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all ${isStandardMode
             ? 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
             : `border-white/10 ${isActive ? 'bg-emerald-500/[0.1] text-emerald-200' : 'bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'}`
             }`}
@@ -389,6 +389,10 @@ export const Dock = () => {
     const activeTrack = useMemo(
         () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
         [ambientTracks, ambientAudio.trackId]
+    );
+    const companyContextLabel = useMemo(
+        () => (safeCompanies.length === 1 ? '1 Firmenkontext' : `${safeCompanies.length} Firmenkontexte`),
+        [safeCompanies.length]
     );
     const activeDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
@@ -571,12 +575,12 @@ export const Dock = () => {
     const contextDeck = useMemo(() => {
         if (activeFolder && activeSpace) {
             return {
-                label: 'Folder Focus',
+                label: 'Ordner',
                 title: activeFolder.name,
-                description: 'Der Dock kennt jetzt deinen aktiven Arbeitsknoten und bietet direkte naechste Schritte fuer Review, Chat und Ruecksprung an.',
-                signalA: `${activeFolder.node_count || 0} docs`,
-                signalB: `${activeSpace.name} · ${activeFolders.length} folders`,
-                actionLabel: 'Folder oeffnen',
+                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente oeffnen, teilen oder zurueck in den Bereich springen.',
+                signalA: `${activeFolder.node_count || 0} Dokumente`,
+                signalB: `${activeSpace.name} · ${activeFolders.length} Ordner`,
+                actionLabel: 'Im Finder oeffnen',
                 accent: activeFolder.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeFolder.name, {
                     folderId: activeFolder.id,
@@ -590,12 +594,12 @@ export const Dock = () => {
         if (activeSpace) {
             const docCount = activeFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
             return {
-                label: 'Space Focus',
+                label: 'Bereich',
                 title: activeSpace.name,
-                description: 'Das Control Center schlaegt dir jetzt den staerksten Folder und die passendsten naechsten Oberflaechen fuer diesen Space vor.',
-                signalA: `${activeFolders.length} folders`,
-                signalB: `${docCount} docs`,
-                actionLabel: 'Space oeffnen',
+                description: 'Das ist der aktuelle Arbeitsbereich. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
+                signalA: `${activeFolders.length} Ordner`,
+                signalB: `${docCount} Dokumente`,
+                actionLabel: 'Im Finder oeffnen',
                 accent: activeSpace.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeSpace.name, {
                     spaceId: activeSpace.id,
@@ -609,12 +613,12 @@ export const Dock = () => {
             const folderCount = activeSpaces.reduce((sum, space) => sum + Math.max(space.folder_count ?? 0, (foldersBySpace[space.id] || []).length), 0);
             const docCount = activeSpaces.reduce((sum, space) => sum + (foldersBySpace[space.id] || []).reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0), 0);
             return {
-                label: 'Department Focus',
+                label: 'Abteilung',
                 title: activeDepartment.name,
-                description: 'Der Dock wird hier zur Leitstelle und zeigt, welcher Space als naechster Zoom Sinn ergibt, statt nur universelle Buttons zu duplizieren.',
-                signalA: `${activeSpaces.length} spaces`,
-                signalB: `${folderCount} folders · ${docCount} docs`,
-                actionLabel: 'Department oeffnen',
+                description: 'Die Abteilung zeigt ihre Bereiche, Ordner und Dokumente. Von hier aus solltest du in den passenden Bereich hineinzoomen.',
+                signalA: `${activeSpaces.length} Bereiche`,
+                signalB: `${folderCount} Ordner · ${docCount} Dokumente`,
+                actionLabel: 'Im Finder oeffnen',
                 accent: activeDepartment.color || accent,
                 onOpen: () => openFinderContext(activeDepartment.name, {
                     departmentId: activeDepartment.id,
@@ -625,13 +629,13 @@ export const Dock = () => {
 
         return {
             label: 'Universe',
-            title: activeCompany?.name || user?.active_company_name || 'Workspace',
-            description: 'Im Universe-Modus bleibt das Control Center breit und ruhig, aber bietet dir jetzt klar den naechsten Einstieg statt statischer App-Kacheln.',
-            signalA: `${safeDepartments.length} departments`,
-            signalB: `${safeCompanies.length} workspaces`,
-            actionLabel: 'Workspace oeffnen',
+            title: activeCompany?.name || user?.active_company_name || 'Firmenkontext',
+            description: 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus solltest du zuerst den richtigen Firmenkontext oder die passende Abteilung waehlen.',
+            signalA: `${safeDepartments.length} Abteilungen`,
+            signalB: companyContextLabel,
+            actionLabel: 'Kontext oeffnen',
             accent,
-            onOpen: () => openFinderContext(activeCompany?.name || 'Workspace', {
+            onOpen: () => openFinderContext(activeCompany?.name || 'Firmenkontext', {
                 companyId: activeCompanyId || undefined,
             }),
         };
@@ -646,8 +650,8 @@ export const Dock = () => {
         activeSpaces,
         accent,
         foldersBySpace,
+        companyContextLabel,
         openFinderContext,
-        safeCompanies.length,
         safeDepartments.length,
         user?.active_company_name,
     ]);
@@ -688,8 +692,8 @@ export const Dock = () => {
     const controlCenterNextMove = useMemo(() => {
         if (shellContext.nextTarget.kind === 'company') {
             return {
-                label: 'Workspace oeffnen',
-                hint: 'Direkt in Dateien und Strukturen dieses Workspaces springen.',
+                label: 'Kontext oeffnen',
+                hint: 'Direkt in Dateien und Strukturen dieses Firmenkontexts springen.',
             };
         }
 
@@ -769,8 +773,8 @@ export const Dock = () => {
             return [
                 {
                     id: 'space-open',
-                    label: 'Space oeffnen',
-                    description: 'Gehe direkt in den Finder mit diesem Space als Root.',
+                    label: 'Im Finder oeffnen',
+                    description: 'Gehe direkt in den Finder mit diesem Bereich als Root.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
                 },
@@ -791,7 +795,7 @@ export const Dock = () => {
                 {
                     id: 'space-settings',
                     label: 'Shell anpassen',
-                    description: 'Passe Dock, Audio oder Atmosphaere direkt an.',
+                    description: 'Passe Dock, Audio oder Szene direkt an.',
                     icon: Settings,
                     onClick: closeAfter(() => handleDockClick('settings')),
                 },
@@ -802,8 +806,8 @@ export const Dock = () => {
             return [
                 {
                     id: 'department-open',
-                    label: 'Department oeffnen',
-                    description: 'Oeffne die Department-Struktur im Finder.',
+                    label: 'Im Finder oeffnen',
+                    description: 'Oeffne die Department-Struktur direkt im Finder.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
                 },
@@ -1059,7 +1063,7 @@ export const Dock = () => {
                 </AnimatePresence>
 
                 <div
-                    className={`relative flex flex-wrap items-center justify-between gap-3 overflow-hidden px-4 py-3.5 xl:flex-nowrap ${isStandardMode
+                    className={`relative flex flex-wrap items-center justify-between gap-3 overflow-visible px-4 py-3.5 xl:flex-nowrap ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
                         : 'rounded-3xl backdrop-blur-2xl'
                         }`}
@@ -1185,7 +1189,7 @@ export const Dock = () => {
 
                             {ambientTracks.length > 0 && !isCommandDeckOpen && (
                                 <>
-                                    <div className={`hidden 2xl:block h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
+                                    <div className={`hidden xl:block h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
                                     <DockNowPlaying
                                         isStandardMode={isStandardMode}
                                         isDeckOpen={isCommandDeckOpen}
@@ -1286,9 +1290,9 @@ export const Dock = () => {
                                 {companies.length > 1 && (
                                     <span className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'
                                         }`}>
-                                        {companies.length} Workspaces
-                                    </span>
-                                )}
+                                        {companyContextLabel}
+                                            </span>
+                                        )}
                             </div>
                             <ChevronUp
                                 size={14}
@@ -1307,7 +1311,7 @@ export const Dock = () => {
                                 >
                                     <div className="p-2 border-b border-white/5">
                                         <span className="text-[10px] text-white/30 uppercase tracking-wider px-2">
-                                            Workspace wechseln
+                                            Kontext wechseln
                                         </span>
                                     </div>
                                     <div className="p-1">

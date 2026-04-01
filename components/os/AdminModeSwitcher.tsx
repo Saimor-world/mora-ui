@@ -24,8 +24,8 @@ export const AdminModeSwitcher: React.FC = () => {
     return (
         <button
             onClick={() => setAdminMode(!isAdminMode)}
-            title={isAdminMode ? 'Admin verlassen' : 'Admin'}
-            aria-label={isAdminMode ? 'Admin-Modus verlassen' : 'Admin-Modus öffnen'}
+            title={isAdminMode ? 'Workspace-Admin verlassen' : 'Workspace-Admin öffnen'}
+            aria-label={isAdminMode ? 'Workspace-Admin verlassen' : 'Workspace-Admin öffnen'}
             className={[
                 'w-[42px] h-[42px] flex items-center justify-center rounded-xl transition-all duration-200',
                 isAdminMode

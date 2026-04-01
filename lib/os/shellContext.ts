@@ -66,6 +66,11 @@ interface BuildShellContextSnapshotArgs {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+const formatCount = (value: number, singular: string, plural?: string) => {
+    const resolvedPlural = plural || `${singular}e`;
+    return `${value} ${value === 1 ? singular : resolvedPlural}`;
+};
+
 const getFreshnessWeight = (value?: string | null) => {
     if (!value) return 0.32;
     const days = (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24);
@@ -120,7 +125,7 @@ export const buildShellContextSnapshot = ({
     accent = '#10B981',
 }: BuildShellContextSnapshotArgs): ShellContextSnapshot => {
     const scopeLabel = getShellScopeLabel(viewLevel);
-    const workspaceTitle = activeCompany?.name || userCompanyName || 'Workspace';
+    const workspaceTitle = activeCompany?.name || userCompanyName || 'Firmenkontext';
     const leadingSpace = pickLeadingSpace(activeSpaces, foldersBySpace);
     const leadingFolder = pickLeadingFolder(activeFolders);
 
@@ -130,12 +135,12 @@ export const buildShellContextSnapshot = ({
             contextLabel: 'Folder',
             title: activeFolder.name,
             subtitle: activeSpace.name,
-            description: 'Aktiver Arbeitsknoten. Hier sollte das OS Ruecksprung, Review und Notizen direkt aus dem Fokus heraus anbieten.',
-            signalA: `${activeFolder.node_count || 0} docs`,
-            signalB: `${activeFolders.length} folders im Space`,
+            description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente oeffnen, zurueck in den Bereich springen oder den Finder fuer diesen Ordner nutzen.',
+            signalA: formatCount(activeFolder.node_count || 0, 'Dokument', 'Dokumente'),
+            signalB: formatCount(activeFolders.length, 'Ordner', 'Ordner im Bereich'),
             accent: activeFolder.color || activeSpace.color || activeDepartment?.color || accent,
             nextMoveLabel: `Zurueck zu ${activeSpace.name}`,
-            nextMoveHint: 'Den Folder-Kontext halten, aber den Raum wieder aufziehen.',
+            nextMoveHint: 'Oeffne wieder den Bereich und halte diesen Ordner als aktuellen Fokus.',
             nextTarget: { kind: 'space', id: activeSpace.id },
         };
     }
@@ -147,14 +152,14 @@ export const buildShellContextSnapshot = ({
             contextLabel: 'Space',
             title: activeSpace.name,
             subtitle: activeDepartment?.name || workspaceTitle,
-            description: 'Der Space ist jetzt die operative Mitte. Das OS sollte von hier direkt in den staerksten Folder oder den Finder fuehren.',
-            signalA: `${activeFolders.length} folders`,
-            signalB: `${docCount} docs`,
+            description: 'Das ist der aktuelle Arbeitsbereich dieses Departments. Hier sollten echte Ordner, Dokumente und der naechste sinnvolle Einstieg sichtbar sein.',
+            signalA: formatCount(activeFolders.length, 'Ordner'),
+            signalB: formatCount(docCount, 'Dokument', 'Dokumente'),
             accent: activeSpace.color || activeDepartment?.color || accent,
             nextMoveLabel: leadingFolder ? `Fokus auf ${leadingFolder.name}` : 'Finder fuer diesen Space',
             nextMoveHint: leadingFolder
-                ? 'Der staerkste Folder ist der sinnvollste naechste Arbeitsschritt.'
-                : 'Wenn noch kein Lead-Folder sichtbar ist, oeffne den Space im Finder.',
+                ? 'Der sichtbar staerkste Ordner ist hier der sinnvollste naechste Schritt.'
+                : 'Wenn noch kein klarer Lead-Ordner sichtbar ist, oeffne die Struktur im Finder.',
             nextTarget: leadingFolder
                 ? { kind: 'folder', id: leadingFolder.id }
                 : { kind: 'space', id: activeSpace.id },
@@ -169,14 +174,14 @@ export const buildShellContextSnapshot = ({
             contextLabel: 'Department',
             title: activeDepartment.name,
             subtitle: workspaceTitle,
-            description: 'Hier geht es nicht um App-Wechsel, sondern um den naechsten semantisch sinnvollen Zoom in die operative Struktur.',
-            signalA: `${activeSpaces.length} spaces`,
-            signalB: `${folderCount} folders / ${docCount} docs`,
+            description: 'Das Department zeigt seine Bereiche, Ordner und Dokumente als Struktur. Von hier aus solltest du in den passenden Bereich hineinzoomen, nicht Apps wechseln.',
+            signalA: formatCount(activeSpaces.length, 'Bereich', 'Bereiche'),
+            signalB: `${formatCount(folderCount, 'Ordner')} / ${formatCount(docCount, 'Dokument', 'Dokumente')}`,
             accent: activeDepartment.color || accent,
             nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Department im Finder oeffnen',
             nextMoveHint: leadingSpace
-                ? 'Der staerkste Space sollte als naechstes aktiv werden.'
-                : 'Wenn noch kein Lead-Space erkennbar ist, oeffne die Struktur im Finder.',
+                ? 'Der staerkste Bereich ist der beste naechste Einstieg.'
+                : 'Wenn noch kein klarer Bereich vorne liegt, oeffne die Struktur im Finder.',
             nextTarget: leadingSpace
                 ? { kind: 'space', id: leadingSpace.id }
                 : { kind: 'department', id: activeDepartment.id },
@@ -187,13 +192,15 @@ export const buildShellContextSnapshot = ({
         scopeLabel,
         contextLabel: 'Universe',
         title: workspaceTitle,
-        subtitle: 'Live topography',
-        description: 'Das OS sollte im Universe nicht alles gleichzeitig tun, sondern klar sagen, wo der beste Einstieg in die Arbeit liegt.',
-        signalA: `${departmentCount} departments`,
-        signalB: `${companyCount} workspaces`,
+        subtitle: 'Live-Struktur',
+        description: 'Das Universe zeigt den Gesamtzuschnitt der aktuellen Instanz. Hier sollte klar sein, in welches Department du als Naechstes hineingehst.',
+        signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
+        signalB: formatCount(companyCount, 'Firmenkontext', 'Firmenkontexte'),
         accent,
-        nextMoveLabel: 'Control Center oeffnen',
-        nextMoveHint: 'Vom Universe aus ist zuerst Kontextwahl wichtiger als direkter Tiefensprung.',
+        nextMoveLabel: companyCount > 1 ? 'Kontext oeffnen' : 'Abteilung waehlen',
+        nextMoveHint: companyCount > 1
+            ? 'Diese Instanz hat mehrere Firmenkontexte. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
+            : 'Waehle zuerst die passende Abteilung und geh dann in die operative Struktur.',
         nextTarget: { kind: 'company', id: activeCompany?.id },
     };
 };

@@ -1,5 +1,7 @@
 'use client';
 
+import type { RitualSceneId } from '@/lib/os/ritualMode';
+
 export interface AmbientAudioTrackMeta {
     id: string;
     name: string;
@@ -18,6 +20,8 @@ export interface AmbientAudioSettings {
     trackId: string | null;
 }
 
+export type AmbientSceneTrackMap = Partial<Record<RitualSceneId, string | null>>;
+
 export interface AmbientAudioSettingsUpdate {
     ambientAudioEnabled?: boolean;
     ambientAudioVolume?: number;
@@ -30,9 +34,11 @@ export const AMBIENT_AUDIO_STORAGE_KEYS = {
     enabled: 'saimor_ambient_audio_enabled',
     volume: 'saimor_ambient_audio_volume',
     trackId: 'saimor_ambient_audio_track_id',
+    sceneTrackMap: 'saimor_ambient_audio_scene_track_map',
 } as const;
 
 export const AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT = 'saimor-ambient-audio-library-updated';
+export const AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT = 'saimor-ambient-audio-settings-updated';
 
 const DB_NAME = 'saimor-ambient-audio';
 const STORE_NAME = 'tracks';
@@ -52,6 +58,34 @@ const readStoredTrackId = (key: string) => {
     if (typeof window === 'undefined') return null;
     const rawValue = window.localStorage.getItem(key);
     return rawValue && rawValue.trim().length > 0 ? rawValue : null;
+};
+
+const readStoredSceneTrackMap = (): AmbientSceneTrackMap => {
+    if (typeof window === 'undefined') return {};
+    const rawValue = window.localStorage.getItem(AMBIENT_AUDIO_STORAGE_KEYS.sceneTrackMap);
+    if (!rawValue) return {};
+
+    try {
+        const parsed = JSON.parse(rawValue) as Record<string, unknown>;
+        const result: AmbientSceneTrackMap = {};
+        for (const sceneId of ['flow', 'build', 'lounge', 'night'] as RitualSceneId[]) {
+            const value = parsed?.[sceneId];
+            if (typeof value === 'string' && value.trim().length > 0) {
+                result[sceneId] = value;
+            } else if (value === null) {
+                result[sceneId] = null;
+            }
+        }
+        return result;
+    } catch {
+        return {};
+    }
+};
+
+const emitAmbientAudioSettingsUpdated = () => {
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT));
+    }
 };
 
 export const clampAmbientAudioVolume = (value: unknown) => {
@@ -86,6 +120,8 @@ export const persistAmbientAudioSettings = (
             window.localStorage.removeItem(AMBIENT_AUDIO_STORAGE_KEYS.trackId);
         }
     }
+
+    emitAmbientAudioSettingsUpdated();
 };
 
 export const resolveAmbientAudioSettings = (userSettings?: Record<string, any> | null): AmbientAudioSettings => ({
@@ -106,6 +142,27 @@ export const resolveAmbientAudioSettings = (userSettings?: Record<string, any> |
             ? userSettings.ambientAudioTrackId
             : readStoredTrackId(AMBIENT_AUDIO_STORAGE_KEYS.trackId),
 });
+
+export const resolveAmbientSceneTrackMap = (_userSettings?: Record<string, any> | null): AmbientSceneTrackMap => (
+    readStoredSceneTrackMap()
+);
+
+export const persistAmbientSceneTrackMap = (updates: AmbientSceneTrackMap) => {
+    if (typeof window === 'undefined') return;
+
+    const nextMap: AmbientSceneTrackMap = {};
+    for (const sceneId of ['flow', 'build', 'lounge', 'night'] as RitualSceneId[]) {
+        const value = updates?.[sceneId];
+        if (typeof value === 'string' && value.trim().length > 0) {
+            nextMap[sceneId] = value;
+        } else if (value === null) {
+            nextMap[sceneId] = null;
+        }
+    }
+
+    window.localStorage.setItem(AMBIENT_AUDIO_STORAGE_KEYS.sceneTrackMap, JSON.stringify(nextMap));
+    emitAmbientAudioSettingsUpdated();
+};
 
 export const formatAmbientTrackSize = (bytes: number) => {
     if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';

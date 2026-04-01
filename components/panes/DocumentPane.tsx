@@ -41,7 +41,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     };
 
     const [content, setContent] = useState(initialContent || '');
-    const [name, setName] = useState(initialName || 'Document');
+    const [name, setName] = useState(initialName || 'Dokument');
     const [type, setType] = useState(initialType || '');
     const [metadata, setMetadata] = useState(initialMetadata || {});
     const [relations, setRelations] = useState<any[]>([]);
@@ -50,6 +50,8 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
     // Load real data from backend
     useEffect(() => {
+        let cancelled = false;
+
         async function loadDocument() {
             if (!nodeId) {
                 setIsLoading(false);
@@ -60,36 +62,35 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 setIsLoading(true);
                 setLoadError(null);
 
-                // Fetch node details from backend
                 const nodeData = await fetchNodeDetails(nodeId);
+                if (cancelled) return;
 
                 if (nodeData) {
-                    setName(nodeData.name || nodeData.title || 'Document');
+                    setName(nodeData.name || nodeData.title || 'Dokument');
                     setContent(nodeData.content || '');
                     setType(nodeData.type || '');
                     setMetadata(nodeData.metadata || {});
                 } else {
-                    // fetchNodeDetails uses isOptional: returns null on 404/403/error.
-                    // Without this branch the pane silently shows an empty document,
-                    // giving no signal to the user that something went wrong.
                     setLoadError('Dokument nicht gefunden oder kein Zugriff.');
                 }
 
-                // Fetch relations to explain connections
                 const nodeRelations = await fetchNodeRelations(nodeId);
+                if (cancelled) return;
                 if (nodeRelations) {
                     setRelations(nodeRelations);
                 }
 
             } catch (err: any) {
+                if (cancelled) return;
                 console.error('Failed to load document:', err);
-                setLoadError(err.message || 'Failed to load document');
+                setLoadError(err.message || 'Dokument konnte nicht geladen werden');
             } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsLoading(false);
             }
         }
 
         loadDocument();
+        return () => { cancelled = true; };
     }, [nodeId]);
 
     // Determine file type from name or type
@@ -150,17 +151,17 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const getRelationExplanation = (relation: any): string => {
         switch (relation.type) {
             case 'same_folder':
-                return 'Same folder';
+                return 'Gleicher Ordner';
             case 'same_type':
-                return 'Same type';
+                return 'Gleicher Typ';
             case 'shared_tags':
-                return 'Shared tags';
+                return 'Gemeinsame Tags';
             case 'same_author':
-                return 'Same author';
+                return 'Gleicher Autor';
             case 'semantic':
-                return 'Similar content';
+                return 'Ähnlicher Inhalt';
             default:
-                return 'Related';
+                return 'Verwandt';
         }
     };
 
@@ -193,7 +194,8 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
     return (
         <GlassPanel
-            title={name || 'Document'}
+            title={name || 'Dokument'}
+            paneId={id}
             width={pane.size?.width || 800}
             height={pane.size?.height || 600}
             initialX={pane.position.x}
@@ -413,7 +415,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 {/* Footer with Metadata */}
                 {metadata && Object.keys(metadata).length > 0 && (
                     <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4">
-                        {metadata.size && <span>Size: {(metadata.size / 1024).toFixed(1)} KB</span>}
+                        {metadata.size && <span>Größe: {(metadata.size / 1024).toFixed(1)} KB</span>}
                         {metadata.tags && Array.isArray(metadata.tags) && <span>Tags: {metadata.tags.join(', ')}</span>}
                         {nodeId && <span className="font-mono">ID: {nodeId.slice(0, 8)}...</span>}
                     </div>

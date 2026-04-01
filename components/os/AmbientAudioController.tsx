@@ -1,25 +1,55 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { getAmbientAudioTrackBlob, resolveAmbientAudioSettings } from '@/lib/audio/ambientAudio';
+import {
+    AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT,
+    AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT,
+    getAmbientAudioTrackBlob,
+    resolveAmbientAudioSettings,
+    resolveAmbientSceneTrackMap,
+} from '@/lib/audio/ambientAudio';
 import { useMoraStore } from '@/lib/store/moraState';
+import { getEffectiveRitualScene, resolveRitualSettings, RITUAL_SCENES } from '@/lib/os/ritualMode';
 
 export const AmbientAudioController: React.FC = () => {
     const userSettings = useMoraStore((state) => state.user?.settings);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const objectUrlRef = useRef<string | null>(null);
     const [ambientAudio, setAmbientAudio] = useState(() => resolveAmbientAudioSettings());
+    const [sceneTrackMap, setSceneTrackMap] = useState(() => resolveAmbientSceneTrackMap());
+    const ritualSettings = resolveRitualSettings(userSettings);
+    const ritualSceneId = getEffectiveRitualScene(ritualSettings);
+    const effectiveTrackId = sceneTrackMap[ritualSceneId] || ambientAudio.trackId;
+    const effectiveVolume = Math.max(
+        0,
+        Math.min(1, ambientAudio.volume * (RITUAL_SCENES[ritualSceneId]?.audioGain ?? 1))
+    );
 
     useEffect(() => {
         setAmbientAudio(resolveAmbientAudioSettings(userSettings));
+        setSceneTrackMap(resolveAmbientSceneTrackMap(userSettings));
+    }, [userSettings]);
+
+    useEffect(() => {
+        const syncSettings = () => {
+            setAmbientAudio(resolveAmbientAudioSettings(userSettings));
+            setSceneTrackMap(resolveAmbientSceneTrackMap(userSettings));
+        };
+
+        window.addEventListener(AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT, syncSettings);
+        window.addEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, syncSettings);
+        return () => {
+            window.removeEventListener(AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT, syncSettings);
+            window.removeEventListener(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT, syncSettings);
+        };
     }, [userSettings]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
         if (!audioElement) return;
         audioElement.loop = true;
-        audioElement.volume = ambientAudio.volume;
-    }, [ambientAudio.volume]);
+        audioElement.volume = effectiveVolume;
+    }, [effectiveVolume]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
@@ -41,7 +71,7 @@ export const AmbientAudioController: React.FC = () => {
             audioElement.load();
         };
 
-        if (!ambientAudio.trackId) {
+        if (!effectiveTrackId) {
             clearSource();
             return () => {
                 cancelled = true;
@@ -52,7 +82,7 @@ export const AmbientAudioController: React.FC = () => {
             audioElement.pause();
             revokeCurrentObjectUrl();
 
-            const trackBlob = await getAmbientAudioTrackBlob(ambientAudio.trackId as string);
+            const trackBlob = await getAmbientAudioTrackBlob(effectiveTrackId);
             if (cancelled) return;
 
             if (!trackBlob) {
@@ -63,7 +93,7 @@ export const AmbientAudioController: React.FC = () => {
             const objectUrl = URL.createObjectURL(trackBlob);
             objectUrlRef.current = objectUrl;
             audioElement.src = objectUrl;
-            audioElement.volume = ambientAudio.volume;
+            audioElement.volume = effectiveVolume;
 
             if (ambientAudio.enabled) {
                 try {
@@ -80,7 +110,7 @@ export const AmbientAudioController: React.FC = () => {
             cancelled = true;
             audioElement.pause();
         };
-    }, [ambientAudio.enabled, ambientAudio.trackId, ambientAudio.volume]);
+    }, [ambientAudio.enabled, effectiveTrackId, effectiveVolume]);
 
     useEffect(() => {
         const audioElement = audioRef.current;

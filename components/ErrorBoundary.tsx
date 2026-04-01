@@ -112,21 +112,21 @@ export class ErrorBoundary extends Component<Props, State> {
 
                             {/* Title */}
                             <h1 className="text-2xl font-light text-red-100 text-center mb-3 tracking-wide">
-                                Something Went Wrong
+                                Etwas ist schiefgelaufen
                             </h1>
 
                             {/* Message */}
                             <p className="text-sm text-red-200/70 text-center mb-6 leading-relaxed">
-                                We encountered an unexpected error. Your data is safe.
+                                Dieser Bereich konnte gerade nicht sauber geladen werden. Deine Daten bleiben erhalten.
                                 <br />
-                                Try refreshing the page or returning to the home screen.
+                                Versuche es erneut, lade die Seite neu oder geh zur Startflaeche zurueck.
                             </p>
 
                             {/* Error Details (Development Only) */}
                             {process.env.NODE_ENV === 'development' && this.state.error && (
                                 <div className="mb-6 p-4 rounded-xl bg-black/30 border border-red-500/20">
                                     <p className="text-xs font-mono text-red-300 mb-2 font-semibold">
-                                        Error Details (Dev Only):
+                                        Fehlerdetails (nur lokal):
                                     </p>
                                     <p className="text-xs font-mono text-red-200/80 mb-2 break-all">
                                         {this.state.error.toString()}
@@ -134,7 +134,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                     {this.state.errorInfo && (
                                         <details className="mt-3">
                                             <summary className="text-xs text-red-300/70 cursor-pointer hover:text-red-300 mb-2">
-                                                Component Stack
+                                                Komponenten-Stack
                                             </summary>
                                             <pre className="text-[10px] text-red-200/60 overflow-auto max-h-40 leading-relaxed">
                                                 {this.state.errorInfo.componentStack}
@@ -151,7 +151,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-100 hover:bg-red-500/20 hover:border-red-500/50 transition-all group"
                                 >
                                     <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
-                                    <span className="text-sm font-medium">Try Again</span>
+                                    <span className="text-sm font-medium">Erneut versuchen</span>
                                 </button>
 
                                 <button
@@ -159,7 +159,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-100 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Reload Page</span>
+                                    <span className="text-sm font-medium">Seite neu laden</span>
                                 </button>
 
                                 <button
@@ -167,14 +167,14 @@ export class ErrorBoundary extends Component<Props, State> {
                                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-mora-gold/10 border border-mora-gold/30 text-mora-gold hover:bg-mora-gold/20 hover:border-mora-gold/50 transition-all"
                                 >
                                     <Home className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Go Home</span>
+                                    <span className="text-sm font-medium">Zur Startflaeche</span>
                                 </button>
                             </div>
                         </div>
 
                         {/* Help Text */}
                         <p className="text-xs text-emerald-500/30 text-center mt-6 font-mono tracking-wider">
-                            If this persists, please contact support
+                            Wenn das haeufig passiert, sollte dieser Bereich stabilisiert werden.
                         </p>
                     </div>
                 </div>
@@ -232,10 +232,10 @@ export class InlineErrorBoundary extends Component<Props, State> {
                         <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                             <p className="text-sm text-red-200 mb-1 font-medium">
-                                Component Error
+                                Bereichsfehler
                             </p>
                             <p className="text-xs text-red-300/70 leading-relaxed">
-                                This section encountered an error. Try refreshing the page.
+                                Dieser Abschnitt konnte nicht sauber geladen werden. Versuche es mit einem Neuladen.
                             </p>
                             {process.env.NODE_ENV === 'development' && this.state.error && (
                                 <p className="text-xs font-mono text-red-300/50 mt-2 break-all">

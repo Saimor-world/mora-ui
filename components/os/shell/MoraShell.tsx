@@ -310,7 +310,7 @@ export const MoraShell: React.FC = () => {
         if (viewLevel === 'folder') return 'Folder';
         return 'Universe';
     }, [viewLevel]);
-    const workspaceTabLabel = 'Workspace';
+    const workspaceTabLabel = 'Kontext';
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);

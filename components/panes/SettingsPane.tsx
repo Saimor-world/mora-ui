@@ -16,11 +16,15 @@ import {
     clampAmbientAudioVolume,
     formatAmbientTrackSize,
     listAmbientAudioTracks,
+    persistAmbientSceneTrackMap,
     removeAmbientAudioTrack,
     resolveAmbientAudioSettings,
+    resolveAmbientSceneTrackMap,
     storeAmbientAudioFiles,
+    type AmbientSceneTrackMap,
     type AmbientAudioTrackMeta,
 } from '@/lib/audio/ambientAudio';
+import { RITUAL_SCENES, RITUAL_SCENE_ORDER } from '@/lib/os/ritualMode';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -51,6 +55,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const [ambientAudioEnabled, setAmbientAudioEnabled] = useState(false);
     const [ambientAudioVolume, setAmbientAudioVolume] = useState(DEFAULT_AMBIENT_AUDIO_VOLUME);
     const [ambientAudioTrackId, setAmbientAudioTrackId] = useState<string | null>(null);
+    const [ambientSceneTrackMap, setAmbientSceneTrackMap] = useState<AmbientSceneTrackMap>({});
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const [ambientTracksLoading, setAmbientTracksLoading] = useState(true);
     const [ambientTracksUploading, setAmbientTracksUploading] = useState(false);
@@ -119,6 +124,7 @@ useEffect(() => {
             setAmbientAudioEnabled(ambientAudio.enabled);
             setAmbientAudioVolume(ambientAudio.volume);
             setAmbientAudioTrackId(ambientAudio.trackId);
+            setAmbientSceneTrackMap(resolveAmbientSceneTrackMap(user.settings));
             return;
         }
         if (typeof window !== 'undefined') {
@@ -130,6 +136,7 @@ useEffect(() => {
             setAmbientAudioEnabled(ambientAudio.enabled);
             setAmbientAudioVolume(ambientAudio.volume);
             setAmbientAudioTrackId(ambientAudio.trackId);
+            setAmbientSceneTrackMap(resolveAmbientSceneTrackMap());
         }
     }, [user?.settings]);
 
@@ -246,6 +253,15 @@ useEffect(() => {
 
     const handleAmbientTrackSelect = (trackId: string) => {
         saveSetting({ ambientAudioTrackId: trackId });
+    };
+
+    const handleAmbientSceneTrackSelect = (sceneId: keyof AmbientSceneTrackMap, trackId: string) => {
+        const nextMap: AmbientSceneTrackMap = {
+            ...ambientSceneTrackMap,
+            [sceneId]: trackId || null,
+        };
+        setAmbientSceneTrackMap(nextMap);
+        persistAmbientSceneTrackMap(nextMap);
     };
 
     const handleAmbientTrackDelete = async (trackId: string) => {
@@ -597,6 +613,42 @@ useEffect(() => {
 
                                     <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/45 leading-relaxed">
                                         Songs bleiben lokal in diesem Browser gespeichert. Kein Upload zum Server.
+                                    </div>
+
+                                    <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-4">
+                                        <div className="text-sm text-white/80 font-medium">Szenen & Musik</div>
+                                        <div className="mt-1 text-xs text-white/40 leading-relaxed">
+                                            Optional kannst du pro Szene einen bevorzugten Song hinterlegen. Wenn die Szene aktiv ist,
+                                            nutzt SAIMOR zuerst diesen Track und passt die Lautstärke leicht an.
+                                        </div>
+
+                                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                            {RITUAL_SCENE_ORDER.map((sceneId) => (
+                                                <label
+                                                    key={sceneId}
+                                                    className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
+                                                >
+                                                    <div className="text-xs uppercase tracking-[0.18em] text-white/35">
+                                                        {RITUAL_SCENES[sceneId].label}
+                                                    </div>
+                                                    <div className="mt-1 text-xs text-white/45">
+                                                        {RITUAL_SCENES[sceneId].description}
+                                                    </div>
+                                                    <select
+                                                        value={ambientSceneTrackMap[sceneId] ?? ''}
+                                                        onChange={(event) => handleAmbientSceneTrackSelect(sceneId, event.target.value)}
+                                                        className="mt-3 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-emerald-500/40 focus:outline-none"
+                                                    >
+                                                        <option value="">Aktiven Song beibehalten</option>
+                                                        {ambientTracks.map((track) => (
+                                                            <option key={track.id} value={track.id}>
+                                                                {track.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 

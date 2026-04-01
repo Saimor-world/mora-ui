@@ -118,7 +118,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         {workspaceName}
                     </div>
                     <div className={`mt-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                        {scopeLabel} · {orbStateLabel} · {sceneLabel}
+                        {scopeLabel} · Szene {sceneLabel}
                     </div>
                 </div>
 
@@ -127,7 +127,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-600 hover:border-[#0078D4]/40 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-emerald-400/25 hover:text-emerald-200'}`}
                 >
                     {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
-                    {isPinned ? 'Anheften aus' : 'Anheften'}
+                    {isPinned ? 'Loesen' : 'Anheften'}
                 </button>
             </div>
 
@@ -147,7 +147,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className="relative">
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Sparkles size={12} />
-                            Live Context
+                            Aktueller Kontext
                         </div>
 
                         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -184,7 +184,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 className={`rounded-[22px] border px-4 py-4 text-left transition-colors ${isStandardMode ? 'border-[#0078D4]/18 bg-[#0078D4]/8 hover:border-[#0078D4]/38' : 'border-emerald-400/18 bg-emerald-500/[0.08] hover:border-emerald-400/28 hover:bg-emerald-500/[0.12]'}`}
                             >
                                 <div className={`text-[10px] uppercase tracking-[0.2em] ${accentText}`}>
-                                    Next Move
+                                    Naechster Schritt
                                 </div>
                                 <div className={`mt-2 text-sm ${primaryText}`}>{nextMoveLabel}</div>
                                 <div className={`mt-1 text-[11px] leading-relaxed ${secondaryText}`}>{nextMoveHint}</div>
@@ -204,7 +204,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         <div className="min-w-0">
                             <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                                 <Clock3 size={12} />
-                                Atmosphaere
+                                Szene
                             </div>
                             <div className={`mt-2 text-base ${primaryText}`}>{sceneLabel}</div>
                             <p className={`mt-2 text-sm leading-relaxed ${secondaryText}`}>

@@ -19,6 +19,7 @@ export interface RitualSceneDefinition {
     description: string;
     accent: string;
     aura: string;
+    audioGain: number;
 }
 
 export const DEFAULT_RITUAL_SCENE: RitualSceneId = 'flow';
@@ -35,35 +36,39 @@ export const RITUAL_MODE_UPDATED_EVENT = 'saimor-ritual-mode-updated';
 export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
     flow: {
         id: 'flow',
-        label: 'Flow Field',
+        label: 'Flow',
         shortLabel: 'Flow',
-        description: 'Leicht, offen und gut fuer Recherche, Schreiben und ruhige Navigation.',
+        description: 'Ruhig und offen fuer Schreiben, Lesen und entspannte Navigation.',
         accent: 'rgba(16,185,129,0.34)',
         aura: 'rgba(34,211,238,0.22)',
+        audioGain: 0.92,
     },
     build: {
         id: 'build',
-        label: 'Build Forge',
+        label: 'Build',
         shortLabel: 'Build',
-        description: 'Mehr Kante, mehr Richtung. Gut fuer Implementierung, Struktur und schnelle Entscheidungen.',
+        description: 'Klarer Kontrast fuer Umsetzung, Struktur und schnelle Entscheidungen.',
         accent: 'rgba(56,189,248,0.34)',
         aura: 'rgba(251,191,36,0.18)',
+        audioGain: 1,
     },
     lounge: {
         id: 'lounge',
-        label: 'Soft Lounge',
+        label: 'Lounge',
         shortLabel: 'Lounge',
-        description: 'Waermer, weicher und etwas cineastischer fuer Review, Lesen und entspannte Sessions.',
+        description: 'Waermer und weicher fuer Review, Lesen und ruhigere Sessions.',
         accent: 'rgba(251,146,60,0.32)',
         aura: 'rgba(244,114,182,0.18)',
+        audioGain: 0.86,
     },
     night: {
         id: 'night',
-        label: 'Night Lab',
-        shortLabel: 'Night',
-        description: 'Tiefer, stiller und konzentrierter fuer spaete Stunden und lange Coding-Runs.',
+        label: 'Nacht',
+        shortLabel: 'Nacht',
+        description: 'Dunkler und stiller fuer spaete, lange Arbeitsphasen.',
         accent: 'rgba(99,102,241,0.34)',
         aura: 'rgba(34,211,238,0.18)',
+        audioGain: 0.76,
     },
 };
 

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut, Eye } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -21,6 +21,12 @@ interface KairosEvent {
         new_nodes?: number;
         sample_titles?: string[];
     };
+}
+
+function getComparableTimestamp(value?: string | null): number {
+    if (!value) return 0;
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function relativeTime(isoStr: string): string {
@@ -174,11 +180,26 @@ export const HomeSurface: React.FC = () => {
 
     const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
     const personalSpaceLabel = myContent?.space?.name || 'Persönlicher Space';
-    const personalLatestLabel =
-        myContent?.nodes?.[0]?.title ||
-        myContent?.files?.[0]?.name ||
-        myContent?.folders?.[0]?.name ||
-        null;
+    const personalLatestLabel = useMemo(() => {
+        if (!myContent) return null;
+
+        const candidates = [
+            ...(Array.isArray(myContent.nodes) ? myContent.nodes.map((node) => ({
+                label: node.title || node.name || 'Unbenanntes Dokument',
+                timestamp: getComparableTimestamp(node.updated_at || node.created_at),
+            })) : []),
+            ...(Array.isArray(myContent.files) ? myContent.files.map((file) => ({
+                label: file.name || 'Datei',
+                timestamp: getComparableTimestamp(file.created_at),
+            })) : []),
+            ...(Array.isArray(myContent.folders) ? myContent.folders.map((folder) => ({
+                label: folder.name || 'Ordner',
+                timestamp: getComparableTimestamp(folder.updated_at || folder.created_at),
+            })) : []),
+        ];
+
+        return candidates.sort((left, right) => right.timestamp - left.timestamp)[0]?.label ?? null;
+    }, [myContent]);
 
     return (
         <div className="absolute inset-0 overflow-auto">
@@ -247,11 +268,14 @@ export const HomeSurface: React.FC = () => {
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt geöffnet
+                            Zuletzt im Workspace aktualisiert
                         </h2>
+                        <p className={`mb-3 text-xs ${t.cardSub}`}>
+                            Echte Dokument-Updates aus dem aktuellen Firmenkontext.
+                        </p>
                         {recentDocs.length === 0 ? (
                             <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
-                                Noch keine Dokumente – öffne den Finder, um loszulegen.
+                                Noch keine Dokumente sichtbar. Öffne den Finder, um die aktuelle Struktur zu prüfen.
                             </p>
                         ) : (
                             <ul className="flex flex-col gap-1">
@@ -282,6 +306,9 @@ export const HomeSurface: React.FC = () => {
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
                             Mora bemerkt
                         </h2>
+                        <p className={`mb-3 text-xs ${t.cardSub}`}>
+                            Awareness-Ereignisse aus dem Core, nicht aus statischem Demo-Text.
+                        </p>
                         <ul className="flex flex-col gap-1">
                             {kairosEvents.map((evt) => (
                                 <li key={evt.id} className={`flex items-start gap-3 rounded-xl px-4 py-3 ${t.item}`}>
@@ -305,6 +332,9 @@ export const HomeSurface: React.FC = () => {
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
                             Persönlicher Bereich
                         </h2>
+                        <p className={`mb-3 text-xs ${t.cardSub}`}>
+                            Eigene Ordner, Dokumente und Dateien aus deinem privaten Kontext.
+                        </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
                                 data-testid="my-content-card"
@@ -338,7 +368,7 @@ export const HomeSurface: React.FC = () => {
                                     {personalSpaceLabel}
                                 </div>
                                 <div className={`mt-4 text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                    Neueste Spur
+                                    Letzte private Aktivität
                                 </div>
                                 <div className={`mt-2 text-sm ${t.cardText}`}>
                                     {personalLatestLabel || 'Noch keine privaten Inhalte sichtbar.'}

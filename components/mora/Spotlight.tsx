@@ -24,9 +24,9 @@ import {
 import { useMoraStore } from "@/lib/store/moraState";
 import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { usePaneStore } from "@/lib/store/paneStore";
-import { moraAgentClient } from "@/lib/api/moraAgentClient";
 import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
 import { Loader2, Sparkles, Bot, User } from "lucide-react";
+import { executeAgenticLoop } from "@/lib/api/cognitionClient";
 
 /**
  * SPOTLIGHT - Global Command Palette (Cmd+K)
@@ -70,6 +70,10 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         companies,
         spacesByDepartment,
         activeCompanyId,
+        activeDepartmentId,
+        activeSpaceId,
+        activeFolderId,
+        viewLevel,
         navigateToCore,
         setActiveCompany,
         setViewMode,
@@ -104,31 +108,44 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         setMoraResponse(null);
 
         try {
-            // 1. Send to Agent
-            const response = await moraAgentClient.chat({
-                message,
-                session_id: 'spotlight-session'
+            const activeContext = activeFolderId
+                ? { entityId: activeFolderId, entityType: 'folder' as const }
+                : activeSpaceId
+                    ? { entityId: activeSpaceId, entityType: 'space' as const }
+                    : activeDepartmentId
+                        ? { entityId: activeDepartmentId, entityType: 'department' as const }
+                        : { entityId: undefined, entityType: undefined };
+
+            const response = await executeAgenticLoop(message, {
+                level: viewLevel || 'company',
+                entityId: activeContext.entityId,
+                entityType: activeContext.entityType,
+                companyId: activeCompanyId || undefined,
             });
 
-            if (response && response.response) {
-                // 2. Parse & Execute
-                const { cleanContent, commands } = parseAIResponse(response.response);
+            if (response?.final_message) {
+                const { cleanContent, commands } = parseAIResponse(response.final_message);
 
                 if (commands.length > 0) {
                     executeCursorCommands(commands);
                 }
 
-                setMoraResponse(cleanContent);
+                if (response.final_state === 'S4_CONFIRM' && response.pending_confirmations.length > 0) {
+                    const pending = response.pending_confirmations[0];
+                    setMoraResponse(`${cleanContent}\n\nBestaetigung noetig: ${pending.what_will_change}`);
+                } else {
+                    setMoraResponse(cleanContent);
+                }
             } else {
-                setMoraResponse("Ich bin gerade nicht erreichbar. Versuche es später erneut.");
+                setMoraResponse("Ich kann den Auftrag gerade nicht sauber ausfuehren. Versuche es erneut.");
             }
         } catch (error) {
             console.error("Mora Spotlight Error:", error);
-            setMoraResponse("Verbindungsfehler im Neuralen Netz.");
+            setMoraResponse("Verbindungsfehler beim Arbeitslauf.");
         } finally {
             setIsMoraThinking(false);
         }
-    }, []);
+    }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, viewLevel]);
 
     // Helper to open/focus pane
     const openFromSpotlight = useCallback((type: string, id: string, title: string, size = { width: 700, height: 500 }) => {

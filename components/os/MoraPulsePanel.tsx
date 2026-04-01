@@ -146,7 +146,7 @@ export const MoraPulsePanel: React.FC = () => {
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-200/80">
                                 <Sparkles size={12} />
-                                {ritualScene.shortLabel} scene
+                                {ritualScene.shortLabel}-Szene
                             </div>
                             <div className="mt-3 flex items-end gap-2">
                                 <div className="text-[32px] font-light tracking-tight text-white">{formatClock(now)}</div>
@@ -192,7 +192,7 @@ export const MoraPulsePanel: React.FC = () => {
 
                     {!isDeckOpen && (
                         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/42">
-                            <span className="truncate">{activeCompany?.name || user?.active_company_name || 'Workspace'}</span>
+                            <span className="truncate">{activeCompany?.name || user?.active_company_name || 'Firmenkontext'}</span>
                             <span>{ritualSettings.autoTime ? 'Auto' : 'Manuell'}</span>
                         </div>
                     )}

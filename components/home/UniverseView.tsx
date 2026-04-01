@@ -680,10 +680,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
                     const baseOpacity = path.highlighted || isPreviewedPath
-                        ? 0.9
+                        ? 0.82
                         : isFocusedPath
-                            ? 0.7
-                            : 0.2 + path.strength * 0.22;
+                            ? 0.26
+                            : 0.06 + path.strength * 0.08;
 
                     return (
                         <g key={path.id}>
@@ -729,7 +729,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </svg>
 
             <div className="pointer-events-none absolute inset-0 z-[18]">
-                {semanticCalloutPaths.map((path) => {
+                {semanticCalloutPaths
+                    .filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id)
+                    .map((path) => {
                         const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                         const labelTitle = path.focusPeerName || `${path.fromName} / ${path.toName}`;
                         const isInteractive = Boolean(path.focusPeerId);
@@ -794,21 +796,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     className="left-8 top-28 z-30"
                     eyebrow={hoverPlanetId ? 'Live Focus' : 'Department Signal'}
                     title={focusedPlanet.name}
-                    badge={isLocked(focusedPlanet) ? 'Visible' : 'Member'}
+                    badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
                     summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
                     metrics={[
-                        { label: 'Spaces', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
-                        { label: 'Folders', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
-                        { label: 'Docs', value: focusedPlanetMetrics.nodes, toneClassName: 'text-violet-200' },
+                        { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
+                        { label: 'Ordner', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
+                        { label: 'Dokumente', value: focusedPlanetMetrics.nodes, toneClassName: 'text-violet-200' },
                         { label: 'Health', value: `${focusedPlanetMetrics.health}%`, toneClassName: 'text-amber-200' },
                     ]}
                 >
                     <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                         <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-white/35">
-                            <span>Semantic Links</span>
+                            <span>Semantische Links</span>
                             <span>{focusedPlanetLinkCount}</span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-white/45">
@@ -914,7 +916,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     <Planet
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                        isActive={activeDepartmentId === p.id || isSemanticPreviewPlanet}
+                                        isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
                                         onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
                                         onClick={() => {
                                             // Locked: outer wrapper handles click (tooltip). Block navigation.
@@ -928,7 +930,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <Planet
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                    isActive={activeDepartmentId === p.id || isSemanticPreviewPlanet}
+                                    isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
                                     onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
                                     onClick={() => {
                                         navigateToDepartment(p.id);

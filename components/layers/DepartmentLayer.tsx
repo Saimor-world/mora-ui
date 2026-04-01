@@ -18,9 +18,9 @@ const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce re
 type PreviewLane = 'focus' | 'flow' | 'archive';
 
 const PREVIEW_LANE_META: Record<PreviewLane, { label: string; accent: string; distance: number; spread: number }> = {
-    focus: { label: 'Focus', accent: '#34D399', distance: 126, spread: 72 },
-    flow: { label: 'Flow', accent: '#22D3EE', distance: 188, spread: 64 },
-    archive: { label: 'Archive', accent: '#A78BFA', distance: 250, spread: 58 },
+    focus: { label: 'Stark', accent: '#34D399', distance: 126, spread: 72 },
+    flow: { label: 'Aktiv', accent: '#22D3EE', distance: 188, spread: 64 },
+    archive: { label: 'Älter', accent: '#A78BFA', distance: 250, spread: 58 },
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -393,7 +393,7 @@ export const DepartmentLayer: React.FC = () => {
                 if (right.signal !== left.signal) return right.signal - left.signal;
                 return (left.folder.name || '').localeCompare(right.folder.name || '');
             })
-            .slice(0, 10);
+            .slice(0, 3);
 
         const laneCounts = ranked.reduce<Record<PreviewLane, number>>((accumulator, _, index) => {
             accumulator[resolvePreviewLane(index)] += 1;
@@ -422,7 +422,7 @@ export const DepartmentLayer: React.FC = () => {
                 x,
                 y,
                 distance: Math.hypot(x - hoveredSpacePosition.x, y - hoveredSpacePosition.y),
-                lineStrength: Math.max(0.28, Math.min(1, 0.24 + entry.signal / strongestSignal * 0.76)),
+                lineStrength: Math.max(0.2, Math.min(0.82, 0.18 + entry.signal / strongestSignal * 0.54)),
             };
         });
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders, previewSafeBounds]);
@@ -602,8 +602,8 @@ export const DepartmentLayer: React.FC = () => {
                     if (!activeDepartmentId) return;
                     addSpace({
                         department_id: activeDepartmentId,
-                        name: 'New Space',
-                        description: 'Created from Department Layer'
+                        name: 'Neuer Bereich',
+                        description: 'Aus dem Department-Layer erstellt'
                     });
                 }}
                 className="absolute top-8 right-8 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 transition-all text-sm tracking-widest font-light"
@@ -613,19 +613,19 @@ export const DepartmentLayer: React.FC = () => {
                 whileTap={{ scale: 0.97 }}
             >
                 <Plus size={15} />
-                NEW SPACE
+                NEUER BEREICH
             </motion.button>
 
             <LayerInsightRail
                 className="left-8 top-32 z-40"
                 eyebrow={deptTitle || 'Department'}
                 title={hoveredSpaceDetails?.displayName || deptTitle || 'Department'}
-                badge={hoveredSpaceDetails ? 'Space focus' : 'Layer 2'}
+                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsübersicht'}
                 accent={hoveredSpaceDetails?.color || deptColor}
-                collapsedHint={hoveredSpaceDetails ? 'Space bleibt gehalten.' : 'Space fokussieren fuer Blueprint.'}
+                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren für Details.'}
                 summary={hoveredSpaceDetails
-                    ? `${hoveredSpaceDetails.folderTotal} folders und ${hoveredSpaceDetails.docTotal} docs bleiben fokussierbar, aber die tieferen Lane-Signale klappen erst bei echtem Hover auf.`
-                    : 'Der Department-Layer bleibt jetzt ruhig. Hover ueber einen Space, um sein Blueprint gezielt aufzuziehen.'}
+                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die stärksten Ordner.`
+                    : 'Hover über einen Bereich, um seine stärksten Ordner und die echte Struktur zu sehen.'}
                 forceExpanded={Boolean(hoveredSpaceDetails)}
                 onPointerEnter={() => {
                     if (hoveredSpaceId) {
@@ -638,16 +638,16 @@ export const DepartmentLayer: React.FC = () => {
                     }
                 }}
                 metrics={[
-                    { label: 'Spaces', value: spaces.length, toneClassName: 'text-emerald-200' },
-                    { label: 'Folders', value: totalFolders, toneClassName: 'text-cyan-200' },
-                    { label: 'Docs', value: docsCount, toneClassName: 'text-violet-200' },
+                    { label: 'Bereiche', value: spaces.length, toneClassName: 'text-emerald-200' },
+                    { label: 'Ordner', value: totalFolders, toneClassName: 'text-cyan-200' },
+                    { label: 'Dokumente', value: docsCount, toneClassName: 'text-violet-200' },
                 ]}
             >
-                {hoveredSpaceDetails ? (
+                    {hoveredSpaceDetails ? (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                                <div className="text-[9px] uppercase tracking-[0.22em] text-white/35">Focused Space</div>
+                                <div className="text-[9px] uppercase tracking-[0.22em] text-white/35">Fokussierter Bereich</div>
                                 <div className="mt-1 truncate text-sm text-white/85">{hoveredSpaceDetails.displayName}</div>
                             </div>
                             <div
@@ -669,7 +669,7 @@ export const DepartmentLayer: React.FC = () => {
                                         {hoveredLaneSummary[lane].count}
                                     </div>
                                     <div className="mt-1 text-[10px] text-white/40">
-                                        {hoveredLaneSummary[lane].docs} docs
+                                        {hoveredLaneSummary[lane].docs} Dokumente
                                     </div>
                                 </div>
                             ))}
@@ -689,19 +689,19 @@ export const DepartmentLayer: React.FC = () => {
                         )}
 
                         <p className="text-[11px] leading-relaxed text-white/45">
-                            {hoveredSpaceDetails.description || 'Das Blueprint klappt jetzt als semantischer Arbeitsfokus auf, bevor du in Layer 3 springst.'}
+                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die stärksten Ordner dieses Bereichs, bevor du in die nächste Ebene gehst.'}
                         </p>
                     </div>
                 ) : (
                     <p className="text-[11px] leading-relaxed text-white/40">
-                        Hover ueber einen Space, um seine Folder-Konstellation zu arretieren und direkt in die Struktur zu springen.
+                        Hover über einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
                     </p>
                 )}
             </LayerInsightRail>
 
             <div className="absolute inset-0 flex items-center justify-center z-10">
                 {isLoadingSpaces ? (
-                    <LoadingState message="Scanning Sector..." />
+                    <LoadingState message="Department wird geladen..." />
                 ) : (
                     <div ref={orbitContainerRef} className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
                         <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25 z-0">
@@ -909,9 +909,9 @@ export const DepartmentLayer: React.FC = () => {
                                                 height: `${1 + lineStrength}px`,
                                                 transform: `translate(-50%, -50%) translate(${hoveredSpacePosition.x}px, ${hoveredSpacePosition.y}px) rotate(${angle}rad)`,
                                                 transformOrigin: '0 50%',
-                                                background: `linear-gradient(90deg, ${laneAccent}${Math.round((0.42 + lineStrength * 0.22) * 255).toString(16).padStart(2, '0')}, rgba(255,255,255,0.02))`,
-                                                boxShadow: `0 0 14px ${laneAccent}${Math.round((0.14 + lineStrength * 0.16) * 255).toString(16).padStart(2, '0')}`,
-                                                opacity: 0.58 + lineStrength * 0.32,
+                                                background: `linear-gradient(90deg, ${laneAccent}${Math.round((0.28 + lineStrength * 0.16) * 255).toString(16).padStart(2, '0')}, rgba(255,255,255,0.02))`,
+                                                boxShadow: `0 0 10px ${laneAccent}${Math.round((0.1 + lineStrength * 0.12) * 255).toString(16).padStart(2, '0')}`,
+                                                opacity: 0.34 + lineStrength * 0.18,
                                             }}
                                         />
                                     );
@@ -919,7 +919,7 @@ export const DepartmentLayer: React.FC = () => {
                             </div>
                         )}
 
-                        {hoveredPreviewFolders.map(({ folder, x, y, lane, nodeCount, color }, i) => (
+                        {hoveredPreviewFolders.map(({ folder, x, y, lane, color, nodeCount }, i) => (
                             <div
                                 key={`folder-${folder.id}`}
                                 className="absolute pointer-events-auto"
@@ -953,9 +953,6 @@ export const DepartmentLayer: React.FC = () => {
                                             }
                                         }}
                                     />
-                                    <div className="mt-1 rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-white/52">
-                                        {PREVIEW_LANE_META[lane].label} · {nodeCount}
-                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -1013,8 +1010,8 @@ export const DepartmentLayer: React.FC = () => {
                                     });
                                 }}
                             >
-                                <div className="text-[10px] text-emerald-300/70 tracking-[0.3em] uppercase mb-3">
-                                    Document Stack
+                        <div className="text-[10px] text-emerald-300/70 tracking-[0.3em] uppercase mb-3">
+                                    Dokumente
                                 </div>
                                 <div className="relative w-56 h-36">
                                     {departmentDocs.slice(0, 5).map((doc, i) => (
@@ -1033,7 +1030,7 @@ export const DepartmentLayer: React.FC = () => {
                                                 </span>
                                             </div>
                                             <div className="absolute bottom-3 right-3 text-[9px] text-emerald-300/50 uppercase tracking-[0.2em]">
-                                                open
+                                                öffnen
                                             </div>
                                         </motion.div>
                                     ))}

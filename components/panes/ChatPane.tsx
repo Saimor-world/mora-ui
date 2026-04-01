@@ -178,6 +178,19 @@ function isLikelyFileOperationIntent(text: string): boolean {
     ].some((pattern) => pattern.test(lower));
 }
 
+function shouldPreferAgenticLoop(text: string): boolean {
+    const lower = text.toLowerCase();
+    return [
+        /\b(erstelle|erzeuge|anlegen|lege an|create)\b/,
+        /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|rewrite|schreib um)\b/,
+        /\b(verschiebe|move|sortiere|ordne|organisiere)\b/,
+        /\b(lösche|loesche|entferne|delete|archive)\b/,
+        /\b(teile|share|veröffentliche|veroeffentliche)\b/,
+        /\b(fasse zusammen|zusammenfassen|review|prüfe|pruefe|analysiere|compare|vergleiche)\b/,
+        /\b(starte|setze fort|continue|mach weiter|plane|bereite vor|arbeite aus)\b/,
+    ].some((pattern) => pattern.test(lower));
+}
+
 function toChatOpenableResult(candidate: import('@/lib/api/coreClient').OpenIntentCandidate): OpenableSearchResult {
     const normalizedType = (
         candidate.type === 'department'
@@ -887,7 +900,7 @@ Was kann ich fuer dich tun?`,
                 setIsLoading(false);
                 return;
             } else {
-                if (isLikelyFileOperationIntent(content) && activeCompanyId) {
+                if ((isLikelyFileOperationIntent(content) || shouldPreferAgenticLoop(content) || Boolean(activePlanId)) && activeCompanyId) {
                     const activeContext = activeFolderId
                         ? { entityId: activeFolderId, entityType: 'folder' as const }
                         : activeSpaceId

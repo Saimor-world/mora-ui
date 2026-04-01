@@ -312,6 +312,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     return (
         <GlassPanel
             title={searchMode === 'mora' ? 'Suche (Mora)' : 'Suche'}
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -390,7 +391,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                 <div className="flex-1 overflow-auto p-2">
                     {query ? (
                         <AnimatePresence mode="wait">
-                            {isSearching ? (
+                            {isSearching && results.length === 0 ? (
                                 <div className="flex items-center justify-center py-8">
                                     <motion.div
                                         animate={{ rotate: 360 }}

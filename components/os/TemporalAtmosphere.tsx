@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
 import {
     getEffectiveRitualScene,
+    RITUAL_SCENES,
     resolveRitualSettings,
     type RitualSceneId,
 } from '@/lib/os/ritualMode';
@@ -88,6 +89,7 @@ export const TemporalAtmosphere: React.FC = () => {
     const ritualSettings = useMemo(() => resolveRitualSettings(userSettings), [userSettings]);
     const ritualSceneId = useMemo(() => getEffectiveRitualScene(ritualSettings, now), [ritualSettings, now]);
     const sceneProfile = SCENE_PROFILES[ritualSceneId];
+    const sceneDefinition = RITUAL_SCENES[ritualSceneId];
     const baseOpacity = viewLevel === 'core' ? 1 : viewLevel === 'space' ? 0.7 : 0.62;
     const orbAccent = ORB_ACCENTS[orbState] || sceneProfile.orbAccent || ORB_ACCENTS.idle;
 
@@ -100,7 +102,7 @@ export const TemporalAtmosphere: React.FC = () => {
             <motion.div
                 className="absolute inset-0"
                 style={{
-                    background: `${BAND_BACKGROUNDS[timeBand]}, ${sceneProfile.haze}`,
+                    background: `${BAND_BACKGROUNDS[timeBand]}, ${sceneProfile.haze}, radial-gradient(circle at 28% 78%, ${sceneDefinition.accent} 0%, transparent 36%), radial-gradient(circle at 84% 22%, ${sceneDefinition.aura} 0%, transparent 32%)`,
                     mixBlendMode: 'screen',
                 }}
                 animate={{

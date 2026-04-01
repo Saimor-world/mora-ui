@@ -54,7 +54,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
             const data = await fetchNodesByCompany(activeCompanyId);
             setNodes(data || []);
         } catch (e) {
-            toast.error('Inhalte konnten nicht geladen werden');
+            toast.error('Inhalte konnten nicht geladen werden.');
             setNodes([]);
         } finally {
             setIsLoading(false);
@@ -81,7 +81,8 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
 
     return (
         <GlassPanel
-            title="Grid View"
+            title="Alle Inhalte"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -106,7 +107,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                         <input
                             type="text"
-                            placeholder="Search nodes..."
+                            placeholder="Inhalte durchsuchen..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/30"
@@ -121,7 +122,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                             onChange={(e) => setFilterType(e.target.value || null)}
                             className="bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/30"
                         >
-                            <option value="">All Types</option>
+                            <option value="">Alle Typen</option>
                             {nodeTypes.map(type => (
                                 <option key={type} value={type}>{type}</option>
                             ))}
@@ -139,7 +140,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {/* Count */}
                     <div className="text-xs text-white/40">
-                        {filteredNodes.length} of {nodes.length} nodes
+                        {filteredNodes.length} von {nodes.length}
                     </div>
                 </div>
 
@@ -168,7 +169,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                                                 openPane({
                                                     id: `doc-${node.id}`,
                                                     type: 'document',
-                                                    title: node.title || 'Untitled',
+                                                    title: node.title || 'Ohne Titel',
                                                     size: { width: 800, height: 600 },
                                                     data: {
                                                         nodeId: node.id,
@@ -186,7 +187,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-sm text-white/80 font-medium truncate">
-                                                        {node.title || 'Untitled'}
+                                                        {node.title || 'Ohne Titel'}
                                                     </div>
                                                     <div className="flex items-center gap-1.5 mt-1">
                                                         <span className="text-xs text-white/30 uppercase tracking-wider">{node.type}</span>
@@ -210,7 +211,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                                 <Grid size={48} className="text-emerald-400" />
                             </div>
                             <p className="text-sm text-white/40 text-center">
-                                {nodes.length === 0 ? 'No nodes found in this workspace' : 'No matching nodes'}
+                                {nodes.length === 0 ? 'Keine Inhalte in diesem Arbeitsbereich' : 'Keine passenden Ergebnisse'}
                             </p>
                         </div>
                     )}
