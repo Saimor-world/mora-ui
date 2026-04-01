@@ -266,7 +266,7 @@ export const HomeSurface: React.FC = () => {
                                             {node.updated_at && (
                                                 <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
                                                     <Clock size={11} className="inline mr-1 opacity-60" />
-                                                    {new Date(node.updated_at).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
+                                                    {relativeTime(node.updated_at)}
                                                 </span>
                                             )}
                                         </button>
@@ -326,7 +326,11 @@ export const HomeSurface: React.FC = () => {
                                 </div>
                             </button>
 
-                            <div className={`rounded-2xl border px-5 py-4 ${t.card.replace('hover:border-gray-300', '').replace('hover:border-white/18', '')}`}>
+                            <button
+                                data-testid="personal-space-card"
+                                onClick={openMeineDateien}
+                                className={`w-full text-left rounded-2xl border px-5 py-4 transition-all ${t.card}`}
+                            >
                                 <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
                                     Personal Space
                                 </div>
@@ -339,7 +343,7 @@ export const HomeSurface: React.FC = () => {
                                 <div className={`mt-2 text-sm ${t.cardText}`}>
                                     {personalLatestLabel || 'Noch keine privaten Inhalte sichtbar.'}
                                 </div>
-                            </div>
+                            </button>
                         </div>
                     </section>
                 )}
