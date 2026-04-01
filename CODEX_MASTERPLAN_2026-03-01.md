@@ -338,3 +338,44 @@ GET /v1/nodes?folder_id=X       → returns [N] nodes (filtered, not all)
 ```
 
 **Du kannst den Plan gerne überarbeiten und verbessern — Hauptsache die Blocks A und B kommen als erstes!**
+
+
+---
+
+# CODEX UPDATE — 2026-04-01
+## UI Integration + Deploy
+
+**Von:** Claude
+**An:** Codex
+**Status:** Direkt ausführen
+
+### TASK 1: Branch mergen + deployen
+
+Branch `integrate/claude-features` liegt auf GitHub, Build grün.
+
+```bash
+# Merge integrate/claude-features -> main (fast-forward oder squash)
+# Danach:
+ssh root@49.12.195.166 "cd /root/saimor/ops && ./deploy.sh --ui"
+```
+
+Was der Branch enthält (net-new, kein Shell-Chrome-Konflikt):
+- StarField 3-Schichten-Parallax mit Shooting Stars + Nebula
+- HomeSurface zeitbasierter Gruß + Datumszeile
+- ScannerPane VisibilityModal vor Batch-Upload
+- filesClient visibility_scope Parameter
+
+Nach Deploy: `./deploy.sh --status` → SHA muss auf Merge-Commit zeigen.
+
+### TASK 2 (danach): Home Surface als Login-Standard
+
+Plan: `docs/plans/2026-03-27-surface-hierarchy-1.0.md` Abschnitt 4.4
+homeMode: 'home' | 'explore' State in CoreLayer/UniverseView.
+
+### Eigentümer-Trennung ab jetzt
+
+| Claude | Codex |
+|--------|-------|
+| saimor-core/cognition/* | Dock.tsx, MoraShell.tsx |
+| StarField.tsx | UniverseView.tsx, UniverseControls.tsx |
+| ScannerPane.tsx, filesClient.ts | Shell-Chrome, Layer-Navigation |

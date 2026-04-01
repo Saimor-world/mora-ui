@@ -5,89 +5,68 @@ import { ChevronRight } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 
 /**
- * ShellBreadcrumb — persistent OS-level location indicator.
+ * ShellBreadcrumb — deep-location anchor for folder work only.
  *
- * Mounts in MoraShell above ViewPort. Only renders when the user has
- * navigated into a department, space, or folder — the three layers that
- * need a "where am I?" anchor in the shell frame.
- *
- * Navigation contract (matches DepartmentLayer / SpaceLayer breadcrumbs):
- *   Root  -> navigateToExplore()
- *   Dept  → navigateToDepartment(activeDepartmentId)   [space/folder level only]
- *   Space → (future: navigateToSpace)
- *
- * Hidden at viewLevel 'core' and 'company' — those surfaces own their chrome.
+ * UniverseControls now carries the primary context at department/space level.
+ * This breadcrumb stays reserved for folder depth where a persistent path is
+ * still useful while panes and overlays are open.
  */
 export const ShellBreadcrumb: React.FC = () => {
-    const viewLevel          = useMoraStore((s) => s.viewLevel);
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeSpaceId      = useMoraStore((s) => s.activeSpaceId);
-    const departments        = useMoraStore((s) => s.departments);
-    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
-    const navigateToExplore  = useMoraStore((s) => s.navigateToExplore);
-    const navigateToDepartment = useMoraStore((s) => s.navigateToDepartment);
+    const viewLevel = useMoraStore((state) => state.viewLevel);
+    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
+    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
+    const departments = useMoraStore((state) => state.departments);
+    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
+    const navigateToExplore = useMoraStore((state) => state.navigateToExplore);
+    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
+    const navigateToSpace = useMoraStore((state) => state.navigateToSpace);
 
-    // Only render inside a layer
-    if (!viewLevel || viewLevel === 'core' || viewLevel === 'company') return null;
+    if (viewLevel !== 'folder') return null;
 
-    const dept  = departments?.find((d) => d.id === activeDepartmentId) ?? null;
+    const dept = departments?.find((department) => department.id === activeDepartmentId) ?? null;
     const space = activeSpaceId && dept
-        ? (spacesByDepartment?.[dept.id] ?? []).find((s) => s.id === activeSpaceId) ?? null
+        ? (spacesByDepartment?.[dept.id] ?? []).find((entry) => entry.id === activeSpaceId) ?? null
         : null;
-
-    const handleRoot = () => {
-        navigateToExplore();
-    };
-
-    const handleDept = () => {
-        if (activeDepartmentId) navigateToDepartment(activeDepartmentId);
-    };
-
-    const atSpace  = viewLevel === 'space' || viewLevel === 'folder';
-    const atFolder = viewLevel === 'folder';
 
     return (
         <nav
             data-testid="shell-breadcrumb"
             aria-label="Navigation"
-            className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-[11px] text-white/35 shadow-[0_10px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl select-none pointer-events-auto"
+            className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-4 py-2 text-[11px] text-white/35 shadow-[0_10px_30px_rgba(0,0,0,0.24)] backdrop-blur-xl select-none pointer-events-auto"
         >
-            {/* Root — always Universe / Explore */}
             <button
                 data-testid="breadcrumb-root"
-                onClick={handleRoot}
-                className="hover:text-white/60 transition-colors"
+                onClick={navigateToExplore}
+                className="transition-colors hover:text-white/60"
             >
                 Universum
             </button>
 
-            {/* Department */}
             {dept && (
                 <>
                     <ChevronRight size={10} className="opacity-40" />
                     <button
                         data-testid="breadcrumb-dept"
-                        onClick={atSpace ? handleDept : undefined}
-                        className={atSpace ? 'hover:text-white/60 transition-colors' : 'text-white/55 cursor-default'}
+                        onClick={() => navigateToDepartment(dept.id)}
+                        className="transition-colors hover:text-white/60"
                     >
                         {dept.name}
                     </button>
                 </>
             )}
 
-            {/* Space */}
-            {space && atSpace && (
+            {space && (
                 <>
                     <ChevronRight size={10} className="opacity-40" />
-                    <span
+                    <button
                         data-testid="breadcrumb-space"
-                        className={atFolder ? 'text-white/55' : 'text-white/70'}
+                        onClick={() => navigateToSpace(space.id)}
+                        className="text-white/55 transition-colors hover:text-white/72"
                     >
                         {space.name}
-                    </span>
+                    </button>
                 </>
             )}
         </nav>
     );
 };
-
