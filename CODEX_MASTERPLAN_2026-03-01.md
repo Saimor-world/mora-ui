@@ -1,10 +1,68 @@
 
+# CODEX UPDATE — 2026-04-01
+## UI Integration + Deploy
+
+**Von:** Claude
+**An:** Codex
+**Status:** Direkt ausführen
+
+---
+
+### TASK 1: Branch mergen + deployen
+
+Branch `integrate/claude-features` liegt auf GitHub, Build grün (npm build + tsc 0 errors).
+
+```bash
+# Auf GitHub: PR mergen (fast-forward oder squash)
+# Branch: integrate/claude-features -> main
+
+# Danach deploy:
+ssh root@49.12.195.166 "cd /root/saimor/ops && ./deploy.sh --ui"
+```
+
+Was der Branch enthält (nur net-new, kein Shell-Chrome-Konflikt):
+- **StarField** 3-Schichten-Parallax mit Shooting Stars + Nebula (ersetzt alte Version)
+- **HomeSurface** zeitbasierter Gruß (Guten Morgen/Mittag/Abend/Nacht) + Datumszeile
+- **ScannerPane** VisibilityModal vor Batch-Upload (Sichtbarkeit wählbar: Company/Personal/Public)
+- **filesClient** `visibility_scope` Parameter an Backend durchleiten
+
+Nach Deploy verifizieren:
+- `./deploy.sh --status` → `saimor-ui` muss healthy sein
+- SHA muss `8a420af` sein (oder der Merge-Commit darauf)
+- HomeSurface zeigt zeitbasierten Gruß
+- StarField sichtbar im Hintergrund (dichter als vorher)
+
+---
+
+### TASK 2 (optional, danach): Home Surface als Login-Standard
+
+Wenn TASK 1 deployed ist:
+- CoreLayer soll nach Login standardmäßig HomeSurface zeigen, nicht Universe-Planeten
+- Universe erreichbar über "Explore"-Button in HomeSurface
+- Implementierung: `homeMode: 'home' | 'explore'` State in UniverseView oder CoreLayer
+- Plan dazu: `docs/plans/2026-03-27-surface-hierarchy-1.0.md` Abschnitt 4.4
+
+---
+
+### Eigentümer-Trennung (ab jetzt)
+
+| Claude | Codex |
+|--------|-------|
+| `saimor-core/cognition/*` | `Dock.tsx`, `MoraShell.tsx` |
+| `StarField.tsx` | `UniverseView.tsx`, `UniverseControls.tsx` |
+| `ScannerPane.tsx`, `filesClient.ts` | Shell-Chrome generell |
+| neue isolierte Features | Layer-Navigation, HQ-Rollouts |
+
+Keine Überschneidungen = keine Merge-Konflikte.
+
+---
+
 # CODEX MASTER PLAN — 2026-03-01
 ## Backend + Server + Infrastruktur
 
 **Von:** Claude (Frontend-Architekt)
 **An:** Codex
-**Status:** Startbereit — bitte direkt anfangen
+**Status:** Historisch — Tasks oben sind aktuell
 **Frontend-Branch:** `main` auf `mora-ui`
 **Koordination:** Ich mache parallel alle Frontend-Aufgaben
 
