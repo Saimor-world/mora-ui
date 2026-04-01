@@ -91,8 +91,8 @@ export const HomeSurface: React.FC = () => {
                 if (!cancelled) setMyContent(null);
             });
 
-        // KAIROS awareness events — v1 endpoint (no company scope required)
-        void coreGet('/v1/mindloop/events?type=awareness&limit=5')
+        // KAIROS awareness events — v3 endpoint, company-scoped
+        void coreGet('/v3/mindloop/events?type=awareness&limit=5')
             .then((data: any) => {
                 if (cancelled) return;
                 const events: KairosEvent[] = data?.events ?? [];
