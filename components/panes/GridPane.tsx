@@ -7,6 +7,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fetchNodesByCompany } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
+import { VisibilityBadge } from '@/components/content/VisibilityBadge';
+import type { NodeVisibility } from '@/lib/types/core';
+
+function toNodeVisibility(node: CoreNode & { visibility_scope?: string }): NodeVisibility | null {
+    if (node.visibility) return node.visibility;
+    if (node.visibility_scope === 'personal') return 'private';
+    if (node.visibility_scope === 'public') return 'public';
+    return null; // company = default, no badge
+}
 
 const getNodeIcon = (type: string) => {
     switch (type) {
@@ -179,8 +188,9 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                                                     <div className="text-sm text-white/80 font-medium truncate">
                                                         {node.title || 'Untitled'}
                                                     </div>
-                                                    <div className="text-xs text-white/30 mt-1 uppercase tracking-wider">
-                                                        {node.type}
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <span className="text-xs text-white/30 uppercase tracking-wider">{node.type}</span>
+                                                        {(() => { const vis = toNodeVisibility(node as any); return vis ? <VisibilityBadge visibility={vis} size={10} /> : null; })()}
                                                     </div>
                                                 </div>
                                             </div>

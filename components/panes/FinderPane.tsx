@@ -2028,9 +2028,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 <span className="text-[9px] text-white/30 uppercase tracking-tighter">{file.type || 'system'}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
                                                                 <span className="text-[9px] text-white/30">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
-                                                                {file.visibility && (
-                                                                    <VisibilityBadge visibility={file.visibility} size={10} />
-                                                                )}
+                                                                {(() => {
+                                                                    const vis = file.visibility ||
+                                                                        ((file as any).visibility_scope === 'personal' ? 'private' :
+                                                                         (file as any).visibility_scope === 'public' ? 'public' : null);
+                                                                    return vis ? <VisibilityBadge visibility={vis as any} size={10} /> : null;
+                                                                })()}
                                                             </div>
                                                         </div>
 
@@ -2311,9 +2314,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <span className="text-[10px] text-white/30 shrink-0">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
-                                                        {file.visibility && (
-                                                            <VisibilityBadge visibility={file.visibility} size={11} />
-                                                        )}
+                                                        {(() => {
+                                                            const vis = file.visibility ||
+                                                                ((file as any).visibility_scope === 'personal' ? 'private' :
+                                                                 (file as any).visibility_scope === 'public' ? 'public' : null);
+                                                            return vis ? <VisibilityBadge visibility={vis as any} size={11} /> : null;
+                                                        })()}
                                                         {isResonant && <Sparkles size={14} className="text-amber-400" />}
                                                     </div>
                                                 );
