@@ -36,6 +36,7 @@ interface DockCommandDeckProps {
     contextSignalA: string;
     contextSignalB: string;
     contextAccent: string;
+    contextActionLabel: string;
     nextMoveLabel: string;
     nextMoveHint: string;
     sceneLabel: string;
@@ -68,6 +69,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     contextSignalA,
     contextSignalB,
     contextAccent,
+    contextActionLabel,
     nextMoveLabel,
     nextMoveHint,
     sceneLabel,
@@ -104,7 +106,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.98 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
-            className={`w-[min(980px,calc(100vw-3rem))] rounded-[32px] border p-5 backdrop-blur-2xl ${shellCard}`}
+            className={`w-[min(860px,calc(100vw-3rem))] rounded-[32px] border p-5 backdrop-blur-2xl ${shellCard}`}
         >
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -115,28 +117,21 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className={`mt-4 text-xl font-light tracking-[0.08em] ${primaryText}`}>
                         {workspaceName}
                     </div>
-                    <div className={`mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                        <span className={`rounded-full border px-2.5 py-1 ${microCard}`}>{scopeLabel}</span>
-                        <span className={`rounded-full border px-2.5 py-1 ${microCard}`}>{orbStateLabel}</span>
-                        <span className={`rounded-full border px-2.5 py-1 ${microCard}`}>{sceneLabel}</span>
+                    <div className={`mt-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
+                        {scopeLabel} · {orbStateLabel} · {sceneLabel}
                     </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
-                    <div className={`rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.2em] ${microCard} ${secondaryText}`}>
-                        {autoSceneEnabled ? 'Auto time' : 'Manual'}
-                    </div>
-                    <button
-                        onClick={onTogglePinned}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-600 hover:border-[#0078D4]/40 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-emerald-400/25 hover:text-emerald-200'}`}
-                    >
-                        {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
-                        {isPinned ? 'Auto close' : 'Pin open'}
-                    </button>
-                </div>
+                <button
+                    onClick={onTogglePinned}
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-600 hover:border-[#0078D4]/40 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                >
+                    {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
+                    {isPinned ? 'Anheften aus' : 'Anheften'}
+                </button>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
                 <div
                     className={`relative overflow-hidden rounded-[28px] border p-5 ${microCard}`}
                     style={!isStandardMode ? {
@@ -152,14 +147,15 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className="relative">
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Sparkles size={12} />
-                            Focus Frame
+                            Live Context
                         </div>
+
                         <div className="mt-4 flex flex-wrap items-center gap-2">
                             <div className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${microCard} ${secondaryText}`}>
                                 {contextLabel}
                             </div>
                             <div className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${microCard} ${accentText}`}>
-                                Active
+                                {scopeLabel}
                             </div>
                         </div>
 
@@ -197,7 +193,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 onClick={onOpenContext}
                                 className={`rounded-[22px] border px-4 py-3 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.05] text-white/76 hover:border-emerald-400/25 hover:text-emerald-200'}`}
                             >
-                                Open Context
+                                {contextActionLabel}
                             </button>
                         </div>
                     </div>
@@ -208,7 +204,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         <div className="min-w-0">
                             <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                                 <Clock3 size={12} />
-                                Atmosphere
+                                Atmosphaere
                             </div>
                             <div className={`mt-2 text-base ${primaryText}`}>{sceneLabel}</div>
                             <p className={`mt-2 text-sm leading-relaxed ${secondaryText}`}>
@@ -227,7 +223,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 }`}
                         >
                             <Clock3 size={12} />
-                            {autoSceneEnabled ? 'Auto' : 'Manual'}
+                            {autoSceneEnabled ? 'Auto' : 'Manuell'}
                         </button>
                     </div>
 
@@ -242,65 +238,55 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                             onClick={onOpenAudio}
                             className={`rounded-2xl border px-3 py-2 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/25 hover:text-emerald-200'}`}
                         >
-                            Audio settings
+                            Audio
                         </button>
                     </div>
 
                     <div className={`mt-4 rounded-[24px] border p-4 ${microCard}`}>
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Music2 size={12} />
-                            Now Playing
+                            Audio
                         </div>
-                        <div className={`mt-3 text-base ${primaryText}`}>
-                            {trackName || 'Audio konfigurieren'}
-                        </div>
-                        <div className={`mt-1 text-sm ${secondaryText}`}>
-                            {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Noch keine Library'}
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between gap-3">
-                            <div className="flex items-end gap-1">
-                                {[10, 18, 12, 20, 14].map((height, index) => (
-                                    <span
-                                        key={`${height}-${index}`}
-                                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#0078D4]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'} ${isPlaying ? 'animate-pulse' : 'opacity-30'}`}
-                                        style={{
-                                            height,
-                                            animationDelay: `${index * 0.1}s`,
-                                            animationDuration: `${1 + index * 0.08}s`,
-                                        }}
-                                    />
-                                ))}
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className={`truncate text-base ${primaryText}`}>
+                                    {trackName || 'Noch kein Track aktiv'}
+                                </div>
+                                <div className={`mt-1 text-sm ${secondaryText}`}>
+                                    {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Library in den Einstellungen aufbauen'}
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={onToggleAudio}
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
-                                >
-                                    {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-                                </button>
-                                <button
-                                    onClick={onNextTrack}
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
-                                >
-                                    <SkipForward size={15} />
-                                </button>
-                            </div>
+                            {trackCount > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={onToggleAudio}
+                                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
+                                    >
+                                        {isPlaying ? <Pause size={15} /> : <Play size={15} />}
+                                    </button>
+                                    <button
+                                        onClick={onNextTrack}
+                                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
+                                    >
+                                        <SkipForward size={15} />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {actions.map((action) => (
                     <button
                         key={action.id}
                         onClick={action.onClick}
-                        className={`group rounded-[22px] border p-4 text-left transition-all ${microCard} ${isStandardMode ? 'hover:border-[#0078D4]/35 hover:bg-white' : 'hover:border-emerald-400/20 hover:bg-emerald-500/[0.08]'}`}
+                        className={`group rounded-[22px] border p-3.5 text-left transition-all ${microCard} ${isStandardMode ? 'hover:border-[#0078D4]/35 hover:bg-white' : 'hover:border-emerald-400/20 hover:bg-emerald-500/[0.08]'}`}
                     >
                         <action.icon size={16} className={accentText} />
-                        <div className={`mt-4 text-sm ${primaryText}`}>{action.label}</div>
+                        <div className={`mt-3 text-sm ${primaryText}`}>{action.label}</div>
                         <div className={`mt-1 text-[11px] leading-relaxed ${secondaryText}`}>{action.description}</div>
                     </button>
                 ))}

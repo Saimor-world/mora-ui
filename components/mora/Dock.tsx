@@ -296,7 +296,7 @@ const DockSearchLauncher: React.FC<DockSearchLauncherProps> = ({
     <button
         type="button"
         onClick={onOpen}
-        className={`hidden xl:flex min-w-[142px] max-w-[154px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all ${isStandardMode
+        className={`hidden xl:flex min-w-[128px] max-w-[138px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all ${isStandardMode
             ? 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
             : `border-white/10 ${isActive ? 'bg-emerald-500/[0.1] text-emerald-200' : 'bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'}`
             }`}
@@ -309,10 +309,10 @@ const DockSearchLauncher: React.FC<DockSearchLauncherProps> = ({
         </div>
         <div className="min-w-0 flex-1">
             <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                Search
+                Suche
             </div>
             <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                System durchsuchen
+                System
             </div>
         </div>
         <kbd className={`rounded-lg px-2 py-1 text-[10px] font-mono ${isStandardMode ? 'bg-white text-gray-500' : 'bg-white/10 text-white/40'}`}>
@@ -571,12 +571,12 @@ export const Dock = () => {
     const contextDeck = useMemo(() => {
         if (activeFolder && activeSpace) {
             return {
-                label: 'Folder focus',
+                label: 'Folder Focus',
                 title: activeFolder.name,
                 description: 'Der Dock kennt jetzt deinen aktiven Arbeitsknoten und bietet direkte naechste Schritte fuer Review, Chat und Ruecksprung an.',
                 signalA: `${activeFolder.node_count || 0} docs`,
                 signalB: `${activeSpace.name} · ${activeFolders.length} folders`,
-                actionLabel: 'Open folder',
+                actionLabel: 'Folder oeffnen',
                 accent: activeFolder.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeFolder.name, {
                     folderId: activeFolder.id,
@@ -590,12 +590,12 @@ export const Dock = () => {
         if (activeSpace) {
             const docCount = activeFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
             return {
-                label: 'Space focus',
+                label: 'Space Focus',
                 title: activeSpace.name,
                 description: 'Das Control Center schlaegt dir jetzt den staerksten Folder und die passendsten naechsten Oberflaechen fuer diesen Space vor.',
                 signalA: `${activeFolders.length} folders`,
                 signalB: `${docCount} docs`,
-                actionLabel: 'Open space',
+                actionLabel: 'Space oeffnen',
                 accent: activeSpace.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeSpace.name, {
                     spaceId: activeSpace.id,
@@ -609,12 +609,12 @@ export const Dock = () => {
             const folderCount = activeSpaces.reduce((sum, space) => sum + Math.max(space.folder_count ?? 0, (foldersBySpace[space.id] || []).length), 0);
             const docCount = activeSpaces.reduce((sum, space) => sum + (foldersBySpace[space.id] || []).reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0), 0);
             return {
-                label: 'Department focus',
+                label: 'Department Focus',
                 title: activeDepartment.name,
                 description: 'Der Dock wird hier zur Leitstelle und zeigt, welcher Space als naechster Zoom Sinn ergibt, statt nur universelle Buttons zu duplizieren.',
                 signalA: `${activeSpaces.length} spaces`,
                 signalB: `${folderCount} folders · ${docCount} docs`,
-                actionLabel: 'Open department',
+                actionLabel: 'Department oeffnen',
                 accent: activeDepartment.color || accent,
                 onOpen: () => openFinderContext(activeDepartment.name, {
                     departmentId: activeDepartment.id,
@@ -629,7 +629,7 @@ export const Dock = () => {
             description: 'Im Universe-Modus bleibt das Control Center breit und ruhig, aber bietet dir jetzt klar den naechsten Einstieg statt statischer App-Kacheln.',
             signalA: `${safeDepartments.length} departments`,
             signalB: `${safeCompanies.length} workspaces`,
-            actionLabel: 'Open workspace',
+            actionLabel: 'Workspace oeffnen',
             accent,
             onOpen: () => openFinderContext(activeCompany?.name || 'Workspace', {
                 companyId: activeCompanyId || undefined,
@@ -688,7 +688,7 @@ export const Dock = () => {
     const controlCenterNextMove = useMemo(() => {
         if (shellContext.nextTarget.kind === 'company') {
             return {
-                label: 'Open Workspace',
+                label: 'Workspace oeffnen',
                 hint: 'Direkt in Dateien und Strukturen dieses Workspaces springen.',
             };
         }
@@ -736,7 +736,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'folder-open',
-                    label: 'Open Finder',
+                    label: 'Finder oeffnen',
                     description: 'Bleib im aktiven Folder und zieh Dateien direkt weiter.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -750,14 +750,14 @@ export const Dock = () => {
                 },
                 {
                     id: 'folder-chat',
-                    label: 'Chat In Context',
+                    label: 'Chat im Kontext',
                     description: 'Sprich mit Mora aus genau diesem Folder-Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
                 },
                 {
                     id: 'folder-notes',
-                    label: 'Capture Note',
+                    label: 'Notiz erfassen',
                     description: 'Lege schnell Review- oder Arbeitsnotizen daneben an.',
                     icon: FileText,
                     onClick: closeAfter(() => handleDockClick('notes')),
@@ -769,7 +769,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'space-open',
-                    label: 'Open Space',
+                    label: 'Space oeffnen',
                     description: 'Gehe direkt in den Finder mit diesem Space als Root.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -783,14 +783,14 @@ export const Dock = () => {
                 },
                 {
                     id: 'space-chat',
-                    label: 'Space Chat',
+                    label: 'Raum Chat',
                     description: 'Oeffne Mora und bleib in diesem Raum-Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
                 },
                 {
                     id: 'space-settings',
-                    label: 'Shell Tuning',
+                    label: 'Shell anpassen',
                     description: 'Passe Dock, Audio oder Atmosphaere direkt an.',
                     icon: Settings,
                     onClick: closeAfter(() => handleDockClick('settings')),
@@ -802,7 +802,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'department-open',
-                    label: 'Open Department',
+                    label: 'Department oeffnen',
                     description: 'Oeffne die Department-Struktur im Finder.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -816,14 +816,14 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-team',
-                    label: 'Team Surface',
+                    label: 'Teamflaeche',
                     description: 'Wechsle direkt zur Team-Oberflaeche fuer diesen Arbeitsbereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
                 },
                 {
                     id: 'department-chat',
-                    label: 'Strategy Chat',
+                    label: 'Strategie Chat',
                     description: 'Starte Mora mit Department-Fokus statt globalem Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
@@ -834,14 +834,14 @@ export const Dock = () => {
         return [
             {
                 id: 'universe-home',
-                label: 'Return Home',
+                label: 'Home',
                 description: 'Zurueck auf die zentrale Core-Oberflaeche.',
                 icon: Home,
                 onClick: closeAfter(() => handleDockClick('home')),
             },
                 {
                     id: 'universe-finder',
-                    label: 'Open Finder',
+                    label: 'Finder oeffnen',
                     description: 'Direkt in Dateien und Strukturen einsteigen.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -855,7 +855,7 @@ export const Dock = () => {
             },
             {
                 id: 'universe-settings',
-                label: 'Settings',
+                label: 'Einstellungen',
                 description: 'Audio, Scenes und Shell feinjustieren.',
                 icon: Settings,
                 onClick: closeAfter(() => handleDockClick('settings')),
@@ -1034,6 +1034,7 @@ export const Dock = () => {
                                     contextSignalA={shellContext.signalA}
                                     contextSignalB={shellContext.signalB}
                                     contextAccent={contextDeck.accent || shellContext.accent}
+                                    contextActionLabel={contextDeck.actionLabel}
                                     nextMoveLabel={controlCenterNextMove.label}
                                     nextMoveHint={controlCenterNextMove.hint}
                                     sceneLabel={ritualScene.label}
@@ -1234,7 +1235,10 @@ export const Dock = () => {
                                             Control Center
                                         </div>
                                         <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                                            {shellContext.contextLabel}: {shellContext.title}
+                                            {controlCenterNextMove.label}
+                                        </div>
+                                        <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
+                                            {shellContext.scopeLabel}
                                         </div>
                                     </div>
                                 </button>

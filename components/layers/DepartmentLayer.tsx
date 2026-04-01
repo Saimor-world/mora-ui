@@ -328,8 +328,8 @@ export const DepartmentLayer: React.FC = () => {
         return {
             minX: -halfWidth + 184,
             maxX: halfWidth - 184,
-            minY: -halfHeight + 176,
-            maxY: halfHeight - 172,
+            minY: -halfHeight + 210,
+            maxY: halfHeight - 184,
         };
     }, [orbitFrame.height, orbitFrame.width]);
 
@@ -352,8 +352,8 @@ export const DepartmentLayer: React.FC = () => {
             x: hoveredSpacePosition.x / distance,
             y: hoveredSpacePosition.y / distance,
         };
-        const topPressure = hoveredSpacePosition.y < previewSafeBounds.minY + 156;
-        const bottomPressure = hoveredSpacePosition.y > previewSafeBounds.maxY - 156;
+        const topPressure = hoveredSpacePosition.y < previewSafeBounds.minY + 188;
+        const bottomPressure = hoveredSpacePosition.y > previewSafeBounds.maxY - 168;
         const leftPressure = hoveredSpacePosition.x < previewSafeBounds.minX + 172;
         const rightPressure = hoveredSpacePosition.x > previewSafeBounds.maxX - 172;
 

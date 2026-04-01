@@ -151,7 +151,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </div>
                 <div className="mt-1 truncate text-sm text-white/86">{shellContext.title}</div>
                 <div className="mt-1 truncate text-[11px] text-white/44">
-                    {shellContext.signalA} / {shellContext.signalB}
+                    {shellContext.subtitle}
                 </div>
             </button>
 

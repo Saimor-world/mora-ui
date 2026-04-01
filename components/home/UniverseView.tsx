@@ -736,11 +736,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         const isPreviewedPath = semanticPreviewPathId === path.id;
 
                         const labelContent = (
-                            <div className="min-w-[140px]">
-                                <div className="truncate text-[11px] uppercase tracking-[0.18em] text-white/46">
-                                    Semantischer Link
-                                </div>
-                                <div className="mt-1 truncate text-sm text-white/88">
+                            <div className="min-w-[150px] max-w-[220px]">
+                                <div className="truncate text-sm text-white/88">
                                     {labelTitle}
                                 </div>
                                 <div className="mt-2 flex items-center gap-2">
@@ -758,18 +755,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         {Math.round(path.semanticAffinity * 100)}%
                                     </span>
                                 </div>
-                                {isInteractive && (
-                                    <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-white/42">
-                                        Hover preview, Klick fuer Zoom
-                                    </div>
-                                )}
                             </div>
                         );
 
                         return (
                             <motion.div
                                 key={`${path.id}-label`}
-                                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-black/55 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+                                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[18px] border border-white/10 bg-black/55 px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl"
                                 style={{
                                     left: `${path.labelX}%`,
                                     top: `${path.labelY}%`,
