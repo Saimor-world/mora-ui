@@ -56,7 +56,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
         if (data?.activeSection && data.activeSection !== activeSection) {
             setActiveSection(data.activeSection);
         }
-    }, [data?.activeSection]);
+    }, [activeSection, data?.activeSection]);
 
     const handleClose = () => {
         removePane(id);

@@ -561,7 +561,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
         } finally {
             setIsProcessing(false);
         }
-    }, [addLine, buildStatusOutput, requireOnline, renderInputResult]);
+    }, [addLine, buildStatusOutput, requireOnline, renderInputResult, setConn]);
 
     // ── Keyboard handling ────────────────────────────────────────────────────
 

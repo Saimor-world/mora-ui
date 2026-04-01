@@ -88,7 +88,7 @@ export const OrbitalCanvas: React.FC<OrbitalCanvasProps> = ({
         });
 
         animationRef.current = requestAnimationFrame(animate);
-    }, [bodies, bodyHierarchy]);
+    }, [bodies]);
 
     // Start/stop animation — only runs when bodies are present
     useEffect(() => {

@@ -317,7 +317,10 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                             {/* Avatar */}
                                             <div className={`w-10 h-10 rounded-full ${roleConfig.bg} flex items-center justify-center`}>
                                                 {member.avatar ? (
-                                                    <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                                    <>
+                                                        {/* eslint-disable-next-line @next/next/no-img-element -- member avatars can point to arbitrary external sources */}
+                                                        <img src={member.avatar} alt={member.name} className="w-full h-full rounded-full object-cover" />
+                                                    </>
                                                 ) : (
                                                     <span className={`text-sm font-medium ${roleConfig.color}`}>
                                                         {member.name.charAt(0).toUpperCase()}

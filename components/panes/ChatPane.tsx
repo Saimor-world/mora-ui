@@ -687,32 +687,8 @@ Was kann ich fuer dich tun?`,
         return () => window.removeEventListener('keydown', handler);
     }, [isFullscreen]);
 
-    // Handle initial message from Dock/Spotlight chat input
-    useEffect(() => {
-        if (pane?.data?.initialMessage && !initialMessageProcessed.current) {
-            initialMessageProcessed.current = true;
-            const initialMsg = pane.data.initialMessage;
-
-            // Set input as visual feedback
-            setInput(initialMsg); // Optional, maybe better to just show it in chat
-
-            // Trigger processing immediately
-            setTimeout(() => {
-                const userMessage: Message = {
-                    id: crypto.randomUUID(),
-                    role: 'user',
-                    content: initialMsg,
-                    timestamp: new Date()
-                };
-                setMessages(prev => [...prev, userMessage]);
-                setInput('');
-                processMessage(userMessage.content);
-            }, 300); // Slight delay for mount animation
-        }
-    }, [pane?.data?.initialMessage, pane?.id]); // Added pane.id to ensure it triggers on new pane creation
-
     // Parse command intents
-    const parseIntent = (text: string): { type: 'navigate' | 'search' | 'global_search' | 'chat', target?: string } => {
+    const parseIntent = useCallback((text: string): { type: 'navigate' | 'search' | 'global_search' | 'chat', target?: string } => {
         const lower = text.toLowerCase();
 
         // Global Documents Request
@@ -741,10 +717,10 @@ Was kann ich fuer dich tun?`,
         }
 
         return { type: 'chat' };
-    };
+    }, [departments]);
 
     // Execute navigation
-    const executeNavigation = (deptId: string) => {
+    const executeNavigation = useCallback((deptId: string) => {
         const dept = safeDepartments.find(d => d.id === deptId);
         if (dept) {
             dispatchMoraPresence({
@@ -759,10 +735,10 @@ Was kann ich fuer dich tun?`,
             return `✨ Ich navigiere zu **${dept.name}**! Schau auf die Planeten links.`;
         }
         return 'Department nicht gefunden.';
-    };
+    }, [safeDepartments]);
 
     // Execute search
-    const executeSearch = (query: string, global: boolean = false) => {
+    const executeSearch = useCallback((query: string, global: boolean = false) => {
         openPane({
             id: 'finder-main',
             type: 'finder',
@@ -784,7 +760,7 @@ Was kann ich fuer dich tun?`,
         return global
             ? `🌐 Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
             : `🔍 Ich öffne die Suche für **"${query}"**...`;
-    };
+    }, [activeCompanyId, openPane]);
 
     const executeDirectOpenIntent = useCallback(async (query: string) => {
         const trimmed = query.trim();
@@ -860,7 +836,7 @@ Was kann ich fuer dich tun?`,
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)
-    const processMessage = async (content: string) => {
+    const processMessage = useCallback(async (content: string) => {
         setIsLoading(true);
         setAmbiguityChoice(null);
         setOpenIntentReceipt(null);
@@ -1111,7 +1087,50 @@ Was kann ich fuer dich tun?`,
         }
         // Cancel memSearch if it hasn't fired yet — not possible with simple setTimeout
         // (fire-and-forget is fine for memory hints)
-    };
+    }, [
+        activeCompanyId,
+        activeDepartmentId,
+        activeFolderId,
+        activePlanId,
+        activeSessionId,
+        activeSpaceId,
+        executeDirectOpenIntent,
+        executeNavigation,
+        executeSearch,
+        fetchRelevantMemories,
+        id,
+        messages,
+        parseIntent,
+        setActiveSession,
+        streamError,
+        streamSend,
+        viewLevel,
+    ]);
+
+    // Handle initial message from Dock/Spotlight chat input
+    useEffect(() => {
+        if (pane?.data?.initialMessage && !initialMessageProcessed.current) {
+            initialMessageProcessed.current = true;
+            const initialMsg = pane.data.initialMessage;
+
+            // Set input as visual feedback
+            setInput(initialMsg);
+
+            const timer = window.setTimeout(() => {
+                const userMessage: Message = {
+                    id: crypto.randomUUID(),
+                    role: 'user',
+                    content: initialMsg,
+                    timestamp: new Date()
+                };
+                setMessages(prev => [...prev, userMessage]);
+                setInput('');
+                void processMessage(userMessage.content);
+            }, 300);
+
+            return () => window.clearTimeout(timer);
+        }
+    }, [pane?.data?.initialMessage, pane?.id, processMessage]);
 
     const sendMessage = async () => {
         if (!input.trim() || isLoading) return;

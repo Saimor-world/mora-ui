@@ -268,7 +268,7 @@ interface MoraState {
     resetStore: () => void; // System: Clear all state on logout
 
     // Data Actions - Load
-    loadCompanies: () => Promise<void>;
+    loadCompanies: (options?: { prefetchTree?: boolean }) => Promise<void>;
     loadDepartments: (companyId?: string) => Promise<void>;
     loadSpacesForDepartment: (departmentId: string) => Promise<void>;
     loadFoldersForSpace: (spaceId: string) => Promise<void>;
@@ -667,7 +667,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         });
     },
 
-    loadCompanies: async () => {
+    loadCompanies: async (options) => {
         set({ isLoadingCompanies: true, coreError: null });
         // Phase 8.1: Dispatch thinking event
         mindLoop.dispatch({ type: 'DATA_CHANGE', source: 'Core', awarenessTrigger: 'thinking', severity: 0.1, payload: { action: 'loadCompanies' } });
@@ -743,8 +743,9 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 isLoadingCompanies: false
             });
 
-            // SPEED UP: Fire-and-forget pre-fetch for the full hierarchical tree
-            if (nextActive) {
+            // Optional prefetch: useful for some entry paths, but bootstrap can disable it
+            // to avoid duplicate tree requests during initial session restore.
+            if (nextActive && options?.prefetchTree !== false) {
                 get().loadTree(userTenant || undefined, nextActive).catch(console.error);
             }
 

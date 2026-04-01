@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
@@ -13,6 +14,17 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { usePathname } from "next/navigation";
 import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
 import { StandardModeHandler } from "@/components/ui/StandardModeHandler";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mora-mono",
+});
 
 export default function RootLayout({
   children,
@@ -95,12 +107,8 @@ export default function RootLayout({
       <head>
         <title>SAIMOR | Mora OS</title>
         <meta name="description" content="Intelligent System" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"
-          rel="stylesheet"
-        />
       </head>
-      <body className="antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
+      <body className={`${inter.className} ${jetbrainsMono.variable} antialiased bg-[#030806] overflow-hidden`} suppressHydrationWarning>
         <ErrorBoundary>
           <MoraSessionProvider>
             <StandardModeHandler />

@@ -319,7 +319,10 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                         /* Image Viewer */
                         <div className="h-full flex items-center justify-center p-4 bg-black/20">
                             {imageUrl ? (
-                                <img src={imageUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                                <>
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- document previews may use blob/object URLs */}
+                                    <img src={imageUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                                </>
                             ) : content ? (
                                 /* Demo image with text description (no real file) */
                                 <div className="text-center max-w-md">

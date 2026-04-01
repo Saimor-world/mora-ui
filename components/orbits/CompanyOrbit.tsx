@@ -101,7 +101,7 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
         const anchorPoints = positionsToAnchorPoints(positions, 'department', bubbleSize / 2);
 
         return { positions, orbitRadius, anchorPoints };
-    }, [departments.length, finalCenter, radius]);
+    }, [departments, finalCenter, radius]);
 
     // Notify parent of anchor points (for canvas signals)
     React.useEffect(() => {

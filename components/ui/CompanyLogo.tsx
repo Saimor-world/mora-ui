@@ -103,17 +103,20 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
             {/* Logo / Initial Content */}
             <div className={`${config.image} rounded-full overflow-hidden flex items-center justify-center relative z-10`}>
                 {(displaySrc || hasValidImage) ? (
-                    <img
-                        src={displaySrc || src!}
-                        alt={companyName}
-                        className="w-full h-full object-cover"
-                        onError={() => setImageError(true)}
-                        onLoad={() => setImageLoaded(true)}
-                        style={{
-                            filter: isDemoOverride ? `drop-shadow(0 0 20px ${vibeColor}80)` : `drop-shadow(0 0 15px ${vibeColor}60)`,
-                            opacity: imageLoaded || isDemoOverride ? 1 : 0,
-                        }}
-                    />
+                    <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- company logos may be uploaded or external URLs outside next/image config */}
+                        <img
+                            src={displaySrc || src!}
+                            alt={companyName}
+                            className="w-full h-full object-cover"
+                            onError={() => setImageError(true)}
+                            onLoad={() => setImageLoaded(true)}
+                            style={{
+                                filter: isDemoOverride ? `drop-shadow(0 0 20px ${vibeColor}80)` : `drop-shadow(0 0 15px ${vibeColor}60)`,
+                                opacity: imageLoaded || isDemoOverride ? 1 : 0,
+                            }}
+                        />
+                    </>
                 ) : (
                     <span
                         className={`${config.text} font-extralight tracking-widest`}

@@ -24,11 +24,17 @@ export function useAuthBootstrapper() {
     const { data: session, status } = useSession();
     const [isBootstrapped, setIsBootstrapped] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
+    const sessionUser = session?.user as any;
+    const sessionEmail = sessionUser?.email || null;
+    const sessionName = sessionUser?.name || null;
+    const sessionAccessToken = sessionUser?.accessToken || null;
+    const sessionTenantId = sessionUser?.tenant_id || null;
 
     useEffect(() => {
         // Only run in browser
         if (typeof window === 'undefined') return;
         if (status === 'loading') return;
+        if (status === 'authenticated' && isBootstrapped) return;
 
         const bootstrap = async () => {
             const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -90,12 +96,12 @@ export function useAuthBootstrapper() {
             if (hasNextAuth || hasLegacyToken || hasCoreSession || mayHaveHttpOnlySession) {
                 try {
                     // SYNC: If NextAuth is authenticated, ensure the token is in localStorage for coreClient
-                    const currentToken = hasNextAuth ? (session?.user as any)?.accessToken : hasLegacyToken;
+                    const currentToken = hasNextAuth ? sessionAccessToken : hasLegacyToken;
                     if (hasNextAuth && currentToken) {
                         // Only use localStorage token as a dev fallback. Production should rely on cookies/session.
                         if (isLocalhost) localStorage.setItem('saimor_dev_token', currentToken);
-                        localStorage.setItem('last_user_name', session.user?.email?.split('@')[0] || 'User');
-                        if (session.user?.email) localStorage.setItem('last_user_email', session.user.email);
+                        localStorage.setItem('last_user_name', sessionEmail?.split('@')[0] || 'User');
+                        if (sessionEmail) localStorage.setItem('last_user_email', sessionEmail);
 
                         // Bridge NextAuth -> Core API cookie.
                         // coreClient/filesClient/realtimeClient rely on mora_auth_token.
@@ -123,13 +129,13 @@ export function useAuthBootstrapper() {
                     if (result && result.user_id) {
                         // Auth is valid! Now load data
                         const store = useMoraStore.getState();
-                        const tenantId = result.tenant_id || (session?.user as any)?.tenant_id;
+                        const tenantId = result.tenant_id || sessionTenantId;
 
                         // Fix: Update user in store immediately so loadCompanies can use it
                         store.setUser({
                             id: result.user_id,
-                            email: result.email || session?.user?.email || 'user@saimor.io',
-                            name: result.name || result.email?.split('@')[0] || session?.user?.name || 'User',
+                            email: result.email || sessionEmail || 'user@saimor.io',
+                            name: result.name || result.email?.split('@')[0] || sessionName || 'User',
                             role: result.role || 'member',
                             settings: result.settings || {},
                             tenant_id: tenantId,
@@ -162,7 +168,7 @@ export function useAuthBootstrapper() {
                         }
 
                         // Load companies in the background
-                        await store.loadCompanies().catch(console.error);
+                        await store.loadCompanies({ prefetchTree: false }).catch(console.error);
 
                         // RESTORE ACTIVE COMPANY
                         const freshState = useMoraStore.getState();
@@ -224,14 +230,6 @@ export function useAuthBootstrapper() {
                         if (selectedCompanyId) {
                             store.setActiveCompany(selectedCompanyId);
                             localStorage.setItem('last_company_id', selectedCompanyId);
-                            // IMPORTANT: Load tree for THIS company context
-                            const safeCompanies = Array.isArray(companies) ? companies : [];
-                            const selectedCompany = safeCompanies.find(c => c.id === selectedCompanyId);
-                            const targetTenant = selectedCompany?.tenant_id || tenantId;
-                            await Promise.all([
-                                store.loadTree(targetTenant, selectedCompanyId).catch((err) => console.log('Tree load fail', err)),
-                                store.loadDepartments(selectedCompanyId).catch((err) => console.log('Dept load fail', err))
-                            ]);
                         } else {
                             // Fallback if no company selected
                             await store.loadTree(tenantId).catch(() => { });
@@ -268,7 +266,7 @@ export function useAuthBootstrapper() {
         };
 
         bootstrap();
-    }, [router, pathname, status, session]);
+    }, [router, pathname, status, isBootstrapped, sessionAccessToken, sessionEmail, sessionName, sessionTenantId]);
 
     return { isBootstrapped, authError };
 }

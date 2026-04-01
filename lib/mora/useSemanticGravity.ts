@@ -59,7 +59,7 @@ export function useSemanticGravity(relevance: number = 0, radius: number = 300) 
 
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
-    }, [relevance, radius]);
+    }, [relevance, radius, x, y]);
 
     return {
         ref,

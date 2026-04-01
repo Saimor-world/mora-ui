@@ -167,7 +167,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     const viewMode = useMoraStore((s) => s.viewMode);
     const viewLevel = useMoraStore((s) => s.viewLevel);
     // cursorAgent — 1.0 gated (CursorAgent component is future-tier; local stub for UI)
-    const cursorAgent = { active: false, action: 'idle' as const };
+    const cursorAgent = useMemo(() => ({ active: false, action: 'idle' as const }), []);
     const departments = useMoraStore((s) => s.departments);
     const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);

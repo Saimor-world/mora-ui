@@ -32,11 +32,6 @@ export function useLocalAI(): UseLocalAIReturn {
 
     const { departments, companies, activeCompanyId } = useMoraStore();
 
-    // Check connection on mount
-    useEffect(() => {
-        checkConnection();
-    }, []);
-
     const checkConnection = useCallback(async (): Promise<boolean> => {
         try {
             const connected = await moraAI.checkConnection();
@@ -47,6 +42,11 @@ export function useLocalAI(): UseLocalAIReturn {
             return false;
         }
     }, []);
+
+    // Check connection on mount
+    useEffect(() => {
+        checkConnection();
+    }, [checkConnection]);
 
     const sendMessage = useCallback(async (message: string): Promise<string> => {
         setIsLoading(true);

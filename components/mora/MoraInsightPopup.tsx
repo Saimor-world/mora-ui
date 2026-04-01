@@ -44,6 +44,11 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
     const [isVisible, setIsVisible] = useState(false);
     const [progress, setProgress] = useState(100);
 
+    const handleDismiss = useCallback(() => {
+        setIsVisible(false);
+        if (insight) onDismiss?.(insight);
+    }, [insight, onDismiss]);
+
     useEffect(() => {
         if (!insight) {
             setIsVisible(false);
@@ -52,7 +57,7 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
         setIsVisible(true);
         setProgress(100);
 
-        setTimeout(() => {
+        const presenceTimer = window.setTimeout(() => {
             dispatchMoraPresence({
                 action: 'point',
                 targetId: 'mora-insight-popup',
@@ -71,13 +76,11 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
             }
         }, 50);
 
-        return () => clearInterval(interval);
-    }, [insight?.id]);
-
-    const handleDismiss = useCallback(() => {
-        setIsVisible(false);
-        if (insight) onDismiss?.(insight);
-    }, [insight, onDismiss]);
+        return () => {
+            window.clearTimeout(presenceTimer);
+            clearInterval(interval);
+        };
+    }, [autoHideMs, handleDismiss, insight]);
 
     const handleConfirm = useCallback(() => {
         setIsVisible(false);

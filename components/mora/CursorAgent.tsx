@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useAnimation, useReducedMotion } from 'framer-motion';
 
 interface CursorAgentProps {
@@ -81,7 +81,7 @@ export function CursorAgent({
         isDocumentVisible &&
         (isMoving || action === 'point' || action === 'navigate' || awareness === 'thinking' || awareness === 'alert' || awareness === 'insight');
 
-    const moveToTarget = async (start: { x: number; y: number }, end: { x: number; y: number }) => {
+    const moveToTarget = useCallback(async (start: { x: number; y: number }, end: { x: number; y: number }) => {
         if (isMoving) return;
 
         setIsMoving(true);
@@ -112,7 +112,7 @@ export function CursorAgent({
 
         setCurrentPosition(end);
         setIsMoving(false);
-    };
+    }, [controls, isMoving, speed]);
 
     useEffect(() => {
         if (!active) return;
@@ -162,7 +162,7 @@ export function CursorAgent({
             default:
                 break;
         }
-    }, [action, target, active, currentPosition, homePosition, controls, onActionComplete]);
+    }, [action, target, active, currentPosition, homePosition, controls, moveToTarget, onActionComplete]);
 
     if (!active && !isMoving) {
         return null;

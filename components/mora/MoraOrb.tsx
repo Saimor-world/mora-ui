@@ -146,6 +146,7 @@ export function MoraOrb({
                         className="relative z-20 w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]"
                         style={{ borderBottomColor: `${color}40` }}
                     >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- company logos can come from arbitrary upload URLs */}
                         <img src={companyLogo} alt="Logo" className="w-7 h-7 object-contain opacity-90" />
                     </motion.div>
                 )}

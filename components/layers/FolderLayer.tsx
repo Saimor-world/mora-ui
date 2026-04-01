@@ -120,7 +120,10 @@ export const FolderLayer: React.FC = () => {
     const currentDepartment = safeDepartments.find(d => d.id === activeDepartmentId);
     const currentSpace = (Array.isArray(spacesByDepartment[activeDepartmentId || '']) ? spacesByDepartment[activeDepartmentId || ''] : []).find(s => s.id === activeSpaceId);
 
-    const nodes = activeFolderId ? (nodesByFolder[activeFolderId] || []) : [];
+    const nodes = useMemo(
+        () => (activeFolderId ? (nodesByFolder[activeFolderId] || []) : []),
+        [activeFolderId, nodesByFolder]
+    );
 
     // ... (Keep filter logic) ...
     const filteredNodes = useMemo(() => {

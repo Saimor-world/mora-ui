@@ -99,7 +99,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     }, [isOpen]);
 
     // Handle Mora Chat
-    const handleMoraChat = async (message: string) => {
+    const handleMoraChat = useCallback(async (message: string) => {
         setIsMoraThinking(true);
         setMoraResponse(null);
 
@@ -128,7 +128,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         } finally {
             setIsMoraThinking(false);
         }
-    };
+    }, []);
 
     // Helper to open/focus pane
     const openFromSpotlight = useCallback((type: string, id: string, title: string, size = { width: 700, height: 500 }) => {
@@ -367,7 +367,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         });
 
         return result;
-    }, [departments, companies, activeCompanyId, spacesByDepartment, openFromSpotlight, navigateToDepartment, navigateToSpace, panes, minimizePane, onClose, setActiveCompany]);
+    }, [departments, companies, activeCompanyId, spacesByDepartment, openFromSpotlight, navigateToCore, navigateToDepartment, navigateToSpace, openPane, panes, minimizePane, onClose, setActiveCompany]);
 
     // Filter actions based on query
     const filteredActions = useMemo(() => {
@@ -418,7 +418,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 onClose();
                 break;
         }
-    }, [filteredActions, selectedIndex, onClose]);
+    }, [filteredActions, handleMoraChat, onClose, query, selectedIndex]);
 
     // Reset selection when results change
     useEffect(() => {

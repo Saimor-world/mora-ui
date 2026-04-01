@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -38,7 +38,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState<string | null>(null);
 
-    const loadNodes = async () => {
+    const loadNodes = useCallback(async () => {
         if (!activeCompanyId) return;
         setIsLoading(true);
         try {
@@ -50,11 +50,11 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeCompanyId]);
 
     useEffect(() => {
         loadNodes();
-    }, [activeCompanyId]);
+    }, [loadNodes]);
 
     const filteredNodes = nodes.filter(n => {
         const matchesSearch = n.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||

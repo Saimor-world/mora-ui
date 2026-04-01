@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 /**
  * CURSOR TRAIL EFFECT (The Firefly)
@@ -20,6 +20,12 @@ interface Point {
     color: string;
 }
 
+const TRAIL_COLORS = [
+    'rgba(16, 185, 129, ',
+    'rgba(52, 211, 153, ',
+    'rgba(206, 182, 118, '
+];
+
 export const CursorTrailEffect: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const particles = useRef<Point[]>([]);
@@ -30,13 +36,6 @@ export const CursorTrailEffect: React.FC = () => {
     const isRunning = useRef(false);
     const fadeFrameRef = useRef(0);
     const isDocumentVisible = useRef(true);
-
-    // Color palette - Emerald to Gold
-    const colors = [
-        'rgba(16, 185, 129, ', // Emerald-500
-        'rgba(52, 211, 153, ', // Emerald-400
-        'rgba(206, 182, 118, ' // Mora-Gold
-    ];
 
     // Listen for Mouse Movement
     useEffect(() => {
@@ -112,7 +111,7 @@ export const CursorTrailEffect: React.FC = () => {
                         vy: (Math.random() - 0.5) * 2,
                         life: life,
                         size: 1 + Math.random() * 2,
-                        color: colors[Math.floor(Math.random() * colors.length)]
+                        color: TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)]
                     });
                 }
             }

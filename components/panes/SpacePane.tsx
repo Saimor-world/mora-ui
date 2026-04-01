@@ -110,7 +110,10 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
 
 
 
-    const rawItems = activeFolder ? folderNodes : (targetSpaceId ? (foldersBySpace[targetSpaceId] || []) : []);
+    const rawItems = useMemo(
+        () => (activeFolder ? folderNodes : (targetSpaceId ? (foldersBySpace[targetSpaceId] || []) : [])),
+        [activeFolder, folderNodes, targetSpaceId, foldersBySpace]
+    );
 
     // STRICT DEDUPLICATION for Grid View
     const items = useMemo(() => {

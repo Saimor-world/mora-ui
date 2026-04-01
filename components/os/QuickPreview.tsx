@@ -267,11 +267,14 @@ const ImagePreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
     return (
         <div className="h-full flex items-center justify-center p-6">
             {item.url ? (
-                <img
-                    src={item.url}
-                    alt={item.name}
-                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                />
+                <>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- preview supports blob/object URLs from local quick-look sources */}
+                    <img
+                        src={item.url}
+                        alt={item.name}
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                    />
+                </>
             ) : (
                 <div className="text-center text-white/30">
                     <ImageIcon size={48} className="mx-auto mb-4 opacity-30" />

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import {
     RITUAL_SCENES,
     getEffectiveRitualScene,
@@ -114,113 +115,88 @@ export const MoraPulsePanel: React.FC = () => {
         openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
     };
 
-    const departmentFolderCount = useMemo(
-        () => activeSpaces.reduce((sum, space) => sum + Math.max(space.folder_count ?? 0, (foldersBySpace[space.id] || []).length), 0),
-        [activeSpaces, foldersBySpace]
-    );
-
-    const departmentDocCount = useMemo(
-        () => activeSpaces.reduce((sum, space) => sum + (foldersBySpace[space.id] || []).reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0), 0),
-        [activeSpaces, foldersBySpace]
-    );
-
-    const currentContext = useMemo(() => {
-        if (activeFolder && activeSpace) {
-            return {
-                label: 'Folder',
-                title: activeFolder.name,
-                subtitle: activeSpace.name,
-                signalLine: `${activeFolder.node_count || 0} docs · ${activeFolders.length} folders im Space`,
-                note: 'Aktiver Folder bleibt im Space als Live-Fokus sichtbar, waehrend das Control Center die naechsten Schritte uebernimmt.',
-                onOpen: () => openPane({
-                    id: 'finder-main',
-                    type: 'finder',
-                    title: activeFolder.name,
-                    size: { width: 1280, height: 820 },
-                    data: {
-                        folderId: activeFolder.id,
-                        spaceId: activeSpace.id,
-                        departmentId: activeDepartmentId,
-                        companyId: activeCompanyId || activeDepartment?.company_id || undefined,
-                    },
-                }),
-            };
-        }
-
-        if (activeSpace) {
-            const docs = activeFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
-            return {
-                label: 'Space',
-                title: activeSpace.name,
-                subtitle: activeDepartment?.name || activeCompany?.name || 'Workspace',
-                signalLine: `${activeFolders.length} folders · ${docs} docs`,
-                note: 'Space-Fokus bleibt lesbar, aber der eigentliche Arbeitswechsel passiert jetzt im Control Center statt in einer zweiten HUD-Spalte.',
-                onOpen: () => openPane({
-                    id: 'finder-main',
-                    type: 'finder',
-                    title: activeSpace.name,
-                    size: { width: 1280, height: 820 },
-                    data: {
-                        spaceId: activeSpace.id,
-                        departmentId: activeDepartmentId,
-                        companyId: activeCompanyId || activeDepartment?.company_id || undefined,
-                    },
-                }),
-            };
-        }
-
-        if (activeDepartment) {
-            return {
-                label: 'Department',
-                title: activeDepartment.name,
-                subtitle: activeCompany?.name || user?.active_company_name || 'Workspace',
-                signalLine: `${activeSpaces.length} spaces · ${departmentFolderCount} folders · ${departmentDocCount} docs`,
-                note: 'Department-Hover klappt jetzt ein Blueprint aus. Das Control Center fuehrt den naechsten Zoom, die Pulse-Leiste nur noch die Orientierung.',
-                onOpen: () => openPane({
-                    id: 'finder-main',
-                    type: 'finder',
-                    title: activeDepartment.name,
-                    size: { width: 1280, height: 820 },
-                    data: {
-                        departmentId: activeDepartment.id,
-                        companyId: activeCompanyId || activeDepartment?.company_id || undefined,
-                    },
-                }),
-            };
-        }
-
-        return {
-            label: 'Universe',
-            title: activeCompany?.name || user?.active_company_name || 'SAIMOR Universe',
-            subtitle: 'Live topography',
-            signalLine: `${safeDepartments.length} departments · ${safeCompanies.length} workspaces`,
-            note: 'Die rechte Seite ist jetzt nur noch Orientierung. Control Center und Layer uebernehmen die eigentliche Arbeit.',
-            onOpen: () => openPane({
-                id: 'finder-main',
-                type: 'finder',
-                title: activeCompany?.name || 'Workspace',
-                size: { width: 1280, height: 820 },
-                data: {
-                    companyId: activeCompanyId || undefined,
-                },
-            }),
-        };
-    }, [
+    const shellContext = useMemo(() => buildShellContextSnapshot({
+        viewLevel,
         activeCompany,
-        activeCompanyId,
         activeDepartment,
-        activeDepartmentId,
         activeFolder,
         activeFolders,
         activeSpace,
         activeSpaces,
-        departmentDocCount,
-        departmentFolderCount,
-        openPane,
+        foldersBySpace,
+        companyCount: safeCompanies.length,
+        departmentCount: safeDepartments.length,
+        userCompanyName: user?.active_company_name,
+    }), [
+        activeCompany,
+        activeDepartment,
+        activeFolder,
+        activeFolders,
+        activeSpace,
+        activeSpaces,
+        foldersBySpace,
         safeCompanies.length,
         safeDepartments.length,
         user?.active_company_name,
+        viewLevel,
     ]);
+
+    const handleOpenContext = () => {
+        if (activeFolder && activeSpace) {
+            openPane({
+                id: 'finder-main',
+                type: 'finder',
+                title: activeFolder.name,
+                size: { width: 1280, height: 820 },
+                data: {
+                    folderId: activeFolder.id,
+                    spaceId: activeSpace.id,
+                    departmentId: activeDepartmentId,
+                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+                },
+            });
+            return;
+        }
+
+        if (activeSpace) {
+            openPane({
+                id: 'finder-main',
+                type: 'finder',
+                title: activeSpace.name,
+                size: { width: 1280, height: 820 },
+                data: {
+                    spaceId: activeSpace.id,
+                    departmentId: activeDepartmentId,
+                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+                },
+            });
+            return;
+        }
+
+        if (activeDepartment) {
+            openPane({
+                id: 'finder-main',
+                type: 'finder',
+                title: activeDepartment.name,
+                size: { width: 1280, height: 820 },
+                data: {
+                    departmentId: activeDepartment.id,
+                    companyId: activeCompanyId || activeDepartment?.company_id || undefined,
+                },
+            });
+            return;
+        }
+
+        openPane({
+            id: 'finder-main',
+            type: 'finder',
+            title: activeCompany?.name || 'Workspace',
+            size: { width: 1280, height: 820 },
+            data: {
+                companyId: activeCompanyId || undefined,
+            },
+        });
+    };
 
     return (
         <div className="pointer-events-none fixed right-6 top-6 z-[78] hidden lg:block">
@@ -255,13 +231,13 @@ export const MoraPulsePanel: React.FC = () => {
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
                                     <FileText size={12} />
-                                    {currentContext.label}
+                                    {shellContext.contextLabel}
                                 </div>
                                 <div className="mt-2 truncate text-sm text-white/85">
-                                    {currentContext.title}
+                                    {shellContext.title}
                                 </div>
                                 <div className="mt-1 text-xs text-white/45">
-                                    {currentContext.subtitle}
+                                    {shellContext.subtitle}
                                 </div>
                             </div>
 
@@ -274,18 +250,12 @@ export const MoraPulsePanel: React.FC = () => {
                         </div>
 
                         <div className="mt-3 text-[11px] text-white/50">
-                            {currentContext.signalLine}
+                            {shellContext.signalA} / {shellContext.signalB}
                         </div>
-
-                        {!isDeckOpen && (
-                            <p className="mt-3 text-[11px] leading-relaxed text-white/42">
-                                {currentContext.note}
-                            </p>
-                        )}
 
                         <div className="mt-3 grid grid-cols-2 gap-2">
                             <button
-                                onClick={currentContext.onOpen}
+                                onClick={handleOpenContext}
                                 className="group rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-emerald-400/25 hover:bg-emerald-500/10"
                             >
                                 <FolderOpen size={16} className="text-white/60 transition-colors group-hover:text-emerald-200" />

@@ -31,15 +31,18 @@ interface DockCommandDeckProps {
     workspaceName: string;
     contextLabel: string;
     contextTitle: string;
+    contextSubtitle: string;
     contextDescription: string;
     contextSignalA: string;
     contextSignalB: string;
-    contextActionLabel: string;
     contextAccent: string;
+    nextMoveLabel: string;
+    nextMoveHint: string;
     sceneLabel: string;
     sceneDescription: string;
     autoSceneEnabled: boolean;
     onOpenContext: () => void;
+    onNextMove: () => void;
     onTogglePinned: () => void;
     onToggleAutoScene: () => void;
     onCycleScene: () => void;
@@ -60,15 +63,18 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     workspaceName,
     contextLabel,
     contextTitle,
+    contextSubtitle,
     contextDescription,
     contextSignalA,
     contextSignalB,
-    contextActionLabel,
     contextAccent,
+    nextMoveLabel,
+    nextMoveHint,
     sceneLabel,
     sceneDescription,
     autoSceneEnabled,
     onOpenContext,
+    onNextMove,
     onTogglePinned,
     onToggleAutoScene,
     onCycleScene,
@@ -98,7 +104,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.98 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
-            className={`w-[min(1040px,calc(100vw-3rem))] rounded-[32px] border p-5 backdrop-blur-2xl ${shellCard}`}
+            className={`w-[min(980px,calc(100vw-3rem))] rounded-[32px] border p-5 backdrop-blur-2xl ${shellCard}`}
         >
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -109,25 +115,30 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className={`mt-4 text-xl font-light tracking-[0.08em] ${primaryText}`}>
                         {workspaceName}
                     </div>
-                    <div className={`mt-2 flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                        <span>{scopeLabel}</span>
-                        <span>{orbStateLabel}</span>
-                        <span>{sceneLabel}</span>
+                    <div className={`mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
+                        <span className={`rounded-full border px-2.5 py-1 ${microCard}`}>{scopeLabel}</span>
+                        <span className={`rounded-full border px-2.5 py-1 ${microCard}`}>{orbStateLabel}</span>
+                        <span className={`rounded-full border px-2.5 py-1 ${microCard}`}>{sceneLabel}</span>
                     </div>
                 </div>
 
-                <button
-                    onClick={onTogglePinned}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-600 hover:border-[#0078D4]/40 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-emerald-400/25 hover:text-emerald-200'}`}
-                >
-                    {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
-                    {isPinned ? 'Auto' : 'Pin'}
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                    <div className={`rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.2em] ${microCard} ${secondaryText}`}>
+                        {autoSceneEnabled ? 'Auto time' : 'Manual'}
+                    </div>
+                    <button
+                        onClick={onTogglePinned}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-600 hover:border-[#0078D4]/40 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                    >
+                        {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
+                        {isPinned ? 'Auto close' : 'Pin open'}
+                    </button>
+                </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
                 <div
-                    className={`relative overflow-hidden rounded-[26px] border p-4 ${microCard}`}
+                    className={`relative overflow-hidden rounded-[28px] border p-5 ${microCard}`}
                     style={!isStandardMode ? {
                         boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 0 0 1px ${contextAccent}10`,
                     } : undefined}
@@ -141,96 +152,125 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className="relative">
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Sparkles size={12} />
-                            Live Context
+                            Focus Frame
                         </div>
-                        <div className="mt-3 flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <div className={`text-[11px] uppercase tracking-[0.24em] ${secondaryText}`}>
-                                    {contextLabel}
-                                </div>
-                                <div className={`mt-2 text-lg ${primaryText}`}>
-                                    {contextTitle}
-                                </div>
-                                <p className={`mt-3 max-w-[44ch] text-sm leading-relaxed ${secondaryText}`}>
-                                    {contextDescription}
-                                </p>
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                            <div className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${microCard} ${secondaryText}`}>
+                                {contextLabel}
                             </div>
-                            <button
-                                onClick={onOpenContext}
-                                className={`shrink-0 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-[#0078D4]/25 bg-white text-[#0078D4] hover:border-[#0078D4]/45' : 'border-white/10 bg-white/[0.05] text-white/76 hover:border-emerald-400/25 hover:text-emerald-200'}`}
-                            >
-                                {contextActionLabel}
-                            </button>
+                            <div className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${microCard} ${accentText}`}>
+                                Active
+                            </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                            <div className={`rounded-2xl border px-3 py-3 ${microCard}`}>
-                                <div className={`text-[9px] uppercase tracking-[0.18em] ${secondaryText}`}>Signal A</div>
-                                <div className={`mt-1 text-sm ${primaryText}`}>{contextSignalA}</div>
+                        <div className={`mt-3 text-xl ${primaryText}`}>
+                            {contextTitle}
+                        </div>
+                        <div className={`mt-2 text-sm ${secondaryText}`}>
+                            {contextSubtitle}
+                        </div>
+                        <p className={`mt-3 max-w-[52ch] text-sm leading-relaxed ${secondaryText}`}>
+                            {contextDescription}
+                        </p>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <div className={`rounded-full border px-3 py-2 text-[11px] ${microCard} ${primaryText}`}>
+                                {contextSignalA}
                             </div>
-                            <div className={`rounded-2xl border px-3 py-3 ${microCard}`}>
-                                <div className={`text-[9px] uppercase tracking-[0.18em] ${secondaryText}`}>Signal B</div>
-                                <div className={`mt-1 text-sm ${primaryText}`}>{contextSignalB}</div>
+                            <div className={`rounded-full border px-3 py-2 text-[11px] ${microCard} ${primaryText}`}>
+                                {contextSignalB}
                             </div>
+                        </div>
+
+                        <div className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                            <button
+                                onClick={onNextMove}
+                                className={`rounded-[22px] border px-4 py-4 text-left transition-colors ${isStandardMode ? 'border-[#0078D4]/18 bg-[#0078D4]/8 hover:border-[#0078D4]/38' : 'border-emerald-400/18 bg-emerald-500/[0.08] hover:border-emerald-400/28 hover:bg-emerald-500/[0.12]'}`}
+                            >
+                                <div className={`text-[10px] uppercase tracking-[0.2em] ${accentText}`}>
+                                    Next Move
+                                </div>
+                                <div className={`mt-2 text-sm ${primaryText}`}>{nextMoveLabel}</div>
+                                <div className={`mt-1 text-[11px] leading-relaxed ${secondaryText}`}>{nextMoveHint}</div>
+                            </button>
+                            <button
+                                onClick={onOpenContext}
+                                className={`rounded-[22px] border px-4 py-3 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.05] text-white/76 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                            >
+                                Open Context
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                    <div className={`rounded-[26px] border p-4 ${microCard}`}>
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                                    <Sparkles size={12} />
-                                    Ritual Scene
-                                </div>
-                                <div className={`mt-2 text-base ${primaryText}`}>{sceneLabel}</div>
-                                <p className={`mt-2 text-sm leading-relaxed ${secondaryText}`}>
-                                    {sceneDescription}
-                                </p>
-                            </div>
-                            <button
-                                onClick={onToggleAutoScene}
-                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.22em] transition-colors ${autoSceneEnabled
-                                    ? isStandardMode
-                                        ? 'border-[#0078D4]/25 bg-[#0078D4]/8 text-[#0078D4]'
-                                        : 'border-cyan-400/22 bg-cyan-500/10 text-cyan-200'
-                                    : isStandardMode
-                                        ? 'border-gray-200 bg-white text-gray-500 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                        : 'border-white/10 bg-white/[0.03] text-white/50 hover:border-cyan-400/25 hover:text-cyan-200'
-                                    }`}
-                            >
+                <div className={`rounded-[28px] border p-4 ${microCard}`}>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                            <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                                 <Clock3 size={12} />
-                                {autoSceneEnabled ? 'Auto Time' : 'Manual'}
-                            </button>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            <button
-                                onClick={onCycleScene}
-                                className={`rounded-2xl border px-3 py-2 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/25 hover:text-emerald-200'}`}
-                            >
-                                Szene wechseln
-                            </button>
-                            <div className={`rounded-2xl border px-3 py-2 text-sm ${microCard} ${accentText}`}>
-                                {autoSceneEnabled ? 'Zeitgetrieben' : 'Manuell fixiert'}
+                                Atmosphere
                             </div>
+                            <div className={`mt-2 text-base ${primaryText}`}>{sceneLabel}</div>
+                            <p className={`mt-2 text-sm leading-relaxed ${secondaryText}`}>
+                                {sceneDescription}
+                            </p>
                         </div>
+                        <button
+                            onClick={onToggleAutoScene}
+                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.22em] transition-colors ${autoSceneEnabled
+                                ? isStandardMode
+                                    ? 'border-[#0078D4]/25 bg-[#0078D4]/8 text-[#0078D4]'
+                                    : 'border-cyan-400/22 bg-cyan-500/10 text-cyan-200'
+                                : isStandardMode
+                                    ? 'border-gray-200 bg-white text-gray-500 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
+                                    : 'border-white/10 bg-white/[0.03] text-white/50 hover:border-cyan-400/25 hover:text-cyan-200'
+                                }`}
+                        >
+                            <Clock3 size={12} />
+                            {autoSceneEnabled ? 'Auto' : 'Manual'}
+                        </button>
                     </div>
 
-                    <div className={`rounded-[26px] border p-4 ${microCard}`}>
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                                <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                                    <Music2 size={12} />
-                                    Now Playing
-                                </div>
-                                <button onClick={onOpenAudio} className={`mt-2 max-w-full truncate text-left text-base ${primaryText}`}>
-                                    {trackName || 'Audio konfigurieren'}
-                                </button>
-                                <div className={`mt-2 text-sm ${secondaryText}`}>
-                                    {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Noch keine Library'}
-                                </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                            onClick={onCycleScene}
+                            className={`rounded-2xl border px-3 py-2 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                        >
+                            Szene wechseln
+                        </button>
+                        <button
+                            onClick={onOpenAudio}
+                            className={`rounded-2xl border px-3 py-2 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                        >
+                            Audio settings
+                        </button>
+                    </div>
+
+                    <div className={`mt-4 rounded-[24px] border p-4 ${microCard}`}>
+                        <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
+                            <Music2 size={12} />
+                            Now Playing
+                        </div>
+                        <div className={`mt-3 text-base ${primaryText}`}>
+                            {trackName || 'Audio konfigurieren'}
+                        </div>
+                        <div className={`mt-1 text-sm ${secondaryText}`}>
+                            {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Noch keine Library'}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between gap-3">
+                            <div className="flex items-end gap-1">
+                                {[10, 18, 12, 20, 14].map((height, index) => (
+                                    <span
+                                        key={`${height}-${index}`}
+                                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#0078D4]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'} ${isPlaying ? 'animate-pulse' : 'opacity-30'}`}
+                                        style={{
+                                            height,
+                                            animationDelay: `${index * 0.1}s`,
+                                            animationDuration: `${1 + index * 0.08}s`,
+                                        }}
+                                    />
+                                ))}
                             </div>
 
                             <div className="flex items-center gap-2">

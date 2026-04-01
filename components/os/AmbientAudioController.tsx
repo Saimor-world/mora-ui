@@ -78,8 +78,9 @@ export const AmbientAudioController: React.FC = () => {
 
         return () => {
             cancelled = true;
+            audioElement.pause();
         };
-    }, [ambientAudio.trackId]);
+    }, [ambientAudio.enabled, ambientAudio.trackId, ambientAudio.volume]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
@@ -98,8 +99,9 @@ export const AmbientAudioController: React.FC = () => {
     }, [ambientAudio.enabled]);
 
     useEffect(() => {
+        const audioElement = audioRef.current;
+
         return () => {
-            const audioElement = audioRef.current;
             if (audioElement) {
                 audioElement.pause();
                 audioElement.removeAttribute('src');

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
@@ -156,25 +156,25 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [activeCompanyId, setPersonalSpaceId]);
 
     // ─── MEMBERSHIP HELPERS ───
-    const isMember = (deptId: string): boolean => {
+    const isMember = useCallback((deptId: string): boolean => {
         // While loading (first render before API responds): show all to avoid flash
         if (!membershipsLoaded) return true;
         if (isAdmin(user?.role)) return true;
         // API failed: restrict to public departments only (no silent cross-scope fallback)
         if (memberships === null) return false;
         return memberships.some((m) => m.department_id === deptId);
-    };
+    }, [membershipsLoaded, memberships, user?.role]);
 
-    const shouldRender = (dept: any): boolean => {
+    const shouldRender = useCallback((dept: any): boolean => {
         if (isMember(dept.id)) return true;
         const vis = dept.visibility ?? 'private';    // server truth; default private
         return vis === 'public' || vis === 'visible'; // private never renders
-    };
+    }, [isMember]);
 
-    const isLocked = (dept: any): boolean => {
+    const isLocked = useCallback((dept: any): boolean => {
         if (isMember(dept.id)) return false;
         return (dept.visibility ?? 'private') === 'visible';
-    };
+    }, [isMember]);
 
     // ─── DEPARTMENT METRICS (from API or fallback to tree) ───
     const departmentMetrics = useMemo(() => {
@@ -299,9 +299,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     // ─── SILK DRIFT PATHS (V10.6) ───
     const visiblePlanets = useMemo(
         () => planetPositions.filter((planet) => shouldRender(planet)),
-        [planetPositions, membershipsLoaded, memberships, user?.role]
+        [planetPositions, shouldRender]
     );
-    const focusedPlanetId = hoverPlanetId || activeDepartmentId || visiblePlanets[0]?.id || null;
+    const focusedPlanetId = hoverPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -399,9 +399,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     focusPeerId,
                     highlighted:
                         hoverPlanetId === from.id ||
-                        hoverPlanetId === to.id ||
-                        activeDepartmentId === from.id ||
-                        activeDepartmentId === to.id,
+                        hoverPlanetId === to.id,
                 };
             })
             .filter((value): value is {
@@ -420,7 +418,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 focusPeerId: string | null;
                 highlighted: boolean;
             } => value !== null);
-    }, [semanticConnections, visiblePlanets, hoverPlanetId, activeDepartmentId, focusedPlanetId]);
+    }, [semanticConnections, visiblePlanets, hoverPlanetId, focusedPlanetId]);
 
     const semanticPreviewPath = useMemo(
         () => semanticPaths.find((path) => path.id === semanticPreviewPathId) || null,
@@ -442,11 +440,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 intensity: Math.max(0.16, Math.min(1, loadSignal / Math.max(1, maxNodes * 0.45 + 12))),
                 highlighted:
                     hoverPlanetId === planet.id ||
-                    activeDepartmentId === planet.id ||
                     semanticPreviewPlanetIds.has(planet.id),
             };
         })
-    ), [visiblePlanets, departmentMetrics, hoverPlanetId, activeDepartmentId, maxNodes, semanticPreviewPlanetIds]);
+    ), [visiblePlanets, departmentMetrics, hoverPlanetId, maxNodes, semanticPreviewPlanetIds]);
 
     const focusedPlanet = useMemo(() => {
         if (!focusedPlanetId) return null;

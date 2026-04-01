@@ -85,11 +85,14 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                 }}
             >
                 {imageUrl ? (
-                    <img
-                        src={imageUrl}
-                        alt={name || 'User'}
-                        className="w-full h-full object-cover"
-                    />
+                    <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- avatar URLs can be arbitrary user-provided sources */}
+                        <img
+                            src={imageUrl}
+                            alt={name || 'User'}
+                            className="w-full h-full object-cover"
+                        />
+                    </>
                 ) : (
                     <span
                         className="text-white/80 font-medium"

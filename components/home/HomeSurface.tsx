@@ -148,7 +148,7 @@ export const HomeSurface: React.FC = () => {
 
     return (
         <div className="absolute inset-0 overflow-auto">
-            <div className="mx-auto flex max-w-3xl flex-col gap-10 px-6 pb-[13rem] pt-12 md:pb-[16rem]">
+            <div className="mx-auto flex max-w-3xl flex-col gap-10 px-6 pb-[16rem] pt-12 md:pb-[18rem] xl:pb-[19rem]">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>

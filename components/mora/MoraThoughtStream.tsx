@@ -76,12 +76,14 @@ export const MoraThoughtStream: React.FC = () => {
     // 1. Cycle through fetched thoughts
     useEffect(() => {
         if (thoughts.length === 0) {
+            setCurrentIndex(0);
             setActiveThought(null);
             return;
         }
 
-        // Set initial thought when list changes or resets
-        setActiveThought(thoughts[currentIndex]);
+        // Reset the carousel when a new batch arrives.
+        setCurrentIndex(0);
+        setActiveThought(thoughts[0] ?? null);
 
         // Only setup interval if there are multiple thoughts to cycle
         if (thoughts.length <= 1) return;
@@ -91,7 +93,7 @@ export const MoraThoughtStream: React.FC = () => {
         }, 12000); // Show each thought for 12 seconds
 
         return () => clearInterval(cycleInterval);
-    }, [thoughts, thoughts.length]); // DON'T include currentIndex here
+    }, [thoughts]);
 
     // 2. Sync active thought when index changes
     useEffect(() => {

@@ -204,9 +204,11 @@ Wenn der User Dokumente sehen will, öffne den "finder".
 `;
 }
 
-export default {
+const cursorBridge = {
     parseAIResponse,
     executeCursorCommands,
     suggestCursorAction,
     getCursorAwareSystemPromptAddition
 };
+
+export default cursorBridge;

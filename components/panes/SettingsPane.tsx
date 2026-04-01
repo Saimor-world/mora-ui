@@ -85,7 +85,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
         canWriteActiveCompany &&
         isAdmin(user?.role);
 
-    const tabs = [
+    const tabs = useMemo(() => [
         { id: 'profile', label: 'Profil', icon: User },
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
@@ -94,20 +94,20 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
         { id: 'about', label: 'Über Mora', icon: Info }
-    ];
+    ], [canEditWorkspace, canManageTeam, canViewSystem]);
 
     // Ensure active tab is valid for current role
     useEffect(() => {
         if (!tabs.find(t => t.id === activeTab)) {
             setActiveTab('profile');
         }
-    }, [user?.role, activeTab]);
+    }, [tabs, activeTab]);
 
     useEffect(() => {
         if (!activeCompany) return;
         setBrandingName(activeCompany.name || '');
         setBrandingLogo(activeCompany.logo_url || null);
-    }, [activeCompany?.id]);
+    }, [activeCompany]);
 
 useEffect(() => {
         if (user?.settings) {
