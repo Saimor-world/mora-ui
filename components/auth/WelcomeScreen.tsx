@@ -54,6 +54,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [reAuthPassword, setReAuthPassword] = useState('');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
+    // Default true so the button is visible while the policy loads (no CLS/flash)
+    const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
     const prefersReducedMotion = useReducedMotion();
     const [isDocumentVisible, setIsDocumentVisible] = useState(
         typeof document === 'undefined' ? true : !document.hidden
@@ -182,6 +184,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setInviteCode('');
         setCompanyName('');
     }, [mode]);
+
+    // Fetch instance policy once on mount — public endpoint, no auth required.
+    // Controls whether the "Account Erstellen" button is shown.
+    useEffect(() => {
+        void coreGet('/v3/auth/instance-policy', { skipAuth: true, isOptional: true })
+            .then((data: any) => {
+                if (data && typeof data.allow_public_registration === 'boolean') {
+                    setAllowPublicRegistration(data.allow_public_registration);
+                }
+            })
+            .catch(() => {
+                // On error: keep default (true) so registration is not silently hidden.
+            });
+    }, []);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -882,8 +898,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
 
-                                {/* Account Erstellen Button */}
-                                <motion.button
+                                {/* Account Erstellen Button — hidden when instance policy disables public registration */}
+                                {allowPublicRegistration && <motion.button
                                     onClick={() => setMode('register')}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
@@ -898,7 +914,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">Starten Sie Ihre Reise</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
-                                </motion.button>
+                                </motion.button>}
 
                                 {/* Quick Demo Button - Re-enabling for High-Fidelity Experience */}
                                 <motion.button

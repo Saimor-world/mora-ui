@@ -444,9 +444,10 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 setFiles(prev => prev.map(f => f.id === fileId ? { ...f, fileRecordId: uploaded.id } : f));
 
             // Global Mycelium intake must stay reviewable; silent auto-execution hides routing decisions.
+            // Default to false — require review unless user has explicitly enabled auto-execution.
             const autoExecute = intakeSeed.source === 'mycelium'
                 ? false
-                : (user?.settings?.autoExecuteActions || true);
+                : (user?.settings?.autoExecuteActions ?? false);
             const response: FileCreateNodeResponse = await requestCreateNodeFromFile(uploaded.id, {
                 autoExecute,
                 batchId: intakeSeed.batchId,
@@ -622,8 +623,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
     const openConfirmedFolder = useCallback((folderId: string, label?: string, path?: string) => {
         surfaceNavigationOutcome({
-            title: 'Ordner geoeffnet',
-            message: `Ich habe ${label || 'den Zielordner'} im Finder geoeffnet.`,
+            title: 'Ordner geöffnet',
+            message: `Ich habe ${label || 'den Zielordner'} im Finder geöffnet.`,
             targetType: 'folder',
             label: label || 'Zielordner',
             path,
@@ -635,8 +636,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
 
     const openConfirmedDocument = useCallback((nodeId: string, label?: string, folderId?: string, path?: string) => {
         surfaceNavigationOutcome({
-            title: 'Datei geoeffnet',
-            message: `Ich habe ${label || 'das Dokument'} geoeffnet.`,
+            title: 'Datei geöffnet',
+            message: `Ich habe ${label || 'das Dokument'} geöffnet.`,
             targetType: 'node',
             label: label || 'Dokument',
             path,
@@ -1110,7 +1111,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                             )}
                                             className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
                                         >
-                                            Datei oeffnen
+                                            Datei öffnen
                                         </button>
                                     </div>
                                 )}
@@ -1218,12 +1219,36 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                 {buildConfidenceText(activePendingAction.intake_context)}
                             </div>
                         )}
+                        {activePendingAction.intake_context?.route_explanation?.reason && (
+                            <div className="rounded-xl border border-white/8 bg-black/15 px-3 py-3 space-y-1.5">
+                                <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">
+                                    Warum dort
+                                </div>
+                                {activePendingAction.intake_context.route_explanation.headline && (
+                                    <div className="text-sm text-white/75">
+                                        {activePendingAction.intake_context.route_explanation.headline}
+                                    </div>
+                                )}
+                                <div className="text-xs text-white/50 leading-relaxed">
+                                    {activePendingAction.intake_context.route_explanation.reason}
+                                </div>
+                                {(activePendingAction.intake_context.route_explanation.signal_labels?.length ?? 0) > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {activePendingAction.intake_context.route_explanation.signal_labels!.map((signal) => (
+                                            <span key={signal} className="rounded-full border border-cyan-400/15 bg-cyan-500/8 px-2 py-0.5 text-[10px] text-cyan-200/70">
+                                                {signal}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {activePendingAction.route_resolution === 'choose' && activeChoiceResults.length > 0 && (
                             <AmbiguityChoiceSurface
                                 query={activePendingAction.file_name}
                                 results={activeChoiceResults}
                                 title={activePendingAction.route_choice_headline || 'Mehrere plausible Ziele'}
-                                body={activePendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Waehle den richtigen Zielordner vor der Freigabe.'}
+                                body={activePendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Wähle den richtigen Zielordner vor der Freigabe.'}
                                 onPick={(result) => {
                                     if (!result.folderId) return;
                                     applyRouteOverride(activePendingAction.action_id, result.folderId);
@@ -1236,7 +1261,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                 tone={activePendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
                                 label={activePendingAction.next.label || 'Naechster Schritt'}
                                 title={activePendingAction.route_summary || buildRoutePath(activePendingAction.intake_context)}
-                                body={activePendingAction.next.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                body={activePendingAction.next.message || 'Prüfe die Einordnung und bestätige oder korrigiere das Ziel.'}
                                 className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
                             />
                         )}
@@ -1246,7 +1271,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     Ziel korrigieren
                                 </div>
                                 <p className="text-xs text-white/55 leading-relaxed">
-                                    Falls Moras Vorschlag nicht passt, waehle vor der Freigabe den richtigen Zielordner.
+                                    Falls Moras Vorschlag nicht passt, wähle vor der Freigabe den richtigen Zielordner.
                                 </p>
                                 <select
                                     value={activePendingAction.folder_id || ''}
@@ -1254,7 +1279,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     className="w-full rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-sm text-white/80 outline-none focus:border-amber-400/40"
                                 >
                                     <option value="" disabled>
-                                        Zielordner auswaehlen
+                                        Zielordner auswählen
                                     </option>
                                     {routeOptions.map((option) => (
                                         <option key={option.folderId} value={option.folderId}>

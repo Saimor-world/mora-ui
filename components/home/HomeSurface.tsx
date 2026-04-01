@@ -1,15 +1,37 @@
 ﻿'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut } from 'lucide-react';
+import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut, Eye } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { fetchNodesByCompany, fetchMyContent, authLogout } from '@/lib/api/coreClient';
+import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet } from '@/lib/api/coreClient';
 import type { UserContentResponse } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
+
+interface KairosEvent {
+    id: string;
+    timestamp: string;
+    event_type: string;
+    source: string;
+    payload: {
+        summary?: string;
+        new_nodes?: number;
+        sample_titles?: string[];
+    };
+}
+
+function relativeTime(isoStr: string): string {
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return 'gerade eben';
+    if (min < 60) return `vor ${min} Min.`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `vor ${h} Std.`;
+    return `vor ${Math.floor(h / 24)} Tag${Math.floor(h / 24) > 1 ? 'en' : ''}`;
+}
 
 /**
  * HomeSurface - Day-start working surface for SAIMOR 1.0.
@@ -34,6 +56,7 @@ export const HomeSurface: React.FC = () => {
 
     const [recentDocs, setRecentDocs] = useState<CoreNode[] | null>(null);
     const [myContent, setMyContent] = useState<UserContentResponse | null | undefined>(undefined);
+    const [kairosEvents, setKairosEvents] = useState<KairosEvent[] | null>(null);
 
     useEffect(() => {
         if (!activeCompanyId) {
@@ -66,6 +89,17 @@ export const HomeSurface: React.FC = () => {
             })
             .catch(() => {
                 if (!cancelled) setMyContent(null);
+            });
+
+        // KAIROS awareness events — v3 endpoint, company-scoped
+        void coreGet('/v3/mindloop/events?type=awareness&limit=5')
+            .then((data: any) => {
+                if (cancelled) return;
+                const events: KairosEvent[] = data?.events ?? [];
+                setKairosEvents(events.length > 0 ? events.slice(0, 3) : null);
+            })
+            .catch(() => {
+                if (!cancelled) setKairosEvents(null);
             });
 
         return () => {
@@ -139,7 +173,7 @@ export const HomeSurface: React.FC = () => {
     })();
 
     const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const personalSpaceLabel = myContent?.space?.name || 'Persoenlicher Space';
+    const personalSpaceLabel = myContent?.space?.name || 'Persönlicher Space';
     const personalLatestLabel =
         myContent?.nodes?.[0]?.title ||
         myContent?.files?.[0]?.name ||
@@ -213,11 +247,11 @@ export const HomeSurface: React.FC = () => {
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt geoeffnet
+                            Zuletzt geöffnet
                         </h2>
                         {recentDocs.length === 0 ? (
                             <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
-                                Noch keine Dokumente - oeffne den Finder, um loszulegen.
+                                Noch keine Dokumente – öffne den Finder, um loszulegen.
                             </p>
                         ) : (
                             <ul className="flex flex-col gap-1">
@@ -243,10 +277,33 @@ export const HomeSurface: React.FC = () => {
                     </section>
                 )}
 
+                {kairosEvents && kairosEvents.length > 0 && (
+                    <section data-testid="kairos-feed-section">
+                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                            Mora bemerkt
+                        </h2>
+                        <ul className="flex flex-col gap-1">
+                            {kairosEvents.map((evt) => (
+                                <li key={evt.id} className={`flex items-start gap-3 rounded-xl px-4 py-3 ${t.item}`}>
+                                    <Eye size={14} className={`mt-0.5 shrink-0 ${t.cardSub}`} />
+                                    <span className="flex-1 text-sm leading-snug">
+                                        {evt.payload.summary || (evt.payload.new_nodes != null
+                                            ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
+                                            : 'Workspace-Aktivität erkannt')}
+                                    </span>
+                                    <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
+                                        {relativeTime(evt.timestamp)}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                )}
+
                 {myContent && (
                     <section data-testid="personal-area-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Persoenlicher Bereich
+                            Persönlicher Bereich
                         </h2>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
