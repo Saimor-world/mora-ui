@@ -28,7 +28,7 @@ export interface LocalAIConfig {
 const DEFAULT_CONFIG: LocalAIConfig = {
     provider: 'ollama',
     baseUrl: 'http://localhost:11434',
-    model: 'llama2',
+    model: 'llama3.2:latest',
     temperature: 0.7,
     maxTokens: 2048
 };

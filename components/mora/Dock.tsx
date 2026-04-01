@@ -39,6 +39,7 @@ import {
 } from '@/lib/os/ritualMode';
 import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
+import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -374,6 +375,7 @@ export const Dock = () => {
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
     const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
+    const assistantRuntime = useAssistantRuntime();
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
@@ -1405,7 +1407,7 @@ export const Dock = () => {
                                         ? 'Rueckfrage offen'
                                         : viewMode === 'demo'
                                             ? 'Demo aktiv'
-                                            : 'Bereit'}
+                                            : assistantRuntime.title}
                             </span>
                             <div className="hidden">
                                 <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-gray-200 text-gray-500 bg-gray-100' : 'border-white/10 text-white/55 bg-white/[0.04]'}`}>

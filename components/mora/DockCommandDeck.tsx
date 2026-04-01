@@ -14,6 +14,7 @@ import {
     Sparkles,
     type LucideIcon,
 } from 'lucide-react';
+import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 
 export interface DockCommandDeckAction {
     id: string;
@@ -88,6 +89,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     onOpenAudio,
     actions,
 }) => {
+    const assistantRuntime = useAssistantRuntime(45_000);
     const shellCard = isStandardMode
         ? 'border-gray-200 bg-white shadow-[0_18px_60px_rgba(0,0,0,0.12)]'
         : 'border-white/10 bg-[linear-gradient(180deg,rgba(7,18,14,0.96),rgba(4,10,8,0.98))] shadow-[0_30px_100px_rgba(0,0,0,0.52)]';
@@ -273,6 +275,19 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    <div className={`mt-4 rounded-[24px] border p-4 ${microCard}`}>
+                        <div className={`flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
+                            <span>Assistant</span>
+                            <span className={accentText}>{assistantRuntime.badge}</span>
+                        </div>
+                        <div className={`mt-3 text-sm ${primaryText}`}>
+                            {assistantRuntime.title}
+                        </div>
+                        <div className={`mt-1 text-[11px] ${secondaryText}`}>
+                            {assistantRuntime.subtitle}
                         </div>
                     </div>
                 </div>

@@ -14,6 +14,7 @@ import {
     resolveRitualSettings,
 } from '@/lib/os/ritualMode';
 import { requestCommandDeckOpen, SAIMOR_COMMAND_DECK_STATE_EVENT } from '@/lib/os/commandDeck';
+import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 
 const ORB_LABELS: Record<string, string> = {
     idle: 'Standby',
@@ -58,6 +59,7 @@ export const MoraPulsePanel: React.FC = () => {
 
     const [now, setNow] = useState(() => new Date());
     const [isDeckOpen, setIsDeckOpen] = useState(false);
+    const assistantRuntime = useAssistantRuntime();
 
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualScene = useMemo(
@@ -187,6 +189,23 @@ export const MoraPulsePanel: React.FC = () => {
 
                         <div className="mt-3 text-[11px] text-white/50">
                             {shellContext.signalA} / {shellContext.signalB}
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                            <div className="min-w-0">
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-white/35">Assistant</div>
+                                <div className="mt-1 truncate text-[11px] text-white/78">
+                                    {assistantRuntime.title}
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-200/70">
+                                    {assistantRuntime.badge}
+                                </div>
+                                <div className="mt-1 max-w-[110px] truncate text-[11px] text-white/42">
+                                    {assistantRuntime.subtitle}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
