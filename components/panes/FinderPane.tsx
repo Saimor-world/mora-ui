@@ -5,7 +5,7 @@ import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2 } from 'lucide-react';
+import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
 import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
 import type { CoreTreeNode } from '@/lib/types/core';
@@ -18,6 +18,7 @@ import {
     confirmCreateNodeFromFile,
     rejectCreateNodeFromFile,
     getFileNode,
+    downloadCompanyFile,
     type FileCreateNodeResponse,
     type FileIntakeDestination,
     type FileIntakeNext,
@@ -30,6 +31,7 @@ import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/u
 import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
+import { getContentDisplayName, getContentTypeLabel, getNodeSourceFileId, openNodeLike } from '@/lib/utils/contentOpen';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -226,24 +228,24 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const handleRename = async () => {
         if (!contextMenu?.item) return;
-        const newName = prompt("Rename:", contextMenu.item.name || contextMenu.item.title);
+        const newName = prompt("Umbenennen:", contextMenu.item.name || contextMenu.item.title);
         if (!newName) return;
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space' || contextMenu.item.type === 'department') {
                 if (contextMenu.item.type === 'space') await updateSpace(contextMenu.item.id, { name: newName });
                 else if (contextMenu.item.type === 'folder') await updateFolder(contextMenu.item.id, { name: newName });
-                else toast.error("Cannot rename departments here");
+                else toast.error("Bereiche koennen hier nicht umbenannt werden");
             } else {
                 await updateNode(contextMenu.item.id, { title: newName });
             }
             loadContent();
-            toast.success('Renamed successfully');
-        } catch (e: any) { toast.error(e.message || 'Rename failed'); }
+            toast.success('Umbenannt');
+        } catch (e: any) { toast.error(e.message || 'Umbenennen fehlgeschlagen'); }
         setContextMenu(null);
     };
 
     const handleDelete = async () => {
-        if (!contextMenu?.item || !confirm(`Delete ${contextMenu.item.name || contextMenu.item.title}?`)) return;
+        if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
                 if (contextMenu.item.type === 'space') await deleteSpace(contextMenu.item.id);
@@ -252,22 +254,59 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 await deleteNode(contextMenu.item.id);
             }
             loadContent();
-            toast.success('Deleted');
-        } catch (e: any) { toast.error(e.message || 'Delete failed'); }
+            toast.success('Geloescht');
+        } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
         setContextMenu(null);
     };
+
+    const canOpenSourceFile = useCallback((item: any) => Boolean(getNodeSourceFileId(item)), []);
+
+    const handleOpenSourceFile = useCallback(async (item: any) => {
+        const fileId = getNodeSourceFileId(item);
+        if (!fileId) {
+            toast.info('Keine Originaldatei verknuepft');
+            return;
+        }
+        try {
+            await downloadCompanyFile(fileId, item?.metadata?.original_filename || getContentDisplayName(item));
+        } catch (error: any) {
+            toast.error(error?.message || 'Originaldatei konnte nicht geoeffnet werden');
+        }
+    }, []);
+
+    const openFinderNode = useCallback((item: any) => {
+        const resolvedFolderId = currentFolderIdRef.current ?? item?.folder_id ?? undefined;
+        const result = openNodeLike(item, openPane, {
+            paneId: `doc-${item.id}`,
+            title: item.name || item.title || 'Dokument',
+            folderId: resolvedFolderId,
+            companyId: activeCompanyId ?? paneCompanyId ?? item?.company_id ?? undefined,
+            navigationContext: navigationContext ? {
+                title: navigationContext.title,
+                message: navigationContext.message,
+                label: navigationContext.label,
+                path: navigationContext.path,
+                source: navigationContext.source,
+                folderId: resolvedFolderId,
+                timestamp: Date.now(),
+            } satisfies DocumentNavigationContext : undefined,
+        });
+        if (result.mode === 'external-link') {
+            toast.success('Link im Browser geoeffnet');
+        }
+    }, [activeCompanyId, navigationContext, openPane, paneCompanyId]);
 
     const handleCopy = () => {
         if (!contextMenu?.item) return;
         setClipboard({ id: contextMenu.item.id, item: contextMenu.item, mode: 'copy' });
-        toast.success('Copied to clipboard');
+        toast.success('In Zwischenablage kopiert');
         setContextMenu(null);
     };
 
     const handleCut = () => {
         if (!contextMenu?.item) return;
         setClipboard({ id: contextMenu.item.id, item: contextMenu.item, mode: 'cut' });
-        toast.success('Cut to clipboard');
+        toast.success('Zum Verschieben markiert');
         setContextMenu(null);
     };
 
@@ -279,7 +318,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 // Move
                 if (clipboard.item.type === 'folder' || clipboard.item.type === 'space') {
                     // Folder move not fully supported in pure API yet without parent update
-                    toast.info("Moving folders not yet supported");
+                    toast.info("Ordner koennen hier noch nicht verschoben werden");
                 } else {
                     await updateNode(clipboard.id, { folder_id: targetFolderId || undefined });
                     toast.success('Element verschoben');
@@ -287,26 +326,26 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             } else {
                 // Copy (Duplicate) - Requires creating new node
                 if (['folder', 'space', 'department'].includes(clipboard.item.type)) {
-                    toast.info("Folder duplication not supported");
+                    toast.info("Ordner koennen hier noch nicht dupliziert werden");
                 } else {
                     if (!resolvedCompanyId) {
-                        toast.error('Select a company first.');
+                        toast.error('Bitte zuerst eine Firma waehlen.');
                         return;
                     }
                     await addNode({
                         company_id: resolvedCompanyId,
                         folder_id: targetFolderId || undefined,
-                        title: `${clipboard.item.name || clipboard.item.title} (Copy)`,
+                        title: `${clipboard.item.name || clipboard.item.title} (Kopie)`,
                         type: clipboard.item.type,
                         content: clipboard.item.content || '',
                         metadata: clipboard.item.metadata || {}
                     } as any);
-                    toast.success('File duplicated');
+                    toast.success('Inhalt dupliziert');
                 }
             }
             void loadContent();
             setClipboard(null);
-        } catch (e: any) { toast.error(e.message || 'Paste failed'); }
+        } catch (e: any) { toast.error(e.message || 'Einfuegen fehlgeschlagen'); }
         setContextMenu(null);
     };
 
@@ -315,35 +354,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
             navigateToFolder(contextMenu.item.id);
         } else {
-            const resolvedFolderId = currentFolderIdRef.current ?? undefined;
-            openPane({
-                id: `doc-${contextMenu.item.id}`,
-                type: 'document',
-                title: contextMenu.item.name || 'Document',
-                size: { width: 800, height: 600 },
-                data: {
-                    nodeId: contextMenu.item.id,
-                    content: contextMenu.item.content,
-                    name: contextMenu.item.name,
-                    type: contextMenu.item.type,
-                    folderId: resolvedFolderId,
-                    // Forward Finder's own navigationContext only if it came from Mora/search/session.
-                    // If Finder was opened locally, omit navigationContext — DocumentPane stays quiet.
-                    // Pick only DocumentNavigationContext-compatible fields (FinderNavigationContext
-                    // has targetType + query which do not exist on DocumentNavigationContext).
-                    ...(navigationContext ? {
-                        navigationContext: {
-                            title: navigationContext.title,
-                            message: navigationContext.message,
-                            label: navigationContext.label,
-                            path: navigationContext.path,
-                            source: navigationContext.source,
-                            folderId: resolvedFolderId,
-                            timestamp: Date.now(),
-                        } satisfies DocumentNavigationContext,
-                    } : {}),
-                },
-            });
+            openFinderNode(contextMenu.item);
         }
         setContextMenu(null);
     };
@@ -498,13 +509,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const checkResonance = async (nodeId: string) => {
         setResonanceSourceId(nodeId);
-        toast.info('Detecting resonance...');
+        toast.info('Aehnliche Inhalte werden gesucht...');
         try {
             const similar = await getSemanticallySimilarNodes(nodeId);
             const ids = similar.map(n => n.id);
             setResonanceIds(ids);
             if (ids.length > 0) {
-                toast.success(`Found ${ids.length} related files`);
+                toast.success(`${ids.length} verwandte Inhalte gefunden`);
             }
         } catch (e: any) {
             // Silence 500 errors if semantic service is offline
@@ -708,7 +719,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (breadcrumbs.length > 0) {
             return breadcrumbs.map((b) => b.name).filter(Boolean).join(' / ');
         }
-        return 'Home';
+        return 'Start';
     }, [folderContext, breadcrumbs]);
 
     const buildRoutePath = useCallback((intake?: IntakeContext | null) => {
@@ -1219,7 +1230,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const handleUpload = useCallback(async (fileList: File[]) => {
         if (!resolvedCompanyId) {
-            toast.error('Select a company first.');
+            toast.error('Bitte zuerst eine Firma waehlen.');
             setShowUpload(false);
             return;
         }
@@ -1242,7 +1253,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }));
 
         const targetFolderId = resolveUploadFolderId();
-        const targetFolderName = targetFolderId ? (findNodeInTree(rawTree, targetFolderId)?.name || 'current folder') : 'company root';
+        const targetFolderName = targetFolderId ? (findNodeInTree(rawTree, targetFolderId)?.name || 'aktueller Ordner') : 'Firmenwurzel';
         let successCount = 0;
         let hasPendingConfirmation = false;
         let hasPerFileError = false;
@@ -1387,15 +1398,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 }
             }
             if (successCount > 0 && !hasPendingConfirmation) {
-                toast.success(`${successCount} file(s) uploaded to ${targetFolderName}`);
+                toast.success(`${successCount} Datei(en) nach ${targetFolderName} hochgeladen`);
                 await loadContent();
             } else if (successCount === 0 && !hasPerFileError) {
                 // Only show generic error if no per-file error toast was already displayed
-                toast.error('Failed to upload files');
+                toast.error('Dateien konnten nicht hochgeladen werden');
                 setIdle();
             }
         } catch (e: any) {
-            toast.error(e.message || 'Upload error');
+            toast.error(e.message || 'Upload fehlgeschlagen');
             setIdle();
         } finally {
             setIsUploading(false);
@@ -1610,8 +1621,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     <Upload className="w-8 h-8 text-emerald-400 animate-bounce" />
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-emerald-100 font-bold text-lg">Drop to add to Mycelium</p>
-                                    <p className="text-emerald-400/70 text-sm">Target: {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Inbox'}</p>
+                                    <p className="text-emerald-100 font-bold text-lg">Hier ablegen, um Inhalte einzuordnen</p>
+                                    <p className="text-emerald-400/70 text-sm">Ziel: {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Eingang'}</p>
                                 </div>
                             </div>
                         </div>
@@ -1704,7 +1715,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 className={`flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 rounded-lg transition-all text-xs md:text-sm group shrink-0 ${!currentFolderId ? 'text-emerald-400 bg-emerald-500/10' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
                             >
                                 <Home size={14} className={!currentFolderId ? 'text-emerald-400' : 'text-white/40'} />
-                                <span className="font-medium tracking-tight">{folderContext?.path?.company?.name || 'Home'}</span>
+                                <span className="font-medium tracking-tight">{folderContext?.path?.company?.name || 'Start'}</span>
                             </button>
 
                             {folderContext?.path?.department && (
@@ -1953,16 +1964,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
 
                                                             {folder.type === 'department' && (
-                                                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold tracking-tighter border border-emerald-500/20 uppercase">Planet</span>
+                                                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold tracking-tighter border border-emerald-500/20 uppercase">Bereich</span>
                                                             )}
                                                             {folder.type === 'space' && (
-                                                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-bold tracking-tighter border border-cyan-500/20 uppercase">Moon</span>
+                                                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-bold tracking-tighter border border-cyan-500/20 uppercase">Space</span>
                                                             )}
                                                         </div>
                                                         <div className="space-y-1">
                                                             <span className={`text-sm font-medium line-clamp-2 leading-snug break-words ${isSelected ? 'text-white' : 'text-white/80'}`} title={folder.name}>{folder.name}</span>
                                                             {folder.type === 'folder' && (
-                                                                <span className="text-[10px] text-white/30 uppercase tracking-[0.1em]">Shared Folder</span>
+                                                                <span className="text-[10px] text-white/30 uppercase tracking-[0.1em]">Gemeinsamer Ordner</span>
                                                             )}
                                                         </div>
 
@@ -1979,6 +1990,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 const isResonant = resonanceIds.includes(file.id);
                                                 const isSelected = selectedNodeId === file.id;
                                                 const Icon = TYPE_ICONS[file.type] || FileText;
+                                                const hasSourceFile = canOpenSourceFile(file);
+                                                const opensExternally = file.type === 'link' && typeof file.url === 'string' && file.url.trim().length > 0;
 
                                                 return (
                                                     <motion.div
@@ -1989,13 +2002,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         onDoubleClick={(e: React.MouseEvent) => {
                                                             e.stopPropagation();
                                                             checkResonance(file.id);
-                                                            openPane({
-                                                                id: `doc-${file.id}`,
-                                                                type: 'document',
-                                                                title: file.name || 'Document',
-                                                                size: { width: 800, height: 600 },
-                                                                data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
-                                                            });
+                                                            openFinderNode(file);
                                                         }}
                                                         className={`p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-200 flex flex-col gap-2.5 md:gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
@@ -2025,9 +2032,21 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 )}
                                                             </span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-[9px] text-white/30 uppercase tracking-tighter">{file.type || 'system'}</span>
+                                                                <span className="text-[9px] text-white/30 uppercase tracking-tighter">{getContentTypeLabel(file.type)}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
                                                                 <span className="text-[9px] text-white/30">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
+                                                                {hasSourceFile && (
+                                                                    <>
+                                                                        <div className="w-1 h-1 rounded-full bg-white/10" />
+                                                                        <span className="text-[9px] text-cyan-200/60 uppercase tracking-tighter">Original</span>
+                                                                    </>
+                                                                )}
+                                                                {opensExternally && (
+                                                                    <>
+                                                                        <div className="w-1 h-1 rounded-full bg-white/10" />
+                                                                        <span className="text-[9px] text-violet-200/60 uppercase tracking-tighter">Browser</span>
+                                                                    </>
+                                                                )}
                                                                 {(() => {
                                                                     const vis = file.visibility ||
                                                                         ((file as any).visibility_scope === 'personal' ? 'private' :
@@ -2095,7 +2114,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         {currentFolderId ? <FolderIcon size={24} className="text-emerald-400" /> : <Home size={24} className="text-emerald-400" />}
                                                     </div>
                                                     <span className="text-xs text-white bg-black/50 px-2 py-1 rounded-md border border-white/10 backdrop-blur-sm">
-                                                        {folderContext?.path?.breadcrumbs?.slice(-1)[0]?.name || folderContext?.path?.space?.name || folderContext?.path?.department?.name || 'Home'}
+                                                        {folderContext?.path?.breadcrumbs?.slice(-1)[0]?.name || folderContext?.path?.space?.name || folderContext?.path?.department?.name || 'Start'}
                                                     </span>
                                                 </div>
                                                 {/* Center core */}
@@ -2195,13 +2214,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             }}
                                                             onClick={() => {
                                                                 checkResonance(file.id);
-                                                                openPane({
-                                                                    id: `doc-${file.id}`,
-                                                                    type: 'document',
-                                                                    title: file.name || 'Document',
-                                                                    size: { width: 800, height: 600 },
-                                                                    data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
-                                                                });
+                                                                openFinderNode(file);
                                                             }} onContextMenu={(e) => handleContextMenu(e, file, "file")}
                                                             title={file.name}
                                                             onMouseEnter={() => {
@@ -2218,24 +2231,24 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     );
                                                 })}
 
-                                                {/* Legend */}
+                                                {/* Legende */}
                                                 <div className="absolute bottom-4 left-4 flex items-center justify-center flex-wrap gap-4 text-[10px] text-white/60 bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-xl z-50 shadow-2xl">
-                                                    <div className="font-medium text-emerald-400/80 mr-2 uppercase tracking-widest hidden sm:block">Legend</div>
+                                                    <div className="font-medium text-emerald-400/80 mr-2 uppercase tracking-widest hidden sm:block">Legende</div>
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                        <span>Planet</span>
+                                                        <span>Bereich</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                                                        <span>Moon</span>
+                                                        <span>Space</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-2 h-2 rounded-full bg-blue-400" />
-                                                        <span>Folder</span>
+                                                        <span>Ordner</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-2 h-2 rounded-full bg-white/40" />
-                                                        <span>File</span>
+                                                        <span>Inhalt</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2266,7 +2279,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         <div className="flex-1 min-w-0">
                                                             <span className={`text-sm block truncate ${isSelected ? 'text-white font-medium' : 'text-white/70'}`}>{folder.name}</span>
                                                             {folder.foundIn && (
-                                                                <span className="text-[10px] text-emerald-400/40 block truncate">in {folder.foundIn}</span>
+                                                                <span className="text-[10px] text-emerald-400/40 block truncate">Pfad: {folder.foundIn}</span>
                                                             )}
                                                         </div>
                                                         {folder.type && (
@@ -2291,13 +2304,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         onDoubleClick={(e: React.MouseEvent) => {
                                                             e.stopPropagation();
                                                             checkResonance(file.id);
-                                                            openPane({
-                                                                id: `doc-${file.id}`,
-                                                                type: 'document',
-                                                                title: file.name || 'Document',
-                                                                size: { width: 800, height: 600 },
-                                                                data: { nodeId: file.id, content: file.content, name: file.name, type: file.type, metadata: file.metadata }
-                                                            });
+                                                            openFinderNode(file);
                                                         }}
                                                         className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50'
@@ -2310,8 +2317,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         <div className="flex-1 min-w-0">
                                                             <span className={`text-sm block truncate ${isSelected ? 'text-white font-medium' : 'text-white/70'}`}>{file.name}</span>
                                                             {file.foundIn && (
-                                                                <span className="text-[10px] text-emerald-400/40 block truncate">in {file.foundIn}</span>
+                                                                <span className="text-[10px] text-emerald-400/40 block truncate">Pfad: {file.foundIn}</span>
                                                             )}
+                                                            <div className="mt-1 flex items-center gap-2 text-[10px] text-white/30">
+                                                                <span>{getContentTypeLabel(file.type)}</span>
+                                                                {canOpenSourceFile(file) && <span className="text-cyan-200/60">Originaldatei</span>}
+                                                                {file.type === 'link' && typeof file.url === 'string' && file.url.trim().length > 0 && (
+                                                                    <span className="text-violet-200/60">Browser-Link</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <span className="text-[10px] text-white/30 shrink-0">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
                                                         {(() => {
@@ -2477,37 +2491,48 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         {contextMenu.item.name || contextMenu.item.title || 'Item'}
                                     </div>
                                     <button onClick={handleOpen} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
-                                        <ExternalLink size={14} /> Open
+                                        <ExternalLink size={14} /> {(contextMenu.item.type === 'link' && contextMenu.item.url) ? 'Im Browser oeffnen' : 'Oeffnen'}
                                     </button>
+                                    {contextMenu.type === 'file' && canOpenSourceFile(contextMenu.item) && (
+                                        <button
+                                            onClick={() => {
+                                                void handleOpenSourceFile(contextMenu.item);
+                                                setContextMenu(null);
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
+                                        >
+                                            <Paperclip size={14} /> Originaldatei oeffnen
+                                        </button>
+                                    )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
                                         <Globe size={14} /> Im Universe oeffnen
                                     </button>
                                     <button onClick={handleRename} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
-                                        <Edit size={14} /> Rename
+                                        <Edit size={14} /> Umbenennen
                                     </button>
                                     <button onClick={handleCopy} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
-                                        <Copy size={14} /> Copy
+                                        <Copy size={14} /> Kopieren
                                     </button>
                                     <button onClick={handleCut} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
-                                        <Scissors size={14} /> Cut
+                                        <Scissors size={14} /> Ausschneiden
                                     </button>
                                     <div className="h-px bg-white/5 my-1" />
                                     <button onClick={handleDelete} className="w-full text-left px-3 py-1.5 hover:bg-red-500/20 hover:text-red-400 flex items-center gap-2 transition-colors text-red-300">
-                                        <Trash2 size={14} /> Delete
+                                        <Trash2 size={14} /> Loeschen
                                     </button>
                                 </>
                             ) : (
                                 <>
                                     <button onClick={() => loadContent()} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
-                                        <RefreshCw size={14} /> Refresh
+                                        <RefreshCw size={14} /> Aktualisieren
                                     </button>
                                     {clipboard && (
                                         <button onClick={handlePaste} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2">
-                                            <Clipboard size={14} /> Paste Item
+                                            <Clipboard size={14} /> Element einfuegen
                                         </button>
                                     )}
                                     <button onClick={() => setIsCreateFolderOpen(true)} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
-                                        <FolderIcon size={14} /> New Folder
+                                        <FolderIcon size={14} /> Neuer Ordner
                                     </button>
                                 </>
                             )}
@@ -2523,7 +2548,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 isCreateFolderOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
                         <div className="bg-[#0a1a12] border border-emerald-500/20 rounded-2xl p-6 w-[400px] shadow-2xl">
-                            <h3 className="text-lg font-medium text-white mb-4">New Folder</h3>
+                            <h3 className="text-lg font-medium text-white mb-4">Neuer Ordner</h3>
                             <form onSubmit={async (e) => {
                                 e.preventDefault();
                                 if (!newFolderName.trim() || !currentFolderId) return;
@@ -2543,7 +2568,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     setNewFolderName('');
                                     setIsCreateFolderOpen(false);
                                     loadContent();
-                                    toast.success('Folder created');
+                                    toast.success('Ordner erstellt');
                                 } catch (err: any) {
                                     toast.error(err?.message || 'Failed to create folder');
                                 }
@@ -2552,7 +2577,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     type="text"
                                     value={newFolderName}
                                     onChange={(e) => setNewFolderName(e.target.value)}
-                                    placeholder="Folder name..."
+                                    placeholder="Ordnername..."
                                     className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white focus:border-emerald-500/50 outline-none mb-4"
                                     autoFocus
                                 />

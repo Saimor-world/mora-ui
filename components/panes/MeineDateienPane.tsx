@@ -3,9 +3,10 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, Folder, FileText, Paperclip, ChevronRight, Link, Check, ExternalLink } from 'lucide-react';
-import { fetchMyContent, shareNode, shareFile, getCoreBaseUrl, type UserContentResponse } from '@/lib/api/coreClient';
+import { fetchMyContent, shareNode, shareFile, type UserContentResponse } from '@/lib/api/coreClient';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
+import { downloadCompanyFile } from '@/lib/api/filesClient';
 
 /**
  * MeineDateienPane — the current user's personal content surface.
@@ -88,8 +89,7 @@ export const MeineDateienPane: React.FC = () => {
     }, [openPane]);
 
     const handleOpenFile = useCallback((fileId: string, fileName: string) => {
-        const url = `${getCoreBaseUrl()}/v3/files/${fileId}/download`;
-        window.open(url, '_blank', 'noopener,noreferrer');
+        void downloadCompanyFile(fileId, fileName);
     }, []);
 
     const handleOpenLinkedNode = useCallback((nodeId: string, title: string) => {
