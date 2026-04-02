@@ -94,7 +94,7 @@ export const ContextRail: React.FC = () => {
             action: handleHomeClick
         },
         { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
-        { id: 'activity', icon: Activity, label: 'Aktivität', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
+        { id: 'activity', icon: Activity, label: 'Aktivitaet', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
         { id: 'chat', icon: MessageSquare, label: "Mora", action: () => { closeOverlays(); openChatDock(); } },
     ];
 

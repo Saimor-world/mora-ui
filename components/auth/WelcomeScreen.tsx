@@ -68,10 +68,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Showcase oeffnen oder mit Zugangsdaten weiter'
+        ? 'Showcase starten oder mit Zugangsdaten weiter'
         : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Eigene Organisation vorbereiten'
+        ? 'Eigene Instanz vorbereiten'
         : 'Neue Organisation einrichten';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
@@ -399,7 +399,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!usingInvite && selectedRole === 'owner' && (!companyName || !companyName.trim())) {
-            toast.error('Firmenname ist erforderlich für Owner-Accounts');
+            toast.error('Organisationsname ist fuer Owner-Accounts erforderlich');
             return;
         }
 
@@ -791,7 +791,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         transition={{ duration: 1.5, repeat: Infinity }}
                                                         className="text-xs text-emerald-500/50 tracking-widest"
                                                     >
-                                                        Identität wird geprüft...
+                                                        Identitaet wird geprueft...
                                                     </motion.div>
                                                 </motion.div>
                                             )}
@@ -811,7 +811,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] disabled:opacity-50"
                                                     >
                                                         <Sparkles className="w-4 h-4 text-emerald-400" />
-                                                        <span className="font-medium tracking-wide">Identität bestätigt — Fortsetzen</span>
+                                                        <span className="font-medium tracking-wide">Identitaet bestaetigt - Fortsetzen</span>
                                                     </motion.button>
                                                     <button
                                                         onClick={() => void handleLogout()}
@@ -830,7 +830,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     className="space-y-3"
                                                 >
                                                     <div className="text-xs text-amber-500/60 text-center tracking-wider mb-3">
-                                                        Bestätige kurz dein Passwort
+                                                        Bestaetige kurz dein Passwort
                                                     </div>
                                                     <input
                                                         type="password"
@@ -850,7 +850,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                             className="flex-1 py-3 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
                                                         >
                                                             <LogIn className="w-4 h-4 text-emerald-400" />
-                                                            <span className="font-medium tracking-wide text-sm">Bestätigen</span>
+                                                            <span className="font-medium tracking-wide text-sm">Bestaetigen</span>
                                                         </motion.button>
                                                         <button
                                                             onClick={() => void handleLogout()}
@@ -939,8 +939,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <Sparkles className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Simple Coffee Group erleben</div>
-                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Perfekt kuratierte Demo starten</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Simple Coffee Group oeffnen</div>
+                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Mit echter Struktur, Signalen und Finder starten</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
@@ -1104,14 +1104,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                                 <div>
                                                     <label className="block text-[10px] text-mora-gold/70 mb-2.5 uppercase tracking-widest font-medium">
-                                                        Unternehmensname *
+                                                        Organisationsname *
                                                     </label>
                                                     <input
                                                         type="text"
                                                         value={companyName}
                                                         onChange={(e) => setCompanyName(e.target.value)}
                                                         className="w-full bg-black/40 border border-mora-gold/30 rounded-xl px-4 py-3.5 text-emerald-50 focus:outline-none focus:border-mora-gold/60 focus:bg-black/60 placeholder:text-mora-gold/30 transition-all duration-300"
-                                                        placeholder="Name Ihres Unternehmens"
+                                                        placeholder="Name Ihrer Organisation"
                                                     />
                                                     <p className="text-[10px] text-mora-gold/50 mt-1.5 flex items-center gap-1">
                                                         <Sparkles size={10} />
@@ -1138,7 +1138,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     >
                                                         {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
                                                         <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                        <span className="text-xs font-medium relative z-10">Eigentümer</span>
+                                                        <span className="text-xs font-medium relative z-10">Eigentuemer</span>
                                                         <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
                                                     </button>
                                                     <button

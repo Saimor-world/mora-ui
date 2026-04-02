@@ -43,14 +43,14 @@ export const AdminHome: React.FC = () => {
                         <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">In dieser Instanz</div>
                         <div className="mt-2 text-sm text-white/85">Organisationsverwaltung</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/48">
-                            Dieser Bereich ist für Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
+                            Dieser Bereich ist fuer Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
                         </p>
                     </div>
                     <div className="rounded-2xl border border-amber-400/18 bg-amber-500/[0.06] p-4">
                         <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/70">Separat</div>
                         <div className="mt-2 text-sm text-white/88">Owner-Bereich</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/50">
-                            Systemweite Firmen-, Benutzer-, Token- und Instanzverwaltung bleibt bewusst außerhalb dieser Arbeitsoberfläche.
+                            Systemweite Organisations-, Benutzer-, Token- und Instanzverwaltung bleibt bewusst ausserhalb dieser Arbeitsoberflaeche.
                         </p>
                         <a
                             href={ownerConsoleUrl}
