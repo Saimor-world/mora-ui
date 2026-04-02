@@ -20,7 +20,7 @@ type PreviewLane = 'focus' | 'flow' | 'archive';
 const PREVIEW_LANE_META: Record<PreviewLane, { label: string; accent: string; distance: number; spread: number }> = {
     focus: { label: 'Stark', accent: '#34D399', distance: 126, spread: 72 },
     flow: { label: 'Aktiv', accent: '#22D3EE', distance: 188, spread: 64 },
-    archive: { label: 'Ruhig', accent: '#A78BFA', distance: 250, spread: 58 },
+    archive: { label: 'Ablage', accent: '#A78BFA', distance: 250, spread: 58 },
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -618,14 +618,14 @@ export const DepartmentLayer: React.FC = () => {
 
             <LayerInsightRail
                 className="left-8 top-32 z-40"
-                eyebrow={deptTitle || 'Department'}
-                title={hoveredSpaceDetails?.displayName || deptTitle || 'Department'}
-                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsübersicht'}
+                eyebrow={deptTitle || 'Abteilung'}
+                title={hoveredSpaceDetails?.displayName || deptTitle || 'Abteilung'}
+                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsuebersicht'}
                 accent={hoveredSpaceDetails?.color || deptColor}
-                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren für Details.'}
+                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren fuer Details.'}
                 summary={hoveredSpaceDetails
-                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die stärksten Ordner.`
-                    : 'Hover über einen Bereich, um seine stärksten Ordner und die echte Struktur zu sehen.'}
+                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die staerksten Ordner.`
+                    : 'Hover ueber einen Bereich, um seine staerksten Ordner und die echte Struktur zu sehen.'}
                 forceExpanded={Boolean(hoveredSpaceDetails)}
                 onPointerEnter={() => {
                     if (hoveredSpaceId) {
@@ -689,12 +689,12 @@ export const DepartmentLayer: React.FC = () => {
                         )}
 
                         <p className="text-[11px] leading-relaxed text-white/45">
-                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die stärksten Ordner dieses Bereichs, bevor du in die nächste Ebene gehst.'}
+                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die staerksten Ordner dieses Bereichs, bevor du in die naechste Ebene gehst.'}
                         </p>
                     </div>
                 ) : (
                     <p className="text-[11px] leading-relaxed text-white/40">
-                        Hover über einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
+                        Hover ueber einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
                     </p>
                 )}
             </LayerInsightRail>
@@ -1026,11 +1026,11 @@ export const DepartmentLayer: React.FC = () => {
                                             <div className="absolute top-3 left-3 flex items-center gap-2 text-[10px] text-white/80">
                                                 <FileText size={12} className="text-emerald-300/80" />
                                                 <span className="truncate max-w-[160px]">
-                                                    {doc.name || doc.title || 'Document'}
+                                                    {doc.name || doc.title || 'Dokument'}
                                                 </span>
                                             </div>
                                             <div className="absolute bottom-3 right-3 text-[9px] text-emerald-300/50 uppercase tracking-[0.2em]">
-                                                öffnen
+                                                oeffnen
                                             </div>
                                         </motion.div>
                                     ))}

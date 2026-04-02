@@ -52,6 +52,11 @@ function relativeTime(isoStr: string): string {
     }).format(new Date(isoStr));
 }
 
+function formatCountLabel(value: number, singular: string, plural?: string): string {
+    const resolvedPlural = plural || `${singular}e`;
+    return `${value} ${value === 1 ? singular : resolvedPlural}`;
+}
+
 /**
  * HomeSurface - Day-start working surface for SAIMOR 1.0.
  *
@@ -267,9 +272,9 @@ export const HomeSurface: React.FC = () => {
     const myContentCountsLabel = useMemo(() => {
         if (!myContent?.counts) return null;
         return [
-            myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
-            myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
-            myContent.counts.files != null && `${myContent.counts.files} Originaldateien`,
+            myContent.counts.nodes != null && formatCountLabel(myContent.counts.nodes, 'bearbeitbarer Inhalt', 'bearbeitbare Inhalte'),
+            myContent.counts.folders != null && formatCountLabel(myContent.counts.folders, 'Ordner'),
+            myContent.counts.files != null && formatCountLabel(myContent.counts.files, 'Quelldatei', 'Quelldateien'),
         ].filter(Boolean).join(' · ');
     }, [myContent]);
 
@@ -278,7 +283,7 @@ export const HomeSurface: React.FC = () => {
         ? personalLatestItem.kind === 'node'
             ? 'Dokument'
             : personalLatestItem.kind === 'file'
-                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Verknuepftes Dokument' : 'Originaldatei')
+                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Dokument mit Quelle' : 'Quelldatei')
                 : 'Ordner'
         : null;
 
@@ -414,7 +419,7 @@ export const HomeSurface: React.FC = () => {
                             Persönlicher Bereich
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner, bearbeitbare Dokumente und hochgeladene Originaldateien aus deinem privaten Kontext.
+                            Eigene Ordner, bearbeitbare Inhalte und hochgeladene Quelldateien aus deinem privaten Kontext.
                         </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
@@ -431,7 +436,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Originaldateien bleiben als Quelle erhalten. Mora kann sie einordnen und mit Dokumenten verknuepfen, ohne das Original zu verlieren.
+                                        Quelldateien bleiben als Original erhalten. Mora kann sie einordnen und mit Dokumenten verknuepfen, ohne das Original zu verlieren.
                                     </div>
                                 </div>
                             </button>

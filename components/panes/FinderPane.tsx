@@ -31,7 +31,14 @@ import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/u
 import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
-import { getContentDisplayName, getContentTypeLabel, getNodeSourceFileId, openNodeLike } from '@/lib/utils/contentOpen';
+import {
+    getContentDisplayName,
+    getContentSecondaryLabel,
+    getContentTypeLabel,
+    getNodeOpenActionLabel,
+    getNodeSourceFileId,
+    openNodeLike,
+} from '@/lib/utils/contentOpen';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -264,13 +271,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const handleOpenSourceFile = useCallback(async (item: any) => {
         const fileId = getNodeSourceFileId(item);
         if (!fileId) {
-            toast.info('Keine Originaldatei verknuepft');
+            toast.info('Keine Quelldatei verknuepft');
             return;
         }
         try {
             await downloadCompanyFile(fileId, item?.metadata?.original_filename || getContentDisplayName(item));
         } catch (error: any) {
-            toast.error(error?.message || 'Originaldatei konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Quelldatei konnte nicht geoeffnet werden');
         }
     }, []);
 
@@ -329,7 +336,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     toast.info("Ordner koennen hier noch nicht dupliziert werden");
                 } else {
                     if (!resolvedCompanyId) {
-                        toast.error('Bitte zuerst eine Firma waehlen.');
+                        toast.error('Bitte zuerst eine Organisation waehlen.');
                         return;
                     }
                     await addNode({
@@ -1230,7 +1237,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const handleUpload = useCallback(async (fileList: File[]) => {
         if (!resolvedCompanyId) {
-            toast.error('Bitte zuerst eine Firma waehlen.');
+            toast.error('Bitte zuerst eine Organisation waehlen.');
             setShowUpload(false);
             return;
         }
@@ -1630,11 +1637,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     <div className="flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 border-b border-white/5 bg-emerald-500/[0.04]">
                         <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-100/85">
-                            {resolvedCompanyName ? `Firma: ${resolvedCompanyName}` : 'Firmenkontext fehlt'}
+                            {resolvedCompanyName ? `Organisation: ${resolvedCompanyName}` : 'Organisationskontext fehlt'}
                         </span>
                         {globalSearch && (
                             <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-100/80">
-                                Unternehmensweite Suche
+                                Organisationsweite Suche
                             </span>
                         )}
                         {!globalSearch && searchQuery.trim() && (
@@ -1683,7 +1690,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <button
                                 onClick={navigateBack}
                                 disabled={backStack.length === 0}
-                                aria-label="Navigate back"
+                                aria-label="Zurueck"
                                 className={`p-1.5 rounded-lg border transition-colors ${backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Zurück (Alt+Links)"
                             >
@@ -1692,7 +1699,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <button
                                 onClick={navigateForward}
                                 disabled={forwardStack.length === 0}
-                                aria-label="Navigate forward"
+                                aria-label="Vorwaerts"
                                 className={`p-1.5 rounded-lg border transition-colors ${forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Vorwärts (Alt+Rechts)"
                             >
@@ -1701,7 +1708,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <button
                                 onClick={navigateUp}
                                 disabled={!currentFolderId}
-                                aria-label="Navigate up"
+                                aria-label="Nach oben"
                                 className={`p-1.5 rounded-lg border transition-colors ${currentFolderId ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Hoch (Alt+Hoch)"
                             >
@@ -1785,7 +1792,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search..."
+                                    placeholder="Suche..."
                                     className="pl-9 pr-4 py-1.5 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-28 lg:w-32 focus:w-40 lg:focus:w-48 transition-all"
                                 />
                             </div>
@@ -2321,9 +2328,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                             <div className="mt-1 flex items-center gap-2 text-[10px] text-white/30">
                                                                 <span>{getContentTypeLabel(file.type)}</span>
-                                                                {canOpenSourceFile(file) && <span className="text-cyan-200/60">Originaldatei</span>}
-                                                                {file.type === 'link' && typeof file.url === 'string' && file.url.trim().length > 0 && (
-                                                                    <span className="text-violet-200/60">Browser-Link</span>
+                                                                {getContentSecondaryLabel(file) && (
+                                                                    <span className="text-cyan-200/60">{getContentSecondaryLabel(file)}</span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -2491,7 +2497,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         {contextMenu.item.name || contextMenu.item.title || 'Item'}
                                     </div>
                                     <button onClick={handleOpen} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
-                                        <ExternalLink size={14} /> {(contextMenu.item.type === 'link' && contextMenu.item.url) ? 'Im Browser oeffnen' : 'Oeffnen'}
+                                        <ExternalLink size={14} /> {getNodeOpenActionLabel(contextMenu.item)}
                                     </button>
                                     {contextMenu.type === 'file' && canOpenSourceFile(contextMenu.item) && (
                                         <button
@@ -2501,7 +2507,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             }}
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
-                                            <Paperclip size={14} /> Originaldatei oeffnen
+                                            <Paperclip size={14} /> Quelldatei oeffnen
                                         </button>
                                     )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">

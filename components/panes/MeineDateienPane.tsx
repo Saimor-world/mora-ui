@@ -111,7 +111,7 @@ export const MeineDateienPane: React.FC = () => {
     if (content === null || content === 'error') {
         return (
             <div className="text-sm text-white/30 py-8 px-4">
-                Meine Inhalte nicht verfügbar.
+                Meine Inhalte nicht verfuegbar.
             </div>
         );
     }
@@ -137,13 +137,13 @@ export const MeineDateienPane: React.FC = () => {
             {counts && (
                 <div className="border-b border-white/5 mb-1 px-4 py-2">
                     <div className="flex items-center gap-3 text-[10px] text-white/20">
-                        {counts.total != null && <span>{counts.total} Einträge gesamt</span>}
+                        {counts.total != null && <span>{counts.total} Eintraege gesamt</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.nodes != null && <span>{counts.nodes} Dokumente</span>}
-                        {counts.files != null && <span>{counts.files} Originaldateien</span>}
+                        {counts.nodes != null && <span>{counts.nodes} bearbeitbare Inhalte</span>}
+                        {counts.files != null && <span>{counts.files} Quelldateien</span>}
                     </div>
                     <div className="mt-1 text-[10px] text-white/20">
-                        Dokumente sind bearbeitbare Inhalte. Originaldateien und Anhänge bleiben als Quelle sichtbar. Ordner strukturieren beides.
+                        Bearbeitbare Inhalte kannst du direkt oeffnen. Quelldateien bleiben als Original erhalten und koennen mit Inhalten verknuepft sein.
                     </div>
                 </div>
             )}
@@ -179,12 +179,12 @@ export const MeineDateienPane: React.FC = () => {
 
             {/* Section 2: Nodes — primary content */}
             {nodes.length > 0 && (
-                <section aria-label="Dokumente">
+                <section aria-label="Bearbeitbare Inhalte">
                     <div className="px-4 pt-3 pb-1 text-[10px] text-white/20 uppercase tracking-wider">
-                        Dokumente
+                        Bearbeitbare Inhalte
                     </div>
                     {nodes.map((node) => {
-                        const label = node.title ?? node.name ?? '—';
+                        const label = node.title ?? node.name ?? 'Unbenannt';
                         const share = shareStates[node.id] ?? { status: 'idle' };
                         return (
                             <div
@@ -217,9 +217,9 @@ export const MeineDateienPane: React.FC = () => {
 
             {/* Section 3: Files — uploads, always shareable */}
             {files.length > 0 && (
-                <section aria-label="Originaldateien und Anhänge">
+                <section aria-label="Quelldateien und Anhaenge">
                     <div className="px-4 pt-3 pb-1 text-[10px] text-white/20 uppercase tracking-wider">
-                        Originaldateien & Anhänge
+                        Quelldateien & Anhaenge
                     </div>
                     {files.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };
@@ -242,7 +242,7 @@ export const MeineDateienPane: React.FC = () => {
                                         </span>
                                         {isLinkedToDocument && (
                                             <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-cyan-200/80 shrink-0">
-                                                Oeffnet Dokument
+                                                Als Dokument oeffnen
                                             </span>
                                         )}
                                         <ExternalLink size={10} className="opacity-0 group-hover:opacity-30 transition-opacity shrink-0" />
@@ -261,8 +261,8 @@ export const MeineDateienPane: React.FC = () => {
                                     </div>
                                     <div className="mt-1 text-[11px] text-white/30">
                                         {isLinkedToDocument
-                                            ? 'Originaldatei vorhanden und bereits mit einem Dokument verknüpft.'
-                                            : 'Liegt bisher nur als Originaldatei vor. Klick öffnet den Download.'}
+                                            ? 'Die Quelldatei bleibt erhalten und ist bereits mit einem Dokument verknuepft.'
+                                            : 'Liegt bisher nur als Quelldatei vor. Klick laedt die Datei direkt herunter.'}
                                     </div>
                                     <ShareResult state={share} />
                                 </div>
@@ -287,7 +287,7 @@ const ShareControl: React.FC<{ state: ShareState; onShare: () => void }> = ({ st
         <button
             onClick={(e) => { e.stopPropagation(); onShare(); }}
             className="opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-white/50"
-            title="Öffentlichen Link erstellen"
+            title="Oeffentlichen Link erstellen"
             aria-label="Teilen"
             data-testid="share-button"
         >
@@ -313,7 +313,7 @@ const ShareResult: React.FC<{ state: ShareState }> = ({ state }) => {
     if (state.status === 'unavailable') {
         return (
             <span className="text-[10px] text-white/20 mt-0.5 block" data-testid="share-unavailable">
-                Teilen für diesen Inhalt noch nicht verfügbar
+                Teilen fuer diesen Inhalt noch nicht verfuegbar
             </span>
         );
     }

@@ -368,7 +368,7 @@ const RelevantMemories: React.FC<{
                 </div>
                 {isMemoryBasis && (
                     <p className="mb-2 text-[11px] leading-relaxed text-white/55">
-                        Mora hat diese Antwort auf gespeichertes Wissen gestützt. Hier siehst du die naheliegendsten Gedächtnistreffer im aktuellen Firmenkontext.
+                        Mora hat diese Antwort auf gespeichertes Wissen gestuetzt. Hier siehst du die naheliegendsten Gedaechtnistreffer im aktuellen Organisationskontext.
                     </p>
                 )}
                 <div className="space-y-1.5">
@@ -405,7 +405,7 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
     return (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
             <p className="text-sm font-medium text-foreground/80">
-                Kein Firmenkontext aktiv
+                Kein Organisationskontext aktiv
             </p>
             <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
                 Richte zuerst eine Organisation oder einen Demo-Kontext ein, damit Mora sinnvoll arbeiten kann.
@@ -764,8 +764,8 @@ Womit soll ich beginnen?`,
         dispatchNavigationResult({
             title: global ? 'Unternehmenssuche geoeffnet' : 'Suche geoeffnet',
             message: global
-                ? 'Ich habe die unternehmensweite Suche im aktuellen Firmenkontext geoeffnet.'
-                : `Ich habe die Suche fuer ${query} im aktuellen Firmenkontext geoeffnet.`,
+                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geoeffnet.'
+                : `Ich habe die Suche fuer ${query} im aktuellen Organisationskontext geoeffnet.`,
             targetType: 'search',
             label: query || 'Alle Dokumente',
             query: query || '',
@@ -847,7 +847,7 @@ Womit soll ich beginnen?`,
         if (chosen.type === 'file' || chosen.type === 'node') {
             return `Ich oeffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
         }
-        return `Ich oeffne **${chosen.title}** im aktuellen Firmenkontext.`;
+        return `Ich oeffne **${chosen.title}** im aktuellen Organisationskontext.`;
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)

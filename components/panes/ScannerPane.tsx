@@ -870,7 +870,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5">
                     <span className="rounded-full border border-purple-400/15 bg-purple-500/10 px-2.5 py-1 text-[11px] text-purple-100/85">
-                        {activeCompanyName ? `Einordnung für ${activeCompanyName}` : 'Firmenkontext fehlt'}
+                        {activeCompanyName ? `Einordnung fuer ${activeCompanyName}` : 'Organisationskontext fehlt'}
                     </span>
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55">
                         Globaler Drop landet in Mycelium, lokale Dropzonen bleiben im aktuellen Finder-Kontext.

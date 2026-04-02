@@ -778,16 +778,16 @@ export const MemorySidebar: React.FC = () => {
                                             <CommandReceipt
                                                 tone={resolvedCompanyId ? 'cyan' : 'amber'}
                                                 icon={Brain}
-                                                label={resolvedCompanyId ? 'Firmenkontext aktiv' : 'Kein Firmenkontext aktiv'}
+                                                label={resolvedCompanyId ? 'Organisationskontext aktiv' : 'Kein Organisationskontext aktiv'}
                                                 title={resolvedCompanyId
-                                                    ? 'Hier siehst du deine letzten Eintraege und die Hinweise zum aktiven Firmenkontext.'
-                                                    : 'Hier siehst du nur deine eigenen Eintraege. Firmenhinweise erscheinen, sobald ein Firmenkontext aktiv ist.'}
+                                                    ? 'Hier siehst du deine letzten Eintraege und die Hinweise zum aktiven Organisationskontext.'
+                                                    : 'Hier siehst du nur deine eigenen Eintraege. Organisationshinweise erscheinen, sobald ein Organisationskontext aktiv ist.'}
                                                 chips={[
                                                     { label: 'Kuerzlich' },
                                                     { label: 'Offen' },
                                                     { label: 'Kontext', tone: resolvedCompanyId ? 'cyan' : 'slate' },
                                                 ]}
-                                                footer={resolvedCompanyId ? 'Mora zeigt hier, was fuer dich im aktuellen Firmenkontext gerade relevant ist.' : 'Waehle einen Firmenkontext, damit auch Firmenhinweise und Freigaben erscheinen.'}
+                                                footer={resolvedCompanyId ? 'Mora zeigt hier, was fuer dich im aktuellen Organisationskontext gerade relevant ist.' : 'Waehle einen Organisationskontext, damit auch Hinweise und Freigaben erscheinen.'}
                                             />
                                         </div>
 
@@ -802,7 +802,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Kein Firmenkontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Firmenhinweise und Freigaben kommen dazu, sobald du in einer Organisation bist.
+                                                        Kein Organisationskontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du in einer Organisation bist.
                                                     </div>
                                                 )}
 
@@ -896,7 +896,7 @@ export const MemorySidebar: React.FC = () => {
                                             </>
                                         ) : (
                                             <p className="text-xs text-muted-foreground px-4 py-6 text-center leading-relaxed">
-                                                Dein Bereich ist verfuegbar. Firmenhinweise erscheinen, sobald ein Firmenkontext aktiv ist.
+                                                Dein Bereich ist verfuegbar. Organisationshinweise erscheinen, sobald ein Organisationskontext aktiv ist.
                                             </p>
                                         )}
 

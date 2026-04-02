@@ -120,7 +120,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         {workspaceName}
                     </div>
                     <div className={`mt-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                        {scopeLabel} · {orbStateLabel}
+                        {scopeLabel} / {orbStateLabel}
                     </div>
                 </div>
 

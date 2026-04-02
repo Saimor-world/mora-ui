@@ -289,8 +289,8 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
         case 'company':
             if (!companyId) return;
             surfaceNavigationOutcome({
-                title: 'Firmenkontext geoeffnet',
-                message: `Ich habe ${label} im aktuellen Firmenkontext geoeffnet.`,
+                title: 'Organisation geoeffnet',
+                message: `Ich habe ${label} im aktuellen Organisationskontext geoeffnet.`,
                 targetType: 'company',
                 label,
                 companyId,

@@ -178,7 +178,7 @@ export const buildShellContextSnapshot = ({
             subtitle: companyTitle,
             description: 'Die Abteilung zeigt ihre Bereiche und Schwerpunkte. Von hier aus gehst du in den passenden Bereich, nicht in eine App.',
             signalA: formatCount(activeSpaces.length, 'Bereich', 'Bereiche'),
-            signalB: `${formatCount(folderCount, 'Ordner')} · ${formatCount(docCount, 'Dokument', 'Dokumente')}`,
+            signalB: `${formatCount(folderCount, 'Ordner')} / ${formatCount(docCount, 'Dokument', 'Dokumente')}`,
             accent: activeDepartment.color || accent,
             nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Abteilung im Finder oeffnen',
             nextMoveHint: leadingSpace

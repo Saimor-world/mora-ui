@@ -211,7 +211,7 @@ export const GridPane: React.FC<{ id: string }> = ({ id }) => {
                                 <Grid size={48} className="text-emerald-400" />
                             </div>
                             <p className="text-sm text-white/40 text-center">
-                                {nodes.length === 0 ? 'Keine Inhalte in diesem Firmenkontext' : 'Keine passenden Ergebnisse'}
+                                {nodes.length === 0 ? 'Keine Inhalte in diesem Organisationskontext' : 'Keine passenden Ergebnisse'}
                             </p>
                         </div>
                     )}

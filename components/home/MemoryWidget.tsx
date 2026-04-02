@@ -97,7 +97,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                             {isAccountScoped ? 'Konto-Gedächtnis' : 'Gedächtnis'}
                         </h3>
                         <p className="text-[9px] text-white/30 uppercase tracking-widest">
-                            {isAccountScoped ? 'Firmenkontext fehlt' : 'Core-Metriken'}
+                            {isAccountScoped ? 'Organisationskontext fehlt' : 'Core-Metriken'}
                         </p>
                     </div>
                 </div>
@@ -118,7 +118,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
 
             {isAccountScoped && (
                 <div className="mb-4 rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-xs text-white/45 leading-relaxed">
-                    Kein Firmenkontext aktiv. Konto-Gedaechtnis bleibt lokal; Firmenmetriken und Freigaben erscheinen erst mit einer Organisation.
+                    Kein Organisationskontext aktiv. Konto-Gedaechtnis bleibt lokal; Organisationsmetriken und Freigaben erscheinen erst mit einer Organisation.
                 </div>
             )}
 

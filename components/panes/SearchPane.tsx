@@ -360,7 +360,7 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                             </span>
                         ) : (
                             <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-amber-100/85">
-                                Firmenkontext fehlt
+                                Organisationskontext fehlt
                             </span>
                         )}
                         {query.trim() && activeCompanyName && (

@@ -436,7 +436,7 @@ export async function openSearchResult(
         case 'department':
             surfaceNavigationOutcome({
                 title: 'Bereich geoeffnet',
-                message: `Ich habe ${result.title} im aktuellen Firmenkontext geoeffnet.`,
+                message: `Ich habe ${result.title} im aktuellen Organisationskontext geoeffnet.`,
                 targetType: 'department',
                 label: result.title,
                 path: result.path,
@@ -448,7 +448,7 @@ export async function openSearchResult(
         case 'space':
             surfaceNavigationOutcome({
                 title: 'Bereich geoeffnet',
-                message: `Ich habe ${result.title} im aktuellen Firmenkontext geoeffnet.`,
+                message: `Ich habe ${result.title} im aktuellen Organisationskontext geoeffnet.`,
                 targetType: 'space',
                 label: result.title,
                 path: result.path,

@@ -505,7 +505,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                     {!ctx.isOperational ? (
                         <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center h-full">
                             <p className="text-sm font-medium text-foreground/80">
-                                Kein Firmenkontext aktiv
+                                Kein Organisationskontext aktiv
                             </p>
                             <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
                                 Richte zuerst eine Organisation oder einen Demo-Kontext ein, damit das Team sinnvoll erscheint.

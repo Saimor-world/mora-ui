@@ -192,7 +192,7 @@ export const MoraPulsePanel: React.FC = () => {
                         </div>
 
                         <div className="mt-3 text-[11px] text-white/50">
-                            {shellContext.signalA} · {shellContext.signalB}
+                            {shellContext.signalA} / {shellContext.signalB}
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">

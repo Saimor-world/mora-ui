@@ -13,12 +13,12 @@ const SCOPE_CONFIG: Record<MoraScope, { color: string; bg: string; label: (src?:
     personal: {
         color: 'text-emerald-400',
         bg: 'bg-emerald-500/10',
-        label: () => 'persönlicher Kontext',
+        label: () => 'persoenlicher Kontext',
     },
     shared: {
         color: 'text-blue-400',
         bg: 'bg-blue-500/10',
-        label: (src) => src ?? 'Unternehmenskontext',
+        label: (src) => src ?? 'Organisationskontext',
     },
     object: {
         color: 'text-amber-400',
@@ -33,9 +33,6 @@ const SCOPE_CONFIG: Record<MoraScope, { color: string; bg: string; label: (src?:
  * Spec (Section 5, "Memory Scope Visibility Rule"):
  * Mora must always indicate which scope she is drawing from.
  * This is a trust model requirement, not just a UX nicety.
- *
- * Label design is an open decision (spec Section 10, item 4).
- * This is the functional MVC.
  */
 export const MoraContextLabel: React.FC<MoraContextLabelProps> = ({ scope, sourceName }) => {
     if (!scope) return null;

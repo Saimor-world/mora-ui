@@ -64,8 +64,29 @@ export function getNodeSourceFileName(item: Pick<OpenableNodeLike, 'metadata' | 
     return getContentDisplayName(item);
 }
 
+export function hasLinkedSourceFile(item: Pick<OpenableNodeLike, 'metadata'>): boolean {
+    return Boolean(getNodeSourceFileId(item));
+}
+
 export function isExternalLinkNode(item: Pick<OpenableNodeLike, 'type' | 'url'>): boolean {
     return (item.type || '').toLowerCase() === 'link' && typeof item.url === 'string' && item.url.trim().length > 0;
+}
+
+export function getContentSecondaryLabel(item: Pick<OpenableNodeLike, 'type' | 'url' | 'metadata'>): string | null {
+    if (isExternalLinkNode(item)) {
+        return 'Browser-Link';
+    }
+    if (hasLinkedSourceFile(item)) {
+        return 'Mit Quelldatei';
+    }
+    return null;
+}
+
+export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'url'>): string {
+    if (isExternalLinkNode(item)) {
+        return 'Im Browser oeffnen';
+    }
+    return 'Dokument oeffnen';
 }
 
 export function openDocumentNode(

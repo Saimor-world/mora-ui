@@ -62,7 +62,7 @@ const LANE_CONFIG: Record<LaneKey, {
         size: 'md',
     },
     archive: {
-        label: 'Im Hintergrund',
+        label: 'Ablage',
         accent: '#a78bfa',
         radiusX: 482,
         radiusY: 296,
@@ -545,7 +545,7 @@ export const SpaceLayer: React.FC = () => {
                 badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
                 collapsedHint="Ordner oeffnen oder Control Center nutzen."
-                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} weniger aktuelle Ordner werden aus echter Dokumentdichte und letzter Aktivität abgeleitet.`}
+                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} abgelegte Ordner werden aus echter Dokumentdichte und letzter Aktivitaet abgeleitet.`}
                 metrics={[
                     { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
                     { label: 'Mit Inhalt', value: foldersWithDocs, toneClassName: 'text-cyan-200' },
@@ -576,7 +576,7 @@ export const SpaceLayer: React.FC = () => {
                     onClick={openSpaceFinder}
                     className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
                 >
-                    Finder öffnen
+                    Finder oeffnen
                 </button>
             </LayerInsightRail>
 
@@ -613,7 +613,7 @@ export const SpaceLayer: React.FC = () => {
                                 onClick={() => openFocusedFolder(inspectedFolder.folder.id)}
                                 className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 transition-colors hover:bg-emerald-500/16"
                             >
-                                Öffnen
+                                Oeffnen
                             </button>
                         </div>
 
@@ -629,7 +629,7 @@ export const SpaceLayer: React.FC = () => {
                         </div>
 
                         <p className="mt-4 text-[11px] leading-relaxed text-white/44">
-                            Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualität und Dokumentzahl kommen aus echten Ordnerdaten.
+                            Die linke Karte zeigt den aktuell staerksten oder gerade geoeffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>
                 </motion.div>
@@ -745,7 +745,7 @@ export const SpaceLayer: React.FC = () => {
                         {positionedFolders.map((entry, index) => {
                             const isInspected = inspectedFolder?.folder.id === entry.folder.id;
                             const laneConfig = LANE_CONFIG[entry.lane];
-                            const showInlineCard = isInspected || entry.isActive || (entry.lane === 'focus' && index === 0);
+                            const showInlineCard = isInspected || entry.isActive;
 
                             return (
                                 <motion.div

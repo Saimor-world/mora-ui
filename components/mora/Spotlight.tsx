@@ -189,7 +189,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
         result.push({
             id: "action-memory",
-            label: "Mora's Gedächtnis",
+            label: 'Moras Gedaechtnis',
             description: "Erinnerungen durchsuchen & verwalten",
             icon: <Brain size={16} className="text-violet-400" />,
             category: "action",
@@ -372,7 +372,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             result.push({
                 id: `company-${company.id}`,
                 label: company.name,
-                description: company.is_demo ? "Demo-Instanz erkunden" : "Firmenkontext wechseln",
+                description: company.is_demo ? 'Demo-Instanz erkunden' : 'Organisation wechseln',
                 icon: <Hash size={16} className={company.is_demo ? "text-emerald-400" : "text-mora-gold"} />,
                 category: "entity",
                 keywords: ["company", "kontext", company.name.toLowerCase(), "firma", "demo"],

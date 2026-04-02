@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -102,11 +102,11 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
-        { id: 'about', label: 'Über Mora', icon: Info }
+        { id: 'about', label: 'Ueber Mora', icon: Info }
     ], [canEditWorkspace, canManageTeam, canViewSystem, structureTabLabel]);
 
     const resolvedTabs = useMemo(
-        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Über Mora' } : tab)),
+        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Ueber Mora' } : tab)),
         [tabs]
     );
 
@@ -316,7 +316,7 @@ useEffect(() => {
 
         const oversizedFile = audioFiles.find((file) => file.size > MAX_AMBIENT_AUDIO_FILE_BYTES);
         if (oversizedFile) {
-            toast.error(`"${oversizedFile.name}" ist größer als 25 MB`);
+            toast.error(`"${oversizedFile.name}" ist groesser als 25 MB`);
             return;
         }
 
@@ -332,13 +332,13 @@ useEffect(() => {
             }
 
             if (audioFiles.length !== selectedFiles.length) {
-                toast.info('Nur Audiodateien wurden übernommen');
+                toast.info('Nur Audiodateien wurden uebernommen');
             }
 
             toast.success(
                 storedTracks.length === 1
-                    ? `"${storedTracks[0].name}" wurde zur Audio-Bibliothek hinzugefügt`
-                    : `${storedTracks.length} Songs wurden zur Audio-Bibliothek hinzugefügt`
+                    ? `"${storedTracks[0].name}" wurde zur Audio-Bibliothek hinzugefuegt`
+                    : `${storedTracks.length} Songs wurden zur Audio-Bibliothek hinzugefuegt`
             );
         } catch (error) {
             console.error('[Settings] Failed to store ambient audio files:', error);
@@ -568,8 +568,8 @@ useEffect(() => {
                                 <div>
                                     <h3 className="text-lg text-white font-light">Hintergrundmusik</h3>
                                     <p className="mt-2 text-sm text-white/45 max-w-xl">
-                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik läuft weiter,
-                                        solange SAIMOR OS geöffnet ist, auch wenn du in andere Panes wechselst.
+                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik laeuft weiter,
+                                        solange SAIMOR OS geoeffnet ist, auch wenn du in andere Panes wechselst.
                                     </p>
                                 </div>
 
@@ -592,8 +592,8 @@ useEffect(() => {
                                             <div className="text-sm text-white/80 font-medium">Aktiver Song</div>
                                             <div className="text-xs text-white/40 mt-1">
                                                 {selectedAmbientTrack
-                                                    ? `${selectedAmbientTrack.name} • ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
-                                                    : 'Noch kein Song ausgewählt'}
+                                                    ? `${selectedAmbientTrack.name} - ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
+                                                    : 'Noch kein Song ausgewaehlt'}
                                             </div>
                                         </div>
                                         <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] uppercase tracking-[0.18em] text-white/45">
@@ -605,7 +605,7 @@ useEffect(() => {
                                         <div className="flex items-center justify-between text-xs uppercase tracking-wider text-white/40">
                                             <span className="inline-flex items-center gap-2">
                                                 <Volume2 size={14} />
-                                                Lautstärke
+                                                Lautstaerke
                                             </span>
                                             <span>{Math.round(ambientAudioVolume * 100)}%</span>
                                         </div>
@@ -628,7 +628,7 @@ useEffect(() => {
                                         <div className="text-sm text-white/80 font-medium">Szenen & Musik</div>
                                         <div className="mt-1 text-xs text-white/40 leading-relaxed">
                                             Optional kannst du pro Szene einen bevorzugten Song hinterlegen. Wenn die Szene aktiv ist,
-                                            nutzt SAIMOR zuerst diesen Track und passt die Lautstärke leicht an.
+                                            nutzt SAIMOR zuerst diesen Track und passt die Lautstaerke leicht an.
                                         </div>
 
                                         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -768,20 +768,20 @@ useEffect(() => {
 
                     {activeTab === 'notifications' && (
                         <div className="space-y-6">
-                            <h3 className="text-lg text-white font-light">Mitteilungen & MÔRA</h3>
+                            <h3 className="text-lg text-white font-light">Mitteilungen & MORA</h3>
 
-                            {/* MÔRA Intelligence Section */}
+                            {/* MORA Intelligence Section */}
                             <div className="space-y-4">
-                                <h4 className="text-xs uppercase tracking-wider text-white/40">MÔRA Intelligence</h4>
+                                <h4 className="text-xs uppercase tracking-wider text-white/40">MORA Intelligence</h4>
 
                                 {/* Auto-Execute Toggle */}
                                 <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
-                                            <div className="text-sm text-white/80 font-medium">Auto-Execute Actions</div>
+                                            <div className="text-sm text-white/80 font-medium">Aktionen direkt ausfuehren</div>
                                             <div className="text-xs text-white/40 mt-1">
-                                                When disabled, MÔRA will ask for your confirmation before executing tool actions
-                                                (file creation, data modifications, etc.)
+                                                Wenn deaktiviert, fragt MORA vor jedem Werkzeugschritt nach deiner Bestaetigung.
+                                                Das betrifft zum Beispiel Dateierstellung und inhaltliche Aenderungen.
                                             </div>
                                         </div>
                                         <button
@@ -790,8 +790,8 @@ useEffect(() => {
                                                 const next = !current;
                                                 saveSetting({ autoExecuteActions: next });
                                                 toast.info(next
-                                                    ? 'MÔRA wird Aktionen automatisch ausführen'
-                                                    : 'MÔRA wird vor Aktionen fragen');
+                                                    ? 'MORA wird Aktionen automatisch ausfuehren'
+                                                    : 'MORA wird vor Aktionen fragen');
                                             }}
                                             className={`w-12 h-7 rounded-full border relative transition-all flex-shrink-0 ml-4 ${(user?.settings?.autoExecuteActions ?? true)
                                                 ? 'bg-emerald-500/30 border-emerald-500/50'
@@ -813,12 +813,12 @@ useEffect(() => {
                                         {(user?.settings?.autoExecuteActions ?? true) ? (
                                             <>
                                                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                                                <span>MÔRA führt Aktionen automatisch aus</span>
+                                                <span>MORA fuehrt Aktionen automatisch aus</span>
                                             </>
                                         ) : (
                                             <>
                                                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                <span>Datenhoheit aktiv: Bestätigung vor jeder Aktion</span>
+                                                <span>Datenhoheit aktiv: Bestaetigung vor jeder Aktion</span>
                                             </>
                                         )}
                                     </div>
@@ -828,7 +828,7 @@ useEffect(() => {
                                 <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <div className="text-sm text-white/80">Desktop Notifications</div>
+                                            <div className="text-sm text-white/80">Desktop-Benachrichtigungen</div>
                                             <div className="text-xs text-white/40">Browser-Benachrichtigungen aktivieren</div>
                                         </div>
                                         <button
@@ -862,7 +862,7 @@ useEffect(() => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="text-sm text-white/80">Sound Effects</div>
-                                            <div className="text-xs text-white/40">UI-Sounds für Aktionen</div>
+                                            <div className="text-xs text-white/40">UI-Sounds fuer Aktionen</div>
                                         </div>
                                         <button
                                             onClick={() => {
@@ -906,7 +906,7 @@ useEffect(() => {
                                 </div>
                             </div>
                             <p className="text-sm text-white/40">
-                                Bearbeite Departments, Spaces und Ordner. Ändere Namen, Farben und Icons.
+                                Bearbeite Departments, Spaces und Ordner. Aendere Namen, Farben und Icons.
                             </p>
 
                             {/* Create Department Form */}
@@ -1060,22 +1060,22 @@ useEffect(() => {
                                                         <button
                                                             onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                if (!confirm(`"${dept.name}" wirklich löschen? Alle enthaltenen Spaces und Dokumente werden gelöscht.`)) return;
+                                                                if (!confirm(`"${dept.name}" wirklich loeschen? Alle enthaltenen Spaces und Dokumente werden geloescht.`)) return;
                                                                 setIsDeleting(dept.id);
                                                                 try {
                                                                     await deleteDepartment(dept.id);
                                                                     await loadDepartments(activeCompanyId || undefined);
                                                                     if (activeCompanyId) loadTree();
-                                                                    toast.success('Department gelöscht');
+                                                                    toast.success('Department geloescht');
                                                                 } catch (err) {
-                                                                    toast.error('Löschen fehlgeschlagen');
+                                                                    toast.error('Loeschen fehlgeschlagen');
                                                                 } finally {
                                                                     setIsDeleting(null);
                                                                 }
                                                             }}
                                                             disabled={isDeleting === dept.id}
                                                             className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors duration-200 disabled:opacity-30"
-                                                            title="Löschen"
+                                                            title="Loeschen"
                                                         >
                                                             {isDeleting === dept.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                                         </button>
@@ -1158,7 +1158,7 @@ useEffect(() => {
                                                                     className="flex items-center gap-1.5 text-[10px] text-blue-400/60 hover:text-blue-300 transition-colors"
                                                                 >
                                                                     <Plus size={10} />
-                                                                    Space hinzufügen
+                                                                    Space hinzufuegen
                                                                 </button>
                                                             )}
                                                         </div>
@@ -1227,7 +1227,7 @@ useEffect(() => {
                                                                     </button>
                                                                     <button
                                                                         onClick={async () => {
-                                                                            if (!confirm(`"${child.name}" wirklich löschen?`)) return;
+                                                                            if (!confirm(`"${child.name}" wirklich loeschen?`)) return;
                                                                             setIsDeleting(child.id);
                                                                             try {
                                                                                 if (child.type === 'space') {
@@ -1236,9 +1236,9 @@ useEffect(() => {
                                                                                     await deleteDepartment(child.id);
                                                                                 }
                                                                                 if (activeCompanyId) loadTree();
-                                                                                toast.success('Gelöscht');
+                                                                                toast.success('Geloescht');
                                                                             } catch (err) {
-                                                                                toast.error('Löschen fehlgeschlagen');
+                                                                                toast.error('Loeschen fehlgeschlagen');
                                                                             } finally {
                                                                                 setIsDeleting(null);
                                                                             }
@@ -1271,12 +1271,12 @@ useEffect(() => {
 
                             {/* Future: Color & Icon Picker */}
                             <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-                                <h4 className="text-sm text-white/60 font-medium mb-2">Zukünftige Features</h4>
+                                <h4 className="text-sm text-white/60 font-medium mb-2">Zukuenftige Features</h4>
                                 <ul className="text-xs text-white/40 space-y-1">
-                                    <li>• Farben für Departments anpassen</li>
-                                    <li>• Custom Icons zuweisen</li>
-                                    <li>• Drag & Drop Sortierung</li>
-                                    <li>• Team Manager: Sichtbarkeit pro Rolle</li>
+                                    <li>- Farben fuer Departments anpassen</li>
+                                    <li>- Custom Icons zuweisen</li>
+                                    <li>- Drag & Drop Sortierung</li>
+                                    <li>- Team Manager: Sichtbarkeit pro Rolle</li>
                                 </ul>
                             </div>
                         </div>
@@ -1306,7 +1306,7 @@ useEffect(() => {
                                     className="mt-4 px-5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm hover:bg-emerald-500/25 transition-colors duration-200 flex items-center gap-2"
                                 >
                                     <Users size={14} />
-                                    Team Manager öffnen
+                                    Team Manager oeffnen
                                     <ChevronRight size={14} />
                                 </button>
                             </div>
@@ -1327,11 +1327,11 @@ useEffect(() => {
                                     <div className="text-white font-mono text-sm">v2.0.0-beta</div>
                                 </div>
                                 <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                                    <div className="text-xs text-violet-400 uppercase tracking-wider mb-1">Departments</div>
+                                    <div className="text-xs text-violet-400 uppercase tracking-wider mb-1">Abteilungen</div>
                                     <div className="text-white font-mono text-sm">{departments.length}</div>
                                 </div>
                                 <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Firmenkontexte</div>
+                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Organisationen</div>
                                     <div className="text-white font-mono text-sm">{companies.length}</div>
                                 </div>
                             </div>
@@ -1341,18 +1341,18 @@ useEffect(() => {
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <h4 className="text-sm font-medium text-white/80">Datenverwaltung</h4>
                                 <p className="hidden text-xs text-white/40">
-                                    Hier kannst du die komplette Demo-Struktur zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten überschrieben.
+                                    Hier kannst du die komplette Demo-Struktur zuruecksetzen. Alle Daten werden geloescht und mit den Standard-Demo-Daten ueberschrieben.
                                 </p>
                                 <p className="text-xs text-white/40">
-                                    Hier kannst du die öffentliche Demo-Instanz auf den kuratierten Ausgangszustand zurücksetzen.
+                                    Hier kannst du die oeffentliche Demo-Instanz auf den kuratierten Ausgangszustand zuruecksetzen.
                                 </p>
 
                                 <button
                                     onClick={async () => {
-                                        if (!confirm('Bist du sicher? Alle Änderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurückgesetzt.')) return;
+                                        if (!confirm('Bist du sicher? Alle Aenderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurueckgesetzt.')) return;
 
                                         try {
-                                            toast.loading('Demo-Instanz wird zurückgesetzt...');
+                                            toast.loading('Demo-Instanz wird zurueckgesetzt...');
 
                                             // Get token from Session (Production Auth)
                                             const token = session?.user?.accessToken; // || localStorage fallback removed
@@ -1379,20 +1379,20 @@ useEffect(() => {
                                                 throw new Error(err.detail || 'Reset failed');
                                             }
 
-                                            toast.success('Demo-Instanz erfolgreich zurückgesetzt!');
+                                            toast.success('Demo-Instanz erfolgreich zurueckgesetzt!');
                                             // Force reload window to clear all local state nuances
                                             window.location.reload();
                                         } catch (e) {
                                             console.error(e);
-                                            toast.error('Fehler beim Zurücksetzen.');
+                                            toast.error('Fehler beim Zuruecksetzen.');
                                         }
                                     }}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group [&>span:last-child]:hidden"
                                 >
                                     <Trash2 size={16} className="group-hover:animate-pulse" />
-                                    <span className="hidden">Demo-Instanz zurücksetzen</span>
-                                    <span>Demo-Daten zurücksetzen</span>
-                                    <span>Demo-Instanz zurücksetzen</span>
+                                    <span className="hidden">Demo-Instanz zuruecksetzen</span>
+                                    <span>Demo-Daten zuruecksetzen</span>
+                                    <span>Demo-Instanz zuruecksetzen</span>
                                 </button>
                             </div>
                             )}
@@ -1415,16 +1415,16 @@ useEffect(() => {
 
                     {activeTab === 'about' && (
                         <div className="space-y-6">
-                            <h3 className="text-lg text-white font-light">About SAIMÔR</h3>
+                            <h3 className="text-lg text-white font-light">Ueber SAIMOR</h3>
                             <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/60 leading-relaxed">
                                 <p className="mb-4">
-                                    SAIMÔR is an advanced Semantic Artificial Intelligence for Memory and Organizational Recall.
+                                    SAIMOR ist das semantische Betriebssystem fuer Klarheit, Struktur und belastbare Erinnerung in Organisationen.
                                 </p>
                                 <div className="flex items-center gap-2 text-xs text-white/30 mt-8">
                                     <span>v2.0.0-beta</span>
-                                    <span>•</span>
-                                    <span>Môra Core + Gateway</span>
-                                    <span>•</span>
+                                    <span>-</span>
+                                    <span>Mora Core + Gateway</span>
+                                    <span>-</span>
                                     <span>{process.env.NODE_ENV}</span>
                                 </div>
                             </div>
@@ -1435,3 +1435,5 @@ useEffect(() => {
         </GlassPanel>
     );
 };
+
+

@@ -23,11 +23,11 @@ const makeId = () => Math.random().toString(36).slice(2, 10);
 
 const defaultMessages: Record<Channel, ChatMessage[]> = {
     team: [
-        { id: makeId(), channel: "team", author: "System", text: "Welcome to the team channel.", timestamp: Date.now() },
+        { id: makeId(), channel: "team", author: "System", text: "Willkommen im Team-Kanal.", timestamp: Date.now() },
     ],
     personal: [],
     system: [
-        { id: makeId(), channel: "system", author: "Môra", text: "No new alerts. System stable.", timestamp: Date.now() },
+        { id: makeId(), channel: "system", author: "Mora", text: "Keine neuen Signale. System stabil.", timestamp: Date.now() },
     ],
 };
 
