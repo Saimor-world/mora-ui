@@ -16,6 +16,8 @@ interface UniverseControlsProps {
     visibleModes?: ViewMode[];
     workspaceLabel?: string;
     scopeLabel?: string;
+    disableContextSwitch?: boolean;
+    companyCountLabel?: string;
 }
 
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
@@ -26,6 +28,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     onSwitchCompany,
     visibleModes = ['owner', 'workspace', 'demo'],
     workspaceLabel = 'Kontext',
+    disableContextSwitch = false,
+    companyCountLabel,
 }) => {
     const user = useMoraStore((state) => state.user);
     const viewLevel = useMoraStore((state) => state.viewLevel);
@@ -71,6 +75,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent: activeDepartment?.color || '#10B981',
+        isPublicDemoSurface: disableContextSwitch,
     }), [
         viewLevel,
         activeCompany,
@@ -83,6 +88,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         companies.length,
         safeDepartments.length,
         user?.active_company_name,
+        disableContextSwitch,
     ]);
 
     const handleContextClick = () => {
@@ -155,7 +161,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </div>
             </button>
 
-            {activeCompany && companies.length > 1 && (
+            {activeCompany && companies.length > 1 && !disableContextSwitch && (
                 <button
                     type="button"
                     onClick={handleContextClick}
@@ -167,7 +173,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                         Kontext
                     </span>
                     <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/68">
-                        {companies.length}
+                        {companyCountLabel || companies.length}
                     </span>
                 </button>
             )}

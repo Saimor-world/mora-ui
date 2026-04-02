@@ -15,6 +15,7 @@ import {
 } from '@/lib/os/ritualMode';
 import { requestCommandDeckOpen, SAIMOR_COMMAND_DECK_STATE_EVENT } from '@/lib/os/commandDeck';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 const ORB_LABELS: Record<string, string> = {
     idle: 'Standby',
@@ -60,6 +61,7 @@ export const MoraPulsePanel: React.FC = () => {
     const [now, setNow] = useState(() => new Date());
     const [isDeckOpen, setIsDeckOpen] = useState(false);
     const assistantRuntime = useAssistantRuntime();
+    const surfaceProfile = useSurfaceProfile();
 
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualScene = useMemo(
@@ -121,6 +123,7 @@ export const MoraPulsePanel: React.FC = () => {
         companyCount: safeCompanies.length,
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
+        isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
     }), [
         activeCompany,
         activeDepartment,
@@ -131,6 +134,7 @@ export const MoraPulsePanel: React.FC = () => {
         foldersBySpace,
         safeCompanies.length,
         safeDepartments.length,
+        surfaceProfile.isPublicDemoSurface,
         user?.active_company_name,
         viewLevel,
     ]);
@@ -211,7 +215,7 @@ export const MoraPulsePanel: React.FC = () => {
 
                     {!isDeckOpen && (
                         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/42">
-                            <span className="truncate">{activeCompany?.name || user?.active_company_name || 'Firmenkontext'}</span>
+                            <span className="truncate">{activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}</span>
                             <span>{ritualSettings.autoTime ? 'Auto' : 'Manuell'}</span>
                         </div>
                     )}

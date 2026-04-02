@@ -62,6 +62,7 @@ interface BuildShellContextSnapshotArgs {
     departmentCount?: number;
     userCompanyName?: string | null;
     accent?: string;
+    isPublicDemoSurface?: boolean;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -123,6 +124,7 @@ export const buildShellContextSnapshot = ({
     departmentCount = 0,
     userCompanyName,
     accent = '#10B981',
+    isPublicDemoSurface = false,
 }: BuildShellContextSnapshotArgs): ShellContextSnapshot => {
     const scopeLabel = getShellScopeLabel(viewLevel);
     const workspaceTitle = activeCompany?.name || userCompanyName || 'Firmenkontext';
@@ -192,13 +194,17 @@ export const buildShellContextSnapshot = ({
         scopeLabel,
         contextLabel: 'Universe',
         title: workspaceTitle,
-        subtitle: 'Live-Struktur',
-        description: 'Das Universe zeigt den Gesamtzuschnitt der aktuellen Instanz. Hier sollte klar sein, in welches Department du als Naechstes hineingehst.',
+        subtitle: isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Live-Struktur',
+        description: isPublicDemoSurface
+            ? 'Das Universe zeigt eine kuratierte Demo-Instanz. Hier solltest du direkt die passende Abteilung fuer den Showcase waehlen.'
+            : 'Das Universe zeigt den Gesamtzuschnitt der aktuellen Instanz. Hier sollte klar sein, in welches Department du als Naechstes hineingehst.',
         signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
-        signalB: formatCount(companyCount, 'Firmenkontext', 'Firmenkontexte'),
+        signalB: isPublicDemoSurface ? 'Oeffentliche Demo' : formatCount(companyCount, 'Firmenkontext', 'Firmenkontexte'),
         accent,
-        nextMoveLabel: companyCount > 1 ? 'Kontext oeffnen' : 'Abteilung waehlen',
-        nextMoveHint: companyCount > 1
+        nextMoveLabel: isPublicDemoSurface ? 'Demo-Abteilung waehlen' : companyCount > 1 ? 'Kontext oeffnen' : 'Abteilung waehlen',
+        nextMoveHint: isPublicDemoSurface
+            ? 'Diese Instanz ist ein Showcase. Waehle die passende Abteilung und gehe dann in die Beispielstruktur.'
+            : companyCount > 1
             ? 'Diese Instanz hat mehrere Firmenkontexte. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
             : 'Waehle zuerst die passende Abteilung und geh dann in die operative Struktur.',
         nextTarget: { kind: 'company', id: activeCompany?.id },

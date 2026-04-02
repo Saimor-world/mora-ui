@@ -77,6 +77,7 @@ import { LockScreen } from '@/components/auth/LockScreen';
 import { UserCursor } from '@/components/layout/UserCursor';
 // import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
 
@@ -270,9 +271,15 @@ export const MoraShell: React.FC = () => {
     const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
     const role = user?.role || 'demo';
     const tenantId = user?.tenant_id;
+    const surfaceProfile = useSurfaceProfile();
+    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface;
 
     const filteredCompanies = React.useMemo(() => {
         if (!safeCompanies.length) return [];
+        if (isPublicDemoSurface) {
+            const demoCompanies = safeCompanies.filter((c) => c.is_demo);
+            return demoCompanies.length ? demoCompanies : safeCompanies;
+        }
         if (tenantId === TENANT_DEMO) {
             return safeCompanies.filter((c) => c.is_demo || c.tenant_id === TENANT_HQ);
         }
@@ -287,7 +294,7 @@ export const MoraShell: React.FC = () => {
         }
         if (role === 'system_owner') return safeCompanies;
         return tenantId ? safeCompanies.filter((c) => c.tenant_id === tenantId) : safeCompanies;
-    }, [safeCompanies, viewMode, role, tenantId]);
+    }, [safeCompanies, viewMode, role, tenantId, isPublicDemoSurface]);
 
     const activeCompanyForView = React.useMemo(() => {
         if (filteredCompanies.length === 0) return activeCompany;
@@ -297,11 +304,14 @@ export const MoraShell: React.FC = () => {
     const displayCompany = activeCompanyForView || activeCompany;
     const hasDemoCompany = safeCompanies.some((c) => c.is_demo);
     const visibleModes = React.useMemo<UniverseViewMode[]>(() => {
+        if (isPublicDemoSurface) {
+            return hasDemoCompany ? ['demo'] : ['workspace'];
+        }
         if (role === 'system_owner') {
             return hasDemoCompany ? ['owner', 'workspace', 'demo'] : ['owner', 'workspace'];
         }
         return hasDemoCompany ? ['workspace', 'demo'] : ['workspace'];
-    }, [role, hasDemoCompany]);
+    }, [role, hasDemoCompany, isPublicDemoSurface]);
     const scopeLabel = React.useMemo(() => {
         if (viewLevel === 'company') return 'Portfolio';
         if (viewLevel === 'core') return 'Universe';
@@ -310,7 +320,12 @@ export const MoraShell: React.FC = () => {
         if (viewLevel === 'folder') return 'Folder';
         return 'Universe';
     }, [viewLevel]);
-    const workspaceTabLabel = 'Kontext';
+    const workspaceTabLabel = surfaceProfile.workspaceTabLabel;
+
+    useEffect(() => {
+        if (!isPublicDemoSurface || !hasDemoCompany || viewMode === 'demo') return;
+        useMoraStore.getState().setViewMode('demo');
+    }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
@@ -619,7 +634,7 @@ export const MoraShell: React.FC = () => {
                 onUnlock={handleUnlock}
                 onLogout={handleLogout}
                 userName={user?.name || localStorage.getItem('last_user_name') || 'Benutzer'}
-                companyName={displayCompany?.name || 'Workspace'}
+                companyName={displayCompany?.name || surfaceProfile.fallbackCompanyName}
             />
         );
     }
@@ -677,6 +692,8 @@ export const MoraShell: React.FC = () => {
                     visibleModes={visibleModes}
                     workspaceLabel={workspaceTabLabel}
                     scopeLabel={scopeLabel}
+                    disableContextSwitch={isPublicDemoSurface}
+                    companyCountLabel={surfaceProfile.isPublicDemoSurface ? 'Demo' : undefined}
                 />
 
                 {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}

@@ -40,6 +40,8 @@ import {
 import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -376,6 +378,7 @@ export const Dock = () => {
     const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const assistantRuntime = useAssistantRuntime();
+    const surfaceProfile = useSurfaceProfile();
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
@@ -393,8 +396,8 @@ export const Dock = () => {
         [ambientTracks, ambientAudio.trackId]
     );
     const companyContextLabel = useMemo(
-        () => (safeCompanies.length === 1 ? '1 Firmenkontext' : `${safeCompanies.length} Firmenkontexte`),
-        [safeCompanies.length]
+        () => formatCompanyContextLabel(surfaceProfile, safeCompanies.length),
+        [surfaceProfile, safeCompanies.length]
     );
     const activeDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
@@ -516,6 +519,7 @@ export const Dock = () => {
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent,
+        isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
     }), [
         viewLevel,
         activeCompany,
@@ -529,6 +533,7 @@ export const Dock = () => {
         safeDepartments.length,
         user?.active_company_name,
         accent,
+        surfaceProfile.isPublicDemoSurface,
     ]);
 
     const scopeLabel = shellContext.scopeLabel;
@@ -561,7 +566,7 @@ export const Dock = () => {
             return;
         }
 
-        openFinderContext(activeCompany?.name || 'Workspace', {
+        openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
             companyId: activeCompanyId || undefined,
         });
     }, [
@@ -572,6 +577,7 @@ export const Dock = () => {
         activeFolder,
         activeSpace,
         openFinderContext,
+        surfaceProfile.fallbackCompanyName,
     ]);
 
     const contextDeck = useMemo(() => {
@@ -631,13 +637,15 @@ export const Dock = () => {
 
         return {
             label: 'Universe',
-            title: activeCompany?.name || user?.active_company_name || 'Firmenkontext',
-            description: 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus solltest du zuerst den richtigen Firmenkontext oder die passende Abteilung waehlen.',
+            title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
+            description: surfaceProfile.isPublicDemoSurface
+                ? 'Das Universe zeigt die kuratierte Demo-Instanz. Von hier aus solltest du direkt in die passende Demo-Abteilung springen.'
+                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus solltest du zuerst den richtigen Firmenkontext oder die passende Abteilung waehlen.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: 'Kontext oeffnen',
+            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Demo-Kontext' : 'Kontext oeffnen',
             accent,
-            onOpen: () => openFinderContext(activeCompany?.name || 'Firmenkontext', {
+            onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
             }),
         };
@@ -655,6 +663,8 @@ export const Dock = () => {
         companyContextLabel,
         openFinderContext,
         safeDepartments.length,
+        surfaceProfile.fallbackCompanyName,
+        surfaceProfile.isPublicDemoSurface,
         user?.active_company_name,
     ]);
 
@@ -1032,7 +1042,7 @@ export const Dock = () => {
                                     isPinned={isCommandDeckPinned}
                                     orbStateLabel={orbStateLabel}
                                     scopeLabel={scopeLabel}
-                                    workspaceName={activeCompany?.name || user?.active_company_name || 'Workspace'}
+                                    workspaceName={activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}
                                     contextLabel={shellContext.contextLabel}
                                     contextTitle={shellContext.title}
                                     contextSubtitle={shellContext.subtitle}
@@ -1161,7 +1171,7 @@ export const Dock = () => {
                             </span>
                             <span className={`text-xs uppercase tracking-wider font-medium ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'
                                 }`}>
-                                {viewMode === 'demo' ? 'Demo Mode' : roleLabel(user?.role)}
+                                {viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
                             </span>
                         </div>
                         <AdminModeSwitcher />
@@ -1277,7 +1287,10 @@ export const Dock = () => {
                                 ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
                                 : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
                                 }`}
-                            onClick={() => setShowCompanySwitcher(!showCompanySwitcher)}
+                            onClick={() => {
+                                if (!surfaceProfile.companySwitcherEnabled) return;
+                                setShowCompanySwitcher(!showCompanySwitcher);
+                            }}
                             type="button"
                         >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isStandardMode ? 'bg-[#0078D4]/10' : 'bg-emerald-500/20'
@@ -1287,9 +1300,9 @@ export const Dock = () => {
                             <div className="hidden 2xl:flex flex-col items-start">
                                 <span className={`text-xs font-medium max-w-[90px] truncate ${isStandardMode ? 'text-gray-800' : 'text-white/80'
                                     }`}>
-                                    {activeCompany?.name || 'Workspace'}
+                                    {activeCompany?.name || surfaceProfile.fallbackCompanyName}
                                 </span>
-                                {companies.length > 1 && (
+                                {companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                     <span className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'
                                         }`}>
                                         {companyContextLabel}
@@ -1298,13 +1311,13 @@ export const Dock = () => {
                             </div>
                             <ChevronUp
                                 size={14}
-                                className={`text-white/40 transition-transform ${showCompanySwitcher ? '' : 'rotate-180'}`}
+                                className={`text-white/40 transition-transform ${showCompanySwitcher && surfaceProfile.companySwitcherEnabled ? '' : 'rotate-180'}`}
                             />
                         </button>
 
                         {/* COMPANY SWITCHER POPUP */}
                         <AnimatePresence>
-                            {showCompanySwitcher && companies.length > 1 && (
+                            {showCompanySwitcher && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
