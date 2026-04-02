@@ -14,24 +14,22 @@ import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
  * The cosmic universe visually recedes -- this is the operational context.
  *
  * Phase 2 MVC: roster view + membership/visibility management.
- * AdminRosterView is wired in Chunk 3 Task 3.3 once it exists.
  */
 export const AdminHome: React.FC = () => {
     const setAdminMode = useContextStore((s) => s.setAdminMode);
-    const ownerConsoleUrl = 'https://www.saimor.world/owner';
+    const ownerConsoleUrl = 'https://owner.saimor.world/login';
 
     return (
         <div className="flex flex-col h-full bg-[#07090f] text-white overflow-hidden">
-            {/* Admin mode indicator -- always visible */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-amber-500/5">
                 <div className="flex items-center gap-2">
                     <Settings2 size={16} className="text-amber-400" />
-                    <span className="text-sm font-medium text-amber-400">Workspace-Admin</span>
-                    <span className="text-xs text-white/30">-- Bereichs- und Sichtbarkeitsverwaltung im HQ</span>
+                    <span className="text-sm font-medium text-amber-400">Administration</span>
+                    <span className="text-xs text-white/30">-- Bereiche, Sichtbarkeit und Organisationsstruktur</span>
                 </div>
                 <button
                     onClick={() => setAdminMode(false)}
-                    title="Admin verlassen"
+                    title="Administration verlassen"
                     className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
                 >
                     <X size={14} />
@@ -39,21 +37,20 @@ export const AdminHome: React.FC = () => {
                 </button>
             </div>
 
-            {/* Main admin content */}
             <div className="flex-1 overflow-y-auto p-6">
                 <div className="mb-6 grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                        <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Im HQ</div>
-                        <div className="mt-2 text-sm text-white/85">Workspace-Verwaltung</div>
+                        <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">In dieser Instanz</div>
+                        <div className="mt-2 text-sm text-white/85">Organisationsverwaltung</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/48">
                             Dieser Bereich ist für Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
                         </p>
                     </div>
                     <div className="rounded-2xl border border-amber-400/18 bg-amber-500/[0.06] p-4">
-                        <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/70">Extern</div>
+                        <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/70">Separat</div>
                         <div className="mt-2 text-sm text-white/88">Owner Console</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/50">
-                            Systemweite Firmen-, User-, Token- und Instanzverwaltung bleibt bewusst außerhalb des HQ.
+                            Systemweite Firmen-, Benutzer-, Token- und Instanzverwaltung bleibt bewusst außerhalb dieser Arbeitsoberfläche.
                         </p>
                         <a
                             href={ownerConsoleUrl}

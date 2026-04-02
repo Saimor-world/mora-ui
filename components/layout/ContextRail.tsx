@@ -14,6 +14,7 @@ import { UserAvatar } from '@/components/mora/UserAvatar';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
+import { roleLabel } from '@/lib/auth/roles';
 
 /**
  * ContextRail - Left Navigation Sidebar
@@ -89,11 +90,11 @@ export const ContextRail: React.FC = () => {
         {
             id: 'home',
             icon: Home,
-            label: 'Home',
+            label: 'Start',
             action: handleHomeClick
         },
-        { id: 'search', icon: Search, label: 'Search', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
-        { id: 'activity', icon: Activity, label: 'Activity', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
+        { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
+        { id: 'activity', icon: Activity, label: 'Aktivität', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
         { id: 'chat', icon: MessageSquare, label: "Mora Chat", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
@@ -134,7 +135,7 @@ export const ContextRail: React.FC = () => {
         closeOverlays();
 
         // Redirect to WelcomeScreen
-        toast.info("Logged out successfully");
+        toast.info("Abgemeldet");
         router.replace('/');
     };
 
@@ -232,7 +233,7 @@ export const ContextRail: React.FC = () => {
                         <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
                             }`} />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            Demo (Simple Coffee Group)
+                            Demo-Instanz
                         </div>
                         {viewMode === 'demo' && (
                             <motion.div
@@ -249,7 +250,7 @@ export const ContextRail: React.FC = () => {
                     >
                         <Settings size={22} className="text-white/40 group-hover:text-white/80 transition-colors" />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            Settings
+                            Einstellungen
                         </div>
                     </button>
 
@@ -281,10 +282,7 @@ export const ContextRail: React.FC = () => {
                             {currentAccount?.email || localStorage.getItem('user_name') || 'User'}
                         </div>
                         <div className="text-xs text-white/50 mb-1">
-                            Role: {getCurrentRole().charAt(0).toUpperCase() + getCurrentRole().slice(1)}
-                        </div>
-                        <div className="text-xs text-white/30 mb-4">
-                            {currentAccount?.tenantId || localStorage.getItem('saimor_tenant') || 'tenant-default'}
+                            Rolle: {roleLabel(getCurrentRole())}
                         </div>
 
                         <div className="flex flex-col gap-2">
@@ -297,14 +295,14 @@ export const ContextRail: React.FC = () => {
                                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/80"
                             >
                                 <User size={16} />
-                                Profile & Settings
+                                Profil & Einstellungen
                             </button>
                             <button
                                 onClick={handleLogout}
                                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors duration-200 text-left text-sm text-red-400"
                             >
                                 <LogOut size={16} />
-                                Logout
+                                Abmelden
                             </button>
                         </div>
                     </motion.div>
@@ -320,7 +318,7 @@ export const ContextRail: React.FC = () => {
                         exit={{ opacity: 0, x: -10 }}
                         className="fixed left-[88px] bottom-20 z-[70] w-80 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-2xl"
                     >
-                        <h3 className="text-sm text-white/90 font-medium mb-3">Quick Settings</h3>
+                        <h3 className="text-sm text-white/90 font-medium mb-3">Schnelleinstellungen</h3>
 
                         <div className="space-y-2">
                             <button

@@ -10,6 +10,7 @@ import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import {
     AMBIENT_AUDIO_STORAGE_KEYS,
     DEFAULT_AMBIENT_AUDIO_VOLUME,
@@ -33,6 +34,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const { data: session } = useSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { user, updateUserSettings, departments, treeData, loadTree, loadDepartments, activeCompanyId, isStandardMode, setIsStandardMode, companies, loadCompanies } = useMoraStore();
+    const surfaceProfile = useSurfaceProfile();
     const pane = getPane(id);
 
     // Workspace Edit Mode State
@@ -89,24 +91,31 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const canEditBranding =
         canWriteActiveCompany &&
         isAdmin(user?.role);
+    const structureTabLabel = surfaceProfile.isPublicDemoSurface ? 'Demo-Struktur' : 'Organisation';
+    const showDemoReset = surfaceProfile.isPublicDemoSurface;
 
     const tabs = useMemo(() => [
         { id: 'profile', label: 'Profil', icon: User },
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
-        ...(canEditWorkspace ? [{ id: 'workspace', label: 'Workspace', icon: FolderCog }] : []),
+        ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
         { id: 'about', label: 'Über Mora', icon: Info }
-    ], [canEditWorkspace, canManageTeam, canViewSystem]);
+    ], [canEditWorkspace, canManageTeam, canViewSystem, structureTabLabel]);
+
+    const resolvedTabs = useMemo(
+        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Über Mora' } : tab)),
+        [tabs]
+    );
 
     // Ensure active tab is valid for current role
     useEffect(() => {
-        if (!tabs.find(t => t.id === activeTab)) {
+        if (!resolvedTabs.find(t => t.id === activeTab)) {
             setActiveTab('profile');
         }
-    }, [tabs, activeTab]);
+    }, [resolvedTabs, activeTab]);
 
     useEffect(() => {
         if (!activeCompany) return;
@@ -364,7 +373,7 @@ useEffect(() => {
             <div className="flex h-full">
                 {/* Sidebar */}
                 <div className="w-1/3 border-r border-white/10 p-4 space-y-1">
-                    {tabs.map(tab => (
+                    {resolvedTabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
@@ -459,7 +468,7 @@ useEffect(() => {
                                             companyId={activeCompanyId}
                                         />
                                         <div className="space-y-2">
-                                            <label className="text-xs uppercase tracking-wider text-white/40">Company Name</label>
+                                            <label className="text-xs uppercase tracking-wider text-white/40">Unternehmensname</label>
                                             <input
                                                 value={brandingName}
                                                 onChange={(e) => setBrandingName(e.target.value)}
@@ -1249,7 +1258,7 @@ useEffect(() => {
                                 ) : (
                                     <div className="p-8 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center">
                                         <Loader2 className="animate-spin text-white/30 mb-4" size={24} />
-                                        <p className="text-white/40 text-sm">Lade Workspace-Struktur...</p>
+                                        <p className="text-white/40 text-sm">{surfaceProfile.isPublicDemoSurface ? 'Lade Demo-Struktur...' : 'Lade Organisationsstruktur...'}</p>
                                         <button
                                             onClick={() => activeCompanyId && loadTree()}
                                             className="mt-4 px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg text-white/60 transition-colors duration-200"
@@ -1328,10 +1337,14 @@ useEffect(() => {
                             </div>
 
                             {/* DEMO / RESET ACTIONS */}
+                            {showDemoReset && (
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <h4 className="text-sm font-medium text-white/80">Datenverwaltung</h4>
-                                <p className="text-xs text-white/40">
+                                <p className="hidden text-xs text-white/40">
                                     Hier kannst du den Workspace komplett zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten überschrieben.
+                                </p>
+                                <p className="text-xs text-white/40">
+                                    Hier kannst du die öffentliche Demo-Instanz auf den kuratierten Ausgangszustand zurücksetzen.
                                 </p>
 
                                 <button
@@ -1374,12 +1387,15 @@ useEffect(() => {
                                             toast.error('Fehler beim Zurücksetzen.');
                                         }
                                     }}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group [&>span:last-child]:hidden"
                                 >
                                     <Trash2 size={16} className="group-hover:animate-pulse" />
+                                    <span className="hidden">Workspace zurücksetzen (Reset Data)</span>
+                                    <span>Demo-Daten zurücksetzen</span>
                                     <span>Workspace zurücksetzen (Reset Data)</span>
                                 </button>
                             </div>
+                            )}
 
                             <div className="p-4 rounded-lg bg-white/5 border border-white/10 space-y-2">
                                 <div className="flex items-center justify-between">

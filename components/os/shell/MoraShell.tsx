@@ -266,6 +266,7 @@ export const MoraShell: React.FC = () => {
     const { reset: resetPanes, openPane } = usePaneStore();
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
     const isAdminMode = useContextStore((s) => s.isAdminMode);
+    const setAdminMode = useContextStore((s) => s.setAdminMode);
     const safeCompanies = React.useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
 
     const activeCompany = safeCompanies.find(c => c.id === activeCompanyId);
@@ -326,6 +327,14 @@ export const MoraShell: React.FC = () => {
         if (!isPublicDemoSurface || !hasDemoCompany || viewMode === 'demo') return;
         useMoraStore.getState().setViewMode('demo');
     }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
+
+    useEffect(() => {
+        if (isPublicDemoSurface && isAdminMode) {
+            setAdminMode(false);
+        }
+    }, [isPublicDemoSurface, isAdminMode, setAdminMode]);
+
+    const effectiveAdminMode = isAdminMode && !isPublicDemoSurface;
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
@@ -703,7 +712,7 @@ export const MoraShell: React.FC = () => {
                     <div className="pointer-events-none absolute left-6 bottom-28 z-30">
                         <ShellBreadcrumb />
                     </div>
-                    {isAdminMode ? (
+                    {effectiveAdminMode ? (
                         <AdminHome />
                     ) : (
                         <ViewPort />

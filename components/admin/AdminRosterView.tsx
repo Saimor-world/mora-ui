@@ -40,7 +40,7 @@ export const AdminRosterView: React.FC = () => {
     if (users === null) {
         return (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white/55">
-                Die Benutzerliste ist im HQ noch nicht vollständig verfügbar. Für Instanz- und Owner-Verwaltung nutze bitte die externe Owner Console.
+                Die Benutzerliste ist derzeit noch nicht vollständig verfügbar. Für Instanz- und Owner-Verwaltung nutze bitte die separate Owner Console.
             </div>
         );
     }

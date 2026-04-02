@@ -414,7 +414,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 <p className="text-[10px] text-emerald-500/50 uppercase tracking-widest">
                                     {moraIsThinking ? "MORA reflektiert..." :
                                         coreError ? "Eingeschraenkte Verbindung" :
-                                            viewMode === 'demo' ? "Demo Modus" : "Aktiver Dialog"}
+                                            viewMode === 'demo' ? "Demokontext" : "Aktiver Dialog"}
                                 </p>
                             </div>
                         </div>
@@ -423,7 +423,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                         {viewMode === 'demo' && (
                             <div className="mx-4 flex items-center gap-2 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                                 <Sparkles size={10} className="text-emerald-400" />
-                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Demo Modus</span>
+                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Beispielinstanz</span>
                             </div>
                         )}
 
@@ -457,7 +457,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                             >
                                 <Sparkles size={24} className="text-emerald-400/30 mb-4" />
                                 <h3 className="text-emerald-100/80 font-light mb-2">
-                                    {viewMode === 'demo' ? 'Simple Coffee Group - Demo' : 'Willkommen im Resonanzraum'}
+                                    {viewMode === 'demo' ? 'Beispielinstanz aktiv' : 'Willkommen im Resonanzraum'}
                                 </h3>
                                 <p className="text-emerald-500/50 text-sm leading-relaxed">
                                     {viewMode === 'demo'

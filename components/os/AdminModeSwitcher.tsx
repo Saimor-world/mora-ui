@@ -4,6 +4,7 @@ import React from 'react';
 import { Settings2, X } from 'lucide-react';
 import { useContextStore } from '@/lib/store/contextStore';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
  * AdminModeSwitcher -- Dock control for entering/exiting Admin mode.
@@ -17,15 +18,17 @@ import { useMoraStore } from '@/lib/store/moraState';
 export const AdminModeSwitcher: React.FC = () => {
     const user = useMoraStore((s) => s.user);
     const { isAdminMode, setAdminMode } = useContextStore();
+    const surfaceProfile = useSurfaceProfile();
 
     // Role gate -- only owner/admin can enter admin mode
     if (!user || (user.role !== 'owner' && user.role !== 'admin')) return null;
+    if (surfaceProfile.isPublicDemoSurface) return null;
 
     return (
         <button
             onClick={() => setAdminMode(!isAdminMode)}
-            title={isAdminMode ? 'Workspace-Admin verlassen' : 'Workspace-Admin öffnen'}
-            aria-label={isAdminMode ? 'Workspace-Admin verlassen' : 'Workspace-Admin öffnen'}
+            title={isAdminMode ? 'Administration verlassen' : 'Administration öffnen'}
+            aria-label={isAdminMode ? 'Administration verlassen' : 'Administration öffnen'}
             className={[
                 'w-[42px] h-[42px] flex items-center justify-center rounded-xl transition-all duration-200',
                 isAdminMode

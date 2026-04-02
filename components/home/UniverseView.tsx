@@ -13,6 +13,7 @@ import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
 import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 type DepartmentMetricSet = {
     nodes: number;
@@ -86,6 +87,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     } = useMoraStore();
 
     const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
+    const surfaceProfile = useSurfaceProfile();
+    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface;
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
@@ -515,12 +518,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         if (!raw) {
             const sessionCompanyName = user?.active_company_name?.trim();
             if (sessionCompanyName) return sessionCompanyName;
+            if (isPublicDemoSurface && (isDemo || tenantId === TENANT_DEMO)) return 'Demo-Instanz';
             if (isDemo || tenantId === TENANT_DEMO) return 'Simple Coffee Group';
-            if (tenantId === TENANT_HQ) return 'Saimor HQ';
-            return 'Firmenkontext fehlt';
+            if (tenantId === TENANT_HQ) return 'Interne Instanz';
+            return 'Organisation nicht verfügbar';
         }
         return raw;
-    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo, user?.active_company_name]);
+    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo, user?.active_company_name, isPublicDemoSurface]);
     const titleStyle = useMemo(() => {
         const length = displayCompanyName.length;
         const max = length > 22 ? 44 : length > 18 ? 50 : 56;
@@ -985,9 +989,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-3">
                                         <Activity className="w-5 h-5 text-cyan-400" />
-                                        <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-white/90">System Insight</h2>
+                                        <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-white/90">Systemstatus</h2>
                                     </div>
-                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">Instance: Einheit_R1_Cortex_{activeCompanyId?.slice(0, 4)}</p>
+                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Aktive Organisation'}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowSystemStatus(false)}
@@ -1007,8 +1011,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 />
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}
-                                    label="Tenant"
-                                    value={currentCompany?.tenant_id?.replace('tenant-', '') || 'unknown'}
+                                    label="Kontext"
+                                    value={currentCompany?.is_demo ? 'Demo-Instanz' : 'Geschuetzt'}
                                     status={currentCompany?.is_demo ? 'neutral' : 'secure'}
                                 />
                                 <InsightCard
@@ -1032,8 +1036,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     <span>•</span>
                                     <span>Firmware V10.6.4</span>
                                 </div>
-                                <div className="text-[9px] tracking-[0.2em] text-white/30 truncate max-w-[200px]">
-                                    TENANT_IDENTIFIER: {activeCompanyId}
+                                <div className="text-[9px] tracking-[0.2em] text-white/30 truncate max-w-[240px]">
+                                    {currentCompany?.name || displayCompanyName}
                                 </div>
                             </div>
                         </motion.div>
