@@ -372,10 +372,10 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             result.push({
                 id: `company-${company.id}`,
                 label: company.name,
-                description: company.is_demo ? "Demo-Unternehmen erkunden" : "Arbeitsbereich wechseln",
+                description: company.is_demo ? "Demo-Instanz erkunden" : "Firmenkontext wechseln",
                 icon: <Hash size={16} className={company.is_demo ? "text-emerald-400" : "text-mora-gold"} />,
                 category: "entity",
-                keywords: ["company", "workspace", company.name.toLowerCase(), "firma", "demo"],
+                keywords: ["company", "kontext", company.name.toLowerCase(), "firma", "demo"],
                 onSelect: () => {
                     setActiveCompany(company.id);
                     onClose();

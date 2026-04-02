@@ -154,7 +154,7 @@ export const buildShellContextSnapshot = ({
             contextLabel: 'Space',
             title: activeSpace.name,
             subtitle: activeDepartment?.name || workspaceTitle,
-            description: 'Das ist der aktuelle Arbeitsbereich dieses Departments. Hier sollten echte Ordner, Dokumente und der naechste sinnvolle Einstieg sichtbar sein.',
+            description: 'Das ist die aktive Struktur dieses Departments. Hier sollten echte Ordner, Dokumente und der naechste sinnvolle Einstieg sichtbar sein.',
             signalA: formatCount(activeFolders.length, 'Ordner'),
             signalB: formatCount(docCount, 'Dokument', 'Dokumente'),
             accent: activeSpace.color || activeDepartment?.color || accent,
@@ -197,7 +197,7 @@ export const buildShellContextSnapshot = ({
         subtitle: isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Live-Struktur',
         description: isPublicDemoSurface
             ? 'Das Universe zeigt eine kuratierte Demo-Instanz. Hier solltest du direkt die passende Abteilung fuer den Showcase waehlen.'
-            : 'Das Universe zeigt den Gesamtzuschnitt der aktuellen Instanz. Hier sollte klar sein, in welches Department du als Naechstes hineingehst.',
+            : 'Das Universe zeigt den Gesamtzuschnitt der aktuellen Instanz. Hier sollte klar sein, in welche Abteilung du als Naechstes hineingehst.',
         signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
         signalB: isPublicDemoSurface ? 'Oeffentliche Demo' : formatCount(companyCount, 'Firmenkontext', 'Firmenkontexte'),
         accent,

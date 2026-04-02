@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Cpu, Database, Zap } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
  * V12: System Stats
@@ -19,6 +20,7 @@ export const SystemStats: React.FC = () => {
     const companies = useMoraStore((s) => s.companies);
     const nodesByFolder = useMoraStore((s) => s.nodesByFolder);
     const orbState = useMoraStore((s) => s.orbState);
+    const surfaceProfile = useSurfaceProfile();
 
     const [uptime, setUptime] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -67,7 +69,7 @@ export const SystemStats: React.FC = () => {
                 {/* Companies */}
                 <div className="flex items-center gap-1.5">
                     <Database size={10} className="opacity-50" />
-                    <span>{companies.length} Workspaces</span>
+                    <span>{surfaceProfile.isPublicDemoSurface ? 'Demo-Instanz' : `${companies.length} Firmenkontexte`}</span>
                 </div>
 
                 {/* Departments */}

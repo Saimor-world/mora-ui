@@ -604,7 +604,7 @@ export const Dock = () => {
             return {
                 label: 'Bereich',
                 title: activeSpace.name,
-                description: 'Das ist der aktuelle Arbeitsbereich. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
+                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
                 signalA: `${activeFolders.length} Ordner`,
                 signalB: `${docCount} Dokumente`,
                 actionLabel: 'Im Finder oeffnen',
@@ -833,7 +833,7 @@ export const Dock = () => {
                 {
                     id: 'department-team',
                     label: 'Teamflaeche',
-                    description: 'Wechsle direkt zur Team-Oberflaeche fuer diesen Arbeitsbereich.',
+                    description: 'Wechsle direkt zur Team-Oberflaeche fuer diesen Bereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
                 },
