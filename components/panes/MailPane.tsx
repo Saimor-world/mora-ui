@@ -86,7 +86,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
         } catch (err: any) {
             console.error("Failed to load mail:", err);
-            setError(err.message || "Failed to connect to mail server");
+            setError(err.message || "Verbindung zum Mailserver fehlgeschlagen");
         } finally {
             setLoading(false);
         }
@@ -168,6 +168,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     return (
         <GlassPanel
             title="Post"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -210,7 +211,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                 onClick={fetchMails}
                                 disabled={loading}
                                 className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors disabled:opacity-50"
-                                title="Refresh"
+                                title="Aktualisieren"
                             >
                                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             </button>

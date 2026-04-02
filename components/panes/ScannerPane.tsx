@@ -850,6 +850,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         <>
         <GlassPanel
             title="Scanner"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

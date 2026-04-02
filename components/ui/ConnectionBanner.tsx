@@ -49,7 +49,7 @@ export const ConnectionBanner: React.FC = () => {
                     {/* Message */}
                     <div className="flex flex-col">
                         <span className="text-sm font-medium text-amber-200">
-                            {status === 'offline' ? 'Backend offline' : 'Verbindungsfehler'}
+                            {status === 'offline' ? 'Keine Verbindung' : 'Verbindungsfehler'}
                         </span>
                         <span className="text-[10px] text-amber-400/60">
                             {formatLastConnected()} • Demo-Modus aktiv

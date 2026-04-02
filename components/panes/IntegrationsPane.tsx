@@ -215,6 +215,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     return (
         <GlassPanel
             title="Integrationen"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

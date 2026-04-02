@@ -58,30 +58,29 @@ export const AppLibraryPane: React.FC<{ id: string }> = ({ id }) => {
         removePane(id);
     };
 
-    // FULL APP LIBRARY - All available apps
-    // NOTE: "Finder" is the main file browser with full hierarchical structure (Departments → Spaces → Folders → Nodes)
-    // "Grid View" shows all nodes in a flat grid for quick overview
+    // Finder = hierarchischer Browser (Departments → Spaces → Folders → Nodes)
+    // Alle Inhalte = flache Grid-Ansicht aller Nodes
     const apps: { name: string; type: PaneType; icon: typeof FileText; color: string; category: string }[] = [
         { name: 'Finder', type: 'finder', icon: Folder, color: 'text-emerald-400', category: 'core' },
-        { name: 'Grid View', type: 'grid', icon: Grid, color: 'text-emerald-300', category: 'core' },
-        { name: 'Search', type: 'search', icon: Search, color: 'text-emerald-400', category: 'core' },
-        { name: 'Notes', type: 'notes', icon: StickyNote, color: 'text-yellow-400', category: 'core' },
+        { name: 'Alle Inhalte', type: 'grid', icon: Grid, color: 'text-emerald-300', category: 'core' },
+        { name: 'Suche', type: 'search', icon: Search, color: 'text-emerald-400', category: 'core' },
+        { name: 'Notizen', type: 'notes', icon: StickyNote, color: 'text-yellow-400', category: 'core' },
         { name: 'Scanner', type: 'scanner', icon: ScanLine, color: 'text-purple-400', category: 'core' },
         { name: 'Team', type: 'team', icon: Users, color: 'text-emerald-400', category: 'collaboration' },
-        { name: 'Users', type: 'users', icon: Users, color: 'text-emerald-300', category: 'collaboration' },
-        { name: 'Mail', type: 'mail', icon: Mail, color: 'text-red-400', category: 'collaboration' },
-        { name: 'Calendar', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'collaboration' },
+        { name: 'Benutzer', type: 'users', icon: Users, color: 'text-emerald-300', category: 'collaboration' },
+        { name: 'Post', type: 'mail', icon: Mail, color: 'text-red-400', category: 'collaboration' },
+        { name: 'Kalender', type: 'calendar', icon: Calendar, color: 'text-orange-400', category: 'collaboration' },
         { name: 'Terminal', type: 'terminal', icon: Terminal, color: 'text-mora-gold', category: 'system' },
-        { name: 'Actions', type: 'actions', icon: Activity, color: 'text-cyan-300', category: 'system' },
-        { name: 'Integrations', type: 'integrations', icon: Wrench, color: 'text-blue-300', category: 'system' },
-        // { name: 'Timeline', type: 'timeline', icon: Activity, color: 'text-emerald-400', category: 'system' },
-        { name: 'Settings', type: 'settings', icon: Box, color: 'text-white', category: 'system' },
+        { name: 'Aktionen', type: 'actions', icon: Activity, color: 'text-cyan-300', category: 'system' },
+        { name: 'Integrationen', type: 'integrations', icon: Wrench, color: 'text-blue-300', category: 'system' },
+        { name: 'Einstellungen', type: 'settings', icon: Box, color: 'text-white', category: 'system' },
     ];
 
 
     return (
         <GlassPanel
-            title="App Library"
+            title="Apps"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

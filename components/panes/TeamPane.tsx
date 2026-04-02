@@ -421,6 +421,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     return (
         <GlassPanel
             title="Team"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

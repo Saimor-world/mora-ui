@@ -1674,7 +1674,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 disabled={backStack.length === 0}
                                 aria-label="Navigate back"
                                 className={`p-1.5 rounded-lg border transition-colors ${backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
-                                title="Back (Alt+Left)"
+                                title="Zurück (Alt+Links)"
                             >
                                 <ChevronLeft size={14} />
                             </button>
@@ -1683,7 +1683,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 disabled={forwardStack.length === 0}
                                 aria-label="Navigate forward"
                                 className={`p-1.5 rounded-lg border transition-colors ${forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
-                                title="Forward (Alt+Right)"
+                                title="Vorwärts (Alt+Rechts)"
                             >
                                 <ChevronRight size={14} />
                             </button>
@@ -1692,7 +1692,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 disabled={!currentFolderId}
                                 aria-label="Navigate up"
                                 className={`p-1.5 rounded-lg border transition-colors ${currentFolderId ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
-                                title="Up (Alt+Up)"
+                                title="Hoch (Alt+Hoch)"
                             >
                                 <CornerUpLeft size={14} />
                             </button>
@@ -1794,21 +1794,21 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 <button
                                     onClick={() => setViewMode('grid')}
                                     className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white/70'}`}
-                                    title="Grid View"
+                                    title="Rasteransicht"
                                 >
                                     <LayoutGrid size={16} />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('list')}
                                     className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white/70'}`}
-                                    title="List View"
+                                    title="Listenansicht"
                                 >
                                     <List size={16} />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('graph')}
                                     className={`hidden md:block p-1.5 rounded-lg transition-all ${viewMode === 'graph' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white/70'}`}
-                                    title="Semantic Graph"
+                                    title="Semantischer Graph"
                                 >
                                     <Share2 size={16} />
                                 </button>
@@ -1819,14 +1819,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 <button
                                     onClick={handleCopyPath}
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                    title="Copy Path"
+                                    title="Pfad kopieren"
                                 >
                                     <Copy size={16} />
                                 </button>
                                 <button
                                     onClick={() => loadContent()}
                                     className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                    title="Refresh"
+                                    title="Aktualisieren"
                                 >
                                     <RefreshCw size={16} className={(isLoading || isLoadingTree) ? 'animate-spin' : ''} />
                                 </button>
@@ -1835,7 +1835,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     <button
                                         onClick={() => setIsCreateFolderOpen(true)}
                                         className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all"
-                                        title="New Folder"
+                                        title="Neuer Ordner"
                                     >
                                         <Plus size={16} />
                                     </button>

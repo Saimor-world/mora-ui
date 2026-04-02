@@ -210,14 +210,15 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
         setMembers(prev => prev.map(m =>
             m.id === memberId ? { ...m, defaultCompanyId: updated.default_company_id || null } : m
         ));
-        toast.success(selectedCompanyId ? 'Default company updated' : 'Default company cleared');
+        toast.success(selectedCompanyId ? 'Standard-Firma aktualisiert' : 'Standard-Firma entfernt');
     };
 
     if (!pane) return null;
 
     return (
         <GlassPanel
-            title="Team & Users"
+            title="Benutzer"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -369,7 +370,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
                                                     onChange={(e) => handleCompanyBindingChange(member.id, e.target.value)}
                                                     className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white/70 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 cursor-pointer"
                                                     onClick={(e) => e.stopPropagation()}
-                                                    title="Default company"
+                                                    title="Standard-Firma"
                                                 >
                                                     <option value="">No default company</option>
                                                     {member.companyOptions.map(company => (

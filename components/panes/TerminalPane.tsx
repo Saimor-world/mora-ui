@@ -610,6 +610,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
     return (
         <GlassPanel
             title="Terminal"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

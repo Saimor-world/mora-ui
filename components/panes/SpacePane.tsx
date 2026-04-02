@@ -245,7 +245,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             title={
                 <div className="flex items-center gap-2 text-sm">
                     <span className="opacity-50 hover:opacity-100 cursor-pointer transition-opacity" onClick={() => setActiveFolderLocal(null)}>
-                        {currentSpace?.name || 'Space'}
+                        {currentSpace?.name || 'Bereich'}
                     </span>
                     {activeFolder && (
                         <>
@@ -257,6 +257,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                     )}
                 </div>
             }
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

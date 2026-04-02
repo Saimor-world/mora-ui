@@ -201,7 +201,8 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
 
     return (
         <GlassPanel
-            title="Calendar"
+            title="Kalender"
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

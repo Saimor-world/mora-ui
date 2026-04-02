@@ -716,6 +716,7 @@ export const WorkSessionPane: React.FC<{ id: string }> = ({ id }) => {
     return (
         <GlassPanel
             title={plan?.title ?? 'Arbeitsplan'}
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

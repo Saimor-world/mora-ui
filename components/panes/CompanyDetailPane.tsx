@@ -59,7 +59,8 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
 
     return (
         <GlassPanel
-            title={companyName || company?.name || "Company"}
+            title={companyName || company?.name || "Firma"}
+            paneId={id}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
