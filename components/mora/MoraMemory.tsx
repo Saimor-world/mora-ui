@@ -308,7 +308,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     if (!companyId) {
         return (
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
-                Keine aktive Company. Konto-Gedächtnis bleibt sichtbar, Firmenmetriken sind ausgeblendet.
+                Kein Kontext aktiv. Konto-Gedaechtnis bleibt sichtbar, Organisationsmetriken sind ausgeblendet.
             </div>
         );
     }
@@ -317,7 +317,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
         return (
             <div className="flex items-center gap-2 text-xs text-white/40 p-2">
                 <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-400/70" />
-                Lade Firmenmetriken...
+                Lade Organisationsmetriken...
             </div>
         );
     }
@@ -325,7 +325,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     if (!metrics) {
         return (
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
-                Keine Firmenmetriken verfuegbar.
+                Keine Organisationsmetriken verfuegbar.
             </div>
         );
     }
@@ -339,7 +339,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     const stats = [
         { label: "Erinnerungen", value: totalEpisodic, color: "emerald" },
         { label: "Fakten", value: metrics.structured_facts, color: "blue" },
-        { label: "Pending", value: metrics.pending_reviews, color: metrics.pending_reviews > 0 ? "amber" : "white" },
+        { label: "Offen", value: metrics.pending_reviews, color: metrics.pending_reviews > 0 ? "amber" : "white" },
         { label: "Neu (7d)", value: metrics.recent_learns_7d, color: "violet" },
     ];
 
@@ -396,7 +396,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     const tabs = [
         { id: "search" as const, label: "Suchen", icon: Search, show: showSearch },
         { id: "queue" as const, label: "Review", icon: AlertTriangle, show: showQueue },
-        { id: "stats" as const, label: "Stats", icon: Brain, show: showStats },
+        { id: "stats" as const, label: "Metriken", icon: Brain, show: showStats },
     ].filter((t) => t.show);
 
     return (
@@ -405,7 +405,9 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Brain className="h-4 w-4 text-violet-400" />
-                    <span className="text-xs font-medium text-white/80">Konto-Gedächtnis</span>
+                    <span className="text-xs font-medium text-white/80">
+                        {resolvedCompanyId ? 'Organisations-Memory' : 'Konto-Gedaechtnis'}
+                    </span>
                 </div>
                 <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5">
                     {tabs.map((tab) => {

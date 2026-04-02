@@ -1331,8 +1331,12 @@ useEffect(() => {
                                     <div className="text-white font-mono text-sm">{departments.length}</div>
                                 </div>
                                 <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Organisationen</div>
-                                    <div className="text-white font-mono text-sm">{companies.length}</div>
+                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">
+                                        {surfaceProfile.isPublicDemoSurface ? 'Instanz' : 'Organisationen'}
+                                    </div>
+                                    <div className="text-white font-mono text-sm">
+                                        {surfaceProfile.isPublicDemoSurface ? 'Demo' : companies.length}
+                                    </div>
                                 </div>
                             </div>
 

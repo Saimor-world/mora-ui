@@ -233,7 +233,7 @@ export const ContextRail: React.FC = () => {
                         <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
                             }`} />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            Showcase
+                            Demo
                         </div>
                         {viewMode === 'demo' && (
                             <motion.div

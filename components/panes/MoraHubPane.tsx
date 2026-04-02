@@ -24,9 +24,9 @@ interface Props {
 // TAB CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════
 const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
-    { id: "overview", label: "Overview", icon: Sparkles },
+    { id: "overview", label: "Ueberblick", icon: Sparkles },
     { id: "memory", label: "Memory", icon: Brain },
-    { id: "stats", label: "Stats", icon: BarChart3 },
+    { id: "stats", label: "Metriken", icon: BarChart3 },
 ];
 
 /**
@@ -89,7 +89,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
-                                <span className="text-xs font-medium text-white/80">Mora Statistics (Live)</span>
+                                    <span className="text-xs font-medium text-white/80">Mora-Metriken</span>
                             </div>
                             {/* MR18: scope freshness — honest about staleness */}
                             {ctx.lastScopeUpdateAt && (
@@ -126,7 +126,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                     Setup Erforderlich
                                 </p>
                                 <p className="text-xs text-amber-200/50 max-w-[260px] leading-relaxed">
-                                    Richte zuerst eine Organisation oder die Demo-Instanz ein, damit Mora operativ wird.
+                                    Oeffne zuerst die Demo-Instanz oder einen Bereich, damit Mora operativ wird.
                                 </p>
                             </div>
                         )}
@@ -153,7 +153,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             dimBackground={false}
             title={
                 <div className="flex items-center gap-3">
-                    <span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Nexus</span>
+                    <span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Hub</span>
                     {/* Tab Navigation */}
                     <div className="flex items-center gap-0.5 bg-black/30 rounded-lg p-0.5 ml-2">
                         {TABS.map((tab) => {

@@ -54,7 +54,7 @@ class ConfigManager {
 
     // DEV LOGGING
     if (isDevelopment && typeof window !== 'undefined') {
-      console.log('[ConfigManager] âœ… Configuration Loaded:', coreApiUrl);
+      console.log('[ConfigManager] Configuration loaded:', coreApiUrl);
     }
 
     return {
@@ -88,7 +88,7 @@ class ConfigManager {
 
     // Only log errors in development
     if (errors.length > 0 && this.config.isDevelopment) {
-      console.error('âŒ Configuration Errors:\n', errors.join('\n'));
+      console.error('Configuration errors:\n', errors.join('\n'));
     }
   }
 

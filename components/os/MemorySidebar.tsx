@@ -24,6 +24,7 @@ import {
 import type { MemorySearchResult, MemoryCategory } from '@/lib/types/memory';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
  * MEMORY SIDEBAR
@@ -602,6 +603,7 @@ export const MemorySidebar: React.FC = () => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const user = useMoraStore((s) => (s as any).user);
     const resolvedCompanyId = activeCompanyId ?? null;
+    const surfaceProfile = useSurfaceProfile();
     const mod = usePlatformModifier();
     const { isOpen, isCollapsed, setOpen, setCollapsed } = useMemorySidebarStore();
     const { pendingCount, pendingItems, refresh, approve, reject, debugScope } = useMemory();
@@ -612,6 +614,22 @@ export const MemorySidebar: React.FC = () => {
     const [searchResults, setSearchResults] = useState<MemorySearchResult[]>([]);
     const [recentMemories, setRecentMemories] = useState<MemorySearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const memoryScopeLabel = resolvedCompanyId
+        ? (surfaceProfile.isPublicDemoSurface ? 'Demo-Memory' : 'Organisations-Memory')
+        : 'Konto-Gedaechtnis';
+    const memoryContextLabel = resolvedCompanyId
+        ? (surfaceProfile.isPublicDemoSurface ? 'Demo-Kontext aktiv' : 'Organisationskontext aktiv')
+        : 'Kein Kontext aktiv';
+    const memoryContextTitle = resolvedCompanyId
+        ? (surfaceProfile.isPublicDemoSurface
+            ? 'Hier siehst du deine letzten Eintraege und die Hinweise zur aktiven Demo-Instanz.'
+            : 'Hier siehst du deine letzten Eintraege und die Hinweise zum aktiven Organisationskontext.')
+        : 'Hier siehst du nur deine eigenen Eintraege. Weitere Hinweise erscheinen, sobald ein Kontext aktiv ist.';
+    const memoryContextFooter = resolvedCompanyId
+        ? (surfaceProfile.isPublicDemoSurface
+            ? 'Mora zeigt hier, was im aktuellen Demo-Kontext fuer dich gerade relevant ist.'
+            : 'Mora zeigt hier, was fuer dich im aktuellen Organisationskontext gerade relevant ist.')
+        : 'Waehle einen Kontext, damit zusaetzlich Hinweise und Freigaben erscheinen.';
 
     // Load recent memories on mount
     useEffect(() => {
@@ -729,7 +747,7 @@ export const MemorySidebar: React.FC = () => {
                                         <div className="flex items-center gap-2">
                                             <Brain size={16} className="text-violet-400" />
                                             <span className="text-xs font-medium text-white/80">
-                                                {resolvedCompanyId ? 'Firmen-Memory' : 'Konto-Gedächtnis'}
+                                                {memoryScopeLabel}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-1">
@@ -778,16 +796,14 @@ export const MemorySidebar: React.FC = () => {
                                             <CommandReceipt
                                                 tone={resolvedCompanyId ? 'cyan' : 'amber'}
                                                 icon={Brain}
-                                                label={resolvedCompanyId ? 'Organisationskontext aktiv' : 'Kein Organisationskontext aktiv'}
-                                                title={resolvedCompanyId
-                                                    ? 'Hier siehst du deine letzten Eintraege und die Hinweise zum aktiven Organisationskontext.'
-                                                    : 'Hier siehst du nur deine eigenen Eintraege. Organisationshinweise erscheinen, sobald ein Organisationskontext aktiv ist.'}
+                                                label={memoryContextLabel}
+                                                title={memoryContextTitle}
                                                 chips={[
                                                     { label: 'Kuerzlich' },
                                                     { label: 'Offen' },
                                                     { label: 'Kontext', tone: resolvedCompanyId ? 'cyan' : 'slate' },
                                                 ]}
-                                                footer={resolvedCompanyId ? 'Mora zeigt hier, was fuer dich im aktuellen Organisationskontext gerade relevant ist.' : 'Waehle einen Organisationskontext, damit auch Hinweise und Freigaben erscheinen.'}
+                                                footer={memoryContextFooter}
                                             />
                                         </div>
 
@@ -802,7 +818,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Kein Organisationskontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du in einer Organisation bist.
+                                                        Kein Kontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Demo-Instanz geoeffnet hast.
                                                     </div>
                                                 )}
 
@@ -896,7 +912,7 @@ export const MemorySidebar: React.FC = () => {
                                             </>
                                         ) : (
                                             <p className="text-xs text-muted-foreground px-4 py-6 text-center leading-relaxed">
-                                                Dein Bereich ist verfuegbar. Organisationshinweise erscheinen, sobald ein Organisationskontext aktiv ist.
+                                                Dein Bereich ist verfuegbar. Weitere Hinweise erscheinen, sobald ein aktiver Demo- oder Organisationskontext vorliegt.
                                             </p>
                                         )}
 

@@ -405,10 +405,10 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
     return (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
             <p className="text-sm font-medium text-foreground/80">
-                Kein Organisationskontext aktiv
+                Kein Kontext aktiv
             </p>
             <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Richte zuerst eine Organisation oder einen Demo-Kontext ein, damit Mora sinnvoll arbeiten kann.
+                Oeffne zuerst die Demo-Instanz oder waehle einen Bereich, damit Mora sinnvoll arbeiten kann.
             </p>
             {onOpenSettings && (
                 <button

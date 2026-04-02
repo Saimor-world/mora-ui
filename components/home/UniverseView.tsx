@@ -100,6 +100,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+    const totalSpaceCount = useMemo(
+        () =>
+            Object.values(spacesByDepartment || {}).reduce((sum, spaces) => (
+                sum + (Array.isArray(spaces) ? spaces.length : 0)
+            ), 0),
+        [spacesByDepartment]
+    );
 
     // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
     useEffect(() => {
@@ -540,25 +547,30 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     return (
         <div className="relative w-full h-full overflow-hidden text-white bg-transparent">
             {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
-            <StarField warp={false} />
+            <StarField warp={false} density="medium" opacity={0.98} />
             {/* Galaxy wash */}
             <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
                 background: `
-                    radial-gradient(1240px 620px at 60% 60%, rgba(34, 160, 220, 0.42) 0%, transparent 65%),
-                    radial-gradient(960px 440px at 20% 25%, rgba(34, 197, 94, 0.28) 0%, transparent 60%),
-                    radial-gradient(860px 440px at 80% 35%, rgba(99, 102, 241, 0.30) 0%, transparent 55%),
-                    radial-gradient(1040px 560px at 40% 80%, rgba(12, 74, 110, 0.28) 0%, transparent 60%)
+                    radial-gradient(1380px 760px at 58% 58%, rgba(22, 163, 255, 0.52) 0%, transparent 67%),
+                    radial-gradient(980px 520px at 18% 24%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
+                    radial-gradient(920px 480px at 82% 28%, rgba(129, 140, 248, 0.34) 0%, transparent 56%),
+                    radial-gradient(860px 420px at 74% 74%, rgba(239, 68, 68, 0.14) 0%, transparent 54%),
+                    radial-gradient(1120px 620px at 42% 84%, rgba(8, 47, 73, 0.34) 0%, transparent 60%)
                 `
             }} />
             {/* Deep space gradient */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#072522] via-[#0b1b2d] to-[#103636] opacity-80 z-[-8] pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#03110f_0%,#071b2e_38%,#0d2238_62%,#102f29_100%)] opacity-90 z-[-8] pointer-events-none" />
             {/* Galaxy band */}
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "linear-gradient(120deg, rgba(16,185,129,0.10) 0%, rgba(6,182,212,0.17) 45%, rgba(99,102,241,0.13) 70%, transparent 100%)",
+                background: "linear-gradient(120deg, rgba(16,185,129,0.10) 0%, rgba(6,182,212,0.22) 35%, rgba(96,165,250,0.18) 55%, rgba(129,140,248,0.16) 72%, transparent 100%)",
                 mixBlendMode: "screen"
             }} />
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "radial-gradient(760px 280px at 52% 48%, rgba(255,255,255,0.05) 0%, rgba(34,211,238,0.05) 22%, transparent 70%)",
+                background: "radial-gradient(880px 320px at 51% 47%, rgba(255,255,255,0.07) 0%, rgba(34,211,238,0.08) 18%, rgba(99,102,241,0.06) 34%, transparent 72%)",
+                mixBlendMode: "screen"
+            }} />
+            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
+                background: "radial-gradient(620px 220px at 28% 72%, rgba(248,113,113,0.06) 0%, transparent 72%), radial-gradient(540px 180px at 78% 18%, rgba(167,139,250,0.08) 0%, transparent 70%)",
                 mixBlendMode: "screen"
             }} />
             {/* Subtle vignette */}
@@ -591,7 +603,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         transition={{ delay: 1, duration: 1.5 }}
                     >
                         <div className="h-[1px] w-12 bg-white/20" />
-                        <span className="text-[10px] tracking-[0.3em] text-emerald-400/60 uppercase font-medium">Corporate Overview</span>
+                        <span className="text-[10px] tracking-[0.3em] text-emerald-400/60 uppercase font-medium">Live-Topographie</span>
                         <div className="h-[1px] w-12 bg-white/20" />
                     </motion.div>
                 </motion.div>
@@ -1017,10 +1029,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 />
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
-                                    label="Organisationen"
-                                    value={`${companies.length}`}
+                                    label={isPublicDemoSurface ? 'Bereiche' : 'Organisationen'}
+                                    value={isPublicDemoSurface ? `${totalSpaceCount}` : `${companies.length}`}
                                     status="stable"
-                                    progress={Math.min(companies.length * 20, 100)}
+                                    progress={Math.min((isPublicDemoSurface ? totalSpaceCount : companies.length) * 20, 100)}
                                 />
                                 <InsightCard
                                     icon={<Zap className="w-4 h-4" />}

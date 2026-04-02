@@ -6,6 +6,7 @@ import { Lock, Eye, EyeOff, Fingerprint, RefreshCw, LogOut, Moon } from 'lucide-
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { useMoraStore } from '@/lib/store/moraState';
 import { useAccentColor } from '@/lib/hooks/useAccentColor';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { toast } from 'sonner';
 
 interface LockScreenProps {
@@ -34,6 +35,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
     companyLogo
 }) => {
     const { accentColor } = useAccentColor();
+    const surfaceProfile = useSurfaceProfile();
     const [pin, setPin] = useState('');
     const [showPin, setShowPin] = useState(false);
     const [isUnlocking, setIsUnlocking] = useState(false);
@@ -269,7 +271,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
 
             {/* Bottom Branding */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-white/20 tracking-widest">
-                SECURE WORKSPACE
+                {surfaceProfile.isPublicDemoSurface ? 'SECURE DEMO INSTANCE' : 'SECURE ORGANIZATION'}
             </div>
         </div>
     );

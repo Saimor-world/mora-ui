@@ -457,16 +457,16 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                                     ? "bg-emerald-500/20 text-emerald-300"
                                     : "bg-white/5 text-gray-400 hover:bg-white/10"
                                     }`}
-                                title="Human-in-the-loop toggle"
+                                title="Automatikmodus umschalten"
                             >
-                                {hilEnabled ? "Apply w/ Confirm" : "Auto Apply"}
+                                {hilEnabled ? "Mit Bestaetigung" : "Direkt anwenden"}
                             </button>
                         )}
                         <button
                             onClick={fetchEvents}
                             disabled={loading}
                             className="p-1.5 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
-                            title="Refresh"
+                            title="Aktualisieren"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${loading ? "animate-spin" : ""}`} />
                         </button>

@@ -62,14 +62,14 @@ const ORB_CONFIG: Record<string, {
     watch: {
         color: "#a78bfa",
         label: "Beobachte",
-        sublabel: "Sektor wird gescannt",
+        sublabel: "Bereich wird gescannt",
         icon: Eye,
         glowClass: "shadow-violet-500/20",
     },
     focus: {
         color: "#22c55e",
         label: "Fokus",
-        sublabel: "Deep Dive aktiv",
+        sublabel: "Ordnerfokus aktiv",
         icon: Zap,
         glowClass: "shadow-green-500/20",
     },
@@ -88,7 +88,7 @@ const getOrbConfig = (state: string, viewMode?: string) => {
             ...ORB_CONFIG.idle,
             color: "#22d3ee",
             label: "Demo",
-            sublabel: "Sandbox aktiv",
+            sublabel: "Demo-Instanz aktiv",
             glowClass: "shadow-cyan-500/20",
         };
     }
@@ -122,10 +122,10 @@ const UniverseStatsGrid: React.FC = () => {
     const starCount = Object.values(nodesByFolder).flat().length;
 
     const stats = [
-        { label: "Planeten", count: planetCount, color: "emerald" },
-        { label: "Monde", count: spaceCount, color: "blue" },
-        { label: "Nebel", count: nebulaCount, color: "violet" },
-        { label: "Sterne", count: starCount, color: "amber" },
+        { label: "Abteilungen", count: planetCount, color: "emerald" },
+        { label: "Bereiche", count: spaceCount, color: "blue" },
+        { label: "Ordner", count: nebulaCount, color: "violet" },
+        { label: "Inhalte", count: starCount, color: "amber" },
     ];
 
     const colorClasses: Record<string, string> = {
@@ -159,7 +159,7 @@ const UniverseStatsGrid: React.FC = () => {
 // ═══════════════════════════════════════════════════════════════════════════
 export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     scope,
-    title = "Mora Nexus",
+    title = "Mora Hub",
     compact = false,
     className,
 }) => {
@@ -182,10 +182,10 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     // Dynamic context line
     const contextLine = useMemo(() => {
         const dept = safeDepartments.find((d) => d.id === activeDepartmentId);
-        if (viewLevel === "folder") return dept ? `${dept.name} › Deep Dive` : "Deep Dive";
-        if (viewLevel === "space") return dept ? `${dept.name} › Sektor` : "Sektor";
-        if (viewLevel === "department") return dept?.name || "Department";
-        return viewMode === "demo" ? "Sandbox" : "Universe";
+        if (viewLevel === "folder") return dept ? `${dept.name} > Ordnerfokus` : "Ordnerfokus";
+        if (viewLevel === "space") return dept ? `${dept.name} > Bereich` : "Bereich";
+        if (viewLevel === "department") return dept?.name || "Abteilung";
+        return viewMode === "demo" ? "Demo-Instanz" : "Universe";
     }, [viewLevel, viewMode, safeDepartments, activeDepartmentId]);
 
     // Cursor Agent status
@@ -224,15 +224,15 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     };
 
     const openSearch = () => {
-        openPane({ id: "search-main", type: "search", title: "Search", size: { width: 720, height: 520 } });
+        openPane({ id: "search-main", type: "search", title: "Suche", size: { width: 720, height: 520 } });
     };
 
     const openNotes = () => {
-        openPane({ id: "notes-main", type: "notes", title: "Notes", size: { width: 720, height: 560 } });
+        openPane({ id: "notes-main", type: "notes", title: "Notizen", size: { width: 720, height: 560 } });
     };
 
     const openSettings = () => {
-        openPane({ id: "settings-main", type: "settings", title: "Settings", size: { width: 720, height: 640 } });
+        openPane({ id: "settings-main", type: "settings", title: "Einstellungen", size: { width: 720, height: 640 } });
     };
 
     // ─── Actions Grid ───
@@ -242,7 +242,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
         { id: "upload", label: "Upload", icon: Upload, color: "violet", onClick: () => openFinder(true) },
         { id: "search", label: "Suche", icon: Search, shortcut: "S", color: "amber", onClick: openSearch },
         { id: "team", label: "Team", icon: Users, color: "pink", onClick: openTeam },
-        { id: "notes", label: "Notes", icon: StickyNote, shortcut: "N", color: "cyan", onClick: openNotes },
+        { id: "notes", label: "Notizen", icon: StickyNote, shortcut: "N", color: "cyan", onClick: openNotes },
     ];
 
     // Color map for tailwind classes
@@ -281,14 +281,14 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                                 ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
                                 : "bg-white/[0.03] border-white/10 text-white/40 hover:bg-white/[0.06]"
                         }`}
-                        title="Human-in-the-loop toggle"
+                        title="Automatikmodus umschalten"
                     >
-                        {hilEnabled ? "⚡ Confirm" : "Auto"}
+                        {hilEnabled ? "Bestaetigen" : "Auto"}
                     </button>
                     <button
                         onClick={openSettings}
                         className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors"
-                        title="Settings"
+                        title="Einstellungen"
                     >
                         <Settings className="h-3.5 w-3.5" />
                     </button>
@@ -347,7 +347,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                     {/* ─── Quick Actions ─── */}
                     <div className={`flex-1 ${compact ? "px-3 pb-3" : "px-4 pb-4"}`}>
                         <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 mb-2">
-                            Quick Actions
+                            Schnellaktionen
                         </div>
                         <div className={`grid ${compact ? "grid-cols-3" : "grid-cols-2"} gap-1.5`}>
                             {actions.map((action) => {
@@ -381,11 +381,11 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                         <div className="flex items-center gap-1.5">
                             <Activity className="h-3 w-3 text-emerald-400/60" />
                             <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
-                                Live Feed
+                                Live-Signale
                             </span>
                         </div>
                         <span className="text-[9px] text-white/20">
-                            {scope === "department" ? "Sektor" : "Global"}
+                            {scope === "department" ? "Bereich" : "Kontext"}
                         </span>
                     </div>
                     <div className={`flex-1 min-h-0 ${compact ? "p-2" : "p-3"}`}>
@@ -409,7 +409,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                                 <div className="flex items-center gap-1.5">
                                     <Brain className="h-3 w-3 text-violet-400/60" />
                                     <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
-                                        Gedächtnis
+                                        Memory
                                     </span>
                                 </div>
                                 {showMemory ? (

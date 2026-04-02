@@ -639,11 +639,11 @@ export const Dock = () => {
             label: 'Universe',
             title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: surfaceProfile.isPublicDemoSurface
-                ? 'Das Universe zeigt die kuratierte Beispielorganisation. Von hier aus solltest du direkt in die passende Showcase-Abteilung springen.'
+                ? 'Das Universe zeigt die kuratierte Demo-Instanz. Von hier aus solltest du direkt in die passende Abteilung springen.'
                 : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Showcase oeffnen' : 'Organisation oeffnen',
+            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Demo oeffnen' : 'Organisation oeffnen',
             accent,
             onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,

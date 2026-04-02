@@ -68,7 +68,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Showcase starten oder mit Zugangsdaten weiter'
+        ? 'Demo starten oder mit Zugangsdaten weiter'
         : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Eigene Instanz vorbereiten'

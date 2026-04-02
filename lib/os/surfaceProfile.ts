@@ -21,9 +21,9 @@ export const DEFAULT_SURFACE_PROFILE: SurfaceProfileSnapshot = {
 const PUBLIC_DEMO_PROFILE: SurfaceProfileSnapshot = {
     id: 'public_demo',
     isPublicDemoSurface: true,
-    workspaceTabLabel: 'Showcase',
+    workspaceTabLabel: 'Demo',
     fallbackCompanyName: 'Simple Coffee Group',
-    roleBadgeLabel: 'Showcase',
+    roleBadgeLabel: 'Demo',
     companySwitcherEnabled: false,
 };
 
@@ -42,7 +42,7 @@ export const formatCompanyContextLabel = (
     companyCount: number
 ) => {
     if (profile.isPublicDemoSurface) {
-        return 'Beispielorganisation';
+        return 'Demo-Instanz';
     }
 
     if (companyCount <= 0) return 'Keine Organisation';

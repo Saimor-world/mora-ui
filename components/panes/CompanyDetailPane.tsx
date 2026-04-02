@@ -34,24 +34,24 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
     const company = safeCompanies.find(c => c.id === companyId);
 
     const tabs = [
-        { id: 'overview', label: 'Overview', icon: Building2 },
-        { id: 'danger', label: 'Danger Zone', icon: AlertCircle },
+        { id: 'overview', label: 'Ueberblick', icon: Building2 },
+        { id: 'danger', label: 'Gefahrenzone', icon: AlertCircle },
     ];
 
     const handleDeleteCompany = async () => {
         if (confirmDelete != company?.name) {
-            toast.error('Please type the company name to confirm');
+            toast.error('Bitte gib den Organisationsnamen zur Bestaetigung ein');
             return;
         }
 
         setIsDeleting(true);
         try {
             await coreDelete(`/v3/companies/${companyId}`);
-            toast.success(`Deleted "${company?.name}"`);
+            toast.success(`"${company?.name}" wurde geloescht`);
             await loadCompanies();
             removePane(id);
         } catch (error: any) {
-            toast.error(error.message || 'Failed to delete company');
+            toast.error(error.message || 'Organisation konnte nicht geloescht werden');
         } finally {
             setIsDeleting(false);
         }
@@ -107,21 +107,21 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
                                 </div>
                                 {company?.is_demo && (
                                     <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs border border-blue-500/30">
-                                        DEMO
+                                        Demo
                                     </span>
                                 )}
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
                                 <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                    <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Company ID</div>
+                                    <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Organisations-ID</div>
                                     <div className="text-sm text-white/70 font-mono break-all">{companyId}</div>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2 text-emerald-400 text-sm">
                                 <CheckCircle size={16} />
-                                Active
+                                Aktiv
                             </div>
                         </div>
                     )}

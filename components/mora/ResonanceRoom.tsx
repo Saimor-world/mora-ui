@@ -461,7 +461,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 </h3>
                                 <p className="text-emerald-500/50 text-sm leading-relaxed">
                                     {viewMode === 'demo'
-                                        ? 'Simple Coffee Group ist als kuratierte Beispielinstanz geladen. Ich kann dir Struktur, Signale und naechste Schritte im Showcase erklaeren.'
+                                        ? 'Simple Coffee Group ist als kuratierte Demo-Instanz geladen. Ich kann dir Struktur, Signale und naechste Schritte in der Beispielorganisation erklaeren.'
                                         : 'Hier treffen unsere Gedanken aufeinander. Sprechen Sie, und ich werde zuhoeren. Mein Bewusstseinsstrom fliesst durch diesen Raum.'}
                                 </p>
                             </motion.div>

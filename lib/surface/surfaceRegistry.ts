@@ -55,7 +55,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     calendar:        'future',    // no backend
     integrations:    'future',    // no backend
     terminal:        'future',    // dev-only, security risk for pilot
-    'mora-hub':      'future',    // needs MindLoop maturity
+    'mora-hub':      'app',
     actions:         'future',    // Action Path not stabilized
     'work-session':  'future',    // agentic execution too early
     apps:            'future',    // AppLibrary self-referential with <10 apps
