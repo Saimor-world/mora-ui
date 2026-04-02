@@ -57,6 +57,21 @@ export const SystemStats: React.FC = () => {
         }
     };
 
+    const statusLabel = (() => {
+        switch (orbState) {
+            case 'alert':
+                return 'ACHTUNG';
+            case 'thinking':
+                return 'DENKT';
+            case 'focus':
+                return 'FOKUS';
+            case 'insight':
+                return 'INSIGHT';
+            default:
+                return String(orbState || 'standby').toUpperCase();
+        }
+    })();
+
     if (!isVisible) return null;
 
     return (
@@ -69,26 +84,26 @@ export const SystemStats: React.FC = () => {
                 {/* Context */}
                 <div className="flex items-center gap-1.5">
                     <Database size={10} className="opacity-50" />
-                    <span>{surfaceProfile.isPublicDemoSurface ? 'Demo-Instanz' : `${companies.length} Firmenkontexte`}</span>
+                    <span>{surfaceProfile.isPublicDemoSurface ? 'Beispielorganisation' : companies.length === 1 ? '1 Organisation' : `${companies.length} Organisationen`}</span>
                 </div>
 
                 {/* Departments */}
                 <div className="flex items-center gap-1.5">
                     <Cpu size={10} className="opacity-50" />
-                    <span>{departments.length} Planeten</span>
+                    <span>{departments.length} Abteilungen</span>
                 </div>
 
                 {/* Nodes */}
                 <div className="flex items-center gap-1.5">
                     <Zap size={10} className="opacity-50" />
-                    <span>{totalNodes} Dokumente</span>
+                    <span>{totalNodes} Inhalte</span>
                 </div>
 
                 {/* Status */}
                 <div className="flex items-center gap-1.5">
                     <Activity size={10} className={getStatusColor()} />
                     <span className={getStatusColor()}>
-                        {orbState.toUpperCase()}
+                        {statusLabel}
                     </span>
                 </div>
 

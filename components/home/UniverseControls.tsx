@@ -27,7 +27,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     companies = [],
     onSwitchCompany,
     visibleModes = ['owner', 'workspace', 'demo'],
-    workspaceLabel = 'Kontext',
+    workspaceLabel = 'Organisation',
     disableContextSwitch = false,
     companyCountLabel,
 }) => {
@@ -166,11 +166,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     type="button"
                     onClick={handleContextClick}
                     className="hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-white/74 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 md:flex"
-                    title="Kontext wechseln"
+                    title="Organisation wechseln"
                 >
                     <Globe className="h-3 w-3" />
                     <span className="text-[10px] uppercase tracking-[0.18em] text-white/56">
-                        Kontext
+                        Organisationen
                     </span>
                     <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/68">
                         {companyCountLabel || companies.length}

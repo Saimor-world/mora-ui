@@ -13,6 +13,7 @@ import { Mycelium25D } from '@/components/organic/Mycelium25D';
 import type { CoreNode, CoreFolder } from '@/lib/types/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/lib/toast';
+import { openNodeLike } from '@/lib/utils/contentOpen';
 
 // Type Icons Mapping
 const TYPE_ICONS: Record<string, any> = {
@@ -181,12 +182,9 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             return;
         }
 
-        openPane({
-            id: `document-${node.id}`,
-            type: 'document',
-            title: node.title || 'Document',
-            data: { nodeId: node.id },
-            size: { width: 800, height: 600 }
+        openNodeLike(node, openPane, {
+            paneId: `document-${node.id}`,
+            title: node.title || node.name || 'Dokument',
         });
     };
 
@@ -198,7 +196,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
         try {
             // Check if this is a demo space
             if (String(targetSpaceId).startsWith('space-') && !String(targetSpaceId).match(/^[0-9a-fA-F-]{36}$/)) {
-                throw new Error("Cannot modify demo spaces. Create a real space to add folders.");
+                throw new Error("Demo-Bereiche koennen nicht veraendert werden. Lege dafuer einen echten Bereich an.");
             }
 
             await addFolder({
@@ -211,10 +209,10 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             toast.success("Ordner erstellt");
         } catch (error: any) {
             console.error('Failed to create folder:', error);
-            if (error.message.includes("Cannot modify demo") || error.message.includes("not found")) {
-                toast.error("Demo-Modus: Beispiel-Bereiche können nicht verändert werden.");
+            if (error.message.includes("Demo-Bereiche") || error.message.includes("not found")) {
+                toast.error("Demo-Modus: Beispiel-Bereiche koennen nicht veraendert werden.");
             } else {
-                toast.error("Failed to create folder");
+                toast.error("Ordner konnte nicht erstellt werden");
             }
         } finally {
             setIsSubmitting(false);
@@ -224,16 +222,16 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
     // Handlers
 
     const handleDeleteSpace = async () => {
-        if (!targetSpaceId) return toast.error("No space selected");
+        if (!targetSpaceId) return toast.error("Kein Bereich ausgewaehlt");
         try {
             await deleteSpace(targetSpaceId);
-            toast.success("Space deleted");
+            toast.success("Bereich geloescht");
             removePane(id); // Close window on delete
             if (activeDepartmentId) {
                 await loadSpacesForDepartment(activeDepartmentId);
             }
         } catch (e: any) {
-            toast.error(e?.message || "Failed to delete space");
+            toast.error(e?.message || "Bereich konnte nicht geloescht werden");
         }
     };
 

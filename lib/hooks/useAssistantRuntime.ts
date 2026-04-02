@@ -103,9 +103,9 @@ function normalizeAssistantRuntime(payload: ProvidersPayload | null | undefined)
         status === 'offline'
             ? OFFLINE_SNAPSHOT.title
             : source === 'local'
-                ? `Lokal · ${readableProvider}`
+                ? `Lokal - ${readableProvider}`
                 : source === 'cloud'
-                    ? `Cloud · ${readableProvider}`
+                    ? `Cloud - ${readableProvider}`
                     : readableProvider;
 
     const subtitle =
@@ -179,4 +179,3 @@ export function useAssistantRuntime(pollMs: number = 60_000): AssistantRuntimeSn
 
     return snapshot;
 }
-

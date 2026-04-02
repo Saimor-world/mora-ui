@@ -639,11 +639,11 @@ export const Dock = () => {
             label: 'Universe',
             title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: surfaceProfile.isPublicDemoSurface
-                ? 'Das Universe zeigt die kuratierte Demo-Instanz. Von hier aus solltest du direkt in die passende Demo-Abteilung springen.'
-                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus solltest du zuerst den richtigen Firmenkontext oder die passende Abteilung waehlen.',
+                ? 'Das Universe zeigt die kuratierte Beispielorganisation. Von hier aus solltest du direkt in die passende Showcase-Abteilung springen.'
+                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Demo-Kontext' : 'Kontext oeffnen',
+            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Showcase oeffnen' : 'Organisation oeffnen',
             accent,
             onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -704,8 +704,8 @@ export const Dock = () => {
     const controlCenterNextMove = useMemo(() => {
         if (shellContext.nextTarget.kind === 'company') {
             return {
-                label: 'Kontext oeffnen',
-                hint: 'Direkt in Dateien und Strukturen dieses Firmenkontexts springen.',
+                label: 'Organisation oeffnen',
+                hint: 'Direkt in Dateien und Strukturen dieser Organisation springen.',
             };
         }
 
@@ -766,8 +766,8 @@ export const Dock = () => {
                 },
                 {
                     id: 'folder-chat',
-                    label: 'Chat im Kontext',
-                    description: 'Sprich mit Mora aus genau diesem Folder-Kontext.',
+                    label: 'Mora im Ordner',
+                    description: 'Sprich mit Mora direkt aus diesem Ordner heraus.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
                 },
@@ -799,8 +799,8 @@ export const Dock = () => {
                 },
                 {
                     id: 'space-chat',
-                    label: 'Raum Chat',
-                    description: 'Oeffne Mora und bleib in diesem Raum-Kontext.',
+                    label: 'Mora im Bereich',
+                    description: 'Oeffne Mora und bleib in diesem Bereich als Arbeitskontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
                 },
@@ -819,7 +819,7 @@ export const Dock = () => {
                 {
                     id: 'department-open',
                     label: 'Im Finder oeffnen',
-                    description: 'Oeffne die Department-Struktur direkt im Finder.',
+                    description: 'Oeffne die Abteilungsstruktur direkt im Finder.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
                 },
@@ -839,8 +839,8 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-chat',
-                    label: 'Strategie Chat',
-                    description: 'Starte Mora mit Department-Fokus statt globalem Kontext.',
+                    label: 'Mora fuer die Abteilung',
+                    description: 'Starte Mora mit Abteilungsfokus statt globalem Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
                 },
@@ -1326,7 +1326,7 @@ export const Dock = () => {
                                 >
                                     <div className="p-2 border-b border-white/5">
                                         <span className="text-[10px] text-white/30 uppercase tracking-wider px-2">
-                                            Kontext wechseln
+                                            Organisation wechseln
                                         </span>
                                     </div>
                                     <div className="p-1">

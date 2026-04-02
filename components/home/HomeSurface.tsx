@@ -4,12 +4,13 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut, Eye } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
+import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet } from '@/lib/api/coreClient';
 import type { UserContentResponse } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
+import { downloadCompanyFile } from '@/lib/api/filesClient';
 
 interface KairosEvent {
     id: string;
@@ -41,7 +42,14 @@ function relativeTime(isoStr: string): string {
     if (min < 60) return `vor ${min} Min.`;
     const h = Math.floor(min / 60);
     if (h < 24) return `vor ${h} Std.`;
-    return `vor ${Math.floor(h / 24)} Tag${Math.floor(h / 24) > 1 ? 'en' : ''}`;
+    const days = Math.floor(h / 24);
+    if (days <= 14) {
+        return `vor ${days} Tag${days > 1 ? 'en' : ''}`;
+    }
+    return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: 'short',
+    }).format(new Date(isoStr));
 }
 
 /**
@@ -184,7 +192,7 @@ export const HomeSurface: React.FC = () => {
     })();
 
     const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const personalSpaceLabel = myContent?.space?.name || 'Persönlicher Space';
+    const personalSpaceLabel = myContent?.space?.name || 'Persoenlicher Bereich';
     const personalLatestItem = useMemo<PersonalLatestItem | null>(() => {
         if (!myContent) return null;
 
@@ -253,8 +261,7 @@ export const HomeSurface: React.FC = () => {
             return;
         }
 
-        const url = `${getCoreBaseUrl()}/v3/files/${personalLatestItem.id}/download`;
-        window.open(url, '_blank', 'noopener,noreferrer');
+        void downloadCompanyFile(personalLatestItem.id, personalLatestItem.label);
     }, [openMeineDateien, openPane, personalLatestItem]);
 
     const myContentCountsLabel = useMemo(() => {
@@ -262,7 +269,7 @@ export const HomeSurface: React.FC = () => {
         return [
             myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
             myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
-            myContent.counts.files != null && `${myContent.counts.files} Dateien`,
+            myContent.counts.files != null && `${myContent.counts.files} Originaldateien`,
         ].filter(Boolean).join(' · ');
     }, [myContent]);
 
@@ -271,7 +278,7 @@ export const HomeSurface: React.FC = () => {
         ? personalLatestItem.kind === 'node'
             ? 'Dokument'
             : personalLatestItem.kind === 'file'
-                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Quelldatei' : 'Datei')
+                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Verknuepftes Dokument' : 'Originaldatei')
                 : 'Ordner'
         : null;
 
@@ -342,10 +349,10 @@ export const HomeSurface: React.FC = () => {
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt im Firmenkontext aktualisiert
+                            Zuletzt in der Organisation aktualisiert
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Echte Dokument-Updates aus dem aktuellen Firmenkontext.
+                            Echte Dokument-Updates aus der aktuell aktiven Organisation.
                         </p>
                         {recentDocs.length === 0 ? (
                             <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
@@ -381,7 +388,7 @@ export const HomeSurface: React.FC = () => {
                             Mora bemerkt
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Awareness-Ereignisse aus dem Core, nicht aus statischem Demo-Text.
+                            Reale Signale aus dem Core. Aeltere Demo-Eintraege zeigen wir bewusst mit Datum statt mit kuenstlicher Frische.
                         </p>
                         <ul className="flex flex-col gap-1">
                             {kairosEvents.map((evt) => (
@@ -390,7 +397,7 @@ export const HomeSurface: React.FC = () => {
                                     <span className="flex-1 text-sm leading-snug">
                                         {evt.payload.summary || (evt.payload.new_nodes != null
                                             ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
-                                            : 'Aktivitaet im Firmenkontext erkannt')}
+                                            : 'Operatives Signal in der Organisation')}
                                     </span>
                                     <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
                                         {relativeTime(evt.timestamp)}
@@ -407,7 +414,7 @@ export const HomeSurface: React.FC = () => {
                             Persönlicher Bereich
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner, Dokumente und Dateien aus deinem privaten Kontext.
+                            Eigene Ordner, bearbeitbare Dokumente und hochgeladene Originaldateien aus deinem privaten Kontext.
                         </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
@@ -424,7 +431,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Dokumente sind Inhalte. Quelldateien und Anhänge bleiben als Originale sichtbar. Ordner strukturieren beides.
+                                        Originaldateien bleiben als Quelle erhalten. Mora kann sie einordnen und mit Dokumenten verknuepfen, ohne das Original zu verlieren.
                                     </div>
                                 </div>
                             </button>
@@ -436,7 +443,7 @@ export const HomeSurface: React.FC = () => {
                             >
                                 <div className="flex items-center justify-between gap-3">
                                     <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                        Privater Bereich
+                                        Persoenlicher Bereich
                                     </div>
                                     {personalLatestKindLabel && (
                                         <span className={`text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>
@@ -448,7 +455,7 @@ export const HomeSurface: React.FC = () => {
                                     {personalSpaceLabel}
                                 </div>
                                 <div className={`mt-4 text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                    Letzte private Aktivität
+                                    Zuletzt aktiv
                                 </div>
                                 <div className={`mt-2 text-sm ${t.cardText}`}>
                                     {personalLatestLabel || 'Noch keine privaten Inhalte sichtbar.'}

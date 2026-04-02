@@ -95,7 +95,7 @@ export const ContextRail: React.FC = () => {
         },
         { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
         { id: 'activity', icon: Activity, label: 'Aktivität', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
-        { id: 'chat', icon: MessageSquare, label: "Mora Chat", action: () => { closeOverlays(); openChatDock(); } },
+        { id: 'chat', icon: MessageSquare, label: "Mora", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
     // Blitz = Enter/Exit Demo Mode
@@ -233,7 +233,7 @@ export const ContextRail: React.FC = () => {
                         <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
                             }`} />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            Demo-Instanz
+                            Showcase
                         </div>
                         {viewMode === 'demo' && (
                             <motion.div
@@ -289,7 +289,7 @@ export const ContextRail: React.FC = () => {
                             <button
                                 onClick={() => {
                                     const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
+                                    openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
                                     setShowUserMenu(false);
                                 }}
                                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/80"
@@ -318,13 +318,13 @@ export const ContextRail: React.FC = () => {
                         exit={{ opacity: 0, x: -10 }}
                         className="fixed left-[88px] bottom-20 z-[70] w-80 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-2xl"
                     >
-                        <h3 className="text-sm text-white/90 font-medium mb-3">Schnelleinstellungen</h3>
+                        <h3 className="text-sm text-white/90 font-medium mb-3">Schnellzugriff</h3>
 
                         <div className="space-y-2">
                             <button
                                 onClick={() => {
                                     const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 720, height: 640 } });
+                                    openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
                                     setShowSettings(false);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
@@ -346,13 +346,13 @@ export const ContextRail: React.FC = () => {
                             <button
                                 onClick={() => {
                                     const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 680, height: 560 } });
+                                    openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora', size: { width: 680, height: 560 } });
                                     setShowSettings(false);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Sparkles size={15} />
-                                Mora Nexus
+                                Mora
                             </button>
                         </div>
                     </motion.div>

@@ -1004,7 +1004,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
                                 <InsightCard
                                     icon={<Cpu className="w-4 h-4" />}
-                                    label="Departments"
+                                    label="Abteilungen"
                                     value={`${departments.length}`}
                                     status="optimal"
                                     progress={Math.min(departments.length * 10, 100)}
@@ -1017,7 +1017,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 />
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
-                                    label="Kontexte"
+                                    label="Organisationen"
                                     value={`${companies.length}`}
                                     status="stable"
                                     progress={Math.min(companies.length * 20, 100)}

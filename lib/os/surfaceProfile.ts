@@ -12,18 +12,18 @@ export interface SurfaceProfileSnapshot {
 export const DEFAULT_SURFACE_PROFILE: SurfaceProfileSnapshot = {
     id: 'standard',
     isPublicDemoSurface: false,
-    workspaceTabLabel: 'Kontext',
-    fallbackCompanyName: 'Firmenkontext',
-    roleBadgeLabel: 'Arbeitskontext',
+    workspaceTabLabel: 'Organisation',
+    fallbackCompanyName: 'Organisation',
+    roleBadgeLabel: 'Arbeitsmodus',
     companySwitcherEnabled: true,
 };
 
 const PUBLIC_DEMO_PROFILE: SurfaceProfileSnapshot = {
     id: 'public_demo',
     isPublicDemoSurface: true,
-    workspaceTabLabel: 'Demo',
-    fallbackCompanyName: 'Demo-Instanz',
-    roleBadgeLabel: 'Demo-Instanz',
+    workspaceTabLabel: 'Showcase',
+    fallbackCompanyName: 'Simple Coffee Group',
+    roleBadgeLabel: 'Showcase',
     companySwitcherEnabled: false,
 };
 
@@ -42,8 +42,9 @@ export const formatCompanyContextLabel = (
     companyCount: number
 ) => {
     if (profile.isPublicDemoSurface) {
-        return 'Demo-Instanz';
+        return 'Beispielorganisation';
     }
 
-    return companyCount === 1 ? '1 Firmenkontext' : `${companyCount} Firmenkontexte`;
+    if (companyCount <= 0) return 'Keine Organisation';
+    return companyCount === 1 ? '1 Organisation' : `${companyCount} Organisationen`;
 };

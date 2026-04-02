@@ -140,10 +140,10 @@ export const MeineDateienPane: React.FC = () => {
                         {counts.total != null && <span>{counts.total} Einträge gesamt</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
                         {counts.nodes != null && <span>{counts.nodes} Dokumente</span>}
-                        {counts.files != null && <span>{counts.files} Dateien</span>}
+                        {counts.files != null && <span>{counts.files} Originaldateien</span>}
                     </div>
                     <div className="mt-1 text-[10px] text-white/20">
-                        Dokumente sind bearbeitbare Inhalte. Quelldateien und Anhänge bleiben als Originale sichtbar. Ordner strukturieren beides.
+                        Dokumente sind bearbeitbare Inhalte. Originaldateien und Anhänge bleiben als Quelle sichtbar. Ordner strukturieren beides.
                     </div>
                 </div>
             )}
@@ -217,9 +217,9 @@ export const MeineDateienPane: React.FC = () => {
 
             {/* Section 3: Files — uploads, always shareable */}
             {files.length > 0 && (
-                <section aria-label="Quelldateien und Anhänge">
+                <section aria-label="Originaldateien und Anhänge">
                     <div className="px-4 pt-3 pb-1 text-[10px] text-white/20 uppercase tracking-wider">
-                        Quelldateien & Anhänge
+                        Originaldateien & Anhänge
                     </div>
                     {files.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };
@@ -242,7 +242,7 @@ export const MeineDateienPane: React.FC = () => {
                                         </span>
                                         {isLinkedToDocument && (
                                             <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-cyan-200/80 shrink-0">
-                                                Öffnet Dokument
+                                                Oeffnet Dokument
                                             </span>
                                         )}
                                         <ExternalLink size={10} className="opacity-0 group-hover:opacity-30 transition-opacity shrink-0" />
@@ -262,7 +262,7 @@ export const MeineDateienPane: React.FC = () => {
                                     <div className="mt-1 text-[11px] text-white/30">
                                         {isLinkedToDocument
                                             ? 'Originaldatei vorhanden und bereits mit einem Dokument verknüpft.'
-                                            : 'Nur als Originaldatei vorhanden. Klick öffnet den Download.'}
+                                            : 'Liegt bisher nur als Originaldatei vor. Klick öffnet den Download.'}
                                     </div>
                                     <ShareResult state={share} />
                                 </div>

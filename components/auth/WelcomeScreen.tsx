@@ -66,12 +66,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const { setViewMode, setUser, navigateToCore } = useMoraStore();
     const hasInvite = inviteCode.trim().length > 0;
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
-    const contextLabel = surfaceProfile.isPublicDemoSurface ? 'Kontext' : 'Organisation';
+    const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Demo oeffnen oder mit eigenen Zugangsdaten weiter'
+        ? 'Showcase oeffnen oder mit Zugangsdaten weiter'
         : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Eigene Organisation anlegen'
+        ? 'Eigene Organisation vorbereiten'
         : 'Neue Organisation einrichten';
 
     const handleLogout = React.useCallback(async (showToast = true) => {

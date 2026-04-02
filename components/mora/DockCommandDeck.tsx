@@ -120,7 +120,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         {workspaceName}
                     </div>
                     <div className={`mt-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                        {scopeLabel} · Szene {sceneLabel}
+                        {scopeLabel} · {orbStateLabel}
                     </div>
                 </div>
 
@@ -149,7 +149,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     <div className="relative">
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Sparkles size={12} />
-                            Aktueller Kontext
+                            Live-Kontext
                         </div>
 
                         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -255,7 +255,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                     {trackName || 'Noch kein Track aktiv'}
                                 </div>
                                 <div className={`mt-1 text-sm ${secondaryText}`}>
-                                    {trackCount > 0 ? `${trackCount} lokale Tracks` : 'Library in den Einstellungen aufbauen'}
+                                    {trackCount > 0 ? `${trackCount} Tracks in deiner Library` : 'Library in den Einstellungen aufbauen'}
                                 </div>
                             </div>
 
@@ -280,7 +280,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
 
                     <div className={`mt-4 rounded-[24px] border p-4 ${microCard}`}>
                         <div className={`flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                            <span>Assistant</span>
+                            <span>Mora-Laufzeit</span>
                             <span className={accentText}>{assistantRuntime.badge}</span>
                         </div>
                         <div className={`mt-3 text-sm ${primaryText}`}>

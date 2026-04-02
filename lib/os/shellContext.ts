@@ -79,10 +79,10 @@ const getFreshnessWeight = (value?: string | null) => {
 };
 
 export const getShellScopeLabel = (viewLevel?: ShellViewLevel) => {
-    if (viewLevel === 'company') return 'Portfolio';
-    if (viewLevel === 'department') return 'Department';
-    if (viewLevel === 'space') return 'Space';
-    if (viewLevel === 'folder') return 'Folder';
+    if (viewLevel === 'company') return 'Kontext';
+    if (viewLevel === 'department') return 'Abteilung';
+    if (viewLevel === 'space') return 'Bereich';
+    if (viewLevel === 'folder') return 'Ordner';
     return 'Universe';
 };
 
@@ -127,22 +127,22 @@ export const buildShellContextSnapshot = ({
     isPublicDemoSurface = false,
 }: BuildShellContextSnapshotArgs): ShellContextSnapshot => {
     const scopeLabel = getShellScopeLabel(viewLevel);
-    const workspaceTitle = activeCompany?.name || userCompanyName || 'Firmenkontext';
+    const companyTitle = activeCompany?.name || userCompanyName || 'Organisation';
     const leadingSpace = pickLeadingSpace(activeSpaces, foldersBySpace);
     const leadingFolder = pickLeadingFolder(activeFolders);
 
     if (activeFolder && activeSpace) {
         return {
             scopeLabel,
-            contextLabel: 'Folder',
+            contextLabel: 'Ordner',
             title: activeFolder.name,
             subtitle: activeSpace.name,
-            description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente oeffnen, zurueck in den Bereich springen oder den Finder fuer diesen Ordner nutzen.',
+            description: 'Du bist in einem konkreten Ordner. Von hier aus oeffnest du Inhalte, gehst in den Bereich zurueck oder springst in den Finder.',
             signalA: formatCount(activeFolder.node_count || 0, 'Dokument', 'Dokumente'),
-            signalB: formatCount(activeFolders.length, 'Ordner', 'Ordner im Bereich'),
+            signalB: `${activeFolders.length} Ordner im Bereich`,
             accent: activeFolder.color || activeSpace.color || activeDepartment?.color || accent,
-            nextMoveLabel: `Zurueck zu ${activeSpace.name}`,
-            nextMoveHint: 'Oeffne wieder den Bereich und halte diesen Ordner als aktuellen Fokus.',
+            nextMoveLabel: `Zurueck in ${activeSpace.name}`,
+            nextMoveHint: 'Der Bereich bleibt dein Arbeitskontext. Der Ordner ist hier der aktuelle Fokus.',
             nextTarget: { kind: 'space', id: activeSpace.id },
         };
     }
@@ -151,10 +151,10 @@ export const buildShellContextSnapshot = ({
         const docCount = activeFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
         return {
             scopeLabel,
-            contextLabel: 'Space',
+            contextLabel: 'Bereich',
             title: activeSpace.name,
-            subtitle: activeDepartment?.name || workspaceTitle,
-            description: 'Das ist die aktive Struktur dieses Departments. Hier sollten echte Ordner, Dokumente und der naechste sinnvolle Einstieg sichtbar sein.',
+            subtitle: activeDepartment?.name || companyTitle,
+            description: 'Hier siehst du die echte Struktur dieses Bereichs. Ordner, Dokumente und der naechste sinnvolle Einstieg sollen direkt sichtbar sein.',
             signalA: formatCount(activeFolders.length, 'Ordner'),
             signalB: formatCount(docCount, 'Dokument', 'Dokumente'),
             accent: activeSpace.color || activeDepartment?.color || accent,
@@ -173,14 +173,14 @@ export const buildShellContextSnapshot = ({
         const docCount = activeSpaces.reduce((sum, space) => sum + (foldersBySpace[space.id] || []).reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0), 0);
         return {
             scopeLabel,
-            contextLabel: 'Department',
+            contextLabel: 'Abteilung',
             title: activeDepartment.name,
-            subtitle: workspaceTitle,
-            description: 'Das Department zeigt seine Bereiche, Ordner und Dokumente als Struktur. Von hier aus solltest du in den passenden Bereich hineinzoomen, nicht Apps wechseln.',
+            subtitle: companyTitle,
+            description: 'Die Abteilung zeigt ihre Bereiche und Schwerpunkte. Von hier aus gehst du in den passenden Bereich, nicht in eine App.',
             signalA: formatCount(activeSpaces.length, 'Bereich', 'Bereiche'),
-            signalB: `${formatCount(folderCount, 'Ordner')} / ${formatCount(docCount, 'Dokument', 'Dokumente')}`,
+            signalB: `${formatCount(folderCount, 'Ordner')} · ${formatCount(docCount, 'Dokument', 'Dokumente')}`,
             accent: activeDepartment.color || accent,
-            nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Department im Finder oeffnen',
+            nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Abteilung im Finder oeffnen',
             nextMoveHint: leadingSpace
                 ? 'Der staerkste Bereich ist der beste naechste Einstieg.'
                 : 'Wenn noch kein klarer Bereich vorne liegt, oeffne die Struktur im Finder.',
@@ -192,20 +192,30 @@ export const buildShellContextSnapshot = ({
 
     return {
         scopeLabel,
-        contextLabel: 'Universe',
-        title: workspaceTitle,
-        subtitle: isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Live-Struktur',
+        contextLabel: isPublicDemoSurface ? 'Showcase' : 'Organisation',
+        title: companyTitle,
+        subtitle: isPublicDemoSurface
+            ? 'Kuratierte Beispielorganisation'
+            : companyCount > 1
+                ? `${companyCount} Organisationen aktiv`
+                : 'Single-Company-Instanz',
         description: isPublicDemoSurface
-            ? 'Das Universe zeigt eine kuratierte Demo-Instanz. Hier solltest du direkt die passende Abteilung fuer den Showcase waehlen.'
-            : 'Das Universe zeigt den Gesamtzuschnitt der aktuellen Instanz. Hier sollte klar sein, in welche Abteilung du als Naechstes hineingehst.',
+            ? 'Simple Coffee Group ist die oeffentliche Beispielorganisation. Waehle eine Abteilung und gehe dann in die echte Struktur.'
+            : companyCount > 1
+                ? 'Diese Instanz zeigt mehrere Organisationen. Waehle zuerst den richtigen Kontext und gehe dann tiefer.'
+                : 'Diese Instanz ist auf eine Organisation zugeschnitten. Waehle die passende Abteilung und gehe dann in die Struktur.',
         signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
-        signalB: isPublicDemoSurface ? 'Oeffentliche Demo' : formatCount(companyCount, 'Firmenkontext', 'Firmenkontexte'),
+        signalB: isPublicDemoSurface
+            ? 'Showcase bereit'
+            : companyCount > 1
+                ? `${companyCount} Organisationen`
+                : '1 Organisation',
         accent,
-        nextMoveLabel: isPublicDemoSurface ? 'Demo-Abteilung waehlen' : companyCount > 1 ? 'Kontext oeffnen' : 'Abteilung waehlen',
+        nextMoveLabel: isPublicDemoSurface ? 'Showcase starten' : companyCount > 1 ? 'Organisation waehlen' : 'Abteilung waehlen',
         nextMoveHint: isPublicDemoSurface
             ? 'Diese Instanz ist ein Showcase. Waehle die passende Abteilung und gehe dann in die Beispielstruktur.'
             : companyCount > 1
-            ? 'Diese Instanz hat mehrere Firmenkontexte. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
+            ? 'Diese Instanz hat mehrere Organisationen. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
             : 'Waehle zuerst die passende Abteilung und geh dann in die operative Struktur.',
         nextTarget: { kind: 'company', id: activeCompany?.id },
     };

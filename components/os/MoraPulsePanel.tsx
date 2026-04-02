@@ -19,19 +19,19 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 const ORB_LABELS: Record<string, string> = {
     idle: 'Standby',
-    thinking: 'Thinking',
-    insight: 'Insight',
-    focus: 'Focus',
-    alert: 'Alert',
+    thinking: 'Denkt',
+    insight: 'Erkenntnis',
+    focus: 'Fokus',
+    alert: 'Achtung',
     demo: 'Demo',
 };
 
 const VIEW_LEVEL_LABELS: Record<string, string> = {
-    company: 'Portfolio',
+    company: 'Kontext',
     core: 'Universe',
-    department: 'Department',
-    space: 'Space',
-    folder: 'Folder',
+    department: 'Abteilung',
+    space: 'Bereich',
+    folder: 'Ordner',
 };
 
 const formatClock = (value: Date) => new Intl.DateTimeFormat('de-DE', {
@@ -192,12 +192,12 @@ export const MoraPulsePanel: React.FC = () => {
                         </div>
 
                         <div className="mt-3 text-[11px] text-white/50">
-                            {shellContext.signalA} / {shellContext.signalB}
+                            {shellContext.signalA} · {shellContext.signalB}
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
                             <div className="min-w-0">
-                                <div className="text-[10px] uppercase tracking-[0.2em] text-white/35">Assistant</div>
+                                <div className="text-[10px] uppercase tracking-[0.2em] text-white/35">Mora</div>
                                 <div className="mt-1 truncate text-[11px] text-white/78">
                                     {assistantRuntime.title}
                                 </div>
@@ -223,7 +223,7 @@ export const MoraPulsePanel: React.FC = () => {
                     {isDeckOpen && (
                         <div className="flex items-center gap-2 rounded-2xl border border-emerald-400/15 bg-emerald-500/8 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-emerald-100/75">
                             <PanelTopOpen size={13} />
-                            Control Center aktiv
+                            Control Center offen
                         </div>
                     )}
                 </div>
