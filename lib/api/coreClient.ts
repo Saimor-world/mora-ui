@@ -1875,6 +1875,9 @@ export interface UserContentResponse {
         created_at?: string | null;
         owner_id?: string | null;
         visibility?: NodeVisibility;
+        linked_status?: 'document' | 'standalone';
+        linked_node_id?: string | null;
+        linked_folder_id?: string | null;
     }>;
     /** Summary counts for quick display. */
     counts?: {

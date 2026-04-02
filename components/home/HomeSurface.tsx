@@ -25,7 +25,7 @@ interface KairosEvent {
 
 type PersonalLatestItem =
     | { kind: 'node'; id: string; label: string; timestamp: number }
-    | { kind: 'file'; id: string; label: string; timestamp: number }
+    | { kind: 'file'; id: string; label: string; timestamp: number; linkedNodeId?: string | null }
     | { kind: 'folder'; id: string; label: string; timestamp: number };
 
 function getComparableTimestamp(value?: string | null): number {
@@ -200,6 +200,7 @@ export const HomeSurface: React.FC = () => {
                 id: file.id,
                 label: file.name || 'Datei',
                 timestamp: getComparableTimestamp(file.created_at),
+                linkedNodeId: file.linked_node_id || null,
             })) : []),
             ...(Array.isArray(myContent.folders) ? myContent.folders.map((folder) => ({
                 kind: 'folder' as const,
@@ -240,6 +241,18 @@ export const HomeSurface: React.FC = () => {
             return;
         }
 
+        const linkedNodeId = (personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId;
+        if (linkedNodeId) {
+            openPane({
+                id: `doc-${linkedNodeId}`,
+                type: 'document',
+                title: personalLatestItem.label,
+                size: { width: 960, height: 720 },
+                data: { nodeId: linkedNodeId },
+            });
+            return;
+        }
+
         const url = `${getCoreBaseUrl()}/v3/files/${personalLatestItem.id}/download`;
         window.open(url, '_blank', 'noopener,noreferrer');
     }, [openMeineDateien, openPane, personalLatestItem]);
@@ -258,7 +271,7 @@ export const HomeSurface: React.FC = () => {
         ? personalLatestItem.kind === 'node'
             ? 'Dokument'
             : personalLatestItem.kind === 'file'
-                ? 'Datei'
+                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Quelldatei' : 'Datei')
                 : 'Ordner'
         : null;
 
@@ -411,7 +424,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Dokumente sind Inhalte, Dateien sind Uploads, Ordner sind Container.
+                                        Dokumente sind Inhalte. Quelldateien und Anhänge bleiben als Originale sichtbar. Ordner strukturieren beides.
                                     </div>
                                 </div>
                             </button>

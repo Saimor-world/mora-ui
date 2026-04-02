@@ -40,7 +40,7 @@ const LANE_CONFIG: Record<LaneKey, {
     size: 'sm' | 'md' | 'lg';
 }> = {
     focus: {
-        label: 'Fokus',
+        label: 'Im Fokus',
         accent: '#34d399',
         radiusX: 280,
         radiusY: 168,
@@ -62,7 +62,7 @@ const LANE_CONFIG: Record<LaneKey, {
         size: 'md',
     },
     archive: {
-        label: 'Ruhig',
+        label: 'Im Hintergrund',
         accent: '#a78bfa',
         radiusX: 482,
         radiusY: 296,
@@ -545,7 +545,7 @@ export const SpaceLayer: React.FC = () => {
                 badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
                 collapsedHint="Ordner oeffnen oder Control Center nutzen."
-                summary={`${laneSummaries.focus.count} starke, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} ruhigere Ordner werden aus echter Dokumentdichte und Aktualität abgeleitet.`}
+                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} weniger aktuelle Ordner werden aus echter Dokumentdichte und letzter Aktivität abgeleitet.`}
                 metrics={[
                     { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
                     { label: 'Mit Inhalt', value: foldersWithDocs, toneClassName: 'text-cyan-200' },

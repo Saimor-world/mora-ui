@@ -92,6 +92,10 @@ export const MeineDateienPane: React.FC = () => {
         window.open(url, '_blank', 'noopener,noreferrer');
     }, []);
 
+    const handleOpenLinkedNode = useCallback((nodeId: string, title: string) => {
+        openPane({ id: `doc-${nodeId}`, type: 'document', title, size: { width: 960, height: 720 }, data: { nodeId } });
+    }, [openPane]);
+
     if (loading) {
         return (
             <div
@@ -139,7 +143,7 @@ export const MeineDateienPane: React.FC = () => {
                         {counts.files != null && <span>{counts.files} Dateien</span>}
                     </div>
                     <div className="mt-1 text-[10px] text-white/20">
-                        Dokumente sind inhaltliche Einträge. Dateien sind rohe Uploads. Ordner strukturieren beides.
+                        Dokumente sind bearbeitbare Inhalte. Quelldateien und Anhänge bleiben als Originale sichtbar. Ordner strukturieren beides.
                     </div>
                 </div>
             )}
@@ -213,19 +217,22 @@ export const MeineDateienPane: React.FC = () => {
 
             {/* Section 3: Files — uploads, always shareable */}
             {files.length > 0 && (
-                <section aria-label="Dateien">
+                <section aria-label="Quelldateien und Anhänge">
                     <div className="px-4 pt-3 pb-1 text-[10px] text-white/20 uppercase tracking-wider">
-                        Dateien
+                        Quelldateien & Anhänge
                     </div>
                     {files.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };
                         const displayName = file.name || `Datei ${file.id.slice(0, 8)}`;
+                        const isLinkedToDocument = Boolean(file.linked_node_id);
                         return (
                             <div
                                 key={file.id}
                                 className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-white/[0.03] transition-colors cursor-pointer group"
                                 data-testid={`file-row-${file.id}`}
-                                onClick={() => handleOpenFile(file.id, displayName)}
+                                onClick={() => isLinkedToDocument && file.linked_node_id
+                                    ? handleOpenLinkedNode(file.linked_node_id, displayName)
+                                    : handleOpenFile(file.id, displayName)}
                             >
                                 <Paperclip size={13} className="text-white/25 shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
@@ -233,6 +240,11 @@ export const MeineDateienPane: React.FC = () => {
                                         <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors truncate">
                                             {displayName}
                                         </span>
+                                        {isLinkedToDocument && (
+                                            <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-cyan-200/80 shrink-0">
+                                                Öffnet Dokument
+                                            </span>
+                                        )}
                                         <ExternalLink size={10} className="opacity-0 group-hover:opacity-30 transition-opacity shrink-0" />
                                                 {typeof file.size === 'number' && (
                                                     <span className="text-[10px] text-white/20 shrink-0">
@@ -246,6 +258,11 @@ export const MeineDateienPane: React.FC = () => {
                                             state={share}
                                             onShare={() => handleShareFile(file.id)}
                                         />
+                                    </div>
+                                    <div className="mt-1 text-[11px] text-white/30">
+                                        {isLinkedToDocument
+                                            ? 'Originaldatei vorhanden und bereits mit einem Dokument verknüpft.'
+                                            : 'Nur als Originaldatei vorhanden. Klick öffnet den Download.'}
                                     </div>
                                     <ShareResult state={share} />
                                 </div>

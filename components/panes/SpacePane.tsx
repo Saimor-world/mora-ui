@@ -208,11 +208,11 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
             });
             setFormData({ name: '', color: FOLDER_COLORS[0].value });
             setIsCreateModalOpen(false);
-            toast.success("Folder created successfully");
+            toast.success("Ordner erstellt");
         } catch (error: any) {
             console.error('Failed to create folder:', error);
             if (error.message.includes("Cannot modify demo") || error.message.includes("not found")) {
-                toast.error("Demo Mode: Cannot modify example spaces.");
+                toast.error("Demo-Modus: Beispiel-Bereiche können nicht verändert werden.");
             } else {
                 toast.error("Failed to create folder");
             }
@@ -251,7 +251,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                         <>
                             <ChevronRight size={14} className="opacity-30" />
                             <span className="text-emerald-400 font-medium">
-                                {folderNodes.find(n => n.id === activeFolder)?.title || 'Folder'}
+                                {folderNodes.find(n => n.id === activeFolder)?.title || 'Ordner'}
                             </span>
                         </>
                     )}
@@ -298,7 +298,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                 <button
                                     onClick={() => setViewMode('mycelium')}
                                     className={`p-2 rounded-md transition-all ${viewMode === 'mycelium' ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white'}`}
-                                    title="Constellation View"
+                                    title="Netzansicht"
                                 >
                                     <Network size={18} />
                                 </button>
@@ -311,7 +311,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
+                                placeholder="Im Bereich suchen..."
                                 className="pl-9 pr-4 py-2 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-48 transition-all focus:w-64"
                             />
                         </div>
@@ -323,14 +323,14 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                 <button
                                     onClick={handleDeleteSpace}
                                     className="p-2 rounded-lg hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors"
-                                    title="Delete Space"
+                                    title="Bereich löschen"
                                 >
                                     <Trash2 size={18} />
                                 </button>
                                 <button
                                     onClick={() => targetSpaceId && loadFoldersForSpace(targetSpaceId)}
                                     className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-                                    title="Refresh"
+                                    title="Aktualisieren"
                                 >
                                     <RefreshCw size={18} />
                                 </button>
@@ -339,7 +339,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm tracking-wide"
                                 >
                                     <Plus size={16} />
-                                    NEW FOLDER
+                                    Neuer Ordner
                                 </button>
 
                             </>
@@ -352,7 +352,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                         openPane({
                                             id: `finder-upload-${activeFolder}`,
                                             type: 'finder',
-                                            title: 'Upload Files',
+                                            title: 'Dateien hochladen',
                                             size: { width: 800, height: 600 },
                                             data: { folderId: activeFolder, showUpload: true }
                                         });
@@ -360,10 +360,10 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-all text-sm tracking-wide"
                                 >
                                     <Upload size={16} />
-                                    UPLOAD
+                                    HOCHLADEN
                                 </button>
                                 <div className="text-xs text-white/40 uppercase tracking-widest px-4">
-                                    Viewing Folder
+                                    Ordnerinhalt
                                 </div>
                             </>
                         )}
@@ -377,7 +377,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                         {/* Loading Overlay - outside AnimatePresence to avoid 'wait' mode issues */}
                         {isLoadingFolders && (
                             <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 backdrop-blur-sm">
-                                <LoadingState message="Loading contents..." />
+                                <LoadingState message="Inhalte werden geladen..." />
                             </div>
                         )}
 
@@ -418,7 +418,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                             );
                                         })}
                                     </div>
-                                    {folderNodes.length === 0 && <EmptyState icon={Folder} title="Empty Folder" description="No items found." />}
+                                    {folderNodes.length === 0 && <EmptyState icon={Folder} title="Leerer Ordner" description="Keine Einträge gefunden." />}
                                 </motion.div>
                             ) : (
                                 <motion.div
@@ -470,7 +470,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                                                     );
                                                 })}
                                             </div>
-                                            {filteredItems.length === 0 && <EmptyState icon={Folder} title="Empty Space" description="No folders yet." />}
+                                            {filteredItems.length === 0 && <EmptyState icon={Folder} title="Leerer Bereich" description="Noch keine Ordner vorhanden." />}
                                         </div>
                                     )}
 
@@ -507,11 +507,11 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                 <CreateModal
                     isOpen={isCreateModalOpen}
                     onClose={() => setIsCreateModalOpen(false)}
-                    title="New Folder"
+                    title="Ordner anlegen"
                 >
                     <form onSubmit={handleCreateFolder} className="space-y-4">
                         <div>
-                            <label className="block text-xs text-emerald-400/70 mb-1.5 tracking-wider">NAME</label>
+                            <label className="block text-xs text-emerald-400/70 mb-1.5 tracking-wider">Name</label>
                             <input
                                 type="text"
                                 value={formData.name}
@@ -522,7 +522,7 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-emerald-400/70 mb-1.5 tracking-wider">COLOR</label>
+                            <label className="block text-xs text-emerald-400/70 mb-1.5 tracking-wider">FARBE</label>
                             <div className="flex gap-2">
                                 {FOLDER_COLORS.map((color) => (
                                     <button
@@ -536,8 +536,8 @@ export const SpacePane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                         <div className="flex gap-2 pt-2">
-                            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-2 rounded-lg border border-white/10 text-white/60 hover:bg-white/5 text-sm">Cancel</button>
-                            <button type="submit" className="flex-1 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 text-sm">Create</button>
+                            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-2 rounded-lg border border-white/10 text-white/60 hover:bg-white/5 text-sm">Abbrechen</button>
+                            <button type="submit" className="flex-1 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 text-sm">Erstellen</button>
                         </div>
                     </form>
                 </CreateModal>
