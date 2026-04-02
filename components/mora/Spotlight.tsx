@@ -631,7 +631,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                                                 <div key={cat} className="mb-4 first:mt-2">
                                                     <div className="px-4 py-2 text-[9px] font-bold tracking-[0.2em] text-emerald-500/30 uppercase flex items-center gap-2">
                                                         <div className="w-1 h-1 rounded-full bg-emerald-500/30" />
-                                                        {cat === 'navigation' ? 'Navigation Layers' : cat === 'action' ? 'System Actions' : 'Workspace Entities'}
+                                                        {cat === 'navigation' ? 'Navigations-Ebenen' : cat === 'action' ? 'System-Aktionen' : 'Kontext-Elemente'}
                                                     </div>
 
                                                     {catActions.map((action) => {

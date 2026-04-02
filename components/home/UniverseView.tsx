@@ -1017,7 +1017,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 />
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
-                                    label="Companies"
+                                    label="Kontexte"
                                     value={`${companies.length}`}
                                     status="stable"
                                     progress={Math.min(companies.length * 20, 100)}

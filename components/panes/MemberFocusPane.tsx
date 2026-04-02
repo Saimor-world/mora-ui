@@ -27,7 +27,7 @@ export const MemberFocusPane = () => {
     const deptCount = safeDepartments.length;
 
     const stats = [
-        { label: 'ELEMENTE', value: docCount, sub: 'im Workspace' },
+        { label: 'ELEMENTE', value: docCount, sub: 'im Kontext' },
         { label: 'BEREICHE', value: deptCount, sub: 'aktive Abteilungen' }
     ];
 
@@ -58,7 +58,7 @@ export const MemberFocusPane = () => {
                                 <span className="text-[10px] font-bold tracking-[0.2em] text-emerald-500/60 uppercase">System Focus</span>
                                 {activeCompany?.is_demo && <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 text-[8px] font-bold tracking-widest border border-blue-500/30">DEMO</span>}
                             </div>
-                            <h2 className="text-xl font-light text-white tracking-tight">{activeCompany?.name || 'Workspace'}</h2>
+                            <h2 className="text-xl font-light text-white tracking-tight">{activeCompany?.name || 'Organisation'}</h2>
                             <p className="text-[11px] text-white/40 mt-1 italic font-light">
                                 {activeDepartment ? `Zentriert auf ${activeDepartment.name}` : `Zentriert auf den ${activeCompany?.name}-Orb`}
                             </p>

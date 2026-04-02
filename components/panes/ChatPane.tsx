@@ -405,10 +405,10 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
     return (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
             <p className="text-sm font-medium text-foreground/80">
-                Kein Workspace konfiguriert
+                Kein Firmenkontext aktiv
             </p>
             <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Richte eine Firma oder einen Workspace ein, um Mora nutzen zu können.
+                Richte zuerst eine Organisation oder einen Demo-Kontext ein, damit Mora sinnvoll arbeiten kann.
             </p>
             {onOpenSettings && (
                 <button
@@ -417,7 +417,7 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
                     onClick={onOpenSettings}
                     className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
                 >
-                    Einstellungen öffnen
+                    Einstellungen oeffnen
                 </button>
             )}
         </div>
@@ -525,15 +525,17 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         {
             id: 'welcome',
             role: 'assistant',
-            content: `Hallo! Ich bin Mora, deine KI-Begleiterin.
+            content: `Hallo, ich bin Mora.
 
-Ich kann dir helfen:
-- **"Zeig mir Abteilung XY"** - Ich navigiere dorthin
-- **"Was gibt es Neues?"** - Aktuelle Updates
-- **"Finde Dokumente ueber..."** - Suche im Wissen
-- **"Merke dir..."** - Ich speichere wichtige Infos
+Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
+- **"Zeig mir HR & Culture"** -> ich navigiere dorthin
+- **"Was ist neu?"** -> ich fasse reale Signale zusammen
+- **"Finde alles zu Onboarding"** -> ich suche ueber Inhalte und Struktur
+- **"Merke dir ..."** -> ich speichere belastbare Fakten fuer spaeter
 
-Was kann ich fuer dich tun?`,
+Wenn etwas fehlt, sage ich es klar. Wenn ich etwas direkt anstossen kann, tue ich es.
+
+Womit soll ich beginnen?`,
             timestamp: new Date()
         }
     ]);
@@ -662,7 +664,7 @@ Was kann ich fuer dich tun?`,
             dispatchMoraPresence({
                 action: 'point',
                 targetId: 'chat-setup-settings',
-                message: 'Hier Workspace einrichten',
+                message: 'Hier Organisation einrichten',
                 source: 'system',
                 duration: 3200,
             });

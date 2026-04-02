@@ -20,7 +20,7 @@ type PreviewLane = 'focus' | 'flow' | 'archive';
 const PREVIEW_LANE_META: Record<PreviewLane, { label: string; accent: string; distance: number; spread: number }> = {
     focus: { label: 'Stark', accent: '#34D399', distance: 126, spread: 72 },
     flow: { label: 'Aktiv', accent: '#22D3EE', distance: 188, spread: 64 },
-    archive: { label: 'Älter', accent: '#A78BFA', distance: 250, spread: 58 },
+    archive: { label: 'Ruhig', accent: '#A78BFA', distance: 250, spread: 58 },
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -393,7 +393,7 @@ export const DepartmentLayer: React.FC = () => {
                 if (right.signal !== left.signal) return right.signal - left.signal;
                 return (left.folder.name || '').localeCompare(right.folder.name || '');
             })
-            .slice(0, 3);
+            .slice(0, 2);
 
         const laneCounts = ranked.reduce<Record<PreviewLane, number>>((accumulator, _, index) => {
             accumulator[resolvePreviewLane(index)] += 1;
@@ -495,7 +495,7 @@ export const DepartmentLayer: React.FC = () => {
             folderTotal: signal.folderTotal,
             docTotal: signal.docTotal,
             intensity: signal.intensity,
-            leadFolders: hoveredPreviewFolders.slice(0, 3).map((entry) => entry.folder.name),
+            leadFolders: hoveredPreviewFolders.slice(0, 2).map((entry) => entry.folder.name),
         };
     }, [hoveredSpaceId, spaceMeta, spaceSignals, hoveredPreviewFolders]);
 
@@ -999,7 +999,7 @@ export const DepartmentLayer: React.FC = () => {
                                     openPane({
                                         id: 'finder-main',
                                         type: 'finder',
-                                        title: currentDepartment?.name || 'Workspace',
+                                        title: currentDepartment?.name || 'Bereich',
                                         data: {
                                             departmentId: activeDepartmentId,
                                             departmentName: currentDepartment?.name,

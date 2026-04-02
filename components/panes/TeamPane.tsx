@@ -120,7 +120,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
             dispatchMoraPresence({
                 action: 'point',
                 targetId: 'team-setup-settings',
-                message: 'Hier Workspace einrichten',
+                message: 'Hier Organisation einrichten',
                 source: 'system',
                 duration: 3200,
             });
@@ -505,10 +505,10 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                     {!ctx.isOperational ? (
                         <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center h-full">
                             <p className="text-sm font-medium text-foreground/80">
-                                Kein Workspace konfiguriert
+                                Kein Firmenkontext aktiv
                             </p>
                             <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-                                Richte eine Firma oder einen Workspace ein, um das Team nutzen zu können.
+                                Richte zuerst eine Organisation oder einen Demo-Kontext ein, damit das Team sinnvoll erscheint.
                             </p>
                             <button
                                 id="team-setup-settings"
@@ -845,7 +845,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                                     <UserPlus className="w-10 h-10 mx-auto mb-3 text-mora-gold/50" />
                                     <h3 className="text-lg font-light text-emerald-50">Teammitglied einladen</h3>
                                     <p className="text-xs text-emerald-500/50 mt-1">
-                                        Laden Sie Kollegen zu Ihrem Arbeitsbereich ein
+                                        Laden Sie Kollegen in Ihre Organisation ein
                                     </p>
                                 </div>
 

@@ -48,7 +48,7 @@ export const AdminHome: React.FC = () => {
                     </div>
                     <div className="rounded-2xl border border-amber-400/18 bg-amber-500/[0.06] p-4">
                         <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/70">Separat</div>
-                        <div className="mt-2 text-sm text-white/88">Owner Console</div>
+                        <div className="mt-2 text-sm text-white/88">Owner-Bereich</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/50">
                             Systemweite Firmen-, Benutzer-, Token- und Instanzverwaltung bleibt bewusst außerhalb dieser Arbeitsoberfläche.
                         </p>
@@ -58,7 +58,7 @@ export const AdminHome: React.FC = () => {
                             rel="noreferrer"
                             className="mt-4 inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100 transition-colors hover:bg-amber-500/18"
                         >
-                            Owner Console öffnen
+                            Owner-Bereich oeffnen
                         </a>
                     </div>
                 </div>

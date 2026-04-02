@@ -30,7 +30,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
     onUnlock,
     onLogout,
     userName = 'User',
-    companyName = 'Workspace',
+    companyName = 'Organisation',
     companyLogo
 }) => {
     const { accentColor } = useAccentColor();

@@ -268,7 +268,7 @@ export const HomeSurface: React.FC = () => {
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt im Workspace aktualisiert
+                            Zuletzt im Firmenkontext aktualisiert
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
                             Echte Dokument-Updates aus dem aktuellen Firmenkontext.
@@ -316,7 +316,7 @@ export const HomeSurface: React.FC = () => {
                                     <span className="flex-1 text-sm leading-snug">
                                         {evt.payload.summary || (evt.payload.new_nodes != null
                                             ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
-                                            : 'Workspace-Aktivität erkannt')}
+                                            : 'Aktivitaet im Firmenkontext erkannt')}
                                     </span>
                                     <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
                                         {relativeTime(evt.timestamp)}

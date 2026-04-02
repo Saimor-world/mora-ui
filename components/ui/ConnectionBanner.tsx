@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useConnectionStatus } from '@/lib/hooks/useConnectionStatus';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
  * V12: Connection Banner
@@ -12,7 +13,8 @@ import { useConnectionStatus } from '@/lib/hooks/useConnectionStatus';
  * Allows user to retry connection.
  */
 export const ConnectionBanner: React.FC = () => {
-    const { status, isOffline, errorMessage, retry, lastConnected } = useConnectionStatus();
+    const { status, retry, lastConnected } = useConnectionStatus();
+    const surfaceProfile = useSurfaceProfile();
 
     // Don't show if connected
     if (status === 'connected' || status === 'connecting') {
@@ -52,7 +54,7 @@ export const ConnectionBanner: React.FC = () => {
                             {status === 'offline' ? 'Keine Verbindung' : 'Verbindungsfehler'}
                         </span>
                         <span className="text-[10px] text-amber-400/60">
-                            {formatLastConnected()} • Demo-Modus aktiv
+                            {formatLastConnected()} • {surfaceProfile.isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Verbindung eingeschraenkt'}
                         </span>
                     </div>
 

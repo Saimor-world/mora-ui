@@ -180,7 +180,7 @@ class MoraAIClient {
      */
     async complete(prompt: string): Promise<string> {
         return this.chat([
-            { role: 'system', content: 'Du bist Mora, die KI-Assistentin von SAIMÔR. Antworte präzise und hilfreich auf Deutsch.' },
+            { role: 'system', content: 'Du bist Mora, der lokale KI-Kern von SAIMOR. Antworte auf Deutsch, klar, ehrlich und handlungsorientiert. Erfinde keine Daten und nenne fehlende Informationen offen.' },
             { role: 'user', content: prompt }
         ]);
     }
@@ -193,12 +193,12 @@ class MoraAIClient {
         nodeCount: number;
         recentActivity: string[];
     }): Promise<string> {
-        const prompt = `Analysiere diesen Workspace:
+        const prompt = `Analysiere diesen Firmenkontext:
 - Departments: ${context.departments.join(', ')}
 - Nodes: ${context.nodeCount}
 - Letzte Aktivität: ${context.recentActivity.slice(0, 5).join(', ')}
 
-Gib eine kurze Zusammenfassung und 2-3 Vorschläge zur Verbesserung.`;
+Gib eine kurze Zusammenfassung und 2-3 konkrete nächste Schritte.`;
 
         return this.complete(prompt);
     }

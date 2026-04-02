@@ -127,16 +127,16 @@ export function useLocalAI(): UseLocalAIReturn {
             } else {
                 // Fallback analysis when AI is offline
                 const fallback = `
-**Workspace Analyse (Offline)**
+**Kontextanalyse (Offline)**
 
-📊 **${company?.name || 'Workspace'}**
+📊 **${company?.name || 'Organisation'}**
 - ${deptNames.length} Departments aktiv
 - ${deptNames.join(', ') || 'Keine Departments'}
 
 💡 **Empfehlungen:**
-1. Lokale KI verbinden für tiefere Analyse
-2. Weitere Inhalte zu Departments hinzufügen
-3. Team-Mitglieder einladen
+1. Lokale KI verbinden fuer tiefere Analyse
+2. Mehr Inhalte in die wichtigsten Bereiche legen
+3. MORA danach konkrete naechste Schritte ausarbeiten lassen
 
 *Verbinde Ollama unter localhost:11434 für KI-Features.*
                 `.trim();

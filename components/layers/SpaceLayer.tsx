@@ -62,7 +62,7 @@ const LANE_CONFIG: Record<LaneKey, {
         size: 'md',
     },
     archive: {
-        label: 'Älter',
+        label: 'Ruhig',
         accent: '#a78bfa',
         radiusX: 482,
         radiusY: 296,
@@ -98,10 +98,10 @@ const formatActivityLabel = (value?: string | null) => {
     if (!value) return 'ohne Datum';
     const days = Math.floor((Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24));
     if (days <= 0) return 'heute';
-    if (days === 1) return 'vor 1 Tg.';
-    if (days < 7) return `vor ${days} Tg.`;
-    if (days < 30) return `vor ${Math.ceil(days / 7)} Wo.`;
-    return `vor ${Math.ceil(days / 30)} Mon.`;
+    if (days === 1) return 'vor 1 Tag';
+    if (days < 7) return `vor ${days} Tagen`;
+    if (days < 30) return `vor ${Math.ceil(days / 7)} Wochen`;
+    return `vor ${Math.ceil(days / 30)} Monaten`;
 };
 
 const getFreshnessWeight = (value?: string | null) => {
@@ -545,7 +545,7 @@ export const SpaceLayer: React.FC = () => {
                 badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
                 collapsedHint="Ordner oeffnen oder Control Center nutzen."
-                summary={`${laneSummaries.focus.count} starke, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} ältere Ordner werden aus echter Dokumentdichte und Aktualität abgeleitet.`}
+                summary={`${laneSummaries.focus.count} starke, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} ruhigere Ordner werden aus echter Dokumentdichte und Aktualität abgeleitet.`}
                 metrics={[
                     { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
                     { label: 'Mit Inhalt', value: foldersWithDocs, toneClassName: 'text-cyan-200' },

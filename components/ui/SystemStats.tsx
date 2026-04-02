@@ -66,7 +66,7 @@ export const SystemStats: React.FC = () => {
             className="fixed bottom-24 left-0 right-0 z-[50] pointer-events-none"
         >
             <div className="flex items-center justify-center gap-6 py-1.5 text-[9px] font-mono text-white/20">
-                {/* Companies */}
+                {/* Context */}
                 <div className="flex items-center gap-1.5">
                     <Database size={10} className="opacity-50" />
                     <span>{surfaceProfile.isPublicDemoSurface ? 'Demo-Instanz' : `${companies.length} Firmenkontexte`}</span>

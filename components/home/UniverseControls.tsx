@@ -126,7 +126,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                         isActive={viewMode === 'workspace'}
                         onClick={() => setViewMode('workspace')}
                         icon={LayoutGrid}
-                        label={workspaceLabel || 'Workspace'}
+                        label={workspaceLabel || 'Kontext'}
                     />
                 )}
 

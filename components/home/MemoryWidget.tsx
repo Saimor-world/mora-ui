@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Brain, Clock, CheckCircle, AlertCircle, Database, ShieldCheck, Sparkles } from 'lucide-react';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
@@ -13,8 +13,8 @@ import { useMoraStore } from '@/lib/store/moraState';
  * Kompaktes Widget fuer die Home-Ansicht mit:
  * - Anzahl Erinnerungen
  * - Pending Reviews mit pulsierendem Indikator
- * - Letzte Aktivitaet
- * - Mini-Graph der letzten 7 Tage
+ * - Ehrliche Core-Metriken
+ * - Signalsicht statt simuliertem Tagesgraph
  */
 
 interface MemoryWidgetProps {
@@ -34,22 +34,18 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
         return episodicSum + (metrics.structured_facts || 0);
     }, [metrics]);
 
-    // Simuliere 7-Tage-Aktivitaet basierend auf recent_learns_7d
-    const weeklyActivity = useMemo(() => {
-        const base = metrics?.recent_learns_7d || 0;
-        // Verteile die Aktivitaet auf 7 Tage mit etwas Variation
+    const signalBars = useMemo(() => {
+        const facts = metrics?.structured_facts || 0;
+        const learns = metrics?.recent_learns_7d || 0;
+        const reviews = pendingCount;
         return [
-            Math.max(1, Math.floor(base * 0.08)),
-            Math.max(1, Math.floor(base * 0.12)),
-            Math.max(2, Math.floor(base * 0.18)),
-            Math.max(1, Math.floor(base * 0.10)),
-            Math.max(2, Math.floor(base * 0.22)),
-            Math.max(1, Math.floor(base * 0.15)),
-            Math.max(2, Math.floor(base * 0.15)),
+            { label: 'Fakten', value: facts, icon: Database },
+            { label: 'Lernen', value: learns, icon: Sparkles },
+            { label: 'Review', value: reviews, icon: ShieldCheck },
         ];
-    }, [metrics]);
+    }, [metrics, pendingCount]);
 
-    const maxActivity = Math.max(...weeklyActivity, 1);
+    const maxSignal = Math.max(...signalBars.map((item) => item.value), 1);
 
     const handleClick = () => {
         openPane({
@@ -101,7 +97,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                             {isAccountScoped ? 'Konto-Gedächtnis' : 'Gedächtnis'}
                         </h3>
                         <p className="text-[9px] text-white/30 uppercase tracking-widest">
-                            {isAccountScoped ? 'Firmenkontext fehlt' : 'Memory Hub'}
+                            {isAccountScoped ? 'Firmenkontext fehlt' : 'Core-Metriken'}
                         </p>
                     </div>
                 </div>
@@ -122,7 +118,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
 
             {isAccountScoped && (
                 <div className="mb-4 rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-xs text-white/45 leading-relaxed">
-                    Keine aktive Company gewählt. Konto-Gedächtnis bleibt lokal; Firmenmetriken und Freigaben werden erst mit Workspace angezeigt.
+                    Kein Firmenkontext aktiv. Konto-Gedaechtnis bleibt lokal; Firmenmetriken und Freigaben erscheinen erst mit einer Organisation.
                 </div>
             )}
 
@@ -143,31 +139,35 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
 
             <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[8px] text-white/30 uppercase tracking-widest">Aktivitaet</span>
+                    <span className="text-[8px] text-white/30 uppercase tracking-widest">Signalsicht</span>
                     <div className="flex items-center gap-1 text-[8px] text-white/20">
                         <Clock className="w-2.5 h-2.5" />
                         <span>{formatLastActivity()}</span>
                     </div>
                 </div>
                 <div className="flex items-end gap-1 h-8">
-                    {weeklyActivity.map((value, index) => {
-                        const height = Math.max(15, (value / maxActivity) * 100);
-                        const isToday = index === 6;
+                    {signalBars.map((item) => {
+                        const height = Math.max(18, (item.value / maxSignal) * 100);
+                        const Icon = item.icon;
                         return (
                             <motion.div
-                                key={index}
+                                key={item.label}
                                 initial={{ height: 0 }}
                                 animate={{ height: `${height}%` }}
-                                transition={{ duration: 0.5, delay: index * 0.05, ease: "easeOut" }}
-                                className={`flex-1 rounded-sm transition-colors ${isToday ? 'bg-violet-400 group-hover:bg-violet-300' : 'bg-white/10 group-hover:bg-white/15'}`}
-                                title={`Tag ${index + 1}: ${value} Eintraege`}
-                            />
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className="flex-1 rounded-sm bg-white/10 transition-colors group-hover:bg-white/15"
+                                title={`${item.label}: ${item.value}`}
+                            >
+                                <div className="flex h-full items-end justify-center pb-1">
+                                    <Icon className="h-2.5 w-2.5 text-white/35" />
+                                </div>
+                            </motion.div>
                         );
                     })}
                 </div>
                 <div className="flex gap-1 mt-1">
-                    {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day, i) => (
-                        <span key={day} className={`flex-1 text-center text-[7px] ${i === 6 ? 'text-violet-400/60' : 'text-white/20'}`}>{day}</span>
+                    {signalBars.map((item) => (
+                        <span key={item.label} className="flex-1 text-center text-[7px] text-white/20">{item.label}</span>
                     ))}
                 </div>
             </div>

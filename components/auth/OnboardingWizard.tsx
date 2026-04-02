@@ -170,7 +170,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 await loadDepartments(myCompany.id);
             }
 
-            toast.success('Môra ist bereit! Willkommen in Ihrem Arbeitsbereich.', { id: toastId });
+            toast.success('Môra ist bereit! Willkommen in Ihrer Organisation.', { id: toastId });
 
         } catch (error: any) {
             console.error('Onboarding Fehler:', error);
@@ -283,7 +283,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 </h2>
 
                                 <p className="text-white/60 max-w-md mx-auto leading-relaxed mb-8">
-                                    Richten wir Ihren Arbeitsbereich ein. Dies erstellt Môras erstes Verständnis Ihrer Organisation.
+                                    Richten wir Ihre Organisation ein. Dies erstellt Môras erstes Verstaendnis Ihrer Struktur.
                                 </p>
 
                                 <div className="flex items-center justify-center gap-4 text-sm text-white/40">
@@ -374,7 +374,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 exit={{ opacity: 0, x: -20 }}
                             >
                                 <h2 className="text-2xl font-light text-white mb-2">Abteilungen</h2>
-                                <p className="text-white/50 mb-6">Erstellen Sie Ihre ersten Abteilungen. Diese erscheinen als Planeten in Ihrem Arbeitsbereich.</p>
+                                <p className="text-white/50 mb-6">Erstellen Sie Ihre ersten Abteilungen. Diese erscheinen als Planeten in Ihrer Organisationsansicht.</p>
 
                                 <div className="space-y-4 max-h-[280px] overflow-y-auto pr-2">
                                     {departments.map((dept, index) => (
@@ -468,7 +468,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 </h2>
 
                                 <p className="text-white/60 max-w-md mx-auto leading-relaxed mb-8">
-                                    Môra erstellt nun Ihren Arbeitsbereich mit:
+                                    Môra richtet jetzt Ihre Organisation ein:
                                 </p>
 
                                 <div className="flex flex-col gap-3 max-w-sm mx-auto text-left">

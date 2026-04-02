@@ -126,7 +126,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                     Setup Erforderlich
                                 </p>
                                 <p className="text-xs text-amber-200/50 max-w-[260px] leading-relaxed">
-                                    Richte einen Workspace ein, damit Mora operativ wird.
+                                    Richte zuerst eine Organisation oder die Demo-Instanz ein, damit Mora operativ wird.
                                 </p>
                             </div>
                         )}

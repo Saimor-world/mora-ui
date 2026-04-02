@@ -88,7 +88,7 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
                 "  mora <frage>     - Frage an MORA stellen",
                 "  search <term>    - Semantische Suche",
                 "  providers        - Verfügbare AI-Provider",
-                "  analyze          - Workspace-Analyse starten",
+                "  analyze          - Kontextanalyse starten",
                 "",
                 "SHELL (Remote Session):",
                 "  ls, pwd, cd, cat, ps, ...  - Ausführung auf dem Core-Server",
@@ -469,7 +469,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
 
             if (command === "analyze") {
                 if (requireOnline("Analyse")) {
-                    addLine("system", "Starte Workspace-Analyse...");
+                    addLine("system", "Starte Kontextanalyse...");
                     try {
                         const response = await corePost("/v1/autonomous/analyze", { deep: false });
                         addLine("output", `Analyse: ${response?.tasks_processed || 0} Tasks verarbeitet`);

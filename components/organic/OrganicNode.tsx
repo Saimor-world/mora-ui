@@ -128,7 +128,7 @@ export function OrganicNode({
                 </h3>
                 {active && (
                     <p className="text-[10px] text-emerald-500/70 mt-1 animate-in fade-in duration-300">
-                        Active Workspace
+                        Aktiver Kontext
                     </p>
                 )}
             </div>

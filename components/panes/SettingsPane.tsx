@@ -887,7 +887,7 @@ useEffect(() => {
                     {activeTab === 'workspace' && (
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg text-white font-light">Workspace verwalten</h3>
+                                <h3 className="text-lg text-white font-light">{surfaceProfile.isPublicDemoSurface ? 'Demo-Struktur pflegen' : 'Organisation verwalten'}</h3>
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => {
@@ -1331,7 +1331,7 @@ useEffect(() => {
                                     <div className="text-white font-mono text-sm">{departments.length}</div>
                                 </div>
                                 <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Companies</div>
+                                    <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Firmenkontexte</div>
                                     <div className="text-white font-mono text-sm">{companies.length}</div>
                                 </div>
                             </div>
@@ -1341,7 +1341,7 @@ useEffect(() => {
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <h4 className="text-sm font-medium text-white/80">Datenverwaltung</h4>
                                 <p className="hidden text-xs text-white/40">
-                                    Hier kannst du den Workspace komplett zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten überschrieben.
+                                    Hier kannst du die komplette Demo-Struktur zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten überschrieben.
                                 </p>
                                 <p className="text-xs text-white/40">
                                     Hier kannst du die öffentliche Demo-Instanz auf den kuratierten Ausgangszustand zurücksetzen.
@@ -1349,10 +1349,10 @@ useEffect(() => {
 
                                 <button
                                     onClick={async () => {
-                                        if (!confirm('Bist du sicher? Alle Änderungen gehen verloren und der Workspace wird auf den Demo-Zustand zurückgesetzt.')) return;
+                                        if (!confirm('Bist du sicher? Alle Änderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurückgesetzt.')) return;
 
                                         try {
-                                            toast.loading('Workspace wird zurückgesetzt...');
+                                            toast.loading('Demo-Instanz wird zurückgesetzt...');
 
                                             // Get token from Session (Production Auth)
                                             const token = session?.user?.accessToken; // || localStorage fallback removed
@@ -1379,7 +1379,7 @@ useEffect(() => {
                                                 throw new Error(err.detail || 'Reset failed');
                                             }
 
-                                            toast.success('Workspace erfolgreich zurückgesetzt!');
+                                            toast.success('Demo-Instanz erfolgreich zurückgesetzt!');
                                             // Force reload window to clear all local state nuances
                                             window.location.reload();
                                         } catch (e) {
@@ -1390,9 +1390,9 @@ useEffect(() => {
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group [&>span:last-child]:hidden"
                                 >
                                     <Trash2 size={16} className="group-hover:animate-pulse" />
-                                    <span className="hidden">Workspace zurücksetzen (Reset Data)</span>
+                                    <span className="hidden">Demo-Instanz zurücksetzen</span>
                                     <span>Demo-Daten zurücksetzen</span>
-                                    <span>Workspace zurücksetzen (Reset Data)</span>
+                                    <span>Demo-Instanz zurücksetzen</span>
                                 </button>
                             </div>
                             )}

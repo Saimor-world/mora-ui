@@ -14,6 +14,7 @@ import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
 import { signIn } from "next-auth/react";
 import { OnboardingWizard } from './OnboardingWizard';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
@@ -57,6 +58,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     // Default true so the button is visible while the policy loads (no CLS/flash)
     const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
     const prefersReducedMotion = useReducedMotion();
+    const surfaceProfile = useSurfaceProfile();
     const [isDocumentVisible, setIsDocumentVisible] = useState(
         typeof document === 'undefined' ? true : !document.hidden
     );
@@ -64,6 +66,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const { setViewMode, setUser, navigateToCore } = useMoraStore();
     const hasInvite = inviteCode.trim().length > 0;
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
+    const contextLabel = surfaceProfile.isPublicDemoSurface ? 'Kontext' : 'Organisation';
+    const loginSubtitle = surfaceProfile.isPublicDemoSurface
+        ? 'Demo oeffnen oder mit eigenen Zugangsdaten weiter'
+        : 'Zugriff auf deine Organisation';
+    const registerSubtitle = surfaceProfile.isPublicDemoSurface
+        ? 'Eigene Organisation anlegen'
+        : 'Neue Organisation einrichten';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
         await authLogout();
@@ -458,12 +467,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 // Determine if we need onboarding (for new owner it is mandatory)
                 setRegisteredEmail(email);
                 setShowOnboarding(true);
-                toast.success('Account erstellt! Richten wir Ihren Arbeitsbereich ein.', { id: toastId });
+                toast.success('Account erstellt! Richten wir nun Ihre Organisation ein.', { id: toastId });
                 return;
             } else {
                 setViewMode('workspace');
                 navigateToCore();
-                localStorage.setItem('last_workspace', email.split('@')[0] + "'s Workspace");
+                localStorage.setItem('last_workspace', 'Eigene Organisation');
                 toast.success("Account erstellt! Willkommen bei SAIMÔR.", { id: toastId });
             }
 
@@ -693,7 +702,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 className="flex items-center gap-2 text-xs mb-5 p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10"
                                             >
                                                 <Zap className="w-3.5 h-3.5 text-mora-gold" />
-                                                <span className="text-emerald-500/70">Arbeitsbereich:</span>
+                                                <span className="text-emerald-500/70">{contextLabel}:</span>
                                                 <span className="text-emerald-100 font-medium">{sessionInfo.lastWorkspace}</span>
                                             </motion.div>
                                         )}
@@ -763,7 +772,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         {sessionInfo.lastWorkspace && (
                                             <div className="flex items-center gap-2 text-xs mb-5 p-3 rounded-lg bg-mora-gold/5 border border-mora-gold/10">
                                                 <Building2 className="w-3.5 h-3.5 text-mora-gold/70" />
-                                                <span className="text-emerald-500/70">Letzter Arbeitsbereich:</span>
+                                                <span className="text-emerald-500/70">Letzter Kontext:</span>
                                                 <span className="text-emerald-100 font-medium">{sessionInfo.lastWorkspace}</span>
                                             </div>
                                         )}
@@ -893,7 +902,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Anmelden</div>
-                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">Zugriff auf Ihren Arbeitsbereich</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">{loginSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
@@ -911,12 +920,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Account Erstellen</div>
-                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">Starten Sie Ihre Reise</div>
+                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">{registerSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
                                 </motion.button>}
 
-                                {/* Quick Demo Button - Re-enabling for High-Fidelity Experience */}
+                                {/* Curated public demo entry */}
                                 <motion.button
                                     onClick={() => {
                                         void handleLogin({ email: 'demo', password: 'demo123' });
@@ -930,8 +939,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <Sparkles className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Quick Demo</div>
-                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">&quot;Simple Coffee Group&quot; erkunden</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Simple Coffee Group erleben</div>
+                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Perfekt kuratierte Demo starten</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
@@ -958,13 +967,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                 <div className="relative z-10">
                                     <h2 className="text-3xl font-extralight tracking-[0.25em] text-emerald-50 mb-8 text-center drop-shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                                        SIGN IN
+                                        ANMELDEN
                                     </h2>
 
                                     <div className="space-y-5">
                                         <div>
                                             <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
-                                                Email
+                                                E-Mail
                                             </label>
                                             <input
                                                 type="email"
@@ -975,13 +984,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 autoCapitalize="off"
                                                 spellCheck="false"
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
-                                                placeholder="your@email.com"
+                                                placeholder="name@firma.de"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
-                                                Password
+                                                Passwort
                                             </label>
                                             <input
                                                 type="password"
@@ -1012,7 +1021,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'<- Zurück zum Hauptbereich'}
+                                            {'<- Zurueck zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1071,7 +1080,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                         <div>
                                             <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
-                                                Invite Code (optional)
+                                                Einladungscode (optional)
                                             </label>
                                             <input
                                                 type="text"
@@ -1089,7 +1098,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     <CompanyLogoUpload
                                                         value={logoUrl}
                                                         onChange={setLogoUrl}
-                                                        companyName={companyName || 'Company'}
+                                                        companyName={companyName || 'Organisation'}
                                                     />
                                                 </div>
 
@@ -1106,7 +1115,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     />
                                                     <p className="text-[10px] text-mora-gold/50 mt-1.5 flex items-center gap-1">
                                                         <Sparkles size={10} />
-                                                        Dies wird der Name Ihres Arbeitsbereichs sein
+                                                        Dies wird der Name Ihrer Organisation sein
                                                     </p>
                                                 </div>
                                             </div>
@@ -1162,7 +1171,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'<- Zurück zum Hauptbereich'}
+                                            {'<- Zurueck zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
