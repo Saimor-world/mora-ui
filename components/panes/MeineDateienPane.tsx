@@ -131,10 +131,22 @@ export const MeineDateienPane: React.FC = () => {
         <div className="flex flex-col py-2" data-testid="meine-dateien-content">
             {/* Counts header */}
             {counts && (
-                <div className="flex items-center gap-3 px-4 py-2 text-[10px] text-white/20 border-b border-white/5 mb-1">
-                    {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                    {counts.nodes != null && <span>{counts.nodes} Dokumente</span>}
-                    {counts.files != null && <span>{counts.files} Dateien</span>}
+                <div className="border-b border-white/5 mb-1 px-4 py-2">
+                    <div className="flex items-center gap-3 text-[10px] text-white/20">
+                        {counts.total != null && <span>{counts.total} Einträge gesamt</span>}
+                        {counts.folders != null && <span>{counts.folders} Ordner</span>}
+                        {counts.nodes != null && <span>{counts.nodes} Dokumente</span>}
+                        {counts.files != null && <span>{counts.files} Dateien</span>}
+                    </div>
+                    <div className="mt-1 text-[10px] text-white/20">
+                        Dokumente sind inhaltliche Einträge. Dateien sind rohe Uploads. Ordner strukturieren beides.
+                    </div>
+                </div>
+            )}
+
+            {content.space?.name && (
+                <div className="px-4 pb-2 pt-1 text-[11px] text-white/30">
+                    Privater Bereich: <span className="text-white/55">{content.space.name}</span>
                 </div>
             )}
 

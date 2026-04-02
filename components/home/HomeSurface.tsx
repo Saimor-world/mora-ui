@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut, Eye } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet } from '@/lib/api/coreClient';
+import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
 import type { UserContentResponse } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
 import { useAccountStore } from '@/lib/auth/useAccount';
@@ -22,6 +22,11 @@ interface KairosEvent {
         sample_titles?: string[];
     };
 }
+
+type PersonalLatestItem =
+    | { kind: 'node'; id: string; label: string; timestamp: number }
+    | { kind: 'file'; id: string; label: string; timestamp: number }
+    | { kind: 'folder'; id: string; label: string; timestamp: number };
 
 function getComparableTimestamp(value?: string | null): number {
     if (!value) return 0;
@@ -180,26 +185,82 @@ export const HomeSurface: React.FC = () => {
 
     const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
     const personalSpaceLabel = myContent?.space?.name || 'Persönlicher Space';
-    const personalLatestLabel = useMemo(() => {
+    const personalLatestItem = useMemo<PersonalLatestItem | null>(() => {
         if (!myContent) return null;
 
         const candidates = [
             ...(Array.isArray(myContent.nodes) ? myContent.nodes.map((node) => ({
+                kind: 'node' as const,
+                id: node.id,
                 label: node.title || node.name || 'Unbenanntes Dokument',
                 timestamp: getComparableTimestamp(node.updated_at || node.created_at),
             })) : []),
             ...(Array.isArray(myContent.files) ? myContent.files.map((file) => ({
+                kind: 'file' as const,
+                id: file.id,
                 label: file.name || 'Datei',
                 timestamp: getComparableTimestamp(file.created_at),
             })) : []),
             ...(Array.isArray(myContent.folders) ? myContent.folders.map((folder) => ({
+                kind: 'folder' as const,
+                id: folder.id,
                 label: folder.name || 'Ordner',
                 timestamp: getComparableTimestamp(folder.updated_at || folder.created_at),
             })) : []),
         ];
 
-        return candidates.sort((left, right) => right.timestamp - left.timestamp)[0]?.label ?? null;
+        return candidates.sort((left, right) => right.timestamp - left.timestamp)[0] ?? null;
     }, [myContent]);
+
+    const openPersonalLatest = useCallback(() => {
+        if (!personalLatestItem) {
+            openMeineDateien();
+            return;
+        }
+
+        if (personalLatestItem.kind === 'node') {
+            openPane({
+                id: `doc-${personalLatestItem.id}`,
+                type: 'document',
+                title: personalLatestItem.label,
+                size: { width: 960, height: 720 },
+                data: { nodeId: personalLatestItem.id },
+            });
+            return;
+        }
+
+        if (personalLatestItem.kind === 'folder') {
+            openPane({
+                id: `finder-${personalLatestItem.id}`,
+                type: 'finder',
+                title: personalLatestItem.label,
+                size: { width: 960, height: 720 },
+                data: { folderId: personalLatestItem.id },
+            });
+            return;
+        }
+
+        const url = `${getCoreBaseUrl()}/v3/files/${personalLatestItem.id}/download`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }, [openMeineDateien, openPane, personalLatestItem]);
+
+    const myContentCountsLabel = useMemo(() => {
+        if (!myContent?.counts) return null;
+        return [
+            myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
+            myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
+            myContent.counts.files != null && `${myContent.counts.files} Dateien`,
+        ].filter(Boolean).join(' · ');
+    }, [myContent]);
+
+    const personalLatestLabel = personalLatestItem?.label ?? null;
+    const personalLatestKindLabel = personalLatestItem
+        ? personalLatestItem.kind === 'node'
+            ? 'Dokument'
+            : personalLatestItem.kind === 'file'
+                ? 'Datei'
+                : 'Ordner'
+        : null;
 
     return (
         <div className="absolute inset-0 overflow-auto">
@@ -344,25 +405,31 @@ export const HomeSurface: React.FC = () => {
                                 <FolderHeart size={20} className={t.qaIcon} />
                                 <div className="min-w-0 flex-1">
                                     <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
-                                    {myContent.counts && (
+                                    {myContentCountsLabel && (
                                         <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
-                                            {[
-                                                myContent.counts.nodes != null && `${myContent.counts.nodes} Dokumente`,
-                                                myContent.counts.folders != null && `${myContent.counts.folders} Ordner`,
-                                                myContent.counts.files != null && `${myContent.counts.files} Dateien`,
-                                            ].filter(Boolean).join(' · ')}
+                                            {myContentCountsLabel}
                                         </div>
                                     )}
+                                    <div className={`mt-1 text-[11px] ${t.cardSub}`}>
+                                        Dokumente sind Inhalte, Dateien sind Uploads, Ordner sind Container.
+                                    </div>
                                 </div>
                             </button>
 
                             <button
                                 data-testid="personal-space-card"
-                                onClick={openMeineDateien}
+                                onClick={openPersonalLatest}
                                 className={`w-full text-left rounded-2xl border px-5 py-4 transition-all ${t.card}`}
                             >
-                                <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                    Personal Space
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
+                                        Privater Bereich
+                                    </div>
+                                    {personalLatestKindLabel && (
+                                        <span className={`text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>
+                                            {personalLatestKindLabel}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className={`mt-2 truncate text-sm font-medium ${t.cardText}`}>
                                     {personalSpaceLabel}
