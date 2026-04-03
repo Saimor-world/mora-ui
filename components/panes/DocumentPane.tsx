@@ -1,34 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    Copy,
+    Download,
+    File,
+    FileImage,
+    FileText,
+    FileVideo,
+    FolderOpen,
+    Link,
+    Loader2,
+    Paperclip,
+    RefreshCw,
+    Search,
+    Sparkles,
+    UploadCloud,
+    X,
+} from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { FileText, Copy, Download, File, FileImage, FileVideo, Loader2, Link, X, FolderOpen, Search, Sparkles, UploadCloud } from 'lucide-react';
-import { toast } from '@/lib/toast';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
-import { getDownloadUrl } from '@/lib/api/filesClient';
+import { getCompanyFileUrl } from '@/lib/api/filesClient';
+import { toast } from '@/lib/toast';
 import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
+import { getNodeSourceFileId, getNodeSourceFileName, openSourceFileForNode } from '@/lib/utils/contentOpen';
 
 interface DocumentPaneProps {
     id: string;
 }
 
-/**
- * DocumentPane - View Documents (read-only)
- * 
- * LOADS REAL DATA from backend API!
- * Supports:
- * - Markdown files (rendered)
- * - Text files (read-only)
- * - Images (preview)  
- * - PDF info
- */
+interface NodeRelation {
+    type?: string;
+    target_name?: string;
+    source_name?: string;
+}
+
 export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
-
-    // Get document data from pane
-    const docData = pane?.data || {};
-    const { nodeId, content: initialContent, name: initialName, type: initialType, metadata: initialMetadata, url, folderId, companyId, navigationContext } = docData as {
+    const docData = (pane?.data || {}) as {
         nodeId?: string;
         content?: string;
         name?: string;
@@ -40,15 +50,27 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
         navigationContext?: DocumentNavigationContext;
     };
 
+    const {
+        nodeId,
+        content: initialContent,
+        name: initialName,
+        type: initialType,
+        metadata: initialMetadata,
+        url,
+        folderId,
+        companyId,
+        navigationContext,
+    } = docData;
+
     const [content, setContent] = useState(initialContent || '');
     const [name, setName] = useState(initialName || 'Dokument');
     const [type, setType] = useState(initialType || '');
-    const [metadata, setMetadata] = useState(initialMetadata || {});
-    const [relations, setRelations] = useState<any[]>([]);
+    const [metadata, setMetadata] = useState<Record<string, any>>(initialMetadata || {});
+    const [relations, setRelations] = useState<NodeRelation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [reloadKey, setReloadKey] = useState(0);
 
-    // Load real data from backend
     useEffect(() => {
         let cancelled = false;
 
@@ -65,45 +87,44 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 const nodeData = await fetchNodeDetails(nodeId);
                 if (cancelled) return;
 
-                if (nodeData) {
-                    setName(nodeData.name || nodeData.title || 'Dokument');
-                    setContent(nodeData.content || '');
-                    setType(nodeData.type || '');
-                    setMetadata(nodeData.metadata || {});
-                } else {
+                if (!nodeData) {
                     setLoadError('Dokument nicht gefunden oder kein Zugriff.');
+                    return;
                 }
+
+                setName(nodeData.name || nodeData.title || 'Dokument');
+                setContent(nodeData.content || '');
+                setType(nodeData.type || '');
+                setMetadata(nodeData.metadata || {});
 
                 const nodeRelations = await fetchNodeRelations(nodeId);
                 if (cancelled) return;
-                if (nodeRelations) {
-                    setRelations(nodeRelations);
-                }
-
-            } catch (err: any) {
+                setRelations(Array.isArray(nodeRelations) ? nodeRelations : []);
+            } catch (error: any) {
                 if (cancelled) return;
-                console.error('Failed to load document:', err);
-                setLoadError(err.message || 'Dokument konnte nicht geladen werden');
+                setLoadError(error?.message || 'Dokument konnte nicht geladen werden');
             } finally {
-                if (!cancelled) setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             }
         }
 
-        loadDocument();
-        return () => { cancelled = true; };
-    }, [nodeId]);
+        void loadDocument();
+        return () => {
+            cancelled = true;
+        };
+    }, [nodeId, reloadKey]);
 
-    // Determine file type from name or type
-    const fileExtension = name?.split('.').pop()?.toLowerCase() || '';
+    const fileExtension = useMemo(() => name?.split('.').pop()?.toLowerCase() || '', [name]);
     const isPDF = fileExtension === 'pdf' || type === 'pdf';
-    const isMarkdown = fileExtension === 'md' || fileExtension === 'markdown' || type === 'markdown';
+    const isMarkdown = ['md', 'markdown'].includes(fileExtension) || type === 'markdown';
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
     const isVideo = ['mp4', 'webm', 'mov'].includes(fileExtension);
 
-    // Generate image URL from file_path if available
-    const imageUrl = url || (metadata?.file_path && nodeId
-        ? getDownloadUrl(nodeId)
-        : null);
+    const sourceFileId = getNodeSourceFileId({ metadata });
+    const sourceFileName = getNodeSourceFileName({ metadata, name, title: name, id: nodeId || 'document' });
+    const previewUrl = url || (sourceFileId ? getCompanyFileUrl(sourceFileId) : null);
 
     const navigationSourceLabel = (() => {
         switch (navigationContext?.source) {
@@ -135,7 +156,6 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
         }
     })();
 
-    // Simple markdown renderer
     const renderMarkdown = (md: string) => {
         return md
             .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold text-white/90 mt-4 mb-2">$1</h3>')
@@ -147,8 +167,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             .replace(/\n/gim, '<br />');
     };
 
-    // Get human-readable relation explanation
-    const getRelationExplanation = (relation: any): string => {
+    const getRelationExplanation = (relation: NodeRelation): string => {
         switch (relation.type) {
             case 'same_folder':
                 return 'Gleicher Ordner';
@@ -159,37 +178,170 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             case 'same_author':
                 return 'Gleicher Autor';
             case 'semantic':
-                return 'Ähnlicher Inhalt';
+                return 'Aehnlicher Inhalt';
             default:
                 return 'Verwandt';
         }
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(content);
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(content);
         toast.success('Inhalt kopiert');
     };
 
-    const handleDownload = () => {
+    const handleDownloadText = () => {
         const blob = new Blob([content], { type: 'text/plain' });
         const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = name || 'document.txt';
-        a.click();
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = name || 'dokument.txt';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
         URL.revokeObjectURL(downloadUrl);
-        toast.success('Datei heruntergeladen');
+        toast.success('Textinhalt heruntergeladen');
+    };
+
+    const handleOpenOriginal = async () => {
+        try {
+            const opened = await openSourceFileForNode({
+                metadata,
+                name,
+                title: name,
+                id: nodeId || 'document',
+            });
+            if (!opened) {
+                toast.info('Keine Originaldatei verknuepft');
+            }
+        } catch (error: any) {
+            toast.error(error?.message || 'Originaldatei konnte nicht geoeffnet werden');
+        }
     };
 
     if (!pane) return null;
 
-    // Get file icon based on type
-    const getFileIcon = () => {
-        if (isPDF) return <File size={18} className="text-red-400" />;
-        if (isImage) return <FileImage size={18} className="text-purple-400" />;
-        if (isVideo) return <FileVideo size={18} className="text-pink-400" />;
-        if (isMarkdown) return <FileText size={18} className="text-yellow-400" />;
-        return <FileText size={18} className="text-blue-400" />;
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <div className="flex items-center justify-center h-full p-6">
+                    <CommandReceipt
+                        tone="cyan"
+                        icon={Loader2}
+                        label="Dokument laedt"
+                        title={name}
+                        body="Der Inhalt wird aus dem Core geladen. Mora zeigt solange nur den letzten bekannten Titel und Kontext."
+                        chips={[
+                            ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
+                            ...(folderId ? [{ label: `Ordner: ${folderId}` }] : []),
+                        ]}
+                        className="w-full max-w-xl"
+                    />
+                </div>
+            );
+        }
+
+        if (loadError) {
+            return (
+                <div className="flex items-center justify-center h-full p-6">
+                    <CommandReceipt
+                        tone="red"
+                        icon={X}
+                        label="Dokument nicht lesbar"
+                        title="Fehler beim Laden"
+                        body={loadError}
+                        chips={[
+                            ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
+                            { label: 'Inhalt bleibt unveraendert' },
+                        ]}
+                        actions={(
+                            <button
+                                type="button"
+                                onClick={() => setReloadKey((prev) => prev + 1)}
+                                className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/14 px-3.5 py-2 text-[11px] font-medium text-red-50 transition-colors hover:border-red-300/35 hover:bg-red-500/22"
+                            >
+                                <RefreshCw size={13} />
+                                Erneut laden
+                            </button>
+                        )}
+                        className="w-full max-w-xl"
+                    />
+                </div>
+            );
+        }
+
+        if (isImage) {
+            return (
+                <div className="h-full flex items-center justify-center p-4 bg-black/20">
+                    {previewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- document previews may use auth-protected file URLs
+                        <img src={previewUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                    ) : content ? (
+                        <div className="text-center max-w-md">
+                            <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
+                            <p className="text-white/70 text-sm mb-2">Bild-Beschreibung:</p>
+                            <p className="text-white/50 text-sm italic">{content}</p>
+                            <p className="text-white/30 text-xs mt-4">Es liegt keine echte Bildvorschau vor.</p>
+                        </div>
+                    ) : (
+                        <div className="text-center text-white/50">
+                            <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
+                            <p>Keine Vorschau verfuegbar</p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (isPDF) {
+            return (
+                <div className="h-full flex flex-col items-center justify-center p-6 bg-black/20">
+                    <File size={64} className="text-red-400/60 mb-4" />
+                    <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
+                    {content ? (
+                        <>
+                            <p className="text-white/50 text-sm text-center max-w-md mb-4">{content}</p>
+                            <p className="text-white/30 text-xs">Die PDF liegt als Originaldatei vor und kann direkt geoeffnet werden.</p>
+                        </>
+                    ) : (
+                        <p className="text-white/40 text-sm">PDF-Dokument</p>
+                    )}
+                </div>
+            );
+        }
+
+        if (isMarkdown && content) {
+            return (
+                <div
+                    className="p-6 prose prose-invert prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+                />
+            );
+        }
+
+        if (content) {
+            return (
+                <pre className="p-4 whitespace-pre-wrap text-white/80 font-mono text-sm leading-relaxed">
+                    {content}
+                </pre>
+            );
+        }
+
+        return (
+            <div className="flex items-center justify-center h-full p-6">
+                <CommandReceipt
+                    tone="slate"
+                    icon={FileText}
+                    label="Leeres Dokument"
+                    title="Dieser Eintrag hat noch keinen Textinhalt."
+                    body="Mora zeigt bewusst keinen erfundenen Inhalt. Wenn spaeter Text oder Metadaten geliefert werden, erscheint er hier."
+                    chips={[
+                        ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
+                        ...(sourceFileId ? [{ label: `Original: ${sourceFileName}` }] : [{ label: 'Keine Vorschau verfuegbar' }]),
+                    ]}
+                    className="w-full max-w-xl"
+                />
+            </div>
+        );
     };
 
     return (
@@ -246,145 +398,74 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                                     </button>
                                 ) : null
                             )}
-                            footer="Diese Datei bleibt mit ihrem Ursprung verknuepft. Mora blendet nur die Herkunft ein, die der Kontext wirklich geliefert hat."
+                            footer="Dieses Dokument bleibt mit seinem Ursprung verknuepft. Mora zeigt nur die Herkunft, die der Kontext wirklich geliefert hat."
                         />
                     </div>
                 )}
 
-                {/* Toolbar */}
                 <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/5">
-                    <div className="flex items-center gap-3">
-                        {getFileIcon()}
+                    <div className="flex items-center gap-3 min-w-0">
+                        {isPDF ? (
+                            <File size={18} className="text-red-400" />
+                        ) : isImage ? (
+                            <FileImage size={18} className="text-purple-400" />
+                        ) : isVideo ? (
+                            <FileVideo size={18} className="text-pink-400" />
+                        ) : (
+                            <FileText size={18} className="text-blue-400" />
+                        )}
                         <span className="text-sm text-white/80 font-medium truncate max-w-[300px]">{name}</span>
                         <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">
                             {fileExtension || type || 'doc'}
                         </span>
+                        {sourceFileId && (
+                            <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">
+                                Mit Original
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Copy */}
                         {!isPDF && !isImage && !isVideo && content && (
                             <button
-                                onClick={handleCopy}
+                                onClick={() => void handleCopy()}
                                 className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                title="Kopieren"
+                                title="Inhalt kopieren"
                             >
                                 <Copy size={16} />
                             </button>
                         )}
-
-                        {/* Download */}
                         {content && (
                             <button
-                                onClick={handleDownload}
+                                onClick={handleDownloadText}
                                 className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                title="Herunterladen"
+                                title="Textinhalt herunterladen"
                             >
                                 <Download size={16} />
                             </button>
                         )}
+                        {sourceFileId && (
+                            <button
+                                onClick={() => void handleOpenOriginal()}
+                                className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+                                title="Originaldatei oeffnen"
+                            >
+                                <Paperclip size={16} />
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setReloadKey((prev) => prev + 1)}
+                            className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+                            title="Neu laden"
+                        >
+                            <RefreshCw size={16} />
+                        </button>
                     </div>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-auto">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center h-full p-6">
-                            <CommandReceipt
-                                tone="cyan"
-                                icon={Loader2}
-                                label="Dokument laedt"
-                                title={name}
-                                body="Der Inhalt wird aus dem Kern geladen. Mora zeigt solange den zuletzt bekannten Titel und Kontext an."
-                                chips={[
-                                    ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
-                                    ...(folderId ? [{ label: `Ordner: ${folderId}` }] : []),
-                                ]}
-                                className="w-full max-w-xl"
-                            />
-                        </div>
-                    ) : loadError ? (
-                        <div className="flex items-center justify-center h-full p-6">
-                            <CommandReceipt
-                                tone="red"
-                                icon={X}
-                                label="Dokument nicht lesbar"
-                                title="Fehler beim Laden"
-                                body={loadError}
-                                chips={[
-                                    ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
-                                    { label: 'Inhalt bleibt unveraendert' },
-                                ]}
-                                className="w-full max-w-xl"
-                            />
-                        </div>
-                    ) : isImage ? (
-                        /* Image Viewer */
-                        <div className="h-full flex items-center justify-center p-4 bg-black/20">
-                            {imageUrl ? (
-                                <>
-                                    {/* eslint-disable-next-line @next/next/no-img-element -- document previews may use blob/object URLs */}
-                                    <img src={imageUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
-                                </>
-                            ) : content ? (
-                                /* Demo image with text description (no real file) */
-                                <div className="text-center max-w-md">
-                                    <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
-                                    <p className="text-white/70 text-sm mb-2">Bild-Beschreibung:</p>
-                                    <p className="text-white/50 text-sm italic">{content}</p>
-                                    <p className="text-white/30 text-xs mt-4">(Demo-Datei - keine echte Bilddatei)</p>
-                                </div>
-                            ) : (
-                                <div className="text-center text-white/50">
-                                    <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
-                                    <p>Keine Vorschau verfügbar</p>
-                                </div>
-                            )}
-                        </div>
-                    ) : isPDF ? (
-                        /* PDF View - Demo mode shows description, real files would embed viewer */
-                        <div className="h-full flex flex-col items-center justify-center p-6 bg-black/20">
-                            <File size={64} className="text-red-400/60 mb-4" />
-                            <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
-                            {content ? (
-                                <>
-                                    <p className="text-white/50 text-sm text-center max-w-md mb-4">{content}</p>
-                                    <p className="text-white/30 text-xs">(Demo-PDF - Inhaltsbeschreibung)</p>
-                                </>
-                            ) : (
-                                <p className="text-white/40 text-sm">PDF-Dokument</p>
-                            )}
-                        </div>
-                    ) : isMarkdown && content ? (
-                        /* Markdown Rendered View */
-                        <div
-                            className="p-6 prose prose-invert prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                        />
-                    ) : content ? (
-                        /* Plain Text View */
-                        <pre className="p-4 whitespace-pre-wrap text-white/80 font-mono text-sm leading-relaxed">
-                            {content}
-                        </pre>
-                    ) : (
-                        /* Empty State */
-                        <div className="flex items-center justify-center h-full p-6">
-                            <CommandReceipt
-                                tone="slate"
-                                icon={FileText}
-                                label="Leeres Dokument"
-                                title="Diese Datei hat keinen Inhalt."
-                                body="Mora zeigt bewusst keinen erfundenen Inhalt. Wenn spaeter Text oder Metadaten geliefert werden, erscheint er hier."
-                                chips={[
-                                    ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
-                                    { label: 'Keine Vorschau verfuegbar' },
-                                ]}
-                                className="w-full max-w-xl"
-                            />
-                        </div>
-                    )}
+                    {renderContent()}
                 </div>
 
-                {/* Relations Section - Explain WHY files are connected */}
                 {relations.length > 0 && (
                     <div className="px-4 py-3 border-t border-white/5 bg-white/5">
                         <div className="flex items-center gap-2 mb-2">
@@ -394,13 +475,13 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                             </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {relations.slice(0, 5).map((rel, i) => (
+                            {relations.slice(0, 5).map((relation, index) => (
                                 <span
-                                    key={i}
+                                    key={`${relation.type || 'relation'}-${index}`}
                                     className="px-2 py-1 rounded-lg bg-white/5 text-xs text-white/50 border border-white/10"
-                                    title={`Verbunden mit: ${rel.target_name || rel.source_name || 'Datei'}`}
+                                    title={`Verbunden mit: ${relation.target_name || relation.source_name || 'Inhalt'}`}
                                 >
-                                    {getRelationExplanation(rel)}
+                                    {getRelationExplanation(relation)}
                                 </span>
                             ))}
                             {relations.length > 5 && (
@@ -412,11 +493,11 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     </div>
                 )}
 
-                {/* Footer with Metadata */}
                 {metadata && Object.keys(metadata).length > 0 && (
-                    <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4">
-                        {metadata.size && <span>Größe: {(metadata.size / 1024).toFixed(1)} KB</span>}
+                    <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4 flex-wrap">
+                        {metadata.size && <span>Groesse: {(metadata.size / 1024).toFixed(1)} KB</span>}
                         {metadata.tags && Array.isArray(metadata.tags) && <span>Tags: {metadata.tags.join(', ')}</span>}
+                        {sourceFileId && <span>Original: {sourceFileName}</span>}
                         {nodeId && <span className="font-mono">ID: {nodeId.slice(0, 8)}...</span>}
                     </div>
                 )}

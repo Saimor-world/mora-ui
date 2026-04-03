@@ -1575,6 +1575,19 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         intel_report: FileText,
     };
 
+    const getContainerTypeLabel = (type?: string) => {
+        switch (type) {
+            case 'department':
+                return 'Bereich';
+            case 'space':
+                return 'Space';
+            case 'folder':
+                return 'Ordner';
+            default:
+                return type || 'Container';
+        }
+    };
+
     if (!pane) return null;
 
     return (
@@ -1920,7 +1933,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         title={searchQuery ? 'Zu dieser Suche gibt es gerade keine sichtbaren Treffer.' : 'In diesem Bereich sind noch keine Ordner oder Dateien sichtbar.'}
                                         body={searchQuery
                                             ? 'Die Suche ist aktiv, aber der aktuelle Kontext liefert nichts Sichtbares. Mora zeigt dir trotzdem den letzten Pfad und den Suchbegriff oben an.'
-                                            : 'Drop Dateien hier hinein oder navigiere tiefer in den Baum. Mora blendet keine falschen Treffer ein.'}
+                                            : 'Lege Dateien hier ab oder navigiere tiefer in den Baum. Mora blendet keine falschen Treffer ein.'}
                                         chips={[
                                             { label: `Pfad: ${currentPathLabel}` },
                                             ...(searchQuery ? [{ label: `Suche: ${searchQuery}`, tone: 'cyan' as const }] : [{ label: 'Keine Suche aktiv' }]),
@@ -1999,6 +2012,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 const Icon = TYPE_ICONS[file.type] || FileText;
                                                 const hasSourceFile = canOpenSourceFile(file);
                                                 const opensExternally = file.type === 'link' && typeof file.url === 'string' && file.url.trim().length > 0;
+                                                const displayName = getContentDisplayName(file);
+                                                const secondaryLabel = getContentSecondaryLabel(file);
 
                                                 return (
                                                     <motion.div
@@ -2030,11 +2045,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <span className={`text-sm line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={file.name}>
-                                                                {file.name}
-                                                                {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
+                                                            <span className={`text-sm line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={displayName}>
+                                                                {displayName}
+                                                                {displayName.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
                                                                     <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
-                                                                        {file.name.match(/[_-](EN|DE|FR|ES|IT)\b/i)[1].toUpperCase()}
+                                                                        {displayName.match(/[_-](EN|DE|FR|ES|IT)\b/i)![1].toUpperCase()}
                                                                     </span>
                                                                 )}
                                                             </span>
@@ -2042,16 +2057,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 <span className="text-[9px] text-white/30 uppercase tracking-tighter">{getContentTypeLabel(file.type)}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
                                                                 <span className="text-[9px] text-white/30">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
-                                                                {hasSourceFile && (
+                                                                {secondaryLabel && (
                                                                     <>
                                                                         <div className="w-1 h-1 rounded-full bg-white/10" />
-                                                                        <span className="text-[9px] text-cyan-200/60 uppercase tracking-tighter">Original</span>
-                                                                    </>
-                                                                )}
-                                                                {opensExternally && (
-                                                                    <>
-                                                                        <div className="w-1 h-1 rounded-full bg-white/10" />
-                                                                        <span className="text-[9px] text-violet-200/60 uppercase tracking-tighter">Browser</span>
+                                                                        <span className={`text-[9px] uppercase tracking-tighter ${opensExternally ? 'text-violet-200/60' : hasSourceFile ? 'text-cyan-200/60' : 'text-white/35'}`}>
+                                                                            {secondaryLabel}
+                                                                        </span>
                                                                     </>
                                                                 )}
                                                                 {(() => {
@@ -2290,7 +2301,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         {folder.type && (
-                                                            <span className="text-[10px] text-white/30 uppercase shrink-0">{folder.type}</span>
+                                                            <span className="text-[10px] text-white/30 uppercase shrink-0">{getContainerTypeLabel(folder.type)}</span>
                                                         )}
                                                     </div>
                                                 );
@@ -2301,6 +2312,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 const isSelected = selectedNodeId === file.id;
                                                 const isResonant = resonanceIds.includes(file.id);
                                                 const Icon = TYPE_ICONS[file.type] || FileText;
+                                                const displayName = getContentDisplayName(file);
+                                                const secondaryLabel = getContentSecondaryLabel(file);
 
                                                 return (
                                                     <div
@@ -2322,14 +2335,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     >
                                                         <Icon size={18} className={isSelected ? 'text-emerald-400' : 'text-white/60'} />
                                                         <div className="flex-1 min-w-0">
-                                                            <span className={`text-sm block truncate ${isSelected ? 'text-white font-medium' : 'text-white/70'}`}>{file.name}</span>
+                                                            <span className={`text-sm block truncate ${isSelected ? 'text-white font-medium' : 'text-white/70'}`}>{displayName}</span>
                                                             {file.foundIn && (
                                                                 <span className="text-[10px] text-emerald-400/40 block truncate">Pfad: {file.foundIn}</span>
                                                             )}
                                                             <div className="mt-1 flex items-center gap-2 text-[10px] text-white/30">
                                                                 <span>{getContentTypeLabel(file.type)}</span>
-                                                                {getContentSecondaryLabel(file) && (
-                                                                    <span className="text-cyan-200/60">{getContentSecondaryLabel(file)}</span>
+                                                                {secondaryLabel && (
+                                                                    <span className={`${file.type === 'link' ? 'text-violet-200/60' : 'text-cyan-200/60'}`}>{secondaryLabel}</span>
                                                                 )}
                                                             </div>
                                                         </div>

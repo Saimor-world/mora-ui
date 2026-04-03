@@ -15,7 +15,25 @@ export interface OpenableNodeLike {
     metadata?: Record<string, any> | null;
 }
 
+export interface OpenableSourceFileLike {
+    id: string;
+    name?: string | null;
+    size?: number | null;
+    mime_type?: string | null;
+    linked_status?: 'document' | 'standalone' | string | null;
+    linked_node_id?: string | null;
+    linked_folder_id?: string | null;
+}
+
 interface OpenNodeOptions {
+    paneId?: string;
+    title?: string;
+    folderId?: string;
+    companyId?: string;
+    navigationContext?: unknown;
+}
+
+interface OpenSourceFileOptions {
     paneId?: string;
     title?: string;
     folderId?: string;
@@ -89,6 +107,28 @@ export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'ur
     return 'Dokument oeffnen';
 }
 
+export function getSourceFileDisplayName(item: Pick<OpenableSourceFileLike, 'name' | 'id'>): string {
+    return item.name || `Quelldatei ${item.id.slice(0, 8)}`;
+}
+
+export function hasLinkedDocument(item: Pick<OpenableSourceFileLike, 'linked_node_id'>): boolean {
+    return typeof item.linked_node_id === 'string' && item.linked_node_id.trim().length > 0;
+}
+
+export function getSourceFileSecondaryLabel(item: Pick<OpenableSourceFileLike, 'linked_status' | 'linked_node_id'>): string {
+    if (hasLinkedDocument(item)) {
+        return 'Mit Dokument verknuepft';
+    }
+    if ((item.linked_status || '').toLowerCase() === 'document') {
+        return 'Als Dokument verknuepft';
+    }
+    return 'Originaldatei';
+}
+
+export function getSourceFileOpenActionLabel(item: Pick<OpenableSourceFileLike, 'linked_node_id'>): string {
+    return hasLinkedDocument(item) ? 'Dokument oeffnen' : 'Originaldatei oeffnen';
+}
+
 export function openDocumentNode(
     item: OpenableNodeLike,
     openPane: OpenPaneFn,
@@ -132,4 +172,30 @@ export async function openSourceFileForNode(item: Pick<OpenableNodeLike, 'metada
     if (!fileId) return false;
     await downloadCompanyFile(fileId, getNodeSourceFileName(item));
     return true;
+}
+
+export async function openSourceFileLike(
+    item: OpenableSourceFileLike,
+    openPane: OpenPaneFn,
+    options?: OpenSourceFileOptions,
+): Promise<{ mode: 'document' | 'download' }> {
+    if (hasLinkedDocument(item)) {
+        openPane({
+            id: options?.paneId || `doc-${item.linked_node_id}`,
+            type: 'document',
+            title: options?.title || getSourceFileDisplayName(item),
+            size: { width: 960, height: 720 },
+            data: {
+                nodeId: item.linked_node_id,
+                name: options?.title || getSourceFileDisplayName(item),
+                folderId: options?.folderId ?? item.linked_folder_id ?? undefined,
+                companyId: options?.companyId,
+                ...(options?.navigationContext ? { navigationContext: options.navigationContext } : {}),
+            },
+        });
+        return { mode: 'document' };
+    }
+
+    await downloadCompanyFile(item.id, getSourceFileDisplayName(item));
+    return { mode: 'download' };
 }

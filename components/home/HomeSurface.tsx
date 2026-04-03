@@ -10,7 +10,7 @@ import type { CoreNode } from '@/lib/types/core';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
-import { downloadCompanyFile } from '@/lib/api/filesClient';
+import { openSourceFileLike } from '@/lib/utils/contentOpen';
 
 interface KairosEvent {
     id: string;
@@ -254,19 +254,11 @@ export const HomeSurface: React.FC = () => {
             return;
         }
 
-        const linkedNodeId = (personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId;
-        if (linkedNodeId) {
-            openPane({
-                id: `doc-${linkedNodeId}`,
-                type: 'document',
-                title: personalLatestItem.label,
-                size: { width: 960, height: 720 },
-                data: { nodeId: linkedNodeId },
-            });
-            return;
-        }
-
-        void downloadCompanyFile(personalLatestItem.id, personalLatestItem.label);
+        void openSourceFileLike({
+            id: personalLatestItem.id,
+            name: personalLatestItem.label,
+            linked_node_id: (personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId,
+        }, openPane);
     }, [openMeineDateien, openPane, personalLatestItem]);
 
     const myContentCountsLabel = useMemo(() => {
