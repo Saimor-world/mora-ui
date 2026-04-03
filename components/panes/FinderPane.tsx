@@ -1541,6 +1541,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const filteredFiles = filteredContent.files;
     const filteredFolders = filteredContent.folders;
+    const selectedEntry = useMemo(() => {
+        if (!selectedNodeId) return null;
+        const selectedFolder = filteredFolders.find((folder) => folder.id === selectedNodeId);
+        if (selectedFolder) return { kind: 'folder' as const, item: selectedFolder };
+        const selectedFile = filteredFiles.find((file) => file.id === selectedNodeId);
+        if (selectedFile) return { kind: 'file' as const, item: selectedFile };
+        return null;
+    }, [filteredFiles, filteredFolders, selectedNodeId]);
 
     // Get current level type for UI hints
     const currentLevelType = useMemo(() => {
@@ -1586,6 +1594,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             default:
                 return type || 'Container';
         }
+    };
+
+    const getContextOpenLabel = (item: any, type: 'folder' | 'file' | 'background') => {
+        if (type === 'background') return 'Oeffnen';
+        if (type === 'folder' || ['folder', 'space', 'department'].includes(item?.type)) {
+            if (item?.type === 'department') return 'Bereich oeffnen';
+            if (item?.type === 'space') return 'Bereich oeffnen';
+            return 'Ordner oeffnen';
+        }
+        return getNodeOpenActionLabel(item);
     };
 
     if (!pane) return null;
@@ -1891,6 +1909,61 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 <AlertCircle size={11} />
                                 <span>{contextHint}</span>
                             </div>
+                        </div>
+                    )}
+
+                    {selectedEntry && (
+                        <div className="px-3 md:px-6 pb-3">
+                            <CommandReceipt
+                                tone={selectedEntry.kind === 'folder' ? 'cyan' : 'emerald'}
+                                icon={selectedEntry.kind === 'folder' ? FolderIcon : (TYPE_ICONS[selectedEntry.item.type] || FileText)}
+                                label={selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}
+                                title={selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
+                                body={selectedEntry.kind === 'folder'
+                                    ? `Kontext: ${currentPathLabel}. Ein weiterer Klick oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'}.`
+                                    : `${getNodeOpenActionLabel(selectedEntry.item)}. ${getContentSecondaryLabel(selectedEntry.item) ? `Zusatz: ${getContentSecondaryLabel(selectedEntry.item)}.` : 'Kein Zusatzkontext.'}`}
+                                chips={[
+                                    ...(selectedEntry.item?.foundIn ? [{ label: `Gefunden in: ${selectedEntry.item.foundIn}` }] : []),
+                                    ...(selectedEntry.kind === 'file' && selectedEntry.item?.created_at ? [{ label: new Date(selectedEntry.item.created_at).toLocaleDateString() }] : []),
+                                    ...(selectedEntry.kind === 'file' && selectedEntry.item?.metadata?.size ? [{ label: `${(selectedEntry.item.metadata.size / 1024).toFixed(0)} KB` }] : []),
+                                ]}
+                                actions={(
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (selectedEntry.kind === 'folder') {
+                                                    navigateToFolder(selectedEntry.item.id);
+                                                } else {
+                                                    openFinderNode(selectedEntry.item);
+                                                }
+                                            }}
+                                            className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
+                                        >
+                                            <ExternalLink size={13} />
+                                            {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getNodeOpenActionLabel(selectedEntry.item)}
+                                        </button>
+                                        {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleOpenSourceFile(selectedEntry.item)}
+                                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
+                                            >
+                                                <Paperclip size={13} />
+                                                Originaldatei oeffnen
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedNodeId(null)}
+                                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/75 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                        >
+                                            Auswahl aufheben
+                                        </button>
+                                    </div>
+                                )}
+                                footer="Ein Klick markiert. Ein zweiter Klick auf Ordner navigiert weiter. Doppelklick auf Inhalte oeffnet direkt."
+                            />
                         </div>
                     )}
 
@@ -2510,7 +2583,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         {contextMenu.item.name || contextMenu.item.title || 'Item'}
                                     </div>
                                     <button onClick={handleOpen} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
-                                        <ExternalLink size={14} /> {getNodeOpenActionLabel(contextMenu.item)}
+                                        <ExternalLink size={14} /> {getContextOpenLabel(contextMenu.item, contextMenu.type)}
                                     </button>
                                     {contextMenu.type === 'file' && canOpenSourceFile(contextMenu.item) && (
                                         <button
@@ -2520,7 +2593,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             }}
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
-                                            <Paperclip size={14} /> Quelldatei oeffnen
+                                            <Paperclip size={14} /> Originaldatei oeffnen
                                         </button>
                                     )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
@@ -2606,13 +2679,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         onClick={() => { setIsCreateFolderOpen(false); setNewFolderName(''); }}
                                         className="flex-1 py-2 rounded-lg border border-white/10 text-white/60 hover:bg-white/5"
                                     >
-                                        Cancel
+                                        Abbrechen
                                     </button>
                                     <button
                                         type="submit"
                                         className="flex-1 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30"
                                     >
-                                        Create
+                                        Erstellen
                                     </button>
                                 </div>
                             </form>
