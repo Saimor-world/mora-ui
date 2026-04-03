@@ -92,10 +92,10 @@ export function isExternalLinkNode(item: Pick<OpenableNodeLike, 'type' | 'url'>)
 
 export function getContentSecondaryLabel(item: Pick<OpenableNodeLike, 'type' | 'url' | 'metadata'>): string | null {
     if (isExternalLinkNode(item)) {
-        return 'Browser-Link';
+        return 'Im Browser';
     }
     if (hasLinkedSourceFile(item)) {
-        return 'Mit Quelldatei';
+        return 'Mit Originaldatei';
     }
     return null;
 }
@@ -104,7 +104,7 @@ export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'ur
     if (isExternalLinkNode(item)) {
         return 'Im Browser oeffnen';
     }
-    return 'Dokument oeffnen';
+    return 'Arbeitsdokument oeffnen';
 }
 
 export function getSourceFileDisplayName(item: Pick<OpenableSourceFileLike, 'name' | 'id'>): string {
@@ -117,16 +117,16 @@ export function hasLinkedDocument(item: Pick<OpenableSourceFileLike, 'linked_nod
 
 export function getSourceFileSecondaryLabel(item: Pick<OpenableSourceFileLike, 'linked_status' | 'linked_node_id'>): string {
     if (hasLinkedDocument(item)) {
-        return 'Mit Dokument verknuepft';
+        return 'Mit Arbeitsdokument verknuepft';
     }
     if ((item.linked_status || '').toLowerCase() === 'document') {
-        return 'Als Dokument verknuepft';
+        return 'Als Arbeitsdokument verknuepft';
     }
     return 'Originaldatei';
 }
 
 export function getSourceFileOpenActionLabel(item: Pick<OpenableSourceFileLike, 'linked_node_id'>): string {
-    return hasLinkedDocument(item) ? 'Dokument oeffnen' : 'Originaldatei oeffnen';
+    return hasLinkedDocument(item) ? 'Arbeitsdokument oeffnen' : 'Datei oeffnen';
 }
 
 export function openDocumentNode(

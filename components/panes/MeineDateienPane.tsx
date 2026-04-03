@@ -121,11 +121,11 @@ export const MeineDateienPane: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
                         {counts.total != null && <span>{counts.total} Eintraege gesamt</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.nodes != null && <span>{counts.nodes} bearbeitbare Inhalte</span>}
-                        {counts.files != null && <span>{counts.files} Quelldateien</span>}
+                        {counts.nodes != null && <span>{counts.nodes} Arbeitsdokumente</span>}
+                        {counts.files != null && <span>{counts.files} Originaldateien</span>}
                     </div>
                     <div className="mt-1 text-[10px] text-white/20">
-                        Derselbe Content-Kern wie im Finder: Ordner strukturieren, Dokumente sind bearbeitbar, Quelldateien bleiben als Originale erhalten.
+                        Wenn Mora aus einer hochgeladenen Datei ein Arbeitsdokument erzeugt, bleibt die Originaldatei als Quelle erhalten. Beide gehoeren zum selben Inhaltssystem.
                     </div>
                 </div>
             )}
@@ -160,9 +160,9 @@ export const MeineDateienPane: React.FC = () => {
             )}
 
             {nodes.length > 0 && (
-                <section aria-label="Bearbeitbare Inhalte">
+                <section aria-label="Arbeitsdokumente">
                     <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Bearbeitbare Inhalte
+                        Arbeitsdokumente
                     </div>
                     {nodes.map((node) => {
                         const label = getContentDisplayName(node);
@@ -213,9 +213,9 @@ export const MeineDateienPane: React.FC = () => {
             )}
 
             {files.length > 0 && (
-                <section aria-label="Quelldateien und Anhaenge">
+                <section aria-label="Originaldateien und Anhaenge">
                     <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Quelldateien und Anhaenge
+                        Originaldateien und Anhaenge
                     </div>
                     {files.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };

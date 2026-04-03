@@ -77,7 +77,7 @@ export function getSearchResultTypeLabel(type: OpenableSearchResult['type']): st
         case 'folder':
             return 'Ordner';
         case 'file':
-            return 'Quelldatei';
+            return 'Originaldatei';
         case 'node':
             return 'Inhalt';
         default:
@@ -354,7 +354,7 @@ export function getSearchResultSubtitle(result: Pick<OpenableSearchResult, 'path
         case 'folder':
             return 'Ordner';
         case 'file':
-            return 'Quelldatei';
+            return 'Originaldatei';
         case 'node':
             return 'Inhalt';
         default:

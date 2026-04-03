@@ -264,18 +264,18 @@ export const HomeSurface: React.FC = () => {
     const myContentCountsLabel = useMemo(() => {
         if (!myContent?.counts) return null;
         return [
-            myContent.counts.nodes != null && formatCountLabel(myContent.counts.nodes, 'bearbeitbarer Inhalt', 'bearbeitbare Inhalte'),
+            myContent.counts.nodes != null && formatCountLabel(myContent.counts.nodes, 'Arbeitsdokument', 'Arbeitsdokumente'),
             myContent.counts.folders != null && formatCountLabel(myContent.counts.folders, 'Ordner'),
-            myContent.counts.files != null && formatCountLabel(myContent.counts.files, 'Quelldatei', 'Quelldateien'),
+            myContent.counts.files != null && formatCountLabel(myContent.counts.files, 'Originaldatei', 'Originaldateien'),
         ].filter(Boolean).join(' · ');
     }, [myContent]);
 
     const personalLatestLabel = personalLatestItem?.label ?? null;
     const personalLatestKindLabel = personalLatestItem
         ? personalLatestItem.kind === 'node'
-            ? 'Dokument'
+            ? 'Arbeitsdokument'
             : personalLatestItem.kind === 'file'
-                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Dokument mit Quelle' : 'Quelldatei')
+                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Arbeitsdokument mit Original' : 'Originaldatei')
                 : 'Ordner'
         : null;
 
@@ -411,7 +411,7 @@ export const HomeSurface: React.FC = () => {
                             Persönlicher Bereich
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner, bearbeitbare Inhalte und hochgeladene Quelldateien aus deinem privaten Kontext.
+                            Eigene Ordner, Arbeitsdokumente und hochgeladene Originaldateien aus deinem privaten Kontext.
                         </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
@@ -428,7 +428,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Quelldateien bleiben als Original erhalten. Mora kann sie einordnen und mit Dokumenten verknuepfen, ohne das Original zu verlieren.
+                                        Wenn Mora aus einer hochgeladenen Datei ein Arbeitsdokument macht, bleibt das Original als Quelle erhalten und bleibt weiterhin direkt oeffnbar.
                                     </div>
                                 </div>
                             </button>

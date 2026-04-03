@@ -398,7 +398,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                                     </button>
                                 ) : null
                             )}
-                            footer="Dieses Dokument bleibt mit seinem Ursprung verknuepft. Mora zeigt nur die Herkunft, die der Kontext wirklich geliefert hat."
+                            footer="Dieses Arbeitsdokument bleibt mit seinem Ursprung verknuepft. Mora zeigt nur die Herkunft, die der Kontext wirklich geliefert hat."
                         />
                     </div>
                 )}
@@ -419,10 +419,10 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                             {fileExtension || type || 'doc'}
                         </span>
                         {sourceFileId && (
-                            <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">
-                                Mit Original
-                            </span>
-                        )}
+                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">
+                                    Mit Original
+                                </span>
+                            )}
                     </div>
                     <div className="flex items-center gap-2">
                         {!isPDF && !isImage && !isVideo && content && (
