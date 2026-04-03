@@ -71,14 +71,15 @@ export function toOpenableSearchResult(candidate: {
 export function getSearchResultTypeLabel(type: OpenableSearchResult['type']): string {
     switch (type) {
         case 'department':
-            return 'Bereich';
+            return 'Abteilung';
         case 'space':
-            return 'Space';
+            return 'Bereich';
         case 'folder':
             return 'Ordner';
         case 'file':
+            return 'Quelldatei';
         case 'node':
-            return 'Datei';
+            return 'Inhalt';
         default:
             return 'Treffer';
     }
@@ -347,14 +348,15 @@ export function getSearchResultSubtitle(result: Pick<OpenableSearchResult, 'path
     if (fallbackPreview) return fallbackPreview;
     switch (result.type) {
         case 'department':
-            return 'Bereich';
+            return 'Abteilung';
         case 'space':
-            return 'Space';
+            return 'Bereich';
         case 'folder':
             return 'Ordner';
         case 'file':
+            return 'Quelldatei';
         case 'node':
-            return 'Datei';
+            return 'Inhalt';
         default:
             return 'Treffer';
     }

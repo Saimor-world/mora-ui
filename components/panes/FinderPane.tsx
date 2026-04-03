@@ -431,7 +431,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (itemType === 'space') {
             const spaceId = item.id ?? resolvedSpaceId;
             if (!spaceId) {
-                toast.error('Space konnte nicht im Universe geoeffnet werden');
+                toast.error('Bereich konnte nicht im Universe geoeffnet werden');
                 setContextMenu(null);
                 return;
             }
@@ -440,7 +440,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setActiveFolder(null);
             setViewLevel('space');
             void loadFoldersForSpace(spaceId);
-            toast.success('Space im Universe geoeffnet');
+            toast.success('Bereich im Universe geoeffnet');
             setContextMenu(null);
             return;
         }
@@ -1580,7 +1580,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             case 'department':
                 return 'Bereich';
             case 'space':
-                return 'Space';
+                return 'Bereich';
             case 'folder':
                 return 'Ordner';
             default:
@@ -1987,7 +1987,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold tracking-tighter border border-emerald-500/20 uppercase">Bereich</span>
                                                             )}
                                                             {folder.type === 'space' && (
-                                                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-bold tracking-tighter border border-cyan-500/20 uppercase">Space</span>
+                                                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-bold tracking-tighter border border-cyan-500/20 uppercase">Bereich</span>
                                                             )}
                                                         </div>
                                                         <div className="space-y-1">
@@ -2258,7 +2258,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                                                        <span>Space</span>
+                                                        <span>Bereich</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-2 h-2 rounded-full bg-blue-400" />
