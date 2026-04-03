@@ -68,10 +68,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Demo starten oder mit Zugangsdaten weiter'
+        ? 'Simple Coffee Group erkunden oder mit Zugangsdaten weiter'
         : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Eigene Instanz vorbereiten'
+        ? 'Private Instanz ausserhalb der Demo vorbereiten'
         : 'Neue Organisation einrichten';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
@@ -919,7 +919,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <UserPlus className="w-5 h-5 text-mora-gold group-hover:text-mora-gold/90 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Account Erstellen</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
+                                            {surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : 'Account Erstellen'}
+                                        </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">{registerSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
@@ -940,7 +942,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Simple Coffee Group oeffnen</div>
-                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Mit echter Struktur, Signalen und Finder starten</div>
+                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Kuratierten Demo-Flow mit echter Struktur, Signalen und Finder starten</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
@@ -1048,7 +1050,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                 <div className="relative z-10">
                                     <h2 className="text-2xl font-extralight tracking-[0.2em] text-emerald-50 mb-8 text-center uppercase drop-shadow-[0_0_15px_rgba(206,182,118,0.2)]">
-                                        Account Erstellen
+                                        {surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : 'Account Erstellen'}
                                     </h2>
 
                                     <div className="space-y-4">

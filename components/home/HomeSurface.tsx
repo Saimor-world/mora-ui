@@ -11,6 +11,7 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { openSourceFileLike } from '@/lib/utils/contentOpen';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 interface KairosEvent {
     id: string;
@@ -57,6 +58,22 @@ function formatCountLabel(value: number, singular: string, plural?: string): str
     return `${value} ${value === 1 ? singular : resolvedPlural}`;
 }
 
+function normalizePrivateSpaceName(value?: string | null): string {
+    const next = (value || '').trim();
+    if (!next) return 'Privater Bereich';
+    const normalized = next.toLowerCase();
+    if (['my space', 'personal space', 'private space'].includes(normalized)) {
+        return 'Privater Bereich';
+    }
+    return next;
+}
+
+function isFreshSignal(timestamp: string, maxDays = 21): boolean {
+    const parsed = new Date(timestamp).getTime();
+    if (!Number.isFinite(parsed)) return false;
+    return Date.now() - parsed <= maxDays * 24 * 60 * 60 * 1000;
+}
+
 /**
  * HomeSurface - Day-start working surface for SAIMOR 1.0.
  *
@@ -77,6 +94,7 @@ export const HomeSurface: React.FC = () => {
     const setUser = useMoraStore((s) => s.setUser);
     const openPane = usePaneStore((s) => s.openPane);
     const logoutAccount = useAccountStore((s) => s.logout);
+    const surfaceProfile = useSurfaceProfile();
 
     const [recentDocs, setRecentDocs] = useState<CoreNode[] | null>(null);
     const [myContent, setMyContent] = useState<UserContentResponse | null | undefined>(undefined);
@@ -197,7 +215,7 @@ export const HomeSurface: React.FC = () => {
     })();
 
     const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const personalSpaceLabel = myContent?.space?.name || 'Persoenlicher Bereich';
+    const personalSpaceLabel = normalizePrivateSpaceName(myContent?.space?.name);
     const personalLatestItem = useMemo<PersonalLatestItem | null>(() => {
         if (!myContent) return null;
 
@@ -261,14 +279,24 @@ export const HomeSurface: React.FC = () => {
         }, openPane);
     }, [openMeineDateien, openPane, personalLatestItem]);
 
-    const myContentCountsLabel = useMemo(() => {
-        if (!myContent?.counts) return null;
+    const contentSummaryBadges = useMemo(() => {
+        if (!myContent?.counts) return [];
         return [
-            myContent.counts.nodes != null && formatCountLabel(myContent.counts.nodes, 'Arbeitsdokument', 'Arbeitsdokumente'),
-            myContent.counts.folders != null && formatCountLabel(myContent.counts.folders, 'Ordner'),
-            myContent.counts.files != null && formatCountLabel(myContent.counts.files, 'Originaldatei', 'Originaldateien'),
-        ].filter(Boolean).join(' · ');
+            myContent.counts.nodes != null ? { id: 'nodes', label: 'Arbeitsdokumente', value: myContent.counts.nodes } : null,
+            myContent.counts.folders != null ? { id: 'folders', label: 'Ordner', value: myContent.counts.folders } : null,
+            myContent.counts.files != null ? { id: 'files', label: 'Originaldateien', value: myContent.counts.files } : null,
+        ].filter(Boolean) as Array<{ id: string; label: string; value: number }>;
     }, [myContent]);
+
+    const freshKairosEvents = useMemo(() => {
+        if (!kairosEvents) return null;
+        return kairosEvents.filter((event) => isFreshSignal(event.timestamp));
+    }, [kairosEvents]);
+
+    const staleKairosCount = useMemo(() => {
+        if (!kairosEvents) return 0;
+        return kairosEvents.filter((event) => !isFreshSignal(event.timestamp)).length;
+    }, [kairosEvents]);
 
     const personalLatestLabel = personalLatestItem?.label ?? null;
     const personalLatestKindLabel = personalLatestItem
@@ -379,36 +407,49 @@ export const HomeSurface: React.FC = () => {
                     </section>
                 )}
 
-                {kairosEvents && kairosEvents.length > 0 && (
+                {kairosEvents !== null && (
                     <section data-testid="kairos-feed-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
                             Mora bemerkt
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Reale Signale aus dem Core. Aeltere Demo-Eintraege zeigen wir bewusst mit Datum statt mit kuenstlicher Frische.
+                            Reale Signale aus dem Core. Im Vordergrund zeigen wir nur frische Ereignisse; aeltere Eintraege bleiben bewusst im Hintergrund.
                         </p>
-                        <ul className="flex flex-col gap-1">
-                            {kairosEvents.map((evt) => (
-                                <li key={evt.id} className={`flex items-start gap-3 rounded-xl px-4 py-3 ${t.item}`}>
-                                    <Eye size={14} className={`mt-0.5 shrink-0 ${t.cardSub}`} />
-                                    <span className="flex-1 text-sm leading-snug">
-                                        {evt.payload.summary || (evt.payload.new_nodes != null
-                                            ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
-                                            : 'Operatives Signal in der Organisation')}
-                                    </span>
-                                    <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
-                                        {relativeTime(evt.timestamp)}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
+                        {freshKairosEvents && freshKairosEvents.length > 0 ? (
+                            <ul className="flex flex-col gap-1">
+                                {freshKairosEvents.map((evt) => (
+                                    <li key={evt.id} className={`flex items-start gap-3 rounded-xl px-4 py-3 ${t.item}`}>
+                                        <Eye size={14} className={`mt-0.5 shrink-0 ${t.cardSub}`} />
+                                        <span className="flex-1 text-sm leading-snug">
+                                            {evt.payload.summary || (evt.payload.new_nodes != null
+                                                ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
+                                                : 'Operatives Signal in der Organisation')}
+                                        </span>
+                                        <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
+                                            {relativeTime(evt.timestamp)}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className={`rounded-2xl border px-4 py-4 text-sm ${t.card} ${t.cardText}`}>
+                                <div className="font-medium">Derzeit keine frischen Awareness-Signale.</div>
+                                <div className={`mt-1 text-xs ${t.cardSub}`}>
+                                    {staleKairosCount > 0
+                                        ? `${staleKairosCount} aeltere Ereignisse bleiben im Verlauf, werden hier aber nicht kuenstlich als aktuell dargestellt.`
+                                        : surfaceProfile.isPublicDemoSurface
+                                            ? 'Die Demo zeigt gerade keine neuen operativen Signale im Vordergrund.'
+                                            : 'Sobald neue Ereignisse eintreffen, erscheinen sie hier automatisch.'}
+                                </div>
+                            </div>
+                        )}
                     </section>
                 )}
 
                 {myContent && (
                     <section data-testid="personal-area-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Persönlicher Bereich
+                            Privater Bereich
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
                             Eigene Ordner, Arbeitsdokumente und hochgeladene Originaldateien aus deinem privaten Kontext.
@@ -422,9 +463,16 @@ export const HomeSurface: React.FC = () => {
                                 <FolderHeart size={20} className={t.qaIcon} />
                                 <div className="min-w-0 flex-1">
                                     <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
-                                    {myContentCountsLabel && (
-                                        <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
-                                            {myContentCountsLabel}
+                                    {contentSummaryBadges.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {contentSummaryBadges.map((badge) => (
+                                                <span
+                                                    key={badge.id}
+                                                    className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-white/55"
+                                                >
+                                                    {badge.value} {badge.label}
+                                                </span>
+                                            ))}
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
@@ -440,7 +488,7 @@ export const HomeSurface: React.FC = () => {
                             >
                                 <div className="flex items-center justify-between gap-3">
                                     <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                        Persoenlicher Bereich
+                                        Privater Bereich
                                     </div>
                                     {personalLatestKindLabel && (
                                         <span className={`text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>

@@ -119,7 +119,7 @@ export const MeineDateienPane: React.FC = () => {
             {counts && (
                 <div className="mb-1 border-b border-white/5 px-4 py-2">
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
-                        {counts.total != null && <span>{counts.total} Eintraege gesamt</span>}
+                        {counts.total != null && <span>{counts.total} Einträge insgesamt</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
                         {counts.nodes != null && <span>{counts.nodes} Arbeitsdokumente</span>}
                         {counts.files != null && <span>{counts.files} Originaldateien</span>}
@@ -213,9 +213,9 @@ export const MeineDateienPane: React.FC = () => {
             )}
 
             {files.length > 0 && (
-                <section aria-label="Originaldateien und Anhaenge">
+                <section aria-label="Originaldateien und Anhänge">
                     <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Originaldateien und Anhaenge
+                        Originaldateien und Anhänge
                     </div>
                     {files.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };
