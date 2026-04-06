@@ -10,11 +10,17 @@ export interface FilePreview {
 export interface CompanyFileRecord {
     id: string;
     company_id: string;
+    folder_id?: string | null;
     filename: string;
     mime?: string | null;
     size: number;
     sha256: string;
     uploader_user_id?: string | null;
+    owner_user_id?: string | null;
+    visibility_scope?: string | null;
+    linked_node_id?: string | null;
+    linked_folder_id?: string | null;
+    linked_status?: 'document' | 'standalone' | string | null;
     created_at: string;
 }
 
@@ -144,7 +150,8 @@ export const listCompanyFiles = async (companyId: string): Promise<CompanyFileRe
 export const uploadCompanyFile = async (
     file: File,
     companyId: string,
-    visibility: 'public' | 'private' = 'private'
+    visibility: 'public' | 'private' = 'private',
+    folderId?: string
 ): Promise<CompanyFileRecord> => {
     const token = getAuthToken();
 
@@ -158,6 +165,9 @@ export const uploadCompanyFile = async (
     formData.append('file', file);
     formData.append('company_id', companyId);
     formData.append('visibility', visibility);
+    if (folderId) {
+        formData.append('folder_id', folderId);
+    }
 
     // CRITICAL: We do NOT set Content-Type header. 
     // Browser must set it with the correct boundary for multipart/form-data.

@@ -47,6 +47,8 @@ export function getContentDisplayName(item: Pick<OpenableNodeLike, 'name' | 'tit
 
 export function getContentTypeLabel(type?: string | null): string {
     switch ((type || '').toLowerCase()) {
+        case 'file':
+            return 'Datei';
         case 'document':
             return 'Dokument';
         case 'note':
@@ -101,6 +103,9 @@ export function getContentSecondaryLabel(item: Pick<OpenableNodeLike, 'type' | '
 }
 
 export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'url'>): string {
+    if ((item.type || '').toLowerCase() === 'file') {
+        return 'Datei oeffnen';
+    }
     if (isExternalLinkNode(item)) {
         return 'Im Browser oeffnen';
     }

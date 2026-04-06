@@ -6,7 +6,7 @@ import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
-import { setThinking, setFocus, setIdle } from '@/lib/mora/awarenessController';
+import { setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
 import type { CoreTreeNode } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
@@ -14,12 +14,11 @@ import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
 import {
     uploadCompanyFile,
-    requestCreateNodeFromFile,
-    confirmCreateNodeFromFile,
+    listCompanyFiles,
     rejectCreateNodeFromFile,
     getFileNode,
     downloadCompanyFile,
-    type FileCreateNodeResponse,
+    type CompanyFileRecord,
     type FileIntakeDestination,
     type FileIntakeNext,
     type FileIntakeRouteCandidate,
@@ -29,7 +28,7 @@ import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { realtime } from '@/lib/api/realtimeClient';
 import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
-import { dispatchMyceliumBatchComplete, dispatchMyceliumReviewReady } from '@/lib/utils/moraExplanation';
+import { dispatchMyceliumBatchComplete } from '@/lib/utils/moraExplanation';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import {
     getContentDisplayName,
@@ -37,7 +36,10 @@ import {
     getContentTypeLabel,
     getNodeOpenActionLabel,
     getNodeSourceFileId,
+    getSourceFileOpenActionLabel,
+    getSourceFileSecondaryLabel,
     openNodeLike,
+    openSourceFileLike,
 } from '@/lib/utils/contentOpen';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -183,7 +185,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         loadTree,
         isLoadingTree,
         addFolder,
-        user,  // For autoExecuteActions setting
         loadedNodes,
         loadChildren,
         updateNode, deleteNode, updateFolder, deleteFolder, updateSpace, deleteSpace, addNode
@@ -210,6 +211,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const [files, setFiles] = useState<any[]>([]);
     const [folders, setFolders] = useState<any[]>([]);
+    const [companyFiles, setCompanyFiles] = useState<CompanyFileRecord[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showUpload, setShowUpload] = useState(autoShowUpload || false);
     const [isUploading, setIsUploading] = useState(false);
@@ -235,6 +237,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const handleRename = async () => {
         if (!contextMenu?.item) return;
+        if (contextMenu.item.type === 'file') {
+            toast.info('Dateien koennen hier noch nicht umbenannt werden');
+            setContextMenu(null);
+            return;
+        }
         const newName = prompt("Umbenennen:", contextMenu.item.name || contextMenu.item.title);
         if (!newName) return;
         try {
@@ -253,6 +260,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const handleDelete = async () => {
         if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
+        if (contextMenu.item.type === 'file') {
+            toast.info('Dateien koennen hier noch nicht geloescht werden');
+            setContextMenu(null);
+            return;
+        }
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
                 if (contextMenu.item.type === 'space') await deleteSpace(contextMenu.item.id);
@@ -266,7 +278,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setContextMenu(null);
     };
 
-    const canOpenSourceFile = useCallback((item: any) => Boolean(getNodeSourceFileId(item)), []);
+    const canOpenSourceFile = useCallback((item: any) => item?.type !== 'file' && Boolean(getNodeSourceFileId(item)), []);
 
     const handleOpenSourceFile = useCallback(async (item: any) => {
         const fileId = getNodeSourceFileId(item);
@@ -282,6 +294,27 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, []);
 
     const openFinderNode = useCallback((item: any) => {
+        if (item?.type === 'file') {
+            void openSourceFileLike(item, openPane, {
+                paneId: item.linked_node_id ? `doc-${item.linked_node_id}` : undefined,
+                title: item.name || item.title || 'Datei',
+                folderId: item.folder_id ?? undefined,
+                companyId: activeCompanyId ?? paneCompanyId ?? item?.company_id ?? undefined,
+                navigationContext: navigationContext ? {
+                    title: navigationContext.title,
+                    message: navigationContext.message,
+                    label: navigationContext.label,
+                    path: navigationContext.path,
+                    source: navigationContext.source,
+                    folderId: item.folder_id ?? undefined,
+                    timestamp: Date.now(),
+                } satisfies DocumentNavigationContext : undefined,
+            }).catch((error: any) => {
+                toast.error(error?.message || 'Datei konnte nicht geoeffnet werden');
+            });
+            return;
+        }
+
         const resolvedFolderId = currentFolderIdRef.current ?? item?.folder_id ?? undefined;
         const result = openNodeLike(item, openPane, {
             paneId: `doc-${item.id}`,
@@ -737,27 +770,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         ].filter(Boolean).join(' > ') || intake?.suggested_location || currentPathLabel || 'Ziel nicht erkannt';
     }, [currentPathLabel]);
 
-    const surfaceFinderReview = useCallback((action: PendingAction) => {
-        dispatchMyceliumReviewReady({
-            phase: 'review',
-            companyId: resolvedCompanyId || undefined,
-            total: 1,
-            pending: 1,
-            routes: [
-                {
-                    path: buildRoutePath(action.intake_context),
-                    folderId: action.confirm_payload?.folder_id,
-                    count: 1,
-                }
-            ],
-            primaryFile: {
-                name: action.params?.filename,
-                folderId: action.confirm_payload?.folder_id,
-                routeExplanation: action.intake_context?.route_explanation,
-            },
-        });
-    }, [buildRoutePath, resolvedCompanyId]);
-
     const surfaceFinderCompletion = useCallback((args: {
         fileName?: string;
         intakeContext?: IntakeContext;
@@ -871,12 +883,33 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return undefined;
     }, [currentFolderId, findNodeInTree, rawTree, startFolderId]);
 
+    const toFinderFileItem = useCallback((file: CompanyFileRecord) => ({
+        id: file.id,
+        type: 'file',
+        name: file.filename,
+        title: file.filename,
+        company_id: file.company_id,
+        folder_id: file.folder_id ?? undefined,
+        linked_node_id: file.linked_node_id ?? undefined,
+        linked_folder_id: file.linked_folder_id ?? undefined,
+        linked_status: file.linked_status ?? undefined,
+        visibility_scope: file.visibility_scope ?? undefined,
+        created_at: file.created_at,
+        mime: file.mime,
+        size: file.size,
+        metadata: {
+            size: file.size,
+            mime: file.mime,
+        },
+    }), []);
+
     // Recursively extract content for current view
     const getCurrentContent = useCallback(() => {
         // Fallback structures from store
         const flatSpaces = spacesByDepartment || {};
         const flatFolders = foldersBySpace || {};
         const flatNodes = nodesByFolder || {};
+        const standaloneCompanyFiles = companyFiles.filter((file) => !file.linked_node_id);
 
         // 0. SEARCH / GLOBAL VIEW
         if (globalSearch || searchQuery) {
@@ -916,6 +949,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 });
             }
 
+            standaloneCompanyFiles.forEach((file) => {
+                const name = file.filename || '';
+                if (globalSearch || name.toLowerCase().includes(q)) {
+                    results.files.push(toFinderFileItem(file));
+                }
+            });
+
             return results;
         }
 
@@ -941,7 +981,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             // STRICT MERGE: Tree items + Departments list
             const uniqueItems = mergeUnique(items, depts);
 
-            return { folders: uniqueItems.slice(0, 25), files: [] };
+            return {
+                folders: uniqueItems.slice(0, 25),
+                files: standaloneCompanyFiles
+                    .filter((file) => !file.folder_id)
+                    .map(toFinderFileItem),
+            };
         }
 
         // 2. DRILLED DOWN VIEW vs DEEP VIEW
@@ -950,8 +995,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             const allNodes = useMoraStore.getState().nodesByCompany[resolvedCompanyId] || [];
             return {
                 folders: [],
-                files: allNodes.filter(n => !['folder', 'space', 'department'].includes(n.type))
-                    .map(n => ({ ...n, name: n.title || n.name }))
+                files: [
+                    ...allNodes.filter(n => !['folder', 'space', 'department'].includes(n.type))
+                        .map(n => ({ ...n, name: n.title || n.name })),
+                    ...standaloneCompanyFiles.map(toFinderFileItem),
+                ]
             };
         }
 
@@ -987,6 +1035,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             nodes.forEach(n => files.push({ ...n, name: n.title || n.name }));
         }
 
+        standaloneCompanyFiles
+            .filter((file) => file.folder_id === currentFolderId)
+            .forEach((file) => files.push(toFinderFileItem(file)));
+
         // Deduplicate final results by ID
         const folderMap = new Map();
         folders.forEach(f => { if (f?.id) folderMap.set(f.id, f); });
@@ -997,7 +1049,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             folders: Array.from(folderMap.values()),
             files: Array.from(fileMap.values())
         };
-    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery]);
+    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem]);
 
     // Effect to update breadcrumbs only when necessary
     useEffect(() => {
@@ -1146,6 +1198,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             if (!shouldReuseTree) {
                 await loadTree(undefined, resolvedCompanyId || undefined);
             }
+            if (resolvedCompanyId) {
+                const filesPayload = await listCompanyFiles(resolvedCompanyId);
+                setCompanyFiles(filesPayload);
+            } else {
+                setCompanyFiles([]);
+            }
         } catch (e) {
             console.error("Tree load failed", e);
         }
@@ -1246,7 +1304,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setIsUploading(true);
         setUploadProgress({ current: 0, total: fileList.length, filename: fileList[0]?.name || 'file' });
 
-        // P6: Orb reacts - thinking (lila) waehrend Upload/Analyse
+        // P6: Orb reacts - thinking (lila) waehrend Upload
         setThinking();
 
         // P6: Timeline event - intake started (P2-Pattern)
@@ -1255,7 +1313,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 type: 'proposal',
                 status: 'started',
                 intent: 'intake',
-                message: `${fileList[0]?.name || 'Datei'} wird analysiert...`
+                message: `${fileList[0]?.name || 'Datei'} wird gespeichert...`
             }
         }));
 
@@ -1269,124 +1327,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 const file = fileList[i];
                 setUploadProgress({ current: i + 1, total: fileList.length, filename: file.name });
                 try {
-                    const uploaded = await uploadCompanyFile(file, resolvedCompanyId);
+                    const uploaded = await uploadCompanyFile(file, resolvedCompanyId, 'private', targetFolderId);
                     successCount++;
-
-                    // P6: Data Sovereignty - respect user's auto-execute preference
-                    const autoExecute = user?.settings?.autoExecuteActions ?? true;
-                    const response: FileCreateNodeResponse = await requestCreateNodeFromFile(uploaded.id, {
-                        autoExecute,
-                        folderId: targetFolderId
-                    });
-                    const routeDecision = (response as any)?.route_decision;
-                    if (response?.status === 'pending_confirmation') {
-                        if (!response.confirmation_token) {
-                            throw new Error('Confirmation token missing for pending intake action.');
-                        }
-                        hasPendingConfirmation = true;
-                        // P6: Orb switches to focus (blau) - waiting for user
-                        setFocus();
-
-                        // P6: Timeline event - ready for confirmation
-                        const intakeContext = response.intake_context;
-                        window.dispatchEvent(new CustomEvent('mora:agency-update', {
-                            detail: {
-                                type: 'proposal',
-                                status: 'complete',
-                                intent: 'intake',
-                                message: intakeContext?.business_summary || `${uploaded.filename} bereit zur Einordnung`
-                            }
-                        }));
-
-                        // We still use the ConfirmationCard for fine-tuning/policy reasons, but now it's clearly for the file we just dropped
-
-                        const nextPendingAction = {
-                            tool_name: response.tool_name || 'create_node_from_file',
-                            params: {
-                                file_id: uploaded.id,
-                                company_id: uploaded.company_id,
-                                filename: uploaded.filename
-                            },
-                            risk_level: response.risk_level || 'mutation',
-                            confirmation_token: response.confirmation_token,
-                            action_id: response.action_id || `file_${uploaded.id}`,
-                            file_id: uploaded.id,
-                            confirm_endpoint: `/v3/files/${uploaded.id}/confirm-node`,
-                            confirm_payload: {
-                                confirmation_token: response.confirmation_token,
-                                folder_id: response.route_suggestion?.target_folder_id || targetFolderId,
-                            },
-                            route_summary: response.route_summary,
-                            route_resolution: response.route_resolution,
-                            route_candidates: response.route_candidates,
-                            route_choice_headline: response.route_choice_headline,
-                            route_choice_reason: response.route_choice_reason,
-                            route_decision: routeDecision,
-                            next: response.next,
-                            destination: response.destination,
-                            // P6: Pass intake_context to ConfirmationCard
-                            intake_context: {
-                                ...response.intake_context,
-                                route_explanation: response.route_explanation,
-                            }
-                        };
-                        setPendingAction(nextPendingAction);
-                        surfaceFinderReview(nextPendingAction);
-                        break;
-                    }
-
-                    if (response?.status === 'executed') {
-                        window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
-
-                        // Prefer folder_id from API response (backend knows exact placement).
-                        // Fall back to pre-computed targetFolderId, then poll GET /node as last resort.
-                        let resolvedFolderId: string | undefined =
-                            response.folder_id || targetFolderId || undefined;
-                        let resolvedNodeId: string | undefined = response.node_id;
-
-                        if (!resolvedFolderId || !resolvedNodeId) {
-                            try {
-                                const nodeStatus = await getFileNode(uploaded.id);
-                                if (nodeStatus.status === 'linked') {
-                                    if (!resolvedFolderId && nodeStatus.folder_id) {
-                                        resolvedFolderId = nodeStatus.folder_id;
-                                    }
-                                    if (!resolvedNodeId && nodeStatus.node_id) {
-                                        resolvedNodeId = nodeStatus.node_id;
-                                    }
-                                }
-                            } catch {
-                                // best-effort -- silently ignore if endpoint unavailable
-                            }
-                        }
-
-                        if (resolvedFolderId) {
-                            const folderName = findNodeInTree(rawTree, resolvedFolderId)?.name || resolvedFolderId;
-                            // Load nodes FIRST so the store already has data
-                            // when navigateToFolder triggers the content-display effect.
-                            // This prevents the empty-flash (flicker) between old and new content.
-                            await loadNodesForFolder(resolvedFolderId);
-                            navigateToFolder(resolvedFolderId);
-                            // Override the generic end-of-loop toast with a precise one
-                            toast.success(`${file.name} -> ${folderName}`);
-                            successCount = 0; // suppress duplicate success toast below
-                        }
-
-                        surfaceFinderCompletion({
-                            fileName: uploaded.filename,
-                            intakeContext: {
-                                ...response.intake_context,
-                                route_explanation: response.route_explanation,
-                            },
-                            folderId: resolvedFolderId,
-                            nodeId: resolvedNodeId,
-                            result: response.result_summary || response.destination_summary,
-                            outcome: 'confirmed',
-                        });
-
-                        // P6: Auto-executed, return to idle
-                        setIdle();
-                    }
+                    window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                    setSelectedNodeId(uploaded.id);
                 } catch (e: any) {
                     const errMsg = e?.message || 'Upload fehlgeschlagen';
                     console.error(`Failed to upload ${file.name}:`, e);
@@ -1405,7 +1349,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 }
             }
             if (successCount > 0 && !hasPendingConfirmation) {
-                toast.success(`${successCount} Datei(en) nach ${targetFolderName} hochgeladen`);
+                toast.success(
+                    successCount === 1
+                        ? `Datei in ${targetFolderName} gespeichert`
+                        : `${successCount} Dateien in ${targetFolderName} gespeichert`
+                );
                 await loadContent();
             } else if (successCount === 0 && !hasPerFileError) {
                 // Only show generic error if no per-file error toast was already displayed
@@ -1418,8 +1366,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         } finally {
             setIsUploading(false);
             setUploadProgress(null);
+            if (!hasPendingConfirmation) {
+                setIdle();
+            }
         }
-    }, [loadContent, resolveUploadFolderId, resolvedCompanyId, user?.settings?.autoExecuteActions, findNodeInTree, rawTree, loadNodesForFolder, navigateToFolder, surfaceFinderCompletion, surfaceFinderReview]);
+    }, [findNodeInTree, loadContent, rawTree, resolveUploadFolderId, resolvedCompanyId]);
 
     // Integrated Drag & Drop Handlers
     const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -1574,6 +1525,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // Type Icons Mapping (same as SpacePane)
     const TYPE_ICONS: Record<string, any> = {
         document: FileText,
+        file: FileText,
         image: ImageIcon,
         link: LinkIcon,
         task: CheckSquare,
@@ -1602,6 +1554,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             if (item?.type === 'department') return 'Bereich oeffnen';
             if (item?.type === 'space') return 'Bereich oeffnen';
             return 'Ordner oeffnen';
+        }
+        if (item?.type === 'file') {
+            return getSourceFileOpenActionLabel(item);
         }
         return getNodeOpenActionLabel(item);
     };
@@ -1921,11 +1876,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 title={selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
                                 body={selectedEntry.kind === 'folder'
                                     ? `Kontext: ${currentPathLabel}. Ein weiterer Klick oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'}.`
-                                    : `${getNodeOpenActionLabel(selectedEntry.item)}. ${getContentSecondaryLabel(selectedEntry.item) ? `Zusatz: ${getContentSecondaryLabel(selectedEntry.item)}.` : 'Kein Zusatzkontext.'}`}
+                                    : `${getContextOpenLabel(selectedEntry.item, 'file')}. ${selectedEntry.item.type === 'file'
+                                        ? `Status: ${getSourceFileSecondaryLabel(selectedEntry.item)}.`
+                                        : (getContentSecondaryLabel(selectedEntry.item) ? `Zusatz: ${getContentSecondaryLabel(selectedEntry.item)}.` : 'Kein Zusatzkontext.')}`}
                                 chips={[
                                     ...(selectedEntry.item?.foundIn ? [{ label: `Gefunden in: ${selectedEntry.item.foundIn}` }] : []),
                                     ...(selectedEntry.kind === 'file' && selectedEntry.item?.created_at ? [{ label: new Date(selectedEntry.item.created_at).toLocaleDateString() }] : []),
-                                    ...(selectedEntry.kind === 'file' && selectedEntry.item?.metadata?.size ? [{ label: `${(selectedEntry.item.metadata.size / 1024).toFixed(0)} KB` }] : []),
+                                    ...(selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) ? [{ label: `${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB` }] : []),
                                 ]}
                                 actions={(
                                     <div className="flex flex-wrap items-center gap-2">
@@ -1941,7 +1898,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
                                         >
                                             <ExternalLink size={13} />
-                                            {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getNodeOpenActionLabel(selectedEntry.item)}
+                                            {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
                                         </button>
                                         {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
                                             <button
@@ -2086,7 +2043,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 const hasSourceFile = canOpenSourceFile(file);
                                                 const opensExternally = file.type === 'link' && typeof file.url === 'string' && file.url.trim().length > 0;
                                                 const displayName = getContentDisplayName(file);
-                                                const secondaryLabel = getContentSecondaryLabel(file);
+                                                const secondaryLabel = file.type === 'file'
+                                                    ? getSourceFileSecondaryLabel(file)
+                                                    : getContentSecondaryLabel(file);
 
                                                 return (
                                                     <motion.div
@@ -2386,7 +2345,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 const isResonant = resonanceIds.includes(file.id);
                                                 const Icon = TYPE_ICONS[file.type] || FileText;
                                                 const displayName = getContentDisplayName(file);
-                                                const secondaryLabel = getContentSecondaryLabel(file);
+                                                const secondaryLabel = file.type === 'file'
+                                                    ? getSourceFileSecondaryLabel(file)
+                                                    : getContentSecondaryLabel(file);
 
                                                 return (
                                                     <div
