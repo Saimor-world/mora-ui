@@ -1884,6 +1884,8 @@ export interface UserContentResponse {
         folders?: number;
         nodes?: number;
         files?: number;
+        standalone_files?: number;
+        linked_source_files?: number;
         total?: number;
     };
     /** Ownership metadata for this content surface. */

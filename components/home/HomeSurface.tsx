@@ -226,7 +226,7 @@ export const HomeSurface: React.FC = () => {
                 label: node.title || node.name || 'Unbenanntes Dokument',
                 timestamp: getComparableTimestamp(node.updated_at || node.created_at),
             })) : []),
-            ...(Array.isArray(myContent.files) ? myContent.files.map((file) => ({
+            ...(Array.isArray(myContent.files) ? myContent.files.filter((file) => !file.linked_node_id).map((file) => ({
                 kind: 'file' as const,
                 id: file.id,
                 label: file.name || 'Datei',
@@ -282,9 +282,9 @@ export const HomeSurface: React.FC = () => {
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
         return [
-            myContent.counts.nodes != null ? { id: 'nodes', label: 'Arbeitsdokumente', value: myContent.counts.nodes } : null,
+            myContent.counts.nodes != null ? { id: 'nodes', label: 'Dokumente', value: myContent.counts.nodes } : null,
             myContent.counts.folders != null ? { id: 'folders', label: 'Ordner', value: myContent.counts.folders } : null,
-            myContent.counts.files != null ? { id: 'files', label: 'Originaldateien', value: myContent.counts.files } : null,
+            myContent.counts.standalone_files != null ? { id: 'files', label: 'Dateien', value: myContent.counts.standalone_files } : null,
         ].filter(Boolean) as Array<{ id: string; label: string; value: number }>;
     }, [myContent]);
 
@@ -301,9 +301,9 @@ export const HomeSurface: React.FC = () => {
     const personalLatestLabel = personalLatestItem?.label ?? null;
     const personalLatestKindLabel = personalLatestItem
         ? personalLatestItem.kind === 'node'
-            ? 'Arbeitsdokument'
+            ? 'Dokument'
             : personalLatestItem.kind === 'file'
-                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Arbeitsdokument mit Original' : 'Originaldatei')
+                ? 'Datei'
                 : 'Ordner'
         : null;
 
@@ -452,7 +452,7 @@ export const HomeSurface: React.FC = () => {
                             Privater Bereich
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner, Arbeitsdokumente und hochgeladene Originaldateien aus deinem privaten Kontext.
+                            Eigene Ordner, Dokumente und Dateien aus deinem privaten Kontext.
                         </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
@@ -476,7 +476,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Wenn Mora aus einer hochgeladenen Datei ein Arbeitsdokument macht, bleibt das Original als Quelle erhalten und bleibt weiterhin direkt oeffnbar.
+                                        Wenn eine Datei bereits zu einem Dokument gehoert, erscheint sie hier nicht doppelt als eigener Inhalt.
                                     </div>
                                 </div>
                             </button>

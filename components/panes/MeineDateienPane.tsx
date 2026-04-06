@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, ChevronRight, ExternalLink, Folder, Link, Loader2, Paperclip, FileText } from 'lucide-react';
+import { Check, ChevronRight, ExternalLink, FileText, Folder, Link, Loader2, Paperclip } from 'lucide-react';
 import { fetchMyContent, shareFile, shareNode, type UserContentResponse } from '@/lib/api/coreClient';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -103,8 +103,9 @@ export const MeineDateienPane: React.FC = () => {
     const folders = Array.isArray(content.folders) ? content.folders : [];
     const nodes = Array.isArray(content.nodes) ? content.nodes : [];
     const files = Array.isArray(content.files) ? content.files : [];
+    const standaloneFiles = files.filter((file) => !file.linked_node_id);
     const counts = content.counts && typeof content.counts === 'object' ? content.counts : undefined;
-    const isEmpty = folders.length === 0 && nodes.length === 0 && files.length === 0;
+    const isEmpty = folders.length === 0 && nodes.length === 0 && standaloneFiles.length === 0;
 
     if (isEmpty) {
         return (
@@ -119,13 +120,13 @@ export const MeineDateienPane: React.FC = () => {
             {counts && (
                 <div className="mb-1 border-b border-white/5 px-4 py-2">
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
-                        {counts.total != null && <span>{counts.total} Einträge insgesamt</span>}
+                        {counts.total != null && <span>{counts.total} sichtbare Eintraege</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.nodes != null && <span>{counts.nodes} Arbeitsdokumente</span>}
-                        {counts.files != null && <span>{counts.files} Originaldateien</span>}
+                        {counts.nodes != null && <span>{counts.nodes} Dokumente</span>}
+                        {counts.standalone_files != null && <span>{counts.standalone_files} Dateien</span>}
                     </div>
                     <div className="mt-1 text-[10px] text-white/20">
-                        Wenn Mora aus einer hochgeladenen Datei ein Arbeitsdokument erzeugt, bleibt die Originaldatei als Quelle erhalten. Beide gehoeren zum selben Inhaltssystem.
+                        Dateien, die bereits als Quelle zu einem Dokument gehoeren, erscheinen nicht doppelt als eigener Eintrag.
                     </div>
                 </div>
             )}
@@ -160,9 +161,9 @@ export const MeineDateienPane: React.FC = () => {
             )}
 
             {nodes.length > 0 && (
-                <section aria-label="Arbeitsdokumente">
+                <section aria-label="Dokumente">
                     <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Arbeitsdokumente
+                        Dokumente
                     </div>
                     {nodes.map((node) => {
                         const label = getContentDisplayName(node);
@@ -199,7 +200,7 @@ export const MeineDateienPane: React.FC = () => {
                                                     onClick={() => void openSourceFileForNode(node)}
                                                     className="text-cyan-200/70 transition-colors hover:text-cyan-100"
                                                 >
-                                                    Originaldatei oeffnen
+                                                    Quelle oeffnen
                                                 </button>
                                             </>
                                         )}
@@ -212,12 +213,12 @@ export const MeineDateienPane: React.FC = () => {
                 </section>
             )}
 
-            {files.length > 0 && (
-                <section aria-label="Originaldateien und Anhänge">
+            {standaloneFiles.length > 0 && (
+                <section aria-label="Dateien">
                     <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Originaldateien und Anhänge
+                        Dateien
                     </div>
-                    {files.map((file) => {
+                    {standaloneFiles.map((file) => {
                         const share = shareStates[file.id] ?? { status: 'idle' };
                         const displayName = getSourceFileDisplayName(file);
                         return (
@@ -252,18 +253,6 @@ export const MeineDateienPane: React.FC = () => {
                                         >
                                             {getSourceFileOpenActionLabel(file)}
                                         </button>
-                                        {file.linked_node_id && (
-                                            <>
-                                                <span className="text-white/12">•</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void openSourceFileLike({ ...file, linked_node_id: null }, openPane)}
-                                                    className="text-cyan-200/70 transition-colors hover:text-cyan-100"
-                                                >
-                                                    Originaldatei oeffnen
-                                                </button>
-                                            </>
-                                        )}
                                         {typeof file.size === 'number' && (
                                             <>
                                                 <span className="text-white/12">•</span>
@@ -279,6 +268,7 @@ export const MeineDateienPane: React.FC = () => {
                     })}
                 </section>
             )}
+
         </div>
     );
 };
