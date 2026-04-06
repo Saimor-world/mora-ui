@@ -271,13 +271,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const handleOpenSourceFile = useCallback(async (item: any) => {
         const fileId = getNodeSourceFileId(item);
         if (!fileId) {
-            toast.info('Keine Quelldatei verknuepft');
+            toast.info('Keine Quelle hinterlegt');
             return;
         }
         try {
             await downloadCompanyFile(fileId, item?.metadata?.original_filename || getContentDisplayName(item));
         } catch (error: any) {
-            toast.error(error?.message || 'Quelldatei konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Quelle konnte nicht geoeffnet werden');
         }
     }, []);
 
@@ -1950,7 +1950,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
                                             >
                                                 <Paperclip size={13} />
-                                                Originaldatei oeffnen
+                                                Quelle oeffnen
                                             </button>
                                         )}
                                         <button
@@ -2593,7 +2593,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             }}
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
-                                            <Paperclip size={14} /> Originaldatei oeffnen
+                                            <Paperclip size={14} /> Quelle oeffnen
                                         </button>
                                     )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">

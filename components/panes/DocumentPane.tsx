@@ -211,10 +211,10 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 id: nodeId || 'document',
             });
             if (!opened) {
-                toast.info('Keine Originaldatei verknuepft');
+                toast.info('Keine Quelle hinterlegt');
             }
         } catch (error: any) {
-            toast.error(error?.message || 'Originaldatei konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Quelle konnte nicht geoeffnet werden');
         }
     };
 
@@ -300,7 +300,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     {content ? (
                         <>
                             <p className="text-white/50 text-sm text-center max-w-md mb-4">{content}</p>
-                            <p className="text-white/30 text-xs">Die PDF liegt als Originaldatei vor und kann direkt geoeffnet werden.</p>
+                            <p className="text-white/30 text-xs">Die PDF liegt als Datei vor und kann direkt geoeffnet werden.</p>
                         </>
                     ) : (
                         <p className="text-white/40 text-sm">PDF-Dokument</p>
@@ -336,7 +336,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     body="Mora zeigt bewusst keinen erfundenen Inhalt. Wenn spaeter Text oder Metadaten geliefert werden, erscheint er hier."
                     chips={[
                         ...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []),
-                        ...(sourceFileId ? [{ label: `Original: ${sourceFileName}` }] : [{ label: 'Keine Vorschau verfuegbar' }]),
+                        ...(sourceFileId ? [{ label: `Quelle: ${sourceFileName}` }] : [{ label: 'Keine Vorschau verfuegbar' }]),
                     ]}
                     className="w-full max-w-xl"
                 />
@@ -398,7 +398,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                                     </button>
                                 ) : null
                             )}
-                            footer="Dieses Arbeitsdokument bleibt mit seinem Ursprung verknuepft. Mora zeigt nur die Herkunft, die der Kontext wirklich geliefert hat."
+                            footer="Dieses Dokument kann eine zugrunde liegende Datei als Quelle haben. Mora zeigt diese Herkunft nur dann, wenn sie real vorhanden ist."
                         />
                     </div>
                 )}
@@ -420,7 +420,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                         </span>
                         {sourceFileId && (
                                 <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">
-                                    Mit Original
+                                    Mit Quelle
                                 </span>
                             )}
                     </div>
@@ -447,7 +447,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                             <button
                                 onClick={() => void handleOpenOriginal()}
                                 className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                title="Originaldatei oeffnen"
+                                title="Quelle oeffnen"
                             >
                                 <Paperclip size={16} />
                             </button>
@@ -497,7 +497,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4 flex-wrap">
                         {metadata.size && <span>Groesse: {(metadata.size / 1024).toFixed(1)} KB</span>}
                         {metadata.tags && Array.isArray(metadata.tags) && <span>Tags: {metadata.tags.join(', ')}</span>}
-                        {sourceFileId && <span>Original: {sourceFileName}</span>}
+                        {sourceFileId && <span>Quelle: {sourceFileName}</span>}
                         {nodeId && <span className="font-mono">ID: {nodeId.slice(0, 8)}...</span>}
                     </div>
                 )}
