@@ -42,7 +42,7 @@ export const formatCompanyContextLabel = (
     companyCount: number
 ) => {
     if (profile.isPublicDemoSurface) {
-        return 'Demo-Instanz';
+        return 'Beispielsystem';
     }
 
     if (companyCount <= 0) return 'Keine Organisation';

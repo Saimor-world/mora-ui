@@ -409,7 +409,7 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
                 Kein Kontext aktiv
             </p>
             <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Oeffne zuerst die Demo-Instanz oder waehle einen Bereich, damit Mora sinnvoll arbeiten kann.
+                Oeffne zuerst das Beispielsystem oder waehle einen Bereich, damit Mora sinnvoll arbeiten kann.
             </p>
             {onOpenSettings && (
                 <button
