@@ -37,6 +37,7 @@ import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextLabel';
+import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 
 interface PendingAction {
     tool_name: string;
@@ -1200,7 +1201,7 @@ Womit soll ich beginnen?`,
                     <RelevantMemories
                         memories={relevantMemories}
                         isMemoryBasis={moraCtx.lastAnswerSource === 'memory'}
-                        onOpenMemory={() => openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora Nexus', size: { width: 640, height: 540 }, data: { activeSection: 'memory' } })}
+                        onOpenMemory={() => openMoraCenter(openPane, 'memory', { width: 640, height: 540 })}
                         onDismiss={() => setShowMemories(false)}
                     />
                 ) : null}

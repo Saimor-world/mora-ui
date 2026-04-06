@@ -87,8 +87,8 @@ const getOrbConfig = (state: string, viewMode?: string) => {
         return {
             ...ORB_CONFIG.idle,
             color: "#22d3ee",
-            label: "Demo",
-            sublabel: "Demo-Instanz aktiv",
+            label: "Beispiel",
+            sublabel: "Beispielsystem aktiv",
             glowClass: "shadow-cyan-500/20",
         };
     }
@@ -159,7 +159,7 @@ const UniverseStatsGrid: React.FC = () => {
 // ═══════════════════════════════════════════════════════════════════════════
 export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     scope,
-    title = "Mora Hub",
+    title = "Mora Center",
     compact = false,
     className,
 }) => {
@@ -185,7 +185,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
         if (viewLevel === "folder") return dept ? `${dept.name} > Ordnerfokus` : "Ordnerfokus";
         if (viewLevel === "space") return dept ? `${dept.name} > Bereich` : "Bereich";
         if (viewLevel === "department") return dept?.name || "Abteilung";
-        return viewMode === "demo" ? "Demo-Instanz" : "Universe";
+        return viewMode === "demo" ? "Beispielsystem" : "Universe";
     }, [viewLevel, viewMode, safeDepartments, activeDepartmentId]);
 
     // Cursor Agent status
@@ -391,7 +391,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                     <div className={`flex-1 min-h-0 ${compact ? "p-2" : "p-3"}`}>
                         <MoraUpdatesFeed
                             scope={scope}
-                            title="Activity"
+                            title="Signale"
                             maxEvents={compact ? 4 : (showMemory ? 3 : 6)}
                             compact
                             showHeader={false}
@@ -409,7 +409,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                                 <div className="flex items-center gap-1.5">
                                     <Brain className="h-3 w-3 text-violet-400/60" />
                                     <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
-                                        Memory
+                                        Erinnerungen
                                     </span>
                                 </div>
                                 {showMemory ? (

@@ -27,6 +27,7 @@ import { usePaneStore } from "@/lib/store/paneStore";
 import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
 import { Loader2, Sparkles, Bot, User } from "lucide-react";
 import { executeAgenticLoop } from "@/lib/api/cognitionClient";
+import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 
 /**
  * SPOTLIGHT - Global Command Palette (Cmd+K)
@@ -189,20 +190,13 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
         result.push({
             id: "action-memory",
-            label: 'Moras Gedaechtnis',
-            description: "Erinnerungen durchsuchen & verwalten",
+            label: 'Mora Center',
+            description: "Erinnerungen, Signale und Kontext oeffnen",
             icon: <Brain size={16} className="text-violet-400" />,
             category: "action",
             keywords: ["memory", "gedächtnis", "erinnerung", "lernen", "brain", "wissen"],
             onSelect: () => {
-                // Open MoraHub with memory tab focused
-                openPane({
-                    id: "mora-hub",
-                    type: "mora-hub" as any,
-                    title: "Mora Nexus",
-                    size: { width: 720, height: 640 },
-                    data: { activeSection: "memory" }
-                });
+                openMoraCenter(openPane, 'memory');
                 onClose();
             }
         });

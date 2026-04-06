@@ -25,13 +25,13 @@ interface Props {
 // ═══════════════════════════════════════════════════════════════════════════
 const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
     { id: "overview", label: "Ueberblick", icon: Sparkles },
-    { id: "memory", label: "Memory", icon: Brain },
-    { id: "stats", label: "Metriken", icon: BarChart3 },
+    { id: "memory", label: "Erinnerungen", icon: Brain },
+    { id: "stats", label: "Signale", icon: BarChart3 },
 ];
 
 /**
- * MORA HUB PANE
- * Dedicated brain space for Mora: thoughts, actions, and context tools.
+ * MORA CENTER PANE
+ * Zentrale fuer Mora: Kontext, Erinnerungen und operative Signale.
  * Supports tab navigation: Overview, Memory, Stats
  */
 export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data }) => {
@@ -89,7 +89,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
-                                    <span className="text-xs font-medium text-white/80">Mora-Metriken</span>
+                                    <span className="text-xs font-medium text-white/80">Mora-Signale</span>
                             </div>
                             {/* MR18: scope freshness — honest about staleness */}
                             {ctx.lastScopeUpdateAt && (
@@ -126,7 +126,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                     Setup Erforderlich
                                 </p>
                                 <p className="text-xs text-amber-200/50 max-w-[260px] leading-relaxed">
-                                    Oeffne zuerst die Demo-Instanz oder einen Bereich, damit Mora operativ wird.
+                                    Oeffne zuerst die Beispielinstanz oder einen Bereich, damit Mora operativ werden kann.
                                 </p>
                             </div>
                         )}
@@ -153,7 +153,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             dimBackground={false}
             title={
                 <div className="flex items-center gap-3">
-                    <span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Hub</span>
+                    <span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Center</span>
                     {/* Tab Navigation */}
                     <div className="flex items-center gap-0.5 bg-black/30 rounded-lg p-0.5 ml-2">
                         {TABS.map((tab) => {

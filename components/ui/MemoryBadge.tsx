@@ -3,6 +3,7 @@
 import React from "react";
 import { Brain } from "lucide-react";
 import { usePaneStore } from "@/lib/store/paneStore";
+import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 
 interface MemoryBadgeProps {
     pendingCount: number;
@@ -21,13 +22,7 @@ export const MemoryBadge: React.FC<MemoryBadgeProps> = ({
         if (onClick) {
             onClick();
         } else {
-            openPane({
-                id: "mora-hub",
-                type: "mora-hub" as any,
-                title: "Mora Nexus",
-                size: { width: 720, height: 640 },
-                data: { activeSection: "memory" }
-            });
+            openMoraCenter(openPane, 'memory');
         }
     };
 

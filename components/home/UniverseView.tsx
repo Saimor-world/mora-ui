@@ -1003,7 +1003,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         <Activity className="w-5 h-5 text-cyan-400" />
                                         <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-white/90">Systemstatus</h2>
                                     </div>
-                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Aktive Organisation'}</p>
+                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{isPublicDemoSurface ? 'Kuratiertes Beispielsystem' : 'Aktive Organisation'}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowSystemStatus(false)}
@@ -1024,7 +1024,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}
                                     label="Kontext"
-                                    value={currentCompany?.is_demo ? 'Demo-Instanz' : 'Geschuetzt'}
+                                    value={currentCompany?.is_demo ? 'Beispielsystem' : 'Geschuetzt'}
                                     status={currentCompany?.is_demo ? 'neutral' : 'secure'}
                                 />
                                 <InsightCard
@@ -1044,9 +1044,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                             <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 relative">
                                 <div className="flex items-center gap-4 text-[9px] tracking-[0.3em] text-white/20 uppercase">
-                                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Pulse</span>
+                                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live-Signal</span>
                                     <span>•</span>
-                                    <span>Firmware V10.6.4</span>
+                                    <span>Universe v2</span>
                                 </div>
                                 <div className="text-[9px] tracking-[0.2em] text-white/30 truncate max-w-[240px]">
                                     {currentCompany?.name || displayCompanyName}

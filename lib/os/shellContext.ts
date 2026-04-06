@@ -195,25 +195,25 @@ export const buildShellContextSnapshot = ({
         contextLabel: isPublicDemoSurface ? 'Demo' : 'Organisation',
         title: companyTitle,
         subtitle: isPublicDemoSurface
-            ? 'Oeffentliche Demo-Instanz'
+            ? 'Kuratiertes Beispielsystem'
             : companyCount > 1
                 ? `${companyCount} Organisationen aktiv`
                 : 'Single-Company-Instanz',
         description: isPublicDemoSurface
-            ? 'Simple Coffee Group zeigt die kuratierte Beispielstruktur von SAIMOR. Waehle eine Abteilung und geh dann in die echte Demo-Struktur.'
+            ? 'Simple Coffee Group zeigt die kuratierte Beispielstruktur von SAIMOR. Wähle eine Abteilung und gehe dann in die sichtbare Arbeitsstruktur.'
             : companyCount > 1
                 ? 'Diese Instanz zeigt mehrere Organisationen. Waehle zuerst den richtigen Kontext und gehe dann tiefer.'
                 : 'Diese Instanz ist auf eine Organisation zugeschnitten. Waehle die passende Abteilung und gehe dann in die Struktur.',
         signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
         signalB: isPublicDemoSurface
-            ? 'Kuratiert'
+            ? 'Beispielstruktur'
             : companyCount > 1
                 ? `${companyCount} Organisationen`
                 : '1 Organisation',
         accent,
         nextMoveLabel: isPublicDemoSurface ? 'Abteilung oeffnen' : companyCount > 1 ? 'Organisation waehlen' : 'Abteilung waehlen',
         nextMoveHint: isPublicDemoSurface
-            ? 'Oeffne die passende Abteilung und geh dann in die sichtbare Demo-Struktur.'
+            ? 'Öffne die passende Abteilung und gehe von dort in die sichtbare Beispielstruktur.'
             : companyCount > 1
             ? 'Diese Instanz hat mehrere Organisationen. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
             : 'Waehle zuerst die passende Abteilung und geh dann in die operative Struktur.',

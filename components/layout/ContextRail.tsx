@@ -15,6 +15,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { roleLabel } from '@/lib/auth/roles';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
  * ContextRail - Left Navigation Sidebar
@@ -30,6 +31,7 @@ export const ContextRail: React.FC = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const router = useRouter();
+    const surfaceProfile = useSurfaceProfile();
 
     const user = useMoraStore(state => state.user);
 
@@ -98,8 +100,6 @@ export const ContextRail: React.FC = () => {
         { id: 'chat', icon: MessageSquare, label: "Mora", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
-    // Blitz = Enter/Exit Demo Mode
-    // CONSISTENT WITH DOCK: Demo toggle ALWAYS navigates to Welcome Screen
     const handleWorkspaceView = async () => {
         closeOverlays();
 
@@ -224,7 +224,7 @@ export const ContextRail: React.FC = () => {
 
                 {/* Bottom Actions */}
                 <div className="mt-auto flex flex-col gap-4 w-full px-3">
-                    {/* Workspace/CEO View Button (Blitz = wie CEO die Firma sieht) */}
+                    {/* Entry / demo switch button */}
                     <button
                         onClick={handleWorkspaceView}
                         className={`group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all ${viewMode === 'demo' ? 'bg-blue-500/20' : 'hover:bg-blue-500/10'
@@ -233,7 +233,7 @@ export const ContextRail: React.FC = () => {
                         <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
                             }`} />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            Demo
+                            {surfaceProfile.isPublicDemoSurface ? 'Demo-Start' : 'Instanz-Einstieg'}
                         </div>
                         {viewMode === 'demo' && (
                             <motion.div
