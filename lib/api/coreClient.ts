@@ -1883,6 +1883,7 @@ export interface UserContentResponse {
     counts?: {
         folders?: number;
         nodes?: number;
+        items?: number;
         files?: number;
         standalone_files?: number;
         linked_source_files?: number;

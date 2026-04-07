@@ -110,7 +110,7 @@ export const MeineDateienPane: React.FC = () => {
     if (isEmpty) {
         return (
             <div className="px-4 py-8 text-sm text-white/30">
-                Keine eigenen Inhalte gefunden. Erstelle Dokumente oder lade Dateien hoch.
+                Keine eigenen Inhalte gefunden. Lege einen Ordner an oder lade eine Datei hoch.
             </div>
         );
     }
@@ -122,11 +122,8 @@ export const MeineDateienPane: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
                         {counts.total != null && <span>{counts.total} sichtbare Eintraege</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.nodes != null && <span>{counts.nodes} Dokumente</span>}
-                        {counts.standalone_files != null && <span>{counts.standalone_files} Dateien</span>}
-                    </div>
-                    <div className="mt-1 text-[10px] text-white/20">
-                        Dateien, die bereits als Quelle zu einem Dokument gehoeren, erscheinen nicht doppelt als eigener Eintrag.
+                        {counts.items != null && <span>{counts.items} Inhalte</span>}
+                        {counts.standalone_files != null && counts.standalone_files > 0 && <span>{counts.standalone_files} Dateien</span>}
                     </div>
                 </div>
             )}
@@ -161,9 +158,9 @@ export const MeineDateienPane: React.FC = () => {
             )}
 
             {nodes.length > 0 && (
-                <section aria-label="Dokumente">
+                <section aria-label="Inhalte">
                     <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Dokumente
+                        Inhalte
                     </div>
                     {nodes.map((node) => {
                         const label = getContentDisplayName(node);
@@ -200,7 +197,7 @@ export const MeineDateienPane: React.FC = () => {
                                                     onClick={() => void openSourceFileForNode(node)}
                                                     className="text-cyan-200/70 transition-colors hover:text-cyan-100"
                                                 >
-                                                    Quelle oeffnen
+                                                    Datei oeffnen
                                                 </button>
                                             </>
                                         )}

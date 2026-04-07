@@ -282,7 +282,7 @@ export const HomeSurface: React.FC = () => {
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
         return [
-            myContent.counts.nodes != null ? { id: 'nodes', label: 'Dokumente', value: myContent.counts.nodes } : null,
+            myContent.counts.items != null ? { id: 'items', label: 'Inhalte', value: myContent.counts.items } : null,
             myContent.counts.folders != null ? { id: 'folders', label: 'Ordner', value: myContent.counts.folders } : null,
             myContent.counts.standalone_files != null ? { id: 'files', label: 'Dateien', value: myContent.counts.standalone_files } : null,
         ].filter(Boolean) as Array<{ id: string; label: string; value: number }>;
@@ -301,7 +301,7 @@ export const HomeSurface: React.FC = () => {
     const personalLatestLabel = personalLatestItem?.label ?? null;
     const personalLatestKindLabel = personalLatestItem
         ? personalLatestItem.kind === 'node'
-            ? 'Dokument'
+            ? 'Inhalt'
             : personalLatestItem.kind === 'file'
                 ? 'Datei'
                 : 'Ordner'
@@ -452,7 +452,7 @@ export const HomeSurface: React.FC = () => {
                             Privater Bereich
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner, Dokumente und Dateien aus deinem privaten Kontext.
+                            Eigene Ordner und Inhalte aus deinem privaten Bereich.
                         </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
@@ -476,7 +476,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Wenn eine Datei bereits zu einem Dokument gehoert, erscheint sie hier nicht doppelt als eigener Inhalt.
+                                        Ordner strukturieren deine Inhalte. Dateien erscheinen nur dann separat, wenn sie nicht bereits als eigener Inhalt vorliegen.
                                     </div>
                                 </div>
                             </button>

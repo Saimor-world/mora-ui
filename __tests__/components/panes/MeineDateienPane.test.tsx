@@ -48,7 +48,7 @@ const mockResponse: UserContentResponse = {
             visibility: 'private',
         },
     ],
-    counts: { folders: 1, nodes: 2, files: 1, total: 4 },
+    counts: { folders: 1, nodes: 2, items: 3, files: 1, standalone_files: 1, total: 4 },
 };
 
 describe('MeineDateienPane', () => {
@@ -68,7 +68,7 @@ describe('MeineDateienPane', () => {
         });
     });
 
-    it('shows nodes in Dokumente section', async () => {
+    it('shows nodes in Inhalte section', async () => {
         mockFetch.mockResolvedValue(mockResponse);
         render(<MeineDateienPane />);
         await waitFor(() => {
@@ -115,7 +115,7 @@ describe('MeineDateienPane', () => {
         mockFetch.mockResolvedValue(mockResponse);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/2 Dokumente/i)).toBeInTheDocument();
+            expect(screen.getByText(/3 Inhalte/i)).toBeInTheDocument();
         });
     });
 
