@@ -17,6 +17,7 @@ function AppSkeleton() {
 // The only file to update is this APP_MAP.
 //
 const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
+  apps:            dynamic(() => import('@/apps/apps'),          { ssr: false, loading: () => <AppSkeleton /> }),
   finder:          dynamic(() => import('@/apps/finder'),        { ssr: false, loading: () => <AppSkeleton /> }),
   scanner:         dynamic(() => import('@/apps/scanner'),       { ssr: false, loading: () => <AppSkeleton /> }),
   chat:            dynamic(() => import('@/apps/chat'),          { ssr: false, loading: () => <AppSkeleton /> }),
