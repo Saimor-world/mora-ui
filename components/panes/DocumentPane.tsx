@@ -24,6 +24,7 @@ import { getCompanyFileUrl } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { getNodeSourceFileId, getNodeSourceFileName, openSourceFileForNode } from '@/lib/utils/contentOpen';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 interface DocumentPaneProps {
     id: string;
@@ -61,6 +62,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
         companyId,
         navigationContext,
     } = docData;
+    const surfaceProfile = useSurfaceProfile();
 
     const [content, setContent] = useState(initialContent || '');
     const [name, setName] = useState(initialName || 'Dokument');
@@ -320,9 +322,13 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
         if (content) {
             return (
-                <pre className="p-4 whitespace-pre-wrap text-white/80 font-mono text-sm leading-relaxed">
-                    {content}
-                </pre>
+                <div className="px-6 py-6">
+                    <div className="rounded-[28px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+                        <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-white/82">
+                            {content}
+                        </pre>
+                    </div>
+                </div>
             );
         }
 
@@ -403,62 +409,87 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                     </div>
                 )}
 
-                <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/5">
-                    <div className="flex items-center gap-3 min-w-0">
-                        {isPDF ? (
-                            <File size={18} className="text-red-400" />
-                        ) : isImage ? (
-                            <FileImage size={18} className="text-purple-400" />
-                        ) : isVideo ? (
-                            <FileVideo size={18} className="text-pink-400" />
-                        ) : (
-                            <FileText size={18} className="text-blue-400" />
-                        )}
-                        <span className="text-sm text-white/80 font-medium truncate max-w-[300px]">{name}</span>
-                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">
-                            {fileExtension || type || 'doc'}
-                        </span>
-                        {sourceFileId && (
-                                <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">
-                                    Mit Quelle
+                <div className="border-b border-white/5 bg-white/[0.04] px-4 py-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/34">
+                                <span className={`rounded-full border px-2.5 py-1 ${surfaceProfile.isLocalTruthSurface ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200' : surfaceProfile.isPublicDemoSurface ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/[0.04] text-white/55'}`}>
+                                    {surfaceProfile.isLocalTruthSurface ? 'Local Truth' : surfaceProfile.isPublicDemoSurface ? 'Demo Mirror' : 'Standard'}
                                 </span>
+                                <span>Dokumentenansicht</span>
+                            </div>
+                            <div className="mt-3 flex items-start gap-3">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-black/15">
+                                    {isPDF ? (
+                                        <File size={18} className="text-red-400" />
+                                    ) : isImage ? (
+                                        <FileImage size={18} className="text-purple-400" />
+                                    ) : isVideo ? (
+                                        <FileVideo size={18} className="text-pink-400" />
+                                    ) : (
+                                        <FileText size={18} className="text-blue-300" />
+                                    )}
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="text-base font-medium leading-snug text-white/90">{name}</div>
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-white/48">
+                                            {fileExtension || type || 'doc'}
+                                        </span>
+                                        {sourceFileId && (
+                                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-cyan-100/75">
+                                                Mit Quelle
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/42">
+                                        {sourceFileId
+                                            ? 'Dieses Dokument ist der sichtbare Arbeitskontext. Die zugrunde liegende Datei bleibt als Quelle separat erreichbar.'
+                                            : 'Dieses Dokument ist das sichtbare Arbeitsobjekt in der aktiven Instanz.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                            {!isPDF && !isImage && !isVideo && content && (
+                                <button
+                                    onClick={() => void handleCopy()}
+                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                    title="Inhalt kopieren"
+                                >
+                                    <Copy size={14} />
+                                    Kopieren
+                                </button>
                             )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {!isPDF && !isImage && !isVideo && content && (
+                            {content && (
+                                <button
+                                    onClick={handleDownloadText}
+                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                    title="Textinhalt herunterladen"
+                                >
+                                    <Download size={14} />
+                                    Export
+                                </button>
+                            )}
+                            {sourceFileId && (
+                                <button
+                                    onClick={() => void handleOpenOriginal()}
+                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
+                                    title="Quelle oeffnen"
+                                >
+                                    <Paperclip size={14} />
+                                    Quelle oeffnen
+                                </button>
+                            )}
                             <button
-                                onClick={() => void handleCopy()}
-                                className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                title="Inhalt kopieren"
+                                onClick={() => setReloadKey((prev) => prev + 1)}
+                                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                title="Neu laden"
                             >
-                                <Copy size={16} />
+                                <RefreshCw size={14} />
+                                Neu laden
                             </button>
-                        )}
-                        {content && (
-                            <button
-                                onClick={handleDownloadText}
-                                className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                title="Textinhalt herunterladen"
-                            >
-                                <Download size={16} />
-                            </button>
-                        )}
-                        {sourceFileId && (
-                            <button
-                                onClick={() => void handleOpenOriginal()}
-                                className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                title="Quelle oeffnen"
-                            >
-                                <Paperclip size={16} />
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setReloadKey((prev) => prev + 1)}
-                            className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                            title="Neu laden"
-                        >
-                            <RefreshCw size={16} />
-                        </button>
+                        </div>
                     </div>
                 </div>
 
@@ -471,7 +502,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Link size={14} className="text-emerald-400" />
                             <span className="text-xs text-white/60 font-medium">
-                                Warum {relations.length} Verbindung{relations.length > 1 ? 'en' : ''}?
+                                Verbindungen im Kontext
                             </span>
                         </div>
                         <div className="flex flex-wrap gap-2">

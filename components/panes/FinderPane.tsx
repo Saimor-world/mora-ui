@@ -1942,7 +1942,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
                                         <div className={`relative ${selectedEntry ? 'xl:pr-[320px]' : ''}`}>
-                                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                                            <div className="mb-5 flex flex-wrap items-center gap-2">
                                                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
                                                     {filteredFolders.length} Ordner
                                                 </span>
@@ -1958,17 +1958,17 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                             {selectedEntry && (
                                                 <div className="mb-4 xl:absolute xl:right-0 xl:top-0 xl:w-[288px]">
-                                                    <div className="rounded-2xl border border-white/8 bg-white/[0.035] px-4 py-4">
+                                                    <div className="rounded-3xl border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] px-4 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-md">
                                                         <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/30">
                                                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] text-white/55">
                                                                 Auswahl
                                                             </span>
                                                             <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
                                                         </div>
-                                                        <div className="mt-2 text-base font-medium text-white/88">
+                                                        <div className="mt-3 text-base font-medium leading-snug text-white/90">
                                                             {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
                                                         </div>
-                                                        <div className="mt-2 space-y-1 text-[11px] text-white/42">
+                                                        <div className="mt-3 space-y-1.5 text-[11px] leading-relaxed text-white/42">
                                                             <p>
                                                                 {selectedEntry.kind === 'folder'
                                                                     ? `Oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'} im aktuellen Explorer.`
@@ -2024,8 +2024,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {filteredFolders.length > 0 && (
                                                 <div className="mb-6">
                                                     <div className="mb-3 flex items-center justify-between">
-                                                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Ordner und Bereiche</p>
-                                                        <p className="text-[11px] text-white/32">Navigation durch Struktur</p>
+                                                        <div>
+                                                            <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Ordner und Bereiche</p>
+                                                            <p className="mt-1 text-[12px] text-white/36">Navigation durch Struktur und Kontexte</p>
+                                                        </div>
                                                     </div>
                                                     <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 lg:gap-4">
                                             {filteredFolders.map(folder => {
@@ -2035,9 +2037,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        className={`p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-200 flex flex-col gap-2.5 md:gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
-                                                            ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
-                                                            : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10'
+                                                        className={`min-h-[162px] p-4 rounded-[24px] border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
+                                                            ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
+                                                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
                                                             }`}
                                                     >
                                                         <div className="flex justify-between items-start">
@@ -2064,10 +2066,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-bold tracking-tighter border border-cyan-500/20 uppercase">Bereich</span>
                                                             )}
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <span className={`text-sm font-medium line-clamp-2 leading-snug break-words ${isSelected ? 'text-white' : 'text-white/80'}`} title={folder.name}>{folder.name}</span>
+                                                        <div className="space-y-1.5">
+                                                            <span className={`text-[15px] font-medium line-clamp-2 leading-snug break-words ${isSelected ? 'text-white' : 'text-white/84'}`} title={folder.name}>{folder.name}</span>
                                                             {folder.type === 'folder' && (
-                                                                <span className="text-[10px] text-white/30 uppercase tracking-[0.1em]">Gemeinsamer Ordner</span>
+                                                                <span className="text-[11px] text-white/34">Gemeinsamer Ordner</span>
                                                             )}
                                                         </div>
 
@@ -2085,8 +2087,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {filteredFiles.length > 0 && (
                                                 <div>
                                                     <div className="mb-3 flex items-center justify-between">
-                                                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Inhalte und Dateien</p>
-                                                        <p className="text-[11px] text-white/32">Direkt oeffnen, teilen oder weiterverarbeiten</p>
+                                                        <div>
+                                                            <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Inhalte und Dateien</p>
+                                                            <p className="mt-1 text-[12px] text-white/36">Direkt oeffnen, sichten oder weiterverarbeiten</p>
+                                                        </div>
                                                     </div>
                                                     <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 lg:gap-4">
                                             {filteredFiles.map(file => {
@@ -2111,9 +2115,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             checkResonance(file.id);
                                                             openFinderNode(file);
                                                         }}
-                                                        className={`p-3 md:p-4 rounded-xl md:rounded-2xl border transition-all duration-200 flex flex-col gap-2.5 md:gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.98] ${isSelected
-                                                            ? 'bg-emerald-500/20 border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
-                                                            : 'bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10'
+                                                        className={`min-h-[162px] p-4 rounded-[24px] border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
+                                                            ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_20px_40px_rgba(0,0,0,0.3),0_0_20px_rgba(16,185,129,0.1)]'
+                                                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
                                                             }`}
                                                     >
                                                         {/* Resonance Glow (Background) */}
@@ -2122,15 +2126,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         )}
 
                                                         <div className="flex justify-between items-start">
-                                                            <div className="w-10 h-10 flex items-center justify-center">
-                                                                <Icon size={24} className={isSelected ? 'text-emerald-400' : 'text-emerald-400/80 group-hover:text-emerald-400'} />
+                                                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-black/15">
+                                                                <Icon size={22} className={isSelected ? 'text-emerald-300' : 'text-emerald-300/90 group-hover:text-emerald-200'} />
                                                             </div>
                                                             {file.metadata?.size && (
-                                                                <span className="text-[10px] text-white/30 font-mono">{(file.metadata.size / 1024).toFixed(0)}KB</span>
+                                                                <span className="text-[10px] text-white/26 font-mono">{(file.metadata.size / 1024).toFixed(0)} KB</span>
                                                             )}
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <span className={`text-sm line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/80'}`} title={displayName}>
+                                                        <div className="space-y-1.5">
+                                                            <span className={`text-[15px] line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/84'}`} title={displayName}>
                                                                 {displayName}
                                                                 {displayName.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
                                                                     <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
@@ -2138,8 +2142,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                     </span>
                                                                 )}
                                                             </span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[9px] text-white/30 uppercase tracking-tighter">{getContentTypeLabel(file.type)}</span>
+                                                            <div className="mt-auto flex flex-wrap items-center gap-2">
+                                                                <span className="rounded-full border border-white/8 bg-black/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-white/38">{getContentTypeLabel(file.type)}</span>
                                                                 <div className="w-1 h-1 rounded-full bg-white/10" />
                                                                 <span className="text-[9px] text-white/30">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
                                                                 {secondaryLabel && (
