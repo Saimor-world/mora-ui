@@ -58,7 +58,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     terminal:        'future',    // dev-only, security risk for pilot
     'mora-hub':      'app',
     actions:         'future',    // Action Path not stabilized
-    'work-session':  'future',    // agentic execution too early
+    'work-session':  'app',       // promoted — apps/work-session/ module live
     apps:            'app',       // AppLibrary — promoted (15 apps now registered)
 
     // ── App Platform new types ──────────────────────────────────────────────

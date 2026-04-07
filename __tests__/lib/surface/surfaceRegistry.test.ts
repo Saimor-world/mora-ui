@@ -57,7 +57,7 @@ describe('surfaceRegistry', () => {
             expect(SURFACE_TIERS['terminal']).toBe('future');
             // mora-hub is 'app' in registry — pre-existing state, skip
             expect(SURFACE_TIERS['actions']).toBe('future');
-            expect(SURFACE_TIERS['work-session']).toBe('future');
+            // work-session promoted — apps/work-session/ module live
             // apps is now 'app' tier — AppLibrary promoted
         });
 
@@ -99,7 +99,7 @@ describe('surfaceRegistry', () => {
             expect(isPaneEnabled('mail')).toBe(false);
             expect(isPaneEnabled('terminal')).toBe(false);
             expect(isPaneEnabled('actions')).toBe(false);
-            expect(isPaneEnabled('work-session')).toBe(false);
+            // work-session promoted to app
             expect(isPaneEnabled('integrations')).toBe(false);
         });
 
@@ -122,13 +122,13 @@ describe('surfaceRegistry', () => {
             expect(FUTURE_PANE_TYPES).toContain('integrations');
             expect(FUTURE_PANE_TYPES).toContain('terminal');
             expect(FUTURE_PANE_TYPES).toContain('actions');
-            expect(FUTURE_PANE_TYPES).toContain('work-session');
             // promoted types no longer in future:
             expect(FUTURE_PANE_TYPES).not.toContain('apps');
             expect(FUTURE_PANE_TYPES).not.toContain('calendar');
             expect(FUTURE_PANE_TYPES).not.toContain('timeline');
             expect(FUTURE_PANE_TYPES).not.toContain('tasks');
             expect(FUTURE_PANE_TYPES).not.toContain('canvas');
+            expect(FUTURE_PANE_TYPES).not.toContain('work-session');
         });
 
         it('does not include core_work or app panes', () => {
