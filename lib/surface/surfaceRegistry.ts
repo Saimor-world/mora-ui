@@ -15,7 +15,8 @@ export type PaneType =
     | 'settings' | 'finder' | 'document' | 'chat' | 'team' | 'notes' | 'meine-dateien'
     | 'scanner' | 'users' | 'company-detail' | 'grid' | 'search' | 'space'
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
-    | 'actions' | 'work-session' | 'apps';
+    | 'actions' | 'work-session' | 'apps'
+    | 'timeline' | 'tasks' | 'canvas';
 
 /**
  * Every pane type mapped to its tier.
@@ -46,12 +47,17 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     integrations:     'app',
     browser:          'app',
     'mora-hub':       'app',
+    apps:             'app',       // AppLibrary — promoted (15 apps registered)
+
+    // ── App Platform additions ──────────────────────────────────────────────
+    timeline:        'app',       // Activity feed
+    tasks:           'app',       // Kanban board
+    canvas:          'app',       // Whiteboard
 
     // Future / gated
     terminal:        'future',
     actions:         'future',
     'work-session':  'future',
-    apps:            'future',
 };
 
 /** All future-tier pane types for quick inclusion checks. */
