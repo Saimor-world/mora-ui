@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
     Brain,
     Search,
+    MessageCircle,
     CheckCircle,
     XCircle,
     AlertTriangle,
@@ -19,8 +20,10 @@ import {
     type MemoryOverviewLayer,
 } from "@/lib/api/coreClient";
 import { useMoraStore } from "@/lib/store/moraState";
+import { usePaneStore } from "@/lib/store/paneStore";
 import { useMemory } from "@/lib/hooks/useMemory";
 import { useMemorySurface } from "@/lib/hooks/useMemorySurface";
+import { useSurfaceProfile } from "@/lib/hooks/useSurfaceProfile";
 import type {
     MemorySearchResult as MemoryEntry,
 } from "@/lib/types/memory";
@@ -369,9 +372,11 @@ interface MemoryLayerPanelProps {
     layer?: MemoryOverviewLayer;
     accent: string;
     emptyText: string;
+    onInspect: (item: MemoryOverviewLayer['items'][number]) => void;
+    onExplain: (item: MemoryOverviewLayer['items'][number]) => void;
 }
 
-const MemoryLayerPanel: React.FC<MemoryLayerPanelProps> = ({ layer, accent, emptyText }) => {
+const MemoryLayerPanel: React.FC<MemoryLayerPanelProps> = ({ layer, accent, emptyText, onInspect, onExplain }) => {
     if (!layer) return null;
 
     const pendingReviews = Array.isArray(layer.pending_reviews) ? layer.pending_reviews : [];
@@ -413,6 +418,23 @@ const MemoryLayerPanel: React.FC<MemoryLayerPanelProps> = ({ layer, accent, empt
                                         {item.risk_level}
                                     </span>
                                 ) : null}
+                            </div>
+                            <div className="mt-3 flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onInspect(item)}
+                                    className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
+                                >
+                                    Im System oeffnen
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onExplain(item)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 text-[10px] text-violet-200 transition-colors hover:bg-violet-500/20"
+                                >
+                                    <MessageCircle className="h-3 w-3" />
+                                    Mit Mora erklaeren
+                                </button>
                             </div>
                         </div>
                     ))
@@ -457,6 +479,8 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     companyId = null,
 }) => {
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const { openPane } = usePaneStore();
+    const surfaceProfile = useSurfaceProfile();
     const resolvedCompanyId = companyId ?? activeCompanyId ?? null;
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
@@ -467,6 +491,29 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
         { id: "queue" as const, label: "Review", icon: AlertTriangle, show: showQueue },
         { id: "stats" as const, label: "Metriken", icon: Brain, show: showStats },
     ].filter((t) => t.show);
+
+    const inspectLayerItem = useCallback((item: NonNullable<MemoryOverviewLayer["items"]>[number]) => {
+        const query = item.summary?.trim() || item.title?.trim();
+        if (!query) return;
+        openPane({
+            id: 'search-main',
+            type: 'search',
+            title: `Suche: ${query}`,
+            size: { width: 920, height: 720 },
+            data: { query, companyId: resolvedCompanyId || undefined },
+        });
+    }, [openPane, resolvedCompanyId]);
+
+    const explainLayerItem = useCallback((item: NonNullable<MemoryOverviewLayer["items"]>[number]) => {
+        const prompt = `Erklaere mir diesen ${item.kind || 'Eintrag'} im Kontext ${surfaceProfile.isLocalTruthSurface ? 'der internen Instanz' : 'der aktiven Organisation'}: ${item.summary}`;
+        openPane({
+            id: 'chat-main',
+            type: 'chat',
+            title: 'Mora Chat',
+            size: { width: 720, height: 680 },
+            data: { initialMessage: prompt },
+        });
+    }, [openPane, surfaceProfile.isLocalTruthSurface]);
 
     return (
         <div className="space-y-3">
@@ -503,16 +550,22 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
                     layer={surface?.layers?.foundation}
                     accent="border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
                     emptyText="Noch kein belastbares Grundwissen fuer diesen Kontext sichtbar."
+                    onInspect={inspectLayerItem}
+                    onExplain={explainLayerItem}
                 />
                 <MemoryLayerPanel
                     layer={surface?.layers?.scope}
                     accent="border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
                     emptyText="Noch kein freigegebenes Bereichswissen im aktiven Firmenkontext."
+                    onInspect={inspectLayerItem}
+                    onExplain={explainLayerItem}
                 />
                 <MemoryLayerPanel
                     layer={surface?.layers?.personal}
                     accent="border-violet-500/20 bg-violet-500/10 text-violet-200"
                     emptyText="Noch keine persoenlichen Erinnerungen in diesem Kontext sichtbar."
+                    onInspect={inspectLayerItem}
+                    onExplain={explainLayerItem}
                 />
             </div>
 

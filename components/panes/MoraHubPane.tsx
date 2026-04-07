@@ -10,6 +10,7 @@ import { MoraMemory, MemoryStats } from "@/components/mora/MoraMemory";
 import { Sparkles, Brain, BarChart3 } from "lucide-react";
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 type HubSection = "overview" | "memory" | "stats";
 
@@ -50,6 +51,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const companies = useMoraStore((s) => s.companies);
     const safeCompanies = Array.isArray(companies) ? companies : [];
     const resolvedCompanyId = activeCompanyId || safeCompanies[0]?.id || null;
+    const surfaceProfile = useSurfaceProfile();
 
     const ctx = useMoraContext();
 
@@ -189,6 +191,28 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
         >
             <div className="flex h-full flex-col">
                 <div className="border-b border-white/[0.06] px-4 py-3">
+                    <div className="mb-3 flex items-center gap-2">
+                        <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
+                            surfaceProfile.isLocalTruthSurface
+                                ? "border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
+                                : surfaceProfile.isPublicDemoSurface
+                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                                    : "border-white/10 bg-white/[0.04] text-white/55"
+                        }`}>
+                            {surfaceProfile.isLocalTruthSurface
+                                ? "Local Truth"
+                                : surfaceProfile.isPublicDemoSurface
+                                    ? "Demo Mirror"
+                                    : "Standard"}
+                        </span>
+                        <span className="text-[11px] text-white/35">
+                            {surfaceProfile.isLocalTruthSurface
+                                ? "Diese Sicht folgt der internen Instanzwahrheit."
+                                : surfaceProfile.isPublicDemoSurface
+                                    ? "Diese Sicht spiegelt die kuratierte Demo-Instanz."
+                                    : "Diese Sicht folgt dem Standardmodus der Organisation."}
+                        </span>
+                    </div>
                     <div className="flex items-center gap-1 rounded-xl bg-black/25 p-1">
                         {TABS.map((tab) => {
                             const Icon = tab.icon;
