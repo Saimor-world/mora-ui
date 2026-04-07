@@ -167,7 +167,7 @@ export const HomeSurface: React.FC = () => {
     }, [openPane]);
 
     const openMeineDateien = useCallback(() => {
-        openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 380, height: 560 } });
+        openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 920, height: 720 } });
     }, [openPane]);
 
     const openNotes = useCallback(() => {

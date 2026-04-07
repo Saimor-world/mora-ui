@@ -5,6 +5,7 @@ import { Check, ChevronRight, ExternalLink, FileText, Folder, Link, Loader2, Pap
 import { fetchMyContent, shareFile, shareNode, type UserContentResponse } from '@/lib/api/coreClient';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { GlassPanel } from '@/components/layers/GlassPanel';
 import { toast } from 'sonner';
 import {
     getContentDisplayName,
@@ -26,11 +27,12 @@ type ShareState =
 
 type VisibleItem = NonNullable<UserContentResponse['items']>[number];
 
-export const MeineDateienPane: React.FC = () => {
+export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateien' }) => {
     const [content, setContent] = useState<UserContentResponse | 'error' | null>(null);
     const [loading, setLoading] = useState(true);
     const [shareStates, setShareStates] = useState<Record<string, ShareState>>({});
-    const openPane = usePaneStore((state) => state.openPane);
+    const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const pane = getPane(id);
 
     useEffect(() => {
         let cancelled = false;
@@ -86,20 +88,64 @@ export const MeineDateienPane: React.FC = () => {
         });
     }, [openPane]);
 
+    if (!pane) {
+        return null;
+    }
+
     if (loading) {
         return (
-            <div className="flex items-center gap-2 px-4 py-8 text-sm text-white/30" data-testid="meine-dateien-loading">
-                <Loader2 size={14} className="animate-spin" />
-                Lade Inhalte...
-            </div>
+            <GlassPanel
+                title="Meine Dateien"
+                width={pane.size.width}
+                height={pane.size.height}
+                initialX={pane.position.x}
+                initialY={pane.position.y}
+                paneId={id}
+                onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+                onResize={(w, h) => updatePaneSize(id, w, h)}
+                onClose={() => removePane(id)}
+                onMinimize={() => minimizePane(id)}
+                onFocus={() => focusPane(id)}
+                isActive={true}
+                zIndex={pane.zIndex}
+                showCloseButton
+                showMinimizeButton
+                draggable
+                resizable
+            >
+                <div className="flex items-center gap-2 px-5 py-8 text-sm text-white/30" data-testid="meine-dateien-loading">
+                    <Loader2 size={14} className="animate-spin" />
+                    Lade Inhalte...
+                </div>
+            </GlassPanel>
         );
     }
 
     if (content === null || content === 'error') {
         return (
-            <div className="px-4 py-8 text-sm text-white/30">
-                Meine Inhalte sind gerade nicht verfuegbar.
-            </div>
+            <GlassPanel
+                title="Meine Dateien"
+                width={pane.size.width}
+                height={pane.size.height}
+                initialX={pane.position.x}
+                initialY={pane.position.y}
+                paneId={id}
+                onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+                onResize={(w, h) => updatePaneSize(id, w, h)}
+                onClose={() => removePane(id)}
+                onMinimize={() => minimizePane(id)}
+                onFocus={() => focusPane(id)}
+                isActive={true}
+                zIndex={pane.zIndex}
+                showCloseButton
+                showMinimizeButton
+                draggable
+                resizable
+            >
+                <div className="px-5 py-8 text-sm text-white/30">
+                    Meine Inhalte sind gerade nicht verfuegbar.
+                </div>
+            </GlassPanel>
         );
     }
 
@@ -140,27 +186,70 @@ export const MeineDateienPane: React.FC = () => {
 
     if (isEmpty) {
         return (
-            <div className="px-4 py-8 text-sm text-white/30">
-                Keine eigenen Inhalte gefunden. Lege einen Ordner an oder lade eine Datei hoch.
-            </div>
+            <GlassPanel
+                title="Meine Dateien"
+                width={pane.size.width}
+                height={pane.size.height}
+                initialX={pane.position.x}
+                initialY={pane.position.y}
+                paneId={id}
+                onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+                onResize={(w, h) => updatePaneSize(id, w, h)}
+                onClose={() => removePane(id)}
+                onMinimize={() => minimizePane(id)}
+                onFocus={() => focusPane(id)}
+                isActive={true}
+                zIndex={pane.zIndex}
+                showCloseButton
+                showMinimizeButton
+                draggable
+                resizable
+            >
+                <div className="px-5 py-8 text-sm text-white/30">
+                    Keine eigenen Inhalte gefunden. Lege einen Ordner an oder lade eine Datei hoch.
+                </div>
+            </GlassPanel>
         );
     }
 
     return (
-        <div className="flex flex-col py-2" data-testid="meine-dateien-content">
+        <GlassPanel
+            title="Meine Dateien"
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            paneId={id}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
+            onClose={() => removePane(id)}
+            onMinimize={() => minimizePane(id)}
+            onFocus={() => focusPane(id)}
+            isActive={true}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
+        >
+        <div className="flex h-full flex-col" data-testid="meine-dateien-content">
             {counts && (
-                <div className="mb-1 border-b border-white/5 px-4 py-2">
+                <div className="border-b border-white/5 px-5 py-3">
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
                         {counts.total != null && <span>{counts.total} sichtbare Eintraege</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
                         {counts.documents != null && <span>{counts.documents} Dokumente</span>}
                         {counts.standalone_files != null && counts.standalone_files > 0 && <span>{counts.standalone_files} Dateien</span>}
                     </div>
+                    <p className="mt-2 text-xs text-white/35">
+                        Dein privater Bereich zeigt nur persoenliche Ordner, Dokumente und Dateien. Organisationsinhalte gehoeren in den Finder der aktiven Instanz.
+                    </p>
                 </div>
             )}
 
+            <div className="flex-1 overflow-y-auto py-2">
             {content.space?.name && (
-                <div className="px-4 pb-2 pt-1 text-[11px] text-white/30">
+                <div className="px-5 pb-2 pt-1 text-[11px] text-white/30">
                     Privater Bereich: <span className="text-white/55">{content.space.name}</span>
                 </div>
             )}
@@ -174,7 +263,7 @@ export const MeineDateienPane: React.FC = () => {
                         <button
                             key={folder.id}
                             type="button"
-                            className="group flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-white/[0.03]"
+                            className="group flex w-full items-center gap-2 px-5 py-2.5 text-left hover:bg-white/[0.03]"
                             data-testid={`folder-row-${folder.id}`}
                             onClick={() => handleOpenFolder(folder.id, folder.name)}
                         >
@@ -190,7 +279,7 @@ export const MeineDateienPane: React.FC = () => {
 
             {visibleItems.length > 0 && (
                 <section aria-label="Inhalte">
-                    <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
+                    <div className="px-5 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
                         Inhalte
                     </div>
                     {visibleItems.map((item) => {
@@ -205,7 +294,7 @@ export const MeineDateienPane: React.FC = () => {
                             return (
                                 <div
                                     key={`document-${node.id}`}
-                                    className="group flex items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-white/[0.03]"
+                                    className="group flex items-start gap-2.5 px-5 py-2.5 transition-colors hover:bg-white/[0.03]"
                                     data-testid={`node-row-${node.id}`}
                                 >
                                     <FileText size={13} className="mt-0.5 shrink-0 text-white/30" />
@@ -258,7 +347,7 @@ export const MeineDateienPane: React.FC = () => {
                             return (
                                 <div
                                     key={`file-${file.id}`}
-                                    className="group flex items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-white/[0.03]"
+                                    className="group flex items-start gap-2.5 px-5 py-2.5 transition-colors hover:bg-white/[0.03]"
                                     data-testid={`file-row-${file.id}`}
                                 >
                                     <Paperclip size={13} className="mt-0.5 shrink-0 text-white/25" />
@@ -313,7 +402,9 @@ export const MeineDateienPane: React.FC = () => {
                     })}
                 </section>
             )}
+            </div>
         </div>
+        </GlassPanel>
     );
 };
 

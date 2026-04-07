@@ -29,13 +29,19 @@ const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
     { id: "stats", label: "Signale", icon: BarChart3 },
 ];
 
+const TAB_DESCRIPTIONS: Record<HubSection, string> = {
+    overview: "Kontext, Schnellaktionen und aktueller Arbeitsfokus.",
+    memory: "Gespeicherte Erinnerungen, gelernte Fakten und Suchzugriff.",
+    stats: "Live-Signale und operative Aktivitaet dieses Bereichs.",
+};
+
 /**
  * MORA CENTER PANE
  * Zentrale fuer Mora: Kontext, Erinnerungen und operative Signale.
  * Supports tab navigation: Overview, Memory, Stats
  */
 export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const viewLevel = useMoraStore((s) => s.viewLevel);
@@ -57,6 +63,16 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             setActiveSection(data.activeSection);
         }
     }, [activeSection, data?.activeSection]);
+
+    const switchSection = (section: HubSection) => {
+        setActiveSection(section);
+        updatePane(id, {
+            data: {
+                ...(pane?.data || {}),
+                activeSection: section,
+            },
+        });
+    };
 
     const handleClose = () => {
         removePane(id);
@@ -151,32 +167,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             draggable
             resizable
             dimBackground={false}
-            title={
-                <div className="flex items-center gap-3">
-                    <span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Center</span>
-                    {/* Tab Navigation */}
-                    <div className="flex items-center gap-0.5 bg-black/30 rounded-lg p-0.5 ml-2">
-                        {TABS.map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive = activeSection === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveSection(tab.id)}
-                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] transition-all duration-200 ${
-                                        isActive
-                                            ? "bg-emerald-500/20 text-emerald-300"
-                                            : "text-white/40 hover:text-white/60 hover:bg-white/[0.05]"
-                                    }`}
-                                >
-                                    <Icon className="h-3 w-3" />
-                                    <span>{tab.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            }
+            title={<span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Center</span>}
             isActive={isActive}
             onFocus={() => focusPane(id)}
             onClose={handleClose}
@@ -185,7 +176,33 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             onPositionChange={(x, y) => updatePanePosition(id, x, y)}
             className="overflow-hidden"
         >
-            <div className="h-full">
+            <div className="flex h-full flex-col">
+                <div className="border-b border-white/[0.06] px-4 py-3">
+                    <div className="flex items-center gap-1 rounded-xl bg-black/25 p-1">
+                        {TABS.map((tab) => {
+                            const Icon = tab.icon;
+                            const isTabActive = activeSection === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => switchSection(tab.id)}
+                                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] transition-all ${
+                                        isTabActive
+                                            ? "bg-emerald-500/18 text-emerald-200 shadow-[0_0_0_1px_rgba(16,185,129,0.18)]"
+                                            : "text-white/45 hover:bg-white/[0.05] hover:text-white/72"
+                                    }`}
+                                >
+                                    <Icon className="h-3.5 w-3.5" />
+                                    <span>{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <p className="mt-2 px-1 text-[11px] text-white/35">
+                        {TAB_DESCRIPTIONS[activeSection]}
+                    </p>
+                </div>
                 {renderContent()}
             </div>
         </GlassPanel>

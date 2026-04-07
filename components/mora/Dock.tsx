@@ -1210,7 +1210,7 @@ export const Dock = () => {
                                 id: 'meine-dateien',
                                 type: 'meine-dateien',
                                 title: 'Meine Dateien',
-                                size: { width: 380, height: 560 },
+                                size: { width: 920, height: 720 },
                             })}
                             title="Meine Dateien"
                             aria-label="Meine Dateien öffnen"

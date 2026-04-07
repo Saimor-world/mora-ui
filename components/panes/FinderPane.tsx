@@ -1614,27 +1614,22 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     <Upload className="w-8 h-8 text-emerald-400 animate-bounce" />
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-emerald-100 font-bold text-lg">Hier ablegen, um Inhalte einzuordnen</p>
+                                    <p className="text-emerald-100 font-bold text-lg">Hier ablegen, um Dateien hochzuladen</p>
                                     <p className="text-emerald-400/70 text-sm">Ziel: {breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Eingang'}</p>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 border-b border-white/5 bg-emerald-500/[0.04]">
-                        <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-100/85">
-                            {resolvedCompanyName ? `Organisation: ${resolvedCompanyName}` : 'Organisationskontext fehlt'}
-                        </span>
-                        {globalSearch && (
-                            <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-100/80">
-                                Organisationsweite Suche
+                    <div className="flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 border-b border-white/5 bg-white/[0.02] text-[11px] text-white/38">
+                        <span>{resolvedCompanyName || 'Organisation fehlt'}</span>
+                        {globalSearch ? (
+                            <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-100/80">
+                                Alles durchsuchen
                             </span>
-                        )}
-                        {!globalSearch && searchQuery.trim() && (
-                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/60">
-                                Suchpfad: {currentPathLabel}
-                            </span>
-                        )}
+                        ) : searchQuery.trim() ? (
+                            <span className="truncate text-white/26">Pfad: {currentPathLabel}</span>
+                        ) : null}
                     </div>
 
                     {navigationContext && (
@@ -1783,14 +1778,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 />
                             </div>
 
-                            {/* Deep View Toggle - Hidden on mobile */}
+                            {/* Global/Deep View Toggle - Hidden on mobile */}
                             <button
                                 onClick={() => setIsDeepView(!isDeepView)}
                                 className={`hidden md:flex p-1.5 px-2 lg:px-3 rounded-lg items-center gap-1.5 lg:gap-2 transition-all border text-xs ${isDeepView ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-black/40 border-white/5 text-white/40 hover:text-white'}`}
-                                title={isDeepView ? "Exit Deep View" : "Show All Documents"}
+                                title={isDeepView ? "Nur aktuellen Pfad zeigen" : "Alle Inhalte dieser Organisation zeigen"}
                             >
                                 <Sparkles size={14} />
-                                <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-wider">Deep</span>
+                                <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-wider">
+                                    {isDeepView ? 'Alles' : 'Pfad'}
+                                </span>
                             </button>
 
                             {/* View Mode Toggles */}
@@ -1869,58 +1866,71 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                     {selectedEntry && (
                         <div className="px-3 md:px-6 pb-3">
-                            <CommandReceipt
-                                tone={selectedEntry.kind === 'folder' ? 'cyan' : 'emerald'}
-                                icon={selectedEntry.kind === 'folder' ? FolderIcon : (TYPE_ICONS[selectedEntry.item.type] || FileText)}
-                                label={selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}
-                                title={selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
-                                body={selectedEntry.kind === 'folder'
-                                    ? `Kontext: ${currentPathLabel}. Ein weiterer Klick oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'}.`
-                                    : `${getContextOpenLabel(selectedEntry.item, 'file')}. ${selectedEntry.item.type === 'file'
-                                        ? `Status: ${getSourceFileSecondaryLabel(selectedEntry.item)}.`
-                                        : (getContentSecondaryLabel(selectedEntry.item) ? `Zusatz: ${getContentSecondaryLabel(selectedEntry.item)}.` : 'Kein Zusatzkontext.')}`}
-                                chips={[
-                                    ...(selectedEntry.item?.foundIn ? [{ label: `Gefunden in: ${selectedEntry.item.foundIn}` }] : []),
-                                    ...(selectedEntry.kind === 'file' && selectedEntry.item?.created_at ? [{ label: new Date(selectedEntry.item.created_at).toLocaleDateString() }] : []),
-                                    ...(selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) ? [{ label: `${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB` }] : []),
-                                ]}
-                                actions={(
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (selectedEntry.kind === 'folder') {
-                                                    navigateToFolder(selectedEntry.item.id);
-                                                } else {
-                                                    openFinderNode(selectedEntry.item);
-                                                }
-                                            }}
-                                            className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
-                                        >
-                                            <ExternalLink size={13} />
-                                            {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
-                                        </button>
-                                        {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
-                                            <button
-                                                type="button"
-                                                onClick={() => void handleOpenSourceFile(selectedEntry.item)}
-                                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                            >
-                                                <Paperclip size={13} />
-                                                Quelle oeffnen
-                                            </button>
+                            <div className="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/[0.035] px-4 py-3 md:flex-row md:items-center md:justify-between">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/30">
+                                        <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
+                                        {selectedEntry.item?.foundIn && (
+                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 normal-case tracking-normal text-white/45">
+                                                {selectedEntry.item.foundIn}
+                                            </span>
                                         )}
+                                    </div>
+                                    <div className="mt-1 truncate text-sm font-medium text-white/85">
+                                        {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/38">
+                                        <span>
+                                            {selectedEntry.kind === 'folder'
+                                                ? `Ein weiterer Klick oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'}.`
+                                                : getContextOpenLabel(selectedEntry.item, 'file')}
+                                        </span>
+                                        {selectedEntry.kind === 'file' && selectedEntry.item?.created_at && (
+                                            <span>{new Date(selectedEntry.item.created_at).toLocaleDateString()}</span>
+                                        )}
+                                        {selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) && (
+                                            <span>{`${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB`}</span>
+                                        )}
+                                        {selectedEntry.kind === 'file' && (
+                                            <span>{getSourceFileSecondaryLabel(selectedEntry.item)}</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (selectedEntry.kind === 'folder') {
+                                                navigateToFolder(selectedEntry.item.id);
+                                            } else {
+                                                openFinderNode(selectedEntry.item);
+                                            }
+                                        }}
+                                        className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3 py-1.5 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
+                                    >
+                                        <ExternalLink size={13} />
+                                        {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
+                                    </button>
+                                    {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedNodeId(null)}
-                                            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/75 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                            onClick={() => void handleOpenSourceFile(selectedEntry.item)}
+                                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
                                         >
-                                            Auswahl aufheben
+                                            <Paperclip size={13} />
+                                            Quelle
                                         </button>
-                                    </div>
-                                )}
-                                footer="Ein Klick markiert. Ein zweiter Klick auf Ordner navigiert weiter. Doppelklick auf Inhalte oeffnet direkt."
-                            />
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedNodeId(null)}
+                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                    >
+                                        Auswahl aufheben
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
