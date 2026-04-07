@@ -641,10 +641,12 @@ export const Dock = () => {
             title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: surfaceProfile.isPublicDemoSurface
                 ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
+                : surfaceProfile.isLocalTruthSurface
+                    ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
                 : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur oeffnen' : 'Organisation oeffnen',
+            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur oeffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz oeffnen' : 'Organisation oeffnen',
             accent,
             onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -666,6 +668,7 @@ export const Dock = () => {
         safeDepartments.length,
         surfaceProfile.fallbackCompanyName,
         surfaceProfile.isPublicDemoSurface,
+        surfaceProfile.isLocalTruthSurface,
         user?.active_company_name,
     ]);
 
