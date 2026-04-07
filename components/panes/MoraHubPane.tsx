@@ -5,6 +5,7 @@ import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useMoraStore } from "@/lib/store/moraState";
 import MoraPlayground from "@/components/mora/MoraPlayground";
+import MoraUpdatesFeed from "@/components/mora/MoraUpdatesFeed";
 import { MoraMemory, MemoryStats } from "@/components/mora/MoraMemory";
 import { Sparkles, Brain, BarChart3 } from "lucide-react";
 import { useMoraContext } from '@/lib/mora/useMoraContext';
@@ -105,7 +106,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
-                                    <span className="text-xs font-medium text-white/80">Mora-Signale</span>
+                                <span className="text-xs font-medium text-white/80">Mora-Signale</span>
                             </div>
                             {/* MR18: scope freshness — honest about staleness */}
                             {ctx.lastScopeUpdateAt && (
@@ -114,6 +115,16 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 </p>
                             )}
                             <MemoryStats compact={isCompact} companyId={resolvedCompanyId} />
+                            <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-3">
+                                <MoraUpdatesFeed
+                                    scope={viewLevel === "department" ? "department" : "company"}
+                                    title="Live-Signale"
+                                    maxEvents={isCompact ? 5 : 8}
+                                    compact={isCompact}
+                                    showHilToggle={false}
+                                    className="min-h-[260px]"
+                                />
+                            </div>
                         </div>
                     </div>
                 );

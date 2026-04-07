@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Clock, CheckCircle, AlertCircle, Database, ShieldCheck, Sparkles } from 'lucide-react';
 import { useMemory } from '@/lib/hooks/useMemory';
+import { useMemorySurface } from '@/lib/hooks/useMemorySurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
@@ -24,6 +25,7 @@ interface MemoryWidgetProps {
 
 export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) => {
     const { metrics, pendingCount, isLoading } = useMemory();
+    const { surface } = useMemorySurface();
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const { openPane } = usePaneStore();
     const isAccountScoped = !activeCompanyId;
@@ -36,15 +38,15 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
     }, [metrics]);
 
     const signalBars = useMemo(() => {
-        const facts = metrics?.structured_facts || 0;
-        const learns = metrics?.recent_learns_7d || 0;
-        const reviews = pendingCount;
+        const foundation = surface?.layers?.foundation?.count || 0;
+        const scoped = surface?.layers?.scope?.count || 0;
+        const personal = surface?.layers?.personal?.count || 0;
         return [
-            { label: 'Fakten', value: facts, icon: Database },
-            { label: 'Lernen', value: learns, icon: Sparkles },
-            { label: 'Review', value: reviews, icon: ShieldCheck },
+            { label: 'Grund', value: foundation, icon: Database },
+            { label: 'Bereich', value: scoped, icon: Sparkles },
+            { label: 'Persoenlich', value: personal, icon: ShieldCheck },
         ];
-    }, [metrics, pendingCount]);
+    }, [surface]);
 
     const maxSignal = Math.max(...signalBars.map((item) => item.value), 1);
 

@@ -1169,9 +1169,34 @@ export interface MemoryOverviewMetrics {
     };
 }
 
+export interface MemoryOverviewLayerItem {
+    id?: string;
+    title: string;
+    summary: string;
+    detail?: string;
+    kind?: string;
+    scope?: string;
+    source?: string;
+    timestamp?: string;
+    updated_at?: string;
+    confidence?: number;
+    score?: number;
+    risk_level?: string;
+}
+
+export interface MemoryOverviewLayer {
+    label: string;
+    scope: string;
+    description?: string;
+    count: number;
+    items: MemoryOverviewLayerItem[];
+    pending_reviews?: MemoryOverviewLayerItem[];
+}
+
 export interface MemoryOverview {
     metrics: MemoryOverviewMetrics;
     memory_model?: {
+        ground_knowledge_scope?: string;
         chat_memory_scope?: string;
         shared_operational_scope?: string;
         recent_scope?: string;
@@ -1184,6 +1209,11 @@ export interface MemoryOverview {
         metrics?: string;
         user_id?: string;
         company_id?: string;
+    };
+    layers?: {
+        foundation?: MemoryOverviewLayer;
+        scope?: MemoryOverviewLayer;
+        personal?: MemoryOverviewLayer;
     };
 }
 

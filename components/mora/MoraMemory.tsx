@@ -4,12 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
     Brain,
     Search,
-    Clock,
     CheckCircle,
     XCircle,
     AlertTriangle,
-    Sparkles,
-    ChevronRight,
     RefreshCw,
     BookOpen,
     Lightbulb,
@@ -19,15 +16,13 @@ import {
 } from "lucide-react";
 import {
     searchMemory as searchMemoryApi,
-    getMemoryPending,
+    type MemoryOverviewLayer,
 } from "@/lib/api/coreClient";
-import { toast } from "sonner";
 import { useMoraStore } from "@/lib/store/moraState";
 import { useMemory } from "@/lib/hooks/useMemory";
+import { useMemorySurface } from "@/lib/hooks/useMemorySurface";
 import type {
     MemorySearchResult as MemoryEntry,
-    ReviewItem,
-    MemoryMetrics
 } from "@/lib/types/memory";
 // ===========================================================================
 const categoryIcons: Record<string, React.ElementType> = {
@@ -370,6 +365,79 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     );
 };
 
+interface MemoryLayerPanelProps {
+    layer?: MemoryOverviewLayer;
+    accent: string;
+    emptyText: string;
+}
+
+const MemoryLayerPanel: React.FC<MemoryLayerPanelProps> = ({ layer, accent, emptyText }) => {
+    if (!layer) return null;
+
+    const pendingReviews = Array.isArray(layer.pending_reviews) ? layer.pending_reviews : [];
+
+    return (
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <div className="border-b border-white/[0.06] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">{layer.label}</p>
+                        <p className="mt-1 text-xs text-white/65">{layer.description}</p>
+                    </div>
+                    <div className={`rounded-full border px-2.5 py-1 text-[10px] ${accent}`}>
+                        {layer.count}
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2 px-4 py-4">
+                {layer.items.length === 0 ? (
+                    <div className="rounded-xl border border-white/[0.05] bg-black/15 px-3 py-3 text-xs text-white/35">
+                        {emptyText}
+                    </div>
+                ) : (
+                    layer.items.slice(0, 4).map((item) => (
+                        <div key={item.id || `${item.title}-${item.summary}`} className="rounded-xl border border-white/[0.05] bg-black/15 px-3 py-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">
+                                        {item.title}
+                                    </p>
+                                    <p className="mt-1 text-sm text-white/88 leading-snug">{item.summary}</p>
+                                    {item.detail ? (
+                                        <p className="mt-1 text-xs text-white/38 leading-relaxed">{item.detail}</p>
+                                    ) : null}
+                                </div>
+                                {item.risk_level ? (
+                                    <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-amber-300">
+                                        {item.risk_level}
+                                    </span>
+                                ) : null}
+                            </div>
+                        </div>
+                    ))
+                )}
+
+                {pendingReviews.length > 0 ? (
+                    <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 px-3 py-3">
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-amber-300/80">
+                            Offene Reviews
+                        </p>
+                        <div className="mt-2 space-y-2">
+                            {pendingReviews.slice(0, 3).map((item) => (
+                                <div key={item.id || `${item.title}-${item.summary}`} className="rounded-lg border border-white/[0.05] bg-black/15 px-3 py-2">
+                                    <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{item.title}</p>
+                                    <p className="mt-1 text-xs text-white/80 line-clamp-2">{item.summary}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    );
+};
+
 // ===========================================================================
 // ===========================================================================
 // ===========================================================================
@@ -392,6 +460,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     const resolvedCompanyId = companyId ?? activeCompanyId ?? null;
     const [activeTab, setActiveTab] = useState<"search" | "queue" | "stats">("search");
     const [refreshKey, setRefreshKey] = useState(0);
+    const { surface, isLoading: isSurfaceLoading } = useMemorySurface(resolvedCompanyId);
 
     const tabs = [
         { id: "search" as const, label: "Suchen", icon: Search, show: showSearch },
@@ -428,6 +497,31 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
                     })}
                 </div>
             </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+                <MemoryLayerPanel
+                    layer={surface?.layers?.foundation}
+                    accent="border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
+                    emptyText="Noch kein belastbares Grundwissen fuer diesen Kontext sichtbar."
+                />
+                <MemoryLayerPanel
+                    layer={surface?.layers?.scope}
+                    accent="border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                    emptyText="Noch kein freigegebenes Bereichswissen im aktiven Firmenkontext."
+                />
+                <MemoryLayerPanel
+                    layer={surface?.layers?.personal}
+                    accent="border-violet-500/20 bg-violet-500/10 text-violet-200"
+                    emptyText="Noch keine persoenlichen Erinnerungen in diesem Kontext sichtbar."
+                />
+            </div>
+
+            {isSurfaceLoading ? (
+                <div className="flex items-center gap-2 rounded-xl border border-white/[0.05] bg-black/15 px-3 py-3 text-xs text-white/40">
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin text-violet-400/80" />
+                    Memory-Schichten werden geladen...
+                </div>
+            ) : null}
 
             {/* Content */}
             {activeTab === "search" && showSearch && <MemorySearch compact={compact} companyId={resolvedCompanyId} />}
