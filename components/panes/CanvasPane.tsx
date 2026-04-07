@@ -1,9 +1,14 @@
 'use client';
-// Stub — replaced by full Whiteboard implementation in Plan 4 (app-platform-new-apps)
+import React from 'react';
 import { AppLoader } from '@/lib/apps/AppLoader';
+import { PaneShell } from './PaneShell';
 
 interface Props { id: string; data?: Record<string, unknown>; }
 
 export function CanvasPane({ id, data }: Props) {
-  return <AppLoader appId="canvas" paneId={id} initialData={data ?? {}} />;
+  return (
+    <PaneShell id={id} defaultWidth={900} defaultHeight={680}>
+      <AppLoader appId="canvas" paneId={id} initialData={data ?? {}} />
+    </PaneShell>
+  );
 }
