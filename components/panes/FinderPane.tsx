@@ -1622,7 +1622,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     )}
 
                     <div className="flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 border-b border-white/5 bg-white/[0.02] text-[11px] text-white/38">
-                        <span>{resolvedCompanyName || 'Organisation fehlt'}</span>
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                            Instanz: {resolvedCompanyName || 'Keine Organisation aktiv'}
+                        </span>
                         {globalSearch ? (
                             <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2 py-0.5 text-[10px] text-violet-100/80">
                                 Alles durchsuchen
@@ -1782,11 +1784,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <button
                                 onClick={() => setIsDeepView(!isDeepView)}
                                 className={`hidden md:flex p-1.5 px-2 lg:px-3 rounded-lg items-center gap-1.5 lg:gap-2 transition-all border text-xs ${isDeepView ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-black/40 border-white/5 text-white/40 hover:text-white'}`}
-                                title={isDeepView ? "Nur aktuellen Pfad zeigen" : "Alle Inhalte dieser Organisation zeigen"}
+                                title={isDeepView ? "Gesamtsicht verlassen und nur den aktuellen Pfad zeigen" : "Gesamtsicht ueber die sichtbaren Inhalte dieser Instanz"}
                             >
                                 <Sparkles size={14} />
                                 <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-wider">
-                                    {isDeepView ? 'Alles' : 'Pfad'}
+                                    {isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}
                                 </span>
                             </button>
 
@@ -1869,6 +1871,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             <div className="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/[0.035] px-4 py-3 md:flex-row md:items-center md:justify-between">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/30">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] text-white/55">
+                                            Auswahl
+                                        </span>
                                         <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
                                         {selectedEntry.item?.foundIn && (
                                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 normal-case tracking-normal text-white/45">

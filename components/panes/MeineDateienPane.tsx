@@ -27,6 +27,16 @@ type ShareState =
 
 type VisibleItem = NonNullable<UserContentResponse['items']>[number];
 
+function normalizePrivateAreaLabel(value?: string | null): string {
+    const next = (value || '').trim();
+    if (!next) return 'Privater Bereich';
+    const normalized = next.toLowerCase();
+    if (['my space', 'personal space', 'private space'].includes(normalized)) {
+        return 'Privater Bereich';
+    }
+    return next;
+}
+
 export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateien' }) => {
     const [content, setContent] = useState<UserContentResponse | 'error' | null>(null);
     const [loading, setLoading] = useState(true);
@@ -95,7 +105,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
     if (loading) {
         return (
             <GlassPanel
-                title="Meine Dateien"
+                title="Privater Bereich"
                 width={pane.size.width}
                 height={pane.size.height}
                 initialX={pane.position.x}
@@ -124,7 +134,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
     if (content === null || content === 'error') {
         return (
             <GlassPanel
-                title="Meine Dateien"
+                title="Privater Bereich"
                 width={pane.size.width}
                 height={pane.size.height}
                 initialX={pane.position.x}
@@ -158,6 +168,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
     const documentById = new Map(documents.map((document) => [document.id, document]));
     const fileById = new Map(standaloneFiles.map((file) => [file.id, file]));
     const counts = content.counts && typeof content.counts === 'object' ? content.counts : undefined;
+    const privateAreaLabel = normalizePrivateAreaLabel(content.space?.name);
 
     const visibleItems: VisibleItem[] = Array.isArray(content.items) && content.items.length > 0
         ? content.items
@@ -187,7 +198,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
     if (isEmpty) {
         return (
             <GlassPanel
-                title="Meine Dateien"
+                title="Privater Bereich"
                 width={pane.size.width}
                 height={pane.size.height}
                 initialX={pane.position.x}
@@ -214,7 +225,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
 
     return (
         <GlassPanel
-            title="Meine Dateien"
+            title="Privater Bereich"
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -238,11 +249,11 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
                         {counts.total != null && <span>{counts.total} sichtbare Eintraege</span>}
                         {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.documents != null && <span>{counts.documents} Dokumente</span>}
+                        {counts.documents != null && <span>{counts.documents} Inhalte</span>}
                         {counts.standalone_files != null && counts.standalone_files > 0 && <span>{counts.standalone_files} Dateien</span>}
                     </div>
                     <p className="mt-2 text-xs text-white/35">
-                        Dein privater Bereich zeigt nur persoenliche Ordner, Dokumente und Dateien. Organisationsinhalte gehoeren in den Finder der aktiven Instanz.
+                        Alles hier gehoert nur deinem Konto. Gemeinsame Inhalte und Teamstrukturen oeffnest du getrennt im Finder der aktiven Instanz.
                     </p>
                 </div>
             )}
@@ -250,7 +261,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
             <div className="flex-1 overflow-y-auto py-2">
             {content.space?.name && (
                 <div className="px-5 pb-2 pt-1 text-[11px] text-white/30">
-                    Privater Bereich: <span className="text-white/55">{content.space.name}</span>
+                    Privater Bereich: <span className="text-white/55">{privateAreaLabel}</span>
                 </div>
             )}
 

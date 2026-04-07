@@ -96,6 +96,12 @@ export const HomeSurface: React.FC = () => {
     const resetStore = useMoraStore((s) => s.resetStore);
     const setUser = useMoraStore((s) => s.setUser);
     const openPane = usePaneStore((s) => s.openPane);
+    const getPane = usePaneStore((s) => s.getPane);
+    const focusPane = usePaneStore((s) => s.focusPane);
+    const restorePane = usePaneStore((s) => s.restorePane);
+    const updatePane = usePaneStore((s) => s.updatePane);
+    const updatePanePosition = usePaneStore((s) => s.updatePanePosition);
+    const updatePaneSize = usePaneStore((s) => s.updatePaneSize);
     const logoutAccount = useAccountStore((s) => s.logout);
     const surfaceProfile = useSurfaceProfile();
 
@@ -152,31 +158,62 @@ export const HomeSurface: React.FC = () => {
         };
     }, [activeCompanyId]);
 
-    const openDocument = useCallback((node: CoreNode) => {
+    const revealPane = useCallback((
+        paneId: string,
+        request: { type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat'; title: string; size: { width: number; height: number }; data?: any }
+    ) => {
+        const existing = getPane(paneId);
+        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+        const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+        const centeredX = Math.max(24, Math.floor((viewportWidth - request.size.width) / 2));
+        const centeredY = Math.max(64, Math.floor((viewportHeight - request.size.height) / 2) - 20);
+
+        if (existing) {
+            updatePane(paneId, { title: request.title, data: request.data });
+            updatePaneSize(paneId, request.size.width, request.size.height);
+            updatePanePosition(paneId, centeredX, centeredY);
+            if (existing.minimized) {
+                restorePane(paneId);
+            } else {
+                focusPane(paneId);
+            }
+            return;
+        }
+
         openPane({
-            id: `doc-${node.id}`,
+            id: paneId,
+            type: request.type,
+            title: request.title,
+            size: request.size,
+            position: { x: centeredX, y: centeredY },
+            data: request.data,
+        });
+    }, [focusPane, getPane, openPane, restorePane, updatePane, updatePanePosition, updatePaneSize]);
+
+    const openDocument = useCallback((node: CoreNode) => {
+        revealPane(`doc-${node.id}`, {
             type: 'document',
             title: node.title || 'Dokument',
             size: { width: 960, height: 720 },
             data: { nodeId: node.id },
         });
-    }, [openPane]);
+    }, [revealPane]);
 
     const openFinder = useCallback(() => {
-        openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
-    }, [openPane]);
+        revealPane('finder-main', { type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
+    }, [revealPane]);
 
     const openMeineDateien = useCallback(() => {
-        openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 920, height: 720 } });
-    }, [openPane]);
+        revealPane('meine-dateien', { type: 'meine-dateien', title: 'Privater Bereich', size: { width: 920, height: 720 } });
+    }, [revealPane]);
 
     const openNotes = useCallback(() => {
-        openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } });
-    }, [openPane]);
+        revealPane('notes-main', { type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } });
+    }, [revealPane]);
 
     const openMora = useCallback(() => {
-        openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
-    }, [openPane]);
+        revealPane('chat-main', { type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
+    }, [revealPane]);
 
     const handleLogout = useCallback(async () => {
         await authLogout();
@@ -275,8 +312,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         if (personalLatestItem.kind === 'node') {
-            openPane({
-                id: `doc-${personalLatestItem.id}`,
+            revealPane(`doc-${personalLatestItem.id}`, {
                 type: 'document',
                 title: personalLatestItem.label,
                 size: { width: 960, height: 720 },
@@ -286,8 +322,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         if (personalLatestItem.kind === 'folder') {
-            openPane({
-                id: `finder-${personalLatestItem.id}`,
+            revealPane(`finder-${personalLatestItem.id}`, {
                 type: 'finder',
                 title: personalLatestItem.label,
                 size: { width: 960, height: 720 },
@@ -303,7 +338,7 @@ export const HomeSurface: React.FC = () => {
         }, openPane).catch((error: any) => {
             toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
         });
-    }, [openMeineDateien, openPane, personalLatestItem]);
+    }, [openMeineDateien, openPane, personalLatestItem, revealPane]);
 
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
@@ -407,6 +442,44 @@ export const HomeSurface: React.FC = () => {
                     </button>
                 </div>
 
+                {surfaceProfile.isLocalTruthSurface && (
+                    <section className={`rounded-3xl border px-5 py-5 ${t.card}`}>
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p className={`text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                                    Local Truth
+                                </p>
+                                <p className={`mt-2 text-sm ${t.cardText}`}>
+                                    Diese Instanz ist die Produktwahrheit. Hier pruefst du echte Regeln, echte Inhalte und echte Arbeitsablaeufe, bevor etwas auf die Demo gespiegelt wird.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={openFinder}
+                                    className={`rounded-xl px-4 py-2 text-sm transition-all ${t.qaBtn}`}
+                                >
+                                    Instanz-Finder
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={openMora}
+                                    className={`rounded-xl px-4 py-2 text-sm transition-all ${t.qaBtn}`}
+                                >
+                                    Mora Center
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={openMeineDateien}
+                                    className={`rounded-xl px-4 py-2 text-sm transition-all ${t.qaBtn}`}
+                                >
+                                    Privaten Bereich oeffnen
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
                         <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
@@ -500,7 +573,7 @@ export const HomeSurface: React.FC = () => {
                             >
                                 <FolderHeart size={20} className={t.qaIcon} />
                                 <div className="min-w-0 flex-1">
-                                    <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
+                                    <div className={`text-sm font-medium ${t.cardText}`}>Privater Bereich</div>
                                     {contentSummaryBadges.length > 0 && (
                                         <div className="mt-2 flex flex-wrap gap-2">
                                             {contentSummaryBadges.map((badge) => (
@@ -514,7 +587,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Dein privater Bereich zeigt echte persoenliche Ordner, Inhalte und Dateien. Organisationsinhalte oeffnest du getrennt im Finder der aktiven Instanz.
+                                        Dein privater Bereich ist ein eigenes Fenster. Er zeigt nur persoenliche Ordner und Inhalte; Organisationsinhalte oeffnest du getrennt im Finder der aktiven Instanz.
                                     </div>
                                 </div>
                             </button>

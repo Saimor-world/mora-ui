@@ -37,6 +37,12 @@ const TAB_DESCRIPTIONS: Record<HubSection, string> = {
     stats: "Live-Signale und operative Aktivitaet dieses Bereichs.",
 };
 
+const SECTION_TITLES: Record<HubSection, string> = {
+    overview: "Arbeitsfokus",
+    memory: "Erinnerungsebenen",
+    stats: "Signale und Aktivitaet",
+};
+
 /**
  * MORA CENTER PANE
  * Zentrale fuer Mora: Kontext, Erinnerungen und operative Signale.
@@ -87,24 +93,48 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const height = pane?.size?.height ?? 720;
     const isCompact = width < 500;
 
+    const renderSectionHeader = (section: HubSection) => (
+        <div className="border-b border-white/[0.06] px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+                <div>
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/32">
+                        {TABS.find((tab) => tab.id === section)?.label}
+                    </p>
+                    <p className="mt-1 text-sm text-white/82">{SECTION_TITLES[section]}</p>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/55">
+                    {surfaceProfile.isLocalTruthSurface ? "Local Truth" : surfaceProfile.isPublicDemoSurface ? "Demo Mirror" : "Standard"}
+                </span>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-white/38">
+                {TAB_DESCRIPTIONS[section]}
+            </p>
+        </div>
+    );
+
     // ─── Render Section Content ───
     const renderContent = () => {
         switch (activeSection) {
             case "memory":
                 return (
-                    <div className="h-full p-4 overflow-y-auto">
-                        <MoraMemory
-                            compact={isCompact}
-                            showSearch={true}
-                            showQueue={true}
-                            showStats={!isCompact}
-                            companyId={resolvedCompanyId}
-                        />
+                    <div className="flex h-full flex-col">
+                        {renderSectionHeader("memory")}
+                        <div className="h-full overflow-y-auto p-4">
+                            <MoraMemory
+                                compact={isCompact}
+                                showSearch={true}
+                                showQueue={true}
+                                showStats={!isCompact}
+                                companyId={resolvedCompanyId}
+                            />
+                        </div>
                     </div>
                 );
             case "stats":
                 return (
-                    <div className="h-full p-4 overflow-y-auto">
+                    <div className="flex h-full flex-col">
+                        {renderSectionHeader("stats")}
+                        <div className="h-full overflow-y-auto p-4">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
                                 <BarChart3 className="h-4 w-4 text-emerald-400" />
@@ -128,12 +158,14 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 />
                             </div>
                         </div>
+                        </div>
                     </div>
                 );
             case "overview":
             default:
                 return (
                     <div className="h-full flex flex-col">
+                        {renderSectionHeader("overview")}
                         {ctx.isOperational === null ? null : ctx.isOperational ? (
                             <>
                                 {/* MR18: Mora context — always visible when scope is known */}
@@ -234,9 +266,6 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                             );
                         })}
                     </div>
-                    <p className="mt-2 px-1 text-[11px] text-white/35">
-                        {TAB_DESCRIPTIONS[activeSection]}
-                    </p>
                 </div>
                 {renderContent()}
             </div>
