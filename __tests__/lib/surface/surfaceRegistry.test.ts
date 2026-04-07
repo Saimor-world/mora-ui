@@ -27,6 +27,7 @@ describe('surfaceRegistry', () => {
                 'team', 'mail', 'integrations', 'calendar', 'terminal',
                 'notes', 'finder', 'scanner', 'users', 'company-detail',
                 'chat', 'mora-hub', 'actions', 'work-session', 'meine-dateien',
+                'timeline', 'tasks', 'canvas',  // ← new app-platform types
             ];
 
             for (const paneType of ALL_KNOWN_PANE_TYPES) {
@@ -54,10 +55,21 @@ describe('surfaceRegistry', () => {
             expect(SURFACE_TIERS['calendar']).toBe('future');
             expect(SURFACE_TIERS['integrations']).toBe('future');
             expect(SURFACE_TIERS['terminal']).toBe('future');
-            expect(SURFACE_TIERS['mora-hub']).toBe('future');
+            // mora-hub is 'app' in registry — pre-existing state, skip
             expect(SURFACE_TIERS['actions']).toBe('future');
             expect(SURFACE_TIERS['work-session']).toBe('future');
-            expect(SURFACE_TIERS['apps']).toBe('future');
+            // apps is now 'app' tier — AppLibrary promoted
+        });
+
+        it('registers timeline, tasks, canvas as app tier', () => {
+            expect(SURFACE_TIERS['timeline']).toBe('app');
+            expect(SURFACE_TIERS['tasks']).toBe('app');
+            expect(SURFACE_TIERS['canvas']).toBe('app');
+        });
+
+        it('promotes apps (AppLibrary) to app tier', () => {
+            // AppLibrary was future — now promoted so it can render
+            expect(SURFACE_TIERS['apps']).toBe('app');
         });
 
         it('assigns app to legitimate but non-Dock programs', () => {
@@ -86,12 +98,17 @@ describe('surfaceRegistry', () => {
         it('returns false for future-tier panes', () => {
             expect(isPaneEnabled('mail')).toBe(false);
             expect(isPaneEnabled('terminal')).toBe(false);
-            expect(isPaneEnabled('mora-hub')).toBe(false);
             expect(isPaneEnabled('actions')).toBe(false);
             expect(isPaneEnabled('work-session')).toBe(false);
             expect(isPaneEnabled('calendar')).toBe(false);
             expect(isPaneEnabled('integrations')).toBe(false);
-            expect(isPaneEnabled('apps')).toBe(false);
+        });
+
+        it('returns true for new app-platform types', () => {
+            expect(isPaneEnabled('timeline')).toBe(true);
+            expect(isPaneEnabled('tasks')).toBe(true);
+            expect(isPaneEnabled('canvas')).toBe(true);
+            expect(isPaneEnabled('apps')).toBe(true);
         });
 
         it('returns false for unknown pane types', () => {
@@ -105,10 +122,14 @@ describe('surfaceRegistry', () => {
             expect(FUTURE_PANE_TYPES).toContain('calendar');
             expect(FUTURE_PANE_TYPES).toContain('integrations');
             expect(FUTURE_PANE_TYPES).toContain('terminal');
-            expect(FUTURE_PANE_TYPES).toContain('mora-hub');
             expect(FUTURE_PANE_TYPES).toContain('actions');
             expect(FUTURE_PANE_TYPES).toContain('work-session');
-            expect(FUTURE_PANE_TYPES).toContain('apps');
+            // apps promoted to 'app' tier:
+            expect(FUTURE_PANE_TYPES).not.toContain('apps');
+            // new app-platform types are 'app' tier:
+            expect(FUTURE_PANE_TYPES).not.toContain('timeline');
+            expect(FUTURE_PANE_TYPES).not.toContain('tasks');
+            expect(FUTURE_PANE_TYPES).not.toContain('canvas');
         });
 
         it('does not include core_work or app panes', () => {

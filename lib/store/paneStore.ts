@@ -4,7 +4,8 @@ export interface PaneConfig {
     id: string;
     type: 'document' | 'settings' | 'apps' | 'grid' | 'space' | 'search'
     | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
-    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline' | 'mora-hub' | 'actions' | 'work-session' | 'meine-dateien';
+    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline' | 'mora-hub' | 'actions' | 'work-session' | 'meine-dateien'
+    | 'tasks' | 'canvas';
 
     title: string;
     position: { x: number; y: number };

@@ -23,7 +23,8 @@ export type PaneType =
     | 'settings' | 'finder' | 'document' | 'chat' | 'team' | 'notes' | 'meine-dateien'
     | 'scanner' | 'users' | 'company-detail' | 'grid' | 'search' | 'space'
     | 'mail' | 'calendar' | 'integrations' | 'terminal' | 'mora-hub'
-    | 'actions' | 'work-session' | 'apps';
+    | 'actions' | 'work-session' | 'apps'
+    | 'timeline' | 'tasks' | 'canvas';
 
 /**
  * Every pane type mapped to its tier.
@@ -58,7 +59,12 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     'mora-hub':      'app',
     actions:         'future',    // Action Path not stabilized
     'work-session':  'future',    // agentic execution too early
-    apps:            'future',    // AppLibrary self-referential with <10 apps
+    apps:            'app',       // AppLibrary — promoted (15 apps now registered)
+
+    // ── App Platform new types ──────────────────────────────────────────────
+    timeline:        'app',       // Activity feed — new
+    tasks:           'app',       // Kanban board — new
+    canvas:          'app',       // Whiteboard — new
 };
 
 // ─── Derived Constants ──────────────────────────────────────────────────────
