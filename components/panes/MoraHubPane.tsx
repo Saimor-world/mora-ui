@@ -166,9 +166,9 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                 return (
                     <div className="h-full flex flex-col">
                         {renderSectionHeader("overview")}
-                        {ctx.isOperational === null ? null : ctx.isOperational ? (
+                        {ctx.isOperational ? (
                             <>
-                                {/* MR18: Mora context — always visible when scope is known */}
+                                {/* Context chip — always visible when scope is known */}
                                 <div className="px-4 pt-3 pb-2 border-b border-white/5 shrink-0">
                                     <MoraContextChip variant="hub" snapshot={ctx} />
                                 </div>
@@ -182,13 +182,49 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 </div>
                             </>
                         ) : (
-                            <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 mx-6 mt-8 border border-amber-500/20 bg-amber-500/5 rounded-2xl text-center">
-                                <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-amber-400/80">
-                                    Setup Erforderlich
-                                </p>
-                                <p className="text-xs text-amber-200/50 max-w-[260px] leading-relaxed">
-                                    Oeffne zuerst die Beispielinstanz oder einen Bereich, damit Mora operativ werden kann.
-                                </p>
+                            /* Gentle idle state — not a warning, just a waiting room */
+                            <div className="flex flex-col h-full overflow-y-auto">
+                                <div className="flex flex-col items-center gap-5 px-6 py-8 text-center">
+                                    {/* Ora orb placeholder */}
+                                    <div className="relative flex h-16 w-16 items-center justify-center">
+                                        <div className="absolute inset-0 rounded-full bg-emerald-500/[0.07] blur-xl" />
+                                        <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/15 bg-[linear-gradient(180deg,rgba(16,185,129,0.06),rgba(16,185,129,0.02))]">
+                                            <Sparkles size={22} className="text-emerald-400/50" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-white/70">Mora wartet</p>
+                                        <p className="mt-1.5 text-[12px] leading-relaxed text-white/35 max-w-[240px]">
+                                            Oeffne einen Bereich oder eine Instanz — dann wird Mora hier aktiv.
+                                        </p>
+                                    </div>
+                                    {/* Quick-jump hints */}
+                                    <div className="w-full space-y-2 text-left">
+                                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/25">Schnellzugriff</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => switchSection("memory")}
+                                            className="w-full flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left transition-colors hover:border-white/12 hover:bg-white/[0.05]"
+                                        >
+                                            <Brain className="h-4 w-4 shrink-0 text-white/35" />
+                                            <div>
+                                                <p className="text-[12px] font-medium text-white/65">Erinnerungen</p>
+                                                <p className="text-[10px] text-white/30">Was Mora bisher gelernt hat</p>
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => switchSection("stats")}
+                                            className="w-full flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left transition-colors hover:border-white/12 hover:bg-white/[0.05]"
+                                        >
+                                            <BarChart3 className="h-4 w-4 shrink-0 text-white/35" />
+                                            <div>
+                                                <p className="text-[12px] font-medium text-white/65">Signale</p>
+                                                <p className="text-[10px] text-white/30">Live-Aktivität der Instanz</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

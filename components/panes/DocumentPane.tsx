@@ -313,18 +313,20 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
         if (isMarkdown && content) {
             return (
-                <div
-                    className="p-6 prose prose-invert prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                />
+                <div className="px-5 py-5 md:px-8 md:py-7">
+                    <div
+                        className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] px-6 py-6 prose prose-invert prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+                    />
+                </div>
             );
         }
 
         if (content) {
             return (
-                <div className="px-6 py-6">
-                    <div className="rounded-[28px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
-                        <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-white/82">
+                <div className="px-5 py-5 md:px-8 md:py-7">
+                    <div className="rounded-[24px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] px-6 py-6 shadow-[0_14px_40px_rgba(0,0,0,0.22)]">
+                        <pre className="whitespace-pre-wrap font-mono text-[13px] leading-[1.75] text-white/80">
                             {content}
                         </pre>
                     </div>
@@ -371,165 +373,145 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             resizable
         >
             <div className="flex flex-col h-full">
-                {navigationContext && (
-                    <div className="px-3 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
-                        <CommandReceipt
-                            tone="cyan"
-                            icon={NavigationIcon}
-                            label={navigationSourceLabel}
-                            title={navigationContext.message}
-                            chips={[
-                                ...(navigationContext.label ? [{ label: navigationContext.label }] : []),
-                                ...(navigationContext.path ? [{ label: navigationContext.path }] : []),
-                                ...(folderId || navigationContext.folderId ? [{ label: `Zielordner: ${navigationContext.folderId || folderId}` }] : []),
-                            ]}
-                            actions={(
-                                (navigationContext.folderId || folderId) ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => openNavigationOutcome({
-                                            title: 'Zielordner geoeffnet',
-                                            message: `Ich habe den zugehoerigen Zielordner fuer ${navigationContext.label || name || 'das Dokument'} geoeffnet.`,
-                                            targetType: 'folder',
-                                            label: navigationContext.label || name || 'Finder',
-                                            path: navigationContext.path,
-                                            companyId: navigationContext.companyId || companyId,
-                                            folderId: navigationContext.folderId || folderId,
-                                            source: navigationContext.source || 'search',
-                                        }, openPane)}
-                                        className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                    >
-                                        <FolderOpen size={13} />
-                                        Im Zielordner oeffnen
-                                    </button>
-                                ) : null
-                            )}
-                            footer="Dieses Dokument kann eine zugrunde liegende Datei als Quelle haben. Mora zeigt diese Herkunft nur dann, wenn sie real vorhanden ist."
-                        />
+                {/* Compact doc strip — surface + icon + name + actions in one line */}
+                <div className="flex items-center gap-2 border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] px-3 py-2 backdrop-blur-md">
+                    {/* File type icon */}
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-black/20">
+                        {isPDF ? (
+                            <File size={13} className="text-red-400" />
+                        ) : isImage ? (
+                            <FileImage size={13} className="text-purple-400" />
+                        ) : isVideo ? (
+                            <FileVideo size={13} className="text-pink-400" />
+                        ) : (
+                            <FileText size={13} className="text-blue-300" />
+                        )}
                     </div>
-                )}
 
-                <div className="border-b border-white/5 bg-white/[0.04] px-4 py-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/34">
-                                <span className={`rounded-full border px-2.5 py-1 ${surfaceProfile.isLocalTruthSurface ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200' : surfaceProfile.isPublicDemoSurface ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-white/10 bg-white/[0.04] text-white/55'}`}>
-                                    {surfaceProfile.isLocalTruthSurface ? 'Local Truth' : surfaceProfile.isPublicDemoSurface ? 'Demo Mirror' : 'Standard'}
-                                </span>
-                                <span>Dokumentenansicht</span>
-                            </div>
-                            <div className="mt-3 flex items-start gap-3">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-black/15">
-                                    {isPDF ? (
-                                        <File size={18} className="text-red-400" />
-                                    ) : isImage ? (
-                                        <FileImage size={18} className="text-purple-400" />
-                                    ) : isVideo ? (
-                                        <FileVideo size={18} className="text-pink-400" />
-                                    ) : (
-                                        <FileText size={18} className="text-blue-300" />
-                                    )}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-base font-medium leading-snug text-white/90">{name}</div>
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-white/48">
-                                            {fileExtension || type || 'doc'}
-                                        </span>
-                                        {sourceFileId && (
-                                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-cyan-100/75">
-                                                Mit Quelle
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/42">
-                                        {sourceFileId
-                                            ? 'Dieses Dokument ist der sichtbare Arbeitskontext. Die zugrunde liegende Datei bleibt als Quelle separat erreichbar.'
-                                            : 'Dieses Dokument ist das sichtbare Arbeitsobjekt in der aktiven Instanz.'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                            {!isPDF && !isImage && !isVideo && content && (
-                                <button
-                                    onClick={() => void handleCopy()}
-                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                    title="Inhalt kopieren"
-                                >
-                                    <Copy size={14} />
-                                    Kopieren
-                                </button>
-                            )}
-                            {content && (
-                                <button
-                                    onClick={handleDownloadText}
-                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                    title="Textinhalt herunterladen"
-                                >
-                                    <Download size={14} />
-                                    Export
-                                </button>
-                            )}
-                            {sourceFileId && (
-                                <button
-                                    onClick={() => void handleOpenOriginal()}
-                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                    title="Quelle oeffnen"
-                                >
-                                    <Paperclip size={14} />
-                                    Quelle oeffnen
-                                </button>
-                            )}
+                    {/* Name + type badge */}
+                    <div className="min-w-0 flex-1 flex items-center gap-2">
+                        <span className="truncate text-[13px] font-medium text-white/88" title={name}>{name}</span>
+                        <span className="shrink-0 rounded-full border border-white/8 bg-black/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-white/38">
+                            {fileExtension || type || 'doc'}
+                        </span>
+                        {sourceFileId && (
+                            <span className="shrink-0 rounded-full border border-cyan-400/15 bg-cyan-500/[0.08] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-cyan-200/65">
+                                Quelle
+                            </span>
+                        )}
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] ${surfaceProfile.isLocalTruthSurface ? 'border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-200/70' : surfaceProfile.isPublicDemoSurface ? 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-200/70' : 'border-white/8 bg-white/[0.03] text-white/35'}`}>
+                            {surfaceProfile.isLocalTruthSurface ? 'Local' : surfaceProfile.isPublicDemoSurface ? 'Demo' : 'Std'}
+                        </span>
+                    </div>
+
+                    {/* Action buttons — compact pill group */}
+                    <div className="flex items-center gap-1 shrink-0">
+                        {!isPDF && !isImage && !isVideo && content && (
                             <button
-                                onClick={() => setReloadKey((prev) => prev + 1)}
-                                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                title="Neu laden"
+                                onClick={() => void handleCopy()}
+                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 bg-transparent text-white/40 transition-colors hover:border-white/15 hover:bg-white/[0.05] hover:text-white/70"
+                                title="Inhalt kopieren"
                             >
-                                <RefreshCw size={14} />
-                                Neu laden
+                                <Copy size={12} />
                             </button>
-                        </div>
+                        )}
+                        {content && (
+                            <button
+                                onClick={handleDownloadText}
+                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 bg-transparent text-white/40 transition-colors hover:border-white/15 hover:bg-white/[0.05] hover:text-white/70"
+                                title="Textinhalt herunterladen"
+                            >
+                                <Download size={12} />
+                            </button>
+                        )}
+                        {sourceFileId && (
+                            <button
+                                onClick={() => void handleOpenOriginal()}
+                                className="flex h-7 items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.08] px-2.5 text-[10px] font-medium text-cyan-200/80 transition-colors hover:border-cyan-300/30 hover:bg-cyan-500/15"
+                                title="Quelle oeffnen"
+                            >
+                                <Paperclip size={11} />
+                                <span className="hidden sm:inline">Quelle</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setReloadKey((prev) => prev + 1)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 bg-transparent text-white/40 transition-colors hover:border-white/15 hover:bg-white/[0.05] hover:text-white/70"
+                            title="Neu laden"
+                        >
+                            <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+                        {(navigationContext?.folderId || folderId) && (
+                            <button
+                                type="button"
+                                onClick={() => openNavigationOutcome({
+                                    title: 'Zielordner geoeffnet',
+                                    message: `Zielordner fuer ${navigationContext?.label || name || 'das Dokument'} geoeffnet.`,
+                                    targetType: 'folder',
+                                    label: navigationContext?.label || name || 'Finder',
+                                    path: navigationContext?.path,
+                                    companyId: navigationContext?.companyId || companyId,
+                                    folderId: navigationContext?.folderId || folderId,
+                                    source: navigationContext?.source || 'search',
+                                }, openPane)}
+                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/8 bg-transparent text-white/40 transition-colors hover:border-white/15 hover:bg-white/[0.05] hover:text-white/70"
+                                title="Im Finder oeffnen"
+                            >
+                                <FolderOpen size={12} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto">
+                {/* Navigation context banner — only when present */}
+                {navigationContext && (
+                    <div className="px-3 py-2 border-b border-cyan-400/[0.08] bg-cyan-500/[0.04]">
+                        <div className="flex items-center gap-2">
+                            <NavigationIcon size={12} className="shrink-0 text-cyan-400/70" />
+                            <span className="text-[11px] text-cyan-200/65">{navigationSourceLabel}</span>
+                            {navigationContext.label && (
+                                <span className="rounded-full border border-cyan-400/15 bg-cyan-500/[0.08] px-2 py-0.5 text-[10px] text-cyan-200/55">{navigationContext.label}</span>
+                            )}
+                            {navigationContext.path && (
+                                <span className="truncate text-[10px] text-white/28">{navigationContext.path}</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Main content — fills remaining space */}
+                <div className="flex-1 overflow-auto bg-[radial-gradient(ellipse_at_top,rgba(10,35,28,0.3),transparent_50%),linear-gradient(180deg,rgba(1,8,6,0.7),rgba(1,5,4,0.88))]">
                     {renderContent()}
                 </div>
 
-                {relations.length > 0 && (
-                    <div className="px-4 py-3 border-t border-white/5 bg-white/5">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Link size={14} className="text-emerald-400" />
-                            <span className="text-xs text-white/60 font-medium">
-                                Verbindungen im Kontext
-                            </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {relations.slice(0, 5).map((relation, index) => (
-                                <span
-                                    key={`${relation.type || 'relation'}-${index}`}
-                                    className="px-2 py-1 rounded-lg bg-white/5 text-xs text-white/50 border border-white/10"
-                                    title={`Verbunden mit: ${relation.target_name || relation.source_name || 'Inhalt'}`}
-                                >
-                                    {getRelationExplanation(relation)}
-                                </span>
-                            ))}
-                            {relations.length > 5 && (
-                                <span className="px-2 py-1 text-xs text-white/30">
-                                    +{relations.length - 5} weitere
-                                </span>
+                {/* Footer row — relations + meta — only when relevant */}
+                {(relations.length > 0 || (metadata && Object.keys(metadata).length > 0)) && (
+                    <div className="border-t border-white/[0.04] bg-black/10 px-3 py-2">
+                        <div className="flex flex-wrap items-center gap-3">
+                            {relations.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Link size={11} className="shrink-0 text-emerald-400/60" />
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {relations.slice(0, 4).map((relation, index) => (
+                                            <span
+                                                key={`${relation.type || 'relation'}-${index}`}
+                                                className="rounded-full border border-white/8 bg-white/[0.03] px-2 py-0.5 text-[10px] text-white/38"
+                                                title={`${relation.target_name || relation.source_name || 'Inhalt'}`}
+                                            >
+                                                {getRelationExplanation(relation)}
+                                            </span>
+                                        ))}
+                                        {relations.length > 4 && (
+                                            <span className="text-[10px] text-white/25">+{relations.length - 4}</span>
+                                        )}
+                                    </div>
+                                </div>
                             )}
+                            <div className="ml-auto flex items-center gap-3 text-[10px] text-white/25 font-mono">
+                                {metadata?.size && <span>{(metadata.size / 1024).toFixed(0)} KB</span>}
+                                {nodeId && <span>{nodeId.slice(0, 8)}</span>}
+                            </div>
                         </div>
-                    </div>
-                )}
-
-                {metadata && Object.keys(metadata).length > 0 && (
-                    <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4 flex-wrap">
-                        {metadata.size && <span>Groesse: {(metadata.size / 1024).toFixed(1)} KB</span>}
-                        {metadata.tags && Array.isArray(metadata.tags) && <span>Tags: {metadata.tags.join(', ')}</span>}
-                        {sourceFileId && <span>Quelle: {sourceFileName}</span>}
-                        {nodeId && <span className="font-mono">ID: {nodeId.slice(0, 8)}...</span>}
                     </div>
                 )}
             </div>

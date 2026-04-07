@@ -529,6 +529,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     ]);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
+    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('cozy');
     const [graphZoom, setGraphZoom] = useState(0.85);
     const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
     const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: { x: number, y: number } }>({ isDragging: false, startX: 0, startY: 0, initialPan: { x: 0, y: 0 } });
@@ -1494,6 +1495,25 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const filteredFiles = filteredContent.files;
     const filteredFolders = filteredContent.folders;
+    const contextlessFiles = useMemo(() => {
+        if (currentFolderId || searchQuery.trim() || globalSearch) return [];
+        return filteredFiles.filter((file) => {
+            const hasContext = Boolean(
+                file.folder_id ||
+                file.department_id ||
+                file.space_id ||
+                file.foundIn ||
+                file.path ||
+                file.scope_path,
+            );
+            return !hasContext;
+        });
+    }, [currentFolderId, filteredFiles, globalSearch, searchQuery]);
+    const mainFiles = useMemo(() => {
+        if (!contextlessFiles.length) return filteredFiles;
+        const hidden = new Set(contextlessFiles.map((file) => file.id));
+        return filteredFiles.filter((file) => !hidden.has(file.id));
+    }, [contextlessFiles, filteredFiles]);
     const selectedEntry = useMemo(() => {
         if (!selectedNodeId) return null;
         const selectedFolder = filteredFolders.find((folder) => folder.id === selectedNodeId);
@@ -1521,6 +1541,27 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         : surfaceProfile.isPublicDemoSurface
             ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
             : 'border-white/10 bg-white/[0.04] text-white/55';
+
+    const densityLabel = cardDensity === 'compact' ? 'Kompakt' : cardDensity === 'showcase' ? 'Gross' : 'Standard';
+    const nextDensity = () => setCardDensity((current) => current === 'compact' ? 'cozy' : current === 'cozy' ? 'showcase' : 'compact');
+    const folderGridClass = cardDensity === 'compact'
+        ? 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(170px,1fr))]'
+        : cardDensity === 'showcase'
+            ? 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5 lg:grid-cols-[repeat(auto-fill,minmax(250px,1fr))]'
+            : 'grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]';
+    const fileGridClass = folderGridClass;
+    const folderCardClass = cardDensity === 'compact'
+        ? 'min-h-[140px] rounded-[24px] px-4 py-4'
+        : cardDensity === 'showcase'
+            ? 'min-h-[210px] rounded-[30px] px-6 py-6'
+            : 'min-h-[176px] rounded-[28px] px-5 py-5';
+    const fileCardClass = cardDensity === 'compact'
+        ? 'min-h-[152px] rounded-[24px] px-4 py-4'
+        : cardDensity === 'showcase'
+            ? 'min-h-[226px] rounded-[30px] px-6 py-6'
+            : 'min-h-[186px] rounded-[28px] px-5 py-5';
+    const iconTileClass = cardDensity === 'compact' ? 'h-10 w-10 rounded-xl' : cardDensity === 'showcase' ? 'h-14 w-14 rounded-[20px]' : 'h-12 w-12 rounded-2xl';
+    const cardTitleClass = cardDensity === 'compact' ? 'text-[15px]' : cardDensity === 'showcase' ? 'text-[18px]' : 'text-[17px]';
 
 
     // (Removed old extractFolders and separate load logic to unify via Tree)
@@ -1635,10 +1676,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
 
-                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-3 md:px-6 py-4 backdrop-blur-md">
-                        <div className="rounded-[28px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(7,22,18,0.9),rgba(4,14,12,0.84))] px-4 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] md:px-5">
-                            <div className="flex flex-col gap-4">
-                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] px-3 md:px-6 py-3 backdrop-blur-md">
+                        <div className="rounded-[24px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(7,22,18,0.86),rgba(4,14,12,0.8))] px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.22)] md:px-5">
+                            <div className="flex flex-col gap-3">
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
@@ -1657,14 +1698,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </span>
                                             ) : null}
                                         </div>
-                                        <div className="mt-3">
+                                        <div className="mt-2">
                                             <p className="text-[11px] uppercase tracking-[0.24em] text-white/30">
                                                 Explorer
                                             </p>
-                                            <h2 className="mt-2 text-[22px] font-semibold tracking-tight text-white/92">
+                                            <h2 className="mt-1.5 text-[18px] font-semibold tracking-tight text-white/92 md:text-[20px]">
                                                 {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                             </h2>
-                                            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/42">
+                                            <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-white/40">
                                                 {globalSearch
                                                     ? 'Du siehst die sichtbaren Inhalte der aktiven Instanz in einer zusammengezogenen Gesamtsicht.'
                                                     : searchQuery.trim()
@@ -1675,18 +1716,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="grid gap-2 sm:grid-cols-3 lg:w-[360px]">
-                                        <div className="rounded-2xl border border-white/8 bg-white/[0.035] px-3 py-3">
+                                    <div className="grid gap-2 sm:grid-cols-3 lg:w-[330px]">
+                                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/32">Ordner</div>
-                                            <div className="mt-2 text-xl font-semibold text-white/88">{filteredFolders.length}</div>
+                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
                                         </div>
-                                        <div className="rounded-2xl border border-white/8 bg-white/[0.035] px-3 py-3">
+                                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/32">Inhalte</div>
-                                            <div className="mt-2 text-xl font-semibold text-white/88">{filteredFiles.length}</div>
+                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFiles.length}</div>
                                         </div>
-                                        <div className="rounded-2xl border border-white/8 bg-white/[0.035] px-3 py-3">
+                                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/32">Modus</div>
-                                            <div className="mt-2 text-sm font-medium text-white/72">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</div>
+                                            <div className="mt-1.5 text-sm font-medium text-white/72">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1877,6 +1918,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 </button>
                             </div>
 
+                            {/* Density Toggle */}
+                            <button
+                                onClick={nextDensity}
+                                className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/8 bg-black/30 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/46 transition-all hover:border-white/16 hover:text-white/76"
+                                title="Kartengrösse umschalten (Kompakt → Standard → Gross)"
+                            >
+                                <Box size={14} />
+                                <span className="hidden lg:inline">{densityLabel}</span>
+                            </button>
+
                             {/* Actions */}
                             <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-3">
                                 <button
@@ -1991,8 +2042,13 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     {filteredFolders.length} Ordner
                                                 </span>
                                                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
-                                                    {filteredFiles.length} Inhalte
+                                                    {mainFiles.length} Inhalte
                                                 </span>
+                                                {contextlessFiles.length > 0 && (
+                                                    <span className="rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-amber-200/50">
+                                                        +{contextlessFiles.length} Unsortiert
+                                                    </span>
+                                                )}
                                                 {searchQuery ? (
                                                     <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
                                                         Suche aktiv
@@ -2073,7 +2129,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             <p className="mt-1 text-[12px] text-white/36">Navigation durch Struktur und Kontexte</p>
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
+                                                    <div className={folderGridClass}>
                                             {filteredFolders.map(folder => {
                                                 const isSelected = selectedNodeId === folder.id;
                                                 return (
@@ -2081,7 +2137,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        className={`min-h-[176px] rounded-[28px] border px-5 py-5 transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 ${isSelected
+                                                        className={`${folderCardClass} border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 ${isSelected
                                                             ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
                                                             : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
                                                             }`}
@@ -2111,7 +2167,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             )}
                                                         </div>
                                                         <div className="mt-5 space-y-2">
-                                                            <span className={`text-[17px] font-medium line-clamp-2 leading-snug break-words ${isSelected ? 'text-white' : 'text-white/88'}`} title={folder.name}>{folder.name}</span>
+                                                            <span className={`${cardTitleClass} font-medium line-clamp-2 leading-snug break-words ${isSelected ? 'text-white' : 'text-white/88'}`} title={folder.name}>{folder.name}</span>
                                                             {folder.type === 'folder' && (
                                                                 <span className="text-[12px] text-white/36">Gemeinsamer Ordner</span>
                                                             )}
@@ -2128,7 +2184,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             )}
 
-                                            {filteredFiles.length > 0 && (
+                                            {mainFiles.length > 0 && (
                                                 <div className="rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
                                                     <div className="mb-3 flex items-center justify-between">
                                                         <div>
@@ -2136,8 +2192,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             <p className="mt-1 text-[12px] text-white/36">Direkt oeffnen, sichten oder weiterverarbeiten</p>
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
-                                            {filteredFiles.map(file => {
+                                                    <div className={fileGridClass}>
+                                            {mainFiles.map(file => {
                                                 const isResonant = resonanceIds.includes(file.id);
                                                 const isSelected = selectedNodeId === file.id;
                                                 const Icon = TYPE_ICONS[file.type] || FileText;
@@ -2159,7 +2215,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             checkResonance(file.id);
                                                             openFinderNode(file);
                                                         }}
-                                                        className={`min-h-[186px] rounded-[28px] border px-5 py-5 transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
+                                                        className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
                                                             ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
                                                             : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
                                                             }`}
@@ -2170,8 +2226,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         )}
 
                                                         <div className="flex justify-between items-start">
-                                                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/8 bg-black/15">
-                                                                <Icon size={22} className={isSelected ? 'text-emerald-300' : 'text-emerald-300/90 group-hover:text-emerald-200'} />
+                                                            <div className={`${iconTileClass} flex items-center justify-center border border-white/8 bg-black/15`}>
+                                                                <Icon size={cardDensity === 'compact' ? 18 : cardDensity === 'showcase' ? 26 : 22} className={isSelected ? 'text-emerald-300' : 'text-emerald-300/90 group-hover:text-emerald-200'} />
                                                             </div>
                                                             <div className="flex flex-col items-end gap-2">
                                                                 {file.metadata?.size && (
@@ -2181,7 +2237,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             </div>
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <span className={`text-[17px] line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/88'}`} title={displayName}>
+                                                            <span className={`${cardTitleClass} line-clamp-2 leading-snug break-words ${isSelected ? 'text-white font-medium' : 'text-white/88'}`} title={displayName}>
                                                                 {displayName}
                                                                 {displayName.match(/[_-](EN|DE|FR|ES|IT)\b/i) && (
                                                                     <span className="ml-2 px-1.5 py-0.5 rounded text-[8px] bg-white/10 text-white/70 tracking-wider align-middle">
@@ -2232,6 +2288,52 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </motion.div>
                                                 );
                                             })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Contextless / unsorted files zone */}
+                                            {contextlessFiles.length > 0 && (
+                                                <div className="mt-6 rounded-[30px] border border-amber-500/[0.08] bg-[linear-gradient(180deg,rgba(245,158,11,0.03),rgba(245,158,11,0.01))] px-4 py-4 md:px-5">
+                                                    <div className="mb-3 flex items-center justify-between">
+                                                        <div>
+                                                            <p className="text-[11px] uppercase tracking-[0.22em] text-amber-400/45">Ohne Bereichszuordnung</p>
+                                                            <p className="mt-1 text-[12px] text-white/30">Diese Inhalte liegen auf Instanzebene und sind keinem Bereich zugeordnet.</p>
+                                                        </div>
+                                                        <span className="shrink-0 rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/50">{contextlessFiles.length}</span>
+                                                    </div>
+                                                    <div className={fileGridClass}>
+                                                        {contextlessFiles.map(file => {
+                                                            const isSelected = selectedNodeId === file.id;
+                                                            const Icon = TYPE_ICONS[file.type] || FileText;
+                                                            const displayName = getContentDisplayName(file);
+                                                            return (
+                                                                <motion.div
+                                                                    key={file.id}
+                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
+                                                                    onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); openFinderNode(file); }}
+                                                                    onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
+                                                                    className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 opacity-70 hover:opacity-90 ${isSelected
+                                                                        ? 'bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(245,158,11,0.06))] border-amber-500/35'
+                                                                        : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.012))] border-white/[0.05] hover:border-white/10'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex justify-between items-start">
+                                                                        <div className={`${iconTileClass} flex items-center justify-center border border-white/[0.06] bg-black/10`}>
+                                                                            <Icon size={cardDensity === 'compact' ? 18 : cardDensity === 'showcase' ? 26 : 22} className="text-amber-300/50 group-hover:text-amber-300/70" />
+                                                                        </div>
+                                                                        <span className="rounded-full border border-amber-500/10 bg-amber-500/[0.06] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-amber-200/40">Unsortiert</span>
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <span className={`${cardTitleClass} line-clamp-2 leading-snug break-words text-white/60`} title={displayName}>{displayName}</span>
+                                                                        <p className="text-[11px] text-white/28">Kein Bereich · Kein Ordner</p>
+                                                                    </div>
+                                                                    {isSelected && (
+                                                                        <div className="absolute inset-0 rounded-[28px] border border-amber-400/20 pointer-events-none" />
+                                                                    )}
+                                                                </motion.div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             )}
