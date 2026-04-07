@@ -54,11 +54,6 @@ function relativeTime(isoStr: string): string {
     }).format(new Date(isoStr));
 }
 
-function formatCountLabel(value: number, singular: string, plural?: string): string {
-    const resolvedPlural = plural || `${singular}e`;
-    return `${value} ${value === 1 ? singular : resolvedPlural}`;
-}
-
 function normalizePrivateSpaceName(value?: string | null): string {
     const next = (value || '').trim();
     if (!next) return 'Privater Bereich';
@@ -67,6 +62,13 @@ function normalizePrivateSpaceName(value?: string | null): string {
         return 'Privater Bereich';
     }
     return next;
+}
+
+function getDocumentsFromContent(content: UserContentResponse | null | undefined): CoreNode[] {
+    if (!content) return [];
+    if (Array.isArray(content.documents)) return content.documents;
+    if (Array.isArray(content.nodes)) return content.nodes;
+    return [];
 }
 
 function isFreshSignal(timestamp: string, maxDays = 21): boolean {
@@ -242,12 +244,12 @@ export const HomeSurface: React.FC = () => {
         }
 
         const candidates = [
-            ...(Array.isArray(myContent.nodes) ? myContent.nodes.map((node) => ({
+            ...getDocumentsFromContent(myContent).map((node) => ({
                 kind: 'node' as const,
                 id: node.id,
                 label: node.title || node.name || 'Unbenanntes Dokument',
                 timestamp: getComparableTimestamp(node.updated_at || node.created_at),
-            })) : []),
+            })),
             ...(Array.isArray(myContent.files) ? myContent.files.filter((file) => !file.linked_node_id).map((file) => ({
                 kind: 'file' as const,
                 id: file.id,
@@ -306,6 +308,7 @@ export const HomeSurface: React.FC = () => {
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
         return [
+            myContent.counts.documents != null ? { id: 'documents', label: 'Dokumente', value: myContent.counts.documents } : null,
             myContent.counts.items != null ? { id: 'items', label: 'Inhalte', value: myContent.counts.items } : null,
             myContent.counts.folders != null ? { id: 'folders', label: 'Ordner', value: myContent.counts.folders } : null,
             myContent.counts.standalone_files != null ? { id: 'files', label: 'Dateien', value: myContent.counts.standalone_files } : null,
@@ -500,7 +503,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Ordner strukturieren deine Inhalte. Dateien erscheinen nur dann separat, wenn sie nicht bereits als eigener Inhalt vorliegen.
+                                        Ordner strukturieren deinen Bereich. Dokumente sind bearbeitbare Inhalte; Dateien erscheinen nur separat, wenn noch kein Dokument daraus entstanden ist.
                                     </div>
                                 </div>
                             </button>

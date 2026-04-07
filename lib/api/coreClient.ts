@@ -1864,7 +1864,9 @@ export interface UserContentResponse {
     space?: PersonalSpace | null;
     /** Folders owned by or shared with the user in their personal space. */
     folders?: CoreFolder[];
-    /** Nodes (documents, notes, tasks) owned by the user. */
+    /** Documents and other structured work items owned by the user. */
+    documents?: CoreNode[];
+    /** Legacy alias kept for older callers. */
     nodes?: CoreNode[];
     /** Visible user items in product truth order. */
     items?: Array<{
@@ -1892,6 +1894,7 @@ export interface UserContentResponse {
     /** Summary counts for quick display. */
     counts?: {
         folders?: number;
+        documents?: number;
         nodes?: number;
         items?: number;
         files?: number;
