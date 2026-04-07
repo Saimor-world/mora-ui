@@ -1,11 +1,9 @@
 import { create } from 'zustand';
+import type { PaneType } from '@/lib/surface/surfaceRegistry';
 
 export interface PaneConfig {
     id: string;
-    type: 'document' | 'settings' | 'apps' | 'grid' | 'space' | 'search'
-    | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
-    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline' | 'mora-hub' | 'actions' | 'work-session' | 'meine-dateien'
-    | 'tasks' | 'canvas';
+    type: PaneType;
 
     title: string;
     position: { x: number; y: number };
