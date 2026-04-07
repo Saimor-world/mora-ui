@@ -30,6 +30,7 @@ import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/u
 import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete } from '@/lib/utils/moraExplanation';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import {
     getContentDisplayName,
     getContentSecondaryLabel,
@@ -190,6 +191,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         updateNode, deleteNode, updateFolder, deleteFolder, updateSpace, deleteSpace, addNode
     } = useMoraStore();
     const pane = getPane(id);
+    const surfaceProfile = useSurfaceProfile();
 
     // UNIFIED FINDER: Can start at any level
     // Quick Access: Filter by department if provided
@@ -1508,6 +1510,18 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return node?.type || 'folder';
     }, [currentFolderId, treeData, findNodeInTree]);
 
+    const surfaceBadgeLabel = surfaceProfile.isLocalTruthSurface
+        ? 'Local Truth'
+        : surfaceProfile.isPublicDemoSurface
+            ? 'Demo Mirror'
+            : 'Standard';
+
+    const surfaceBadgeTone = surfaceProfile.isLocalTruthSurface
+        ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200'
+        : surfaceProfile.isPublicDemoSurface
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
+            : 'border-white/10 bg-white/[0.04] text-white/55';
+
 
     // (Removed old extractFolders and separate load logic to unify via Tree)
 
@@ -1622,6 +1636,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     )}
 
                     <div className="flex flex-wrap items-center gap-2 px-3 md:px-6 py-2 border-b border-white/5 bg-white/[0.02] text-[11px] text-white/38">
+                        <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
+                            {surfaceBadgeLabel}
+                        </span>
                         <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
                             Instanz: {resolvedCompanyName || 'Keine Organisation aktiv'}
                         </span>
@@ -1866,79 +1883,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
 
-                    {selectedEntry && (
-                        <div className="px-3 md:px-6 pb-3">
-                            <div className="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/[0.035] px-4 py-3 md:flex-row md:items-center md:justify-between">
-                                <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/30">
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] text-white/55">
-                                            Auswahl
-                                        </span>
-                                        <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
-                                        {selectedEntry.item?.foundIn && (
-                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 normal-case tracking-normal text-white/45">
-                                                {selectedEntry.item.foundIn}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="mt-1 truncate text-sm font-medium text-white/85">
-                                        {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
-                                    </div>
-                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/38">
-                                        <span>
-                                            {selectedEntry.kind === 'folder'
-                                                ? `Ein weiterer Klick oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'}.`
-                                                : getContextOpenLabel(selectedEntry.item, 'file')}
-                                        </span>
-                                        {selectedEntry.kind === 'file' && selectedEntry.item?.created_at && (
-                                            <span>{new Date(selectedEntry.item.created_at).toLocaleDateString()}</span>
-                                        )}
-                                        {selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) && (
-                                            <span>{`${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB`}</span>
-                                        )}
-                                        {selectedEntry.kind === 'file' && (
-                                            <span>{getSourceFileSecondaryLabel(selectedEntry.item)}</span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-2 md:justify-end">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (selectedEntry.kind === 'folder') {
-                                                navigateToFolder(selectedEntry.item.id);
-                                            } else {
-                                                openFinderNode(selectedEntry.item);
-                                            }
-                                        }}
-                                        className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3 py-1.5 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
-                                    >
-                                        <ExternalLink size={13} />
-                                        {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
-                                    </button>
-                                    {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
-                                        <button
-                                            type="button"
-                                            onClick={() => void handleOpenSourceFile(selectedEntry.item)}
-                                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                        >
-                                            <Paperclip size={13} />
-                                            Quelle
-                                        </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedNodeId(null)}
-                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                    >
-                                        Auswahl aufheben
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Content Container with Animation */}
                     <div className="flex-1 overflow-y-auto p-6 bg-black/40 relative" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
                         <AnimatePresence mode="popLayout">
@@ -1997,8 +1941,93 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 lg:gap-4">
-                                            {/* Folders */}
+                                        <div className={`relative ${selectedEntry ? 'xl:pr-[320px]' : ''}`}>
+                                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                                                    {filteredFolders.length} Ordner
+                                                </span>
+                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                                                    {filteredFiles.length} Inhalte
+                                                </span>
+                                                {searchQuery ? (
+                                                    <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
+                                                        Suche aktiv
+                                                    </span>
+                                                ) : null}
+                                            </div>
+
+                                            {selectedEntry && (
+                                                <div className="mb-4 xl:absolute xl:right-0 xl:top-0 xl:w-[288px]">
+                                                    <div className="rounded-2xl border border-white/8 bg-white/[0.035] px-4 py-4">
+                                                        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/30">
+                                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] text-white/55">
+                                                                Auswahl
+                                                            </span>
+                                                            <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
+                                                        </div>
+                                                        <div className="mt-2 text-base font-medium text-white/88">
+                                                            {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
+                                                        </div>
+                                                        <div className="mt-2 space-y-1 text-[11px] text-white/42">
+                                                            <p>
+                                                                {selectedEntry.kind === 'folder'
+                                                                    ? `Oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'} im aktuellen Explorer.`
+                                                                    : getContextOpenLabel(selectedEntry.item, 'file')}
+                                                            </p>
+                                                            {selectedEntry.kind === 'file' && selectedEntry.item?.created_at && (
+                                                                <p>{new Date(selectedEntry.item.created_at).toLocaleDateString()}</p>
+                                                            )}
+                                                            {selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) && (
+                                                                <p>{`${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB`}</p>
+                                                            )}
+                                                            {selectedEntry.kind === 'file' && (
+                                                                <p>{getSourceFileSecondaryLabel(selectedEntry.item)}</p>
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (selectedEntry.kind === 'folder') {
+                                                                        navigateToFolder(selectedEntry.item.id);
+                                                                    } else {
+                                                                        openFinderNode(selectedEntry.item);
+                                                                    }
+                                                                }}
+                                                                className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3 py-1.5 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
+                                                            >
+                                                                <ExternalLink size={13} />
+                                                                {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
+                                                            </button>
+                                                            {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => void handleOpenSourceFile(selectedEntry.item)}
+                                                                    className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
+                                                                >
+                                                                    <Paperclip size={13} />
+                                                                    Quelle
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSelectedNodeId(null)}
+                                                                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                                            >
+                                                                Auswahl aufheben
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {filteredFolders.length > 0 && (
+                                                <div className="mb-6">
+                                                    <div className="mb-3 flex items-center justify-between">
+                                                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Ordner und Bereiche</p>
+                                                        <p className="text-[11px] text-white/32">Navigation durch Struktur</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 lg:gap-4">
                                             {filteredFolders.map(folder => {
                                                 const isSelected = selectedNodeId === folder.id;
                                                 return (
@@ -2049,8 +2078,17 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </motion.div>
                                                 );
                                             })}
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                            {/* Files */}
+                                            {filteredFiles.length > 0 && (
+                                                <div>
+                                                    <div className="mb-3 flex items-center justify-between">
+                                                        <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Inhalte und Dateien</p>
+                                                        <p className="text-[11px] text-white/32">Direkt oeffnen, teilen oder weiterverarbeiten</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3 lg:gap-4">
                                             {filteredFiles.map(file => {
                                                 const isResonant = resonanceIds.includes(file.id);
                                                 const isSelected = selectedNodeId === file.id;
@@ -2140,6 +2178,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                     </motion.div>
                                                 );
                                             })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
