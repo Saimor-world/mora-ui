@@ -52,7 +52,7 @@ describe('surfaceRegistry', () => {
 
         it('assigns future to surfaces with no backend or unstable paths', () => {
             expect(SURFACE_TIERS['mail']).toBe('future');
-            expect(SURFACE_TIERS['calendar']).toBe('future');
+            // calendar promoted — apps/calendar/ module now live
             expect(SURFACE_TIERS['integrations']).toBe('future');
             expect(SURFACE_TIERS['terminal']).toBe('future');
             // mora-hub is 'app' in registry — pre-existing state, skip
@@ -100,7 +100,6 @@ describe('surfaceRegistry', () => {
             expect(isPaneEnabled('terminal')).toBe(false);
             expect(isPaneEnabled('actions')).toBe(false);
             expect(isPaneEnabled('work-session')).toBe(false);
-            expect(isPaneEnabled('calendar')).toBe(false);
             expect(isPaneEnabled('integrations')).toBe(false);
         });
 
@@ -119,14 +118,14 @@ describe('surfaceRegistry', () => {
     describe('FUTURE_PANE_TYPES', () => {
         it('lists all future-tier pane types for quick lookup', () => {
             expect(FUTURE_PANE_TYPES).toContain('mail');
-            expect(FUTURE_PANE_TYPES).toContain('calendar');
+            // calendar promoted — no longer future
             expect(FUTURE_PANE_TYPES).toContain('integrations');
             expect(FUTURE_PANE_TYPES).toContain('terminal');
             expect(FUTURE_PANE_TYPES).toContain('actions');
             expect(FUTURE_PANE_TYPES).toContain('work-session');
-            // apps promoted to 'app' tier:
+            // promoted types no longer in future:
             expect(FUTURE_PANE_TYPES).not.toContain('apps');
-            // new app-platform types are 'app' tier:
+            expect(FUTURE_PANE_TYPES).not.toContain('calendar');
             expect(FUTURE_PANE_TYPES).not.toContain('timeline');
             expect(FUTURE_PANE_TYPES).not.toContain('tasks');
             expect(FUTURE_PANE_TYPES).not.toContain('canvas');
