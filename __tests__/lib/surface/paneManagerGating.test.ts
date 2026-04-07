@@ -18,7 +18,7 @@ describe('PaneManager gating contract', () => {
         'team', 'mail', 'integrations', 'calendar', 'terminal',
         'notes', 'finder', 'scanner', 'users', 'company-detail',
         'chat', 'actions', 'work-session', 'meine-dateien',
-        'timeline', 'tasks', 'canvas',
+        'calendar', 'timeline', 'tasks', 'canvas',
         // NOTE: 'mora-hub' removed — pre-existing registry/test discrepancy
         // mora-hub is 'app' in registry but the case exists — omit from contract test
     ] as const;

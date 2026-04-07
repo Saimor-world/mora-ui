@@ -53,7 +53,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
 
     // ── Future (gated in 1.0) ───────────────────────────────────────────────
     mail:            'future',    // no backend
-    calendar:        'future',    // no backend
+    calendar:        'app',       // promoted — apps/calendar/ module live
     integrations:    'future',    // no backend
     terminal:        'future',    // dev-only, security risk for pilot
     'mora-hub':      'app',
