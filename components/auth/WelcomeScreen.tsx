@@ -893,6 +893,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 transition={{ delay: 0.5, staggerChildren: 0.1 }}
                                 className="w-full max-w-md space-y-3"
                             >
+                                {surfaceProfile.isLocalTruthSurface && (
+                                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/8 px-4 py-3 text-left">
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">
+                                            Interne Instanz
+                                        </div>
+                                        <div className="mt-2 text-xs leading-relaxed text-emerald-100/75">
+                                            Hier gelten die echten lokalen Regeln. Demo-Inhalte koennen gespiegelt sein, aber dieser Einstieg ist fuer reale Workflows, Integrationen und Produktionslogik gedacht.
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Anmelden Button */}
                                 <motion.button
                                     onClick={() => setMode('login')}

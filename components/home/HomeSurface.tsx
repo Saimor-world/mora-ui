@@ -308,8 +308,7 @@ export const HomeSurface: React.FC = () => {
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
         return [
-            myContent.counts.documents != null ? { id: 'documents', label: 'Dokumente', value: myContent.counts.documents } : null,
-            myContent.counts.items != null ? { id: 'items', label: 'Inhalte', value: myContent.counts.items } : null,
+            myContent.counts.documents != null ? { id: 'documents', label: 'Inhalte', value: myContent.counts.documents } : null,
             myContent.counts.folders != null ? { id: 'folders', label: 'Ordner', value: myContent.counts.folders } : null,
             myContent.counts.standalone_files != null ? { id: 'files', label: 'Dateien', value: myContent.counts.standalone_files } : null,
         ].filter(Boolean) as Array<{ id: string; label: string; value: number }>;
@@ -343,6 +342,16 @@ export const HomeSurface: React.FC = () => {
                             {firstName ? `${greeting}, ${firstName}.` : greeting + '.'}
                         </h1>
                         <p className={`mt-1 text-sm ${t.sub}`}>{todayLabel}</p>
+                        {surfaceProfile.isLocalTruthSurface && (
+                            <p className="mt-3 inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-500/8 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-emerald-200/75">
+                                Interne Instanz · echte Regeln · lokaler Wahrheitsmodus
+                            </p>
+                        )}
+                        {surfaceProfile.isPublicDemoSurface && (
+                            <p className="mt-3 inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-500/8 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-cyan-200/75">
+                                Oeffentliche Demo · kuratierte Beispielinstanz
+                            </p>
+                        )}
                     </div>
                     <button
                         type="button"
@@ -440,7 +449,9 @@ export const HomeSurface: React.FC = () => {
                             Mora bemerkt
                         </h2>
                         <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Reale Signale aus dem Core. Im Vordergrund zeigen wir nur frische Ereignisse; aeltere Eintraege bleiben bewusst im Hintergrund.
+                            {surfaceProfile.isLocalTruthSurface
+                                ? 'Reale Signale der internen Instanz. Im Vordergrund zeigen wir nur frische Ereignisse; aeltere Eintraege bleiben bewusst im Hintergrund.'
+                                : 'Reale Signale aus dem Core. Im Vordergrund zeigen wir nur frische Ereignisse; aeltere Eintraege bleiben bewusst im Hintergrund.'}
                         </p>
                         {freshKairosEvents && freshKairosEvents.length > 0 ? (
                             <ul className="flex flex-col gap-1">
@@ -503,7 +514,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Ordner strukturieren deinen Bereich. Dokumente sind bearbeitbare Inhalte; Dateien erscheinen nur separat, wenn noch kein Dokument daraus entstanden ist.
+                                        Dein privater Bereich zeigt echte persoenliche Ordner, Inhalte und Dateien. Organisationsinhalte oeffnest du getrennt im Finder der aktiven Instanz.
                                     </div>
                                 </div>
                             </button>
