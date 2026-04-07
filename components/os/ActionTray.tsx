@@ -33,7 +33,7 @@ const intentLabelMap: Record<string, string> = {
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
     update_note_content: 'Inhalt aktualisieren',
-    create_node_from_file: 'Datei einordnen',
+    create_node_from_file: 'Inhalt aus Datei erzeugen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
     work_session_plan: 'Arbeitsplan',

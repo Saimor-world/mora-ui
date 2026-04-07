@@ -5,6 +5,7 @@ import { Check, ChevronRight, ExternalLink, FileText, Folder, Link, Loader2, Pap
 import { fetchMyContent, shareFile, shareNode, type UserContentResponse } from '@/lib/api/coreClient';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { toast } from 'sonner';
 import {
     getContentDisplayName,
     getNodeOpenActionLabel,
@@ -194,7 +195,11 @@ export const MeineDateienPane: React.FC = () => {
                                                 <span className="text-white/12">•</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => void openSourceFileForNode(node)}
+                                                    onClick={() => {
+                                                        void openSourceFileForNode(node).catch((error: any) => {
+                                                            toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                        });
+                                                    }}
                                                     className="text-cyan-200/70 transition-colors hover:text-cyan-100"
                                                 >
                                                     Datei oeffnen
@@ -229,7 +234,11 @@ export const MeineDateienPane: React.FC = () => {
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => void openSourceFileLike(file, openPane)}
+                                            onClick={() => {
+                                                void openSourceFileLike(file, openPane).catch((error: any) => {
+                                                    toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                });
+                                            }}
                                             className="truncate text-left text-sm text-white/60 transition-colors group-hover:text-white/82"
                                         >
                                             {displayName}
@@ -245,7 +254,11 @@ export const MeineDateienPane: React.FC = () => {
                                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
                                         <button
                                             type="button"
-                                            onClick={() => void openSourceFileLike(file, openPane)}
+                                            onClick={() => {
+                                                void openSourceFileLike(file, openPane).catch((error: any) => {
+                                                    toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                });
+                                            }}
                                             className="transition-colors hover:text-white/70"
                                         >
                                             {getSourceFileOpenActionLabel(file)}

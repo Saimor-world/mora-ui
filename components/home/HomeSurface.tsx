@@ -12,6 +12,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { openSourceFileLike } from '@/lib/utils/contentOpen';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { toast } from 'sonner';
 
 interface KairosEvent {
     id: string;
@@ -297,7 +298,9 @@ export const HomeSurface: React.FC = () => {
             id: personalLatestItem.id,
             name: personalLatestItem.label,
             linked_node_id: (personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId,
-        }, openPane);
+        }, openPane).catch((error: any) => {
+            toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+        });
     }, [openMeineDateien, openPane, personalLatestItem]);
 
     const contentSummaryBadges = useMemo(() => {

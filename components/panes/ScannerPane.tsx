@@ -397,8 +397,8 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
         destinationSummary?: string,
     ) => {
         if (destinationSummary) return destinationSummary;
-        if (confirmedFolderId) return `Eingeordnet -> ${buildRoutePath(intake)}`;
-        return 'Eingeordnet';
+        if (confirmedFolderId) return `Als Inhalt angelegt -> ${buildRoutePath(intake)}`;
+        return 'Als Inhalt angelegt';
     }, []);
 
     const confirmPendingAction = useCallback(async (active: PendingAction, visibilityScope?: string) => {
@@ -460,7 +460,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                 setFiles(prev => prev.map(f => f.id === fileId ? {
                     ...f,
                     status: 'review',
-                    result: 'Wartet auf Einordnung',
+                    result: 'Wartet auf Bestätigung',
                     intakeContext: {
                         ...response.intake_context,
                         route_explanation: response.route_explanation,
@@ -524,7 +524,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                     ...(confirmedNodeId ? { confirmedNodeId } : {}),
                 } : f));
                 window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
-                toast.success(response.destination_summary || `Eingeordnet: ${fileObject.name}`);
+                toast.success(response.destination_summary || `Inhalt angelegt: ${fileObject.name}`);
                 return;
             }
 
@@ -900,7 +900,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                         <div>
                             <p className="text-white/70 font-medium">Dateien ablegen oder klicken zum Hochladen</p>
-                            <p className="text-xs text-white/30 mt-1">PDFs, Bilder, Dokumente – werden in den Dateibaum eingeordnet</p>
+                            <p className="text-xs text-white/30 mt-1">PDFs, Bilder und Office-Dateien werden zuerst als Dateien hochgeladen und bei Bedarf in Inhalte überführt.</p>
                         </div>
                     </div>
                 </div>
@@ -1317,7 +1317,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
                                     }).catch(() => { /* destination unknown is acceptable */ });
                                 }
                             }
-                            toast.success(result?.destination_summary || 'Datei eingeordnet');
+                            toast.success(result?.destination_summary || 'Inhalt aus Datei angelegt');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                         }}
                         onRejected={async () => {
