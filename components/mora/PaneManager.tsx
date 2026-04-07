@@ -23,6 +23,9 @@ import { MailPane } from '@/components/panes/MailPane';
 import { CalendarPane } from '@/components/panes/CalendarPane';
 import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
+import { TasksPane }    from '@/components/panes/TasksPane';
+import { TimelinePane } from '@/components/panes/TimelinePane';
+import { CanvasPane }   from '@/components/panes/CanvasPane';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
@@ -73,6 +76,16 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             );
         case 'mora-hub':
             return <MoraHubPane id={pane.id} data={pane.data} />;
+        case 'apps':
+            // AppLibrary — promoted from future to app tier
+            // TODO: replace with full AppLibraryPane via AppLoader in Plan 4
+            return null;
+        case 'timeline':
+            return <TimelinePane id={pane.id} data={pane.data} />;
+        case 'tasks':
+            return <TasksPane    id={pane.id} data={pane.data} />;
+        case 'canvas':
+            return <CanvasPane   id={pane.id} data={pane.data} />;
         default:
             return null;
     }
