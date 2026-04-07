@@ -219,6 +219,27 @@ export const HomeSurface: React.FC = () => {
     const personalLatestItem = useMemo<PersonalLatestItem | null>(() => {
         if (!myContent) return null;
 
+        if (Array.isArray(myContent.items) && myContent.items.length > 0) {
+            const first = myContent.items[0];
+            if (first.kind === 'document' && first.node_id) {
+                return {
+                    kind: 'node',
+                    id: first.node_id,
+                    label: first.label,
+                    timestamp: getComparableTimestamp(first.timestamp),
+                };
+            }
+            if (first.kind === 'file' && first.file_id) {
+                return {
+                    kind: 'file',
+                    id: first.file_id,
+                    label: first.label,
+                    timestamp: getComparableTimestamp(first.timestamp),
+                    linkedNodeId: null,
+                };
+            }
+        }
+
         const candidates = [
             ...(Array.isArray(myContent.nodes) ? myContent.nodes.map((node) => ({
                 kind: 'node' as const,

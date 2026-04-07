@@ -1866,6 +1866,16 @@ export interface UserContentResponse {
     folders?: CoreFolder[];
     /** Nodes (documents, notes, tasks) owned by the user. */
     nodes?: CoreNode[];
+    /** Visible user items in product truth order. */
+    items?: Array<{
+        id: string;
+        kind: 'document' | 'file';
+        label: string;
+        timestamp?: string | null;
+        visibility?: NodeVisibility;
+        node_id?: string | null;
+        file_id?: string | null;
+    }>;
     /** Uploaded files owned by the user. */
     files?: Array<{
         id: string;
