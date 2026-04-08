@@ -20,7 +20,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
-import { getCompanyFileUrl } from '@/lib/api/filesClient';
+import { fetchCompanyFileBlob, getCompanyFileUrl } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { getNodeSourceFileId, getNodeSourceFileName, openSourceFileForNode } from '@/lib/utils/contentOpen';
@@ -72,6 +72,8 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [reloadKey, setReloadKey] = useState(0);
+    const [embeddedPreviewUrl, setEmbeddedPreviewUrl] = useState<string | null>(null);
+    const [previewError, setPreviewError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -127,6 +129,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const sourceFileId = getNodeSourceFileId({ metadata });
     const sourceFileName = getNodeSourceFileName({ metadata, name, title: name, id: nodeId || 'document' });
     const previewUrl = url || (sourceFileId ? getCompanyFileUrl(sourceFileId) : null);
+    const embeddedAssetUrl = sourceFileId ? embeddedPreviewUrl : previewUrl;
     const surfaceLabel = surfaceProfile.isLocalTruthSurface
         ? 'Interne Instanz'
         : surfaceProfile.isPublicDemoSurface
@@ -162,6 +165,39 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 return Sparkles;
         }
     })();
+
+    useEffect(() => {
+        let cancelled = false;
+        let objectUrl: string | null = null;
+
+        async function loadEmbeddedPreview() {
+            setPreviewError(null);
+            if (!sourceFileId || !(isPDF || isImage || isVideo)) {
+                setEmbeddedPreviewUrl(null);
+                return;
+            }
+
+            try {
+                const blob = await fetchCompanyFileBlob(sourceFileId);
+                if (cancelled) return;
+                objectUrl = URL.createObjectURL(blob);
+                setEmbeddedPreviewUrl(objectUrl);
+            } catch (error: any) {
+                if (cancelled) return;
+                setEmbeddedPreviewUrl(null);
+                setPreviewError(error?.message || 'Vorschau konnte nicht geladen werden');
+            }
+        }
+
+        void loadEmbeddedPreview();
+
+        return () => {
+            cancelled = true;
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
+    }, [sourceFileId, isPDF, isImage, isVideo, reloadKey]);
 
     const renderMarkdown = (md: string) => {
         return md
@@ -279,9 +315,9 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
         if (isImage) {
             return (
                 <div className="h-full flex items-center justify-center p-4 bg-black/20">
-                    {previewUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- document previews may use auth-protected file URLs
-                        <img src={previewUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                    {embeddedAssetUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- blob preview URLs are runtime-generated
+                        <img src={embeddedAssetUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
                     ) : content ? (
                         <div className="text-center max-w-md">
                             <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
@@ -304,16 +340,16 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                 <div className="h-full p-4 md:p-6">
                     <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
                         <div className="overflow-hidden rounded-[26px] border border-white/[0.06] bg-black/20 shadow-[0_18px_52px_rgba(0,0,0,0.22)]">
-                            {previewUrl ? (
+                            {embeddedAssetUrl ? (
                                 <iframe
-                                    src={previewUrl}
+                                    src={embeddedAssetUrl}
                                     title={name}
                                     className="h-full min-h-[480px] w-full bg-white"
                                 />
                             ) : (
                                 <div className="flex h-full min-h-[480px] flex-col items-center justify-center gap-4">
                                     <File size={64} className="text-red-400/60" />
-                                    <p className="text-white/65 text-sm">Keine eingebettete Vorschau verfuegbar.</p>
+                                    <p className="text-white/65 text-sm">{previewError || 'Keine eingebettete Vorschau verfuegbar.'}</p>
                                 </div>
                             )}
                         </div>
@@ -343,14 +379,14 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             return (
                 <div className="h-full p-4 md:p-6">
                     <div className="overflow-hidden rounded-[26px] border border-white/[0.06] bg-black/20 shadow-[0_18px_52px_rgba(0,0,0,0.22)]">
-                        {previewUrl ? (
+                        {embeddedAssetUrl ? (
                             <video controls className="h-full min-h-[480px] w-full bg-black">
-                                <source src={previewUrl} />
+                                <source src={embeddedAssetUrl} />
                             </video>
                         ) : (
                             <div className="flex h-full min-h-[480px] flex-col items-center justify-center gap-4">
                                 <FileVideo size={64} className="text-pink-400/60" />
-                                <p className="text-white/65 text-sm">Keine Vorschau verfuegbar.</p>
+                                <p className="text-white/65 text-sm">{previewError || 'Keine Vorschau verfuegbar.'}</p>
                             </div>
                         )}
                     </div>

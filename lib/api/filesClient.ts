@@ -139,6 +139,31 @@ export const getCompanyFileUrl = (fileId: string): string => {
     return `${getCoreBaseUrl()}/v3/files/${fileId}`;
 };
 
+export const fetchCompanyFileBlob = async (fileId: string): Promise<Blob> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${getCoreBaseUrl()}/v3/files/${fileId}`, {
+        method: 'GET',
+        headers: token ? {
+            'Authorization': `Bearer ${token}`
+        } : undefined,
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        let message = `Datei konnte nicht geladen werden: ${response.status} ${response.statusText}`;
+        try {
+            const errorBody = await response.json();
+            if (errorBody.detail) message = errorBody.detail;
+        } catch {
+            // ignore parse errors
+        }
+        throw new CoreError(message, response.status);
+    }
+
+    return response.blob();
+};
+
 /** URL for files uploaded with visibility='public'. No auth required. */
 export const getPublicFileUrl = (fileId: string): string => {
     return `${getCoreBaseUrl()}/v3/files/public/${fileId}`;
