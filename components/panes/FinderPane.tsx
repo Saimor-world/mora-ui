@@ -529,7 +529,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     ]);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
-    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('cozy');
+    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('compact');
+    const nextDensity = useCallback(() => {
+        setCardDensity(d => d === 'compact' ? 'cozy' : d === 'cozy' ? 'showcase' : 'compact');
+    }, []);
     const [graphZoom, setGraphZoom] = useState(0.85);
     const [graphPan, setGraphPan] = useState({ x: 0, y: 0 });
     const graphDragRef = useRef<{ isDragging: boolean, startX: number, startY: number, initialPan: { x: number, y: number } }>({ isDragging: false, startX: 0, startY: 0, initialPan: { x: 0, y: 0 } });
@@ -1543,25 +1546,24 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             : 'border-white/10 bg-white/[0.04] text-white/55';
 
     const densityLabel = cardDensity === 'compact' ? 'Kompakt' : cardDensity === 'showcase' ? 'Gross' : 'Standard';
-    const nextDensity = () => setCardDensity((current) => current === 'compact' ? 'cozy' : current === 'cozy' ? 'showcase' : 'compact');
     const folderGridClass = cardDensity === 'compact'
-        ? 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(170px,1fr))]'
+        ? 'grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(182px,1fr))]'
         : cardDensity === 'showcase'
-            ? 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5 lg:grid-cols-[repeat(auto-fill,minmax(250px,1fr))]'
-            : 'grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(210px,1fr))]';
+            ? 'grid grid-cols-[repeat(auto-fill,minmax(236px,1fr))] gap-5 lg:grid-cols-[repeat(auto-fill,minmax(270px,1fr))]'
+            : 'grid grid-cols-[repeat(auto-fill,minmax(196px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(226px,1fr))]';
     const fileGridClass = folderGridClass;
     const folderCardClass = cardDensity === 'compact'
-        ? 'min-h-[140px] rounded-[24px] px-4 py-4'
+        ? 'min-h-[156px] rounded-[24px] px-4 py-4'
         : cardDensity === 'showcase'
-            ? 'min-h-[210px] rounded-[30px] px-6 py-6'
-            : 'min-h-[176px] rounded-[28px] px-5 py-5';
+            ? 'min-h-[224px] rounded-[30px] px-6 py-6'
+            : 'min-h-[188px] rounded-[28px] px-5 py-5';
     const fileCardClass = cardDensity === 'compact'
-        ? 'min-h-[152px] rounded-[24px] px-4 py-4'
+        ? 'min-h-[164px] rounded-[24px] px-4 py-4'
         : cardDensity === 'showcase'
-            ? 'min-h-[226px] rounded-[30px] px-6 py-6'
-            : 'min-h-[186px] rounded-[28px] px-5 py-5';
-    const iconTileClass = cardDensity === 'compact' ? 'h-10 w-10 rounded-xl' : cardDensity === 'showcase' ? 'h-14 w-14 rounded-[20px]' : 'h-12 w-12 rounded-2xl';
-    const cardTitleClass = cardDensity === 'compact' ? 'text-[15px]' : cardDensity === 'showcase' ? 'text-[18px]' : 'text-[17px]';
+            ? 'min-h-[236px] rounded-[30px] px-6 py-6'
+            : 'min-h-[198px] rounded-[28px] px-5 py-5';
+    const iconTileClass = cardDensity === 'compact' ? 'h-11 w-11 rounded-[16px]' : cardDensity === 'showcase' ? 'h-16 w-16 rounded-[22px]' : 'h-13 w-13 rounded-[18px]';
+    const cardTitleClass = cardDensity === 'compact' ? 'text-[15px]' : cardDensity === 'showcase' ? 'text-[19px]' : 'text-[17px]';
 
 
     // (Removed old extractFolders and separate load logic to unify via Tree)
@@ -1677,12 +1679,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
 
-                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] px-3 md:px-6 py-3 backdrop-blur-md">
-                        <div className="rounded-[24px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(7,22,18,0.86),rgba(4,14,12,0.8))] px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.22)] md:px-5">
-                            <div className="flex flex-col gap-3">
-                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                    <div className="min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2">
+                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.01))] px-3 py-2 backdrop-blur-md md:px-6">
+                        <div className="rounded-[22px] border border-white/[0.06] bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_36%),linear-gradient(180deg,rgba(7,22,18,0.88),rgba(4,14,12,0.82))] px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.18)] md:px-5">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
                                                 {surfaceBadgeLabel}
                                             </span>
@@ -1699,27 +1700,30 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </span>
                                             ) : null}
                                         </div>
-                                        <div className="mt-2">
-                                            <p className="text-[11px] uppercase tracking-[0.24em] text-white/30">
+                                    <div className="mt-2 flex flex-col gap-2 xl:flex-row xl:items-end xl:justify-between">
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] uppercase tracking-[0.18em] text-white/24">
                                                 Explorer
                                             </p>
-                                            <h2 className="mt-1.5 text-[18px] font-semibold tracking-tight text-white/92 md:text-[20px]">
+                                            <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-white/92 md:text-[18px]">
                                                 {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                             </h2>
                                         </div>
-                                    </div>
-                                    <div className="grid gap-2 sm:grid-cols-3 lg:w-[330px]">
-                                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
-                                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/32">Ordner</div>
-                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
-                                        </div>
-                                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
-                                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/32">Inhalte</div>
-                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFiles.length}</div>
-                                        </div>
-                                        <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
-                                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/32">Modus</div>
-                                            <div className="mt-1.5 text-sm font-medium text-white/72">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</div>
+                                        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/34">
+                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">
+                                                {filteredFolders.length} Ordner
+                                            </span>
+                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">
+                                                {mainFiles.length} Inhalte
+                                            </span>
+                                            {contextlessFiles.length > 0 && (
+                                                <span className="rounded-full border border-amber-500/12 bg-amber-500/[0.06] px-2.5 py-1 text-amber-200/55">
+                                                    {contextlessFiles.length} im Eingang
+                                                </span>
+                                            )}
+                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">
+                                                {isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -1910,15 +1914,38 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 </button>
                             </div>
 
-                            {/* Density Toggle */}
+                            {/* Density Toggle Legacy */}
                             <button
                                 onClick={nextDensity}
-                                className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/8 bg-black/30 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.18em] text-white/46 transition-all hover:border-white/16 hover:text-white/76"
+                                className="hidden"
                                 title="Kartengrösse umschalten (Kompakt → Standard → Gross)"
                             >
                                 <Box size={14} />
                                 <span className="hidden lg:inline">{densityLabel}</span>
                             </button>
+
+                            {/* Density Controls */}
+                            <div className="hidden md:flex items-center gap-1 rounded-xl border border-white/8 bg-black/30 p-1">
+                                {([
+                                    ['compact', 'Klein'],
+                                    ['cozy', 'Mittel'],
+                                    ['showcase', 'Gross'],
+                                ] as const).map(([density, label]) => (
+                                    <button
+                                        key={density}
+                                        type="button"
+                                        onClick={() => setCardDensity(density)}
+                                        className={`rounded-lg px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition-all ${
+                                            cardDensity === density
+                                                ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
+                                                : 'text-white/45 hover:text-white/75'
+                                        }`}
+                                        title={`Kartengroesse: ${label}`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
 
                             {/* Actions */}
                             <div className="flex items-center gap-1.5 border-l border-white/10 pl-2 md:pl-3">
@@ -2115,8 +2142,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                             {filteredFolders.length > 0 && (
                                                 <div className="mb-7 rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
-                                                    <div className="mb-3 flex items-center justify-between">
-                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">Ordner</p>
+                                                    <div className="mb-4 flex items-end justify-between gap-4">
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Struktur</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">Bereiche und Ordner der aktiven Instanz.</p>
+                                                        </div>
                                                     </div>
                                                     <div className={folderGridClass}>
                                             {filteredFolders.map(folder => {
@@ -2175,8 +2205,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                             {mainFiles.length > 0 && (
                                                 <div className="rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
-                                                    <div className="mb-3 flex items-center justify-between">
-                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">Inhalte</p>
+                                                    <div className="mb-4 flex items-end justify-between gap-4">
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">Direkt oeffnen, lesen oder weiterverarbeiten.</p>
+                                                        </div>
                                                     </div>
                                                     <div className={fileGridClass}>
                                             {mainFiles.map(file => {
@@ -2281,8 +2314,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {/* Contextless / unsorted files zone */}
                                             {contextlessFiles.length > 0 && (
                                                 <div className="mt-6 rounded-[30px] border border-amber-500/[0.08] bg-[linear-gradient(180deg,rgba(245,158,11,0.03),rgba(245,158,11,0.01))] px-4 py-4 md:px-5">
-                                                    <div className="mb-3 flex items-center justify-between">
-                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-amber-400/40">Ohne Bereichszuordnung</p>
+                                                    <div className="mb-4 flex items-end justify-between gap-4">
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-amber-400/40">Instanz-Eingang</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">Dateien auf Instanzebene, die noch keinem Bereich oder Ordner zugeordnet sind.</p>
+                                                        </div>
                                                         <span className="shrink-0 rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/50">{contextlessFiles.length}</span>
                                                     </div>
                                                     <div className={fileGridClass}>
