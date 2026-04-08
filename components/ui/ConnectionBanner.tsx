@@ -32,7 +32,7 @@ export const ConnectionBanner: React.FC = () => {
     const surfaceLabel = surfaceProfile.isPublicDemoSurface
         ? 'Oeffentliche Demo-Instanz'
         : surfaceProfile.isLocalTruthSurface
-            ? 'Local Truth'
+            ? 'Interne Instanz'
             : 'Verbindung eingeschraenkt';
 
     const helperText = surfaceProfile.isLocalTruthSurface

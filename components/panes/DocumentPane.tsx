@@ -127,6 +127,11 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
     const sourceFileId = getNodeSourceFileId({ metadata });
     const sourceFileName = getNodeSourceFileName({ metadata, name, title: name, id: nodeId || 'document' });
     const previewUrl = url || (sourceFileId ? getCompanyFileUrl(sourceFileId) : null);
+    const surfaceLabel = surfaceProfile.isLocalTruthSurface
+        ? 'Interne Instanz'
+        : surfaceProfile.isPublicDemoSurface
+            ? 'Demo-Spiegel'
+            : 'Standardmodus';
 
     const navigationSourceLabel = (() => {
         switch (navigationContext?.source) {
@@ -296,17 +301,59 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
         if (isPDF) {
             return (
-                <div className="h-full flex flex-col items-center justify-center p-6 bg-black/20">
-                    <File size={64} className="text-red-400/60 mb-4" />
-                    <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
-                    {content ? (
-                        <>
-                            <p className="text-white/50 text-sm text-center max-w-md mb-4">{content}</p>
-                            <p className="text-white/30 text-xs">Die PDF liegt als Datei vor und kann direkt geoeffnet werden.</p>
-                        </>
-                    ) : (
-                        <p className="text-white/40 text-sm">PDF-Dokument</p>
-                    )}
+                <div className="h-full p-4 md:p-6">
+                    <div className="grid h-full gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+                        <div className="overflow-hidden rounded-[26px] border border-white/[0.06] bg-black/20 shadow-[0_18px_52px_rgba(0,0,0,0.22)]">
+                            {previewUrl ? (
+                                <iframe
+                                    src={previewUrl}
+                                    title={name}
+                                    className="h-full min-h-[480px] w-full bg-white"
+                                />
+                            ) : (
+                                <div className="flex h-full min-h-[480px] flex-col items-center justify-center gap-4">
+                                    <File size={64} className="text-red-400/60" />
+                                    <p className="text-white/65 text-sm">Keine eingebettete Vorschau verfuegbar.</p>
+                                </div>
+                            )}
+                        </div>
+                        <aside className="space-y-4">
+                            <div className="rounded-[24px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] p-4">
+                                <p className="text-[10px] uppercase tracking-[0.16em] text-white/26">Dokument</p>
+                                <div className="mt-3 text-base font-medium leading-snug text-white/88">{name}</div>
+                                <p className="mt-3 text-[12px] leading-relaxed text-white/42">
+                                    Die PDF wird direkt in der aktuellen Instanzansicht gezeigt. Wenn du die unveraenderte Quelle brauchst, oeffne sie separat.
+                                </p>
+                            </div>
+                            <div className="rounded-[24px] border border-white/[0.06] bg-white/[0.03] p-4">
+                                <p className="text-[10px] uppercase tracking-[0.16em] text-white/26">Kontext</p>
+                                <div className="mt-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.16em] text-white/42">
+                                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1">{surfaceLabel}</span>
+                                    {sourceFileId ? <span className="rounded-full border border-cyan-400/18 bg-cyan-500/[0.08] px-2 py-1 text-cyan-200/70">Quelle vorhanden</span> : null}
+                                </div>
+                                {content ? <p className="mt-3 text-[12px] leading-relaxed text-white/38">{content}</p> : null}
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            );
+        }
+
+        if (isVideo) {
+            return (
+                <div className="h-full p-4 md:p-6">
+                    <div className="overflow-hidden rounded-[26px] border border-white/[0.06] bg-black/20 shadow-[0_18px_52px_rgba(0,0,0,0.22)]">
+                        {previewUrl ? (
+                            <video controls className="h-full min-h-[480px] w-full bg-black">
+                                <source src={previewUrl} />
+                            </video>
+                        ) : (
+                            <div className="flex h-full min-h-[480px] flex-col items-center justify-center gap-4">
+                                <FileVideo size={64} className="text-pink-400/60" />
+                                <p className="text-white/65 text-sm">Keine Vorschau verfuegbar.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -354,7 +401,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
 
     return (
         <GlassPanel
-            title={name || 'Dokument'}
+            title={<span className="normal-case text-[11px] tracking-[0.22em] text-emerald-100/78">Dokument</span>}
             paneId={id}
             width={pane.size?.width || 800}
             height={pane.size?.height || 600}
@@ -374,8 +421,8 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             resizable
         >
             <div className="flex flex-col h-full">
-                {/* Compact doc strip — surface + icon + name + actions in one line */}
-                <div className="flex items-center gap-2 border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] px-3 py-2 backdrop-blur-md">
+                {/* Compact document strip */}
+                <div className="flex items-center gap-2 border-b border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.022),rgba(255,255,255,0.01))] px-3 py-2 backdrop-blur-md">
                     {/* File type icon */}
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/8 bg-black/20">
                         {isPDF ? (
@@ -401,7 +448,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
                             </span>
                         )}
                         <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] ${surfaceProfile.isLocalTruthSurface ? 'border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-200/70' : surfaceProfile.isPublicDemoSurface ? 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-200/70' : 'border-white/8 bg-white/[0.03] text-white/35'}`}>
-                            {surfaceProfile.isLocalTruthSurface ? 'Local' : surfaceProfile.isPublicDemoSurface ? 'Demo' : 'Std'}
+                            {surfaceProfile.isLocalTruthSurface ? 'Intern' : surfaceProfile.isPublicDemoSurface ? 'Demo' : 'Standard'}
                         </span>
                     </div>
 

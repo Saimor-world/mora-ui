@@ -103,7 +103,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                     <p className="mt-1 text-sm text-white/82">{SECTION_TITLES[section]}</p>
                 </div>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/55">
-                    {surfaceProfile.isLocalTruthSurface ? "Local Truth" : surfaceProfile.isPublicDemoSurface ? "Demo Mirror" : "Standard"}
+                    {surfaceProfile.isLocalTruthSurface ? "Interne Instanz" : surfaceProfile.isPublicDemoSurface ? "Demo-Spiegel" : "Standardmodus"}
                 </span>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-white/38">
@@ -248,7 +248,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             draggable
             resizable
             dimBackground={false}
-            title={<span className="text-xs uppercase tracking-[0.3em] text-emerald-300/80">Mora Center</span>}
+            title={<span className="normal-case text-[11px] tracking-[0.22em] text-emerald-300/80">Mora Center</span>}
             isActive={isActive}
             onFocus={() => focusPane(id)}
             onClose={handleClose}
@@ -268,10 +268,10 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                     : "border-white/10 bg-white/[0.04] text-white/55"
                         }`}>
                             {surfaceProfile.isLocalTruthSurface
-                                ? "Local Truth"
+                                ? "Interne Instanz"
                                 : surfaceProfile.isPublicDemoSurface
-                                    ? "Demo Mirror"
-                                    : "Standard"}
+                                    ? "Demo-Spiegel"
+                                    : "Standardmodus"}
                         </span>
                         <span className="text-[11px] text-white/35">
                             {surfaceProfile.isLocalTruthSurface

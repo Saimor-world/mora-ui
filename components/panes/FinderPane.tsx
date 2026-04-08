@@ -5,7 +5,7 @@ import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
-import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
+import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
 import { setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
 import type { CoreTreeNode } from '@/lib/types/core';
@@ -531,6 +531,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
     const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('compact');
+    const [showContextlessZone, setShowContextlessZone] = useState(false);
     const nextDensity = useCallback(() => {
         setCardDensity(d => d === 'compact' ? 'cozy' : d === 'cozy' ? 'showcase' : 'compact');
     }, []);
@@ -1542,10 +1543,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, [currentFolderId, treeData, findNodeInTree]);
 
     const surfaceBadgeLabel = surfaceProfile.isLocalTruthSurface
-        ? 'Local Truth'
+        ? 'Interne Instanz'
         : surfaceProfile.isPublicDemoSurface
-            ? 'Demo Mirror'
-            : 'Standard';
+            ? 'Demo-Spiegel'
+            : 'Standardmodus';
 
     const surfaceBadgeTone = surfaceProfile.isLocalTruthSurface
         ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200'
@@ -1553,25 +1554,25 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
             : 'border-white/10 bg-white/[0.04] text-white/55';
 
-    const densityLabel = cardDensity === 'compact' ? 'Kompakt' : cardDensity === 'showcase' ? 'Gross' : 'Standard';
+    const densityLabel = cardDensity === 'compact' ? 'Klein' : cardDensity === 'showcase' ? 'Gross' : 'Mittel';
     const folderGridClass = cardDensity === 'compact'
-        ? 'grid grid-cols-[repeat(auto-fill,minmax(154px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(166px,1fr))]'
+        ? 'grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(144px,1fr))]'
         : cardDensity === 'showcase'
-            ? 'grid grid-cols-[repeat(auto-fill,minmax(216px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(248px,1fr))]'
-            : 'grid grid-cols-[repeat(auto-fill,minmax(182px,1fr))] gap-3.5 lg:grid-cols-[repeat(auto-fill,minmax(208px,1fr))]';
+            ? 'grid grid-cols-[repeat(auto-fill,minmax(196px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(220px,1fr))]'
+            : 'grid grid-cols-[repeat(auto-fill,minmax(158px,1fr))] gap-3.5 lg:grid-cols-[repeat(auto-fill,minmax(182px,1fr))]';
     const fileGridClass = folderGridClass;
     const folderCardClass = cardDensity === 'compact'
-        ? 'min-h-[138px] rounded-[22px] px-4 py-4'
+        ? 'min-h-[112px] rounded-[20px] px-3.5 py-3.5'
         : cardDensity === 'showcase'
-            ? 'min-h-[210px] rounded-[28px] px-5 py-5'
-            : 'min-h-[168px] rounded-[24px] px-[18px] py-[18px]';
+            ? 'min-h-[178px] rounded-[26px] px-5 py-5'
+            : 'min-h-[138px] rounded-[22px] px-4 py-4';
     const fileCardClass = cardDensity === 'compact'
-        ? 'min-h-[146px] rounded-[22px] px-4 py-4'
+        ? 'min-h-[122px] rounded-[20px] px-3.5 py-3.5'
         : cardDensity === 'showcase'
-            ? 'min-h-[220px] rounded-[28px] px-5 py-5'
-            : 'min-h-[176px] rounded-[24px] px-[18px] py-[18px]';
-    const iconTileClass = cardDensity === 'compact' ? 'h-10 w-10 rounded-[14px]' : cardDensity === 'showcase' ? 'h-[60px] w-[60px] rounded-[20px]' : 'h-12 w-12 rounded-[16px]';
-    const cardTitleClass = cardDensity === 'compact' ? 'text-[14px]' : cardDensity === 'showcase' ? 'text-[18px]' : 'text-[16px]';
+            ? 'min-h-[188px] rounded-[26px] px-5 py-5'
+            : 'min-h-[150px] rounded-[22px] px-4 py-4';
+    const iconTileClass = cardDensity === 'compact' ? 'h-9 w-9 rounded-[12px]' : cardDensity === 'showcase' ? 'h-[56px] w-[56px] rounded-[18px]' : 'h-11 w-11 rounded-[14px]';
+    const cardTitleClass = cardDensity === 'compact' ? 'text-[13px]' : cardDensity === 'showcase' ? 'text-[17px]' : 'text-[15px]';
 
 
     // (Removed old extractFolders and separate load logic to unify via Tree)
@@ -1631,7 +1632,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     return (
         <>
             <GlassPanel
-                title={finderTitle}
+                title={<span className="normal-case text-[11px] tracking-[0.22em] text-emerald-100/78">{finderTitle}</span>}
                 width={pane.size.width}
                 height={pane.size.height}
                 initialX={pane.position.x}
@@ -1687,52 +1688,57 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
 
-                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-3 py-2 backdrop-blur-md md:px-6">
-                        <div className="rounded-[18px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(5,20,16,0.88),rgba(3,14,11,0.8))] px-4 py-3 shadow-[0_10px_32px_rgba(0,0,0,0.16)]">
-                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                                <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
-                                            {surfaceBadgeLabel}
+                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] px-3 py-2 backdrop-blur-md md:px-6">
+                        <div className="flex flex-col gap-3 rounded-[18px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(5,20,16,0.78),rgba(3,14,11,0.7))] px-4 py-3 shadow-[0_10px_32px_rgba(0,0,0,0.16)] lg:flex-row lg:items-center lg:justify-between">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
+                                        {surfaceBadgeLabel}
+                                    </span>
+                                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/58">
+                                        {resolvedCompanyName || 'Keine Instanz aktiv'}
+                                    </span>
+                                    <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/46">
+                                        {isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}
+                                    </span>
+                                    {globalSearch ? (
+                                        <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-100/80">
+                                            Gesamtsuche
                                         </span>
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/58">
-                                            {resolvedCompanyName || 'Keine Instanz aktiv'}
+                                    ) : searchQuery.trim() ? (
+                                        <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
+                                            Suchfokus
                                         </span>
-                                        <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/46">
-                                            {isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}
+                                    ) : null}
+                                    {surfaceProfile.isLocalTruthSurface && unavailableCompanyFiles.length > 0 ? (
+                                        <span className="rounded-full border border-amber-500/18 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-amber-100/72">
+                                            {unavailableCompanyFiles.length} Altdateien ausgeblendet
                                         </span>
-                                        {globalSearch ? (
-                                            <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-100/80">
-                                                Gesamtsuche
-                                            </span>
-                                        ) : searchQuery.trim() ? (
-                                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
-                                                Suchfokus
-                                            </span>
-                                        ) : null}
-                                        {surfaceProfile.isLocalTruthSurface && unavailableCompanyFiles.length > 0 ? (
-                                            <span className="rounded-full border border-amber-500/18 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-amber-100/72">
-                                                {unavailableCompanyFiles.length} Altdateien ausgeblendet
-                                            </span>
-                                        ) : null}
-                                    </div>
-                                    <div className="mt-2 flex flex-wrap items-end gap-3">
-                                        <div className="min-w-0">
-                                            <p className="text-[10px] uppercase tracking-[0.18em] text-white/22">Explorer</p>
-                                            <h2 className="mt-1 truncate text-[16px] font-semibold tracking-tight text-white/92 md:text-[17px]">
-                                                {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
-                                            </h2>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/34">
-                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">{filteredFolders.length} Ordner</span>
-                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">{mainFiles.length} Inhalte</span>
-                                            {contextlessFiles.length > 0 && (
-                                                <span className="rounded-full border border-amber-500/12 bg-amber-500/[0.06] px-2.5 py-1 text-amber-200/55">
-                                                    {contextlessFiles.length} im Eingang
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                                    ) : null}
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                    <h2 className="truncate text-[15px] font-semibold tracking-tight text-white/92 md:text-[16px]">
+                                        {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
+                                    </h2>
+                                    <p className="text-[12px] leading-relaxed text-white/42">
+                                        {currentFolderId
+                                            ? 'Dateien, Dokumente und Ordner im aktuellen Pfad.'
+                                            : 'Der Einstieg in die aktive Instanz: Struktur, Eingang und aktuelle Inhalte.'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 lg:min-w-[276px]">
+                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
+                                    <div className="mt-1 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
+                                </div>
+                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
+                                    <div className="mt-1 text-lg font-semibold text-white/88">{mainFiles.length}</div>
+                                </div>
+                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                    <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
+                                    <div className="mt-1 text-sm font-semibold text-white/82">{densityLabel}</div>
                                 </div>
                             </div>
                         </div>
@@ -1932,7 +1938,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                             </button>
 
                             {/* Density Controls */}
-                            <div className="hidden md:flex items-center gap-1 rounded-xl border border-white/8 bg-black/30 p-1">
+                            <div className="flex items-center gap-1 rounded-xl border border-white/8 bg-black/30 p-1">
                                 {([
                                     ['compact', 'Klein'],
                                     ['cozy', 'Mittel'],
@@ -1942,13 +1948,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         key={density}
                                         type="button"
                                         onClick={() => setCardDensity(density)}
-                                        className={`rounded-lg px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition-all ${
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] transition-all ${
                                             cardDensity === density
                                                 ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
                                                 : 'text-white/45 hover:text-white/75'
                                         }`}
                                         title={`Kartengroesse: ${label}`}
                                     >
+                                        <span className={`rounded-sm border ${density === 'compact' ? 'h-2.5 w-2.5' : density === 'cozy' ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${cardDensity === density ? 'border-black/30 bg-black/20' : 'border-white/20 bg-white/10'}`} />
                                         {label}
                                     </button>
                                 ))}
@@ -2004,7 +2011,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     )}
 
                     {/* Content Container with Animation */}
-                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(10,45,34,0.34),transparent_38%),linear-gradient(180deg,rgba(1,10,8,0.78),rgba(1,7,6,0.92))] px-3 pb-4 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
+                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(10,45,34,0.34),transparent_38%),linear-gradient(180deg,rgba(1,10,8,0.78),rgba(1,7,6,0.92))] px-3 pb-4 pt-3 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
                         <AnimatePresence mode="popLayout">
                             {/* Loading State */}
                             {(isLoading || isLoadingTree) && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
@@ -2061,29 +2068,29 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid gap-4 xl:grid-cols-[190px_minmax(0,1fr)_280px]">
+                                        <div className="grid gap-4 xl:grid-cols-[156px_minmax(0,1fr)_260px]">
                                             <aside className="space-y-4">
-                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-3.5 py-3.5 shadow-[0_16px_42px_rgba(0,0,0,0.15)]">
+                                                <div className="rounded-[22px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.012))] px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.14)]">
                                                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Explorer</p>
-                                                    <h3 className="mt-2 text-[16px] font-semibold text-white/88">Uebersicht</h3>
+                                                    <h3 className="mt-2 text-[14px] font-semibold text-white/88">Blick</h3>
                                                     <div className="mt-4 grid gap-2">
-                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
+                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
                                                             <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
-                                                            <div className="mt-2 text-xl font-semibold text-white/88">{filteredFolders.length}</div>
+                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
                                                         </div>
-                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
+                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
                                                             <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                                            <div className="mt-2 text-xl font-semibold text-white/88">{mainFiles.length}</div>
+                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{mainFiles.length}</div>
                                                         </div>
                                                         {contextlessFiles.length > 0 && (
-                                                            <div className="rounded-2xl border border-amber-500/[0.1] bg-amber-500/[0.05] px-3 py-3">
-                                                                <div className="text-[10px] uppercase tracking-[0.14em] text-amber-200/45">Eingang</div>
-                                                                <div className="mt-2 text-xl font-semibold text-amber-50/90">{contextlessFiles.length}</div>
+                                                            <div className="rounded-2xl border border-amber-500/[0.1] bg-amber-500/[0.05] px-3 py-2.5">
+                                                                <div className="text-[10px] uppercase tracking-[0.14em] text-amber-200/45">Ohne Bereich</div>
+                                                                <div className="mt-1.5 text-lg font-semibold text-amber-50/90">{contextlessFiles.length}</div>
                                                             </div>
                                                         )}
                                                     </div>
                                                     <div className="mt-4 border-t border-white/[0.06] pt-4">
-                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Modus</p>
+                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
                                                         <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/58">
                                                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</span>
                                                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">{densityLabel}</span>
@@ -2099,8 +2106,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <div className="mb-5 rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
-                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Struktur</p>
-                                                            <p className="mt-1 text-[12px] text-white/34">Bereiche und Ordner der aktiven Instanz.</p>
+                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Ordner und Bereiche</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">Navigation durch Struktur und Kontexte.</p>
                                                         </div>
                                                     </div>
                                                     <div className={folderGridClass}>
@@ -2162,7 +2169,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
-                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte</p>
+                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte und Dateien</p>
                                                             <p className="mt-1 text-[12px] text-white/34">Direkt oeffnen, lesen oder weiterverarbeiten.</p>
                                                         </div>
                                                     </div>
@@ -2271,11 +2278,22 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <div className="mt-5 rounded-[24px] border border-amber-500/[0.08] bg-[linear-gradient(180deg,rgba(245,158,11,0.03),rgba(245,158,11,0.01))] px-4 py-4 md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
-                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-amber-400/40">Instanz-Eingang</p>
-                                                            <p className="mt-1 text-[12px] text-white/34">Dateien auf Instanzebene, die noch keinem Bereich oder Ordner zugeordnet sind.</p>
+                                                            <p className="text-[10px] uppercase tracking-[0.16em] text-amber-400/40">Ohne Bereich</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">Direkt an der Instanz abgelegte Dateien, die Mora noch keinem Bereich zugeordnet hat.</p>
                                                         </div>
-                                                        <span className="shrink-0 rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/50">{contextlessFiles.length}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="shrink-0 rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/50">{contextlessFiles.length}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowContextlessZone((prev) => !prev)}
+                                                                className="inline-flex items-center gap-1 rounded-full border border-amber-500/15 bg-black/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-100/72 transition-colors hover:border-amber-400/25 hover:bg-amber-500/[0.08]"
+                                                            >
+                                                                {showContextlessZone ? 'Ausblenden' : 'Einblenden'}
+                                                                <ChevronDown size={11} className={`transition-transform ${showContextlessZone ? 'rotate-180' : ''}`} />
+                                                            </button>
+                                                        </div>
                                                     </div>
+                                                    {showContextlessZone ? (
                                                     <div className={fileGridClass}>
                                                         {contextlessFiles.map(file => {
                                                             const isSelected = selectedNodeId === file.id;
@@ -2296,11 +2314,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                         <div className={`${iconTileClass} flex items-center justify-center border border-white/[0.06] bg-black/10`}>
                                                                             <Icon size={cardDensity === 'compact' ? 18 : cardDensity === 'showcase' ? 26 : 22} className="text-amber-300/50 group-hover:text-amber-300/70" />
                                                                         </div>
-                                                                        <span className="rounded-full border border-amber-500/10 bg-amber-500/[0.06] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-amber-200/40">Unsortiert</span>
+                                                                        <span className="rounded-full border border-amber-500/10 bg-amber-500/[0.06] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-amber-200/40">Ohne Bereich</span>
                                                                     </div>
                                                                     <div className="space-y-1.5">
                                                                         <span className={`${cardTitleClass} line-clamp-2 leading-snug break-words text-white/60`} title={displayName}>{displayName}</span>
-                                                                        <p className="text-[11px] text-white/28">Kein Bereich · Kein Ordner</p>
+                                                                        <p className="text-[11px] text-white/28">Noch keiner Struktur zugeordnet</p>
                                                                     </div>
                                                                     {isSelected && (
                                                                         <div className="absolute inset-0 rounded-[28px] border border-amber-400/20 pointer-events-none" />
@@ -2309,6 +2327,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             );
                                                         })}
                                                     </div>
+                                                    ) : (
+                                                        <div className="rounded-2xl border border-amber-500/10 bg-black/10 px-4 py-4 text-[12px] leading-relaxed text-white/44">
+                                                            Diese Dateien bleiben bewusst aus dem normalen Arbeitsstrom heraus, bis sie einem Bereich, Ordner oder klaren Kontext zugeordnet sind.
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                             </div>
@@ -2324,7 +2347,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 </span>
                                                                 <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
                                                             </div>
-                                                            <div className="mt-3 text-base font-medium leading-snug text-white/90">
+                                                            <div className="mt-3 text-[15px] font-medium leading-snug text-white/90">
                                                                 {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
                                                             </div>
                                                             <div className="mt-3 space-y-1.5 text-[11px] leading-relaxed text-white/42">
@@ -2386,11 +2409,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                             <div className="mt-4 space-y-2">
                                                                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
                                                                     <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Startlogik</p>
-                                                                    <p className="mt-2 text-[12px] text-white/44">Struktur zuerst, Inhalte direkt darunter. Nicht zugeordnete Dateien landen im Eingang.</p>
+                                                                    <p className="mt-2 text-[12px] text-white/44">Struktur zuerst, Inhalte daneben. Dateien ohne Bereich erscheinen getrennt, damit der aktive Arbeitsfluss klar bleibt.</p>
                                                                 </div>
                                                                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
-                                                                    <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Aktion</p>
-                                                                    <p className="mt-2 text-[12px] text-white/44">Mit den Groessen oben stellst du ein, wie dicht oder wie galeristisch der Explorer wirken soll.</p>
+                                                                    <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
+                                                                    <p className="mt-2 text-[12px] text-white/44">Mit Klein, Mittel und Gross steuerst du, wie dicht oder wie galeristisch der Explorer wirken soll.</p>
                                                                 </div>
                                                             </div>
                                                         </>
