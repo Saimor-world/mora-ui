@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useActivityStore } from '@/lib/store/activityStore';
 
 export interface PaneConfig {
     id: string;
@@ -123,6 +124,17 @@ export const usePaneStore = create<PaneState>((set, get) => ({
             minimized: false,
             data: request.data
         });
+
+        // OS-level activity tracking: record every user-facing pane open
+        const skipTypes = new Set(['settings', 'apps', 'grid']);
+        if (!skipTypes.has(request.type)) {
+            useActivityStore.getState().recordActivity({
+                id: request.id,
+                label: request.title,
+                paneType: request.type,
+                paneData: request.data,
+            });
+        }
     },
 
     addPane: (pane) => set((state) => {
