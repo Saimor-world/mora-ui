@@ -10,7 +10,7 @@ import type { CoreNode } from '@/lib/types/core';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
-import { openSourceFileLike } from '@/lib/utils/contentOpen';
+import { isSourceFileAvailable, openSourceFileLike } from '@/lib/utils/contentOpen';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { toast } from 'sonner';
 
@@ -287,7 +287,7 @@ export const HomeSurface: React.FC = () => {
                 label: node.title || node.name || 'Unbenanntes Dokument',
                 timestamp: getComparableTimestamp(node.updated_at || node.created_at),
             })),
-            ...(Array.isArray(myContent.files) ? myContent.files.filter((file) => !file.linked_node_id).map((file) => ({
+            ...(Array.isArray(myContent.files) ? myContent.files.filter((file) => !file.linked_node_id && isSourceFileAvailable(file)).map((file) => ({
                 kind: 'file' as const,
                 id: file.id,
                 label: file.name || 'Datei',
@@ -342,10 +342,13 @@ export const HomeSurface: React.FC = () => {
 
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
+        const standaloneVisibleFiles = Array.isArray(myContent.files)
+            ? myContent.files.filter((file) => !file.linked_node_id && isSourceFileAvailable(file)).length
+            : 0;
         return [
             myContent.counts.documents != null ? { id: 'documents', label: 'Inhalte', value: myContent.counts.documents } : null,
             myContent.counts.folders != null ? { id: 'folders', label: 'Ordner', value: myContent.counts.folders } : null,
-            myContent.counts.standalone_files != null ? { id: 'files', label: 'Dateien', value: myContent.counts.standalone_files } : null,
+            { id: 'files', label: 'Dateien', value: standaloneVisibleFiles },
         ].filter(Boolean) as Array<{ id: string; label: string; value: number }>;
     }, [myContent]);
 

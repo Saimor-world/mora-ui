@@ -21,6 +21,8 @@ export interface CompanyFileRecord {
     linked_node_id?: string | null;
     linked_folder_id?: string | null;
     linked_status?: 'document' | 'standalone' | string | null;
+    source_available?: boolean;
+    source_status?: 'ready' | 'missing' | string | null;
     created_at: string;
 }
 

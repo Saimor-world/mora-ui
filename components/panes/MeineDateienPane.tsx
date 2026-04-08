@@ -14,6 +14,7 @@ import {
     getSourceFileDisplayName,
     getSourceFileOpenActionLabel,
     getSourceFileSecondaryLabel,
+    isSourceFileAvailable,
     openNodeLike,
     openSourceFileForNode,
     openSourceFileLike,
@@ -163,7 +164,7 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
     const documents = Array.isArray(content.documents)
         ? content.documents
         : (Array.isArray(content.nodes) ? content.nodes : []);
-    const files = Array.isArray(content.files) ? content.files : [];
+    const files = Array.isArray(content.files) ? content.files.filter((file) => isSourceFileAvailable(file)) : [];
     const standaloneFiles = files.filter((file) => !file.linked_node_id);
     const documentById = new Map(documents.map((document) => [document.id, document]));
     const fileById = new Map(standaloneFiles.map((file) => [file.id, file]));
@@ -192,6 +193,12 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
                 file_id: file.id,
             })),
         ];
+    const visibleCounts = {
+        folders: folders.length,
+        documents: documents.length,
+        files: standaloneFiles.length,
+        total: folders.length + visibleItems.length,
+    };
 
     const isEmpty = folders.length === 0 && visibleItems.length === 0;
 
@@ -247,10 +254,10 @@ export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateie
             {counts && (
                 <div className="border-b border-white/5 px-5 py-3">
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
-                        {counts.total != null && <span>{counts.total} sichtbare Eintraege</span>}
-                        {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.documents != null && <span>{counts.documents} Inhalte</span>}
-                        {counts.standalone_files != null && counts.standalone_files > 0 && <span>{counts.standalone_files} Dateien</span>}
+                        <span>{visibleCounts.total} sichtbare Eintraege</span>
+                        <span>{visibleCounts.folders} Ordner</span>
+                        <span>{visibleCounts.documents} Inhalte</span>
+                        {visibleCounts.files > 0 && <span>{visibleCounts.files} Dateien</span>}
                     </div>
                     <p className="mt-2 text-xs text-white/35">
                         Alles hier gehoert nur deinem Konto. Gemeinsame Inhalte und Teamstrukturen oeffnest du getrennt im Finder der aktiven Instanz.

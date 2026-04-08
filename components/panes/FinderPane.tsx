@@ -39,6 +39,7 @@ import {
     getNodeSourceFileId,
     getSourceFileOpenActionLabel,
     getSourceFileSecondaryLabel,
+    isSourceFileAvailable,
     openNodeLike,
     openSourceFileLike,
 } from '@/lib/utils/contentOpen';
@@ -899,6 +900,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         linked_node_id: file.linked_node_id ?? undefined,
         linked_folder_id: file.linked_folder_id ?? undefined,
         linked_status: file.linked_status ?? undefined,
+        source_available: file.source_available ?? true,
+        source_status: file.source_status ?? undefined,
         visibility_scope: file.visibility_scope ?? undefined,
         created_at: file.created_at,
         mime: file.mime,
@@ -915,7 +918,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         const flatSpaces = spacesByDepartment || {};
         const flatFolders = foldersBySpace || {};
         const flatNodes = nodesByFolder || {};
-        const standaloneCompanyFiles = companyFiles.filter((file) => !file.linked_node_id);
+        const healthyCompanyFiles = companyFiles.filter((file) => isSourceFileAvailable(file));
+        const standaloneCompanyFiles = healthyCompanyFiles.filter((file) => !file.linked_node_id);
 
         // 0. SEARCH / GLOBAL VIEW
         if (globalSearch || searchQuery) {
@@ -1498,6 +1502,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const filteredFiles = filteredContent.files;
     const filteredFolders = filteredContent.folders;
+    const unavailableCompanyFiles = useMemo(
+        () => companyFiles.filter((file) => !isSourceFileAvailable(file)),
+        [companyFiles],
+    );
     const contextlessFiles = useMemo(() => {
         if (currentFolderId || searchQuery.trim() || globalSearch) return [];
         return filteredFiles.filter((file) => {
@@ -1547,23 +1555,23 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     const densityLabel = cardDensity === 'compact' ? 'Kompakt' : cardDensity === 'showcase' ? 'Gross' : 'Standard';
     const folderGridClass = cardDensity === 'compact'
-        ? 'grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(182px,1fr))]'
+        ? 'grid grid-cols-[repeat(auto-fill,minmax(154px,1fr))] gap-3 lg:grid-cols-[repeat(auto-fill,minmax(166px,1fr))]'
         : cardDensity === 'showcase'
-            ? 'grid grid-cols-[repeat(auto-fill,minmax(236px,1fr))] gap-5 lg:grid-cols-[repeat(auto-fill,minmax(270px,1fr))]'
-            : 'grid grid-cols-[repeat(auto-fill,minmax(196px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(226px,1fr))]';
+            ? 'grid grid-cols-[repeat(auto-fill,minmax(216px,1fr))] gap-4 lg:grid-cols-[repeat(auto-fill,minmax(248px,1fr))]'
+            : 'grid grid-cols-[repeat(auto-fill,minmax(182px,1fr))] gap-3.5 lg:grid-cols-[repeat(auto-fill,minmax(208px,1fr))]';
     const fileGridClass = folderGridClass;
     const folderCardClass = cardDensity === 'compact'
-        ? 'min-h-[156px] rounded-[24px] px-4 py-4'
+        ? 'min-h-[138px] rounded-[22px] px-4 py-4'
         : cardDensity === 'showcase'
-            ? 'min-h-[224px] rounded-[30px] px-6 py-6'
-            : 'min-h-[188px] rounded-[28px] px-5 py-5';
+            ? 'min-h-[210px] rounded-[28px] px-5 py-5'
+            : 'min-h-[168px] rounded-[24px] px-[18px] py-[18px]';
     const fileCardClass = cardDensity === 'compact'
-        ? 'min-h-[164px] rounded-[24px] px-4 py-4'
+        ? 'min-h-[146px] rounded-[22px] px-4 py-4'
         : cardDensity === 'showcase'
-            ? 'min-h-[236px] rounded-[30px] px-6 py-6'
-            : 'min-h-[198px] rounded-[28px] px-5 py-5';
-    const iconTileClass = cardDensity === 'compact' ? 'h-11 w-11 rounded-[16px]' : cardDensity === 'showcase' ? 'h-16 w-16 rounded-[22px]' : 'h-13 w-13 rounded-[18px]';
-    const cardTitleClass = cardDensity === 'compact' ? 'text-[15px]' : cardDensity === 'showcase' ? 'text-[19px]' : 'text-[17px]';
+            ? 'min-h-[220px] rounded-[28px] px-5 py-5'
+            : 'min-h-[176px] rounded-[24px] px-[18px] py-[18px]';
+    const iconTileClass = cardDensity === 'compact' ? 'h-10 w-10 rounded-[14px]' : cardDensity === 'showcase' ? 'h-[60px] w-[60px] rounded-[20px]' : 'h-12 w-12 rounded-[16px]';
+    const cardTitleClass = cardDensity === 'compact' ? 'text-[14px]' : cardDensity === 'showcase' ? 'text-[18px]' : 'text-[16px]';
 
 
     // (Removed old extractFolders and separate load logic to unify via Tree)
@@ -1679,51 +1687,50 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     )}
 
-                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.01))] px-3 py-2 backdrop-blur-md md:px-6">
-                        <div className="rounded-[22px] border border-white/[0.06] bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.08),transparent_36%),linear-gradient(180deg,rgba(7,22,18,0.88),rgba(4,14,12,0.82))] px-4 py-3 shadow-[0_14px_45px_rgba(0,0,0,0.18)] md:px-5">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.008))] px-3 py-2 backdrop-blur-md md:px-6">
+                        <div className="rounded-[18px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(5,20,16,0.88),rgba(3,14,11,0.8))] px-4 py-3 shadow-[0_10px_32px_rgba(0,0,0,0.16)]">
+                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
-                                                {surfaceBadgeLabel}
+                                        <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
+                                            {surfaceBadgeLabel}
+                                        </span>
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/58">
+                                            {resolvedCompanyName || 'Keine Instanz aktiv'}
+                                        </span>
+                                        <span className="rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/46">
+                                            {isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}
+                                        </span>
+                                        {globalSearch ? (
+                                            <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-100/80">
+                                                Gesamtsuche
                                             </span>
-                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/58">
-                                                {resolvedCompanyName || 'Keine Instanz aktiv'}
+                                        ) : searchQuery.trim() ? (
+                                            <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
+                                                Suchfokus
                                             </span>
-                                            {globalSearch ? (
-                                                <span className="rounded-full border border-violet-400/15 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-100/80">
-                                                    Gesamtsuche
-                                                </span>
-                                            ) : searchQuery.trim() ? (
-                                                <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
-                                                    Suchfokus
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                    <div className="mt-2 flex flex-col gap-2 xl:flex-row xl:items-end xl:justify-between">
+                                        ) : null}
+                                        {surfaceProfile.isLocalTruthSurface && unavailableCompanyFiles.length > 0 ? (
+                                            <span className="rounded-full border border-amber-500/18 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-amber-100/72">
+                                                {unavailableCompanyFiles.length} Altdateien ausgeblendet
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                    <div className="mt-2 flex flex-wrap items-end gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-[10px] uppercase tracking-[0.18em] text-white/24">
-                                                Explorer
-                                            </p>
-                                            <h2 className="mt-1 text-[17px] font-semibold tracking-tight text-white/92 md:text-[18px]">
+                                            <p className="text-[10px] uppercase tracking-[0.18em] text-white/22">Explorer</p>
+                                            <h2 className="mt-1 truncate text-[16px] font-semibold tracking-tight text-white/92 md:text-[17px]">
                                                 {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                             </h2>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.14em] text-white/34">
-                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">
-                                                {filteredFolders.length} Ordner
-                                            </span>
-                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">
-                                                {mainFiles.length} Inhalte
-                                            </span>
+                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">{filteredFolders.length} Ordner</span>
+                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">{mainFiles.length} Inhalte</span>
                                             {contextlessFiles.length > 0 && (
                                                 <span className="rounded-full border border-amber-500/12 bg-amber-500/[0.06] px-2.5 py-1 text-amber-200/55">
                                                     {contextlessFiles.length} im Eingang
                                                 </span>
                                             )}
-                                            <span className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1">
-                                                {isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -2054,9 +2061,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)_300px]">
+                                        <div className="grid gap-4 xl:grid-cols-[190px_minmax(0,1fr)_280px]">
                                             <aside className="space-y-4">
-                                                <div className="rounded-[28px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-3.5 py-3.5 shadow-[0_16px_42px_rgba(0,0,0,0.15)]">
                                                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Explorer</p>
                                                     <h3 className="mt-2 text-[16px] font-semibold text-white/88">Uebersicht</h3>
                                                     <div className="mt-4 grid gap-2">
@@ -2089,7 +2096,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             <div className="min-w-0 space-y-6">
 
                                             {filteredFolders.length > 0 && (
-                                                <div className="mb-7 rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
+                                                <div className="mb-5 rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Struktur</p>
@@ -2152,7 +2159,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             )}
 
                                             {mainFiles.length > 0 && (
-                                                <div className="rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
+                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte</p>
@@ -2261,7 +2268,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
                                             {/* Contextless / unsorted files zone */}
                                             {contextlessFiles.length > 0 && (
-                                                <div className="mt-6 rounded-[30px] border border-amber-500/[0.08] bg-[linear-gradient(180deg,rgba(245,158,11,0.03),rgba(245,158,11,0.01))] px-4 py-4 md:px-5">
+                                                <div className="mt-5 rounded-[24px] border border-amber-500/[0.08] bg-[linear-gradient(180deg,rgba(245,158,11,0.03),rgba(245,158,11,0.01))] px-4 py-4 md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-amber-400/40">Instanz-Eingang</p>
@@ -2307,7 +2314,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             </div>
 
                                             <aside className="space-y-4">
-                                                <div className="rounded-[28px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.018))] px-4 py-4 shadow-[0_20px_54px_rgba(0,0,0,0.18)]">
+                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.016))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)]">
                                                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Fokus</p>
                                                     {selectedEntry ? (
                                                         <>

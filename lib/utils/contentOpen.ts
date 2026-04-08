@@ -23,6 +23,8 @@ export interface OpenableSourceFileLike {
     linked_status?: 'document' | 'standalone' | string | null;
     linked_node_id?: string | null;
     linked_folder_id?: string | null;
+    source_available?: boolean;
+    source_status?: 'ready' | 'missing' | string | null;
 }
 
 interface OpenNodeOptions {
@@ -120,7 +122,10 @@ export function hasLinkedDocument(item: Pick<OpenableSourceFileLike, 'linked_nod
     return typeof item.linked_node_id === 'string' && item.linked_node_id.trim().length > 0;
 }
 
-export function getSourceFileSecondaryLabel(item: Pick<OpenableSourceFileLike, 'linked_status' | 'linked_node_id'>): string {
+export function getSourceFileSecondaryLabel(item: Pick<OpenableSourceFileLike, 'linked_status' | 'linked_node_id' | 'source_available' | 'source_status'>): string {
+    if (!isSourceFileAvailable(item)) {
+        return 'Nicht verfuegbar';
+    }
     if (hasLinkedDocument(item)) {
         return 'Dokument vorhanden';
     }
@@ -128,6 +133,12 @@ export function getSourceFileSecondaryLabel(item: Pick<OpenableSourceFileLike, '
         return 'Dokument vorhanden';
     }
     return 'Datei';
+}
+
+export function isSourceFileAvailable(item: Pick<OpenableSourceFileLike, 'source_available' | 'source_status'>): boolean {
+    if (item.source_available === false) return false;
+    if ((item.source_status || '').toLowerCase() === 'missing') return false;
+    return true;
 }
 
 export function getSourceFileOpenActionLabel(item: Pick<OpenableSourceFileLike, 'linked_node_id'>): string {
@@ -199,6 +210,10 @@ export async function openSourceFileLike(
             },
         });
         return { mode: 'document' };
+    }
+
+    if (!isSourceFileAvailable(item)) {
+        throw new Error('Datei ist in dieser Instanz derzeit nicht verfuegbar.');
     }
 
     await downloadCompanyFile(item.id, getSourceFileDisplayName(item));

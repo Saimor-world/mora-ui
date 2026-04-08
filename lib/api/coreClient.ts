@@ -1920,6 +1920,8 @@ export interface UserContentResponse {
         linked_status?: 'document' | 'standalone';
         linked_node_id?: string | null;
         linked_folder_id?: string | null;
+        source_available?: boolean;
+        source_status?: 'ready' | 'missing' | string | null;
     }>;
     /** Summary counts for quick display. */
     counts?: {
