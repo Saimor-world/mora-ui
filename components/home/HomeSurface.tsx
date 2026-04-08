@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut, Eye } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useActivityStore } from '@/lib/store/activityStore';
 import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet } from '@/lib/api/coreClient';
 import type { UserContentResponse } from '@/lib/api/coreClient';
 import type { CoreNode } from '@/lib/types/core';
@@ -30,6 +31,14 @@ type PersonalLatestItem =
     | { kind: 'node'; id: string; label: string; timestamp: number }
     | { kind: 'file'; id: string; label: string; timestamp: number; linkedNodeId?: string | null }
     | { kind: 'folder'; id: string; label: string; timestamp: number };
+
+type HomeRecentItem = {
+    id: string;
+    label: string;
+    kind: 'document' | 'finder' | 'file' | 'notes' | 'chat' | 'other';
+    openedAt: number;
+    paneData?: any;
+};
 
 function getComparableTimestamp(value?: string | null): number {
     if (!value) return 0;
@@ -104,6 +113,7 @@ export const HomeSurface: React.FC = () => {
     const updatePaneSize = usePaneStore((s) => s.updatePaneSize);
     const logoutAccount = useAccountStore((s) => s.logout);
     const surfaceProfile = useSurfaceProfile();
+    const recentItems = useActivityStore((s) => s.recentItems);
 
     const [recentDocs, setRecentDocs] = useState<CoreNode[] | null>(null);
     const [myContent, setMyContent] = useState<UserContentResponse | null | undefined>(undefined);
@@ -305,6 +315,24 @@ export const HomeSurface: React.FC = () => {
         return candidates.sort((left, right) => right.timestamp - left.timestamp)[0] ?? null;
     }, [myContent]);
 
+    const recentActivityItems = useMemo<HomeRecentItem[]>(() => (
+        recentItems
+            .slice(0, 5)
+            .map((item) => ({
+                id: item.id,
+                label: item.label,
+                kind:
+                    item.paneType === 'document' ? 'document' :
+                    item.paneType === 'finder' || item.paneType === 'meine-dateien' ? 'finder' :
+                    item.paneType === 'notes' ? 'notes' :
+                    item.paneType === 'chat' ? 'chat' :
+                    item.paneType === 'search' || item.paneType === 'scanner' ? 'file' :
+                    'other',
+                openedAt: item.openedAt,
+                paneData: item.paneData,
+            }))
+    ), [recentItems]);
+
     const openPersonalLatest = useCallback(() => {
         if (!personalLatestItem) {
             openMeineDateien();
@@ -340,6 +368,49 @@ export const HomeSurface: React.FC = () => {
         });
     }, [openMeineDateien, openPane, personalLatestItem, revealPane]);
 
+    const openRecentActivity = useCallback((item: HomeRecentItem) => {
+        if (item.kind === 'document' && item.paneData?.nodeId) {
+            revealPane(`doc-${item.paneData.nodeId}`, {
+                type: 'document',
+                title: item.label,
+                size: { width: 960, height: 720 },
+                data: { nodeId: item.paneData.nodeId },
+            });
+            return;
+        }
+
+        if (item.kind === 'finder') {
+            const finderId = item.paneData?.folderId ? `finder-${item.paneData.folderId}` : 'finder-main';
+            revealPane(finderId, {
+                type: 'finder',
+                title: item.label || 'Finder',
+                size: { width: 1280, height: 820 },
+                data: item.paneData,
+            });
+            return;
+        }
+
+        if (item.kind === 'notes') {
+            revealPane('notes-main', {
+                type: 'notes',
+                title: 'Notizen',
+                size: { width: 720, height: 560 },
+            });
+            return;
+        }
+
+        if (item.kind === 'chat') {
+            revealPane('chat-main', {
+                type: 'chat',
+                title: 'Mora',
+                size: { width: 860, height: 680 },
+            });
+            return;
+        }
+
+        openMeineDateien();
+    }, [openMeineDateien, revealPane]);
+
     const contentSummaryBadges = useMemo(() => {
         if (!myContent?.counts) return [];
         const standaloneVisibleFiles = Array.isArray(myContent.files)
@@ -370,6 +441,8 @@ export const HomeSurface: React.FC = () => {
                 ? 'Datei'
                 : 'Ordner'
         : null;
+
+    const recentActivityLabel = recentActivityItems[0]?.label ?? personalLatestLabel ?? null;
 
     return (
         <div className="absolute inset-0 overflow-auto">
@@ -584,31 +657,97 @@ export const HomeSurface: React.FC = () => {
                                 </div>
                             </button>
 
-                            <button
+                            <div
                                 data-testid="personal-space-card"
-                                onClick={openPersonalLatest}
+                                onClick={() => {
+                                    if (recentActivityItems[0]) {
+                                        openRecentActivity(recentActivityItems[0]);
+                                        return;
+                                    }
+                                    openPersonalLatest();
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        if (recentActivityItems[0]) {
+                                            openRecentActivity(recentActivityItems[0]);
+                                        } else {
+                                            openPersonalLatest();
+                                        }
+                                    }
+                                }}
+                                role="button"
+                                tabIndex={0}
                                 className={`w-full text-left rounded-2xl border px-5 py-4 transition-all ${t.card}`}
                             >
                                 <div className="flex items-center justify-between gap-3">
                                     <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                        Privater Bereich
+                                        Zuletzt aktiv
                                     </div>
-                                    {personalLatestKindLabel && (
+                                    {(recentActivityItems[0] || personalLatestItem) && (
                                         <span className={`text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>
-                                            {personalLatestKindLabel}
+                                            {recentActivityItems[0]
+                                                ? recentActivityItems[0].kind === 'document'
+                                                    ? 'Dokument'
+                                                    : recentActivityItems[0].kind === 'finder'
+                                                        ? 'Finder'
+                                                        : recentActivityItems[0].kind === 'notes'
+                                                            ? 'Notizen'
+                                                            : recentActivityItems[0].kind === 'chat'
+                                                                ? 'Mora'
+                                                                : 'Aktivitaet'
+                                                : personalLatestKindLabel}
                                         </span>
                                     )}
                                 </div>
                                 <div className={`mt-2 truncate text-sm font-medium ${t.cardText}`}>
-                                    {personalSpaceLabel}
+                                    {recentActivityLabel || personalSpaceLabel}
                                 </div>
-                                <div className={`mt-4 text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                    Zuletzt aktiv
-                                </div>
-                                <div className={`mt-2 text-sm ${t.cardText}`}>
-                                    {personalLatestLabel || 'Noch keine privaten Inhalte sichtbar.'}
-                                </div>
-                            </button>
+                                {recentActivityItems.length > 0 ? (
+                                    <div className="mt-4 space-y-2">
+                                        {recentActivityItems.slice(0, 3).map((item, index) => (
+                                            <button
+                                                key={item.id}
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    openRecentActivity(item);
+                                                }}
+                                                className="flex w-full items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-left transition-colors hover:border-white/16 hover:bg-white/[0.06]"
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className={`truncate text-sm ${t.cardText}`}>
+                                                        {item.label}
+                                                    </div>
+                                                    <div className={`mt-1 text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>
+                                                        {index === 0 ? 'Gerade geoeffnet' : relativeTime(new Date(item.openedAt).toISOString())}
+                                                    </div>
+                                                </div>
+                                                <div className={`ml-3 shrink-0 text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>
+                                                    {item.kind === 'document'
+                                                        ? 'Dokument'
+                                                        : item.kind === 'finder'
+                                                            ? 'Finder'
+                                                            : item.kind === 'notes'
+                                                                ? 'Notizen'
+                                                                : item.kind === 'chat'
+                                                                    ? 'Mora'
+                                                                    : 'Aktiv'}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className={`mt-4 text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
+                                            Zuletzt aktiv
+                                        </div>
+                                        <div className={`mt-2 text-sm ${t.cardText}`}>
+                                            {personalLatestLabel || 'Noch keine Aktivitaet sichtbar.'}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </section>
                 )}

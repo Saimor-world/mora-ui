@@ -94,6 +94,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
+    const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
@@ -553,6 +554,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         navigateToDepartment(departmentId);
     };
 
+    const handleUniversePointerMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const relativeX = ((event.clientX - rect.left) / rect.width) - 0.5;
+        const relativeY = ((event.clientY - rect.top) / rect.height) - 0.5;
+        setParallaxOffset({
+            x: relativeX * 18,
+            y: relativeY * 14,
+        });
+    }, []);
+
+    const resetUniverseParallax = useCallback(() => {
+        setParallaxOffset({ x: 0, y: 0 });
+    }, []);
+
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
         const tenantId = currentCompany?.tenant_id;
@@ -606,11 +621,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     );
 
     return (
-        <div className="relative w-full h-full overflow-hidden text-white bg-transparent">
+        <div
+            className="relative w-full h-full overflow-hidden text-white bg-transparent"
+            onMouseMove={handleUniversePointerMove}
+            onMouseLeave={resetUniverseParallax}
+        >
             {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
             <StarField warp={false} density="high" opacity={1} />
-            <div
+            <motion.div
                 className="absolute inset-0 z-[-9] pointer-events-none opacity-95"
+                animate={{ x: parallaxOffset.x * -0.12, y: parallaxOffset.y * -0.1 }}
+                transition={{ type: 'spring', stiffness: 40, damping: 20, mass: 0.8 }}
                 style={{
                     backgroundImage: `
                         radial-gradient(circle at 20% 30%, rgba(255,255,255,0.95) 0 1.2px, transparent 1.9px),
@@ -623,8 +644,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     backgroundPosition: '0 0, 120px 40px, 40px 180px, 180px 120px, 260px 220px',
                 }}
             />
-            <div
+            <motion.div
                 className="absolute inset-0 z-[-9] pointer-events-none opacity-95"
+                animate={{ x: parallaxOffset.x * -0.18, y: parallaxOffset.y * -0.14 }}
+                transition={{ type: 'spring', stiffness: 38, damping: 18, mass: 0.85 }}
                 style={{
                     backgroundImage: `
                         radial-gradient(circle at 14% 22%, rgba(255,255,255,1) 0 1.35px, transparent 2.1px),
@@ -639,8 +662,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     mixBlendMode: 'screen',
                 }}
             />
-            <div
+            <motion.div
                 className="absolute inset-0 z-[-9] pointer-events-none opacity-60"
+                animate={{ x: parallaxOffset.x * -0.28, y: parallaxOffset.y * -0.22 }}
+                transition={{ type: 'spring', stiffness: 34, damping: 18, mass: 0.9 }}
                 style={{
                     backgroundImage: `
                         radial-gradient(circle at 12% 34%, rgba(255,255,255,0.95) 0 1.6px, transparent 2.6px),
@@ -655,7 +680,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 }}
             />
             {/* Galaxy wash */}
-            <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
+            <motion.div className="absolute inset-0 z-[-9] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.42, y: parallaxOffset.y * 0.26, scale: 1.01 }}
+                transition={{ type: 'spring', stiffness: 26, damping: 16, mass: 1.05 }}
+                style={{
                 background: `
                     radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.78) 0%, transparent 68%),
                     radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.54) 0%, transparent 60%),
@@ -668,11 +696,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* Deep space gradient */}
             <div className="absolute inset-0 bg-[linear-gradient(135deg,#02110f_0%,#062322_24%,#0a1f38_56%,#103427_100%)] opacity-92 z-[-8] pointer-events-none" />
             {/* Galaxy band */}
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
+            <motion.div className="absolute inset-0 z-[-7] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.78, y: parallaxOffset.y * 0.34, rotate: -0.6 }}
+                transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.2 }}
+                style={{
                 background: "linear-gradient(120deg, rgba(16,185,129,0.22) 0%, rgba(6,182,212,0.34) 32%, rgba(96,165,250,0.26) 58%, rgba(129,140,248,0.18) 76%, transparent 100%)",
                 mixBlendMode: "screen"
             }} />
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
+            <motion.div className="absolute inset-0 z-[-7] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 1.05, y: parallaxOffset.y * 0.5, rotate: -7.6 }}
+                transition={{ type: 'spring', stiffness: 18, damping: 14, mass: 1.25 }}
+                style={{
                 background: "linear-gradient(12deg, transparent 0%, rgba(255,255,255,0.11) 24%, rgba(34,211,238,0.2) 38%, rgba(16,185,129,0.2) 52%, rgba(96,165,250,0.18) 64%, transparent 82%)",
                 transform: "translateY(4%) rotate(-7deg) scale(1.22)",
                 mixBlendMode: "screen",
@@ -714,7 +748,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 background: "radial-gradient(circle at 50% 46%, rgba(0,0,0,0.01) 0%, rgba(0,0,0,0.28) 70%, rgba(0,0,0,0.7) 100%)"
             }} />
 
-            <div className="absolute inset-0 z-[4] pointer-events-none">
+            <motion.div
+                className="absolute inset-0 z-[4] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 1.35, y: parallaxOffset.y * 0.9 }}
+                transition={{ type: 'spring', stiffness: 24, damping: 14, mass: 1.2 }}
+            >
                 {ambientStarDots.map((star) => (
                     <motion.div
                         key={star.id}
@@ -740,7 +778,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         }}
                     />
                 ))}
-            </div>
+            </motion.div>
 
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
             <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30 opacity-85">
