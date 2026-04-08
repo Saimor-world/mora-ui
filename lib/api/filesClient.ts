@@ -23,6 +23,11 @@ export interface CompanyFileRecord {
     linked_status?: 'document' | 'standalone' | string | null;
     source_available?: boolean;
     source_status?: 'ready' | 'missing' | string | null;
+    route_summary?: string | null;
+    suggested_location?: string | null;
+    route_confidence_score?: number | null;
+    route_confidence_label?: string | null;
+    intake_context?: Record<string, any> | null;
     created_at: string;
 }
 

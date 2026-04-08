@@ -19,6 +19,8 @@ interface LayerInsightRailProps {
     accent?: string;
     metrics: LayerInsightMetric[];
     forceExpanded?: boolean;
+    alwaysExpanded?: boolean;
+    showToggle?: boolean;
     collapsedHint?: string;
     onPointerEnter?: () => void;
     onPointerLeave?: () => void;
@@ -34,13 +36,15 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
     accent = '#34d399',
     metrics,
     forceExpanded = false,
+    alwaysExpanded = false,
+    showToggle = true,
     collapsedHint = 'Mehr bei Fokus.',
     onPointerEnter,
     onPointerLeave,
     children,
 }) => {
     const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-    const isExpanded = forceExpanded || isManuallyExpanded;
+    const isExpanded = alwaysExpanded || forceExpanded || isManuallyExpanded;
     const compactMetrics = metrics.slice(0, 2);
 
     return (
@@ -82,17 +86,19 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                                 {badge}
                             </div>
                         )}
-                        <button
-                            type="button"
-                            aria-label={isExpanded ? 'Insight schliessen' : 'Insight oeffnen'}
-                            onClick={() => setIsManuallyExpanded((current) => !current)}
-                            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38 hover:border-white/14 hover:text-white/68'}`}
-                        >
-                            <ChevronRight
-                                size={14}
-                                className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
-                            />
-                        </button>
+                        {showToggle ? (
+                            <button
+                                type="button"
+                                aria-label={isExpanded ? 'Insight schliessen' : 'Insight oeffnen'}
+                                onClick={() => setIsManuallyExpanded((current) => !current)}
+                                className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38 hover:border-white/14 hover:text-white/68'}`}
+                            >
+                                <ChevronRight
+                                    size={14}
+                                    className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                />
+                            </button>
+                        ) : null}
                     </div>
                 </div>
 

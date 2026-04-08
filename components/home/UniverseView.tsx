@@ -277,7 +277,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         hoverClearRef.current = setTimeout(() => {
             setInsightPlanetId(null);
             setSemanticPreviewPathId(null);
-        }, 720);
+        }, 1400);
     }, [clearHoverRelease]);
 
     useEffect(() => (
@@ -343,7 +343,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
-    const focusedPlanetId = insightPlanetId || hoverPlanetId || null;
+    const focusedPlanetId = hoverPlanetId || insightPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -650,7 +650,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         [rings]
     );
 
-    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId);
+    const hasUniverseInteraction = Boolean(hoverPlanetId || semanticPreviewPathId);
     const visibleSemanticPaths = useMemo(
         () => semanticPaths.filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id),
         [semanticPaths, focusedSemanticPathIds, semanticPreviewPathId]
@@ -816,6 +816,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
+            {focusedPlanet && focusedPlanetMetrics ? (
+                <div
+                    className="absolute left-0 top-24 z-[27] h-[440px] w-[500px] pointer-events-auto bg-transparent"
+                    onMouseEnter={clearHoverRelease}
+                    onMouseLeave={() => {
+                        if (!hoverPlanetId) {
+                            scheduleHoverRelease();
+                        }
+                    }}
+                />
+            ) : null}
+
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
             <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30 opacity-85">
                 <motion.div
@@ -901,19 +913,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                 </defs>
 
-                {/* Atmospheric orbital fragments */}
+                {/* Atmospheric contour fragments */}
                 {ambientOrbitFragments.map((fragment) => (
                     <motion.path
                         key={fragment.id}
                         d={fragment.d}
                         fill="none"
-                        stroke="rgba(255,255,255,0.32)"
-                        strokeWidth="0.06"
+                        stroke="rgba(186,230,253,0.2)"
+                        strokeWidth="0.05"
                         strokeOpacity={fragment.opacity}
                         strokeLinecap="round"
-                        strokeDasharray="0.8 1.2"
+                        strokeDasharray="1.8 3.6"
                         animate={{
-                            opacity: hasUniverseInteraction ? fragment.opacity * 0.75 : fragment.opacity,
+                            opacity: hasUniverseInteraction ? fragment.opacity * 0.22 : fragment.opacity * 0.42,
                         }}
                         transition={{ duration: 0.5, ease: 'easeOut' }}
                     />
@@ -932,7 +944,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         strokeDasharray={connection.highlighted ? '3 4' : 'none'}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.52 : hasUniverseInteraction ? 0.06 + connection.intensity * 0.05 : 0 }}
+                        animate={{ opacity: connection.highlighted ? 0.52 : hasUniverseInteraction ? 0.09 + connection.intensity * 0.05 : 0 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
@@ -1063,6 +1075,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
                     summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
+                    alwaysExpanded
+                    showToggle={false}
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
                     onPointerEnter={clearHoverRelease}
                     onPointerLeave={() => {

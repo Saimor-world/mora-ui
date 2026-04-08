@@ -1329,7 +1329,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }));
 
         const targetFolderId = resolveUploadFolderId();
-        const targetFolderName = targetFolderId ? (findNodeInTree(rawTree, targetFolderId)?.name || 'aktueller Ordner') : 'Firmenwurzel';
+        const targetFolderName = targetFolderId ? (findNodeInTree(rawTree, targetFolderId)?.name || 'aktueller Ordner') : null;
+        const routedDestinations = new Set<string>();
         let successCount = 0;
         let hasPendingConfirmation = false;
         let hasPerFileError = false;
@@ -1342,6 +1343,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     successCount++;
                     window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                     setSelectedNodeId(uploaded.id);
+                    const routedTarget =
+                        (uploaded.folder_id ? findNodeInTree(rawTree, uploaded.folder_id)?.name : null)
+                        || uploaded.suggested_location
+                        || targetFolderName
+                        || 'Inbox zur Einordnung';
+                    routedDestinations.add(routedTarget);
                 } catch (e: any) {
                     const errMsg = e?.message || 'Upload fehlgeschlagen';
                     console.error(`Failed to upload ${file.name}:`, e);
@@ -1360,10 +1367,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 }
             }
             if (successCount > 0 && !hasPendingConfirmation) {
+                const destinationSummary = routedDestinations.size === 1
+                    ? Array.from(routedDestinations)[0]
+                    : routedDestinations.size > 1
+                        ? 'mehreren passenden Bereichen'
+                        : (targetFolderName || 'Inbox zur Einordnung');
                 toast.success(
                     successCount === 1
-                        ? `Datei in ${targetFolderName} gespeichert`
-                        : `${successCount} Dateien in ${targetFolderName} gespeichert`
+                        ? `Datei in ${destinationSummary} gespeichert`
+                        : `${successCount} Dateien in ${destinationSummary} gespeichert`
                 );
                 await loadContent();
             } else if (successCount === 0 && !hasPerFileError) {
