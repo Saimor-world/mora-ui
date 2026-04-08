@@ -367,6 +367,7 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({ id }) => {
             onFocus={() => focusPane(id)}
             isActive={true}
             zIndex={pane.zIndex}
+            padding={0}
             showCloseButton
             showMinimizeButton
             draggable

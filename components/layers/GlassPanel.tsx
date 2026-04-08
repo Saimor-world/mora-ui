@@ -574,12 +574,15 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     />
                 )}
 
-                {/* Content */}
-                <div
-                    className="flex-1 overflow-auto custom-scrollbar"
-                    style={{ padding: paddingValue }}
-                >
-                    {children}
+                {/* Content — relative wrapper establishes positioning context so h-full
+                    in children resolves against the flex-assigned height, not auto */}
+                <div className="flex-1 relative overflow-hidden">
+                    <div
+                        className="absolute inset-0 overflow-auto custom-scrollbar"
+                        style={{ padding: paddingValue }}
+                    >
+                        {children}
+                    </div>
                 </div>
             </motion.div>
         </AnimatePresence>,

@@ -120,6 +120,49 @@ interface ChatPaneProps {
     id?: string;
 }
 
+// ─── Lightweight markdown renderer ────────────────────────────────────────────
+function renderMarkdown(raw: string): string {
+    const fmt = (s: string) => s
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(?<![*])\*([^*\n]+)\*(?![*])/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.08);padding:0 4px;border-radius:3px;font-size:0.85em;color:#6ee7b7">$1</code>');
+
+    const lines = raw.split('\n');
+    const out: string[] = [];
+    let listType: 'ul' | null = null;
+
+    const closeList = () => {
+        if (listType) { out.push('</ul>'); listType = null; }
+    };
+
+    for (const line of lines) {
+        const ulMatch = line.match(/^[\*\-]\s+(.+)/);
+        const hMatch = line.match(/^(#{1,3})\s+(.+)/);
+
+        if (hMatch) {
+            closeList();
+            const tag = hMatch[1].length === 1 ? 'h3' : hMatch[1].length === 2 ? 'h4' : 'h5';
+            out.push(`<${tag} style="font-weight:600;margin:10px 0 2px;color:rgba(255,255,255,0.92)">${fmt(hMatch[2])}</${tag}>`);
+        } else if (ulMatch) {
+            if (!listType) {
+                out.push('<ul style="margin:6px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px">');
+                listType = 'ul';
+            }
+            out.push(`<li style="display:flex;gap:6px;align-items:flex-start"><span style="color:rgba(110,231,183,0.65);flex-shrink:0;margin-top:1px">•</span><span>${fmt(ulMatch[1])}</span></li>`);
+        } else {
+            closeList();
+            if (line.trim() === '') {
+                out.push('<div style="height:6px"></div>');
+            } else {
+                out.push(`<p style="margin:0;line-height:1.6">${fmt(line)}</p>`);
+            }
+        }
+    }
+    closeList();
+    return out.join('');
+}
+// ──────────────────────────────────────────────────────────────────────────────
+
 function normalizeAgentResponse(input: unknown): string {
     if (typeof input !== 'string') return 'Ich konnte die Antwort nicht verarbeiten.';
 
@@ -522,24 +565,26 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
         clearHistory,
     } = useMoraStream();
 
-    const [messages, setMessages] = useState<Message[]>([
-        {
+    const [messages, setMessages] = useState<Message[]>(() => {
+        const depts = useMoraStore.getState().departments;
+        const safe = Array.isArray(depts) ? depts : [];
+        const d1 = safe[0]?.name ?? 'R&D';
+        const d2 = safe[1]?.name ?? 'Product';
+        return [{
             id: 'welcome',
             role: 'assistant',
             content: `Hallo, ich bin Mora.
 
 Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
-- **"Zeig mir HR & Culture"** -> ich navigiere dorthin
-- **"Was ist neu?"** -> ich fasse reale Signale zusammen
-- **"Finde alles zu Onboarding"** -> ich suche ueber Inhalte und Struktur
-- **"Merke dir ..."** -> ich speichere belastbare Fakten fuer spaeter
+- **"Zeig mir ${d1}"** → ich navigiere dorthin
+- **"Was ist neu?"** → ich fasse reale Signale zusammen
+- **"Was laeuft in ${d2}?"** → ich suche in Inhalten und Aktivitaet
+- **"Merke dir ..."** → ich speichere belastbare Fakten fuer spaeter
 
-Wenn etwas fehlt, sage ich es klar. Wenn ich etwas direkt anstossen kann, tue ich es.
-
-Womit soll ich beginnen?`,
+Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             timestamp: new Date()
-        }
-    ]);
+        }];
+    });
     const [input, setInput] = useState('');
     // isLoading is true for navigation/search intents (non-streaming)
     const [isLoading, setIsLoading] = useState(false);
@@ -1232,13 +1277,8 @@ Womit soll ich beginnen?`,
                                             }`} />
                                     )}
                                     <div
-                                        className={`${isFullscreen ? 'text-base leading-relaxed' : 'text-sm leading-relaxed'} prose ${isFullscreen ? 'prose-base' : 'prose-sm'} max-w-none ${isStandardMode ? '' : 'prose-invert'
-                                            }`}
-                                        dangerouslySetInnerHTML={{
-                                            __html: msg.content
-                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                .replace(/\n/g, '<br/>')
-                                        }}
+                                        className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
+                                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                                     />
                                     {msg.role === 'user' && (
                                         <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
@@ -1364,13 +1404,10 @@ Womit soll ich beginnen?`,
                                 <div className="flex items-start gap-2">
                                     <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
                                     <div
-                                        className="text-sm leading-relaxed prose prose-sm prose-invert max-w-none"
+                                        className="text-sm leading-relaxed max-w-none"
                                         dangerouslySetInnerHTML={{
-                                            __html: streamingText
-                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                .replace(/\n/g, '<br/>') +
-                                                // Blinking cursor appended inline
-                                                '<span class="inline-block w-[2px] h-[1em] bg-emerald-400 align-middle ml-0.5 animate-pulse" />'
+                                            __html: renderMarkdown(streamingText) +
+                                                '<span style="display:inline-block;width:2px;height:1em;background:#34d399;vertical-align:middle;margin-left:2px" class="animate-pulse"></span>'
                                         }}
                                     />
                                 </div>
@@ -1597,6 +1634,7 @@ Womit soll ich beginnen?`,
             height={pane.size.height}
             minWidth={560}
             minHeight={420}
+            padding={0}
             initialX={pane.position.x}
             initialY={pane.position.y}
             paneId={id}

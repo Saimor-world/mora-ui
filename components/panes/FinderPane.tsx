@@ -1626,6 +1626,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                 height={pane.size.height}
                 initialX={pane.position.x}
                 initialY={pane.position.y}
+                padding={0}
                 paneId={id}
                 onPositionChange={(x, y) => {
                     updatePanePosition(id, x, y);
@@ -1705,15 +1706,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             <h2 className="mt-1.5 text-[18px] font-semibold tracking-tight text-white/92 md:text-[20px]">
                                                 {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                             </h2>
-                                            <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-white/40">
-                                                {globalSearch
-                                                    ? 'Du siehst die sichtbaren Inhalte der aktiven Instanz in einer zusammengezogenen Gesamtsicht.'
-                                                    : searchQuery.trim()
-                                                        ? 'Der Finder filtert den aktuellen Kontext, ohne dir einen zweiten Suchmodus oder technische Sonderwelt aufzuzwingen.'
-                                                        : currentFolderId
-                                                            ? 'Der Finder bleibt im aktuellen Pfad und zeigt nur die Dinge, die in diesem Kontext wirklich sichtbar sind.'
-                                                            : 'Das ist die Startansicht der aktiven Instanz: Struktur zuerst, Inhalte direkt darunter.'}
-                                            </p>
                                         </div>
                                     </div>
                                     <div className="grid gap-2 sm:grid-cols-3 lg:w-[330px]">
@@ -1768,7 +1760,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     )}
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
-                    <div className="flex flex-col gap-3 border-b border-white/5 bg-white/[0.02] px-3 py-3 backdrop-blur-md md:px-6 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex flex-col gap-2 border-b border-white/5 bg-white/[0.02] px-3 py-2 backdrop-blur-md md:px-6 lg:flex-row lg:items-center lg:justify-between">
                         {/* nav-group: exactly one Back/Forward/Up set -- do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
@@ -2037,20 +2029,20 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                         /* GRID VIEW - RESPONSIVE */
                                         <div className={`relative ${selectedEntry ? 'xl:pr-[320px]' : ''}`}>
                                             <div className="min-w-0">
-                                            <div className="mb-5 flex flex-wrap items-center gap-2">
-                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                                            <div className="mb-4 flex flex-wrap items-center gap-1.5">
+                                                <span className="rounded-full border border-white/[0.07] bg-white/[0.03] px-2 py-0.5 text-[10px] tracking-[0.1em] text-white/40">
                                                     {filteredFolders.length} Ordner
                                                 </span>
-                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                                                <span className="rounded-full border border-white/[0.07] bg-white/[0.03] px-2 py-0.5 text-[10px] tracking-[0.1em] text-white/40">
                                                     {mainFiles.length} Inhalte
                                                 </span>
                                                 {contextlessFiles.length > 0 && (
-                                                    <span className="rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-amber-200/50">
-                                                        +{contextlessFiles.length} Unsortiert
+                                                    <span className="rounded-full border border-amber-500/10 bg-amber-500/[0.05] px-2 py-0.5 text-[10px] tracking-[0.1em] text-amber-200/40">
+                                                        +{contextlessFiles.length} unsortiert
                                                     </span>
                                                 )}
                                                 {searchQuery ? (
-                                                    <span className="rounded-full border border-cyan-400/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/80">
+                                                    <span className="rounded-full border border-cyan-400/10 bg-cyan-500/[0.06] px-2 py-0.5 text-[10px] tracking-[0.1em] text-cyan-100/50">
                                                         Suche aktiv
                                                     </span>
                                                 ) : null}
@@ -2124,10 +2116,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {filteredFolders.length > 0 && (
                                                 <div className="mb-7 rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
                                                     <div className="mb-3 flex items-center justify-between">
-                                                        <div>
-                                                            <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Ordner und Bereiche</p>
-                                                            <p className="mt-1 text-[12px] text-white/36">Navigation durch Struktur und Kontexte</p>
-                                                        </div>
+                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">Ordner</p>
                                                     </div>
                                                     <div className={folderGridClass}>
                                             {filteredFolders.map(folder => {
@@ -2187,10 +2176,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {mainFiles.length > 0 && (
                                                 <div className="rounded-[30px] border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.18)] md:px-5">
                                                     <div className="mb-3 flex items-center justify-between">
-                                                        <div>
-                                                            <p className="text-[11px] uppercase tracking-[0.22em] text-white/28">Inhalte und Dateien</p>
-                                                            <p className="mt-1 text-[12px] text-white/36">Direkt oeffnen, sichten oder weiterverarbeiten</p>
-                                                        </div>
+                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">Inhalte</p>
                                                     </div>
                                                     <div className={fileGridClass}>
                                             {mainFiles.map(file => {
@@ -2296,10 +2282,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             {contextlessFiles.length > 0 && (
                                                 <div className="mt-6 rounded-[30px] border border-amber-500/[0.08] bg-[linear-gradient(180deg,rgba(245,158,11,0.03),rgba(245,158,11,0.01))] px-4 py-4 md:px-5">
                                                     <div className="mb-3 flex items-center justify-between">
-                                                        <div>
-                                                            <p className="text-[11px] uppercase tracking-[0.22em] text-amber-400/45">Ohne Bereichszuordnung</p>
-                                                            <p className="mt-1 text-[12px] text-white/30">Diese Inhalte liegen auf Instanzebene und sind keinem Bereich zugeordnet.</p>
-                                                        </div>
+                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-amber-400/40">Ohne Bereichszuordnung</p>
                                                         <span className="shrink-0 rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/50">{contextlessFiles.length}</span>
                                                     </div>
                                                     <div className={fileGridClass}>

@@ -378,8 +378,8 @@ export const HomeSurface: React.FC = () => {
                         </h1>
                         <p className={`mt-1 text-sm ${t.sub}`}>{todayLabel}</p>
                         {surfaceProfile.isLocalTruthSurface && (
-                            <p className="mt-3 inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-500/8 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-emerald-200/75">
-                                Interne Instanz · echte Regeln · lokaler Wahrheitsmodus
+                            <p className="mt-2 inline-flex items-center rounded-full border border-emerald-400/15 bg-emerald-500/6 px-2.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-300/50">
+                                Interne Instanz
                             </p>
                         )}
                         {surfaceProfile.isPublicDemoSurface && (
@@ -443,14 +443,14 @@ export const HomeSurface: React.FC = () => {
                 </div>
 
                 {surfaceProfile.isLocalTruthSurface && (
-                    <section className={`rounded-3xl border px-5 py-5 ${t.card}`}>
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <section className={`rounded-3xl border px-5 py-4 ${t.card}`}>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className={`text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                                <p className={`text-[11px] uppercase tracking-[0.16em] font-medium ${t.sectionHd}`}>
                                     Local Truth
                                 </p>
-                                <p className={`mt-2 text-sm ${t.cardText}`}>
-                                    Diese Instanz ist die Produktwahrheit. Hier pruefst du echte Regeln, echte Inhalte und echte Arbeitsablaeufe, bevor etwas auf die Demo gespiegelt wird.
+                                <p className={`mt-1 text-xs ${t.cardSub}`}>
+                                    Produktwahrheit — echte Regeln, echte Inhalte.
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -482,12 +482,9 @@ export const HomeSurface: React.FC = () => {
 
                 {recentDocs !== null && (
                     <section data-testid="recent-docs-section">
-                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt in der Organisation aktualisiert
+                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.16em] font-medium ${t.sectionHd}`}>
+                            Zuletzt aktualisiert
                         </h2>
-                        <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Echte Dokument-Updates aus der aktuell aktiven Organisation.
-                        </p>
                         {recentDocs.length === 0 ? (
                             <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
                                 Noch keine Dokumente sichtbar. Öffne den Finder, um die aktuelle Struktur zu prüfen.
@@ -518,14 +515,9 @@ export const HomeSurface: React.FC = () => {
 
                 {kairosEvents !== null && (
                     <section data-testid="kairos-feed-section">
-                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.16em] font-medium ${t.sectionHd}`}>
                             Mora bemerkt
                         </h2>
-                        <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            {surfaceProfile.isLocalTruthSurface
-                                ? 'Reale Signale der internen Instanz. Im Vordergrund zeigen wir nur frische Ereignisse; aeltere Eintraege bleiben bewusst im Hintergrund.'
-                                : 'Reale Signale aus dem Core. Im Vordergrund zeigen wir nur frische Ereignisse; aeltere Eintraege bleiben bewusst im Hintergrund.'}
-                        </p>
                         {freshKairosEvents && freshKairosEvents.length > 0 ? (
                             <ul className="flex flex-col gap-1">
                                 {freshKairosEvents.map((evt) => (
@@ -559,12 +551,9 @@ export const HomeSurface: React.FC = () => {
 
                 {myContent && (
                     <section data-testid="personal-area-section">
-                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
+                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.16em] font-medium ${t.sectionHd}`}>
                             Privater Bereich
                         </h2>
-                        <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner und Inhalte aus deinem privaten Bereich.
-                        </p>
                         <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
                             <button
                                 data-testid="my-content-card"
@@ -587,7 +576,7 @@ export const HomeSurface: React.FC = () => {
                                         </div>
                                     )}
                                     <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Dein privater Bereich ist ein eigenes Fenster. Er zeigt nur persoenliche Ordner und Inhalte; Organisationsinhalte oeffnest du getrennt im Finder der aktiven Instanz.
+                                        Persoenliche Ordner und Inhalte — getrennt vom Organisations-Finder.
                                     </div>
                                 </div>
                             </button>
