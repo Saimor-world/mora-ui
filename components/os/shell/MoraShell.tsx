@@ -658,7 +658,7 @@ export const MoraShell: React.FC = () => {
             onDrop={handleShellDrop}
         >
             <AmbientAudioController />
-            {!hasFullscreenPane && <MoraPulsePanel />}
+            {/* MoraPulsePanel hidden — org/scope metadata is not user-facing on Home */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
