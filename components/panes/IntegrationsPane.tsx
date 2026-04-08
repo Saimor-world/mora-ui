@@ -325,7 +325,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     }, []);
 
     const copyGemmaCommand = useCallback(async () => {
-        const command = 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL=\"gemma4:e2b\"; .\\scripts\\Start-Core-Gemma.ps1';
+        const command = 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1';
         try {
             await navigator.clipboard.writeText(command);
             toast.success('Gemma-Startbefehl kopiert');
@@ -368,16 +368,16 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                             </p>
                             <div className="mt-4 flex flex-wrap items-center gap-2">
                                 <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
-                                    surfaceProfile.isLocalTruthSurface
+                                    !surfaceProfile.isPublicDemoSurface
                                         ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200'
                                         : surfaceProfile.isPublicDemoSurface
                                             ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
                                             : 'border-white/10 bg-white/[0.04] text-white/60'
                                 }`}>
-                                    {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz' : surfaceProfile.isPublicDemoSurface ? 'Demo-Spiegel' : 'Standardmodus'}
+                                    {!surfaceProfile.isPublicDemoSurface ? 'Interne Instanz' : surfaceProfile.isPublicDemoSurface ? 'Demo-Spiegel' : 'Standardmodus'}
                                 </span>
                                 <span className="text-xs text-white/40">
-                                    {surfaceProfile.isLocalTruthSurface
+                                    {!surfaceProfile.isPublicDemoSurface
                                         ? 'Hier werden echte lokale Regeln, Browser-Freigaben und Verbindungen aufgebaut.'
                                         : surfaceProfile.isPublicDemoSurface
                                             ? 'Die Demo zeigt dieselbe Oberflaeche, spiegelt aber nur den stabilen Stand.'
@@ -575,7 +575,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             </div>
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
-                                                surfaceProfile.isLocalTruthSurface
+                                                !surfaceProfile.isPublicDemoSurface
                                                     ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
                                                     : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
