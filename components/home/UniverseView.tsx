@@ -579,6 +579,32 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         };
     }, [displayCompanyName]);
 
+    const ambientStarDots = useMemo(
+        () => Array.from({ length: 168 }, (_, index) => {
+            const left = ((index * 11.3) % 98) + 1;
+            const top = ((index * 17.9) % 86) + 5;
+            const size = [1.2, 1.6, 2.1, 2.9, 3.8][index % 5];
+            const colors = [
+                'rgba(255,255,255,0.95)',
+                'rgba(186,230,253,0.95)',
+                'rgba(167,243,208,0.88)',
+                'rgba(196,181,253,0.82)',
+                'rgba(250,204,21,0.72)',
+            ];
+            return {
+                id: `ambient-star-${index}`,
+                left,
+                top,
+                size,
+                color: colors[index % colors.length],
+                opacity: 0.24 + ((index % 6) * 0.09),
+                duration: 3.2 + ((index * 5) % 7) * 0.5,
+                delay: (index % 9) * 0.18,
+            };
+        }),
+        []
+    );
+
     return (
         <div className="relative w-full h-full overflow-hidden text-white bg-transparent">
             {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
@@ -631,28 +657,44 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* Galaxy wash */}
             <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
                 background: `
-                    radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.7) 0%, transparent 68%),
-                    radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.48) 0%, transparent 60%),
-                    radial-gradient(1040px 560px at 84% 24%, rgba(96, 165, 250, 0.48) 0%, transparent 56%),
-                    radial-gradient(980px 500px at 22% 76%, rgba(34, 197, 94, 0.2) 0%, transparent 56%),
-                    radial-gradient(920px 460px at 76% 74%, rgba(239, 68, 68, 0.12) 0%, transparent 54%),
-                    radial-gradient(1260px 680px at 42% 86%, rgba(4, 50, 44, 0.5) 0%, transparent 62%)
+                    radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.78) 0%, transparent 68%),
+                    radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.54) 0%, transparent 60%),
+                    radial-gradient(1040px 560px at 84% 24%, rgba(96, 165, 250, 0.56) 0%, transparent 56%),
+                    radial-gradient(980px 500px at 22% 76%, rgba(34, 197, 94, 0.26) 0%, transparent 56%),
+                    radial-gradient(920px 460px at 76% 74%, rgba(239, 68, 68, 0.14) 0%, transparent 54%),
+                    radial-gradient(1260px 680px at 42% 86%, rgba(4, 50, 44, 0.52) 0%, transparent 62%)
                 `
             }} />
             {/* Deep space gradient */}
             <div className="absolute inset-0 bg-[linear-gradient(135deg,#02110f_0%,#062322_24%,#0a1f38_56%,#103427_100%)] opacity-92 z-[-8] pointer-events-none" />
             {/* Galaxy band */}
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "linear-gradient(120deg, rgba(16,185,129,0.16) 0%, rgba(6,182,212,0.26) 32%, rgba(96,165,250,0.2) 58%, rgba(129,140,248,0.14) 76%, transparent 100%)",
+                background: "linear-gradient(120deg, rgba(16,185,129,0.22) 0%, rgba(6,182,212,0.34) 32%, rgba(96,165,250,0.26) 58%, rgba(129,140,248,0.18) 76%, transparent 100%)",
                 mixBlendMode: "screen"
             }} />
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "linear-gradient(12deg, transparent 0%, rgba(255,255,255,0.08) 24%, rgba(34,211,238,0.16) 38%, rgba(16,185,129,0.16) 52%, rgba(96,165,250,0.14) 64%, transparent 82%)",
-                transform: "translateY(4%) rotate(-7deg) scale(1.18)",
+                background: "linear-gradient(12deg, transparent 0%, rgba(255,255,255,0.11) 24%, rgba(34,211,238,0.2) 38%, rgba(16,185,129,0.2) 52%, rgba(96,165,250,0.18) 64%, transparent 82%)",
+                transform: "translateY(4%) rotate(-7deg) scale(1.22)",
                 mixBlendMode: "screen",
-                filter: "blur(6px)",
+                filter: "blur(8px)",
                 opacity: 1,
             }} />
+            <div
+                className="absolute inset-x-0 top-[20%] z-[-6] h-28 pointer-events-none"
+                style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.08) 18%, rgba(255,255,255,0.12) 49%, rgba(16,185,129,0.08) 78%, transparent 100%)',
+                    filter: 'blur(22px)',
+                    opacity: 0.9,
+                }}
+            />
+            <div
+                className="absolute inset-x-0 top-[58%] z-[-6] h-24 pointer-events-none"
+                style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.1) 20%, rgba(255,255,255,0.08) 50%, rgba(96,165,250,0.12) 80%, transparent 100%)',
+                    filter: 'blur(20px)',
+                    opacity: 0.72,
+                }}
+            />
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
                 background: "radial-gradient(920px 340px at 51% 47%, rgba(255,255,255,0.08) 0%, rgba(34,211,238,0.1) 18%, rgba(16,185,129,0.08) 32%, rgba(99,102,241,0.06) 48%, transparent 72%)",
                 mixBlendMode: "screen"
@@ -672,8 +714,36 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 background: "radial-gradient(circle at 50% 46%, rgba(0,0,0,0.01) 0%, rgba(0,0,0,0.28) 70%, rgba(0,0,0,0.7) 100%)"
             }} />
 
+            <div className="absolute inset-0 z-[4] pointer-events-none">
+                {ambientStarDots.map((star) => (
+                    <motion.div
+                        key={star.id}
+                        className="absolute rounded-full"
+                        style={{
+                            left: `${star.left}%`,
+                            top: `${star.top}%`,
+                            width: `${star.size}px`,
+                            height: `${star.size}px`,
+                            background: star.color,
+                            boxShadow: `0 0 ${Math.max(10, star.size * 12)}px ${star.color}`,
+                            opacity: star.opacity,
+                        }}
+                        animate={{
+                            opacity: [star.opacity * 0.55, Math.min(1, star.opacity + 0.18), star.opacity * 0.75],
+                            scale: [1, 1.26, 1],
+                        }}
+                        transition={{
+                            duration: star.duration,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                            delay: star.delay,
+                        }}
+                    />
+                ))}
+            </div>
+
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
-            <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30">
+            <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30 opacity-85">
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -757,16 +827,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                 </defs>
 
-                {/* Static Elliptical Rings */}
+                {/* Atmospheric orbital memory rings */}
                 {rings.map((r, i) => (
                     <ellipse
                         key={i} cx="50" cy="54" rx={r.rx} ry={r.ry}
-                        fill="none" stroke="white" strokeWidth="0.05" strokeOpacity={0.08 + i * 0.03}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.35)"
+                        strokeWidth="0.04"
+                        strokeOpacity={0.02 + i * 0.015}
+                        strokeDasharray={i === 1 ? '0.7 0.9' : 'none'}
                         className="transition-all duration-1000"
                     />
                 ))}
 
-                {/* Core-to-Planet Light Threads */}
+                {/* Core-to-planet ambient threads */}
                 {coreConnections.map((connection) => (
                     <motion.line
                         key={`core-${connection.id}`}
@@ -775,11 +849,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         x2={connection.x}
                         y2={connection.y}
                         stroke="url(#coreBeam)"
-                        strokeWidth={0.14 + connection.intensity * 0.36}
-                        strokeDasharray={connection.highlighted ? '3 4' : '2 8'}
+                        strokeWidth={connection.highlighted ? 0.18 + connection.intensity * 0.34 : 0.08 + connection.intensity * 0.18}
+                        strokeDasharray={connection.highlighted ? '3 4' : 'none'}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.58 : 0.12 + connection.intensity * 0.16 }}
+                        animate={{ opacity: connection.highlighted ? 0.52 : 0.03 + connection.intensity * 0.04 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
@@ -792,8 +866,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const baseOpacity = path.highlighted || isPreviewedPath
                         ? 0.82
                         : isFocusedPath
-                            ? 0.26
-                            : 0.06 + path.strength * 0.08;
+                            ? 0.18
+                            : 0;
 
                     return (
                         <g key={path.id}>
@@ -807,7 +881,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity * 0.45,
+                                    opacity: baseOpacity * 0.3,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
