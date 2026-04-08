@@ -93,6 +93,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
+    const [isInsightRailHovered, setIsInsightRailHovered] = useState(false);
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
@@ -266,10 +267,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const scheduleHoverRelease = useCallback(() => {
         clearHoverRelease();
         hoverClearRef.current = setTimeout(() => {
+            if (isInsightRailHovered) {
+                return;
+            }
             setInsightPlanetId(null);
             setSemanticPreviewPathId(null);
         }, 1400);
-    }, [clearHoverRelease]);
+    }, [clearHoverRelease, isInsightRailHovered]);
 
     useEffect(() => (
         () => {
@@ -997,8 +1001,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     alwaysExpanded
                     showToggle={false}
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
-                    onPointerEnter={clearHoverRelease}
+                    onPointerEnter={() => {
+                        setIsInsightRailHovered(true);
+                        clearHoverRelease();
+                    }}
                     onPointerLeave={() => {
+                        setIsInsightRailHovered(false);
                         if (!hoverPlanetId) {
                             scheduleHoverRelease();
                         }
