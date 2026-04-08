@@ -4,7 +4,9 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
 import { coreGet } from '@/lib/api/coreClient';
-import { AlertCircle, Bot, Calendar, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Bell, Bot, Calendar, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { toast } from 'sonner';
 
 interface MailOverview {
     configured?: boolean;
@@ -51,6 +53,11 @@ interface IntegrationsOverview {
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
+}
+
+interface BrowserBridgeState {
+    supported: boolean;
+    permission: NotificationPermission | 'unsupported';
 }
 
 const statusTone = (status?: string) => {
@@ -174,13 +181,30 @@ const SummaryCard: React.FC<{
 );
 
 export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const pane = getPane(id);
+    const surfaceProfile = useSurfaceProfile();
 
     const [overview, setOverview] = useState<IntegrationsOverview | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [browserBridge, setBrowserBridge] = useState<BrowserBridgeState>({
+        supported: false,
+        permission: 'unsupported',
+    });
+    const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
+
+    const refreshBrowserBridge = useCallback(() => {
+        if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+            setBrowserBridge({ supported: false, permission: 'unsupported' });
+            return;
+        }
+        setBrowserBridge({
+            supported: true,
+            permission: Notification.permission,
+        });
+    }, []);
 
     const loadOverview = useCallback(async () => {
         setIsLoading(true);
@@ -199,6 +223,10 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         loadOverview();
     }, [loadOverview]);
 
+    useEffect(() => {
+        refreshBrowserBridge();
+    }, [refreshBrowserBridge]);
+
     const ownerBlocked = useMemo(() => {
         const mailBlocked = overview?.mail?.status === 'owner_only' || overview?.mail?.status === 'forbidden_demo';
         const calendarBlocked = overview?.calendar?.status === 'owner_only';
@@ -209,6 +237,66 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
         [overview]
     );
+
+    const browserPermissionLabel = browserBridge.permission === 'granted'
+        ? 'Aktiv'
+        : browserBridge.permission === 'denied'
+            ? 'Blockiert'
+            : browserBridge.permission === 'default'
+                ? 'Noch nicht freigegeben'
+                : 'Nicht verfuegbar';
+
+    const requestBrowserNotifications = useCallback(async () => {
+        if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
+        setIsRequestingNotifications(true);
+        try {
+            const permission = await Notification.requestPermission();
+            refreshBrowserBridge();
+            if (permission === 'granted') {
+                toast.success('Browser-Benachrichtigungen aktiviert');
+                new Notification('Mora ist jetzt mit deinem Browser verbunden', {
+                    body: 'Hinweise, Mail- und Kalender-Signale koennen direkt im Browser auftauchen.',
+                });
+            } else {
+                toast.info('Benachrichtigungen wurden nicht freigegeben');
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Benachrichtigungen konnten nicht aktiviert werden');
+        } finally {
+            setIsRequestingNotifications(false);
+        }
+    }, [refreshBrowserBridge]);
+
+    const sendBrowserTestNotification = useCallback(() => {
+        if (typeof window === 'undefined' || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+            toast.error('Browser-Benachrichtigungen sind noch nicht freigegeben');
+            return;
+        }
+        new Notification('Mora Testsignal', {
+            body: 'Dein Browser ist jetzt Teil der internen Instanz.',
+        });
+        toast.success('Testsignal gesendet');
+    }, []);
+
+    const openMailPane = useCallback(() => {
+        openPane({
+            id: 'mail-main',
+            type: 'mail',
+            title: 'Post',
+            size: { width: 860, height: 640 },
+            position: { x: 160, y: 120 },
+        });
+    }, [openPane]);
+
+    const openCalendarPane = useCallback(() => {
+        openPane({
+            id: 'calendar-main',
+            type: 'calendar',
+            title: 'Kalender',
+            size: { width: 840, height: 620 },
+            position: { x: 180, y: 110 },
+        });
+    }, [openPane]);
 
     if (!pane) return null;
 
@@ -237,11 +325,29 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <p className="text-[10px] uppercase tracking-[0.3em] text-white/35">Integrationsuebersicht</p>
-                            <h3 className="mt-2 text-lg font-medium text-white">Externe Dienste und Assistant-Provider</h3>
+                            <h3 className="mt-2 text-lg font-medium text-white">Konten, Browser und Assistant-Provider</h3>
                             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-                                Mail, Kalender und LLM-Provider werden hier als betriebliche Oberflaeche zusammengezogen.
-                                Die Karten zeigen den aktuellen Zustand, die Bereiche darunter bleiben die ausfuehrbaren Details.
+                                Mail, Kalender, Browser-Freigaben und LLM-Provider werden hier als operative Kontoschicht zusammengezogen.
+                                Diese Flaeche ist die echte Verbindungslogik der Instanz, nicht nur ein Mock-Panel.
                             </p>
+                            <div className="mt-4 flex flex-wrap items-center gap-2">
+                                <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
+                                    surfaceProfile.isLocalTruthSurface
+                                        ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200'
+                                        : surfaceProfile.isPublicDemoSurface
+                                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
+                                            : 'border-white/10 bg-white/[0.04] text-white/60'
+                                }`}>
+                                    {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz' : surfaceProfile.isPublicDemoSurface ? 'Demo-Spiegel' : 'Standardmodus'}
+                                </span>
+                                <span className="text-xs text-white/40">
+                                    {surfaceProfile.isLocalTruthSurface
+                                        ? 'Hier werden echte lokale Regeln, Browser-Freigaben und Verbindungen aufgebaut.'
+                                        : surfaceProfile.isPublicDemoSurface
+                                            ? 'Die Demo zeigt dieselbe Oberflaeche, spiegelt aber nur den stabilen Stand.'
+                                            : 'Diese Organisation nutzt den Standardmodus der Plattform.'}
+                                </span>
+                            </div>
                         </div>
                         <button
                             onClick={loadOverview}
@@ -292,6 +398,109 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                         </div>
                     ) : (
                         <div className="space-y-6">
+                            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                <div className="mb-4">
+                                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Konten & Browser</p>
+                                    <h4 className="mt-1 text-sm font-medium text-white">Direkte Arbeitsanbindung</h4>
+                                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
+                                        Hier verknuepfst du den Browser selbst mit Mora: Benachrichtigungen, Postfach, Kalender und die direkten Arbeitsflaechen im OS.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
+                                                    <Bell size={18} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-white">Browser</h5>
+                                                    <p className="mt-0.5 text-xs text-white/40">Benachrichtigungen und lokale Hinweise</p>
+                                                </div>
+                                            </div>
+                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'degraded' : 'not_configured')}`}>
+                                                {browserPermissionLabel}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-white/60">
+                                            Echte Browser-Benachrichtigungen sind die erste lokale Bruecke fuer Mail-, Kalender- und Mora-Signale.
+                                        </p>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={requestBrowserNotifications}
+                                                disabled={!browserBridge.supported || isRequestingNotifications}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18 disabled:opacity-50"
+                                            >
+                                                <Bell size={14} />
+                                                {isRequestingNotifications ? 'Freigabe...' : 'Benachrichtigungen aktivieren'}
+                                            </button>
+                                            <button
+                                                onClick={sendBrowserTestNotification}
+                                                disabled={browserBridge.permission !== 'granted'}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+                                            >
+                                                <ExternalLink size={14} />
+                                                Testsignal
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+                                                    <Mail size={18} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-white">Postfach</h5>
+                                                    <p className="mt-0.5 text-xs text-white/40">Gmail, Outlook oder eigenes IMAP</p>
+                                                </div>
+                                            </div>
+                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(overview?.mail?.status)}`}>
+                                                {humanizeIntegrationStatus(overview?.mail?.status)}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-white/60">{buildMailDescription(overview || undefined)}</p>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={openMailPane}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/12 px-3 py-2 text-xs text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/18"
+                                            >
+                                                <Mail size={14} />
+                                                Post oeffnen
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300">
+                                                    <Calendar size={18} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-white">Kalender</h5>
+                                                    <p className="mt-0.5 text-xs text-white/40">Google Calendar und lokale Terminansicht</p>
+                                                </div>
+                                            </div>
+                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(overview?.calendar?.status)}`}>
+                                                {humanizeIntegrationStatus(overview?.calendar?.status)}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-white/60">{buildCalendarDescription(overview || undefined)}</p>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={openCalendarPane}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-orange-400/20 bg-orange-500/12 px-3 py-2 text-xs text-orange-100 transition-colors hover:border-orange-300/35 hover:bg-orange-500/18"
+                                            >
+                                                <Calendar size={14} />
+                                                Kalender oeffnen
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
                             <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                                 <SummaryCard
                                     icon={<Mail size={18} />}
