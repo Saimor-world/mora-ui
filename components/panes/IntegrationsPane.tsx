@@ -4,7 +4,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
 import { coreGet } from '@/lib/api/coreClient';
-import { AlertCircle, Bell, Bot, Calendar, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { toast } from 'sonner';
 
@@ -194,6 +194,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         permission: 'unsupported',
     });
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
+    const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
     const refreshBrowserBridge = useCallback(() => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined') {
@@ -297,6 +298,41 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
             position: { x: 180, y: 110 },
         });
     }, [openPane]);
+
+    const openOwnerConsole = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        window.open('https://owner.saimor.world/login', '_blank', 'noopener,noreferrer');
+    }, []);
+
+    const connectGoogleCalendar = useCallback(async () => {
+        setIsConnectingCalendar(true);
+        try {
+            const res = await corePost('/v3/integrations/calendar/connect', {});
+            const authUrl = res?.auth_url;
+            if (!authUrl) {
+                toast.error('Google-Kalender-Verbindung ist noch nicht sauber konfiguriert');
+                return;
+            }
+            if (typeof window !== 'undefined') {
+                window.open(authUrl, '_blank', 'noopener,noreferrer');
+            }
+            toast.success('Google-Weiterleitung geoeffnet');
+        } catch (err: any) {
+            toast.error(err?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
+        } finally {
+            setIsConnectingCalendar(false);
+        }
+    }, []);
+
+    const copyGemmaCommand = useCallback(async () => {
+        const command = 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL=\"gemma4:e2b\"; .\\scripts\\Start-Core-Gemma.ps1';
+        try {
+            await navigator.clipboard.writeText(command);
+            toast.success('Gemma-Startbefehl kopiert');
+        } catch {
+            toast.error('Befehl konnte nicht kopiert werden');
+        }
+    }, []);
 
     if (!pane) return null;
 
@@ -469,6 +505,15 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <Mail size={14} />
                                                 Post oeffnen
                                             </button>
+                                            {ownerBlocked ? (
+                                                <button
+                                                    onClick={openOwnerConsole}
+                                                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                                >
+                                                    <ExternalLink size={14} />
+                                                    Owner Console
+                                                </button>
+                                            ) : null}
                                         </div>
                                     </div>
 
@@ -496,6 +541,69 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <Calendar size={14} />
                                                 Kalender oeffnen
                                             </button>
+                                            <button
+                                                onClick={connectGoogleCalendar}
+                                                disabled={!overview?.capabilities?.calendar_oauth_enabled || isConnectingCalendar}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+                                            >
+                                                <ExternalLink size={14} />
+                                                {isConnectingCalendar ? 'Verbinde...' : 'Mit Google verbinden'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                <div className="mb-4">
+                                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Lokale Intelligenz</p>
+                                    <h4 className="mt-1 text-sm font-medium text-white">Gemma 4 auf der internen Instanz</h4>
+                                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
+                                        Auf localhost soll Mora nicht nur spiegeln, sondern mit echten lokalen Regeln arbeiten. Dafuer ist Gemma 4 ueber Ollama der direkte interne Pfad.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_0.6fr]">
+                                    <div className="rounded-2xl border border-cyan-400/12 bg-cyan-500/[0.06] p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/12 text-cyan-200">
+                                                    <Cpu size={18} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-white">Gemma 4 lokal</h5>
+                                                    <p className="mt-0.5 text-xs text-white/40">Interne Instanz · Ollama · Browser bleibt verbunden</p>
+                                                </div>
+                                            </div>
+                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
+                                                surfaceProfile.isLocalTruthSurface
+                                                    ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
+                                                    : 'border-white/10 bg-white/[0.04] text-white/60'
+                                            }`}>
+                                                {surfaceProfile.isLocalTruthSurface ? 'Empfohlen' : 'Vorbereitet'}
+                                            </span>
+                                        </div>
+                                        <p className="mt-4 text-xs leading-relaxed text-white/60">
+                                            Verwende lokal `gemma4:e2b` fuer schnelle private Arbeit. Wenn du mehr Qualitaet willst, wechsle spaeter auf `gemma4:e4b` oder Cloud-Gemma fuer groessere Aufgaben.
+                                        </p>
+                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
+                                            cd C:\saimor\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\scripts\Start-Core-Gemma.ps1
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={copyGemmaCommand}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
+                                            >
+                                                <Copy size={14} />
+                                                Startbefehl kopieren
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                        <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Wahrheitsmodus</p>
+                                        <div className="mt-3 space-y-3 text-xs leading-relaxed text-white/60">
+                                            <p><span className="text-white/80">localhost</span> arbeitet mit echten lokalen Regeln, Browser-Freigaben und privaten Integrationen.</p>
+                                            <p><span className="text-white/80">hq.saimor.world</span> zeigt dieselbe Oberflaeche, bleibt aber dein Demo-Spiegel.</p>
+                                            <p><span className="text-white/80">owner.saimor.world</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
                                         </div>
                                     </div>
                                 </div>
