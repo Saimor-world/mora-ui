@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
-import { StarField } from '@/components/visual/StarField';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
@@ -43,14 +42,6 @@ const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
 };
 
 const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');
-
-const ellipsePoint = (cx: number, cy: number, rx: number, ry: number, degrees: number) => {
-    const radians = (degrees * Math.PI) / 180;
-    return {
-        x: cx + (rx * Math.cos(radians)),
-        y: cy + (ry * Math.sin(radians)),
-    };
-};
 
 const resolveDepartmentSimilarityProfile = (
     left: DepartmentMetricSet,
@@ -602,58 +593,62 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         };
     }, [displayCompanyName]);
 
-    const ambientStarDots = useMemo(
-        () => Array.from({ length: 168 }, (_, index) => {
-            const left = ((index * 11.3) % 98) + 1;
-            const top = ((index * 17.9) % 86) + 5;
-            const size = [1.2, 1.6, 2.1, 2.9, 3.8][index % 5];
-            const colors = [
-                'rgba(255,255,255,0.95)',
-                'rgba(186,230,253,0.95)',
-                'rgba(167,243,208,0.88)',
-                'rgba(196,181,253,0.82)',
-                'rgba(250,204,21,0.72)',
-            ];
+    const accentStars = useMemo(
+        () => Array.from({ length: 42 }, (_, index) => {
+            const left = ((index * 19.7) % 96) + 2;
+            const top = ((index * 13.4) % 78) + 6;
+            const size = [1.4, 1.8, 2.2, 2.8][index % 4];
+            const color = [
+                'rgba(255,255,255,0.92)',
+                'rgba(191,219,254,0.88)',
+                'rgba(167,243,208,0.78)',
+                'rgba(250,204,21,0.58)',
+            ][index % 4];
             return {
-                id: `ambient-star-${index}`,
+                id: `accent-star-${index}`,
                 left,
                 top,
                 size,
-                color: colors[index % colors.length],
-                opacity: 0.24 + ((index % 6) * 0.09),
-                duration: 3.2 + ((index * 5) % 7) * 0.5,
-                delay: (index % 9) * 0.18,
+                color,
+                opacity: 0.44 + ((index % 5) * 0.08),
+            };
+        }),
+        []
+    );
+    const heroStars = useMemo(
+        () => Array.from({ length: 14 }, (_, index) => {
+            const left = ((index * 23.7) % 88) + 6;
+            const top = ((index * 15.1) % 72) + 8;
+            const size = [2.2, 2.8, 3.6][index % 3];
+            const color = [
+                'rgba(255,255,255,0.95)',
+                'rgba(125,211,252,0.88)',
+                'rgba(52,211,153,0.82)',
+                'rgba(250,204,21,0.7)',
+            ][index % 4];
+            return {
+                id: `hero-star-${index}`,
+                left,
+                top,
+                size,
+                color,
+                delay: index * 0.18,
+                duration: 4.8 + (index % 4) * 0.9,
             };
         }),
         []
     );
 
-    const ambientOrbitFragments = useMemo(
-        () => rings.flatMap((ring, index) => {
-            const segments = index === 0
-                ? [[214, 308]]
-                : index === 1
-                    ? [[18, 106], [196, 296]]
-                    : [[128, 206], [314, 356]];
-
-            return segments.map(([startDeg, endDeg], segmentIndex) => {
-                const start = ellipsePoint(50, 54, ring.rx, ring.ry, startDeg);
-                const end = ellipsePoint(50, 54, ring.rx, ring.ry, endDeg);
-                const largeArcFlag = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
-                return {
-                    id: `orbit-fragment-${index}-${segmentIndex}`,
-                    d: `M ${start.x} ${start.y} A ${ring.rx} ${ring.ry} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
-                    opacity: 0.08 + (index * 0.03),
-                };
-            });
-        }),
-        [rings]
-    );
-
-    const hasUniverseInteraction = Boolean(hoverPlanetId || semanticPreviewPathId);
+    const activeCoreBeamPlanetIds = useMemo(() => {
+        const ids = new Set<string>();
+        if (focusedPlanetId) ids.add(focusedPlanetId);
+        semanticPreviewPlanetIds.forEach((id) => ids.add(id));
+        return ids;
+    }, [focusedPlanetId, semanticPreviewPlanetIds]);
+    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId);
     const visibleSemanticPaths = useMemo(
-        () => semanticPaths.filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id),
-        [semanticPaths, focusedSemanticPathIds, semanticPreviewPathId]
+        () => semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id),
+        [semanticPaths, semanticPreviewPathId]
     );
 
     return (
@@ -662,134 +657,82 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             onMouseMove={handleUniversePointerMove}
             onMouseLeave={resetUniverseParallax}
         >
-            {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
-            <StarField warp={false} density="high" opacity={1} />
+            {/* 0. UNIVERSE BACKDROP - single visual truth, shell starfield remains behind */}
+            <div className="absolute inset-0 z-[-10] pointer-events-none bg-[linear-gradient(140deg,#051412_0%,#0a2d24_26%,#17345a_60%,#0b2d25_100%)]" />
             <motion.div
-                className="absolute inset-0 z-[-9] pointer-events-none opacity-95"
-                animate={{ x: parallaxOffset.x * -0.12, y: parallaxOffset.y * -0.1 }}
-                transition={{ type: 'spring', stiffness: 40, damping: 20, mass: 0.8 }}
+                className="absolute inset-0 z-[-9] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.22, y: parallaxOffset.y * 0.16 }}
+                transition={{ type: 'spring', stiffness: 28, damping: 18, mass: 1 }}
                 style={{
-                    backgroundImage: `
-                        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.95) 0 1.2px, transparent 1.9px),
-                        radial-gradient(circle at 72% 18%, rgba(186,230,253,0.9) 0 1.2px, transparent 1.9px),
-                        radial-gradient(circle at 84% 66%, rgba(255,255,255,0.8) 0 1.2px, transparent 1.9px),
-                        radial-gradient(circle at 36% 78%, rgba(167,243,208,0.85) 0 1.2px, transparent 1.9px),
-                        radial-gradient(circle at 58% 52%, rgba(196,181,253,0.72) 0 1.2px, transparent 1.9px)
+                    background: `
+                        radial-gradient(1200px 760px at 52% 56%, rgba(72, 171, 255, 0.42) 0%, transparent 66%),
+                        radial-gradient(1080px 640px at 16% 20%, rgba(27, 186, 150, 0.3) 0%, transparent 58%),
+                        radial-gradient(860px 480px at 88% 18%, rgba(147, 197, 253, 0.18) 0%, transparent 52%),
+                        radial-gradient(700px 400px at 18% 74%, rgba(16, 185, 129, 0.18) 0%, transparent 54%)
                     `,
-                    backgroundSize: '260px 260px, 320px 320px, 300px 300px, 360px 360px, 420px 420px',
-                    backgroundPosition: '0 0, 120px 40px, 40px 180px, 180px 120px, 260px 220px',
                 }}
             />
             <motion.div
-                className="absolute inset-0 z-[-9] pointer-events-none opacity-95"
-                animate={{ x: parallaxOffset.x * -0.18, y: parallaxOffset.y * -0.14 }}
-                transition={{ type: 'spring', stiffness: 38, damping: 18, mass: 0.85 }}
+                className="absolute inset-0 z-[-8] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.48, y: parallaxOffset.y * 0.22, rotate: -2.4 }}
+                transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.05 }}
                 style={{
-                    backgroundImage: `
-                        radial-gradient(circle at 14% 22%, rgba(255,255,255,1) 0 1.35px, transparent 2.1px),
-                        radial-gradient(circle at 26% 64%, rgba(165,243,252,0.92) 0 1.2px, transparent 1.9px),
-                        radial-gradient(circle at 48% 14%, rgba(255,255,255,0.95) 0 1.25px, transparent 2px),
-                        radial-gradient(circle at 62% 58%, rgba(196,181,253,0.85) 0 1.2px, transparent 1.9px),
-                        radial-gradient(circle at 78% 26%, rgba(255,255,255,0.92) 0 1.25px, transparent 2px),
-                        radial-gradient(circle at 86% 72%, rgba(167,243,208,0.8) 0 1.2px, transparent 1.9px)
-                    `,
-                    backgroundSize: '160px 160px, 200px 200px, 220px 220px, 280px 280px, 240px 240px, 320px 320px',
-                    backgroundPosition: '20px 10px, 80px 120px, 140px 30px, 20px 200px, 180px 80px, 260px 210px',
-                    mixBlendMode: 'screen',
-                }}
-            />
-            <motion.div
-                className="absolute inset-0 z-[-9] pointer-events-none opacity-60"
-                animate={{ x: parallaxOffset.x * -0.28, y: parallaxOffset.y * -0.22 }}
-                transition={{ type: 'spring', stiffness: 34, damping: 18, mass: 0.9 }}
-                style={{
-                    backgroundImage: `
-                        radial-gradient(circle at 12% 34%, rgba(255,255,255,0.95) 0 1.6px, transparent 2.6px),
-                        radial-gradient(circle at 31% 18%, rgba(255,255,255,0.85) 0 1.4px, transparent 2.3px),
-                        radial-gradient(circle at 47% 62%, rgba(224,242,254,0.95) 0 1.6px, transparent 2.5px),
-                        radial-gradient(circle at 67% 24%, rgba(255,255,255,0.9) 0 1.6px, transparent 2.4px),
-                        radial-gradient(circle at 84% 44%, rgba(165,243,252,0.82) 0 1.5px, transparent 2.3px)
-                    `,
-                    backgroundSize: '420px 420px, 520px 520px, 460px 460px, 560px 560px, 640px 640px',
-                    backgroundPosition: '0 0, 100px 40px, 220px 120px, 60px 180px, 280px 240px',
-                    mixBlendMode: 'screen',
-                }}
-            />
-            {/* Galaxy wash */}
-            <motion.div className="absolute inset-0 z-[-9] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 0.42, y: parallaxOffset.y * 0.26, scale: 1.01 }}
-                transition={{ type: 'spring', stiffness: 26, damping: 16, mass: 1.05 }}
-                style={{
-                background: `
-                    radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.78) 0%, transparent 68%),
-                    radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.54) 0%, transparent 60%),
-                    radial-gradient(1040px 560px at 84% 24%, rgba(96, 165, 250, 0.56) 0%, transparent 56%),
-                    radial-gradient(980px 500px at 22% 76%, rgba(34, 197, 94, 0.26) 0%, transparent 56%),
-                    radial-gradient(920px 460px at 76% 74%, rgba(239, 68, 68, 0.14) 0%, transparent 54%),
-                    radial-gradient(1260px 680px at 42% 86%, rgba(4, 50, 44, 0.52) 0%, transparent 62%)
-                `
-            }} />
-            {/* Deep space gradient */}
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,#02110f_0%,#062322_24%,#0a1f38_56%,#103427_100%)] opacity-92 z-[-8] pointer-events-none" />
-            {/* Galaxy band */}
-            <motion.div className="absolute inset-0 z-[-7] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 0.78, y: parallaxOffset.y * 0.34, rotate: -0.6 }}
-                transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.2 }}
-                style={{
-                background: "linear-gradient(120deg, rgba(16,185,129,0.22) 0%, rgba(6,182,212,0.34) 32%, rgba(96,165,250,0.26) 58%, rgba(129,140,248,0.18) 76%, transparent 100%)",
-                mixBlendMode: "screen"
-            }} />
-            <motion.div className="absolute inset-0 z-[-7] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 1.05, y: parallaxOffset.y * 0.5, rotate: -7.6 }}
-                transition={{ type: 'spring', stiffness: 18, damping: 14, mass: 1.25 }}
-                style={{
-                background: "linear-gradient(12deg, transparent 0%, rgba(255,255,255,0.11) 24%, rgba(34,211,238,0.2) 38%, rgba(16,185,129,0.2) 52%, rgba(96,165,250,0.18) 64%, transparent 82%)",
-                transform: "translateY(4%) rotate(-7deg) scale(1.22)",
-                mixBlendMode: "screen",
-                filter: "blur(8px)",
-                opacity: 1,
-            }} />
-            <div
-                className="absolute inset-x-0 top-[20%] z-[-6] h-28 pointer-events-none"
-                style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.08) 18%, rgba(255,255,255,0.12) 49%, rgba(16,185,129,0.08) 78%, transparent 100%)',
-                    filter: 'blur(22px)',
+                    background: 'linear-gradient(102deg, transparent 0%, rgba(220,248,255,0.1) 18%, rgba(69,216,255,0.14) 34%, rgba(45,212,191,0.12) 52%, rgba(125,211,252,0.08) 68%, transparent 84%)',
+                    transform: 'scale(1.16)',
+                    filter: 'blur(18px)',
                     opacity: 0.9,
+                    mixBlendMode: 'screen',
                 }}
             />
             <div
-                className="absolute inset-x-0 top-[58%] z-[-6] h-24 pointer-events-none"
+                className="absolute inset-0 z-[-8] pointer-events-none"
                 style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(16,185,129,0.1) 20%, rgba(255,255,255,0.08) 50%, rgba(96,165,250,0.12) 80%, transparent 100%)',
-                    filter: 'blur(20px)',
-                    opacity: 0.72,
+                    backgroundImage: `
+                        radial-gradient(circle at 12% 24%, rgba(255,255,255,0.9) 0 1px, transparent 1.8px),
+                        radial-gradient(circle at 22% 68%, rgba(56,189,248,0.9) 0 1px, transparent 1.9px),
+                        radial-gradient(circle at 44% 16%, rgba(255,255,255,0.82) 0 1px, transparent 1.8px),
+                        radial-gradient(circle at 63% 58%, rgba(52,211,153,0.72) 0 1px, transparent 1.9px),
+                        radial-gradient(circle at 78% 22%, rgba(250,204,21,0.62) 0 1px, transparent 2px),
+                        radial-gradient(circle at 88% 72%, rgba(255,255,255,0.86) 0 1px, transparent 1.8px)
+                    `,
+                    backgroundSize: '220px 220px, 260px 260px, 280px 280px, 320px 320px, 360px 360px, 420px 420px',
+                    backgroundPosition: '0 0, 60px 110px, 120px 24px, 24px 200px, 180px 70px, 260px 220px',
+                    opacity: 0.6,
                 }}
             />
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "radial-gradient(920px 340px at 51% 47%, rgba(255,255,255,0.08) 0%, rgba(34,211,238,0.1) 18%, rgba(16,185,129,0.08) 32%, rgba(99,102,241,0.06) 48%, transparent 72%)",
-                mixBlendMode: "screen"
-            }} />
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "radial-gradient(620px 220px at 28% 72%, rgba(248,113,113,0.06) 0%, transparent 72%), radial-gradient(540px 180px at 78% 18%, rgba(167,139,250,0.08) 0%, transparent 70%)",
-                mixBlendMode: "screen"
-            }} />
-            <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
-                background: "radial-gradient(900px 240px at 50% 48%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 22%, rgba(5,14,22,0) 70%)",
-                transform: "rotate(-9deg) scale(1.12)",
-                filter: "blur(20px)",
-                opacity: 0.85,
-            }} />
-            {/* Subtle vignette */}
-            <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
-                background: "radial-gradient(circle at 50% 46%, rgba(0,0,0,0.01) 0%, rgba(0,0,0,0.28) 70%, rgba(0,0,0,0.7) 100%)"
-            }} />
-
+            <div
+                className="absolute inset-0 z-[-7] pointer-events-none"
+                style={{
+                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 18%, rgba(0,0,0,0.18) 62%, rgba(0,0,0,0.58) 100%)',
+                }}
+            />
             <motion.div
-                className="absolute inset-0 z-[4] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 1.35, y: parallaxOffset.y * 0.9 }}
-                transition={{ type: 'spring', stiffness: 24, damping: 14, mass: 1.2 }}
+                className="absolute inset-0 z-[-6] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.9, y: parallaxOffset.y * 0.54 }}
+                transition={{ type: 'spring', stiffness: 24, damping: 18, mass: 1.1 }}
             >
-                {ambientStarDots.map((star) => (
+                {accentStars.map((star) => (
+                    <div
+                        key={star.id}
+                        className="absolute rounded-full"
+                        style={{
+                            left: `${star.left}%`,
+                            top: `${star.top}%`,
+                            width: `${star.size}px`,
+                            height: `${star.size}px`,
+                            background: star.color,
+                            boxShadow: `0 0 ${Math.max(8, star.size * 10)}px ${star.color}`,
+                            opacity: star.opacity,
+                        }}
+                    />
+                ))}
+            </motion.div>
+            <motion.div
+                className="absolute inset-0 z-[-5] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.72, y: parallaxOffset.y * 0.44 }}
+                transition={{ type: 'spring', stiffness: 20, damping: 16, mass: 1.08 }}
+            >
+                {heroStars.map((star) => (
                     <motion.div
                         key={star.id}
                         className="absolute rounded-full"
@@ -799,19 +742,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             width: `${star.size}px`,
                             height: `${star.size}px`,
                             background: star.color,
-                            boxShadow: `0 0 ${Math.max(10, star.size * 12)}px ${star.color}`,
-                            opacity: star.opacity,
+                            boxShadow: `0 0 ${star.size * 16}px ${star.color}`,
                         }}
-                        animate={{
-                            opacity: [star.opacity * 0.55, Math.min(1, star.opacity + 0.18), star.opacity * 0.75],
-                            scale: [1, 1.26, 1],
-                        }}
-                        transition={{
-                            duration: star.duration,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: star.delay,
-                        }}
+                        animate={{ opacity: [0.42, 1, 0.54], scale: [1, 1.18, 1] }}
+                        transition={{ duration: star.duration, delay: star.delay, repeat: Infinity, ease: 'easeInOut' }}
                     />
                 ))}
             </motion.div>
@@ -903,9 +837,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <stop offset="100%" stopColor="rgba(6,182,212,0)" />
                     </linearGradient>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(16,185,129,0)" />
-                        <stop offset="50%" stopColor="rgba(16,185,129,0.65)" />
-                        <stop offset="100%" stopColor="rgba(16,185,129,0)" />
+                        <stop offset="0%" stopColor="rgba(56,189,248,0)" />
+                        <stop offset="45%" stopColor="rgba(125,211,252,0.48)" />
+                        <stop offset="55%" stopColor="rgba(255,255,255,0.26)" />
+                        <stop offset="100%" stopColor="rgba(45,212,191,0)" />
                     </linearGradient>
                     <filter id="beamGlow">
                         <feGaussianBlur stdDeviation="0.8" result="blur" />
@@ -913,26 +848,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                 </defs>
 
-                {/* Atmospheric contour fragments */}
-                {ambientOrbitFragments.map((fragment) => (
-                    <motion.path
-                        key={fragment.id}
-                        d={fragment.d}
-                        fill="none"
-                        stroke="rgba(186,230,253,0.2)"
-                        strokeWidth="0.05"
-                        strokeOpacity={fragment.opacity}
-                        strokeLinecap="round"
-                        strokeDasharray="1.8 3.6"
-                        animate={{
-                            opacity: hasUniverseInteraction ? fragment.opacity * 0.22 : fragment.opacity * 0.42,
-                        }}
-                        transition={{ duration: 0.5, ease: 'easeOut' }}
-                    />
-                ))}
-
-                {/* Core-to-planet ambient threads */}
-                {coreConnections.map((connection) => (
+                {/* Focus-to-core threads */}
+                {coreConnections
+                    .filter((connection) => activeCoreBeamPlanetIds.has(connection.id))
+                    .map((connection) => (
                     <motion.line
                         key={`core-${connection.id}`}
                         x1="50"
@@ -940,11 +859,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         x2={connection.x}
                         y2={connection.y}
                         stroke="url(#coreBeam)"
-                        strokeWidth={connection.highlighted ? 0.18 + connection.intensity * 0.34 : 0.08 + connection.intensity * 0.18}
-                        strokeDasharray={connection.highlighted ? '3 4' : 'none'}
+                        strokeWidth={connection.highlighted ? 0.18 + connection.intensity * 0.28 : 0.12 + connection.intensity * 0.18}
+                        strokeDasharray={connection.highlighted ? '5 7' : 'none'}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.52 : hasUniverseInteraction ? 0.09 + connection.intensity * 0.05 : 0 }}
+                        animate={{ opacity: connection.highlighted ? 0.48 : 0.24 + connection.intensity * 0.06 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
@@ -966,13 +885,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.44 + path.strength * 0.72}
+                        strokeWidth={0.28 + path.strength * 0.48}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity * 0.3,
+                                opacity: baseOpacity * 0.18,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
@@ -984,7 +903,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.18 + path.strength * 0.36}
+                                strokeWidth={0.12 + path.strength * 0.24}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
@@ -1074,7 +993,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
+                    summary={`${focusedPlanetLinkCount} semantische Beziehungen fuer ${focusedPlanet.name}. Waehle links eine Verbindung, um die Route im Raum zu lesen und direkt ins verbundene Department zu springen.`}
                     alwaysExpanded
                     showToggle={false}
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
@@ -1097,7 +1016,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <span>{focusedPlanetLinkCount}</span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                            Verbindungen richten sich nach echter Department-Aehnlichkeit statt nach Orbit-Reihenfolge. Farbe und Linienstil zeigen den staerksten Treiber.
+                            Verbindungen richten sich nach inhaltlicher, struktureller und operativer Naehe. Die Route erscheint erst dann stark, wenn du sie wirklich fokussierst.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                             {Object.values(SEMANTIC_DRIVER_META).map((driver) => (
