@@ -18,6 +18,7 @@ import {
     rejectCreateNodeFromFile,
     getFileNode,
     downloadCompanyFile,
+    relocateCompanyFile,
     type CompanyFileRecord,
     type FileIntakeDestination,
     type FileIntakeNext,
@@ -1220,6 +1221,44 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [globalSearch, loadTree, resolvedCompanyId]);
 
+    const relocateFinderFile = useCallback(async (
+        item: any,
+        options: { folderId?: string; autoRoute?: boolean; successMessage: string }
+    ) => {
+        try {
+            const updated = await relocateCompanyFile(item.id, {
+                folderId: options.folderId,
+                autoRoute: options.autoRoute,
+            });
+            setCompanyFiles((prev) => prev.map((file) => file.id === updated.id ? updated : file));
+            await loadContent();
+            toast.success(options.successMessage);
+        } catch (error: any) {
+            toast.error(error?.message || 'Datei konnte nicht neu eingeordnet werden');
+        }
+    }, [loadContent]);
+
+    const handleAutoRouteFile = useCallback(async (item: any) => {
+        await relocateFinderFile(item, {
+            autoRoute: true,
+            successMessage: 'Datei automatisch eingeordnet',
+        });
+        setContextMenu(null);
+    }, [relocateFinderFile]);
+
+    const handleMoveFileToCurrentFolder = useCallback(async (item: any) => {
+        const targetFolderId = resolveUploadFolderId();
+        if (!targetFolderId) {
+            toast.info('Navigiere zuerst in einen echten Ordner');
+            return;
+        }
+        await relocateFinderFile(item, {
+            folderId: targetFolderId,
+            successMessage: 'Datei in aktuellen Ordner verschoben',
+        });
+        setContextMenu(null);
+    }, [relocateFinderFile, resolveUploadFolderId]);
+
     // UNIFIED FINDER: Navigate to starting point based on pane data
     const appliedStartKeyRef = useRef<string>('');
     useEffect(() => {
@@ -2377,6 +2416,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 {selectedEntry.kind === 'file' && (
                                                                     <p>{getSourceFileSecondaryLabel(selectedEntry.item)}</p>
                                                                 )}
+                                                                {selectedEntry.kind === 'file' && !selectedEntry.item?.folder_id && (
+                                                                    <p className="text-amber-200/58">Noch nicht in einen Ordner eingeordnet.</p>
+                                                                )}
                                                             </div>
                                                             <div className="mt-4 flex flex-wrap items-center gap-2">
                                                                 <button
@@ -2393,6 +2435,26 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                                     <ExternalLink size={13} />
                                                                     {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
                                                                 </button>
+                                                                {selectedEntry.kind === 'file' && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => void handleAutoRouteFile(selectedEntry.item)}
+                                                                        className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/14 px-3 py-1.5 text-[11px] font-medium text-amber-50 transition-colors hover:border-amber-300/35 hover:bg-amber-500/22"
+                                                                    >
+                                                                        <Sparkles size={13} />
+                                                                        Automatisch einordnen
+                                                                    </button>
+                                                                )}
+                                                                {selectedEntry.kind === 'file' && resolveUploadFolderId() && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => void handleMoveFileToCurrentFolder(selectedEntry.item)}
+                                                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                                                    >
+                                                                        <CornerUpLeft size={13} />
+                                                                        In aktuellen Ordner
+                                                                    </button>
+                                                                )}
                                                                 {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
                                                                     <button
                                                                         type="button"
@@ -2862,6 +2924,22 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
                                             <Paperclip size={14} /> Quelle oeffnen
+                                        </button>
+                                    )}
+                                    {contextMenu.type === 'file' && (
+                                        <button
+                                            onClick={() => { void handleAutoRouteFile(contextMenu.item); }}
+                                            className="w-full text-left px-3 py-1.5 hover:bg-amber-500/20 hover:text-amber-200 flex items-center gap-2 transition-colors"
+                                        >
+                                            <Sparkles size={14} /> Automatisch einordnen
+                                        </button>
+                                    )}
+                                    {contextMenu.type === 'file' && resolveUploadFolderId() && (
+                                        <button
+                                            onClick={() => { void handleMoveFileToCurrentFolder(contextMenu.item); }}
+                                            className="w-full text-left px-3 py-1.5 hover:bg-white/10 hover:text-white flex items-center gap-2 transition-colors"
+                                        >
+                                            <CornerUpLeft size={14} /> In aktuellen Ordner
                                         </button>
                                     )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">

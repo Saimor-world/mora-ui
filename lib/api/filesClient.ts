@@ -310,6 +310,19 @@ export interface FileNodeStatus {
     company_id?: string;
 }
 
+export const relocateCompanyFile = async (
+    fileId: string,
+    options: { folderId?: string; autoRoute?: boolean }
+): Promise<CompanyFileRecord> => {
+    const payload: Record<string, any> = {
+        auto_route: options.autoRoute ?? false,
+    };
+    if (options.folderId) {
+        payload.folder_id = options.folderId;
+    }
+    return corePost(`/v3/files/${fileId}/location`, payload) as Promise<CompanyFileRecord>;
+};
+
 /** Query where a file's node ended up — use as fallback if create-node response lacks folder_id */
 export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {
     return coreGet(`/v3/files/${fileId}/node`) as Promise<FileNodeStatus>;
