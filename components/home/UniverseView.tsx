@@ -584,7 +584,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
             <StarField warp={false} density="high" opacity={1} />
             <div
-                className="absolute inset-0 z-[-9] pointer-events-none opacity-55"
+                className="absolute inset-0 z-[-9] pointer-events-none opacity-80"
                 style={{
                     backgroundImage: `
                         radial-gradient(circle at 20% 30%, rgba(255,255,255,0.8) 0 1px, transparent 1.5px),
@@ -597,15 +597,31 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     backgroundPosition: '0 0, 120px 40px, 40px 180px, 180px 120px, 260px 220px',
                 }}
             />
+            <div
+                className="absolute inset-0 z-[-9] pointer-events-none opacity-70"
+                style={{
+                    backgroundImage: `
+                        radial-gradient(circle at 14% 22%, rgba(255,255,255,0.95) 0 1.2px, transparent 1.8px),
+                        radial-gradient(circle at 26% 64%, rgba(165,243,252,0.75) 0 1px, transparent 1.7px),
+                        radial-gradient(circle at 48% 14%, rgba(255,255,255,0.88) 0 1.1px, transparent 1.8px),
+                        radial-gradient(circle at 62% 58%, rgba(196,181,253,0.72) 0 1px, transparent 1.7px),
+                        radial-gradient(circle at 78% 26%, rgba(255,255,255,0.84) 0 1.1px, transparent 1.7px),
+                        radial-gradient(circle at 86% 72%, rgba(167,243,208,0.66) 0 1px, transparent 1.6px)
+                    `,
+                    backgroundSize: '180px 180px, 220px 220px, 260px 260px, 320px 320px, 280px 280px, 360px 360px',
+                    backgroundPosition: '20px 10px, 80px 120px, 140px 30px, 20px 200px, 180px 80px, 260px 210px',
+                    mixBlendMode: 'screen',
+                }}
+            />
             {/* Galaxy wash */}
             <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
                 background: `
-                    radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.56) 0%, transparent 68%),
-                    radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.34) 0%, transparent 60%),
-                    radial-gradient(1040px 560px at 84% 24%, rgba(96, 165, 250, 0.32) 0%, transparent 56%),
-                    radial-gradient(980px 500px at 22% 76%, rgba(34, 197, 94, 0.16) 0%, transparent 56%),
+                    radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.62) 0%, transparent 68%),
+                    radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.42) 0%, transparent 60%),
+                    radial-gradient(1040px 560px at 84% 24%, rgba(96, 165, 250, 0.4) 0%, transparent 56%),
+                    radial-gradient(980px 500px at 22% 76%, rgba(34, 197, 94, 0.2) 0%, transparent 56%),
                     radial-gradient(920px 460px at 76% 74%, rgba(239, 68, 68, 0.12) 0%, transparent 54%),
-                    radial-gradient(1260px 680px at 42% 86%, rgba(4, 50, 44, 0.42) 0%, transparent 62%)
+                    radial-gradient(1260px 680px at 42% 86%, rgba(4, 50, 44, 0.5) 0%, transparent 62%)
                 `
             }} />
             {/* Deep space gradient */}
@@ -616,6 +632,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 mixBlendMode: "screen"
             }} />
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
+                background: "linear-gradient(12deg, transparent 0%, rgba(255,255,255,0.04) 24%, rgba(34,211,238,0.1) 38%, rgba(16,185,129,0.1) 52%, rgba(96,165,250,0.08) 64%, transparent 82%)",
+                transform: "translateY(4%) rotate(-7deg) scale(1.18)",
+                mixBlendMode: "screen",
+                filter: "blur(8px)",
+                opacity: 0.9,
+            }} />
+            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
                 background: "radial-gradient(920px 340px at 51% 47%, rgba(255,255,255,0.08) 0%, rgba(34,211,238,0.1) 18%, rgba(16,185,129,0.08) 32%, rgba(99,102,241,0.06) 48%, transparent 72%)",
                 mixBlendMode: "screen"
             }} />
@@ -623,9 +646,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 background: "radial-gradient(620px 220px at 28% 72%, rgba(248,113,113,0.06) 0%, transparent 72%), radial-gradient(540px 180px at 78% 18%, rgba(167,139,250,0.08) 0%, transparent 70%)",
                 mixBlendMode: "screen"
             }} />
+            <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
+                background: "radial-gradient(900px 240px at 50% 48%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 22%, rgba(5,14,22,0) 70%)",
+                transform: "rotate(-9deg) scale(1.12)",
+                filter: "blur(20px)",
+                opacity: 0.85,
+            }} />
             {/* Subtle vignette */}
             <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
-                background: "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.42) 78%, rgba(0,0,0,0.68) 100%)"
+                background: "radial-gradient(circle at 50% 46%, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.34) 68%, rgba(0,0,0,0.74) 100%)"
             }} />
 
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
