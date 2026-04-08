@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut } from 'lucide-react';
+import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
@@ -78,6 +78,7 @@ export const HomeSurface: React.FC = () => {
     const treeData    = useMoraStore((s) => s.treeData);
     const resetStore  = useMoraStore((s) => s.resetStore);
     const setUser     = useMoraStore((s) => s.setUser);
+    const setCoreMode = useMoraStore((s) => s.setCoreMode);
 
     const openPane         = usePaneStore((s) => s.openPane);
     const getPane          = usePaneStore((s) => s.getPane);
@@ -135,6 +136,10 @@ export const HomeSurface: React.FC = () => {
             data: { showUpload: true },
         });
     }, [revealPane]);
+
+    const openUniverse = useCallback(() => {
+        setCoreMode('explore');
+    }, [setCoreMode]);
 
     // ── logout ────────────────────────────────────────────────────────────
     const handleLogout = useCallback(async () => {
@@ -228,9 +233,19 @@ export const HomeSurface: React.FC = () => {
 
                 {/* ── 0. Header: greeting + logout ── */}
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-medium tracking-tight text-white/85">
-                        {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-medium tracking-tight text-white/85">
+                            {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
+                        </h1>
+                        <button
+                            type="button"
+                            onClick={openUniverse}
+                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/18 bg-cyan-500/[0.08] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-cyan-200/78 transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.14]"
+                        >
+                            <Orbit size={13} />
+                            Live-Topographie
+                        </button>
+                    </div>
                     <button
                         type="button"
                         data-testid="home-logout"
@@ -350,6 +365,12 @@ export const HomeSurface: React.FC = () => {
                         className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.08] px-3.5 py-1.5 text-[11px] tracking-[0.05em] text-emerald-300/70 transition-all hover:border-emerald-500/25 hover:bg-emerald-500/[0.12]"
                     >
                         Finder öffnen
+                    </button>
+                    <button
+                        onClick={openUniverse}
+                        className="rounded-lg border border-cyan-400/15 bg-cyan-500/[0.08] px-3.5 py-1.5 text-[11px] tracking-[0.05em] text-cyan-200/72 transition-all hover:border-cyan-300/26 hover:bg-cyan-500/[0.12]"
+                    >
+                        Universe oeffnen
                     </button>
                     <button
                         data-testid="qa-mora"

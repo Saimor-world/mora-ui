@@ -255,6 +255,7 @@ export const MoraShell: React.FC = () => {
         // setCursorAgent, cursorAgent — 1.0 gated with CursorAgent component
         viewMode,
         viewLevel,
+        coreMode,
         orbState: storeOrbState,
         orbNotifications,
         activeCompanyId,
@@ -358,6 +359,7 @@ export const MoraShell: React.FC = () => {
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
+    const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
 
     // Window Snapping
@@ -676,9 +678,9 @@ export const MoraShell: React.FC = () => {
             <TemporalAtmosphere />
 
             {/* Background Layers */}
-            <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
+            {!isUniverseExploreSurface && <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />}
             <StarField
-                density={viewLevel === 'core' ? 'high' : 'medium'}
+                density={isUniverseExploreSurface ? 'low' : viewLevel === 'core' ? 'medium' : 'medium'}
                 opacity={0.97}
                 paused={pauseHeavyBackground}
             />
