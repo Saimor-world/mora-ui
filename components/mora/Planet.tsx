@@ -98,6 +98,17 @@ export const Planet: React.FC<PlanetProps> = ({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={onClick}
+            animate={{
+                y: isHovered || isActive ? [0, -4, 0] : [0, -2, 0],
+            }}
+            transition={{
+                y: {
+                    duration: isHovered || isActive ? 3.4 : 5.6,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay,
+                },
+            }}
         >
             {/* ═ V10 FUNCTIONAL RINGS (Health & Capacity) ═ */}
             <div className="absolute inset-[-40px] pointer-events-none flex items-center justify-center">
@@ -157,8 +168,8 @@ export const Planet: React.FC<PlanetProps> = ({
                 className="orb-glass-halo"
                 style={{ '--orb-glow': style.glow } as React.CSSProperties}
                 animate={{
-                    opacity: isActive ? 0.35 : isHovered ? 0.25 : 0.14,
-                    scale: isHovered ? 1.12 : 1
+                    opacity: isActive ? 0.42 : isHovered ? 0.3 : 0.16,
+                    scale: isHovered ? 1.16 : isActive ? 1.08 : 1
                 }}
             />
 
@@ -176,6 +187,9 @@ export const Planet: React.FC<PlanetProps> = ({
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.08 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                animate={{
+                    rotateZ: isHovered ? [0, 1.2, 0] : 0,
+                }}
             >
                 {/* Subsurface scattering core */}
                 <div

@@ -45,10 +45,10 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
 
     return (
         <motion.div
-            className={`pointer-events-auto absolute overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,12,11,0.84),rgba(0,0,0,0.52))] shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl ${className}`}
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0, width: isExpanded ? 328 : 214 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
+            className={`pointer-events-auto absolute w-[336px] overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.9),rgba(4,10,13,0.76))] shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-2xl ${className}`}
+            initial={{ opacity: 0, x: -16, scale: 0.985 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.24, ease: 'easeOut' }}
             onMouseEnter={onPointerEnter}
             onMouseLeave={onPointerLeave}
         >
@@ -71,7 +71,7 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                                 {eyebrow}
                             </div>
                         </div>
-                        <div className="mt-2 truncate text-base font-light tracking-[0.06em] text-white/88">
+                        <div className="mt-2 truncate text-[30px] font-light tracking-[0.02em] text-white/90">
                             {title}
                         </div>
                     </div>
@@ -112,7 +112,7 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                             ))}
                         </div>
 
-                        <div className="mt-3 text-[11px] text-white/38">
+                        <div className="mt-3 text-[11px] leading-relaxed text-white/40">
                             {collapsedHint}
                         </div>
                     </>

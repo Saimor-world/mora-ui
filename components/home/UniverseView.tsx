@@ -92,6 +92,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
+    const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
@@ -247,12 +248,34 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     // ─── SYNC GUARD (V10.6) ───
     // Ensures data is loaded without disruptive flashes
     const lastSyncId = useRef<string | null>(null);
+    const hoverClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (activeCompanyId && activeCompanyId !== lastSyncId.current) {
             useMoraStore.getState().loadDepartments(activeCompanyId);
             lastSyncId.current = activeCompanyId;
         }
     }, [activeCompanyId]);
+
+    const clearHoverRelease = useCallback(() => {
+        if (hoverClearRef.current) {
+            clearTimeout(hoverClearRef.current);
+            hoverClearRef.current = null;
+        }
+    }, []);
+
+    const scheduleHoverRelease = useCallback(() => {
+        clearHoverRelease();
+        hoverClearRef.current = setTimeout(() => {
+            setInsightPlanetId(null);
+            setSemanticPreviewPathId(null);
+        }, 280);
+    }, [clearHoverRelease]);
+
+    useEffect(() => (
+        () => {
+            clearHoverRelease();
+        }
+    ), [clearHoverRelease]);
 
     // ─── DYNAMIC ORBITAL SYSTEM (CALM & DETERMINISTIC) ───
     // Fixed rings for calm "Solar System" feel.
@@ -311,7 +334,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
-    const focusedPlanetId = hoverPlanetId || null;
+    const focusedPlanetId = insightPlanetId || hoverPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -507,7 +530,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     useEffect(() => {
         setSemanticPreviewPathId(null);
-    }, [activeDepartmentId, hoverPlanetId, focusedPlanetId]);
+    }, [activeDepartmentId, insightPlanetId]);
+
+    const handlePlanetHover = useCallback((planetId: string, hovered: boolean) => {
+        if (hovered) {
+            clearHoverRelease();
+            setHoverPlanetId(planetId);
+            setInsightPlanetId(planetId);
+            return;
+        }
+
+        setHoverPlanetId((current) => (current === planetId ? null : current));
+        scheduleHoverRelease();
+    }, [clearHoverRelease, scheduleHoverRelease]);
 
     const handleSemanticPreview = (pathId: string | null) => {
         setSemanticPreviewPathId(pathId);
@@ -547,26 +582,41 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     return (
         <div className="relative w-full h-full overflow-hidden text-white bg-transparent">
             {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
-            <StarField warp={false} density="medium" opacity={0.98} />
+            <StarField warp={false} density="high" opacity={1} />
+            <div
+                className="absolute inset-0 z-[-9] pointer-events-none opacity-55"
+                style={{
+                    backgroundImage: `
+                        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.8) 0 1px, transparent 1.5px),
+                        radial-gradient(circle at 72% 18%, rgba(186,230,253,0.75) 0 1px, transparent 1.6px),
+                        radial-gradient(circle at 84% 66%, rgba(255,255,255,0.65) 0 1px, transparent 1.5px),
+                        radial-gradient(circle at 36% 78%, rgba(167,243,208,0.7) 0 1px, transparent 1.6px),
+                        radial-gradient(circle at 58% 52%, rgba(196,181,253,0.5) 0 1px, transparent 1.5px)
+                    `,
+                    backgroundSize: '260px 260px, 320px 320px, 300px 300px, 360px 360px, 420px 420px',
+                    backgroundPosition: '0 0, 120px 40px, 40px 180px, 180px 120px, 260px 220px',
+                }}
+            />
             {/* Galaxy wash */}
             <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
                 background: `
-                    radial-gradient(1380px 760px at 58% 58%, rgba(22, 163, 255, 0.52) 0%, transparent 67%),
-                    radial-gradient(980px 520px at 18% 24%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
-                    radial-gradient(920px 480px at 82% 28%, rgba(129, 140, 248, 0.34) 0%, transparent 56%),
-                    radial-gradient(860px 420px at 74% 74%, rgba(239, 68, 68, 0.14) 0%, transparent 54%),
-                    radial-gradient(1120px 620px at 42% 84%, rgba(8, 47, 73, 0.34) 0%, transparent 60%)
+                    radial-gradient(1440px 820px at 54% 58%, rgba(38, 166, 255, 0.56) 0%, transparent 68%),
+                    radial-gradient(1120px 620px at 14% 18%, rgba(16, 185, 129, 0.34) 0%, transparent 60%),
+                    radial-gradient(1040px 560px at 84% 24%, rgba(96, 165, 250, 0.32) 0%, transparent 56%),
+                    radial-gradient(980px 500px at 22% 76%, rgba(34, 197, 94, 0.16) 0%, transparent 56%),
+                    radial-gradient(920px 460px at 76% 74%, rgba(239, 68, 68, 0.12) 0%, transparent 54%),
+                    radial-gradient(1260px 680px at 42% 86%, rgba(4, 50, 44, 0.42) 0%, transparent 62%)
                 `
             }} />
             {/* Deep space gradient */}
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,#03110f_0%,#071b2e_38%,#0d2238_62%,#102f29_100%)] opacity-90 z-[-8] pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#02110f_0%,#062322_24%,#0a1f38_56%,#103427_100%)] opacity-92 z-[-8] pointer-events-none" />
             {/* Galaxy band */}
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "linear-gradient(120deg, rgba(16,185,129,0.10) 0%, rgba(6,182,212,0.22) 35%, rgba(96,165,250,0.18) 55%, rgba(129,140,248,0.16) 72%, transparent 100%)",
+                background: "linear-gradient(120deg, rgba(16,185,129,0.16) 0%, rgba(6,182,212,0.26) 32%, rgba(96,165,250,0.2) 58%, rgba(129,140,248,0.14) 76%, transparent 100%)",
                 mixBlendMode: "screen"
             }} />
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "radial-gradient(880px 320px at 51% 47%, rgba(255,255,255,0.07) 0%, rgba(34,211,238,0.08) 18%, rgba(99,102,241,0.06) 34%, transparent 72%)",
+                background: "radial-gradient(920px 340px at 51% 47%, rgba(255,255,255,0.08) 0%, rgba(34,211,238,0.1) 18%, rgba(16,185,129,0.08) 32%, rgba(99,102,241,0.06) 48%, transparent 72%)",
                 mixBlendMode: "screen"
             }} />
             <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
@@ -817,6 +867,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
                     summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
+                    onPointerEnter={clearHoverRelease}
+                    onPointerLeave={() => {
+                        if (!hoverPlanetId) {
+                            scheduleHoverRelease();
+                        }
+                    }}
                     metrics={[
                         { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
                         { label: 'Ordner', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
@@ -858,7 +914,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         <button
                                             type="button"
                                             key={link.id}
-                                            onMouseEnter={() => handleSemanticPreview(link.pathId)}
+                                        onMouseEnter={() => handleSemanticPreview(link.pathId)}
                                             onMouseLeave={() => handleSemanticPreview(null)}
                                             onClick={() => handleSemanticNavigate(link.targetDepartmentId)}
                                             className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
@@ -933,7 +989,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
-                                        onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
+                                        onHover={(hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
                                             // Locked: outer wrapper handles click (tooltip). Block navigation.
                                         }}
@@ -947,7 +1003,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
                                     isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
-                                    onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
+                                    onHover={(hovered) => handlePlanetHover(p.id, hovered)}
                                     onClick={() => {
                                         navigateToDepartment(p.id);
                                     }}

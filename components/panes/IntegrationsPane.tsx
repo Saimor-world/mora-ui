@@ -3,7 +3,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
-import { coreGet } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { toast } from 'sonner';
@@ -579,14 +579,14 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                     ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
                                                     : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
-                                                {surfaceProfile.isLocalTruthSurface ? 'Empfohlen' : 'Vorbereitet'}
+                                                {!surfaceProfile.isPublicDemoSurface ? 'Empfohlen' : 'Vorbereitet'}
                                             </span>
                                         </div>
                                         <p className="mt-4 text-xs leading-relaxed text-white/60">
                                             Verwende lokal `gemma4:e2b` fuer schnelle private Arbeit. Wenn du mehr Qualitaet willst, wechsle spaeter auf `gemma4:e4b` oder Cloud-Gemma fuer groessere Aufgaben.
                                         </p>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            cd C:\saimor\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\scripts\Start-Core-Gemma.ps1
+                                            cd C:\saimor\saimor-core; $env:OLLAMA_MODEL=&quot;gemma4:e2b&quot;; .\scripts\Start-Core-Gemma.ps1
                                         </div>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
@@ -608,7 +608,6 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     </div>
                                 </div>
                             </section>
-
                             <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                                 <SummaryCard
                                     icon={<Mail size={18} />}
