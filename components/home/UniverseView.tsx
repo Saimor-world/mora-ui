@@ -44,6 +44,14 @@ const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
 
 const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');
 
+const ellipsePoint = (cx: number, cy: number, rx: number, ry: number, degrees: number) => {
+    const radians = (degrees * Math.PI) / 180;
+    return {
+        x: cx + (rx * Math.cos(radians)),
+        y: cy + (ry * Math.sin(radians)),
+    };
+};
+
 const resolveDepartmentSimilarityProfile = (
     left: DepartmentMetricSet,
     right: DepartmentMetricSet
@@ -269,7 +277,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         hoverClearRef.current = setTimeout(() => {
             setInsightPlanetId(null);
             setSemanticPreviewPathId(null);
-        }, 280);
+        }, 720);
     }, [clearHoverRelease]);
 
     useEffect(() => (
@@ -620,6 +628,34 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         []
     );
 
+    const ambientOrbitFragments = useMemo(
+        () => rings.flatMap((ring, index) => {
+            const segments = index === 0
+                ? [[214, 308]]
+                : index === 1
+                    ? [[18, 106], [196, 296]]
+                    : [[128, 206], [314, 356]];
+
+            return segments.map(([startDeg, endDeg], segmentIndex) => {
+                const start = ellipsePoint(50, 54, ring.rx, ring.ry, startDeg);
+                const end = ellipsePoint(50, 54, ring.rx, ring.ry, endDeg);
+                const largeArcFlag = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+                return {
+                    id: `orbit-fragment-${index}-${segmentIndex}`,
+                    d: `M ${start.x} ${start.y} A ${ring.rx} ${ring.ry} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
+                    opacity: 0.08 + (index * 0.03),
+                };
+            });
+        }),
+        [rings]
+    );
+
+    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId);
+    const visibleSemanticPaths = useMemo(
+        () => semanticPaths.filter((path) => path.highlighted || focusedSemanticPathIds.has(path.id) || semanticPreviewPathId === path.id),
+        [semanticPaths, focusedSemanticPathIds, semanticPreviewPathId]
+    );
+
     return (
         <div
             className="relative w-full h-full overflow-hidden text-white bg-transparent"
@@ -865,16 +901,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                 </defs>
 
-                {/* Atmospheric orbital memory rings */}
-                {rings.map((r, i) => (
-                    <ellipse
-                        key={i} cx="50" cy="54" rx={r.rx} ry={r.ry}
+                {/* Atmospheric orbital fragments */}
+                {ambientOrbitFragments.map((fragment) => (
+                    <motion.path
+                        key={fragment.id}
+                        d={fragment.d}
                         fill="none"
-                        stroke="rgba(255,255,255,0.35)"
-                        strokeWidth="0.04"
-                        strokeOpacity={0.02 + i * 0.015}
-                        strokeDasharray={i === 1 ? '0.7 0.9' : 'none'}
-                        className="transition-all duration-1000"
+                        stroke="rgba(255,255,255,0.32)"
+                        strokeWidth="0.06"
+                        strokeOpacity={fragment.opacity}
+                        strokeLinecap="round"
+                        strokeDasharray="0.8 1.2"
+                        animate={{
+                            opacity: hasUniverseInteraction ? fragment.opacity * 0.75 : fragment.opacity,
+                        }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
                     />
                 ))}
 
@@ -891,13 +932,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         strokeDasharray={connection.highlighted ? '3 4' : 'none'}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.52 : 0.03 + connection.intensity * 0.04 }}
+                        animate={{ opacity: connection.highlighted ? 0.52 : hasUniverseInteraction ? 0.06 + connection.intensity * 0.05 : 0 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
 
                 {/* Semantic silk paths */}
-                {semanticPaths.map((path) => {
+                {visibleSemanticPaths.map((path) => {
                     const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
