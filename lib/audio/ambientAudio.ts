@@ -28,7 +28,7 @@ export interface AmbientAudioSettingsUpdate {
     ambientAudioTrackId?: string | null;
 }
 
-export const DEFAULT_AMBIENT_AUDIO_VOLUME = 0.42;
+export const DEFAULT_AMBIENT_AUDIO_VOLUME = 0.14;
 
 export const AMBIENT_AUDIO_STORAGE_KEYS = {
     enabled: 'saimor_ambient_audio_enabled',
@@ -128,7 +128,7 @@ export const resolveAmbientAudioSettings = (userSettings?: Record<string, any> |
     enabled:
         typeof userSettings?.ambientAudioEnabled === 'boolean'
             ? userSettings.ambientAudioEnabled
-            : readStoredBoolean(AMBIENT_AUDIO_STORAGE_KEYS.enabled, false),
+            : readStoredBoolean(AMBIENT_AUDIO_STORAGE_KEYS.enabled, true),
     volume:
         typeof userSettings?.ambientAudioVolume === 'number'
             ? clampAmbientAudioVolume(userSettings.ambientAudioVolume)

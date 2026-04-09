@@ -97,6 +97,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         treeData,
         spacesByDepartment
     } = useMoraStore();
+    const coreMode = useMoraStore((state) => state.coreMode);
+    const setCoreMode = useMoraStore((state) => state.setCoreMode);
 
     const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
     const surfaceProfile = useSurfaceProfile();
@@ -109,6 +111,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [isInsightRailHovered, setIsInsightRailHovered] = useState(false);
     const [heldInsightPlanetId, setHeldInsightPlanetId] = useState<string | null>(null);
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
+    const [isCoreLogoHovered, setIsCoreLogoHovered] = useState(false);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
@@ -633,6 +636,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             letterSpacing: spacing
         };
     }, [displayCompanyName]);
+    const isHomeUniversePreview = coreMode === 'home';
+    const centerSummary = useMemo(() => {
+        const departmentCount = visiblePlanets.length;
+        const areaCount = totalSpaceCount;
+        return {
+            departmentLabel: `${departmentCount} ${departmentCount === 1 ? 'Abteilung' : 'Abteilungen'}`,
+            areaLabel: `${areaCount} ${areaCount === 1 ? 'Bereich' : 'Bereiche'}`,
+        };
+    }, [totalSpaceCount, visiblePlanets.length]);
 
     const accentStars = useMemo(
         () => Array.from({ length: 42 }, (_, index) => {
@@ -824,7 +836,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     transition={{ duration: 1, ease: "easeOut" }}
                 >
                     {/* CENTER LOGO */}
-                    <div className="relative group">
+                    <div
+                        className="relative group"
+                        onMouseEnter={() => setIsCoreLogoHovered(true)}
+                        onMouseLeave={() => setIsCoreLogoHovered(false)}
+                    >
                         {/* Glow Behind Logo */}
                         <div className="absolute inset-0 bg-cyan-500/20 blur-[80px] rounded-full scale-150 group-hover:bg-cyan-400/40 transition-all duration-700" />
 
@@ -834,7 +850,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             size="lg"
                             animated
                             onClick={() => {
-                                if (!activeDepartmentId) {
+                                if (isHomeUniversePreview) {
+                                    setCoreMode('explore');
+                                    setShowSystemStatus(false);
+                                } else if (!activeDepartmentId) {
                                     setShowSystemStatus(!showSystemStatus);
                                 } else {
                                     navigateToCore();
@@ -842,6 +861,41 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 }
                             }}
                         />
+
+                        <AnimatePresence>
+                            {isHomeUniversePreview && isCoreLogoHovered ? (
+                                <motion.div
+                                    className="absolute left-1/2 top-[calc(100%+1.35rem)] w-[320px] -translate-x-1/2 rounded-[24px] border border-cyan-300/14 bg-[linear-gradient(160deg,rgba(6,18,24,0.78),rgba(4,10,13,0.48))] px-5 py-4 text-left shadow-[0_24px_70px_rgba(0,0,0,0.34)] backdrop-blur-[26px]"
+                                    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                                >
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/54">Universe Einstieg</div>
+                                    <div className="mt-2 text-[18px] font-light text-white/92">
+                                        {displayCompanyName}
+                                    </div>
+                                    <p className="mt-2 text-[12px] leading-relaxed text-white/66">
+                                        Die Home-Ebene bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen oeffnet den grossen Raum.
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-white/56">
+                                            {centerSummary.departmentLabel}
+                                        </span>
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-white/56">
+                                            {centerSummary.areaLabel}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCoreMode('explore')}
+                                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-cyan-500/[0.12] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-50/90 transition-all hover:border-cyan-200/32 hover:bg-cyan-500/[0.18]"
+                                    >
+                                        Universe oeffnen
+                                    </button>
+                                </motion.div>
+                            ) : null}
+                        </AnimatePresence>
                     </div>
                 </motion.div>
             </div>

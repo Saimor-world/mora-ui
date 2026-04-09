@@ -44,12 +44,12 @@ export const CoreLayer: React.FC = () => {
                         {...fadeVariants}
                     >
                         <div className="absolute inset-0">
-                            <div className="absolute inset-0 scale-[1.015] opacity-78 saturate-[0.88] [filter:blur(0.5px)]">
+                            <div className="absolute inset-0 scale-[1.006] opacity-[0.88] saturate-[0.94] [filter:blur(0.15px)]">
                                 <UniverseView />
                             </div>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_44%,rgba(20,54,66,0.18),rgba(4,12,12,0.18)_38%,rgba(3,8,10,0.42)_100%)]" />
-                            <div className="absolute inset-x-[18%] top-[18%] h-[24rem] rounded-full bg-cyan-400/[0.06] blur-[120px]" />
-                            <div className="absolute inset-x-[26%] bottom-[12%] h-[16rem] rounded-full bg-emerald-400/[0.05] blur-[110px]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(18,54,76,0.08),rgba(4,12,12,0.1)_38%,rgba(3,8,10,0.24)_100%)]" />
+                            <div className="absolute inset-x-[18%] top-[18%] h-[24rem] rounded-full bg-cyan-400/[0.04] blur-[120px]" />
+                            <div className="absolute inset-x-[26%] bottom-[12%] h-[16rem] rounded-full bg-emerald-400/[0.035] blur-[110px]" />
                         </div>
                         <HomeSurface overlayMode />
                     </motion.div>

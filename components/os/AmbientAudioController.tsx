@@ -5,6 +5,8 @@ import {
     AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT,
     AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT,
     getAmbientAudioTrackBlob,
+    listAmbientAudioTracks,
+    persistAmbientAudioSettings,
     resolveAmbientAudioSettings,
     resolveAmbientSceneTrackMap,
 } from '@/lib/audio/ambientAudio';
@@ -15,6 +17,7 @@ export const AmbientAudioController: React.FC = () => {
     const userSettings = useMoraStore((state) => state.user?.settings);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const objectUrlRef = useRef<string | null>(null);
+    const autoplayBlockedRef = useRef(false);
     const [ambientAudio, setAmbientAudio] = useState(() => resolveAmbientAudioSettings());
     const [sceneTrackMap, setSceneTrackMap] = useState(() => resolveAmbientSceneTrackMap());
     const ritualSettings = resolveRitualSettings(userSettings);
@@ -50,6 +53,31 @@ export const AmbientAudioController: React.FC = () => {
         audioElement.loop = true;
         audioElement.volume = effectiveVolume;
     }, [effectiveVolume]);
+
+    useEffect(() => {
+        if (!ambientAudio.enabled || effectiveTrackId) return;
+
+        let cancelled = false;
+
+        const ensureDefaultTrack = async () => {
+            try {
+                const tracks = await listAmbientAudioTracks();
+                if (cancelled || tracks.length === 0) return;
+                persistAmbientAudioSettings(null, {
+                    ambientAudioEnabled: true,
+                    ambientAudioTrackId: tracks[0].id,
+                });
+            } catch {
+                // Silent fallback: if no library exists yet, keep the controller idle.
+            }
+        };
+
+        void ensureDefaultTrack();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
@@ -98,8 +126,9 @@ export const AmbientAudioController: React.FC = () => {
             if (ambientAudio.enabled) {
                 try {
                     await audioElement.play();
+                    autoplayBlockedRef.current = false;
                 } catch {
-                    // Browsers may block autoplay until the user has interacted with the page.
+                    autoplayBlockedRef.current = true;
                 }
             }
         };
@@ -124,9 +153,36 @@ export const AmbientAudioController: React.FC = () => {
         if (!audioElement.src) return;
 
         audioElement.play().catch(() => {
-            // Browsers may block autoplay until the user has interacted with the page.
+            autoplayBlockedRef.current = true;
         });
     }, [ambientAudio.enabled]);
+
+    useEffect(() => {
+        if (!ambientAudio.enabled || !autoplayBlockedRef.current) return;
+
+        const tryResume = () => {
+            const audioElement = audioRef.current;
+            if (!audioElement || !audioElement.src) return;
+
+            audioElement.play()
+                .then(() => {
+                    autoplayBlockedRef.current = false;
+                    window.removeEventListener('pointerdown', tryResume);
+                    window.removeEventListener('keydown', tryResume);
+                })
+                .catch(() => {
+                    // Keep waiting for a browser-accepted gesture.
+                });
+        };
+
+        window.addEventListener('pointerdown', tryResume);
+        window.addEventListener('keydown', tryResume);
+
+        return () => {
+            window.removeEventListener('pointerdown', tryResume);
+            window.removeEventListener('keydown', tryResume);
+        };
+    }, [ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {
         const audioElement = audioRef.current;

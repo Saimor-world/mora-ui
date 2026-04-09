@@ -298,8 +298,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     if (overlayMode) {
         return (
             <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
-                <div className="absolute left-8 top-28 w-[min(430px,calc(100vw-28rem))]">
-                    <div className="pointer-events-auto rounded-[32px] border border-white/12 bg-[linear-gradient(160deg,rgba(4,16,16,0.78),rgba(4,10,13,0.52))] p-6 shadow-[0_30px_110px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
+                <div className="absolute left-8 top-28 w-[min(390px,calc(100vw-32rem))]">
+                    <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.58),rgba(4,10,13,0.26))] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-[26px]">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/62">Home</div>
@@ -323,16 +323,20 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         <p
                             data-testid="briefing-text"
-                            className="mt-4 text-[14px] font-light leading-relaxed text-white/76"
+                            className="mt-4 text-[13px] font-light leading-relaxed text-white/72"
                         >
                             {briefing}
                         </p>
+
+                        <div className="mt-4 rounded-[20px] border border-cyan-300/12 bg-cyan-500/[0.07] px-4 py-3 text-[12px] leading-relaxed text-cyan-50/78">
+                            Hover auf das Firmenzeichen in der Mitte und springe von dort direkt in den grossen Universumsraum.
+                        </div>
 
                         <div className="mt-5 grid grid-cols-2 gap-3">
                             <button
                                 type="button"
                                 onClick={openUniverse}
-                                className="rounded-[22px] border border-cyan-400/18 bg-cyan-500/[0.10] px-4 py-3 text-left transition-all hover:border-cyan-300/30 hover:bg-cyan-500/[0.16]"
+                                className="rounded-[22px] border border-cyan-400/16 bg-cyan-500/[0.09] px-4 py-3 text-left transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.14]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-100/54">Raum</div>
                                 <div className="mt-2 text-[15px] text-cyan-50/92">Live-Topographie</div>
@@ -341,7 +345,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <button
                                 type="button"
                                 onClick={openFinder}
-                                className="rounded-[22px] border border-emerald-400/16 bg-emerald-500/[0.08] px-4 py-3 text-left transition-all hover:border-emerald-300/28 hover:bg-emerald-500/[0.14]"
+                                className="rounded-[22px] border border-emerald-400/14 bg-emerald-500/[0.07] px-4 py-3 text-left transition-all hover:border-emerald-300/24 hover:bg-emerald-500/[0.12]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/52">Arbeit</div>
                                 <div className="mt-2 text-[15px] text-emerald-50/90">Finder</div>
@@ -354,7 +358,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 data-testid="dept-pulse-tiles"
                                 className="mt-5 flex flex-wrap gap-2"
                             >
-                                {deptTiles.map(({ dept, count, active, loaded }) => (
+                                {deptTiles.slice(0, 4).map(({ dept, count, active, loaded }) => (
                                     <button
                                         key={dept.id}
                                         data-testid={`dept-tile-${dept.id}`}
@@ -385,7 +389,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </div>
                         )}
 
-                        <div className="mt-5 flex flex-wrap gap-2">
+                        <div className="mt-5 hidden flex-wrap gap-2">
                             <button
                                 data-testid="qa-finder"
                                 onClick={openFinder}
@@ -417,8 +421,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] left-8 w-[min(430px,calc(100vw-28rem))]">
-                    <div className="pointer-events-auto rounded-[30px] border border-white/12 bg-[linear-gradient(160deg,rgba(4,16,16,0.78),rgba(4,10,13,0.52))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+                <div className="absolute bottom-[8.25rem] left-8 w-[min(390px,calc(100vw-32rem))]">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.54),rgba(4,10,13,0.22))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-[26px]">
                         <div className="mb-3 flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-emerald-200/42">Privater Bereich</div>
@@ -446,7 +450,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         {privateArea?.latestItems?.length ? (
                             <div className="mt-4 grid gap-2">
-                                {privateArea.latestItems.map((item) => (
+                                {privateArea.latestItems.slice(0, 2).map((item) => (
                                     <button
                                         key={item.id}
                                         type="button"
@@ -479,8 +483,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(480px,calc(100vw-26rem))]">
-                    <div className="pointer-events-auto rounded-[30px] border border-white/12 bg-[linear-gradient(160deg,rgba(4,16,16,0.78),rgba(4,10,13,0.52))] p-5 shadow-[0_22px_80px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(430px,calc(100vw-30rem))]">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.54),rgba(4,10,13,0.22))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-[26px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
