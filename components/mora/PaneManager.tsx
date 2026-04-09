@@ -19,6 +19,9 @@ import { ScannerPane } from '@/components/panes/ScannerPane';
 import { UsersPane } from '@/components/panes/UsersPane';
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
 import { MoraHubPane } from '@/components/panes/MoraHubPane';
+import { MailPane } from '@/components/panes/MailPane';
+import { CalendarPane } from '@/components/panes/CalendarPane';
+import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
@@ -51,6 +54,12 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <ScannerPane id={pane.id} />;
         case 'users':
             return <UsersPane id={pane.id} />;
+        case 'mail':
+            return <MailPane id={pane.id} />;
+        case 'calendar':
+            return <CalendarPane id={pane.id} />;
+        case 'integrations':
+            return <IntegrationsPane id={pane.id} />;
         case 'company-detail':
             return (
                 <CompanyDetailPane

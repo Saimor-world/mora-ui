@@ -68,6 +68,7 @@ interface IntegrationsOverview {
             local_truth?: string;
             demo_mirror?: string;
             owner_console?: string;
+            operations_console?: string;
         };
     };
     capabilities?: {
@@ -325,13 +326,21 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
 
     const openOwnerConsole = useCallback(() => {
         if (typeof window === 'undefined') return;
-        window.open('https://owner.saimor.world/login', '_blank', 'noopener,noreferrer');
-    }, []);
+        const url = overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login';
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }, [overview]);
 
     const openOperationsControl = useCallback(() => {
         if (typeof window === 'undefined') return;
-        window.open('https://www.saimor.world/systems/control', '_blank', 'noopener,noreferrer');
-    }, []);
+        const url = overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control';
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }, [overview]);
+
+    const openLocalTruthSurface = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        const url = overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000';
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }, [overview]);
 
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
@@ -637,6 +646,13 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <ShieldCheck size={14} />
                                                 Operations-Leitstand
                                             </button>
+                                            <button
+                                                onClick={openLocalTruthSurface}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                            >
+                                                <ExternalLink size={14} />
+                                                Local Truth oeffnen
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -645,6 +661,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             <p><span className="text-white/80">localhost</span> arbeitet mit echten lokalen Regeln, Browser-Freigaben und privaten Integrationen.</p>
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.demo_mirror || 'https://hq.saimor.world'}</span> zeigt dieselbe Oberflaeche, bleibt aber dein Demo-Spiegel.</p>
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login'}</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
+                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control'}</span> ist der operative Runtime- und Integrationsleitstand.</p>
                                         </div>
                                     </div>
                                 </div>
