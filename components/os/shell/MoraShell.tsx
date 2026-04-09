@@ -330,6 +330,11 @@ export const MoraShell: React.FC = () => {
     }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
 
     useEffect(() => {
+        if (!isPublicDemoSurface || viewLevel !== 'core' || coreMode === 'explore') return;
+        useMoraStore.getState().setCoreMode('explore');
+    }, [coreMode, isPublicDemoSurface, viewLevel]);
+
+    useEffect(() => {
         if (isPublicDemoSurface && isAdminMode) {
             setAdminMode(false);
         }
