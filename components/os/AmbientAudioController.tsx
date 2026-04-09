@@ -36,8 +36,8 @@ export const AmbientAudioController: React.FC = () => {
         Math.min(1, ambientAudio.volume * (RITUAL_SCENES[ritualSceneId]?.audioGain ?? 1))
     );
     const surfaceVolumeMultiplier = viewLevel === 'core'
-        ? (coreMode === 'home' ? 0.03 : 1)
-        : 0.1;
+        ? (coreMode === 'home' ? 0.012 : 1)
+        : 0.08;
     const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
 
     useEffect(() => {
@@ -191,7 +191,7 @@ export const AmbientAudioController: React.FC = () => {
             objectUrlRef.current = objectUrl;
             audioElement.src = objectUrl;
             audioElement.preload = 'auto';
-            audioElement.volume = Math.min(effectiveVolume, 0.012);
+            audioElement.volume = 0.001;
 
             if (ambientAudio.enabled) {
                 try {
@@ -207,9 +207,8 @@ export const AmbientAudioController: React.FC = () => {
 
         return () => {
             cancelled = true;
-            audioElement.pause();
         };
-    }, [ambientAudio.enabled, ambientAudio.trackId, effectiveTrackId, effectiveVolume, ritualSceneId, sceneTrackMap]);
+    }, [ambientAudio.enabled, ambientAudio.trackId, effectiveTrackId, ritualSceneId, sceneTrackMap]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
@@ -222,7 +221,7 @@ export const AmbientAudioController: React.FC = () => {
 
         const startVolume = audioElement.volume;
         const targetVolume = ambientAudio.enabled ? effectiveVolume : 0;
-        const durationMs = viewLevel === 'core' && coreMode === 'home' ? 1600 : 820;
+        const durationMs = viewLevel === 'core' && coreMode === 'home' ? 2800 : 900;
         const startedAt = performance.now();
 
         const tick = (timestamp: number) => {

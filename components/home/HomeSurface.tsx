@@ -261,12 +261,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
     const overlayBriefing = useMemo(() => {
         const compact = briefing.replace(/\s+/g, ' ').trim();
-        if (compact.length <= 132) return compact;
-        return `${compact.slice(0, 129).trimEnd()}...`;
+        if (compact.length <= 92) return compact;
+        return `${compact.slice(0, 89).trimEnd()}...`;
     }, [briefing]);
 
-    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 2), [deptTiles]);
-    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 2), [recentActivityItems]);
+    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 1), [deptTiles]);
+    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 1), [recentActivityItems]);
     const overlayPrivateItems = useMemo(
         () => privateArea?.latestItems?.slice(0, 1) ?? [],
         [privateArea]
@@ -332,6 +332,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             onClick={openUniverse}
                             role="button"
                             tabIndex={0}
+                            data-interaction-sound="firm"
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter' || event.key === ' ') {
                                     event.preventDefault();
@@ -359,6 +360,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 <button
                                     type="button"
                                     onClick={openUniverse}
+                                    data-interaction-sound="firm"
                                     className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-cyan-500/[0.12] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-50/90 transition-all hover:border-cyan-200/32 hover:bg-cyan-500/[0.18]"
                                 >
                                     Universe oeffnen
@@ -368,15 +370,15 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute left-8 top-28 w-[min(324px,calc(100vw-38rem))]">
-                    <div className="pointer-events-auto rounded-[28px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.34),rgba(4,10,13,0.09))] p-4 shadow-[0_16px_54px_rgba(0,0,0,0.2)] backdrop-blur-[18px]">
+                <div className="absolute left-8 top-28 w-[min(292px,calc(100vw-40rem))]">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/[0.06] bg-[linear-gradient(160deg,rgba(5,16,18,0.26),rgba(4,10,13,0.05))] p-4 shadow-[0_14px_40px_rgba(0,0,0,0.14)] backdrop-blur-[16px]">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/62">Home</div>
-                                <h1 className="mt-2 text-[22px] font-light tracking-[0.02em] text-white/92">
+                                <h1 className="mt-2 text-[20px] font-light tracking-[0.02em] text-white/92">
                                     {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
                                 </h1>
-                                <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/28">
+                                <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/26">
                                     {todayLabel}
                                 </div>
                             </div>
@@ -384,7 +386,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 type="button"
                                 data-testid="home-logout"
                                 onClick={() => void handleLogout()}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/45 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-[10px] text-white/42 transition-all hover:border-white/12 hover:bg-white/[0.05] hover:text-white/68"
                             >
                                 <LogOut size={13} />
                                 Abmelden
@@ -393,16 +395,17 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         <p
                             data-testid="briefing-text"
-                            className="mt-4 text-[12px] font-light leading-relaxed text-white/66"
+                            className="mt-3 text-[11px] font-light leading-relaxed text-white/56"
                         >
                             {overlayBriefing}
                         </p>
 
-                        <div className="mt-4 grid grid-cols-2 gap-2.5">
+                        <div className="mt-4 grid grid-cols-2 gap-2">
                             <button
                                 type="button"
                                 onClick={openUniverse}
-                                className="rounded-[22px] border border-cyan-400/16 bg-cyan-500/[0.09] px-4 py-3 text-left transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.14]"
+                                data-interaction-sound="firm"
+                                className="rounded-[20px] border border-cyan-400/12 bg-cyan-500/[0.07] px-3.5 py-3 text-left transition-all hover:border-cyan-300/22 hover:bg-cyan-500/[0.12]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-100/54">Raum</div>
                                 <div className="mt-2 text-[14px] text-cyan-50/92">Live-Topographie</div>
@@ -411,7 +414,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <button
                                 type="button"
                                 onClick={openFinder}
-                                className="rounded-[22px] border border-emerald-400/14 bg-emerald-500/[0.07] px-4 py-3 text-left transition-all hover:border-emerald-300/24 hover:bg-emerald-500/[0.12]"
+                                className="rounded-[20px] border border-emerald-400/12 bg-emerald-500/[0.06] px-3.5 py-3 text-left transition-all hover:border-emerald-300/20 hover:bg-emerald-500/[0.10]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/52">Arbeit</div>
                                 <div className="mt-2 text-[14px] text-emerald-50/90">Finder</div>
@@ -422,7 +425,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                         {featuredDeptTiles.length > 0 && (
                             <div
                                 data-testid="dept-pulse-tiles"
-                                className="mt-4 flex flex-wrap gap-2"
+                                className="mt-3 flex flex-wrap gap-2"
                             >
                                 {featuredDeptTiles.map(({ dept, count, active, loaded }) => (
                                     <button
@@ -435,15 +438,15 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                             data: { departmentId: dept.id, departmentName: dept.name },
                                         })}
                                         className={[
-                                            'rounded-full border px-4 py-2.5 text-left transition-all',
-                                            'hover:border-white/16 hover:bg-white/[0.06]',
+                                            'rounded-full border px-3 py-2 text-left transition-all',
+                                            'hover:border-white/12 hover:bg-white/[0.05]',
                                             active
-                                                ? 'border-cyan-400/16 bg-cyan-500/[0.08]'
-                                                : 'border-white/[0.08] bg-white/[0.03]',
+                                                ? 'border-cyan-400/14 bg-cyan-500/[0.06]'
+                                                : 'border-white/[0.06] bg-white/[0.025]',
                                         ].join(' ')}
                                     >
-                                        <div className="truncate text-[12px] text-white/86">{dept.name}</div>
-                                        <div className="mt-0.5 text-[10px] text-white/45">
+                                        <div className="truncate text-[11px] text-white/82">{dept.name}</div>
+                                        <div className="mt-0.5 text-[10px] text-white/40">
                                             {active
                                                 ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
                                                 : loaded
@@ -455,16 +458,16 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </div>
                         )}
 
-                        <div className="mt-4 rounded-[20px] border border-white/[0.08] bg-white/[0.03] px-3.5 py-3.5">
+                        <div className="mt-3 rounded-[20px] border border-white/[0.06] bg-white/[0.024] px-3 py-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/40">Privater Bereich</div>
-                                    <div className="mt-1 text-[13px] text-white/80">{privateArea?.label || 'Eigene Inhalte'}</div>
+                                    <div className="mt-1 text-[12px] text-white/62">Eigene Inhalte direkt aus deinem Konto.</div>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={openPrivateArea}
-                                    className="rounded-full border border-emerald-400/14 bg-emerald-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-emerald-100/72 transition-colors hover:border-emerald-300/24 hover:bg-emerald-500/[0.14]"
+                                    className="rounded-full border border-emerald-400/12 bg-emerald-500/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-emerald-100/68 transition-colors hover:border-emerald-300/20 hover:bg-emerald-500/[0.12]"
                                 >
                                     Oeffnen
                                 </button>
@@ -483,7 +486,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                             key={item.id}
                                             type="button"
                                             onClick={openPrivateArea}
-                                            className="flex w-full items-center gap-3 rounded-[16px] border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-white/12 hover:bg-white/[0.05]"
+                                            className="flex w-full items-center gap-3 rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
                                         >
                                             <div
                                                 className={`flex h-8 w-8 items-center justify-center rounded-xl ${item.kind === 'document' ? 'bg-emerald-500/[0.08]' : 'bg-white/[0.04]'}`}
@@ -600,8 +603,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(312px,calc(100vw-38rem))]">
-                    <div className="pointer-events-auto rounded-[24px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.3),rgba(4,10,13,0.08))] p-4 shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-[16px]">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(268px,calc(100vw-42rem))]">
+                    <div className="pointer-events-auto rounded-[24px] border border-white/[0.06] bg-[linear-gradient(160deg,rgba(5,16,18,0.24),rgba(4,10,13,0.05))] p-3.5 shadow-[0_14px_36px_rgba(0,0,0,0.14)] backdrop-blur-[14px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
@@ -610,7 +613,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <button
                                 type="button"
                                 onClick={openFinder}
-                                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/52 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                                className="rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/50 transition-colors hover:border-white/12 hover:bg-white/[0.05] hover:text-white/68"
                             >
                                 Finder
                             </button>
@@ -626,7 +629,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                     <li key={item.id} data-testid="recent-item">
                                         <button
                                             onClick={() => openRecentActivity(item)}
-                                            className="group flex w-full items-center gap-3 rounded-[18px] border border-white/[0.06] bg-white/[0.03] px-3 py-3 text-left transition-all hover:border-white/14 hover:bg-white/[0.06]"
+                                            className="group flex w-full items-center gap-3 rounded-[18px] border border-white/[0.05] bg-white/[0.025] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
                                         >
                                             <div
                                                 className={[

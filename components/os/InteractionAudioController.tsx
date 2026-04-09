@@ -55,8 +55,8 @@ export const InteractionAudioController: React.FC = () => {
             filter.frequency.setValueAtTime(1800, startedAt);
 
             gain.gain.setValueAtTime(0.0001, startedAt);
-            gain.gain.exponentialRampToValueAtTime(intensity === 'firm' ? 0.028 : 0.018, startedAt + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + (intensity === 'firm' ? 0.16 : 0.12));
+            gain.gain.exponentialRampToValueAtTime(intensity === 'firm' ? 0.04 : 0.026, startedAt + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + (intensity === 'firm' ? 0.19 : 0.15));
 
             oscillator.connect(filter);
             filter.connect(gain);
