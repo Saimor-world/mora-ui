@@ -455,6 +455,57 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </div>
                         )}
 
+                        <div className="mt-4 rounded-[20px] border border-white/[0.08] bg-white/[0.03] px-3.5 py-3.5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/40">Privater Bereich</div>
+                                    <div className="mt-1 text-[13px] text-white/80">{privateArea?.label || 'Eigene Inhalte'}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={openPrivateArea}
+                                    className="rounded-full border border-emerald-400/14 bg-emerald-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-emerald-100/72 transition-colors hover:border-emerald-300/24 hover:bg-emerald-500/[0.14]"
+                                >
+                                    Oeffnen
+                                </button>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <HomeChip label="Ordner" value={privateArea?.folderCount ?? 0} />
+                                <HomeChip label="Inhalte" value={privateArea?.documentCount ?? 0} />
+                                <HomeChip label="Dateien" value={privateArea?.fileCount ?? 0} />
+                            </div>
+
+                            {overlayPrivateItems.length > 0 ? (
+                                <div className="mt-3 grid gap-2">
+                                    {overlayPrivateItems.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            onClick={openPrivateArea}
+                                            className="flex w-full items-center gap-3 rounded-[16px] border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-white/12 hover:bg-white/[0.05]"
+                                        >
+                                            <div
+                                                className={`flex h-8 w-8 items-center justify-center rounded-xl ${item.kind === 'document' ? 'bg-emerald-500/[0.08]' : 'bg-white/[0.04]'}`}
+                                            >
+                                                {item.kind === 'document' ? (
+                                                    <FileText size={13} className="text-emerald-300/72" />
+                                                ) : (
+                                                    <FolderOpen size={13} className="text-white/42" />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-[12px] text-white/76">{item.label}</div>
+                                                <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-white/26">
+                                                    {item.kind === 'document' ? 'Inhalt' : 'Datei'}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
+
                         <div className="mt-5 hidden flex-wrap gap-2">
                             <button
                                 data-testid="qa-finder"
@@ -487,7 +538,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] left-8 w-[min(300px,calc(100vw-40rem))]">
+                <div className="hidden absolute bottom-[8.25rem] left-8 w-[min(300px,calc(100vw-40rem))]">
                     <div className="pointer-events-auto rounded-[24px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.3),rgba(4,10,13,0.08))] p-4 shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-[16px]">
                         <div className="mb-3 flex items-start justify-between gap-4">
                             <div>

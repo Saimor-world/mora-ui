@@ -8,6 +8,7 @@ import {
     DEFAULT_AMBIENT_AUDIO_VOLUME,
     getAmbientAudioTrackBlob,
     listAmbientAudioTracks,
+    persistAmbientSceneTrackMap,
     persistAmbientAudioSettings,
     resolveAmbientAudioSettings,
     resolveAmbientSceneTrackMap,
@@ -21,6 +22,7 @@ export const AmbientAudioController: React.FC = () => {
     const viewLevel = useMoraStore((state) => state.viewLevel);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const objectUrlRef = useRef<string | null>(null);
+    const currentTrackIdRef = useRef<string | null>(null);
     const autoplayBlockedRef = useRef(false);
     const fadeFrameRef = useRef<number | null>(null);
     const interactionReadyRef = useRef(false);
@@ -133,6 +135,7 @@ export const AmbientAudioController: React.FC = () => {
 
         const clearSource = () => {
             audioElement.pause();
+            currentTrackIdRef.current = null;
             revokeCurrentObjectUrl();
             audioElement.removeAttribute('src');
             audioElement.load();
@@ -146,6 +149,10 @@ export const AmbientAudioController: React.FC = () => {
         }
 
         const syncTrack = async () => {
+            if (currentTrackIdRef.current === effectiveTrackId && audioElement.src) {
+                return;
+            }
+
             audioElement.pause();
             revokeCurrentObjectUrl();
 
@@ -153,14 +160,38 @@ export const AmbientAudioController: React.FC = () => {
             if (cancelled) return;
 
             if (!trackBlob) {
+                const availableTracks = await listAmbientAudioTracks();
+                if (cancelled) return;
+
+                const fallbackTrackId =
+                    availableTracks.find((track) => track.id === ambientAudio.trackId)?.id
+                    || availableTracks[0]?.id
+                    || null;
+
+                if (fallbackTrackId) {
+                    if (sceneTrackMap[ritualSceneId] === effectiveTrackId) {
+                        persistAmbientSceneTrackMap({
+                            ...sceneTrackMap,
+                            [ritualSceneId]: fallbackTrackId,
+                        });
+                    } else {
+                        persistAmbientAudioSettings(null, {
+                            ambientAudioTrackId: fallbackTrackId,
+                        });
+                    }
+                    return;
+                }
+
                 clearSource();
                 return;
             }
 
             const objectUrl = URL.createObjectURL(trackBlob);
+            currentTrackIdRef.current = effectiveTrackId;
             objectUrlRef.current = objectUrl;
             audioElement.src = objectUrl;
-            audioElement.volume = Math.min(effectiveVolume, 0.025);
+            audioElement.preload = 'auto';
+            audioElement.volume = Math.min(effectiveVolume, 0.012);
 
             if (ambientAudio.enabled) {
                 try {
@@ -178,7 +209,7 @@ export const AmbientAudioController: React.FC = () => {
             cancelled = true;
             audioElement.pause();
         };
-    }, [ambientAudio.enabled, effectiveTrackId, effectiveVolume]);
+    }, [ambientAudio.enabled, ambientAudio.trackId, effectiveTrackId, effectiveVolume, ritualSceneId, sceneTrackMap]);
 
     useEffect(() => {
         const audioElement = audioRef.current;

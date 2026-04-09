@@ -91,6 +91,7 @@ import { SystemStats } from '@/components/ui/SystemStats';
 import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
 import { AmbientAudioController } from '@/components/os/AmbientAudioController';
+import { InteractionAudioController } from '@/components/os/InteractionAudioController';
 import { MoraPulsePanel } from '@/components/os/MoraPulsePanel';
 import { TemporalAtmosphere } from '@/components/os/TemporalAtmosphere';
 // 1.0 gated (future-tier: memory sidebar)
@@ -660,6 +661,7 @@ export const MoraShell: React.FC = () => {
             onDrop={handleShellDrop}
         >
             <AmbientAudioController />
+            <InteractionAudioController />
             {!hasFullscreenPane && <MoraPulsePanel />}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
