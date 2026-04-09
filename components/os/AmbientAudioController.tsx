@@ -23,6 +23,7 @@ export const AmbientAudioController: React.FC = () => {
     const objectUrlRef = useRef<string | null>(null);
     const autoplayBlockedRef = useRef(false);
     const fadeFrameRef = useRef<number | null>(null);
+    const interactionReadyRef = useRef(false);
     const [ambientAudio, setAmbientAudio] = useState(() => resolveAmbientAudioSettings());
     const [sceneTrackMap, setSceneTrackMap] = useState(() => resolveAmbientSceneTrackMap());
     const ritualSettings = resolveRitualSettings(userSettings);
@@ -33,8 +34,8 @@ export const AmbientAudioController: React.FC = () => {
         Math.min(1, ambientAudio.volume * (RITUAL_SCENES[ritualSceneId]?.audioGain ?? 1))
     );
     const surfaceVolumeMultiplier = viewLevel === 'core'
-        ? (coreMode === 'home' ? 0.08 : 1)
-        : 0.16;
+        ? (coreMode === 'home' ? 0.03 : 1)
+        : 0.1;
     const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
 
     useEffect(() => {
@@ -190,7 +191,7 @@ export const AmbientAudioController: React.FC = () => {
 
         const startVolume = audioElement.volume;
         const targetVolume = ambientAudio.enabled ? effectiveVolume : 0;
-        const durationMs = viewLevel === 'core' && coreMode === 'home' ? 1200 : 750;
+        const durationMs = viewLevel === 'core' && coreMode === 'home' ? 1600 : 820;
         const startedAt = performance.now();
 
         const tick = (timestamp: number) => {
@@ -229,6 +230,34 @@ export const AmbientAudioController: React.FC = () => {
             autoplayBlockedRef.current = true;
         });
     }, [ambientAudio.enabled]);
+
+    useEffect(() => {
+        if (!ambientAudio.enabled) return;
+
+        const tryResume = () => {
+            interactionReadyRef.current = true;
+            const audioElement = audioRef.current;
+            if (!audioElement || !audioElement.src) return;
+
+            audioElement.play()
+                .then(() => {
+                    autoplayBlockedRef.current = false;
+                })
+                .catch(() => {
+                    autoplayBlockedRef.current = true;
+                });
+        };
+
+        window.addEventListener('pointerdown', tryResume, { passive: true });
+        window.addEventListener('touchstart', tryResume, { passive: true });
+        window.addEventListener('keydown', tryResume);
+
+        return () => {
+            window.removeEventListener('pointerdown', tryResume);
+            window.removeEventListener('touchstart', tryResume);
+            window.removeEventListener('keydown', tryResume);
+        };
+    }, [ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {
         if (!ambientAudio.enabled || !autoplayBlockedRef.current) return;

@@ -266,7 +266,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     }, [briefing]);
 
     const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 2), [deptTiles]);
-    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 3), [recentActivityItems]);
+    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 2), [recentActivityItems]);
     const overlayPrivateItems = useMemo(
         () => privateArea?.latestItems?.slice(0, 1) ?? [],
         [privateArea]
@@ -368,8 +368,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute left-8 top-28 w-[min(348px,calc(100vw-36rem))]">
-                    <div className="pointer-events-auto rounded-[28px] border border-white/9 bg-[linear-gradient(160deg,rgba(5,16,18,0.46),rgba(4,10,13,0.16))] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.26)] backdrop-blur-[22px]">
+                <div className="absolute left-8 top-28 w-[min(324px,calc(100vw-38rem))]">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.34),rgba(4,10,13,0.09))] p-4 shadow-[0_16px_54px_rgba(0,0,0,0.2)] backdrop-blur-[18px]">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/62">Home</div>
@@ -398,15 +398,15 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             {overlayBriefing}
                         </p>
 
-                        <div className="mt-4 grid grid-cols-2 gap-3">
+                        <div className="mt-4 grid grid-cols-2 gap-2.5">
                             <button
                                 type="button"
                                 onClick={openUniverse}
                                 className="rounded-[22px] border border-cyan-400/16 bg-cyan-500/[0.09] px-4 py-3 text-left transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.14]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-100/54">Raum</div>
-                                <div className="mt-2 text-[15px] text-cyan-50/92">Live-Topographie</div>
-                                <div className="mt-1 text-[11px] text-cyan-100/52">Planetenraum oeffnen</div>
+                                <div className="mt-2 text-[14px] text-cyan-50/92">Live-Topographie</div>
+                                <div className="mt-1 text-[10px] text-cyan-100/48">Planetenraum</div>
                             </button>
                             <button
                                 type="button"
@@ -414,8 +414,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 className="rounded-[22px] border border-emerald-400/14 bg-emerald-500/[0.07] px-4 py-3 text-left transition-all hover:border-emerald-300/24 hover:bg-emerald-500/[0.12]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/52">Arbeit</div>
-                                <div className="mt-2 text-[15px] text-emerald-50/90">Finder</div>
-                                <div className="mt-1 text-[11px] text-emerald-100/50">Direkt in Inhalte springen</div>
+                                <div className="mt-2 text-[14px] text-emerald-50/90">Finder</div>
+                                <div className="mt-1 text-[10px] text-emerald-100/48">Inhalte</div>
                             </button>
                         </div>
 
@@ -487,8 +487,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] left-8 w-[min(332px,calc(100vw-38rem))]">
-                    <div className="pointer-events-auto rounded-[26px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.42),rgba(4,10,13,0.14))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-[20px]">
+                <div className="absolute bottom-[8.25rem] left-8 w-[min(300px,calc(100vw-40rem))]">
+                    <div className="pointer-events-auto rounded-[24px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.3),rgba(4,10,13,0.08))] p-4 shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-[16px]">
                         <div className="mb-3 flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-emerald-200/42">Privater Bereich</div>
@@ -549,8 +549,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(352px,calc(100vw-36rem))]">
-                    <div className="pointer-events-auto rounded-[26px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.42),rgba(4,10,13,0.14))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-[20px]">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(312px,calc(100vw-38rem))]">
+                    <div className="pointer-events-auto rounded-[24px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.3),rgba(4,10,13,0.08))] p-4 shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-[16px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
