@@ -3,7 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
     AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT,
+    AMBIENT_AUDIO_STORAGE_KEYS,
     AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT,
+    DEFAULT_AMBIENT_AUDIO_VOLUME,
     getAmbientAudioTrackBlob,
     listAmbientAudioTracks,
     persistAmbientAudioSettings,
@@ -53,6 +55,36 @@ export const AmbientAudioController: React.FC = () => {
         audioElement.loop = true;
         audioElement.volume = effectiveVolume;
     }, [effectiveVolume]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const explicitEnabled = window.localStorage.getItem(AMBIENT_AUDIO_STORAGE_KEYS.enabled);
+        const explicitTrackId = window.localStorage.getItem(AMBIENT_AUDIO_STORAGE_KEYS.trackId);
+        if (explicitEnabled !== null && explicitTrackId !== null) return;
+
+        let cancelled = false;
+
+        const seedAmbientDefaults = async () => {
+            try {
+                const tracks = await listAmbientAudioTracks();
+                if (cancelled || tracks.length === 0) return;
+                persistAmbientAudioSettings(null, {
+                    ambientAudioEnabled: true,
+                    ambientAudioVolume: DEFAULT_AMBIENT_AUDIO_VOLUME,
+                    ambientAudioTrackId: explicitTrackId || tracks[0].id,
+                });
+            } catch {
+                // If no local library exists yet, leave the controller idle.
+            }
+        };
+
+        void seedAmbientDefaults();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     useEffect(() => {
         if (!ambientAudio.enabled || effectiveTrackId) return;

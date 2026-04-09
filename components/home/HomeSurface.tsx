@@ -10,6 +10,7 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
+import { CompanyLogo } from '@/components/ui/CompanyLogo';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const user        = useMoraStore((s) => s.user);
     const departments = useMoraStore((s) => s.departments);
     const treeData    = useMoraStore((s) => s.treeData);
+    const companies   = useMoraStore((s) => s.companies);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const resetStore  = useMoraStore((s) => s.resetStore);
     const setUser     = useMoraStore((s) => s.setUser);
     const setCoreMode = useMoraStore((s) => s.setCoreMode);
@@ -109,6 +112,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const logoutAccount = useAccountStore((s) => s.logout);
     const recentItems   = useActivityStore((s) => s.recentItems);
     const [privateArea, setPrivateArea] = useState<PrivateAreaSurface | null>(null);
+    const [isUniversePortalHovered, setIsUniversePortalHovered] = useState(false);
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -183,6 +187,10 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const briefing = useMemo(
         () => buildBriefing(departments, treeData),
         [departments, treeData],
+    );
+    const currentCompany = useMemo(
+        () => companies.find((company) => company.id === activeCompanyId) || null,
+        [companies, activeCompanyId]
     );
 
     useEffect(() => {
@@ -298,6 +306,55 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     if (overlayMode) {
         return (
             <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center pb-20">
+                    <div
+                        className="pointer-events-auto relative flex flex-col items-center"
+                        onMouseEnter={() => setIsUniversePortalHovered(true)}
+                        onMouseLeave={() => setIsUniversePortalHovered(false)}
+                    >
+                        <div className="absolute inset-[-2.75rem] rounded-full bg-cyan-400/[0.10] blur-[80px]" />
+                        <div className="absolute inset-[-1rem] rounded-full border border-cyan-300/10 bg-cyan-400/[0.03]" />
+                        <div
+                            className="relative"
+                            onClick={openUniverse}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    openUniverse();
+                                }
+                            }}
+                        >
+                            <CompanyLogo
+                                src={currentCompany?.logo_url}
+                                companyName={currentCompany?.name || user?.active_company_name || 'Organisation'}
+                                size="lg"
+                                animated
+                            />
+                        </div>
+
+                        {isUniversePortalHovered ? (
+                            <div className="absolute top-[calc(100%+1.25rem)] w-[320px] rounded-[24px] border border-cyan-300/14 bg-[linear-gradient(160deg,rgba(6,18,24,0.78),rgba(4,10,13,0.48))] px-5 py-4 text-left shadow-[0_24px_70px_rgba(0,0,0,0.34)] backdrop-blur-[26px]">
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/54">Universe Einstieg</div>
+                                <div className="mt-2 text-[18px] font-light text-white/92">
+                                    {currentCompany?.name || user?.active_company_name || 'Organisation'}
+                                </div>
+                                <p className="mt-2 text-[12px] leading-relaxed text-white/66">
+                                    Ein Klick oeffnet den vollen Planetenraum. Die Home-Ebene bleibt als ruhiger Einstieg sichtbar.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={openUniverse}
+                                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-cyan-500/[0.12] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-50/90 transition-all hover:border-cyan-200/32 hover:bg-cyan-500/[0.18]"
+                                >
+                                    Universe oeffnen
+                                </button>
+                            </div>
+                        ) : null}
+                    </div>
+                </div>
+
                 <div className="absolute left-8 top-28 w-[min(390px,calc(100vw-32rem))]">
                     <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.58),rgba(4,10,13,0.26))] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-[26px]">
                         <div className="flex items-start justify-between gap-4">
