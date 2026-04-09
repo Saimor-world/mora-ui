@@ -94,6 +94,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
     const [isInsightRailHovered, setIsInsightRailHovered] = useState(false);
+    const [heldInsightPlanetId, setHeldInsightPlanetId] = useState<string | null>(null);
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
@@ -270,6 +271,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             if (isInsightRailHovered) {
                 return;
             }
+            setHeldInsightPlanetId(null);
             setInsightPlanetId(null);
             setSemanticPreviewPathId(null);
         }, 1400);
@@ -338,7 +340,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
-    const focusedPlanetId = hoverPlanetId || insightPlanetId || null;
+    const focusedPlanetId = hoverPlanetId || heldInsightPlanetId || insightPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -541,6 +543,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             clearHoverRelease();
             setHoverPlanetId(planetId);
             setInsightPlanetId(planetId);
+            setHeldInsightPlanetId(null);
             return;
         }
 
@@ -978,10 +981,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
                     onPointerEnter={() => {
                         setIsInsightRailHovered(true);
+                        setHeldInsightPlanetId(focusedPlanet.id);
+                        setInsightPlanetId(focusedPlanet.id);
                         clearHoverRelease();
                     }}
                     onPointerLeave={() => {
                         setIsInsightRailHovered(false);
+                        setHeldInsightPlanetId(null);
                         if (!hoverPlanetId) {
                             scheduleHoverRelease();
                         }
