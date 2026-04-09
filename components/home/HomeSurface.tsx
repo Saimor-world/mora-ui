@@ -259,6 +259,19 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
         }))
     ), [recentItems]);
 
+    const overlayBriefing = useMemo(() => {
+        const compact = briefing.replace(/\s+/g, ' ').trim();
+        if (compact.length <= 132) return compact;
+        return `${compact.slice(0, 129).trimEnd()}...`;
+    }, [briefing]);
+
+    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 2), [deptTiles]);
+    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 3), [recentActivityItems]);
+    const overlayPrivateItems = useMemo(
+        () => privateArea?.latestItems?.slice(0, 1) ?? [],
+        [privateArea]
+    );
+
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
             revealPane(`doc-${item.paneData.nodeId}`, {
@@ -355,12 +368,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute left-8 top-28 w-[min(390px,calc(100vw-32rem))]">
-                    <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.58),rgba(4,10,13,0.26))] p-5 shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-[26px]">
+                <div className="absolute left-8 top-28 w-[min(348px,calc(100vw-36rem))]">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/9 bg-[linear-gradient(160deg,rgba(5,16,18,0.46),rgba(4,10,13,0.16))] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.26)] backdrop-blur-[22px]">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/62">Home</div>
-                                <h1 className="mt-2 text-[24px] font-light tracking-[0.02em] text-white/92">
+                                <h1 className="mt-2 text-[22px] font-light tracking-[0.02em] text-white/92">
                                     {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
                                 </h1>
                                 <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/28">
@@ -380,16 +393,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         <p
                             data-testid="briefing-text"
-                            className="mt-4 text-[13px] font-light leading-relaxed text-white/72"
+                            className="mt-4 text-[12px] font-light leading-relaxed text-white/66"
                         >
-                            {briefing}
+                            {overlayBriefing}
                         </p>
 
-                        <div className="mt-4 rounded-[20px] border border-cyan-300/12 bg-cyan-500/[0.07] px-4 py-3 text-[12px] leading-relaxed text-cyan-50/78">
-                            Hover auf das Firmenzeichen in der Mitte und springe von dort direkt in den grossen Universumsraum.
-                        </div>
-
-                        <div className="mt-5 grid grid-cols-2 gap-3">
+                        <div className="mt-4 grid grid-cols-2 gap-3">
                             <button
                                 type="button"
                                 onClick={openUniverse}
@@ -410,12 +419,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </button>
                         </div>
 
-                        {deptTiles.length > 0 && (
+                        {featuredDeptTiles.length > 0 && (
                             <div
                                 data-testid="dept-pulse-tiles"
-                                className="mt-5 flex flex-wrap gap-2"
+                                className="mt-4 flex flex-wrap gap-2"
                             >
-                                {deptTiles.slice(0, 4).map(({ dept, count, active, loaded }) => (
+                                {featuredDeptTiles.map(({ dept, count, active, loaded }) => (
                                     <button
                                         key={dept.id}
                                         data-testid={`dept-tile-${dept.id}`}
@@ -478,8 +487,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] left-8 w-[min(390px,calc(100vw-32rem))]">
-                    <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.54),rgba(4,10,13,0.22))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-[26px]">
+                <div className="absolute bottom-[8.25rem] left-8 w-[min(332px,calc(100vw-38rem))]">
+                    <div className="pointer-events-auto rounded-[26px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.42),rgba(4,10,13,0.14))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-[20px]">
                         <div className="mb-3 flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-emerald-200/42">Privater Bereich</div>
@@ -507,7 +516,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         {privateArea?.latestItems?.length ? (
                             <div className="mt-4 grid gap-2">
-                                {privateArea.latestItems.slice(0, 2).map((item) => (
+                                {overlayPrivateItems.map((item) => (
                                     <button
                                         key={item.id}
                                         type="button"
@@ -540,8 +549,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(430px,calc(100vw-30rem))]">
-                    <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,16,18,0.54),rgba(4,10,13,0.22))] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-[26px]">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(352px,calc(100vw-36rem))]">
+                    <div className="pointer-events-auto rounded-[26px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.42),rgba(4,10,13,0.14))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-[20px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
@@ -552,7 +561,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 onClick={openFinder}
                                 className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/52 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
                             >
-                                Alles im Finder
+                                Finder
                             </button>
                         </div>
 
@@ -562,7 +571,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </p>
                         ) : (
                             <ul className="space-y-2">
-                                {recentActivityItems.map((item) => (
+                                {overlayRecentActivityItems.map((item) => (
                                     <li key={item.id} data-testid="recent-item">
                                         <button
                                             onClick={() => openRecentActivity(item)}

@@ -17,18 +17,25 @@ import { getEffectiveRitualScene, resolveRitualSettings, RITUAL_SCENES } from '@
 
 export const AmbientAudioController: React.FC = () => {
     const userSettings = useMoraStore((state) => state.user?.settings);
+    const coreMode = useMoraStore((state) => state.coreMode);
+    const viewLevel = useMoraStore((state) => state.viewLevel);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const objectUrlRef = useRef<string | null>(null);
     const autoplayBlockedRef = useRef(false);
+    const fadeFrameRef = useRef<number | null>(null);
     const [ambientAudio, setAmbientAudio] = useState(() => resolveAmbientAudioSettings());
     const [sceneTrackMap, setSceneTrackMap] = useState(() => resolveAmbientSceneTrackMap());
     const ritualSettings = resolveRitualSettings(userSettings);
     const ritualSceneId = getEffectiveRitualScene(ritualSettings);
     const effectiveTrackId = sceneTrackMap[ritualSceneId] || ambientAudio.trackId;
-    const effectiveVolume = Math.max(
+    const baseVolume = Math.max(
         0,
         Math.min(1, ambientAudio.volume * (RITUAL_SCENES[ritualSceneId]?.audioGain ?? 1))
     );
+    const surfaceVolumeMultiplier = viewLevel === 'core'
+        ? (coreMode === 'home' ? 0.08 : 1)
+        : 0.16;
+    const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
 
     useEffect(() => {
         setAmbientAudio(resolveAmbientAudioSettings(userSettings));
@@ -53,8 +60,7 @@ export const AmbientAudioController: React.FC = () => {
         const audioElement = audioRef.current;
         if (!audioElement) return;
         audioElement.loop = true;
-        audioElement.volume = effectiveVolume;
-    }, [effectiveVolume]);
+    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -153,7 +159,7 @@ export const AmbientAudioController: React.FC = () => {
             const objectUrl = URL.createObjectURL(trackBlob);
             objectUrlRef.current = objectUrl;
             audioElement.src = objectUrl;
-            audioElement.volume = effectiveVolume;
+            audioElement.volume = Math.min(effectiveVolume, 0.025);
 
             if (ambientAudio.enabled) {
                 try {
@@ -172,6 +178,41 @@ export const AmbientAudioController: React.FC = () => {
             audioElement.pause();
         };
     }, [ambientAudio.enabled, effectiveTrackId, effectiveVolume]);
+
+    useEffect(() => {
+        const audioElement = audioRef.current;
+        if (!audioElement) return;
+
+        if (fadeFrameRef.current) {
+            cancelAnimationFrame(fadeFrameRef.current);
+            fadeFrameRef.current = null;
+        }
+
+        const startVolume = audioElement.volume;
+        const targetVolume = ambientAudio.enabled ? effectiveVolume : 0;
+        const durationMs = viewLevel === 'core' && coreMode === 'home' ? 1200 : 750;
+        const startedAt = performance.now();
+
+        const tick = (timestamp: number) => {
+            const progress = Math.min(1, (timestamp - startedAt) / durationMs);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            audioElement.volume = startVolume + ((targetVolume - startVolume) * eased);
+            if (progress < 1) {
+                fadeFrameRef.current = requestAnimationFrame(tick);
+            } else {
+                fadeFrameRef.current = null;
+            }
+        };
+
+        fadeFrameRef.current = requestAnimationFrame(tick);
+
+        return () => {
+            if (fadeFrameRef.current) {
+                cancelAnimationFrame(fadeFrameRef.current);
+                fadeFrameRef.current = null;
+            }
+        };
+    }, [ambientAudio.enabled, coreMode, effectiveVolume, viewLevel]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
@@ -229,6 +270,11 @@ export const AmbientAudioController: React.FC = () => {
             if (objectUrlRef.current) {
                 URL.revokeObjectURL(objectUrlRef.current);
                 objectUrlRef.current = null;
+            }
+
+            if (fadeFrameRef.current) {
+                cancelAnimationFrame(fadeFrameRef.current);
+                fadeFrameRef.current = null;
             }
         };
     }, []);
