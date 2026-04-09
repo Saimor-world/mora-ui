@@ -13,6 +13,7 @@ import * as sessionLifecycle from '@/lib/auth/sessionLifecycle';
 
 jest.mock('@/lib/api/coreClient', () => ({
     authLogout: jest.fn(),
+    fetchMyContent: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@/lib/auth/sessionLifecycle', () => ({

@@ -1,11 +1,10 @@
 /**
  * CoreLayer.test.tsx
  *
- * TDD RED → GREEN: CoreLayer routes coreMode to the correct surface.
- *
- * coreMode='home'    → renders HomeSurface (not UniverseView)
- * coreMode='explore' → renders UniverseView (not HomeSurface)
- * coreMode changes   → surface switches accordingly
+ * CoreLayer overlay architecture:
+ * coreMode='home'    → renders UniverseView (background) + HomeSurface (overlay)
+ * coreMode='explore' → renders UniverseView only (no HomeSurface overlay)
+ * coreMode changes   → overlay switches accordingly
  */
 
 import React from 'react';
@@ -51,15 +50,15 @@ describe('CoreLayer', () => {
         } as any);
     });
 
-    it('renders HomeSurface when coreMode is home', () => {
+    it('renders HomeSurface overlay + UniverseView background when coreMode is home', () => {
         setCoreMode('home');
         render(<CoreLayer />);
 
         expect(screen.getByTestId('home-surface')).toBeInTheDocument();
-        expect(screen.queryByTestId('universe-view')).not.toBeInTheDocument();
+        expect(screen.getByTestId('universe-view')).toBeInTheDocument();
     });
 
-    it('renders UniverseView when coreMode is explore', () => {
+    it('renders only UniverseView when coreMode is explore', () => {
         setCoreMode('explore');
         render(<CoreLayer />);
 
@@ -67,7 +66,7 @@ describe('CoreLayer', () => {
         expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
     });
 
-    it('switches from HomeSurface to UniverseView when coreMode changes to explore', () => {
+    it('removes HomeSurface overlay when coreMode changes to explore', () => {
         setCoreMode('home');
         render(<CoreLayer />);
 
@@ -81,17 +80,17 @@ describe('CoreLayer', () => {
         expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
     });
 
-    it('switches from UniverseView to HomeSurface when coreMode changes to home', () => {
+    it('adds HomeSurface overlay when coreMode changes to home', () => {
         setCoreMode('explore');
         render(<CoreLayer />);
 
-        expect(screen.getByTestId('universe-view')).toBeInTheDocument();
+        expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
 
         act(() => {
             setCoreMode('home');
         });
 
         expect(screen.getByTestId('home-surface')).toBeInTheDocument();
-        expect(screen.queryByTestId('universe-view')).not.toBeInTheDocument();
+        expect(screen.getByTestId('universe-view')).toBeInTheDocument();
     });
 });

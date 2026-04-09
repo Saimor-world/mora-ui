@@ -38,14 +38,14 @@ describe('AdminModeSwitcher', () => {
         useMoraStore.setState({ user: { id: 'u-1', name: 'Owner', email: 'o@firma.de', role: 'owner' } });
         useContextStore.getState().setAdminMode(true);
         render(<AdminModeSwitcher />);
-        expect(screen.getByTitle(/Admin verlassen/i)).toBeInTheDocument();
+        expect(screen.getByTitle(/Administration verlassen/i)).toBeInTheDocument();
     });
 
     it('clicking exits admin mode when active', () => {
         useMoraStore.setState({ user: { id: 'u-1', name: 'Owner', email: 'o@firma.de', role: 'owner' } });
         useContextStore.getState().setAdminMode(true);
         render(<AdminModeSwitcher />);
-        fireEvent.click(screen.getByTitle(/Admin verlassen/i));
+        fireEvent.click(screen.getByTitle(/Administration verlassen/i));
         expect(useContextStore.getState().isAdminMode).toBe(false);
     });
 });

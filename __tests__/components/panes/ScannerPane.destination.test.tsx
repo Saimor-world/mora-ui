@@ -109,6 +109,14 @@ jest.mock('@/components/mora/ConfirmationCard', () => ({
     ),
 }));
 
+jest.mock('@/components/content/VisibilityModal', () => ({
+    VisibilityModal: ({ onConfirm }: any) => (
+        <div data-testid="visibility-modal">
+            <button onClick={() => onConfirm('company')}>Freigeben</button>
+        </div>
+    ),
+}));
+
 import { ScannerPane } from '@/components/panes/ScannerPane';
 
 beforeEach(() => {
@@ -157,6 +165,8 @@ afterEach(() => {
 
 async function uploadBothFiles() {
     fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+    await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
     await waitFor(() => {
         expect(mockUploadCompanyFile).toHaveBeenCalledTimes(2);
         expect(mockRequestCreateNodeFromFile).toHaveBeenCalledTimes(2);
@@ -174,6 +184,8 @@ describe('ScannerPane — destination threading V2', () => {
     test('sequential confirms: batchResultSummary carries folderId from ConfirmationCard result', async () => {
         render(<ScannerPane id="scanner-main" />);
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
+        fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 
         await waitFor(() => expect(screen.getByTestId('confirmation-card')).toBeInTheDocument());
 
@@ -204,6 +216,8 @@ describe('ScannerPane — destination threading V2', () => {
     test('sequential confirms: single destination → header shows "Im Zielordner öffnen" instead of generic "Finder öffnen"', async () => {
         render(<ScannerPane id="scanner-main" />);
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
+        fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 
         await waitFor(() => expect(screen.getByTestId('confirmation-card')).toBeInTheDocument());
         fireEvent.click(screen.getByRole('button', { name: 'confirm' }));

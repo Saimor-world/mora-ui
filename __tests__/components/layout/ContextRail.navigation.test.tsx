@@ -96,7 +96,7 @@ describe('ContextRail core navigation contract', () => {
             loadNodesForCompany,
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Home' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Start' }));
 
         expect(setViewMode).toHaveBeenCalledWith('workspace');
         expect(navigateToCore).toHaveBeenCalledTimes(1);
@@ -118,7 +118,7 @@ describe('ContextRail core navigation contract', () => {
             user: { role: 'member' },
         });
 
-        fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Suche' }));
 
         expect(navigateToCore).toHaveBeenCalledTimes(1);
         expect(loadTree).toHaveBeenCalledTimes(1);

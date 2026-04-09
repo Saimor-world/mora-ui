@@ -68,7 +68,7 @@ describe('AdminRosterView', () => {
         mockFetch.mockResolvedValue(null);
         render(<AdminRosterView />);
         await waitFor(() => {
-            expect(screen.getByText(/nicht verfügbar/i)).toBeInTheDocument();
+            expect(screen.getByText(/nicht vollst/i)).toBeInTheDocument();
         });
     });
 

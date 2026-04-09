@@ -124,15 +124,16 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
+const _parityMoraStore = {
+    departments: [], isStandardMode: false, activeCompanyId: 'c1',
+    activeDepartmentId: null, activeSpaceId: 's1', activeFolderId: null,
+    viewLevel: 'space', orbState: 'idle', navigateToDepartment: jest.fn(),
+};
 jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) => {
-        const store = {
-            departments: [], isStandardMode: false, activeCompanyId: 'c1',
-            activeDepartmentId: null, activeSpaceId: 's1', activeFolderId: null,
-            viewLevel: 'space', orbState: 'idle', navigateToDepartment: jest.fn(),
-        };
-        return selector ? selector(store) : store;
-    },
+    useMoraStore: Object.assign(
+        (selector?: any) => selector ? selector(_parityMoraStore) : _parityMoraStore,
+        { getState: () => _parityMoraStore },
+    ),
 }));
 
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));

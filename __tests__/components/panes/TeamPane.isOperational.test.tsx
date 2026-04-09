@@ -117,7 +117,7 @@ describe('TeamPane — isOperational gate', () => {
         render(<TeamPane id="team-main" />);
 
         // Setup state should be visible
-        expect(await screen.findByText(/Kein Workspace konfiguriert/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Kein Kontext aktiv/i)).toBeInTheDocument();
 
         // Member list / active tab content should NOT appear
         expect(screen.queryByText(/Teammitglied suchen/i)).not.toBeInTheDocument();

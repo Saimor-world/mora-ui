@@ -11,6 +11,26 @@ jest.mock('@/lib/api/coreClient', () => ({
     shareFile: jest.fn(),
 }));
 
+jest.mock('@/lib/store/paneStore', () => ({
+    usePaneStore: () => ({
+        getPane: (id: string) => ({
+            id,
+            type: 'meine-dateien',
+            title: 'Meine Dateien',
+            position: { x: 100, y: 100 },
+            size: { width: 800, height: 600 },
+            minimized: false,
+            zIndex: 500,
+        }),
+        openPane: jest.fn(),
+        removePane: jest.fn(),
+        minimizePane: jest.fn(),
+        focusPane: jest.fn(),
+        updatePanePosition: jest.fn(),
+        updatePaneSize: jest.fn(),
+    }),
+}));
+
 const mockShareNode = shareNode as jest.MockedFunction<typeof shareNode>;
 const mockShareFile = shareFile as jest.MockedFunction<typeof shareFile>;
 
@@ -99,7 +119,7 @@ describe('MeineDateienPane', () => {
         mockFetch.mockResolvedValue(null);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/nicht verfügbar/i)).toBeInTheDocument();
+            expect(screen.getByText(/nicht verfuegbar/i)).toBeInTheDocument();
         });
     });
 
@@ -115,7 +135,7 @@ describe('MeineDateienPane', () => {
         mockFetch.mockResolvedValue(mockResponse);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/3 Inhalte/i)).toBeInTheDocument();
+            expect(screen.getByText(/2 Inhalte/i)).toBeInTheDocument();
         });
     });
 

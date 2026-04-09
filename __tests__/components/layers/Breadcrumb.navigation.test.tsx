@@ -38,6 +38,10 @@ jest.mock('@/lib/api/coreClient', () => ({
     fetchSingleDepartmentStats: jest.fn().mockResolvedValue(null),
 }));
 
+jest.mock('@/components/layers/LayerInsightRail', () => ({
+    LayerInsightRail: ({ children }: { children?: React.ReactNode }) => <div data-testid="layer-insight-rail">{children}</div>,
+}));
+
 jest.mock('framer-motion', () => {
     const React = require('react');
     const passthrough = (tag: string) =>

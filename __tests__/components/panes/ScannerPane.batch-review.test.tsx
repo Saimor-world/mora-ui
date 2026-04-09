@@ -94,6 +94,14 @@ jest.mock('@/components/mora/ConfirmationCard', () => ({
     ),
 }));
 
+jest.mock('@/components/content/VisibilityModal', () => ({
+    VisibilityModal: ({ onConfirm }: any) => (
+        <div data-testid="visibility-modal">
+            <button onClick={() => onConfirm('company')}>Freigeben</button>
+        </div>
+    ),
+}));
+
 import { ScannerPane } from '@/components/panes/ScannerPane';
 
 beforeEach(() => {
@@ -164,6 +172,9 @@ describe('ScannerPane batch review', () => {
         expect(await screen.findByText(/Mycelium Intake/i)).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        // Confirm through VisibilityModal
+        await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
+        fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 
         await waitFor(() => {
             expect(mockUploadCompanyFile).toHaveBeenCalledTimes(2);
@@ -203,6 +214,8 @@ describe('ScannerPane batch review', () => {
         render(<ScannerPane id="scanner-main" />);
 
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
+        fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 
         expect(await screen.findByText(/2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
 
@@ -220,6 +233,8 @@ describe('ScannerPane batch review', () => {
         render(<ScannerPane id="scanner-main" />);
 
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
+        fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 
         expect(await screen.findByText(/1 Datei wartet auf Freigabe|2 Dateien warten auf Freigabe/i)).toBeInTheDocument();
 
@@ -227,7 +242,7 @@ describe('ScannerPane batch review', () => {
         fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
 
         await waitFor(() => {
-            expect(mockConfirmCreateNodeFromFile).toHaveBeenCalledWith('file-1', 'token-1', { folderId: 'folder-assets' });
+            expect(mockConfirmCreateNodeFromFile).toHaveBeenCalledWith('file-1', 'token-1', expect.objectContaining({ folderId: 'folder-assets' }));
         });
     });
 });

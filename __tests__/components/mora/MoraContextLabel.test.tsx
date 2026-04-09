@@ -6,7 +6,7 @@ import { MoraContextLabel } from '@/components/mora/MoraContextLabel';
 describe('MoraContextLabel', () => {
     it('renders personal scope label', () => {
         render(<MoraContextLabel scope="personal" />);
-        expect(screen.getByText(/persönlicher Kontext/i)).toBeInTheDocument();
+        expect(screen.getByText(/persoenlicher Kontext/i)).toBeInTheDocument();
     });
 
     it('renders shared scope label with source name', () => {
@@ -16,7 +16,7 @@ describe('MoraContextLabel', () => {
 
     it('renders shared scope label without source name', () => {
         render(<MoraContextLabel scope="shared" />);
-        expect(screen.getByText(/Unternehmenskontext/i)).toBeInTheDocument();
+        expect(screen.getByText(/Organisationskontext/i)).toBeInTheDocument();
     });
 
     it('renders object scope label with source name', () => {
