@@ -18,6 +18,7 @@ import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
 export const AdminHome: React.FC = () => {
     const setAdminMode = useContextStore((s) => s.setAdminMode);
     const ownerConsoleUrl = 'https://owner.saimor.world/login';
+    const operationsConsoleUrl = 'https://www.saimor.world/systems/control';
 
     return (
         <div className="flex flex-col h-full bg-[#07090f] text-white overflow-hidden">
@@ -52,14 +53,24 @@ export const AdminHome: React.FC = () => {
                         <p className="mt-2 text-sm leading-relaxed text-white/50">
                             Systemweite Organisations-, Benutzer-, Token- und Instanzverwaltung bleibt bewusst ausserhalb dieser Arbeitsoberflaeche.
                         </p>
-                        <a
-                            href={ownerConsoleUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-4 inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100 transition-colors hover:bg-amber-500/18"
-                        >
-                            Owner-Bereich oeffnen
-                        </a>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <a
+                                href={ownerConsoleUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100 transition-colors hover:bg-amber-500/18"
+                            >
+                                Owner-Bereich oeffnen
+                            </a>
+                            <a
+                                href={operationsConsoleUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-100 transition-colors hover:bg-cyan-500/18"
+                            >
+                                Operations oeffnen
+                            </a>
+                        </div>
                     </div>
                 </div>
 

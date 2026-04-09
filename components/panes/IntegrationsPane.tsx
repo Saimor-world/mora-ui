@@ -46,6 +46,30 @@ interface IntegrationsOverview {
     mail?: MailOverview;
     calendar?: CalendarOverview;
     assistant?: AssistantOverview;
+    runtime?: {
+        local_truth?: {
+            preferred_provider?: string;
+            configured_model?: string;
+            recommended_model?: string;
+            ollama_api_url?: string;
+            startup_script?: string;
+            startup_command?: string;
+            routing_profile?: string;
+            available?: boolean;
+        };
+        cloud_mirror?: {
+            recommended_provider?: string | null;
+            routing_profile?: string | null;
+            gemini_model?: string;
+            anthropic_model?: string;
+            openai_model?: string;
+        };
+        surfaces?: {
+            local_truth?: string;
+            demo_mirror?: string;
+            owner_console?: string;
+        };
+    };
     capabilities?: {
         real_email_enabled?: boolean;
         mail_local_mode?: boolean;
@@ -304,6 +328,11 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         window.open('https://owner.saimor.world/login', '_blank', 'noopener,noreferrer');
     }, []);
 
+    const openOperationsControl = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        window.open('https://www.saimor.world/systems/control', '_blank', 'noopener,noreferrer');
+    }, []);
+
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
         try {
@@ -325,14 +354,15 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     }, []);
 
     const copyGemmaCommand = useCallback(async () => {
-        const command = 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1';
+        const command = overview?.runtime?.local_truth?.startup_command
+            || 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1';
         try {
             await navigator.clipboard.writeText(command);
             toast.success('Gemma-Startbefehl kopiert');
         } catch {
             toast.error('Befehl konnte nicht kopiert werden');
         }
-    }, []);
+    }, [overview]);
 
     if (!pane) return null;
 
@@ -557,9 +587,10 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                             <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
                                 <div className="mb-4">
                                     <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Lokale Intelligenz</p>
-                                    <h4 className="mt-1 text-sm font-medium text-white">Gemma 4 auf der internen Instanz</h4>
+                                    <h4 className="mt-1 text-sm font-medium text-white">Local Truth Runtime</h4>
                                     <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-                                        Auf localhost soll Mora nicht nur spiegeln, sondern mit echten lokalen Regeln arbeiten. Dafuer ist Gemma 4 ueber Ollama der direkte interne Pfad.
+                                        Auf localhost soll Mora nicht nur spiegeln, sondern mit echten lokalen Regeln, Konten und Integrationen arbeiten.
+                                        Die Demo zeigt dieselbe Schale, aber nicht dieselbe operative Wahrheit.
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_0.6fr]">
@@ -570,23 +601,26 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                     <Cpu size={18} />
                                                 </div>
                                                 <div>
-                                                    <h5 className="text-sm font-medium text-white">Gemma 4 lokal</h5>
-                                                    <p className="mt-0.5 text-xs text-white/40">Interne Instanz · Ollama · Browser bleibt verbunden</p>
+                                                    <h5 className="text-sm font-medium text-white">Gemma / Ollama lokal</h5>
+                                                    <p className="mt-0.5 text-xs text-white/40">
+                                                        {overview?.runtime?.local_truth?.preferred_provider || 'ollama'} · {overview?.runtime?.local_truth?.routing_profile || 'privacy'} · Browser bleibt verbunden
+                                                    </p>
                                                 </div>
                                             </div>
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
-                                                !surfaceProfile.isPublicDemoSurface
+                                                overview?.runtime?.local_truth?.available
                                                     ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
                                                     : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
-                                                {!surfaceProfile.isPublicDemoSurface ? 'Empfohlen' : 'Vorbereitet'}
+                                                {overview?.runtime?.local_truth?.available ? 'Bereit' : 'Vorbereitet'}
                                             </span>
                                         </div>
                                         <p className="mt-4 text-xs leading-relaxed text-white/60">
-                                            Verwende lokal `gemma4:e2b` fuer schnelle private Arbeit. Wenn du mehr Qualitaet willst, wechsle spaeter auf `gemma4:e4b` oder Cloud-Gemma fuer groessere Aufgaben.
+                                            Verwende lokal <span className="text-cyan-100">{overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}</span> fuer schnellen privaten Betrieb.
+                                            Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
                                         </p>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            cd C:\saimor\saimor-core; $env:OLLAMA_MODEL=&quot;gemma4:e2b&quot;; .\scripts\Start-Core-Gemma.ps1
+                                            {overview?.runtime?.local_truth?.startup_command || 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1'}
                                         </div>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
@@ -596,14 +630,21 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <Copy size={14} />
                                                 Startbefehl kopieren
                                             </button>
+                                            <button
+                                                onClick={openOperationsControl}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                            >
+                                                <ShieldCheck size={14} />
+                                                Operations-Leitstand
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                                         <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Wahrheitsmodus</p>
                                         <div className="mt-3 space-y-3 text-xs leading-relaxed text-white/60">
                                             <p><span className="text-white/80">localhost</span> arbeitet mit echten lokalen Regeln, Browser-Freigaben und privaten Integrationen.</p>
-                                            <p><span className="text-white/80">hq.saimor.world</span> zeigt dieselbe Oberflaeche, bleibt aber dein Demo-Spiegel.</p>
-                                            <p><span className="text-white/80">owner.saimor.world</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
+                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.demo_mirror || 'https://hq.saimor.world'}</span> zeigt dieselbe Oberflaeche, bleibt aber dein Demo-Spiegel.</p>
+                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login'}</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
                                         </div>
                                     </div>
                                 </div>
