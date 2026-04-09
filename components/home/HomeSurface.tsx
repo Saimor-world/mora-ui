@@ -261,15 +261,19 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
     const overlayBriefing = useMemo(() => {
         const compact = briefing.replace(/\s+/g, ' ').trim();
-        if (compact.length <= 92) return compact;
-        return `${compact.slice(0, 89).trimEnd()}...`;
+        if (compact.length <= 76) return compact;
+        return `${compact.slice(0, 73).trimEnd()}...`;
     }, [briefing]);
 
-    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 1), [deptTiles]);
-    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 1), [recentActivityItems]);
+    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 2), [deptTiles]);
+    const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 2), [recentActivityItems]);
     const overlayPrivateItems = useMemo(
         () => privateArea?.latestItems?.slice(0, 1) ?? [],
         [privateArea]
+    );
+    const activeDepartmentCount = useMemo(
+        () => deptTiles.filter(({ active }) => active).length,
+        [deptTiles]
     );
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
@@ -319,14 +323,14 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     if (overlayMode) {
         return (
             <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
-                <div className="absolute inset-0 flex items-center justify-center pb-20">
+                <div className="absolute inset-0 flex items-center justify-center pb-24">
                     <div
                         className="pointer-events-auto relative flex flex-col items-center"
                         onMouseEnter={() => setIsUniversePortalHovered(true)}
                         onMouseLeave={() => setIsUniversePortalHovered(false)}
                     >
-                        <div className="absolute inset-[-2.75rem] rounded-full bg-cyan-400/[0.10] blur-[80px]" />
-                        <div className="absolute inset-[-1rem] rounded-full border border-cyan-300/10 bg-cyan-400/[0.03]" />
+                        <div className="absolute inset-[-3.5rem] rounded-full bg-cyan-400/[0.08] blur-[92px]" />
+                        <div className="absolute inset-[-1.35rem] rounded-full border border-cyan-300/8 bg-cyan-400/[0.02]" />
                         <div
                             className="relative"
                             onClick={openUniverse}
@@ -349,13 +353,13 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                         </div>
 
                         {isUniversePortalHovered ? (
-                            <div className="absolute top-[calc(100%+1.25rem)] w-[320px] rounded-[24px] border border-cyan-300/14 bg-[linear-gradient(160deg,rgba(6,18,24,0.78),rgba(4,10,13,0.48))] px-5 py-4 text-left shadow-[0_24px_70px_rgba(0,0,0,0.34)] backdrop-blur-[26px]">
+                            <div className="absolute top-[calc(100%+1.25rem)] w-[312px] rounded-[24px] border border-cyan-300/12 bg-[linear-gradient(160deg,rgba(6,18,24,0.66),rgba(4,10,13,0.36))] px-5 py-4 text-left shadow-[0_22px_64px_rgba(0,0,0,0.28)] backdrop-blur-[24px]">
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/54">Universe Einstieg</div>
                                 <div className="mt-2 text-[18px] font-light text-white/92">
                                     {currentCompany?.name || user?.active_company_name || 'Organisation'}
                                 </div>
                                 <p className="mt-2 text-[12px] leading-relaxed text-white/66">
-                                    Ein Klick oeffnet den vollen Planetenraum. Die Home-Ebene bleibt als ruhiger Einstieg sichtbar.
+                                    Ein Klick zieht dich in den vollen Planetenraum. Home bleibt der ruhige Vorhang davor.
                                 </p>
                                 <button
                                     type="button"
@@ -370,8 +374,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute left-8 top-28 w-[min(292px,calc(100vw-40rem))]">
-                    <div className="pointer-events-auto rounded-[28px] border border-white/[0.06] bg-[linear-gradient(160deg,rgba(5,16,18,0.26),rgba(4,10,13,0.05))] p-4 shadow-[0_14px_40px_rgba(0,0,0,0.14)] backdrop-blur-[16px]">
+                <div className="absolute left-8 top-28 w-[min(308px,calc(100vw-39rem))]">
+                    <div className="pointer-events-auto rounded-[30px] border border-white/[0.05] bg-[linear-gradient(160deg,rgba(5,16,18,0.2),rgba(4,10,13,0.03))] p-4 shadow-[0_12px_34px_rgba(0,0,0,0.12)] backdrop-blur-[14px]">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/62">Home</div>
@@ -395,17 +399,23 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         <p
                             data-testid="briefing-text"
-                            className="mt-3 text-[11px] font-light leading-relaxed text-white/56"
+                            className="mt-3 text-[11px] font-light leading-relaxed text-white/54"
                         >
                             {overlayBriefing}
                         </p>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <HomeChip label="Bereiche" value={activeDepartmentCount} />
+                            <HomeChip label="Aktivitaet" value={recentActivityItems.length} />
+                            <HomeChip label="Privat" value={(privateArea?.documentCount ?? 0) + (privateArea?.fileCount ?? 0)} />
+                        </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-2">
                             <button
                                 type="button"
                                 onClick={openUniverse}
                                 data-interaction-sound="firm"
-                                className="rounded-[20px] border border-cyan-400/12 bg-cyan-500/[0.07] px-3.5 py-3 text-left transition-all hover:border-cyan-300/22 hover:bg-cyan-500/[0.12]"
+                                className="rounded-[20px] border border-cyan-400/10 bg-cyan-500/[0.06] px-3.5 py-3 text-left transition-all hover:border-cyan-300/18 hover:bg-cyan-500/[0.11]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-100/54">Raum</div>
                                 <div className="mt-2 text-[14px] text-cyan-50/92">Live-Topographie</div>
@@ -414,7 +424,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <button
                                 type="button"
                                 onClick={openFinder}
-                                className="rounded-[20px] border border-emerald-400/12 bg-emerald-500/[0.06] px-3.5 py-3 text-left transition-all hover:border-emerald-300/20 hover:bg-emerald-500/[0.10]"
+                                className="rounded-[20px] border border-emerald-400/10 bg-emerald-500/[0.05] px-3.5 py-3 text-left transition-all hover:border-emerald-300/18 hover:bg-emerald-500/[0.09]"
                             >
                                 <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/52">Arbeit</div>
                                 <div className="mt-2 text-[14px] text-emerald-50/90">Finder</div>
@@ -423,10 +433,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                         </div>
 
                         {featuredDeptTiles.length > 0 && (
-                            <div
-                                data-testid="dept-pulse-tiles"
-                                className="mt-3 flex flex-wrap gap-2"
-                            >
+                            <div data-testid="dept-pulse-tiles" className="mt-3 flex flex-wrap gap-2">
                                 {featuredDeptTiles.map(({ dept, count, active, loaded }) => (
                                     <button
                                         key={dept.id}
@@ -441,7 +448,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                             'rounded-full border px-3 py-2 text-left transition-all',
                                             'hover:border-white/12 hover:bg-white/[0.05]',
                                             active
-                                                ? 'border-cyan-400/14 bg-cyan-500/[0.06]'
+                                                ? 'border-cyan-400/12 bg-cyan-500/[0.05]'
                                                 : 'border-white/[0.06] bg-white/[0.025]',
                                         ].join(' ')}
                                     >
@@ -458,7 +465,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </div>
                         )}
 
-                        <div className="mt-3 rounded-[20px] border border-white/[0.06] bg-white/[0.024] px-3 py-3">
+                        <div className="mt-3 rounded-[22px] border border-white/[0.05] bg-white/[0.02] px-3 py-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/40">Privater Bereich</div>
@@ -603,8 +610,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(268px,calc(100vw-42rem))]">
-                    <div className="pointer-events-auto rounded-[24px] border border-white/[0.06] bg-[linear-gradient(160deg,rgba(5,16,18,0.24),rgba(4,10,13,0.05))] p-3.5 shadow-[0_14px_36px_rgba(0,0,0,0.14)] backdrop-blur-[14px]">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(292px,calc(100vw-40rem))]">
+                    <div className="pointer-events-auto rounded-[24px] border border-white/[0.05] bg-[linear-gradient(160deg,rgba(5,16,18,0.22),rgba(4,10,13,0.04))] p-3.5 shadow-[0_14px_36px_rgba(0,0,0,0.12)] backdrop-blur-[14px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
@@ -615,7 +622,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 onClick={openFinder}
                                 className="rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/50 transition-colors hover:border-white/12 hover:bg-white/[0.05] hover:text-white/68"
                             >
-                                Finder
+                                Im Finder
                             </button>
                         </div>
 

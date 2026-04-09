@@ -339,7 +339,7 @@ const DockPod: React.FC<DockPodProps> = ({
     <div
         className={`rounded-[24px] border ${isStandardMode
             ? 'border-gray-200 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]'
-            : 'border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.18))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl'
+            : 'border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.12))] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl'
             } ${className}`}
     >
         {children}
@@ -1108,7 +1108,7 @@ export const Dock = () => {
                 </AnimatePresence>
 
                 <div
-                    className={`relative flex flex-wrap items-center justify-between gap-3 overflow-visible px-4 py-3.5 xl:flex-nowrap ${isStandardMode
+                    className={`relative flex flex-wrap items-center justify-between gap-3 overflow-visible px-4 py-3 xl:flex-nowrap ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
                         : 'rounded-3xl backdrop-blur-2xl'
                         }`}
@@ -1117,9 +1117,9 @@ export const Dock = () => {
                         border: '1px solid #E1E1E1',
                         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                     } : {
-                        background: 'linear-gradient(180deg, rgba(10, 25, 18, 0.92) 0%, rgba(5, 12, 10, 0.98) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                        boxShadow: `0 -10px 60px rgba(16, 185, 129, 0.15), 0 25px 80px rgba(0, 0, 0, 0.9), 0 0 100px ${accent}15, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                        background: 'linear-gradient(180deg, rgba(9, 22, 18, 0.78) 0%, rgba(4, 10, 10, 0.86) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.14)',
+                        boxShadow: `0 -8px 38px rgba(16, 185, 129, 0.1), 0 18px 52px rgba(0, 0, 0, 0.68), 0 0 72px ${accent}12, inset 0 1px 0 rgba(255,255,255,0.04)`,
                     }}
                 >
                     {/* TOP GLOW LINE - Premium animated */}
@@ -1136,7 +1136,7 @@ export const Dock = () => {
                     )}
 
                     {/* LEFT: IDENTITY POD */}
-                    <DockPod className="flex shrink-0 items-center gap-3 px-4 py-2.5" isStandardMode={isStandardMode}>
+                    <DockPod className="flex shrink-0 items-center gap-2.5 px-3 py-2.5" isStandardMode={isStandardMode}>
                         <div
                             className="relative w-14 h-14 rounded-full shrink-0"
                             title={user?.name || 'Benutzer'}
@@ -1173,7 +1173,7 @@ export const Dock = () => {
                                 <PlasmaOrb
                                     color={userAccent}
                                     state={orbState as any}
-                                    size={50}
+                                    size={46}
                                 />
                             </div>
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1197,7 +1197,7 @@ export const Dock = () => {
                                 }}
                             />
                         </div>
-                        <div className="hidden sm:flex flex-col">
+                        <div className="hidden sm:flex flex-col text-left">
                             <span className={`text-sm font-semibold truncate max-w-[120px] ${isStandardMode ? 'text-gray-800' : 'text-white/90'
                                 }`}>
                                 {user?.name || 'Benutzer'}
@@ -1205,6 +1205,9 @@ export const Dock = () => {
                             <span className={`text-xs uppercase tracking-wider font-medium ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'
                                 }`}>
                                 {viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
+                            </span>
+                            <span className={`mt-1 text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/36'}`}>
+                                Privater Bereich
                             </span>
                         </div>
                         <AdminModeSwitcher />
@@ -1217,9 +1220,11 @@ export const Dock = () => {
                             })}
                             title="Meine Dateien"
                             aria-label="Meine Dateien öffnen"
-                            className="w-[42px] h-[42px] flex items-center justify-center rounded-xl bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 transition-all duration-200"
+                            data-interaction-sound="soft"
+                            className="flex h-[42px] items-center justify-center gap-2 rounded-xl bg-white/5 px-3 text-white/40 hover:bg-white/10 hover:text-white/70 transition-all duration-200"
                         >
                             <FolderHeart size={18} />
+                            <span className="hidden 2xl:inline text-[11px] uppercase tracking-[0.16em]">Dateien</span>
                         </button>
                     </DockPod>
 

@@ -26,6 +26,7 @@ export const AmbientAudioController: React.FC = () => {
     const autoplayBlockedRef = useRef(false);
     const fadeFrameRef = useRef<number | null>(null);
     const interactionReadyRef = useRef(false);
+    const previousSurfaceKeyRef = useRef<string | null>(null);
     const [ambientAudio, setAmbientAudio] = useState(() => resolveAmbientAudioSettings());
     const [sceneTrackMap, setSceneTrackMap] = useState(() => resolveAmbientSceneTrackMap());
     const ritualSettings = resolveRitualSettings(userSettings);
@@ -35,9 +36,12 @@ export const AmbientAudioController: React.FC = () => {
         0,
         Math.min(1, ambientAudio.volume * (RITUAL_SCENES[ritualSceneId]?.audioGain ?? 1))
     );
+    const surfaceKey = viewLevel === 'core'
+        ? coreMode
+        : 'secondary';
     const surfaceVolumeMultiplier = viewLevel === 'core'
-        ? (coreMode === 'home' ? 0.012 : 1)
-        : 0.08;
+        ? (coreMode === 'home' ? 0.0035 : 1)
+        : 0.055;
     const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
 
     useEffect(() => {
@@ -221,7 +225,17 @@ export const AmbientAudioController: React.FC = () => {
 
         const startVolume = audioElement.volume;
         const targetVolume = ambientAudio.enabled ? effectiveVolume : 0;
-        const durationMs = viewLevel === 'core' && coreMode === 'home' ? 2800 : 900;
+        const previousSurfaceKey = previousSurfaceKeyRef.current;
+        previousSurfaceKeyRef.current = surfaceKey;
+        const enteringHome = surfaceKey === 'home' && previousSurfaceKey !== 'home';
+        const leavingHome = previousSurfaceKey === 'home' && surfaceKey !== 'home';
+        const durationMs = enteringHome
+            ? 4400
+            : leavingHome
+                ? 2200
+                : surfaceKey === 'home'
+                    ? 3600
+                    : 1100;
         const startedAt = performance.now();
 
         const tick = (timestamp: number) => {
@@ -243,7 +257,7 @@ export const AmbientAudioController: React.FC = () => {
                 fadeFrameRef.current = null;
             }
         };
-    }, [ambientAudio.enabled, coreMode, effectiveVolume, viewLevel]);
+    }, [ambientAudio.enabled, coreMode, effectiveVolume, surfaceKey, viewLevel]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
