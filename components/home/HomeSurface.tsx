@@ -71,7 +71,7 @@ function kindLabel(kind: RecentKind): string {
  *   3. Zuletzt berührt (OS-level activityStore — what you actually opened)
  *   4. Three quick actions
  */
-export const HomeSurface: React.FC = () => {
+export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode = false }) => {
     // ── store selectors ────────────────────────────────────────────────────
     const user        = useMoraStore((s) => s.user);
     const departments = useMoraStore((s) => s.departments);
@@ -227,6 +227,164 @@ export const HomeSurface: React.FC = () => {
     const todayLabel  = `${dateStr} · ${timeStr}`;
 
     // ── render ─────────────────────────────────────────────────────────────
+    if (overlayMode) {
+        return (
+            <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
+                <div className="absolute left-1/2 top-32 w-[min(760px,calc(100vw-24rem))] -translate-x-1/2">
+                    <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.52))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/56">Home</div>
+                                <h1 className="mt-2 text-[28px] font-light tracking-[0.02em] text-white/92">
+                                    {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
+                                </h1>
+                                <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/28">
+                                    {todayLabel}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                data-testid="home-logout"
+                                onClick={() => void handleLogout()}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/45 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                <LogOut size={13} />
+                                Abmelden
+                            </button>
+                        </div>
+
+                        <p
+                            data-testid="briefing-text"
+                            className="mt-4 max-w-2xl text-[14px] font-light leading-relaxed text-white/74"
+                        >
+                            {briefing}
+                        </p>
+
+                        {deptTiles.length > 0 && (
+                            <div
+                                data-testid="dept-pulse-tiles"
+                                className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-3"
+                            >
+                                {deptTiles.map(({ dept, count, active, loaded }) => (
+                                    <button
+                                        key={dept.id}
+                                        data-testid={`dept-tile-${dept.id}`}
+                                        onClick={() => revealPane(`finder-dept-${dept.id}`, {
+                                            type: 'finder',
+                                            title: dept.name,
+                                            size: { width: 900, height: 620 },
+                                            data: { departmentId: dept.id, departmentName: dept.name },
+                                        })}
+                                        className={[
+                                            'rounded-[18px] border px-4 py-3 text-left transition-all',
+                                            'hover:border-white/16 hover:bg-white/[0.06]',
+                                            active
+                                                ? 'border-cyan-400/16 bg-cyan-500/[0.08]'
+                                                : 'border-white/[0.08] bg-white/[0.03]',
+                                        ].join(' ')}
+                                    >
+                                        <div className="truncate text-[13px] text-white/86">{dept.name}</div>
+                                        <div className="mt-1 text-[11px] text-white/45">
+                                            {active
+                                                ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
+                                                : loaded
+                                                    ? 'ruhig'
+                                                    : 'lädt…'}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <button
+                                data-testid="qa-finder"
+                                onClick={openFinder}
+                                className="rounded-xl border border-emerald-400/18 bg-emerald-500/[0.10] px-4 py-2 text-[12px] tracking-[0.04em] text-emerald-200/80 transition-all hover:border-emerald-300/28 hover:bg-emerald-500/[0.16]"
+                            >
+                                Finder öffnen
+                            </button>
+                            <button
+                                onClick={openUniverse}
+                                className="rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-4 py-2 text-[12px] tracking-[0.04em] text-cyan-100/84 transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.16]"
+                            >
+                                Live-Topographie
+                            </button>
+                            <button
+                                data-testid="qa-mora"
+                                onClick={openMora}
+                                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[12px] tracking-[0.04em] text-white/52 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                Mora fragen
+                            </button>
+                            <button
+                                data-testid="qa-upload"
+                                onClick={openUpload}
+                                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[12px] tracking-[0.04em] text-white/52 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                Datei hochladen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="absolute bottom-[8.25rem] left-1/2 w-[min(980px,calc(100vw-20rem))] -translate-x-1/2">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.46))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+                        <div className="mb-3 flex items-center justify-between gap-4">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-white/32">Zuletzt berührt</div>
+                                <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivität statt statischer Home-Daten.</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={openFinder}
+                                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/52 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                Alles im Finder
+                            </button>
+                        </div>
+
+                        {recentActivityItems.length === 0 ? (
+                            <p data-testid="recent-items-empty" className="text-sm text-white/30">
+                                Noch keine Aktivität. Starte im Finder.
+                            </p>
+                        ) : (
+                            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                {recentActivityItems.map((item) => (
+                                    <li key={item.id} data-testid="recent-item">
+                                        <button
+                                            onClick={() => openRecentActivity(item)}
+                                            className="group flex w-full items-center gap-3 rounded-[18px] border border-white/[0.06] bg-white/[0.03] px-3 py-3 text-left transition-all hover:border-white/14 hover:bg-white/[0.06]"
+                                        >
+                                            <div
+                                                className={[
+                                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                                                    item.kind === 'document'
+                                                        ? 'bg-emerald-500/[0.08]'
+                                                        : 'bg-white/[0.04]',
+                                                ].join(' ')}
+                                            >
+                                                {kindIcon(item.kind)}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-[13px] text-white/78">
+                                                    {item.label}
+                                                </div>
+                                                <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-white/28">
+                                                    {kindLabel(item.kind)} · {relativeTime(new Date(item.openedAt).toISOString())}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="absolute inset-0 overflow-auto">
             <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 pb-[16rem] pt-10 md:pb-[18rem] xl:pb-[19rem]">
