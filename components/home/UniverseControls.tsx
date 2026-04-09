@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Globe, LayoutGrid, PanelTopOpen, Shield } from 'lucide-react';
+import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
@@ -34,6 +34,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     const user = useMoraStore((state) => state.user);
     const viewLevel = useMoraStore((state) => state.viewLevel);
     const coreMode = useMoraStore((state) => state.coreMode);
+    const setCoreMode = useMoraStore((state) => state.setCoreMode);
     const departments = useMoraStore((state) => state.departments);
     const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
     const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
@@ -110,6 +111,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         requestCommandDeckOpen({ pinned: true });
     };
 
+    const showCoreSurfaceSwitch = viewLevel === 'core';
+
     return (
         <div className="fixed top-6 left-1/2 z-50 flex w-[min(1040px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-2.5 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
             <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">
@@ -166,6 +169,23 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </div>
             </button>
 
+            {showCoreSurfaceSwitch && (
+                <div className="hidden shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1 md:flex">
+                    <CoreSurfaceButton
+                        isActive={coreMode === 'home'}
+                        onClick={() => setCoreMode('home')}
+                        icon={Home}
+                        label="Home"
+                    />
+                    <CoreSurfaceButton
+                        isActive={coreMode === 'explore'}
+                        onClick={() => setCoreMode('explore')}
+                        icon={Orbit}
+                        label="Universe"
+                    />
+                </div>
+            )}
+
             {activeCompany && companies.length > 1 && !disableContextSwitch && (
                 <button
                     type="button"
@@ -194,6 +214,26 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         </div>
     );
 };
+
+const CoreSurfaceButton: React.FC<{
+    isActive: boolean;
+    onClick: () => void;
+    icon: any;
+    label: string;
+}> = ({ isActive, onClick, icon: Icon, label }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={`flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] uppercase tracking-[0.18em] transition-all ${
+            isActive
+                ? 'border border-cyan-400/22 bg-cyan-500/[0.10] text-cyan-100'
+                : 'border border-transparent bg-transparent text-white/46 hover:border-white/10 hover:bg-white/[0.05] hover:text-white/78'
+        }`}
+    >
+        <Icon size={13} />
+        <span>{label}</span>
+    </button>
+);
 
 const ControlButton: React.FC<{ isActive: boolean; onClick: () => void; icon: any; label: string; showLabelAlways?: boolean }> = ({
     isActive, onClick, icon: Icon, label, showLabelAlways = false
