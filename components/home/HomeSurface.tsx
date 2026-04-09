@@ -408,7 +408,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <button
                                 type="button"
                                 onClick={openPrivateArea}
-                                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/52 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                                className="rounded-xl border border-emerald-400/16 bg-emerald-500/[0.08] px-3 py-2 text-[11px] text-emerald-200/74 transition-colors hover:border-emerald-300/24 hover:bg-emerald-500/[0.14] hover:text-emerald-100"
                             >
                                 Öffnen
                             </button>
@@ -459,7 +459,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.46))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
-                                <div className="text-[10px] uppercase tracking-[0.24em] text-white/32">Zuletzt berührt</div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
                                 <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivität statt statischer Home-Daten.</div>
                             </div>
                             <button
