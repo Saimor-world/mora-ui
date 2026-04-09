@@ -230,12 +230,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     if (overlayMode) {
         return (
             <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
-                <div className="absolute left-1/2 top-32 w-[min(760px,calc(100vw-24rem))] -translate-x-1/2">
-                    <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.52))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
+                <div className="absolute left-8 top-28 w-[min(420px,calc(100vw-26rem))]">
+                    <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.68),rgba(4,10,13,0.42))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/56">Home</div>
-                                <h1 className="mt-2 text-[28px] font-light tracking-[0.02em] text-white/92">
+                                <h1 className="mt-2 text-[24px] font-light tracking-[0.02em] text-white/92">
                                     {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
                                 </h1>
                                 <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/28">
@@ -255,7 +255,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         <p
                             data-testid="briefing-text"
-                            className="mt-4 max-w-2xl text-[14px] font-light leading-relaxed text-white/74"
+                            className="mt-4 text-[14px] font-light leading-relaxed text-white/74"
                         >
                             {briefing}
                         </p>
@@ -263,7 +263,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                         {deptTiles.length > 0 && (
                             <div
                                 data-testid="dept-pulse-tiles"
-                                className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-3"
+                                className="mt-5 flex flex-wrap gap-2"
                             >
                                 {deptTiles.map(({ dept, count, active, loaded }) => (
                                     <button
@@ -276,15 +276,15 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                             data: { departmentId: dept.id, departmentName: dept.name },
                                         })}
                                         className={[
-                                            'rounded-[18px] border px-4 py-3 text-left transition-all',
+                                            'rounded-full border px-4 py-2.5 text-left transition-all',
                                             'hover:border-white/16 hover:bg-white/[0.06]',
                                             active
                                                 ? 'border-cyan-400/16 bg-cyan-500/[0.08]'
                                                 : 'border-white/[0.08] bg-white/[0.03]',
                                         ].join(' ')}
                                     >
-                                        <div className="truncate text-[13px] text-white/86">{dept.name}</div>
-                                        <div className="mt-1 text-[11px] text-white/45">
+                                        <div className="truncate text-[12px] text-white/86">{dept.name}</div>
+                                        <div className="mt-0.5 text-[10px] text-white/45">
                                             {active
                                                 ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
                                                 : loaded
@@ -328,7 +328,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] left-1/2 w-[min(980px,calc(100vw-20rem))] -translate-x-1/2">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(520px,calc(100vw-22rem))]">
                     <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.46))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
@@ -349,7 +349,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 Noch keine Aktivität. Starte im Finder.
                             </p>
                         ) : (
-                            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                            <ul className="space-y-2">
                                 {recentActivityItems.map((item) => (
                                     <li key={item.id} data-testid="recent-item">
                                         <button

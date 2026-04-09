@@ -661,30 +661,40 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             onMouseMove={handleUniversePointerMove}
             onMouseLeave={resetUniverseParallax}
         >
-            {/* 0. UNIVERSE BACKDROP - merges with shell background instead of covering it */}
-            <div className="absolute inset-0 z-[-10] pointer-events-none bg-[linear-gradient(135deg,rgba(4,19,18,0.18)_0%,rgba(9,31,50,0.12)_48%,rgba(4,18,18,0.2)_100%)]" />
+            {/* 0. UNIVERSE BACKDROP - single merged stage shared with Home overlays */}
+            <div
+                className="absolute inset-0 z-[-10] pointer-events-none"
+                style={{
+                    background: `
+                        radial-gradient(1600px 920px at 52% 54%, rgba(52, 120, 190, 0.24) 0%, rgba(14, 34, 56, 0.12) 42%, transparent 78%),
+                        radial-gradient(920px 620px at 14% 18%, rgba(26, 213, 184, 0.18) 0%, transparent 62%),
+                        radial-gradient(860px 520px at 88% 16%, rgba(96, 165, 250, 0.16) 0%, transparent 58%),
+                        linear-gradient(135deg, rgba(4, 18, 18, 0.32) 0%, rgba(8, 22, 34, 0.18) 48%, rgba(4, 16, 16, 0.3) 100%)
+                    `,
+                }}
+            />
             <motion.div
                 className="absolute inset-0 z-[-9] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 0.22, y: parallaxOffset.y * 0.16 }}
+                animate={{ x: parallaxOffset.x * 0.24, y: parallaxOffset.y * 0.18 }}
                 transition={{ type: 'spring', stiffness: 28, damping: 18, mass: 1 }}
                 style={{
                     background: `
-                        radial-gradient(1200px 760px at 52% 56%, rgba(96, 165, 250, 0.34) 0%, transparent 68%),
-                        radial-gradient(980px 620px at 16% 20%, rgba(34, 211, 238, 0.22) 0%, transparent 56%),
-                        radial-gradient(820px 460px at 88% 18%, rgba(167, 139, 250, 0.14) 0%, transparent 52%),
-                        radial-gradient(740px 420px at 18% 74%, rgba(45, 212, 191, 0.12) 0%, transparent 54%)
+                        radial-gradient(1200px 760px at 52% 56%, rgba(96, 165, 250, 0.38) 0%, transparent 66%),
+                        radial-gradient(1040px 640px at 18% 24%, rgba(45, 212, 191, 0.24) 0%, transparent 54%),
+                        radial-gradient(860px 480px at 84% 20%, rgba(167, 139, 250, 0.16) 0%, transparent 48%),
+                        radial-gradient(760px 420px at 22% 76%, rgba(16, 185, 129, 0.16) 0%, transparent 52%)
                     `,
                 }}
             />
             <motion.div
                 className="absolute inset-0 z-[-8] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 0.48, y: parallaxOffset.y * 0.22, rotate: -2.4 }}
+                animate={{ x: parallaxOffset.x * 0.44, y: parallaxOffset.y * 0.2, rotate: -2.4 }}
                 transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.05 }}
                 style={{
-                    background: 'linear-gradient(102deg, transparent 0%, rgba(220,248,255,0.05) 18%, rgba(96,165,250,0.08) 34%, rgba(45,212,191,0.06) 52%, rgba(167,139,250,0.05) 68%, transparent 84%)',
+                    background: 'linear-gradient(102deg, transparent 0%, rgba(220,248,255,0.04) 16%, rgba(96,165,250,0.1) 32%, rgba(45,212,191,0.08) 48%, rgba(167,139,250,0.06) 66%, transparent 84%)',
                     transform: 'scale(1.16)',
-                    filter: 'blur(22px)',
-                    opacity: 0.7,
+                    filter: 'blur(26px)',
+                    opacity: 0.78,
                     mixBlendMode: 'screen',
                 }}
             />
@@ -693,21 +703,23 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 style={{
                     backgroundImage: `
                         radial-gradient(circle at 12% 24%, rgba(255,255,255,0.95) 0 1px, transparent 1.8px),
-                        radial-gradient(circle at 22% 68%, rgba(56,189,248,0.96) 0 1px, transparent 1.9px),
+                        radial-gradient(circle at 22% 68%, rgba(56,189,248,0.92) 0 1.1px, transparent 2px),
                         radial-gradient(circle at 44% 16%, rgba(255,255,255,0.92) 0 1px, transparent 1.8px),
-                        radial-gradient(circle at 63% 58%, rgba(125,211,252,0.9) 0 1px, transparent 1.9px),
-                        radial-gradient(circle at 78% 22%, rgba(250,204,21,0.72) 0 1px, transparent 2px),
-                        radial-gradient(circle at 88% 72%, rgba(255,255,255,0.94) 0 1px, transparent 1.8px)
+                        radial-gradient(circle at 63% 58%, rgba(125,211,252,0.9) 0 1.2px, transparent 2px),
+                        radial-gradient(circle at 78% 22%, rgba(250,204,21,0.78) 0 1.1px, transparent 2.2px),
+                        radial-gradient(circle at 88% 72%, rgba(255,255,255,0.94) 0 1px, transparent 1.8px),
+                        radial-gradient(circle at 70% 34%, rgba(45,212,191,0.78) 0 1.1px, transparent 2px),
+                        radial-gradient(circle at 32% 44%, rgba(196,181,253,0.75) 0 1px, transparent 1.8px)
                     `,
-                    backgroundSize: '220px 220px, 260px 260px, 280px 280px, 320px 320px, 360px 360px, 420px 420px',
-                    backgroundPosition: '0 0, 60px 110px, 120px 24px, 24px 200px, 180px 70px, 260px 220px',
-                    opacity: 0.84,
+                    backgroundSize: '220px 220px, 260px 260px, 280px 280px, 320px 320px, 360px 360px, 420px 420px, 300px 300px, 340px 340px',
+                    backgroundPosition: '0 0, 60px 110px, 120px 24px, 24px 200px, 180px 70px, 260px 220px, 140px 160px, 210px 40px',
+                    opacity: 0.92,
                 }}
             />
             <div
                 className="absolute inset-0 z-[-7] pointer-events-none"
                 style={{
-                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 22%, rgba(0,0,0,0.12) 62%, rgba(0,0,0,0.36) 100%)',
+                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 24%, rgba(0,0,0,0.14) 64%, rgba(0,0,0,0.42) 100%)',
                 }}
             />
             <motion.div
@@ -766,37 +778,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 />
             ) : null}
 
-            {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
-            <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30 opacity-85">
-                <motion.div
-                    initial={{ y: -20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 1 }}
-                    className="flex flex-col items-center gap-4"
-                >
-                    <h1
-                        className="font-light uppercase text-white/90 text-center font-sans"
-                        style={{
-                            ...titleStyle,
-                            textShadow: '0 0 40px rgba(16, 185, 129, 0.4)', // Emerald glow, softer
-                        }}
-                    >
-                        {displayCompanyName}
-                    </h1>
-
-                    <motion.div
-                        className="flex items-center justify-center gap-4"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 1, duration: 1.5 }}
-                    >
-                        <div className="h-[1px] w-12 bg-white/20" />
-                        <span className="text-[10px] tracking-[0.3em] text-emerald-400/60 uppercase font-medium">Live-Topographie</span>
-                        <div className="h-[1px] w-12 bg-white/20" />
-                    </motion.div>
-                </motion.div>
-            </div>
-
             {/* 2. CENTER HUB (The Core) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pb-20">
                 <motion.div
@@ -828,31 +809,26 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 </motion.div>
             </div>
 
-            {/* 2. ORBITAL SVG (Connection Network) */}
+            {/* 2. ORBITAL SVG (Connection Field) */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <defs>
                     <filter id="silkGlow">
                         <feGaussianBlur stdDeviation="0.3" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
-                    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(6,182,212,0)" />
-                        <stop offset="50%" stopColor="rgba(6,182,212,0.8)" />
-                        <stop offset="100%" stopColor="rgba(6,182,212,0)" />
-                    </linearGradient>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(56,189,248,0)" />
-                        <stop offset="35%" stopColor="rgba(96,165,250,0.34)" />
-                        <stop offset="55%" stopColor="rgba(196,181,253,0.22)" />
-                        <stop offset="100%" stopColor="rgba(56,189,248,0)" />
+                        <stop offset="0%" stopColor="rgba(103,232,249,0)" />
+                        <stop offset="35%" stopColor="rgba(96,165,250,0.22)" />
+                        <stop offset="55%" stopColor="rgba(45,212,191,0.16)" />
+                        <stop offset="100%" stopColor="rgba(103,232,249,0)" />
                     </linearGradient>
                     <filter id="beamGlow">
-                        <feGaussianBlur stdDeviation="0.8" result="blur" />
+                        <feGaussianBlur stdDeviation="1.2" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                 </defs>
 
-                {/* Focus-to-core threads */}
+                {/* Ambient focus-to-core field */}
                 {coreConnections
                     .filter((connection) => activeCoreBeamPlanetIds.has(connection.id))
                     .map((connection) => (
@@ -863,11 +839,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         x2={connection.x}
                         y2={connection.y}
                         stroke="url(#coreBeam)"
-                        strokeWidth={connection.highlighted ? 0.18 + connection.intensity * 0.28 : 0.12 + connection.intensity * 0.18}
-                        strokeDasharray={connection.highlighted ? '5 7' : 'none'}
+                        strokeWidth={connection.highlighted ? 0.16 + connection.intensity * 0.22 : 0.08 + connection.intensity * 0.1}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.42 : 0.16 + connection.intensity * 0.04 }}
+                        animate={{ opacity: connection.highlighted ? 0.22 : 0.08 + connection.intensity * 0.03 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
@@ -878,9 +853,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
                     const baseOpacity = path.highlighted || isPreviewedPath
-                        ? 0.82
+                        ? 0.7
                         : isFocusedPath
-                            ? 0.18
+                            ? 0.14
                             : 0;
 
                     return (
@@ -889,13 +864,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                        strokeWidth={0.28 + path.strength * 0.48}
+                                strokeWidth={0.24 + path.strength * 0.34}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                opacity: baseOpacity * 0.18,
+                                opacity: baseOpacity * 0.12,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
@@ -907,7 +882,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.12 + path.strength * 0.24}
+                                strokeWidth={0.1 + path.strength * 0.18}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
