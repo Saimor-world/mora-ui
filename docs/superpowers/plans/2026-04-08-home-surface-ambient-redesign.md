@@ -218,62 +218,44 @@ git commit -m "feat(home): buildBriefing utility — generates ambient dept stat
 
 ---
 
-## Chunk 2: HomeSurface Rewrite
+## Chunk 2: Activity Store + HomeSurface Rewrite
 
-### Task 3: Widen `personalLatestItems` state + test
+### Task 3: OS-level activity store ✅ committed `95eb8fd`
 
-**Files:**
-- Modify: `components/home/HomeSurface.tsx` (personalLatestItem useMemo + openPersonalLatest)
-- Modify: `__tests__/components/home/HomeSurface.test.tsx` (add array test)
+**What was built (replaces the stale "Widen personalLatestItems" design):**
 
-The existing `personalLatestItem: PersonalLatestItem | null` is a single item. Widen to `personalLatestItems: PersonalLatestItem[]` (top 5).
+The original plan proposed widening `personalLatestItem` from `fetchMyContent` — but `fetchMyContent` returns items from the user's private space, not what they actually opened recently. That approach was architecturally wrong and was replaced with a proper OS-level activity store that intercepts every `openPane` call.
 
-- [ ] **Step 1: Add a failing test for the array behavior**
+**Files created/modified:**
+- Created: `lib/store/activityStore.ts`
+- Modified: `lib/store/paneStore.ts`
+- Created: `__tests__/lib/store/activityStore.test.ts`
 
-In `__tests__/components/home/HomeSurface.test.tsx`, add after existing tests:
+**`lib/store/activityStore.ts`** — Zustand + persist store:
+- `RecentItem` interface: `{ id: string; label: string; openedAt: number; paneType: string; paneData?: any }`
+- `recordActivity(item: RecentItem)` — prepends, deduplicates by `id` (moves existing to front), caps at 20
+- `clearActivity()` — resets to `[]`
+- Persist key: `mora.recent-items`
 
-```typescript
-describe('HomeSurface — recent items list', () => {
-    it('shows up to 5 recent items from myContent', async () => {
-        mockFetchMyContent.mockResolvedValue({
-            documents: [
-                { id: 'n1', title: 'Doc 1', updated_at: '2026-04-08T10:00:00Z' },
-                { id: 'n2', title: 'Doc 2', updated_at: '2026-04-07T10:00:00Z' },
-                { id: 'n3', title: 'Doc 3', updated_at: '2026-04-06T10:00:00Z' },
-                { id: 'n4', title: 'Doc 4', updated_at: '2026-04-05T10:00:00Z' },
-                { id: 'n5', title: 'Doc 5', updated_at: '2026-04-04T10:00:00Z' },
-                { id: 'n6', title: 'Doc 6', updated_at: '2026-04-03T10:00:00Z' }, // 6th — should be hidden
-            ],
-        } as any);
+**`lib/store/paneStore.ts`** — `recordActivity` hooked inside `openPane` immediately after `get().addPane()`:
+- Skips pane types `settings`, `apps`, `grid` (system panes, not content)
+- Records `{ id: paneConfig.id, label: paneConfig.title, openedAt: Date.now(), paneType: paneConfig.type, paneData: paneConfig.data }`
 
-        render(<HomeSurface />);
+**`__tests__/lib/store/activityStore.test.ts`** — 6 tests:
+1. initial state is empty array
+2. `recordActivity` sets `openedAt` to a timestamp
+3. new items prepend (newest first)
+4. dedup: recording an existing `id` moves it to front
+5. cap at 20 items (21st item causes oldest to drop)
+6. `clearActivity` resets to `[]`
 
-        await waitFor(() => {
-            expect(screen.getByText('Doc 1')).toBeInTheDocument();
-            expect(screen.getByText('Doc 5')).toBeInTheDocument();
-            expect(screen.queryByText('Doc 6')).not.toBeInTheDocument();
-        });
-    });
+All 6 tests passing. ✅
 
-    it('shows empty state when no recent items', async () => {
-        mockFetchMyContent.mockResolvedValue({ documents: [] } as any);
-        render(<HomeSurface />);
-        await waitFor(() => {
-            expect(screen.getByText(/Noch keine Inhalte/i)).toBeInTheDocument();
-        });
-    });
-});
-```
-
-- [ ] **Step 2: Run — expect FAIL**
-
-```bash
-cd C:/saimor/mora-ui-cleanup && npx jest --no-coverage --testPathPattern="HomeSurface.test" 2>&1 | tail -20
-```
-
-Expected: FAIL — new tests don't pass yet (old HomeSurface renders differently)
-
-- [ ] **Step 3: Widen the useMemo in `HomeSurface.tsx`**
+> **Note:** Steps 1–4 below described the superseded `fetchMyContent` / `personalLatestItems[]` approach. That design was scrapped — see architectural note above. The activityStore is the correct implementation. Steps kept for historical reference only.
+>
+> ~~Step 1: Add failing test for array behavior~~  
+> ~~Step 2: Run — expect FAIL~~  
+> ~~Step 3: Widen the useMemo in HomeSurface.tsx~~
 
 Find the existing `personalLatestItem` useMemo (around line 259). Replace:
 
@@ -434,12 +416,29 @@ cd C:/saimor/mora-ui-cleanup && npx jest --no-coverage --testPathPattern="HomeSu
 
 ---
 
-### Task 4: Rewrite HomeSurface JSX
+### Task 4: Rewrite HomeSurface JSX ✅ committed `0ef74ea`
 
 **Files:**
-- Modify: `components/home/HomeSurface.tsx` — full return() rewrite + new store subscriptions + remove dead state
+- Modified: `components/home/HomeSurface.tsx` — full rewrite, 757 → 394 lines
 
-This is the main rewrite. Replace the entire return block and clean up state no longer needed.
+**What was built:**
+
+`HomeSurface` is now a zero-API-call surface. All data comes from pre-loaded stores:
+
+| Section | Data source |
+|---------|-------------|
+| Mora briefing strip | `buildBriefing(departments, treeData)` from moraStore |
+| Dept pulse tiles | `departments` + `treeData` from moraStore |
+| Zuletzt berührt | `recentItems` from `useActivityStore` (activityStore) |
+| Quick actions | Static — openFinder / openMora / openUpload / openUniverse |
+
+**Key architectural note:**  
+`fetchMyContent`, `fetchNodesByCompany`, `kairosEvents`, `PersonalLatestItem`, `useSurfaceProfile`, all `useState` + `useEffect` calls — **all removed**. The surface is now a pure render of pre-loaded state, no async waterfall.
+
+**Codex addition:**  
+Commit `0ef74ea` also adds a "Live-Topographie" orbit button (cyan, `setCoreMode('explore')`) next to the greeting, and a "Universe öffnen" quick action. These complement the ambient design.
+
+~~Original Steps 1–6 (JSX rewrite walkthrough) are superseded by the above implementation.~~
 
 - [ ] **Step 1: Add new store subscriptions and imports at the top of the component**
 
@@ -699,18 +698,30 @@ git commit -m "feat(home): ambient intelligence redesign — pulse tiles, briefi
 
 ## Chunk 3: Test Fixes
 
-### Task 5: Update HomeSurface.test.tsx
+### Task 5: Update HomeSurface.test.tsx ✅ committed `0ef74ea`
 
 **Files:**
-- Modify: `__tests__/components/home/HomeSurface.test.tsx`
+- Modified: `__tests__/components/home/HomeSurface.test.tsx` — full rewrite, 261 → 262 lines, 25 tests
 
-The existing tests check for elements that no longer exist (nav card grid, greeting h1, etc). Update them to reflect the new surface.
+**Test coverage:**
 
-- [ ] **Step 1: Run existing tests to see what's failing**
+| Suite | Tests | What it covers |
+|-------|-------|----------------|
+| rendering | 3 | greeting with name, "Arbeitsplatz" fallback, logout button |
+| Mora Briefing Strip | 3 | strip present, text from buildBriefing, called with correct args |
+| Department Pulse Tiles | 6 | tiles present, per-dept, empty depts hides section, active count, quiet label, click opens finder |
+| Zuletzt berührt | 5 | section always rendered, empty state, activity items, max-5 cap, document/finder click routing |
+| Quick Actions | 6 | all 3 buttons present + correct pane type on click |
+| logout | 1 | server logout + client state cleared |
 
-```bash
-cd C:/saimor/mora-ui-cleanup && npx jest --no-coverage --testPathPattern="HomeSurface.test" 2>&1 | grep -E "PASS|FAIL|✓|✗|×|●" | head -30
-```
+**Mock changes from old test file:**
+- Removed: `fetchNodesByCompany`, `fetchMyContent`, `coreGet` mocks
+- Added: `useActivityStore.setState` in beforeEach; `buildBriefing` mock returning fixed string
+- Added: `getPane`, `focusPane`, `restorePane`, `updatePane`, `updatePanePosition`, `updatePaneSize` in paneStore mock (revealPane helper needs them)
+
+All 25 tests passing. ✅
+
+~~Original Steps 1–4 (incremental test migration) are superseded.~~
 
 - [ ] **Step 2: Update the test mocks at the top of the file**
 
@@ -869,10 +880,11 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3003
 ```
 
 Navigate to home, check:
-- [ ] No right panel visible (MoraPulsePanel gone)
-- [ ] Mora briefing strip appears at top with pulsing dot
-- [ ] Department tiles render (R&D, Product, Growth, Intelligence)
-- [ ] Clicking a dept tile opens Finder scoped to that department
-- [ ] "Zuletzt berührt" shows recent items (or empty state if none)
-- [ ] Quick actions visible: Finder öffnen / Mora fragen / Datei hochladen
-- [ ] Abmelden button present (bottom right)
+- [x] Mora briefing strip appears at top with pulsing emerald dot
+- [x] Department tiles render (one per dept from moraStore)
+- [x] Clicking a dept tile opens Finder scoped to that department
+- [x] "Zuletzt berührt" shows recent items (or empty state if none)
+- [x] Quick actions visible: Finder öffnen · Mora fragen · Datei hochladen · Universe öffnen
+- [x] "Live-Topographie" orbit button in header (Codex addition)
+- [x] Abmelden button present
+- [ ] MoraPulsePanel: **intentionally kept** — Codex restored it in `e4b0fda`, complements the ambient design as a compact sidebar; not user-facing noise at this point
