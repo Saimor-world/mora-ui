@@ -30,15 +30,28 @@ type SemanticDriverMeta = {
     reason: string;
 };
 
+const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
+    'technology & ai': { x: 25, y: 36 },
+    'hr & culture': { x: 52, y: 31 },
+    'store heilbronn': { x: 81, y: 35 },
+    'marketing & brand': { x: 33, y: 64 },
+    management: { x: 72, y: 66 },
+    'store stuttgart': { x: 24, y: 80 },
+    'store san francisco': { x: 83, y: 79 },
+};
+
+const normalizeUniverseKey = (value: string | null | undefined) =>
+    (value || '').trim().toLowerCase();
+
 const metricAffinity = (left: number, right: number) => {
     const baseline = Math.max(1, left, right);
     return Math.max(0, 1 - Math.abs(left - right) / baseline);
 };
 
 const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
-    content: { label: 'Dokumente', accent: '#38bdf8', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
-    structure: { label: 'Struktur', accent: '#7dd3fc', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
-    health: { label: 'Health', accent: '#f59e0b', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
+    content: { label: 'Dokumente', accent: '#7dd3fc', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
+    structure: { label: 'Struktur', accent: '#c4b5fd', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
+    health: { label: 'Health', accent: '#fbbf24', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
 };
 
 const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');
@@ -283,10 +296,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         }
     ), [clearHoverRelease]);
 
-    // ─── DYNAMIC ORBITAL SYSTEM (CALM & DETERMINISTIC) ───
-    // Fixed rings for calm "Solar System" feel.
-    // ry capped at 40 so outer-ring planets stay within the visible viewport
-    // (prevents clipping above the shell nav bar and below the Dock).
+    // Legacy fallback layout for non-demo or unknown department sets.
     const rings = useMemo(() => [
         { rx: 20, ry: 18, speed: 0 }, // Inner Ring (Planets 1-3)
         { rx: 34, ry: 30, speed: 0 }, // Middle Ring (Planets 4-8)
@@ -299,6 +309,26 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
         // Deterministic sorting to ensure planets stay in place
         const sortedDepts = [...safeDepartments].sort((a, b) => a.name.localeCompare(b.name));
+
+        const canUseCuratedDemoLayout =
+            (isPublicDemoSurface || currentCompany?.is_demo || currentCompany?.tenant_id === TENANT_DEMO) &&
+            sortedDepts.every((dept) => CURATED_DEMO_LAYOUT[normalizeUniverseKey(dept.name)]);
+
+        if (canUseCuratedDemoLayout) {
+            return sortedDepts.map((dept) => {
+                const curated = CURATED_DEMO_LAYOUT[normalizeUniverseKey(dept.name)];
+                return {
+                    ...dept,
+                    color: dept.color,
+                    x: curated.x,
+                    y: curated.y,
+                    angle: 0,
+                    rx: 0,
+                    ry: 0,
+                    ringIndex: 0,
+                };
+            });
+        }
 
         return sortedDepts.map((dept, index) => {
             let ringIndex = 0;
@@ -333,7 +363,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ringIndex
             };
         });
-    }, [safeDepartments, rings]);
+    }, [safeDepartments, rings, isPublicDemoSurface, currentCompany?.is_demo, currentCompany?.tenant_id]);
 
     // ─── SILK DRIFT PATHS (V10.6) ───
     const visiblePlanets = useMemo(
@@ -438,7 +468,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     focusPeerId,
                     highlighted:
                         hoverPlanetId === from.id ||
-                        hoverPlanetId === to.id,
+                        hoverPlanetId === to.id ||
+                        focusedPlanetId === from.id ||
+                        focusedPlanetId === to.id,
                 };
             })
             .filter((value): value is {
@@ -543,13 +575,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             clearHoverRelease();
             setHoverPlanetId(planetId);
             setInsightPlanetId(planetId);
-            setHeldInsightPlanetId(null);
+            setHeldInsightPlanetId(planetId);
             return;
         }
 
         setHoverPlanetId((current) => (current === planetId ? null : current));
-        scheduleHoverRelease();
-    }, [clearHoverRelease, scheduleHoverRelease]);
+        if (!isInsightRailHovered) {
+            scheduleHoverRelease();
+        }
+    }, [clearHoverRelease, scheduleHoverRelease, isInsightRailHovered]);
 
     const handleSemanticPreview = (pathId: string | null) => {
         setSemanticPreviewPathId(pathId);
@@ -820,10 +854,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(103,232,249,0)" />
-                        <stop offset="35%" stopColor="rgba(96,165,250,0.22)" />
-                        <stop offset="55%" stopColor="rgba(45,212,191,0.16)" />
-                        <stop offset="100%" stopColor="rgba(103,232,249,0)" />
+                        <stop offset="0%" stopColor="rgba(125,211,252,0)" />
+                        <stop offset="32%" stopColor="rgba(125,211,252,0.18)" />
+                        <stop offset="54%" stopColor="rgba(196,181,253,0.14)" />
+                        <stop offset="100%" stopColor="rgba(125,211,252,0)" />
                     </linearGradient>
                     <filter id="beamGlow">
                         <feGaussianBlur stdDeviation="1.2" result="blur" />
@@ -856,9 +890,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
                     const baseOpacity = path.highlighted || isPreviewedPath
-                        ? 0.7
+                        ? 0.74
                         : isFocusedPath
-                            ? 0.14
+                            ? 0.28
                             : 0;
 
                     return (
@@ -978,7 +1012,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     summary={`${focusedPlanetLinkCount} semantische Beziehungen fuer ${focusedPlanet.name}. Waehle links eine Verbindung, um die Route im Raum zu lesen und direkt ins verbundene Department zu springen.`}
                     alwaysExpanded
                     showToggle={false}
-                    forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
+                    forceExpanded={Boolean(focusedPlanetId) || Boolean(semanticPreviewPathId) || isInsightRailHovered}
                     onPointerEnter={() => {
                         setIsInsightRailHovered(true);
                         setHeldInsightPlanetId(focusedPlanet.id);
@@ -987,10 +1021,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     }}
                     onPointerLeave={() => {
                         setIsInsightRailHovered(false);
-                        setHeldInsightPlanetId(null);
                         if (!hoverPlanetId) {
                             scheduleHoverRelease();
+                            return;
                         }
+                        setHeldInsightPlanetId(hoverPlanetId);
                     }}
                     metrics={[
                         { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
