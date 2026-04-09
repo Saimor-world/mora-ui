@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { coreGet } from "@/lib/api/coreClient";
 import { motion } from "framer-motion";
+import { coreGet } from "@/lib/api/coreClient";
 import { usePaneStore } from "@/lib/store/paneStore";
+import { openMoraCenter } from "@/lib/utils/openMoraCenter";
 
 interface CognitionStatus {
     embedding: {
@@ -22,18 +23,13 @@ interface CognitionBadgeProps {
 }
 
 /**
- * CognitionBadge - Shows current cognition/intelligence mode
- *
- * Displays: NULL | ACTIVE | EXTERNAL | LOCAL
- * Based on /v3/operator/status endpoint
- *
- * Click opens the Mora Hub with Stats section
+ * CognitionBadge - shows current cognition/intelligence mode.
+ * Click opens the Mora Center with runtime details.
  */
 export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
     const { openPane } = usePaneStore();
     const [status, setStatus] = useState<CognitionStatus | null>(null);
     const [mode, setMode] = useState<string>("unknown");
-    const [error, setError] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -41,25 +37,21 @@ export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
                 const res = await coreGet("/v3/operator/status", { isOptional: true });
                 if (res) {
                     setStatus(res);
-                    // Determine mode based on embedding status
                     if (!res.embedding?.enabled) {
                         setMode("NULL");
                     } else if (res.embedding?.mode === "SIMULATION" || res.embedding?.mode === "LIVE") {
-                        setMode("ACTIVE"); // Active cognition
+                        setMode("ACTIVE");
                     } else {
                         setMode("EXTERNAL");
                     }
-                    setError(false);
                 }
-            } catch (err) {
-                // Silent fail - just show OFFLINE mode
-                setError(true);
+            } catch {
                 setMode("OFFLINE");
             }
         };
 
         fetchStatus();
-        const interval = setInterval(fetchStatus, 30000); // Every 30s
+        const interval = setInterval(fetchStatus, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -68,7 +60,6 @@ export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
             case "NULL":
                 return "bg-gray-500/20 border-gray-500/50 text-gray-400";
             case "ACTIVE":
-                return "bg-emerald-500/20 border-emerald-500/50 text-emerald-400";
             case "EXTERNAL":
                 return "bg-emerald-500/20 border-emerald-500/50 text-emerald-400";
             case "LOCAL":
@@ -83,33 +74,26 @@ export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
     const getTooltip = (): string => {
         switch (mode) {
             case "NULL":
-                return "No cognition active. Pass-through mode.";
+                return "Keine erweiterte Intelligenz aktiv. Durchleitungsmodus.";
             case "ACTIVE":
-                return "Cognition engine processing. AI reasoning active.";
+                return "Kognitionslauf aktiv. Mora verarbeitet Signale und Kontext.";
             case "EXTERNAL":
-                return "Real LLM active (GPT-4/Claude/Gemini).";
+                return "Cloud-Modell aktiv.";
             case "LOCAL":
-                return "Local LLM active (Ollama).";
+                return "Lokales Modell aktiv.";
             case "OFFLINE":
-                return "Backend not reachable.";
+                return "Backend nicht erreichbar.";
             default:
-                return "Status unknown.";
+                return "Status unbekannt.";
         }
     };
 
     const handleClick = () => {
         if (onClick) {
             onClick();
-        } else {
-            // Default: Open Mora Hub with Stats section
-            openPane({
-                id: 'mora-hub',
-                type: 'mora-hub',
-                title: 'Mora Nexus',
-                size: { width: 560, height: 720 },
-                data: { activeSection: 'stats' }
-            });
+            return;
         }
+        openMoraCenter(openPane, "stats", { width: 560, height: 720 });
     };
 
     return (
@@ -120,32 +104,33 @@ export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className={`
-        px-2.5 py-1 rounded-full
-        border backdrop-blur-xl
-        flex items-center gap-1.5
-        cursor-pointer select-none
-        hover:brightness-110 transition-all
-        ${getBadgeColor()}
-      `}
-            title={`${getTooltip()} Klicken für Details.`}
+                px-2.5 py-1 rounded-full
+                border backdrop-blur-xl
+                flex items-center gap-1.5
+                cursor-pointer select-none
+                hover:brightness-110 transition-all
+                ${getBadgeColor()}
+            `}
+            title={`${getTooltip()} Klicken fuer Details.`}
         >
-            {/* Pulse indicator */}
             <motion.div
                 animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className={`w-2 h-2 rounded-full ${mode === "ACTIVE" ? "bg-emerald-400" :
-                    mode === "EXTERNAL" ? "bg-emerald-400" :
-                        mode === "OFFLINE" ? "bg-red-400" :
-                            "bg-gray-400"
-                    }`}
+                className={`w-2 h-2 rounded-full ${
+                    mode === "ACTIVE" || mode === "EXTERNAL"
+                        ? "bg-emerald-400"
+                        : mode === "OFFLINE"
+                            ? "bg-red-400"
+                            : mode === "LOCAL"
+                                ? "bg-blue-400"
+                                : "bg-gray-400"
+                }`}
             />
 
-            {/* Mode label */}
             <span className="text-[10px] font-medium tracking-wider uppercase">
                 {mode}
             </span>
 
-            {/* Heartbeat indicator */}
             {status?.heartbeat?.status === "active" && (
                 <span className="text-[8px] opacity-60">•</span>
             )}

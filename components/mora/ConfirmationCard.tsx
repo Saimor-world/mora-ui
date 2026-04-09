@@ -207,7 +207,7 @@ const intentLabelMap: Record<string, string> = {
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
     update_note_content: 'Inhalt aktualisieren',
-    create_node_from_file: 'Datei einordnen',
+    create_node_from_file: 'Inhalt aus Datei erzeugen',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
 };
@@ -377,7 +377,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 res?.result;
 
             if (success) {
-                toast.success(isIntake ? 'Eingeordnet' : isFileOp ? 'Aktion ausgeführt' : 'Action approved.');
+                toast.success(isIntake ? 'Inhalt angelegt' : isFileOp ? 'Aktion ausgeführt' : 'Action approved.');
                 if (typeof window !== 'undefined' && action.tool_name === 'create_node_from_file') {
                     window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
                     window.dispatchEvent(new CustomEvent('mora:agency-update', {

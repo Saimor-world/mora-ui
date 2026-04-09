@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward, Sparkles
+    Music2, Pause, Play, SkipForward, Sparkles, Brain
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -42,6 +42,7 @@ import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
+import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -639,11 +640,13 @@ export const Dock = () => {
             label: 'Universe',
             title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: surfaceProfile.isPublicDemoSurface
-                ? 'Das Universe zeigt die kuratierte Demo-Instanz. Von hier aus solltest du direkt in die passende Abteilung springen.'
+                ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
+                : surfaceProfile.isLocalTruthSurface
+                    ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
                 : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Demo oeffnen' : 'Organisation oeffnen',
+            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur oeffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz oeffnen' : 'Organisation oeffnen',
             accent,
             onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -665,6 +668,7 @@ export const Dock = () => {
         safeDepartments.length,
         surfaceProfile.fallbackCompanyName,
         surfaceProfile.isPublicDemoSurface,
+        surfaceProfile.isLocalTruthSurface,
         user?.active_company_name,
     ]);
 
@@ -772,6 +776,13 @@ export const Dock = () => {
                     onClick: closeAfter(() => handleDockClick('chat')),
                 },
                 {
+                    id: 'folder-mora-center',
+                    label: 'Mora Center',
+                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs oeffnen.',
+                    icon: Brain,
+                    onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
+                },
+                {
                     id: 'folder-notes',
                     label: 'Notiz erfassen',
                     description: 'Lege schnell Review- oder Arbeitsnotizen daneben an.',
@@ -803,6 +814,13 @@ export const Dock = () => {
                     description: 'Oeffne Mora und bleib in diesem Bereich als Arbeitskontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
+                },
+                {
+                    id: 'space-mora-center',
+                    label: 'Mora Center',
+                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs oeffnen.',
+                    icon: Brain,
+                    onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
                 {
                     id: 'space-settings',
@@ -838,6 +856,13 @@ export const Dock = () => {
                     onClick: closeAfter(() => handleDockClick('team')),
                 },
                 {
+                    id: 'department-mora-center',
+                    label: 'Mora Center',
+                    description: 'Erinnerungen und Live-Signale der Abteilung gebuendelt ansehen.',
+                    icon: Brain,
+                    onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
+                },
+                {
                     id: 'department-chat',
                     label: 'Mora fuer die Abteilung',
                     description: 'Starte Mora mit Abteilungsfokus statt globalem Kontext.',
@@ -870,6 +895,13 @@ export const Dock = () => {
                 onClick: closeAfter(() => handleDockClick('chat')),
             },
             {
+                id: 'universe-mora-center',
+                label: 'Mora Center',
+                description: 'Erinnerungen, Signale und Kontext des Beispielsystems oeffnen.',
+                icon: Brain,
+                onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
+            },
+            {
                 id: 'universe-settings',
                 label: 'Einstellungen',
                 description: 'Audio, Scenes und Shell feinjustieren.',
@@ -888,6 +920,7 @@ export const Dock = () => {
         handleOpenContext,
         handleShellNextMove,
         isCommandDeckPinned,
+        openPane,
     ]);
 
     useEffect(() => {
@@ -1180,7 +1213,7 @@ export const Dock = () => {
                                 id: 'meine-dateien',
                                 type: 'meine-dateien',
                                 title: 'Meine Dateien',
-                                size: { width: 380, height: 560 },
+                                size: { width: 920, height: 720 },
                             })}
                             title="Meine Dateien"
                             aria-label="Meine Dateien öffnen"
@@ -1419,7 +1452,7 @@ export const Dock = () => {
                                     : orbState === 'alert'
                                         ? 'Rueckfrage offen'
                                         : viewMode === 'demo'
-                                            ? 'Demo aktiv'
+                                            ? 'Beispiel aktiv'
                                             : assistantRuntime.title}
                             </span>
                             <div className="hidden">

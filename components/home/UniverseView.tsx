@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMoraStore } from '@/lib/store/moraState';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
-import { StarField } from '@/components/visual/StarField';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
@@ -38,7 +37,7 @@ const metricAffinity = (left: number, right: number) => {
 
 const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
     content: { label: 'Dokumente', accent: '#38bdf8', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
-    structure: { label: 'Struktur', accent: '#34d399', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
+    structure: { label: 'Struktur', accent: '#7dd3fc', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
     health: { label: 'Health', accent: '#f59e0b', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
 };
 
@@ -92,7 +91,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
+    const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
+    const [isInsightRailHovered, setIsInsightRailHovered] = useState(false);
+    const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
@@ -247,12 +249,37 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     // ─── SYNC GUARD (V10.6) ───
     // Ensures data is loaded without disruptive flashes
     const lastSyncId = useRef<string | null>(null);
+    const hoverClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (activeCompanyId && activeCompanyId !== lastSyncId.current) {
             useMoraStore.getState().loadDepartments(activeCompanyId);
             lastSyncId.current = activeCompanyId;
         }
     }, [activeCompanyId]);
+
+    const clearHoverRelease = useCallback(() => {
+        if (hoverClearRef.current) {
+            clearTimeout(hoverClearRef.current);
+            hoverClearRef.current = null;
+        }
+    }, []);
+
+    const scheduleHoverRelease = useCallback(() => {
+        clearHoverRelease();
+        hoverClearRef.current = setTimeout(() => {
+            if (isInsightRailHovered) {
+                return;
+            }
+            setInsightPlanetId(null);
+            setSemanticPreviewPathId(null);
+        }, 1400);
+    }, [clearHoverRelease, isInsightRailHovered]);
+
+    useEffect(() => (
+        () => {
+            clearHoverRelease();
+        }
+    ), [clearHoverRelease]);
 
     // ─── DYNAMIC ORBITAL SYSTEM (CALM & DETERMINISTIC) ───
     // Fixed rings for calm "Solar System" feel.
@@ -311,7 +338,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
-    const focusedPlanetId = hoverPlanetId || null;
+    const focusedPlanetId = hoverPlanetId || insightPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -507,7 +534,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     useEffect(() => {
         setSemanticPreviewPathId(null);
-    }, [activeDepartmentId, hoverPlanetId, focusedPlanetId]);
+    }, [activeDepartmentId, insightPlanetId]);
+
+    const handlePlanetHover = useCallback((planetId: string, hovered: boolean) => {
+        if (hovered) {
+            clearHoverRelease();
+            setHoverPlanetId(planetId);
+            setInsightPlanetId(planetId);
+            return;
+        }
+
+        setHoverPlanetId((current) => (current === planetId ? null : current));
+        scheduleHoverRelease();
+    }, [clearHoverRelease, scheduleHoverRelease]);
 
     const handleSemanticPreview = (pathId: string | null) => {
         setSemanticPreviewPathId(pathId);
@@ -517,6 +556,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         setSemanticPreviewPathId(null);
         navigateToDepartment(departmentId);
     };
+
+    const handleUniversePointerMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const relativeX = ((event.clientX - rect.left) / rect.width) - 0.5;
+        const relativeY = ((event.clientY - rect.top) / rect.height) - 0.5;
+        setParallaxOffset({
+            x: relativeX * 18,
+            y: relativeY * 14,
+        });
+    }, []);
+
+    const resetUniverseParallax = useCallback(() => {
+        setParallaxOffset({ x: 0, y: 0 });
+    }, []);
 
     const displayCompanyName = useMemo(() => {
         const raw = currentCompany?.name?.trim();
@@ -544,42 +597,177 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         };
     }, [displayCompanyName]);
 
+    const accentStars = useMemo(
+        () => Array.from({ length: 42 }, (_, index) => {
+            const left = ((index * 19.7) % 96) + 2;
+            const top = ((index * 13.4) % 78) + 6;
+            const size = [1.4, 1.8, 2.2, 2.8][index % 4];
+            const color = [
+                'rgba(255,255,255,0.92)',
+                'rgba(191,219,254,0.88)',
+                'rgba(167,243,208,0.78)',
+                'rgba(250,204,21,0.58)',
+            ][index % 4];
+            return {
+                id: `accent-star-${index}`,
+                left,
+                top,
+                size,
+                color,
+                opacity: 0.44 + ((index % 5) * 0.08),
+            };
+        }),
+        []
+    );
+    const heroStars = useMemo(
+        () => Array.from({ length: 14 }, (_, index) => {
+            const left = ((index * 23.7) % 88) + 6;
+            const top = ((index * 15.1) % 72) + 8;
+            const size = [2.2, 2.8, 3.6][index % 3];
+            const color = [
+                'rgba(255,255,255,0.95)',
+                'rgba(125,211,252,0.88)',
+                'rgba(52,211,153,0.82)',
+                'rgba(250,204,21,0.7)',
+            ][index % 4];
+            return {
+                id: `hero-star-${index}`,
+                left,
+                top,
+                size,
+                color,
+                delay: index * 0.18,
+                duration: 4.8 + (index % 4) * 0.9,
+            };
+        }),
+        []
+    );
+
+    const activeCoreBeamPlanetIds = useMemo(() => {
+        const ids = new Set<string>();
+        if (focusedPlanetId) ids.add(focusedPlanetId);
+        semanticPreviewPlanetIds.forEach((id) => ids.add(id));
+        return ids;
+    }, [focusedPlanetId, semanticPreviewPlanetIds]);
+    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered);
+    const visibleSemanticPaths = useMemo(
+        () => semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id),
+        [semanticPaths, semanticPreviewPathId]
+    );
+
     return (
-        <div className="relative w-full h-full overflow-hidden text-white bg-transparent">
-            {/* 0. DEEP UNIVERSE BACKGROUND (Consolidated StarField) */}
-            <StarField warp={false} density="medium" opacity={0.98} />
-            {/* Galaxy wash */}
-            <div className="absolute inset-0 z-[-9] pointer-events-none" style={{
-                background: `
-                    radial-gradient(1380px 760px at 58% 58%, rgba(22, 163, 255, 0.52) 0%, transparent 67%),
-                    radial-gradient(980px 520px at 18% 24%, rgba(52, 211, 153, 0.30) 0%, transparent 60%),
-                    radial-gradient(920px 480px at 82% 28%, rgba(129, 140, 248, 0.34) 0%, transparent 56%),
-                    radial-gradient(860px 420px at 74% 74%, rgba(239, 68, 68, 0.14) 0%, transparent 54%),
-                    radial-gradient(1120px 620px at 42% 84%, rgba(8, 47, 73, 0.34) 0%, transparent 60%)
-                `
-            }} />
-            {/* Deep space gradient */}
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,#03110f_0%,#071b2e_38%,#0d2238_62%,#102f29_100%)] opacity-90 z-[-8] pointer-events-none" />
-            {/* Galaxy band */}
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "linear-gradient(120deg, rgba(16,185,129,0.10) 0%, rgba(6,182,212,0.22) 35%, rgba(96,165,250,0.18) 55%, rgba(129,140,248,0.16) 72%, transparent 100%)",
-                mixBlendMode: "screen"
-            }} />
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "radial-gradient(880px 320px at 51% 47%, rgba(255,255,255,0.07) 0%, rgba(34,211,238,0.08) 18%, rgba(99,102,241,0.06) 34%, transparent 72%)",
-                mixBlendMode: "screen"
-            }} />
-            <div className="absolute inset-0 z-[-7] pointer-events-none" style={{
-                background: "radial-gradient(620px 220px at 28% 72%, rgba(248,113,113,0.06) 0%, transparent 72%), radial-gradient(540px 180px at 78% 18%, rgba(167,139,250,0.08) 0%, transparent 70%)",
-                mixBlendMode: "screen"
-            }} />
-            {/* Subtle vignette */}
-            <div className="absolute inset-0 z-[-6] pointer-events-none" style={{
-                background: "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.42) 78%, rgba(0,0,0,0.68) 100%)"
-            }} />
+        <div
+            className="relative w-full h-full overflow-hidden text-white bg-transparent"
+            onMouseMove={handleUniversePointerMove}
+            onMouseLeave={resetUniverseParallax}
+        >
+            {/* 0. UNIVERSE BACKDROP - merges with shell background instead of covering it */}
+            <div className="absolute inset-0 z-[-10] pointer-events-none bg-[linear-gradient(135deg,rgba(4,19,18,0.18)_0%,rgba(9,31,50,0.12)_48%,rgba(4,18,18,0.2)_100%)]" />
+            <motion.div
+                className="absolute inset-0 z-[-9] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.22, y: parallaxOffset.y * 0.16 }}
+                transition={{ type: 'spring', stiffness: 28, damping: 18, mass: 1 }}
+                style={{
+                    background: `
+                        radial-gradient(1200px 760px at 52% 56%, rgba(96, 165, 250, 0.34) 0%, transparent 68%),
+                        radial-gradient(980px 620px at 16% 20%, rgba(34, 211, 238, 0.22) 0%, transparent 56%),
+                        radial-gradient(820px 460px at 88% 18%, rgba(167, 139, 250, 0.14) 0%, transparent 52%),
+                        radial-gradient(740px 420px at 18% 74%, rgba(45, 212, 191, 0.12) 0%, transparent 54%)
+                    `,
+                }}
+            />
+            <motion.div
+                className="absolute inset-0 z-[-8] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.48, y: parallaxOffset.y * 0.22, rotate: -2.4 }}
+                transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.05 }}
+                style={{
+                    background: 'linear-gradient(102deg, transparent 0%, rgba(220,248,255,0.05) 18%, rgba(96,165,250,0.08) 34%, rgba(45,212,191,0.06) 52%, rgba(167,139,250,0.05) 68%, transparent 84%)',
+                    transform: 'scale(1.16)',
+                    filter: 'blur(22px)',
+                    opacity: 0.7,
+                    mixBlendMode: 'screen',
+                }}
+            />
+            <div
+                className="absolute inset-0 z-[-8] pointer-events-none"
+                style={{
+                    backgroundImage: `
+                        radial-gradient(circle at 12% 24%, rgba(255,255,255,0.95) 0 1px, transparent 1.8px),
+                        radial-gradient(circle at 22% 68%, rgba(56,189,248,0.96) 0 1px, transparent 1.9px),
+                        radial-gradient(circle at 44% 16%, rgba(255,255,255,0.92) 0 1px, transparent 1.8px),
+                        radial-gradient(circle at 63% 58%, rgba(125,211,252,0.9) 0 1px, transparent 1.9px),
+                        radial-gradient(circle at 78% 22%, rgba(250,204,21,0.72) 0 1px, transparent 2px),
+                        radial-gradient(circle at 88% 72%, rgba(255,255,255,0.94) 0 1px, transparent 1.8px)
+                    `,
+                    backgroundSize: '220px 220px, 260px 260px, 280px 280px, 320px 320px, 360px 360px, 420px 420px',
+                    backgroundPosition: '0 0, 60px 110px, 120px 24px, 24px 200px, 180px 70px, 260px 220px',
+                    opacity: 0.84,
+                }}
+            />
+            <div
+                className="absolute inset-0 z-[-7] pointer-events-none"
+                style={{
+                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 22%, rgba(0,0,0,0.12) 62%, rgba(0,0,0,0.36) 100%)',
+                }}
+            />
+            <motion.div
+                className="absolute inset-0 z-[-6] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.9, y: parallaxOffset.y * 0.54 }}
+                transition={{ type: 'spring', stiffness: 24, damping: 18, mass: 1.1 }}
+            >
+                {accentStars.map((star) => (
+                    <div
+                        key={star.id}
+                        className="absolute rounded-full"
+                        style={{
+                            left: `${star.left}%`,
+                            top: `${star.top}%`,
+                            width: `${star.size}px`,
+                            height: `${star.size}px`,
+                            background: star.color,
+                            boxShadow: `0 0 ${Math.max(8, star.size * 10)}px ${star.color}`,
+                            opacity: star.opacity,
+                        }}
+                    />
+                ))}
+            </motion.div>
+            <motion.div
+                className="absolute inset-0 z-[-5] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.72, y: parallaxOffset.y * 0.44 }}
+                transition={{ type: 'spring', stiffness: 20, damping: 16, mass: 1.08 }}
+            >
+                {heroStars.map((star) => (
+                    <motion.div
+                        key={star.id}
+                        className="absolute rounded-full"
+                        style={{
+                            left: `${star.left}%`,
+                            top: `${star.top}%`,
+                            width: `${star.size}px`,
+                            height: `${star.size}px`,
+                            background: star.color,
+                            boxShadow: `0 0 ${star.size * 16}px ${star.color}`,
+                        }}
+                        animate={{ opacity: [0.42, 1, 0.54], scale: [1, 1.18, 1] }}
+                        transition={{ duration: star.duration, delay: star.delay, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                ))}
+            </motion.div>
+
+            {focusedPlanet && focusedPlanetMetrics ? (
+                <div
+                    className="absolute left-0 top-20 z-[27] h-[520px] w-[560px] pointer-events-auto bg-transparent"
+                    onMouseEnter={clearHoverRelease}
+                    onMouseLeave={() => {
+                        if (!hoverPlanetId) {
+                            scheduleHoverRelease();
+                        }
+                    }}
+                />
+            ) : null}
 
             {/* 1. TOP CENTER TITLE (IMMERSIVE BRANDING) */}
-            <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30">
+            <div className="absolute top-12 left-0 right-0 flex flex-col items-center pointer-events-none z-30 opacity-85">
                 <motion.div
                     initial={{ y: -20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -653,9 +841,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <stop offset="100%" stopColor="rgba(6,182,212,0)" />
                     </linearGradient>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="rgba(16,185,129,0)" />
-                        <stop offset="50%" stopColor="rgba(16,185,129,0.65)" />
-                        <stop offset="100%" stopColor="rgba(16,185,129,0)" />
+                        <stop offset="0%" stopColor="rgba(56,189,248,0)" />
+                        <stop offset="35%" stopColor="rgba(96,165,250,0.34)" />
+                        <stop offset="55%" stopColor="rgba(196,181,253,0.22)" />
+                        <stop offset="100%" stopColor="rgba(56,189,248,0)" />
                     </linearGradient>
                     <filter id="beamGlow">
                         <feGaussianBlur stdDeviation="0.8" result="blur" />
@@ -663,17 +852,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                 </defs>
 
-                {/* Static Elliptical Rings */}
-                {rings.map((r, i) => (
-                    <ellipse
-                        key={i} cx="50" cy="54" rx={r.rx} ry={r.ry}
-                        fill="none" stroke="white" strokeWidth="0.05" strokeOpacity={0.08 + i * 0.03}
-                        className="transition-all duration-1000"
-                    />
-                ))}
-
-                {/* Core-to-Planet Light Threads */}
-                {coreConnections.map((connection) => (
+                {/* Focus-to-core threads */}
+                {coreConnections
+                    .filter((connection) => activeCoreBeamPlanetIds.has(connection.id))
+                    .map((connection) => (
                     <motion.line
                         key={`core-${connection.id}`}
                         x1="50"
@@ -681,25 +863,25 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         x2={connection.x}
                         y2={connection.y}
                         stroke="url(#coreBeam)"
-                        strokeWidth={0.14 + connection.intensity * 0.36}
-                        strokeDasharray={connection.highlighted ? '3 4' : '2 8'}
+                        strokeWidth={connection.highlighted ? 0.18 + connection.intensity * 0.28 : 0.12 + connection.intensity * 0.18}
+                        strokeDasharray={connection.highlighted ? '5 7' : 'none'}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.58 : 0.12 + connection.intensity * 0.16 }}
+                        animate={{ opacity: connection.highlighted ? 0.42 : 0.16 + connection.intensity * 0.04 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
 
                 {/* Semantic silk paths */}
-                {semanticPaths.map((path) => {
+                {visibleSemanticPaths.map((path) => {
                     const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
                     const baseOpacity = path.highlighted || isPreviewedPath
                         ? 0.82
                         : isFocusedPath
-                            ? 0.26
-                            : 0.06 + path.strength * 0.08;
+                            ? 0.18
+                            : 0;
 
                     return (
                         <g key={path.id}>
@@ -707,13 +889,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.44 + path.strength * 0.72}
+                        strokeWidth={0.28 + path.strength * 0.48}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity * 0.45,
+                                opacity: baseOpacity * 0.18,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
@@ -725,7 +907,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.18 + path.strength * 0.36}
+                                strokeWidth={0.12 + path.strength * 0.24}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
@@ -815,8 +997,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Verbindungen fuer ${focusedPlanet.name}. Hover previewt die Route, Klick zoomt ins verbundene Department.`}
+                    summary={`${focusedPlanetLinkCount} semantische Beziehungen fuer ${focusedPlanet.name}. Waehle links eine Verbindung, um die Route im Raum zu lesen und direkt ins verbundene Department zu springen.`}
+                    alwaysExpanded
+                    showToggle={false}
                     forceExpanded={Boolean(hoverPlanetId) || Boolean(semanticPreviewPathId)}
+                    onPointerEnter={() => {
+                        setIsInsightRailHovered(true);
+                        clearHoverRelease();
+                    }}
+                    onPointerLeave={() => {
+                        setIsInsightRailHovered(false);
+                        if (!hoverPlanetId) {
+                            scheduleHoverRelease();
+                        }
+                    }}
                     metrics={[
                         { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
                         { label: 'Ordner', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
@@ -830,7 +1024,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <span>{focusedPlanetLinkCount}</span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                            Verbindungen richten sich nach echter Department-Aehnlichkeit statt nach Orbit-Reihenfolge. Farbe und Linienstil zeigen den staerksten Treiber.
+                            Verbindungen richten sich nach inhaltlicher, struktureller und operativer Naehe. Die Route erscheint erst dann stark, wenn du sie wirklich fokussierst.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                             {Object.values(SEMANTIC_DRIVER_META).map((driver) => (
@@ -858,7 +1052,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         <button
                                             type="button"
                                             key={link.id}
-                                            onMouseEnter={() => handleSemanticPreview(link.pathId)}
+                                        onMouseEnter={() => handleSemanticPreview(link.pathId)}
                                             onMouseLeave={() => handleSemanticPreview(null)}
                                             onClick={() => handleSemanticNavigate(link.targetDepartmentId)}
                                             className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
@@ -933,7 +1127,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
-                                        onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
+                                        onHover={(hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
                                             // Locked: outer wrapper handles click (tooltip). Block navigation.
                                         }}
@@ -947,7 +1141,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
                                     isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
-                                    onHover={(hovered) => setHoverPlanetId(hovered ? p.id : null)}
+                                    onHover={(hovered) => handlePlanetHover(p.id, hovered)}
                                     onClick={() => {
                                         navigateToDepartment(p.id);
                                     }}
@@ -1003,7 +1197,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         <Activity className="w-5 h-5 text-cyan-400" />
                                         <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-white/90">Systemstatus</h2>
                                     </div>
-                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{isPublicDemoSurface ? 'Oeffentliche Demo-Instanz' : 'Aktive Organisation'}</p>
+                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{isPublicDemoSurface ? 'Kuratiertes Beispielsystem' : 'Aktive Organisation'}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowSystemStatus(false)}
@@ -1024,7 +1218,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}
                                     label="Kontext"
-                                    value={currentCompany?.is_demo ? 'Demo-Instanz' : 'Geschuetzt'}
+                                    value={currentCompany?.is_demo ? 'Beispielsystem' : 'Geschuetzt'}
                                     status={currentCompany?.is_demo ? 'neutral' : 'secure'}
                                 />
                                 <InsightCard
@@ -1044,9 +1238,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                             <div className="mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 relative">
                                 <div className="flex items-center gap-4 text-[9px] tracking-[0.3em] text-white/20 uppercase">
-                                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Pulse</span>
+                                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live-Signal</span>
                                     <span>•</span>
-                                    <span>Firmware V10.6.4</span>
+                                    <span>Universe v2</span>
                                 </div>
                                 <div className="text-[9px] tracking-[0.2em] text-white/30 truncate max-w-[240px]">
                                     {currentCompany?.name || displayCompanyName}

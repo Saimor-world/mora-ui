@@ -7,10 +7,11 @@ const coreRewriteTarget = shouldRewriteCore ? coreApiUrl.replace(/\/$/, '') : nu
 
 const nextConfig = {
   reactStrictMode: false,
-  // GUARDRAIL: Only port 3000 for development. No other ports allowed.
   allowedDevOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3003",
+    "http://127.0.0.1:3003",
     "http://172.20.10.*",
     "https://*.trycloudflare.com",
   ],

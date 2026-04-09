@@ -10,11 +10,24 @@ export interface FilePreview {
 export interface CompanyFileRecord {
     id: string;
     company_id: string;
+    folder_id?: string | null;
     filename: string;
     mime?: string | null;
     size: number;
     sha256: string;
     uploader_user_id?: string | null;
+    owner_user_id?: string | null;
+    visibility_scope?: string | null;
+    linked_node_id?: string | null;
+    linked_folder_id?: string | null;
+    linked_status?: 'document' | 'standalone' | string | null;
+    source_available?: boolean;
+    source_status?: 'ready' | 'missing' | string | null;
+    route_summary?: string | null;
+    suggested_location?: string | null;
+    route_confidence_score?: number | null;
+    route_confidence_label?: string | null;
+    intake_context?: Record<string, any> | null;
     created_at: string;
 }
 
@@ -131,6 +144,31 @@ export const getCompanyFileUrl = (fileId: string): string => {
     return `${getCoreBaseUrl()}/v3/files/${fileId}`;
 };
 
+export const fetchCompanyFileBlob = async (fileId: string): Promise<Blob> => {
+    const token = getAuthToken();
+
+    const response = await fetch(`${getCoreBaseUrl()}/v3/files/${fileId}`, {
+        method: 'GET',
+        headers: token ? {
+            'Authorization': `Bearer ${token}`
+        } : undefined,
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        let message = `Datei konnte nicht geladen werden: ${response.status} ${response.statusText}`;
+        try {
+            const errorBody = await response.json();
+            if (errorBody.detail) message = errorBody.detail;
+        } catch {
+            // ignore parse errors
+        }
+        throw new CoreError(message, response.status);
+    }
+
+    return response.blob();
+};
+
 /** URL for files uploaded with visibility='public'. No auth required. */
 export const getPublicFileUrl = (fileId: string): string => {
     return `${getCoreBaseUrl()}/v3/files/public/${fileId}`;
@@ -144,7 +182,8 @@ export const listCompanyFiles = async (companyId: string): Promise<CompanyFileRe
 export const uploadCompanyFile = async (
     file: File,
     companyId: string,
-    visibility: 'public' | 'private' = 'private'
+    visibility: 'public' | 'private' = 'private',
+    folderId?: string
 ): Promise<CompanyFileRecord> => {
     const token = getAuthToken();
 
@@ -158,6 +197,9 @@ export const uploadCompanyFile = async (
     formData.append('file', file);
     formData.append('company_id', companyId);
     formData.append('visibility', visibility);
+    if (folderId) {
+        formData.append('folder_id', folderId);
+    }
 
     // CRITICAL: We do NOT set Content-Type header. 
     // Browser must set it with the correct boundary for multipart/form-data.
@@ -267,6 +309,19 @@ export interface FileNodeStatus {
     folder_id?: string;
     company_id?: string;
 }
+
+export const relocateCompanyFile = async (
+    fileId: string,
+    options: { folderId?: string; autoRoute?: boolean }
+): Promise<CompanyFileRecord> => {
+    const payload: Record<string, any> = {
+        auto_route: options.autoRoute ?? false,
+    };
+    if (options.folderId) {
+        payload.folder_id = options.folderId;
+    }
+    return corePost(`/v3/files/${fileId}/location`, payload) as Promise<CompanyFileRecord>;
+};
 
 /** Query where a file's node ended up — use as fallback if create-node response lacks folder_id */
 export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {

@@ -243,7 +243,7 @@ const intentLabelMap: Record<string, string> = {
     update_note_content: 'Inhalt aktualisieren',
     confirm_action: 'Aktion bestätigen',
     undo: 'Aktion rückgängig machen',
-    create_node_from_file: 'Datei einordnen',
+    create_node_from_file: 'Inhalt aus Datei erzeugen',
     work_session_plan: 'Arbeitsplan',
     navigation_open: 'Navigation',
 };

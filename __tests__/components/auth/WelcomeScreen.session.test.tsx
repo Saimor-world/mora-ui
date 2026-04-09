@@ -11,6 +11,18 @@ jest.mock('@/lib/store/moraState', () => ({
     useMoraStore: jest.fn(),
 }));
 
+jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
+    useSurfaceProfile: () => ({
+        id: 'standard',
+        isPublicDemoSurface: false,
+        isLocalTruthSurface: false,
+        workspaceTabLabel: 'Organisation',
+        fallbackCompanyName: 'Organisation',
+        roleBadgeLabel: 'Arbeitsmodus',
+        companySwitcherEnabled: true,
+    }),
+}));
+
 jest.mock('@/lib/api/coreClient', () => ({
     coreGet: jest.fn(),
     authLogout: jest.fn(),
@@ -112,7 +124,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
             expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
-            expect(screen.getByText('Quick Demo')).toBeInTheDocument();
+            expect(screen.getByText('Simple Coffee Group oeffnen')).toBeInTheDocument();
         });
     });
 
@@ -151,7 +163,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText(/Mora erkennt dich/i)).toBeInTheDocument();
             expect(screen.getByText(/Marco/)).toBeInTheDocument();
-            expect(screen.getByText(/Bestätige kurz dein Passwort/i)).toBeInTheDocument();
+            expect(screen.getByText(/Bestaetige kurz dein Passwort/i)).toBeInTheDocument();
             expect(screen.getByPlaceholderText('Passwort')).toBeInTheDocument();
         });
     });
@@ -176,7 +188,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
 
         await waitFor(() => {
             expect(screen.getByText(/Mora erkennt dich/i)).toBeInTheDocument();
-            expect(screen.getByText(/Identität bestätigt/i)).toBeInTheDocument();
+            expect(screen.getByText(/Identitaet bestaetigt/i)).toBeInTheDocument();
         });
     });
 
@@ -239,7 +251,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
 
         // Type password and submit
         fireEvent.change(screen.getByPlaceholderText('Passwort'), { target: { value: 'secret123' } });
-        fireEvent.click(screen.getByText('Bestätigen'));
+        fireEvent.click(screen.getByText('Bestaetigen'));
 
         // Verify login was called with full email, not just username
         await waitFor(() => {
@@ -272,10 +284,10 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Quick Demo')).toBeInTheDocument();
+            expect(screen.getByText('Simple Coffee Group oeffnen')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Quick Demo'));
+        fireEvent.click(screen.getByText('Simple Coffee Group oeffnen'));
 
         await waitFor(() => {
             expect(mockFetch).toHaveBeenCalledWith(

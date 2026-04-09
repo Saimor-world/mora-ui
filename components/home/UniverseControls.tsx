@@ -33,6 +33,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
 }) => {
     const user = useMoraStore((state) => state.user);
     const viewLevel = useMoraStore((state) => state.viewLevel);
+    const coreMode = useMoraStore((state) => state.coreMode);
     const departments = useMoraStore((state) => state.departments);
     const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
     const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
@@ -90,6 +91,10 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         user?.active_company_name,
         disableContextSwitch,
     ]);
+    const surfaceLabel = useMemo(() => {
+        if (viewLevel !== 'core') return shellContext.scopeLabel;
+        return coreMode === 'home' ? 'Home' : 'Universe';
+    }, [coreMode, shellContext.scopeLabel, viewLevel]);
 
     const handleContextClick = () => {
         if (!companies.length || !activeCompany || !onSwitchCompany) return;
@@ -151,7 +156,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 className="min-w-0 flex-1 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
             >
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
-                    <span>Layer {shellContext.scopeLabel}</span>
+                    <span>Layer {surfaceLabel}</span>
                     <span className="text-white/18">/</span>
                     <span style={{ color: shellContext.accent }}>{shellContext.contextLabel}</span>
                 </div>

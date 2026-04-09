@@ -75,7 +75,7 @@ export function IntelligenceDiagnostics() {
         providers: null,
         providersError: null,
         apiVersions: null,
-        isMinimised: false,
+        isMinimised: true,
     });
     const tickRef = useRef<ReturnType<typeof setInterval>>();
 

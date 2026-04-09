@@ -108,7 +108,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.98 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
-            className={`w-[min(860px,calc(100vw-3rem))] rounded-[32px] border p-5 backdrop-blur-2xl ${shellCard}`}
+            className={`max-h-[calc(100vh-7rem)] w-[min(760px,calc(100vw-4rem))] overflow-y-auto rounded-[32px] border p-4 backdrop-blur-2xl ${shellCard}`}
         >
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -133,9 +133,9 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                 </button>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+            <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_244px]">
                 <div
-                    className={`relative overflow-hidden rounded-[28px] border p-5 ${microCard}`}
+                    className={`relative overflow-hidden rounded-[28px] border p-4 ${microCard}`}
                     style={!isStandardMode ? {
                         boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 0 0 1px ${contextAccent}10`,
                     } : undefined}
@@ -201,7 +201,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     </div>
                 </div>
 
-                <div className={`rounded-[28px] border p-4 ${microCard}`}>
+                <div className={`rounded-[28px] border p-3.5 ${microCard}`}>
                     <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                             <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
@@ -244,7 +244,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         </button>
                     </div>
 
-                    <div className={`mt-4 rounded-[24px] border p-4 ${microCard}`}>
+                    <div className={`mt-4 rounded-[24px] border p-3.5 ${microCard}`}>
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Music2 size={12} />
                             Audio
@@ -278,7 +278,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         </div>
                     </div>
 
-                    <div className={`mt-4 rounded-[24px] border p-4 ${microCard}`}>
+                    <div className={`mt-4 rounded-[24px] border p-3.5 ${microCard}`}>
                         <div className={`flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <span>Mora-Laufzeit</span>
                             <span className={accentText}>{assistantRuntime.badge}</span>
@@ -293,7 +293,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                 </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {actions.map((action) => (
                     <button
                         key={action.id}

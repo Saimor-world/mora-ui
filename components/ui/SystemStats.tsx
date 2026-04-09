@@ -84,7 +84,15 @@ export const SystemStats: React.FC = () => {
                 {/* Context */}
                 <div className="flex items-center gap-1.5">
                     <Database size={10} className="opacity-50" />
-                    <span>{surfaceProfile.isPublicDemoSurface ? 'Demo-Instanz' : companies.length === 1 ? '1 Organisation' : `${companies.length} Organisationen`}</span>
+                    <span>
+                        {surfaceProfile.isPublicDemoSurface
+                            ? 'Beispielsystem'
+                            : surfaceProfile.isLocalTruthSurface
+                                ? 'Interne Instanz'
+                                : companies.length === 1
+                                    ? '1 Organisation'
+                                    : `${companies.length} Organisationen`}
+                    </span>
                 </div>
 
                 {/* Departments */}

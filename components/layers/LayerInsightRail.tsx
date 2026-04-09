@@ -19,6 +19,8 @@ interface LayerInsightRailProps {
     accent?: string;
     metrics: LayerInsightMetric[];
     forceExpanded?: boolean;
+    alwaysExpanded?: boolean;
+    showToggle?: boolean;
     collapsedHint?: string;
     onPointerEnter?: () => void;
     onPointerLeave?: () => void;
@@ -34,21 +36,23 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
     accent = '#34d399',
     metrics,
     forceExpanded = false,
+    alwaysExpanded = false,
+    showToggle = true,
     collapsedHint = 'Mehr bei Fokus.',
     onPointerEnter,
     onPointerLeave,
     children,
 }) => {
     const [isManuallyExpanded, setIsManuallyExpanded] = useState(false);
-    const isExpanded = forceExpanded || isManuallyExpanded;
+    const isExpanded = alwaysExpanded || forceExpanded || isManuallyExpanded;
     const compactMetrics = metrics.slice(0, 2);
 
     return (
         <motion.div
-            className={`pointer-events-auto absolute overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,12,11,0.84),rgba(0,0,0,0.52))] shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-2xl ${className}`}
+            className={`pointer-events-auto absolute w-[336px] overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.9),rgba(4,10,13,0.76))] shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-2xl ${className}`}
             initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0, width: isExpanded ? 328 : 214 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.24, ease: 'easeOut' }}
             onMouseEnter={onPointerEnter}
             onMouseLeave={onPointerLeave}
         >
@@ -71,7 +75,7 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                                 {eyebrow}
                             </div>
                         </div>
-                        <div className="mt-2 truncate text-base font-light tracking-[0.06em] text-white/88">
+                        <div className="mt-2 truncate text-[30px] font-light tracking-[0.02em] text-white/90">
                             {title}
                         </div>
                     </div>
@@ -82,17 +86,19 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                                 {badge}
                             </div>
                         )}
-                        <button
-                            type="button"
-                            aria-label={isExpanded ? 'Insight schliessen' : 'Insight oeffnen'}
-                            onClick={() => setIsManuallyExpanded((current) => !current)}
-                            className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38 hover:border-white/14 hover:text-white/68'}`}
-                        >
-                            <ChevronRight
-                                size={14}
-                                className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
-                            />
-                        </button>
+                        {showToggle ? (
+                            <button
+                                type="button"
+                                aria-label={isExpanded ? 'Insight schliessen' : 'Insight oeffnen'}
+                                onClick={() => setIsManuallyExpanded((current) => !current)}
+                                className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38 hover:border-white/14 hover:text-white/68'}`}
+                            >
+                                <ChevronRight
+                                    size={14}
+                                    className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
+                                />
+                            </button>
+                        ) : null}
                     </div>
                 </div>
 
@@ -112,7 +118,7 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                             ))}
                         </div>
 
-                        <div className="mt-3 text-[11px] text-white/38">
+                        <div className="mt-3 text-[11px] leading-relaxed text-white/40">
                             {collapsedHint}
                         </div>
                     </>

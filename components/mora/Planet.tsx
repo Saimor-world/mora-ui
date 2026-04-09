@@ -98,7 +98,32 @@ export const Planet: React.FC<PlanetProps> = ({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={onClick}
+            animate={{
+                y: isHovered || isActive ? [0, -4, 0] : [0, -2, 0],
+            }}
+            transition={{
+                y: {
+                    duration: isHovered || isActive ? 3.4 : 5.6,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay,
+                },
+            }}
         >
+            <motion.div
+                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[28px] w-[88px] -translate-x-1/2 translate-y-[34px] rounded-full"
+                style={{
+                    background: `radial-gradient(circle, ${style.glow}30 0%, rgba(0,0,0,0.32) 46%, transparent 78%)`,
+                    filter: 'blur(16px)',
+                }}
+                animate={{
+                    opacity: isHovered || isActive ? 0.72 : 0.44,
+                    scaleX: isHovered ? 1.16 : 1,
+                    scaleY: isHovered ? 1.08 : 1,
+                }}
+                transition={{ duration: 0.28, ease: 'easeOut' }}
+            />
+
             {/* ═ V10 FUNCTIONAL RINGS (Health & Capacity) ═ */}
             <div className="absolute inset-[-40px] pointer-events-none flex items-center justify-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
@@ -135,6 +160,21 @@ export const Planet: React.FC<PlanetProps> = ({
                         transition={{ duration: 0.2 }}
                     />
 
+                    <motion.circle
+                        cx="50"
+                        cy="50"
+                        r="46"
+                        fill="none"
+                        stroke={`${style.glow}55`}
+                        strokeWidth="0.5"
+                        opacity="0.22"
+                        animate={{
+                            opacity: isHovered || isActive ? 0.34 : 0.12,
+                            scale: isHovered ? 1.03 : 1,
+                        }}
+                        style={{ transformOrigin: '50px 50px' }}
+                    />
+
                     {/* 3. CINEMATIC LABEL CONNECTOR */}
                     <AnimatePresence>
                         {(isHovered || isActive) && (
@@ -157,8 +197,8 @@ export const Planet: React.FC<PlanetProps> = ({
                 className="orb-glass-halo"
                 style={{ '--orb-glow': style.glow } as React.CSSProperties}
                 animate={{
-                    opacity: isActive ? 0.35 : isHovered ? 0.25 : 0.14,
-                    scale: isHovered ? 1.12 : 1
+                    opacity: isActive ? 0.42 : isHovered ? 0.3 : 0.16,
+                    scale: isHovered ? 1.16 : isActive ? 1.08 : 1
                 }}
             />
 
@@ -171,11 +211,14 @@ export const Planet: React.FC<PlanetProps> = ({
                     '--orb-glow': `${style.glow}08`,
                     '--orb-border': `${style.border}30`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 60px ${style.glow}40, inset 0 0 30px ${style.glow}20, inset 2px 2px 8px rgba(255,255,255,0.3)`
-                        : `0 15px 40px rgba(0,0,0,0.4), inset 0 0 15px ${style.glow}10, inset 1px 1px 2px rgba(255,255,255,0.15)`,
+                        ? `0 0 78px ${style.glow}46, 0 22px 52px rgba(0,0,0,0.46), inset 0 0 36px ${style.glow}22, inset 2px 2px 8px rgba(255,255,255,0.3)`
+                        : `0 18px 44px rgba(0,0,0,0.44), inset 0 0 18px ${style.glow}10, inset 1px 1px 2px rgba(255,255,255,0.15)`,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.08 }}
                 transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+                animate={{
+                    rotateZ: isHovered ? [0, 1.2, 0] : 0,
+                }}
             >
                 {/* Subsurface scattering core */}
                 <div

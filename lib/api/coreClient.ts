@@ -1169,9 +1169,34 @@ export interface MemoryOverviewMetrics {
     };
 }
 
+export interface MemoryOverviewLayerItem {
+    id?: string;
+    title: string;
+    summary: string;
+    detail?: string;
+    kind?: string;
+    scope?: string;
+    source?: string;
+    timestamp?: string;
+    updated_at?: string;
+    confidence?: number;
+    score?: number;
+    risk_level?: string;
+}
+
+export interface MemoryOverviewLayer {
+    label: string;
+    scope: string;
+    description?: string;
+    count: number;
+    items: MemoryOverviewLayerItem[];
+    pending_reviews?: MemoryOverviewLayerItem[];
+}
+
 export interface MemoryOverview {
     metrics: MemoryOverviewMetrics;
     memory_model?: {
+        ground_knowledge_scope?: string;
         chat_memory_scope?: string;
         shared_operational_scope?: string;
         recent_scope?: string;
@@ -1184,6 +1209,11 @@ export interface MemoryOverview {
         metrics?: string;
         user_id?: string;
         company_id?: string;
+    };
+    layers?: {
+        foundation?: MemoryOverviewLayer;
+        scope?: MemoryOverviewLayer;
+        personal?: MemoryOverviewLayer;
     };
 }
 
@@ -1864,8 +1894,20 @@ export interface UserContentResponse {
     space?: PersonalSpace | null;
     /** Folders owned by or shared with the user in their personal space. */
     folders?: CoreFolder[];
-    /** Nodes (documents, notes, tasks) owned by the user. */
+    /** Documents and other structured work items owned by the user. */
+    documents?: CoreNode[];
+    /** Legacy alias kept for older callers. */
     nodes?: CoreNode[];
+    /** Visible user items in product truth order. */
+    items?: Array<{
+        id: string;
+        kind: 'document' | 'file';
+        label: string;
+        timestamp?: string | null;
+        visibility?: NodeVisibility;
+        node_id?: string | null;
+        file_id?: string | null;
+    }>;
     /** Uploaded files owned by the user. */
     files?: Array<{
         id: string;
@@ -1878,12 +1920,18 @@ export interface UserContentResponse {
         linked_status?: 'document' | 'standalone';
         linked_node_id?: string | null;
         linked_folder_id?: string | null;
+        source_available?: boolean;
+        source_status?: 'ready' | 'missing' | string | null;
     }>;
     /** Summary counts for quick display. */
     counts?: {
         folders?: number;
+        documents?: number;
         nodes?: number;
+        items?: number;
         files?: number;
+        standalone_files?: number;
+        linked_source_files?: number;
         total?: number;
     };
     /** Ownership metadata for this content surface. */

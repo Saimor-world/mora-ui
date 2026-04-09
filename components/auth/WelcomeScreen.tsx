@@ -68,11 +68,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Demo starten oder mit Zugangsdaten weiter'
-        : 'Zugriff auf deine Organisation';
+        ? 'Simple Coffee Group erkunden oder mit Zugangsdaten weiter'
+        : surfaceProfile.isLocalTruthSurface
+            ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
+            : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Eigene Instanz vorbereiten'
-        : 'Neue Organisation einrichten';
+        ? 'Private Instanz ausserhalb der Demo vorbereiten'
+        : surfaceProfile.isLocalTruthSurface
+            ? 'Lokale oder interne Instanz fuer echte Produktionsregeln vorbereiten'
+            : 'Neue Organisation einrichten';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
         await authLogout();
@@ -889,6 +893,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 transition={{ delay: 0.5, staggerChildren: 0.1 }}
                                 className="w-full max-w-md space-y-3"
                             >
+                                {surfaceProfile.isLocalTruthSurface && (
+                                    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/8 px-4 py-3 text-left">
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300/80">
+                                            Interne Instanz
+                                        </div>
+                                        <div className="mt-2 text-xs leading-relaxed text-emerald-100/75">
+                                            Hier gelten die echten lokalen Regeln. Diese Oberflaeche ist fuer reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Anmelden Button */}
                                 <motion.button
                                     onClick={() => setMode('login')}
@@ -901,7 +916,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <LogIn className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Anmelden</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
+                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz oeffnen' : 'Anmelden'}
+                                        </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">{loginSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
@@ -919,7 +936,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <UserPlus className="w-5 h-5 text-mora-gold group-hover:text-mora-gold/90 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Account Erstellen</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
+                                            {surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
+                                        </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">{registerSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
@@ -939,8 +958,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         <Sparkles className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">Simple Coffee Group oeffnen</div>
-                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">Mit echter Struktur, Signalen und Finder starten</div>
+                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
+                                            {surfaceProfile.isLocalTruthSurface ? 'Demo-Spiegel oeffnen' : 'Simple Coffee Group oeffnen'}
+                                        </div>
+                                        <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">
+                                            {surfaceProfile.isLocalTruthSurface
+                                                ? 'Spiegele den aktuellen stabilen Demo-Flow, ohne die Wahrheitsinstanz zu verlassen.'
+                                                : 'Kuratierten Demo-Flow mit echter Struktur, Signalen und Finder starten'}
+                                        </div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
@@ -1048,7 +1073,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                 <div className="relative z-10">
                                     <h2 className="text-2xl font-extralight tracking-[0.2em] text-emerald-50 mb-8 text-center uppercase drop-shadow-[0_0_15px_rgba(206,182,118,0.2)]">
-                                        Account Erstellen
+                                        {surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
                                     </h2>
 
                                     <div className="space-y-4">

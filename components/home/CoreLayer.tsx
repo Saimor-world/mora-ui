@@ -43,7 +43,8 @@ export const CoreLayer: React.FC = () => {
                         className="absolute inset-0"
                         {...fadeVariants}
                     >
-                        <HomeSurface />
+                        <UniverseView />
+                        <HomeSurface overlayMode />
                     </motion.div>
                 ) : (
                     <motion.div

@@ -1,39 +1,17 @@
-﻿'use client';
+'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { FolderOpen, FolderHeart, MessageCircle, Compass, FileText, Clock, StickyNote, LogOut, Eye } from 'lucide-react';
+import React, { useCallback, useMemo } from 'react';
+import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { fetchNodesByCompany, fetchMyContent, authLogout, coreGet } from '@/lib/api/coreClient';
-import type { UserContentResponse } from '@/lib/api/coreClient';
-import type { CoreNode } from '@/lib/types/core';
+import { useActivityStore } from '@/lib/store/activityStore';
+import { authLogout } from '@/lib/api/coreClient';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
-import { openSourceFileLike } from '@/lib/utils/contentOpen';
+import { buildBriefing } from '@/lib/home/briefing';
 
-interface KairosEvent {
-    id: string;
-    timestamp: string;
-    event_type: string;
-    source: string;
-    payload: {
-        summary?: string;
-        new_nodes?: number;
-        sample_titles?: string[];
-    };
-}
-
-type PersonalLatestItem =
-    | { kind: 'node'; id: string; label: string; timestamp: number }
-    | { kind: 'file'; id: string; label: string; timestamp: number; linkedNodeId?: string | null }
-    | { kind: 'folder'; id: string; label: string; timestamp: number };
-
-function getComparableTimestamp(value?: string | null): number {
-    if (!value) return 0;
-    const parsed = new Date(value).getTime();
-    return Number.isFinite(parsed) ? parsed : 0;
-}
+// ─── helpers ────────────────────────────────────────────────────────────────
 
 function relativeTime(isoStr: string): string {
     const diff = Date.now() - new Date(isoStr).getTime();
@@ -43,120 +21,127 @@ function relativeTime(isoStr: string): string {
     const h = Math.floor(min / 60);
     if (h < 24) return `vor ${h} Std.`;
     const days = Math.floor(h / 24);
-    if (days <= 14) {
-        return `vor ${days} Tag${days > 1 ? 'en' : ''}`;
-    }
-    return new Intl.DateTimeFormat('de-DE', {
-        day: '2-digit',
-        month: 'short',
-    }).format(new Date(isoStr));
+    if (days <= 14) return `vor ${days} Tag${days > 1 ? 'en' : ''}`;
+    return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short' }).format(new Date(isoStr));
 }
 
-function formatCountLabel(value: number, singular: string, plural?: string): string {
-    const resolvedPlural = plural || `${singular}e`;
-    return `${value} ${value === 1 ? singular : resolvedPlural}`;
+// ─── types ───────────────────────────────────────────────────────────────────
+
+type RecentKind = 'document' | 'finder' | 'notes' | 'chat' | 'other';
+
+interface RecentActivityItem {
+    id: string;
+    label: string;
+    kind: RecentKind;
+    openedAt: number;
+    paneData?: any;
 }
+
+// ─── small UI helpers ─────────────────────────────────────────────────────────
+
+function kindIcon(kind: RecentKind): React.ReactNode {
+    switch (kind) {
+        case 'document': return <FileText size={13} className="text-emerald-400/60" />;
+        case 'finder':   return <FolderOpen size={13} className="text-white/40" />;
+        case 'notes':    return <StickyNote size={13} className="text-white/40" />;
+        case 'chat':     return <MessageCircle size={13} className="text-white/40" />;
+        default:         return <FileText size={13} className="text-white/40" />;
+    }
+}
+
+function kindLabel(kind: RecentKind): string {
+    switch (kind) {
+        case 'document': return 'Dokument';
+        case 'finder':   return 'Finder';
+        case 'notes':    return 'Notizen';
+        case 'chat':     return 'Mora';
+        default:         return 'Aktivität';
+    }
+}
+
+// ─── component ───────────────────────────────────────────────────────────────
 
 /**
- * HomeSurface - Day-start working surface for SAIMOR 1.0.
+ * HomeSurface — Ambient Intelligence edition.
  *
- * Sections:
- *   1. Quick Access  - Finder, Meine Dateien, Notizen, Mora, Erkunden
- *   2. Recent Docs   - fetchNodesByCompany, sorted desc by updated_at
- *   3. Personal Area - fetchMyContent counts summary card
- *
- * Each data section degrades independently - null response = section hidden.
- * No fake placeholder content.
+ * No static nav grid. No org metadata panel. No fetchMyContent.
+ * The home tells you what's happening right now:
+ *   1. Mora briefing (from pre-loaded moraStore departments + treeData)
+ *   2. Dept pulse tiles (click → Finder scoped to dept)
+ *   3. Zuletzt berührt (OS-level activityStore — what you actually opened)
+ *   4. Three quick actions
  */
-export const HomeSurface: React.FC = () => {
-    const navigateToExplore = useMoraStore((s) => s.navigateToExplore);
-    const isStandardMode = useMoraStore((s) => s.isStandardMode);
-    const user = useMoraStore((s) => s.user);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const resetStore = useMoraStore((s) => s.resetStore);
-    const setUser = useMoraStore((s) => s.setUser);
-    const openPane = usePaneStore((s) => s.openPane);
+export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode = false }) => {
+    // ── store selectors ────────────────────────────────────────────────────
+    const user        = useMoraStore((s) => s.user);
+    const departments = useMoraStore((s) => s.departments);
+    const treeData    = useMoraStore((s) => s.treeData);
+    const resetStore  = useMoraStore((s) => s.resetStore);
+    const setUser     = useMoraStore((s) => s.setUser);
+    const setCoreMode = useMoraStore((s) => s.setCoreMode);
+
+    const openPane         = usePaneStore((s) => s.openPane);
+    const getPane          = usePaneStore((s) => s.getPane);
+    const focusPane        = usePaneStore((s) => s.focusPane);
+    const restorePane      = usePaneStore((s) => s.restorePane);
+    const updatePane       = usePaneStore((s) => s.updatePane);
+    const updatePanePos    = usePaneStore((s) => s.updatePanePosition);
+    const updatePaneSize   = usePaneStore((s) => s.updatePaneSize);
+
     const logoutAccount = useAccountStore((s) => s.logout);
+    const recentItems   = useActivityStore((s) => s.recentItems);
 
-    const [recentDocs, setRecentDocs] = useState<CoreNode[] | null>(null);
-    const [myContent, setMyContent] = useState<UserContentResponse | null | undefined>(undefined);
-    const [kairosEvents, setKairosEvents] = useState<KairosEvent[] | null>(null);
+    // ── pane helper ───────────────────────────────────────────────────────
+    const revealPane = useCallback((
+        paneId: string,
+        req: {
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat';
+            title: string;
+            size: { width: number; height: number };
+            data?: any;
+        }
+    ) => {
+        const existing = getPane(paneId);
+        const vw = typeof window !== 'undefined' ? window.innerWidth  : 1920;
+        const vh = typeof window !== 'undefined' ? window.innerHeight : 1080;
+        const cx = Math.max(24, Math.floor((vw - req.size.width)  / 2));
+        const cy = Math.max(64, Math.floor((vh - req.size.height) / 2) - 20);
 
-    useEffect(() => {
-        if (!activeCompanyId) {
-            setRecentDocs(null);
-            setMyContent(undefined);
+        if (existing) {
+            updatePane(paneId, { title: req.title, data: req.data });
+            updatePaneSize(paneId, req.size.width, req.size.height);
+            updatePanePos(paneId, cx, cy);
+            if (existing.minimized) restorePane(paneId);
+            else focusPane(paneId);
             return;
         }
 
-        let cancelled = false;
+        openPane({ id: paneId, type: req.type, title: req.title, size: req.size, position: { x: cx, y: cy }, data: req.data });
+    }, [focusPane, getPane, openPane, restorePane, updatePane, updatePanePos, updatePaneSize]);
 
-        void fetchNodesByCompany(activeCompanyId, { limit: 8 })
-            .then((nodes) => {
-                if (cancelled) return;
-                const sorted = Array.isArray(nodes)
-                    ? [...nodes].sort((a, b) => {
-                          const ta = a.updated_at ?? a.created_at ?? '';
-                          const tb = b.updated_at ?? b.created_at ?? '';
-                          return tb.localeCompare(ta);
-                      })
-                    : null;
-                setRecentDocs(sorted);
-            })
-            .catch(() => {
-                if (!cancelled) setRecentDocs(null);
-            });
-
-        void fetchMyContent()
-            .then((content) => {
-                if (!cancelled) setMyContent(content);
-            })
-            .catch(() => {
-                if (!cancelled) setMyContent(null);
-            });
-
-        // KAIROS awareness events — v3 endpoint, company-scoped
-        void coreGet('/v3/mindloop/events?type=awareness&limit=5')
-            .then((data: any) => {
-                if (cancelled) return;
-                const events: KairosEvent[] = data?.events ?? [];
-                setKairosEvents(events.length > 0 ? events.slice(0, 3) : null);
-            })
-            .catch(() => {
-                if (!cancelled) setKairosEvents(null);
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [activeCompanyId]);
-
-    const openDocument = useCallback((node: CoreNode) => {
-        openPane({
-            id: `doc-${node.id}`,
-            type: 'document',
-            title: node.title || 'Dokument',
-            size: { width: 960, height: 720 },
-            data: { nodeId: node.id },
-        });
-    }, [openPane]);
-
+    // ── named shortcuts ───────────────────────────────────────────────────
     const openFinder = useCallback(() => {
-        openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
-    }, [openPane]);
-
-    const openMeineDateien = useCallback(() => {
-        openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 380, height: 560 } });
-    }, [openPane]);
-
-    const openNotes = useCallback(() => {
-        openPane({ id: 'notes-main', type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } });
-    }, [openPane]);
+        revealPane('finder-main', { type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
+    }, [revealPane]);
 
     const openMora = useCallback(() => {
-        openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
-    }, [openPane]);
+        revealPane('chat-main', { type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
+    }, [revealPane]);
 
+    const openUpload = useCallback(() => {
+        revealPane('finder-upload', {
+            type: 'finder',
+            title: 'Finder',
+            size: { width: 1280, height: 820 },
+            data: { showUpload: true },
+        });
+    }, [revealPane]);
+
+    const openUniverse = useCallback(() => {
+        setCoreMode('explore');
+    }, [setCoreMode]);
+
+    // ── logout ────────────────────────────────────────────────────────────
     const handleLogout = useCallback(async () => {
         await authLogout();
         clearClientSessionArtifacts();
@@ -164,27 +149,67 @@ export const HomeSurface: React.FC = () => {
         resetUserState();
         setUser(null);
         resetStore();
-        if (typeof window !== 'undefined') {
-            window.location.assign('/');
-        }
+        if (typeof window !== 'undefined') window.location.assign('/');
     }, [logoutAccount, resetStore, setUser]);
 
-    const t = {
-        heading:   isStandardMode ? 'text-gray-900'      : 'text-white/90',
-        sub:       isStandardMode ? 'text-gray-500'      : 'text-white/40',
-        card:      isStandardMode ? 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                                  : 'bg-white/[0.04] border-white/8 hover:border-white/18',
-        cardText:  isStandardMode ? 'text-gray-700'      : 'text-white/75',
-        cardSub:   isStandardMode ? 'text-gray-400'      : 'text-white/35',
-        sectionHd: isStandardMode ? 'text-gray-400'      : 'text-white/30',
-        item:      isStandardMode ? 'hover:bg-gray-50 text-gray-700'
-                                  : 'hover:bg-white/[0.04] text-white/70',
-        qaBtn:     isStandardMode
-            ? 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50 shadow-sm'
-            : 'bg-white/[0.05] border border-white/10 text-white/65 hover:border-white/22 hover:bg-white/[0.08]',
-        qaIcon:    isStandardMode ? 'text-gray-400'      : 'text-white/35',
-    };
+    // ── derived data ───────────────────────────────────────────────────────
+    const briefing = useMemo(
+        () => buildBriefing(departments, treeData),
+        [departments, treeData],
+    );
 
+    const deptTiles = useMemo(() => (
+        departments.slice(0, 6).map((dept) => {
+            const node          = treeData?.find((n) => n.id === dept.id) ?? null;
+            const loaded        = node?.children !== undefined;
+            const count         = node?.children?.length ?? 0;
+            const active        = loaded && count > 0;
+            return { dept, count, active, loaded };
+        })
+    ), [departments, treeData]);
+
+    const recentActivityItems = useMemo<RecentActivityItem[]>(() => (
+        recentItems.slice(0, 5).map((item) => ({
+            id:       item.id,
+            label:    item.label,
+            kind: (
+                item.paneType === 'document'                                 ? 'document' :
+                item.paneType === 'finder' || item.paneType === 'meine-dateien' ? 'finder' :
+                item.paneType === 'notes'                                    ? 'notes' :
+                item.paneType === 'chat'                                     ? 'chat' : 'other'
+            ) as RecentKind,
+            openedAt: item.openedAt,
+            paneData: item.paneData,
+        }))
+    ), [recentItems]);
+
+    const openRecentActivity = useCallback((item: RecentActivityItem) => {
+        if (item.kind === 'document' && item.paneData?.nodeId) {
+            revealPane(`doc-${item.paneData.nodeId}`, {
+                type: 'document',
+                title: item.label,
+                size: { width: 960, height: 720 },
+                data: { nodeId: item.paneData.nodeId },
+            });
+            return;
+        }
+        if (item.kind === 'finder') {
+            const id = item.paneData?.folderId ? `finder-${item.paneData.folderId}` : 'finder-main';
+            revealPane(id, { type: 'finder', title: item.label || 'Finder', size: { width: 1280, height: 820 }, data: item.paneData });
+            return;
+        }
+        if (item.kind === 'notes') {
+            revealPane('notes-main', { type: 'notes', title: 'Notizen', size: { width: 720, height: 560 } });
+            return;
+        }
+        if (item.kind === 'chat') {
+            revealPane('chat-main', { type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
+            return;
+        }
+        openFinder();
+    }, [openFinder, revealPane]);
+
+    // ── display values ─────────────────────────────────────────────────────
     const firstName = user?.name?.split(' ')[0] ?? null;
 
     const greeting = (() => {
@@ -196,271 +221,331 @@ export const HomeSurface: React.FC = () => {
         return 'Guten Abend';
     })();
 
-    const todayLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const personalSpaceLabel = myContent?.space?.name || 'Persoenlicher Bereich';
-    const personalLatestItem = useMemo<PersonalLatestItem | null>(() => {
-        if (!myContent) return null;
+    const now         = new Date();
+    const dateStr     = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+    const timeStr     = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const todayLabel  = `${dateStr} · ${timeStr}`;
 
-        const candidates = [
-            ...(Array.isArray(myContent.nodes) ? myContent.nodes.map((node) => ({
-                kind: 'node' as const,
-                id: node.id,
-                label: node.title || node.name || 'Unbenanntes Dokument',
-                timestamp: getComparableTimestamp(node.updated_at || node.created_at),
-            })) : []),
-            ...(Array.isArray(myContent.files) ? myContent.files.map((file) => ({
-                kind: 'file' as const,
-                id: file.id,
-                label: file.name || 'Datei',
-                timestamp: getComparableTimestamp(file.created_at),
-                linkedNodeId: file.linked_node_id || null,
-            })) : []),
-            ...(Array.isArray(myContent.folders) ? myContent.folders.map((folder) => ({
-                kind: 'folder' as const,
-                id: folder.id,
-                label: folder.name || 'Ordner',
-                timestamp: getComparableTimestamp(folder.updated_at || folder.created_at),
-            })) : []),
-        ];
+    // ── render ─────────────────────────────────────────────────────────────
+    if (overlayMode) {
+        return (
+            <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
+                <div className="absolute left-1/2 top-32 w-[min(760px,calc(100vw-24rem))] -translate-x-1/2">
+                    <div className="pointer-events-auto rounded-[30px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.52))] p-5 shadow-[0_28px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/56">Home</div>
+                                <h1 className="mt-2 text-[28px] font-light tracking-[0.02em] text-white/92">
+                                    {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
+                                </h1>
+                                <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-white/28">
+                                    {todayLabel}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                data-testid="home-logout"
+                                onClick={() => void handleLogout()}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/45 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                <LogOut size={13} />
+                                Abmelden
+                            </button>
+                        </div>
 
-        return candidates.sort((left, right) => right.timestamp - left.timestamp)[0] ?? null;
-    }, [myContent]);
-
-    const openPersonalLatest = useCallback(() => {
-        if (!personalLatestItem) {
-            openMeineDateien();
-            return;
-        }
-
-        if (personalLatestItem.kind === 'node') {
-            openPane({
-                id: `doc-${personalLatestItem.id}`,
-                type: 'document',
-                title: personalLatestItem.label,
-                size: { width: 960, height: 720 },
-                data: { nodeId: personalLatestItem.id },
-            });
-            return;
-        }
-
-        if (personalLatestItem.kind === 'folder') {
-            openPane({
-                id: `finder-${personalLatestItem.id}`,
-                type: 'finder',
-                title: personalLatestItem.label,
-                size: { width: 960, height: 720 },
-                data: { folderId: personalLatestItem.id },
-            });
-            return;
-        }
-
-        void openSourceFileLike({
-            id: personalLatestItem.id,
-            name: personalLatestItem.label,
-            linked_node_id: (personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId,
-        }, openPane);
-    }, [openMeineDateien, openPane, personalLatestItem]);
-
-    const myContentCountsLabel = useMemo(() => {
-        if (!myContent?.counts) return null;
-        return [
-            myContent.counts.nodes != null && formatCountLabel(myContent.counts.nodes, 'Arbeitsdokument', 'Arbeitsdokumente'),
-            myContent.counts.folders != null && formatCountLabel(myContent.counts.folders, 'Ordner'),
-            myContent.counts.files != null && formatCountLabel(myContent.counts.files, 'Originaldatei', 'Originaldateien'),
-        ].filter(Boolean).join(' · ');
-    }, [myContent]);
-
-    const personalLatestLabel = personalLatestItem?.label ?? null;
-    const personalLatestKindLabel = personalLatestItem
-        ? personalLatestItem.kind === 'node'
-            ? 'Arbeitsdokument'
-            : personalLatestItem.kind === 'file'
-                ? (((personalLatestItem as PersonalLatestItem & { linkedNodeId?: string | null }).linkedNodeId) ? 'Arbeitsdokument mit Original' : 'Originaldatei')
-                : 'Ordner'
-        : null;
-
-    return (
-        <div className="absolute inset-0 overflow-auto">
-            <div className="mx-auto flex max-w-3xl flex-col gap-10 px-6 pb-[16rem] pt-12 md:pb-[18rem] xl:pb-[19rem]">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h1 className={`text-2xl font-semibold tracking-tight ${t.heading}`}>
-                            {firstName ? `${greeting}, ${firstName}.` : greeting + '.'}
-                        </h1>
-                        <p className={`mt-1 text-sm ${t.sub}`}>{todayLabel}</p>
-                    </div>
-                    <button
-                        type="button"
-                        data-testid="home-logout"
-                        onClick={() => void handleLogout()}
-                        className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-all ${t.qaBtn}`}
-                    >
-                        <LogOut size={16} className={t.qaIcon} />
-                        Abmelden
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                    <button
-                        data-testid="qa-finder"
-                        onClick={openFinder}
-                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
-                    >
-                        <FolderOpen size={22} className={t.qaIcon} />
-                        Finder
-                    </button>
-                    <button
-                        data-testid="qa-meine-dateien"
-                        onClick={openMeineDateien}
-                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
-                    >
-                        <FolderHeart size={22} className={t.qaIcon} />
-                        Meine Dateien
-                    </button>
-                    <button
-                        data-testid="qa-notes"
-                        onClick={openNotes}
-                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
-                    >
-                        <StickyNote size={22} className={t.qaIcon} />
-                        Notizen
-                    </button>
-                    <button
-                        data-testid="qa-mora"
-                        onClick={openMora}
-                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
-                    >
-                        <MessageCircle size={22} className={t.qaIcon} />
-                        Mora
-                    </button>
-                    <button
-                        data-testid="qa-explore"
-                        onClick={navigateToExplore}
-                        className={`flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-sm font-medium transition-all ${t.qaBtn}`}
-                    >
-                        <Compass size={22} className={t.qaIcon} />
-                        Erkunden
-                    </button>
-                </div>
-
-                {recentDocs !== null && (
-                    <section data-testid="recent-docs-section">
-                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Zuletzt in der Organisation aktualisiert
-                        </h2>
-                        <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Echte Dokument-Updates aus der aktuell aktiven Organisation.
+                        <p
+                            data-testid="briefing-text"
+                            className="mt-4 max-w-2xl text-[14px] font-light leading-relaxed text-white/74"
+                        >
+                            {briefing}
                         </p>
-                        {recentDocs.length === 0 ? (
-                            <p data-testid="recent-docs-empty" className={`text-sm ${t.cardSub}`}>
-                                Noch keine Dokumente sichtbar. Öffne den Finder, um die aktuelle Struktur zu prüfen.
+
+                        {deptTiles.length > 0 && (
+                            <div
+                                data-testid="dept-pulse-tiles"
+                                className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-3"
+                            >
+                                {deptTiles.map(({ dept, count, active, loaded }) => (
+                                    <button
+                                        key={dept.id}
+                                        data-testid={`dept-tile-${dept.id}`}
+                                        onClick={() => revealPane(`finder-dept-${dept.id}`, {
+                                            type: 'finder',
+                                            title: dept.name,
+                                            size: { width: 900, height: 620 },
+                                            data: { departmentId: dept.id, departmentName: dept.name },
+                                        })}
+                                        className={[
+                                            'rounded-[18px] border px-4 py-3 text-left transition-all',
+                                            'hover:border-white/16 hover:bg-white/[0.06]',
+                                            active
+                                                ? 'border-cyan-400/16 bg-cyan-500/[0.08]'
+                                                : 'border-white/[0.08] bg-white/[0.03]',
+                                        ].join(' ')}
+                                    >
+                                        <div className="truncate text-[13px] text-white/86">{dept.name}</div>
+                                        <div className="mt-1 text-[11px] text-white/45">
+                                            {active
+                                                ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
+                                                : loaded
+                                                    ? 'ruhig'
+                                                    : 'lädt…'}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="mt-5 flex flex-wrap gap-2">
+                            <button
+                                data-testid="qa-finder"
+                                onClick={openFinder}
+                                className="rounded-xl border border-emerald-400/18 bg-emerald-500/[0.10] px-4 py-2 text-[12px] tracking-[0.04em] text-emerald-200/80 transition-all hover:border-emerald-300/28 hover:bg-emerald-500/[0.16]"
+                            >
+                                Finder öffnen
+                            </button>
+                            <button
+                                onClick={openUniverse}
+                                className="rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-4 py-2 text-[12px] tracking-[0.04em] text-cyan-100/84 transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.16]"
+                            >
+                                Live-Topographie
+                            </button>
+                            <button
+                                data-testid="qa-mora"
+                                onClick={openMora}
+                                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[12px] tracking-[0.04em] text-white/52 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                Mora fragen
+                            </button>
+                            <button
+                                data-testid="qa-upload"
+                                onClick={openUpload}
+                                className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-[12px] tracking-[0.04em] text-white/52 transition-all hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                Datei hochladen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="absolute bottom-[8.25rem] left-1/2 w-[min(980px,calc(100vw-20rem))] -translate-x-1/2">
+                    <div className="pointer-events-auto rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.72),rgba(4,10,13,0.46))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
+                        <div className="mb-3 flex items-center justify-between gap-4">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-white/32">Zuletzt berührt</div>
+                                <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivität statt statischer Home-Daten.</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={openFinder}
+                                className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] text-white/52 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/72"
+                            >
+                                Alles im Finder
+                            </button>
+                        </div>
+
+                        {recentActivityItems.length === 0 ? (
+                            <p data-testid="recent-items-empty" className="text-sm text-white/30">
+                                Noch keine Aktivität. Starte im Finder.
                             </p>
                         ) : (
-                            <ul className="flex flex-col gap-1">
-                                {recentDocs.map((node) => (
-                                    <li key={node.id} data-testid="recent-doc-item">
+                            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                {recentActivityItems.map((item) => (
+                                    <li key={item.id} data-testid="recent-item">
                                         <button
-                                            onClick={() => openDocument(node)}
-                                            className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${t.item}`}
+                                            onClick={() => openRecentActivity(item)}
+                                            className="group flex w-full items-center gap-3 rounded-[18px] border border-white/[0.06] bg-white/[0.03] px-3 py-3 text-left transition-all hover:border-white/14 hover:bg-white/[0.06]"
                                         >
-                                            <FileText size={15} className={t.cardSub} />
-                                            <span className="flex-1 truncate text-sm">{node.title || 'Unbenannt'}</span>
-                                            {node.updated_at && (
-                                                <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
-                                                    <Clock size={11} className="inline mr-1 opacity-60" />
-                                                    {relativeTime(node.updated_at)}
-                                                </span>
-                                            )}
+                                            <div
+                                                className={[
+                                                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                                                    item.kind === 'document'
+                                                        ? 'bg-emerald-500/[0.08]'
+                                                        : 'bg-white/[0.04]',
+                                                ].join(' ')}
+                                            >
+                                                {kindIcon(item.kind)}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-[13px] text-white/78">
+                                                    {item.label}
+                                                </div>
+                                                <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-white/28">
+                                                    {kindLabel(item.kind)} · {relativeTime(new Date(item.openedAt).toISOString())}
+                                                </div>
+                                            </div>
                                         </button>
                                     </li>
                                 ))}
                             </ul>
                         )}
-                    </section>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="absolute inset-0 overflow-auto">
+            <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 pb-[16rem] pt-10 md:pb-[18rem] xl:pb-[19rem]">
+
+                {/* ── 0. Header: greeting + logout ── */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-medium tracking-tight text-white/85">
+                            {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
+                        </h1>
+                        <button
+                            type="button"
+                            onClick={openUniverse}
+                            className="inline-flex items-center gap-2 rounded-full border border-cyan-400/18 bg-cyan-500/[0.08] px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-cyan-200/78 transition-all hover:border-cyan-300/28 hover:bg-cyan-500/[0.14]"
+                        >
+                            <Orbit size={13} />
+                            Live-Topographie
+                        </button>
+                    </div>
+                    <button
+                        type="button"
+                        data-testid="home-logout"
+                        onClick={() => void handleLogout()}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-white/40 transition-all hover:bg-white/[0.04] hover:text-white/65"
+                    >
+                        <LogOut size={13} />
+                        Abmelden
+                    </button>
+                </div>
+
+                {/* ── 1. Mora Briefing Strip ── */}
+                <div
+                    data-testid="briefing-strip"
+                    className="rounded-[10px] border border-white/[0.07] bg-white/[0.02] px-5 py-4"
+                >
+                    <div className="mb-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="h-[7px] w-[7px] rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.65)]" />
+                            <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-400/50">Mora</span>
+                        </div>
+                        <span className="text-[10px] text-white/[0.18]">{todayLabel}</span>
+                    </div>
+                    <p data-testid="briefing-text" className="text-[13px] font-light leading-relaxed text-white/72">
+                        {briefing}
+                    </p>
+                </div>
+
+                {/* ── 2. Department Pulse Tiles ── */}
+                {deptTiles.length > 0 && (
+                    <div
+                        data-testid="dept-pulse-tiles"
+                        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                    >
+                        {deptTiles.map(({ dept, count, active, loaded }) => (
+                            <button
+                                key={dept.id}
+                                data-testid={`dept-tile-${dept.id}`}
+                                onClick={() => revealPane(`finder-dept-${dept.id}`, {
+                                    type: 'finder',
+                                    title: dept.name,
+                                    size: { width: 900, height: 620 },
+                                    data: { departmentId: dept.id, departmentName: dept.name },
+                                })}
+                                className={[
+                                    'rounded-[10px] border px-3 py-3 text-left transition-all hover:border-white/15 hover:bg-white/[0.05]',
+                                    active
+                                        ? 'border-emerald-500/20 bg-emerald-500/[0.07]'
+                                        : 'border-white/[0.07] bg-white/[0.03]',
+                                ].join(' ')}
+                            >
+                                <div className="mb-1 truncate text-[11px] font-medium text-white/85">
+                                    {dept.name}
+                                </div>
+                                {active ? (
+                                    <div className="text-[10px] text-emerald-400">
+                                        {count} {count === 1 ? 'Inhalt' : 'Inhalte'}
+                                    </div>
+                                ) : loaded ? (
+                                    <div className="text-[10px] text-white/30">ruhig</div>
+                                ) : (
+                                    <div className="text-[10px] text-white/[0.18]">…</div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 )}
 
-                {kairosEvents && kairosEvents.length > 0 && (
-                    <section data-testid="kairos-feed-section">
-                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Mora bemerkt
-                        </h2>
-                        <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Reale Signale aus dem Core. Aeltere Demo-Eintraege zeigen wir bewusst mit Datum statt mit kuenstlicher Frische.
+                {/* ── 3. Zuletzt berührt ── */}
+                <section data-testid="recent-items-section">
+                    <h2 className="mb-2.5 text-[9px] uppercase tracking-[0.14em] text-white/20">
+                        Zuletzt berührt
+                    </h2>
+                    {recentActivityItems.length === 0 ? (
+                        <p data-testid="recent-items-empty" className="text-sm text-white/30">
+                            Noch keine Aktivität. Starte im Finder.
                         </p>
+                    ) : (
                         <ul className="flex flex-col gap-1">
-                            {kairosEvents.map((evt) => (
-                                <li key={evt.id} className={`flex items-start gap-3 rounded-xl px-4 py-3 ${t.item}`}>
-                                    <Eye size={14} className={`mt-0.5 shrink-0 ${t.cardSub}`} />
-                                    <span className="flex-1 text-sm leading-snug">
-                                        {evt.payload.summary || (evt.payload.new_nodes != null
-                                            ? `${evt.payload.new_nodes} neue Element${evt.payload.new_nodes !== 1 ? 'e' : ''}`
-                                            : 'Operatives Signal in der Organisation')}
-                                    </span>
-                                    <span className={`text-[11px] shrink-0 ${t.cardSub}`}>
-                                        {relativeTime(evt.timestamp)}
-                                    </span>
+                            {recentActivityItems.map((item) => (
+                                <li key={item.id} data-testid="recent-item">
+                                    <button
+                                        onClick={() => openRecentActivity(item)}
+                                        className="group w-full flex items-center gap-3 rounded-lg border border-white/[0.05] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-white/10 hover:bg-white/[0.05]"
+                                    >
+                                        <div className={[
+                                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
+                                            item.kind === 'document'
+                                                ? 'bg-emerald-500/[0.08]'
+                                                : 'bg-white/[0.04]',
+                                        ].join(' ')}>
+                                            {kindIcon(item.kind)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate text-[12px] text-white/75">
+                                                {item.label}
+                                            </div>
+                                            <div className="mt-0.5 text-[10px] text-white/25">
+                                                {kindLabel(item.kind)} · {relativeTime(new Date(item.openedAt).toISOString())}
+                                            </div>
+                                        </div>
+                                        <span className="shrink-0 text-[10px] text-white/15 opacity-0 transition-opacity group-hover:opacity-100">
+                                            öffnen →
+                                        </span>
+                                    </button>
                                 </li>
                             ))}
                         </ul>
-                    </section>
-                )}
+                    )}
+                </section>
 
-                {myContent && (
-                    <section data-testid="personal-area-section">
-                        <h2 className={`mb-3 text-[11px] uppercase tracking-[0.2em] font-semibold ${t.sectionHd}`}>
-                            Persönlicher Bereich
-                        </h2>
-                        <p className={`mb-3 text-xs ${t.cardSub}`}>
-                            Eigene Ordner, Arbeitsdokumente und hochgeladene Originaldateien aus deinem privaten Kontext.
-                        </p>
-                        <div className="grid gap-3 md:grid-cols-[minmax(0,1.3fr)_minmax(240px,0.7fr)]">
-                            <button
-                                data-testid="my-content-card"
-                                onClick={openMeineDateien}
-                                className={`w-full flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${t.card}`}
-                            >
-                                <FolderHeart size={20} className={t.qaIcon} />
-                                <div className="min-w-0 flex-1">
-                                    <div className={`text-sm font-medium ${t.cardText}`}>Meine Dateien</div>
-                                    {myContentCountsLabel && (
-                                        <div className={`mt-0.5 text-[12px] ${t.cardSub}`}>
-                                            {myContentCountsLabel}
-                                        </div>
-                                    )}
-                                    <div className={`mt-1 text-[11px] ${t.cardSub}`}>
-                                        Wenn Mora aus einer hochgeladenen Datei ein Arbeitsdokument macht, bleibt das Original als Quelle erhalten und bleibt weiterhin direkt oeffnbar.
-                                    </div>
-                                </div>
-                            </button>
+                {/* ── 4. Quick Actions ── */}
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        data-testid="qa-finder"
+                        onClick={openFinder}
+                        className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.08] px-3.5 py-1.5 text-[11px] tracking-[0.05em] text-emerald-300/70 transition-all hover:border-emerald-500/25 hover:bg-emerald-500/[0.12]"
+                    >
+                        Finder öffnen
+                    </button>
+                    <button
+                        onClick={openUniverse}
+                        className="rounded-lg border border-cyan-400/15 bg-cyan-500/[0.08] px-3.5 py-1.5 text-[11px] tracking-[0.05em] text-cyan-200/72 transition-all hover:border-cyan-300/26 hover:bg-cyan-500/[0.12]"
+                    >
+                        Universe oeffnen
+                    </button>
+                    <button
+                        data-testid="qa-mora"
+                        onClick={openMora}
+                        className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-[11px] tracking-[0.05em] text-white/40 transition-all hover:border-white/15 hover:bg-white/[0.06]"
+                    >
+                        Mora fragen
+                    </button>
+                    <button
+                        data-testid="qa-upload"
+                        onClick={openUpload}
+                        className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-[11px] tracking-[0.05em] text-white/40 transition-all hover:border-white/15 hover:bg-white/[0.06]"
+                    >
+                        Datei hochladen
+                    </button>
+                </div>
 
-                            <button
-                                data-testid="personal-space-card"
-                                onClick={openPersonalLatest}
-                                className={`w-full text-left rounded-2xl border px-5 py-4 transition-all ${t.card}`}
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className={`text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                        Persoenlicher Bereich
-                                    </div>
-                                    {personalLatestKindLabel && (
-                                        <span className={`text-[10px] uppercase tracking-[0.14em] ${t.cardSub}`}>
-                                            {personalLatestKindLabel}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className={`mt-2 truncate text-sm font-medium ${t.cardText}`}>
-                                    {personalSpaceLabel}
-                                </div>
-                                <div className={`mt-4 text-[11px] uppercase tracking-[0.18em] ${t.cardSub}`}>
-                                    Zuletzt aktiv
-                                </div>
-                                <div className={`mt-2 text-sm ${t.cardText}`}>
-                                    {personalLatestLabel || 'Noch keine privaten Inhalte sichtbar.'}
-                                </div>
-                            </button>
-                        </div>
-                    </section>
-                )}
             </div>
         </div>
     );

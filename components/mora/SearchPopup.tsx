@@ -82,7 +82,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
 
     // Quick searches
     const quickSearches = [
-        { label: 'Alle Dokumente', query: 'type:file' },
+        { label: 'Alle Dateien', query: 'type:file' },
         { label: 'Heute erstellt', query: 'created:today' },
         { label: 'Letzte Woche', query: 'created:week' },
     ];

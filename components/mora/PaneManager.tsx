@@ -46,7 +46,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'chat':
             return <ChatPane id={pane.id} />;
         case 'meine-dateien':
-            return <MeineDateienPane />;
+            return <MeineDateienPane id={pane.id} />;
 
         case 'grid':
             return <GridPane id={pane.id} />;

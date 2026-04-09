@@ -4,8 +4,10 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Clock, CheckCircle, AlertCircle, Database, ShieldCheck, Sparkles } from 'lucide-react';
 import { useMemory } from '@/lib/hooks/useMemory';
+import { useMemorySurface } from '@/lib/hooks/useMemorySurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
+import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 
 /**
  * MEMORY DASHBOARD WIDGET
@@ -23,6 +25,7 @@ interface MemoryWidgetProps {
 
 export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) => {
     const { metrics, pendingCount, isLoading } = useMemory();
+    const { surface } = useMemorySurface();
     const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const { openPane } = usePaneStore();
     const isAccountScoped = !activeCompanyId;
@@ -35,26 +38,20 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
     }, [metrics]);
 
     const signalBars = useMemo(() => {
-        const facts = metrics?.structured_facts || 0;
-        const learns = metrics?.recent_learns_7d || 0;
-        const reviews = pendingCount;
+        const foundation = surface?.layers?.foundation?.count || 0;
+        const scoped = surface?.layers?.scope?.count || 0;
+        const personal = surface?.layers?.personal?.count || 0;
         return [
-            { label: 'Fakten', value: facts, icon: Database },
-            { label: 'Lernen', value: learns, icon: Sparkles },
-            { label: 'Review', value: reviews, icon: ShieldCheck },
+            { label: 'Grund', value: foundation, icon: Database },
+            { label: 'Bereich', value: scoped, icon: Sparkles },
+            { label: 'Persoenlich', value: personal, icon: ShieldCheck },
         ];
-    }, [metrics, pendingCount]);
+    }, [surface]);
 
     const maxSignal = Math.max(...signalBars.map((item) => item.value), 1);
 
     const handleClick = () => {
-        openPane({
-            id: "mora-hub",
-            type: "mora-hub",
-            title: "Mora Nexus",
-            size: { width: 720, height: 640 },
-            data: { activeSection: "memory" }
-        });
+        openMoraCenter(openPane, 'memory');
     };
 
     const formatLastActivity = () => {
@@ -94,10 +91,10 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                     </div>
                     <div>
                         <h3 className="text-xs font-medium text-white/80 tracking-wide">
-                            {isAccountScoped ? 'Konto-Gedaechtnis' : 'Memory'}
+                            {isAccountScoped ? 'Konto-Gedaechtnis' : 'Mora Center'}
                         </h3>
                         <p className="text-[9px] text-white/30 uppercase tracking-widest">
-                            {isAccountScoped ? 'Kein Kontext aktiv' : 'Core-Metriken'}
+                            {isAccountScoped ? 'Kein Kontext aktiv' : 'Erinnerungen & Signale'}
                         </p>
                     </div>
                 </div>
@@ -175,7 +172,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
             <div className="flex items-center justify-between pt-3 border-t border-white/5">
                 <span className="text-[9px] text-white/30 tracking-wide">Klicken zum Oeffnen</span>
                 <motion.div className="text-[9px] text-violet-400/60 group-hover:text-violet-400 transition-colors flex items-center gap-1" whileHover={{ x: 2 }}>
-                    Mora Nexus
+                    Mora Center
                     <span className="opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
                 </motion.div>
             </div>

@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, ChevronRight, ExternalLink, Folder, Link, Loader2, Paperclip, FileText } from 'lucide-react';
+import { Check, ChevronRight, ExternalLink, FileText, Folder, Link, Loader2, Paperclip } from 'lucide-react';
 import { fetchMyContent, shareFile, shareNode, type UserContentResponse } from '@/lib/api/coreClient';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { GlassPanel } from '@/components/layers/GlassPanel';
+import { toast } from 'sonner';
 import {
     getContentDisplayName,
     getNodeOpenActionLabel,
@@ -12,6 +14,7 @@ import {
     getSourceFileDisplayName,
     getSourceFileOpenActionLabel,
     getSourceFileSecondaryLabel,
+    isSourceFileAvailable,
     openNodeLike,
     openSourceFileForNode,
     openSourceFileLike,
@@ -23,11 +26,24 @@ type ShareState =
     | { status: 'done'; url: string }
     | { status: 'unavailable' };
 
-export const MeineDateienPane: React.FC = () => {
+type VisibleItem = NonNullable<UserContentResponse['items']>[number];
+
+function normalizePrivateAreaLabel(value?: string | null): string {
+    const next = (value || '').trim();
+    if (!next) return 'Privater Bereich';
+    const normalized = next.toLowerCase();
+    if (['my space', 'personal space', 'private space'].includes(normalized)) {
+        return 'Privater Bereich';
+    }
+    return next;
+}
+
+export const MeineDateienPane: React.FC<{ id?: string }> = ({ id = 'meine-dateien' }) => {
     const [content, setContent] = useState<UserContentResponse | 'error' | null>(null);
     const [loading, setLoading] = useState(true);
     const [shareStates, setShareStates] = useState<Record<string, ShareState>>({});
-    const openPane = usePaneStore((state) => state.openPane);
+    const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const pane = getPane(id);
 
     useEffect(() => {
         let cancelled = false;
@@ -83,56 +99,176 @@ export const MeineDateienPane: React.FC = () => {
         });
     }, [openPane]);
 
+    if (!pane) {
+        return null;
+    }
+
     if (loading) {
         return (
-            <div className="flex items-center gap-2 px-4 py-8 text-sm text-white/30" data-testid="meine-dateien-loading">
-                <Loader2 size={14} className="animate-spin" />
-                Lade Inhalte...
-            </div>
+            <GlassPanel
+                title="Privater Bereich"
+                width={pane.size.width}
+                height={pane.size.height}
+                initialX={pane.position.x}
+                initialY={pane.position.y}
+                paneId={id}
+                onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+                onResize={(w, h) => updatePaneSize(id, w, h)}
+                onClose={() => removePane(id)}
+                onMinimize={() => minimizePane(id)}
+                onFocus={() => focusPane(id)}
+                isActive={true}
+                zIndex={pane.zIndex}
+                showCloseButton
+                showMinimizeButton
+                draggable
+                resizable
+            >
+                <div className="flex items-center gap-2 px-5 py-8 text-sm text-white/30" data-testid="meine-dateien-loading">
+                    <Loader2 size={14} className="animate-spin" />
+                    Lade Inhalte...
+                </div>
+            </GlassPanel>
         );
     }
 
     if (content === null || content === 'error') {
         return (
-            <div className="px-4 py-8 text-sm text-white/30">
-                Meine Inhalte sind gerade nicht verfuegbar.
-            </div>
+            <GlassPanel
+                title="Privater Bereich"
+                width={pane.size.width}
+                height={pane.size.height}
+                initialX={pane.position.x}
+                initialY={pane.position.y}
+                paneId={id}
+                onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+                onResize={(w, h) => updatePaneSize(id, w, h)}
+                onClose={() => removePane(id)}
+                onMinimize={() => minimizePane(id)}
+                onFocus={() => focusPane(id)}
+                isActive={true}
+                zIndex={pane.zIndex}
+                showCloseButton
+                showMinimizeButton
+                draggable
+                resizable
+            >
+                <div className="px-5 py-8 text-sm text-white/30">
+                    Meine Inhalte sind gerade nicht verfuegbar.
+                </div>
+            </GlassPanel>
         );
     }
 
     const folders = Array.isArray(content.folders) ? content.folders : [];
-    const nodes = Array.isArray(content.nodes) ? content.nodes : [];
-    const files = Array.isArray(content.files) ? content.files : [];
+    const documents = Array.isArray(content.documents)
+        ? content.documents
+        : (Array.isArray(content.nodes) ? content.nodes : []);
+    const files = Array.isArray(content.files) ? content.files.filter((file) => isSourceFileAvailable(file)) : [];
+    const standaloneFiles = files.filter((file) => !file.linked_node_id);
+    const documentById = new Map(documents.map((document) => [document.id, document]));
+    const fileById = new Map(standaloneFiles.map((file) => [file.id, file]));
     const counts = content.counts && typeof content.counts === 'object' ? content.counts : undefined;
-    const isEmpty = folders.length === 0 && nodes.length === 0 && files.length === 0;
+    const privateAreaLabel = normalizePrivateAreaLabel(content.space?.name);
+
+    const visibleItems: VisibleItem[] = Array.isArray(content.items) && content.items.length > 0
+        ? content.items
+        : [
+            ...documents.map((document) => ({
+                id: document.id,
+                kind: 'document' as const,
+                label: getContentDisplayName(document),
+                timestamp: document.updated_at || document.created_at || null,
+                visibility: document.visibility,
+                node_id: document.id,
+                file_id: null,
+            })),
+            ...standaloneFiles.map((file) => ({
+                id: file.id,
+                kind: 'file' as const,
+                label: getSourceFileDisplayName(file),
+                timestamp: file.created_at || null,
+                visibility: file.visibility,
+                node_id: null,
+                file_id: file.id,
+            })),
+        ];
+    const visibleCounts = {
+        folders: folders.length,
+        documents: documents.length,
+        files: standaloneFiles.length,
+        total: folders.length + visibleItems.length,
+    };
+
+    const isEmpty = folders.length === 0 && visibleItems.length === 0;
 
     if (isEmpty) {
         return (
-            <div className="px-4 py-8 text-sm text-white/30">
-                Keine eigenen Inhalte gefunden. Erstelle Dokumente oder lade Dateien hoch.
-            </div>
+            <GlassPanel
+                title="Privater Bereich"
+                width={pane.size.width}
+                height={pane.size.height}
+                initialX={pane.position.x}
+                initialY={pane.position.y}
+                paneId={id}
+                onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+                onResize={(w, h) => updatePaneSize(id, w, h)}
+                onClose={() => removePane(id)}
+                onMinimize={() => minimizePane(id)}
+                onFocus={() => focusPane(id)}
+                isActive={true}
+                zIndex={pane.zIndex}
+                showCloseButton
+                showMinimizeButton
+                draggable
+                resizable
+            >
+                <div className="px-5 py-8 text-sm text-white/30">
+                    Keine eigenen Inhalte gefunden. Lege einen Ordner an oder lade eine Datei hoch.
+                </div>
+            </GlassPanel>
         );
     }
 
     return (
-        <div className="flex flex-col py-2" data-testid="meine-dateien-content">
+        <GlassPanel
+            title="Privater Bereich"
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            paneId={id}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
+            onClose={() => removePane(id)}
+            onMinimize={() => minimizePane(id)}
+            onFocus={() => focusPane(id)}
+            isActive={true}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
+        >
+        <div className="flex h-full flex-col" data-testid="meine-dateien-content">
             {counts && (
-                <div className="mb-1 border-b border-white/5 px-4 py-2">
+                <div className="border-b border-white/5 px-5 py-3">
                     <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/20">
-                        {counts.total != null && <span>{counts.total} Eintraege gesamt</span>}
-                        {counts.folders != null && <span>{counts.folders} Ordner</span>}
-                        {counts.nodes != null && <span>{counts.nodes} Arbeitsdokumente</span>}
-                        {counts.files != null && <span>{counts.files} Originaldateien</span>}
+                        <span>{visibleCounts.total} sichtbare Eintraege</span>
+                        <span>{visibleCounts.folders} Ordner</span>
+                        <span>{visibleCounts.documents} Inhalte</span>
+                        {visibleCounts.files > 0 && <span>{visibleCounts.files} Dateien</span>}
                     </div>
-                    <div className="mt-1 text-[10px] text-white/20">
-                        Wenn Mora aus einer hochgeladenen Datei ein Arbeitsdokument erzeugt, bleibt die Originaldatei als Quelle erhalten. Beide gehoeren zum selben Inhaltssystem.
-                    </div>
+                    <p className="mt-2 text-xs text-white/35">
+                        Alles hier gehoert nur deinem Konto. Gemeinsame Inhalte und Teamstrukturen oeffnest du getrennt im Finder der aktiven Instanz.
+                    </p>
                 </div>
             )}
 
+            <div className="flex-1 overflow-y-auto py-2">
             {content.space?.name && (
-                <div className="px-4 pb-2 pt-1 text-[11px] text-white/30">
-                    Privater Bereich: <span className="text-white/55">{content.space.name}</span>
+                <div className="px-5 pb-2 pt-1 text-[11px] text-white/30">
+                    Privater Bereich: <span className="text-white/55">{privateAreaLabel}</span>
                 </div>
             )}
 
@@ -145,7 +281,7 @@ export const MeineDateienPane: React.FC = () => {
                         <button
                             key={folder.id}
                             type="button"
-                            className="group flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-white/[0.03]"
+                            className="group flex w-full items-center gap-2 px-5 py-2.5 text-left hover:bg-white/[0.03]"
                             data-testid={`folder-row-${folder.id}`}
                             onClick={() => handleOpenFolder(folder.id, folder.name)}
                         >
@@ -159,127 +295,134 @@ export const MeineDateienPane: React.FC = () => {
                 </section>
             )}
 
-            {nodes.length > 0 && (
-                <section aria-label="Arbeitsdokumente">
-                    <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Arbeitsdokumente
+            {visibleItems.length > 0 && (
+                <section aria-label="Inhalte">
+                    <div className="px-5 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
+                        Inhalte
                     </div>
-                    {nodes.map((node) => {
-                        const label = getContentDisplayName(node);
-                        const share = shareStates[node.id] ?? { status: 'idle' };
-                        const sourceFileId = getNodeSourceFileId(node);
-                        return (
-                            <div
-                                key={node.id}
-                                className="group flex items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-white/[0.03]"
-                                data-testid={`node-row-${node.id}`}
-                            >
-                                <FileText size={13} className="mt-0.5 shrink-0 text-white/30" />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => void openNodeLike(node, openPane)}
-                                            className="truncate text-left text-sm text-white/70 transition-colors group-hover:text-white/90"
-                                        >
-                                            {label}
-                                        </button>
-                                        {node.visibility && (
-                                            <VisibilityBadge visibility={node.visibility} size={11} />
-                                        )}
-                                        <ShareControl state={share} onShare={() => void handleShareNode(node.id)} />
-                                    </div>
-                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
-                                        <span>{getNodeOpenActionLabel(node)}</span>
-                                        {sourceFileId && (
-                                            <>
-                                                <span className="text-white/12">•</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void openSourceFileForNode(node)}
-                                                    className="text-cyan-200/70 transition-colors hover:text-cyan-100"
-                                                >
-                                                    Originaldatei oeffnen
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                    <ShareResult state={share} />
-                                </div>
-                            </div>
-                        );
-                    })}
-                </section>
-            )}
+                    {visibleItems.map((item) => {
+                        if (item.kind === 'document' && item.node_id) {
+                            const node = documentById.get(item.node_id);
+                            if (!node) return null;
 
-            {files.length > 0 && (
-                <section aria-label="Originaldateien und Anhaenge">
-                    <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
-                        Originaldateien und Anhaenge
-                    </div>
-                    {files.map((file) => {
-                        const share = shareStates[file.id] ?? { status: 'idle' };
-                        const displayName = getSourceFileDisplayName(file);
-                        return (
-                            <div
-                                key={file.id}
-                                className="group flex items-start gap-2.5 px-4 py-2.5 transition-colors hover:bg-white/[0.03]"
-                                data-testid={`file-row-${file.id}`}
-                            >
-                                <Paperclip size={13} className="mt-0.5 shrink-0 text-white/25" />
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => void openSourceFileLike(file, openPane)}
-                                            className="truncate text-left text-sm text-white/60 transition-colors group-hover:text-white/82"
-                                        >
-                                            {displayName}
-                                        </button>
-                                        <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-cyan-200/80">
-                                            {getSourceFileSecondaryLabel(file)}
-                                        </span>
-                                        {file.visibility && (
-                                            <VisibilityBadge visibility={file.visibility} size={11} />
-                                        )}
-                                        <ShareControl state={share} onShare={() => void handleShareFile(file.id)} />
+                            const label = getContentDisplayName(node);
+                            const share = shareStates[node.id] ?? { status: 'idle' };
+                            const sourceFileId = getNodeSourceFileId(node);
+
+                            return (
+                                <div
+                                    key={`document-${node.id}`}
+                                    className="group flex items-start gap-2.5 px-5 py-2.5 transition-colors hover:bg-white/[0.03]"
+                                    data-testid={`node-row-${node.id}`}
+                                >
+                                    <FileText size={13} className="mt-0.5 shrink-0 text-white/30" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => void openNodeLike(node, openPane)}
+                                                className="truncate text-left text-sm text-white/70 transition-colors group-hover:text-white/90"
+                                            >
+                                                {label}
+                                            </button>
+                                            {node.visibility && (
+                                                <VisibilityBadge visibility={node.visibility} size={11} />
+                                            )}
+                                            <ShareControl state={share} onShare={() => void handleShareNode(node.id)} />
+                                        </div>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
+                                            <span>{getNodeOpenActionLabel(node)}</span>
+                                            {sourceFileId && (
+                                                <>
+                                                    <span className="text-white/12">•</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            void openSourceFileForNode(node).catch((error: any) => {
+                                                                toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                            });
+                                                        }}
+                                                        className="text-cyan-200/70 transition-colors hover:text-cyan-100"
+                                                    >
+                                                        Quelle oeffnen
+                                                    </button>
+                                                </>
+                                            )}
+                                            <ShareResult state={share} />
+                                        </div>
                                     </div>
-                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
-                                        <button
-                                            type="button"
-                                            onClick={() => void openSourceFileLike(file, openPane)}
-                                            className="transition-colors hover:text-white/70"
-                                        >
-                                            {getSourceFileOpenActionLabel(file)}
-                                        </button>
-                                        {file.linked_node_id && (
-                                            <>
-                                                <span className="text-white/12">•</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void openSourceFileLike({ ...file, linked_node_id: null }, openPane)}
-                                                    className="text-cyan-200/70 transition-colors hover:text-cyan-100"
-                                                >
-                                                    Originaldatei oeffnen
-                                                </button>
-                                            </>
-                                        )}
-                                        {typeof file.size === 'number' && (
-                                            <>
-                                                <span className="text-white/12">•</span>
-                                                <span>{formatBytes(file.size)}</span>
-                                            </>
-                                        )}
-                                    </div>
-                                    <ShareResult state={share} />
                                 </div>
-                                <ExternalLink size={10} className="shrink-0 opacity-0 transition-opacity group-hover:opacity-30" />
-                            </div>
-                        );
+                            );
+                        }
+
+                        if (item.kind === 'file' && item.file_id) {
+                            const file = fileById.get(item.file_id);
+                            if (!file) return null;
+
+                            const share = shareStates[file.id] ?? { status: 'idle' };
+                            const displayName = getSourceFileDisplayName(file);
+
+                            return (
+                                <div
+                                    key={`file-${file.id}`}
+                                    className="group flex items-start gap-2.5 px-5 py-2.5 transition-colors hover:bg-white/[0.03]"
+                                    data-testid={`file-row-${file.id}`}
+                                >
+                                    <Paperclip size={13} className="mt-0.5 shrink-0 text-white/25" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void openSourceFileLike(file, openPane).catch((error: any) => {
+                                                        toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                    });
+                                                }}
+                                                className="truncate text-left text-sm text-white/60 transition-colors group-hover:text-white/82"
+                                            >
+                                                {displayName}
+                                            </button>
+                                            <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-cyan-200/80">
+                                                {getSourceFileSecondaryLabel(file)}
+                                            </span>
+                                            {file.visibility && (
+                                                <VisibilityBadge visibility={file.visibility} size={11} />
+                                            )}
+                                            <ShareControl state={share} onShare={() => void handleShareFile(file.id)} />
+                                        </div>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void openSourceFileLike(file, openPane).catch((error: any) => {
+                                                        toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                    });
+                                                }}
+                                                className="transition-colors hover:text-white/70"
+                                            >
+                                                {getSourceFileOpenActionLabel(file)}
+                                            </button>
+                                            {typeof file.size === 'number' && (
+                                                <>
+                                                    <span className="text-white/12">•</span>
+                                                    <span>{formatBytes(file.size)}</span>
+                                                </>
+                                            )}
+                                            <ShareResult state={share} />
+                                        </div>
+                                    </div>
+                                    <ExternalLink size={10} className="shrink-0 opacity-0 transition-opacity group-hover:opacity-30" />
+                                </div>
+                            );
+                        }
+
+                        return null;
                     })}
                 </section>
             )}
+            </div>
         </div>
+        </GlassPanel>
     );
 };
 

@@ -508,7 +508,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
                                 Kein Kontext aktiv
                             </p>
                             <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-                                Oeffne zuerst die Demo-Instanz oder waehle einen Bereich, damit das Team sinnvoll erscheint.
+                                Oeffne zuerst das Beispielsystem oder waehle einen Bereich, damit das Team sinnvoll erscheint.
                             </p>
                             <button
                                 id="team-setup-settings"
