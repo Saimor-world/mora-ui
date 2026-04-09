@@ -22,13 +22,24 @@ export interface ChatContext {
     pane_id?: string;
 }
 
+export interface ChatAttachment {
+    kind?: 'image';
+    mime_type?: string | null;
+    data_base64?: string | null;
+    data_url?: string | null;
+    file_name?: string | null;
+}
+
 export interface AgentChatRequest {
     message: string;
     session_id?: string;
     history?: AgentMessage[];
+    attachments?: ChatAttachment[];
     context?: ChatContext;
     tenant_id?: string; // Deprecated: tenant comes from JWT on backend
     max_iterations?: number;
+    provider_preference?: 'auto' | 'ollama' | 'gemini' | 'openai' | 'anthropic';
+    model_override?: string | null;
 }
 
 export interface ToolUse {
@@ -113,9 +124,11 @@ export const m = {
             message: request.message,
             context,
             history: request.history || [], // IMPORTANT: Include conversation history for memory
+            attachments: request.attachments || null,
             include_synthesis: true,
-            provider_preference: 'auto',
-            temperature: 0.7
+            provider_preference: request.provider_preference || 'auto',
+            temperature: 0.7,
+            model_override: request.model_override || null,
         };
 
         const response = await corePost('/v3/chat', backendRequest) as ChatApiResponse;

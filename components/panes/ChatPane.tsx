@@ -22,10 +22,10 @@ import { useMoraStore } from '@/lib/store/moraState';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
-import { useMoraStream } from '@/lib/hooks/useMoraStream';
+import { useMoraStream, type ChatAttachment as StreamChatAttachment } from '@/lib/hooks/useMoraStream';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
-import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2, LayoutList } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2, LayoutList, Paperclip, X } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
@@ -220,6 +220,15 @@ function isLikelyFileOperationIntent(text: string): boolean {
         /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(entwurf|draft|briefing)\b/,
         /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|schreibe um)\b.*\b(notiz|note|entwurf|draft|dokument)\b/,
     ].some((pattern) => pattern.test(lower));
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('File read failed'));
+        reader.readAsDataURL(file);
+    });
 }
 
 function shouldPreferAgenticLoop(text: string): boolean {
@@ -586,9 +595,11 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         }];
     });
     const [input, setInput] = useState('');
+    const [pendingAttachments, setPendingAttachments] = useState<StreamChatAttachment[]>([]);
     // isLoading is true for navigation/search intents (non-streaming)
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
     const initialMessageProcessed = useRef(false);
     const hasPromptedSetupRef = useRef(false);
 
@@ -693,6 +704,32 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         }
         setMemoryHint({ show: false, content: '' });
     }, [memoryHint.content, activeCompanyId]);
+
+    const handleAttachmentSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith('image/'));
+        event.target.value = '';
+        if (files.length === 0) return;
+
+        try {
+            const limitedFiles = files.slice(0, 3);
+            const nextAttachments = await Promise.all(
+                limitedFiles.map(async (file) => ({
+                    kind: 'image' as const,
+                    mime_type: file.type || 'image/png',
+                    data_url: await readFileAsDataUrl(file),
+                    file_name: file.name,
+                }))
+            );
+
+            setPendingAttachments((prev) => [...prev, ...nextAttachments].slice(0, 3));
+        } catch (error) {
+            console.error('[ChatPane] Failed to read image attachment:', error);
+        }
+    }, []);
+
+    const removeAttachment = useCallback((index: number) => {
+        setPendingAttachments((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    }, []);
 
     // Auto-scroll to bottom when messages or streaming text changes
     useEffect(() => {
@@ -897,11 +934,12 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)
-    const processMessage = useCallback(async (content: string) => {
+    const processMessage = useCallback(async (content: string, attachments?: StreamChatAttachment[]) => {
         setIsLoading(true);
         setAmbiguityChoice(null);
         setOpenIntentReceipt(null);
-        const intent = parseIntent(content);
+        const hasAttachments = Boolean(attachments && attachments.length > 0);
+        const intent = hasAttachments ? { type: 'chat' as const, target: null } : parseIntent(content);
 
         // Check for memory intent (e.g., "merke dir...", "wichtig...")
         if (detectMemoryIntent(content)) {
@@ -917,7 +955,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         let responseContent = '';
 
         try {
-            if (intent.type === 'navigate' && intent.target) {
+            if (!hasAttachments && intent.type === 'navigate' && intent.target) {
                 responseContent = executeNavigation(intent.target);
                 setMessages(prev => [...prev, {
                     id: crypto.randomUUID(),
@@ -927,7 +965,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 }]);
                 setIsLoading(false);
                 return;
-            } else if (intent.type === 'global_search') {
+            } else if (!hasAttachments && intent.type === 'global_search') {
                 responseContent = executeSearch('', true);
                 setMessages(prev => [...prev, {
                     id: crypto.randomUUID(),
@@ -937,7 +975,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 }]);
                 setIsLoading(false);
                 return;
-            } else if (intent.type === 'search' && intent.target) {
+            } else if (!hasAttachments && intent.type === 'search' && intent.target) {
                 responseContent = await executeDirectOpenIntent(intent.target);
                 setMessages(prev => [...prev, {
                     id: crypto.randomUUID(),
@@ -948,7 +986,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 setIsLoading(false);
                 return;
             } else {
-                if ((isLikelyFileOperationIntent(content) || shouldPreferAgenticLoop(content) || Boolean(activePlanId)) && activeCompanyId) {
+                if (!hasAttachments && (isLikelyFileOperationIntent(content) || shouldPreferAgenticLoop(content) || Boolean(activePlanId)) && activeCompanyId) {
                     const activeContext = activeFolderId
                         ? { entityId: activeFolderId, entityType: 'folder' as const }
                         : activeSpaceId
@@ -1113,7 +1151,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     context: buildChatContext({
                         session_id: "chat_pane",
                         pane_id: id,
-                    }) as Record<string, unknown> | undefined
+                    }) as Record<string, unknown> | undefined,
+                    attachments,
                 });
 
                 // After stream done — add finalized message to local list
@@ -1194,18 +1233,29 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     }, [pane?.data?.initialMessage, pane?.id, processMessage]);
 
     const sendMessage = async () => {
-        if (!input.trim() || isLoading) return;
+        if ((!input.trim() && pendingAttachments.length === 0) || isLoading) return;
+
+        const trimmedInput = input.trim();
+        const attachmentCount = pendingAttachments.length;
+        const messageText = trimmedInput || 'Bitte analysiere dieses Bild im aktuellen Kontext.';
+        const displayText = attachmentCount > 0
+            ? [
+                trimmedInput || 'Bildanalyse angefragt',
+                `[${attachmentCount} Bild${attachmentCount === 1 ? '' : 'er'} angehaengt]`,
+            ].join('\n\n')
+            : messageText;
 
         const userMessage: Message = {
             id: crypto.randomUUID(),
             role: 'user',
-            content: input.trim(),
+            content: displayText,
             timestamp: new Date()
         };
 
         setMessages(prev => [...prev, userMessage]);
         setInput('');
-        await processMessage(userMessage.content);
+        setPendingAttachments([]);
+        await processMessage(messageText, pendingAttachments);
     };
 
     if (!pane) return null;
@@ -1570,7 +1620,46 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             );
                         })()}
 
+                        {pendingAttachments.length > 0 && (
+                            <div className={`flex flex-wrap gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                                {pendingAttachments.map((attachment, index) => (
+                                    <div
+                                        key={`${attachment.file_name || 'attachment'}-${index}`}
+                                        className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/[0.08] px-3 py-1 text-[11px] text-cyan-100/80"
+                                    >
+                                        <Paperclip size={12} />
+                                        <span className="max-w-[180px] truncate">{attachment.file_name || `Bild ${index + 1}`}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeAttachment(index)}
+                                            className="rounded-full p-0.5 text-cyan-100/60 transition-colors hover:bg-white/10 hover:text-white"
+                                            aria-label={`Anhang ${attachment.file_name || index + 1} entfernen`}
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                            <input
+                                ref={attachmentInputRef}
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleAttachmentSelect}
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => attachmentInputRef.current?.click()}
+                                disabled={isStreaming}
+                                className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3 py-3 text-cyan-100/70 transition-colors hover:border-cyan-400/35 hover:bg-cyan-500/[0.14] hover:text-cyan-50 disabled:opacity-50"
+                                title="Bild fuer Gemma anhaengen"
+                            >
+                                <Paperclip size={16} />
+                            </button>
                             <input
                                 type="text"
                                 value={input}
@@ -1579,14 +1668,14 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     if (e.key === 'Enter' && !isStreaming) sendMessage();
                                     if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
                                 }}
-                                placeholder="Schreib Mora... (z.B. 'Merke dir...')"
+                                placeholder="Schreib Mora oder haenge ein Bild an..."
                                 autoFocus={isFullscreen}
                                 disabled={isStreaming}
                                 className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
                             />
                             <button
                                 onClick={sendMessage}
-                                disabled={!input.trim() || isLoading || isStreaming}
+                                disabled={(!input.trim() && pendingAttachments.length === 0) || isLoading || isStreaming}
                                 className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                             >
                                 {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

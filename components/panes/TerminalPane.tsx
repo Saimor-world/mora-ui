@@ -86,6 +86,8 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
                 "",
                 "MORA:",
                 "  mora <frage>     - Frage an MORA stellen",
+                "  gemma <frage>    - Lokales Gemma 4 via Ollama",
+                "  gemma-cloud <frage> - Gehostetes Gemma 4 via Gemini API",
                 "  search <term>    - Semantische Suche",
                 "  providers        - Verfügbare AI-Provider",
                 "  analyze          - Kontextanalyse starten",
@@ -461,6 +463,58 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
                         }
                     } catch (e: any) {
                         addLine("error", `Ollama Fehler: ${e.message || e}`);
+                    }
+                }
+                setIsProcessing(false);
+                return;
+            }
+
+            if (command === "gemma") {
+                const prompt = args.join(" ");
+                if (!prompt) {
+                    addLine("error", "Usage: gemma <prompt>");
+                } else if (requireOnline("Gemma")) {
+                    addLine("system", "Sende an lokales Gemma 4 (gemma4:e2b)...");
+                    try {
+                        const response = await corePost("/v3/chat", {
+                            message: prompt,
+                            provider_preference: "ollama",
+                            model_override: "gemma4:e2b",
+                            context: buildChatContext({ session_id: "terminal_gemma_local" }),
+                        });
+                        if (response?.reply) {
+                            addLine("mora", `Gemma lokal: ${response.reply}`);
+                        } else {
+                            addLine("error", "Keine Antwort von lokalem Gemma");
+                        }
+                    } catch (e: any) {
+                        addLine("error", `Gemma lokal Fehler: ${e.message || e}`);
+                    }
+                }
+                setIsProcessing(false);
+                return;
+            }
+
+            if (command === "gemma-cloud") {
+                const prompt = args.join(" ");
+                if (!prompt) {
+                    addLine("error", "Usage: gemma-cloud <prompt>");
+                } else if (requireOnline("Gemma Cloud")) {
+                    addLine("system", "Sende an gehostetes Gemma 4 (gemma-4-31b-it)...");
+                    try {
+                        const response = await corePost("/v3/chat", {
+                            message: prompt,
+                            provider_preference: "gemini",
+                            model_override: "gemma-4-31b-it",
+                            context: buildChatContext({ session_id: "terminal_gemma_cloud" }),
+                        });
+                        if (response?.reply) {
+                            addLine("mora", `Gemma Cloud: ${response.reply}`);
+                        } else {
+                            addLine("error", "Keine Antwort von Gemma Cloud");
+                        }
+                    } catch (e: any) {
+                        addLine("error", `Gemma Cloud Fehler: ${e.message || e}`);
                     }
                 }
                 setIsProcessing(false);

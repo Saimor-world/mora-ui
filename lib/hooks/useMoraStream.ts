@@ -11,11 +11,22 @@ export interface ChatMessage {
     content: string;
 }
 
+export interface ChatAttachment {
+    kind?: "image";
+    mime_type?: string | null;
+    data_base64?: string | null;
+    data_url?: string | null;
+    file_name?: string | null;
+}
+
 export interface StreamOptions {
     context?: Record<string, unknown>;
     history?: ChatMessage[];
+    attachments?: ChatAttachment[];
     temperature?: number;
     maxTokens?: number;
+    providerPreference?: "auto" | "ollama" | "gemini" | "openai" | "anthropic";
+    modelOverride?: string | null;
 }
 
 export interface ResolvedScope {
@@ -192,9 +203,12 @@ export function useMoraStream(): UseMoraStreamReturn {
                     role: m.role,
                     content: m.content,
                 })),
+                attachments: opts.attachments ?? null,
                 include_synthesis: true,
+                provider_preference: opts.providerPreference ?? "auto",
                 temperature: opts.temperature ?? 0.7,
                 max_tokens: opts.maxTokens ?? null,
+                model_override: opts.modelOverride ?? null,
             });
 
             const baseUrl = getCoreBaseUrl();
