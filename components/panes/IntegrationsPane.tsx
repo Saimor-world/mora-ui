@@ -7,6 +7,7 @@ import { corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
 import { toast } from 'sonner';
 
 interface MailOverview {
@@ -215,6 +216,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         loadOverview,
         refreshBrowserBridge,
     } = useIntegrationsOverview();
+    const localTruthBridge = useLocalTruthBridge(overview);
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
@@ -303,9 +305,9 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
 
     const openLocalTruthSurface = useCallback(() => {
         if (typeof window === 'undefined') return;
-        const url = overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000';
+        const url = localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home';
         window.open(url, '_blank', 'noopener,noreferrer');
-    }, [overview]);
+    }, [localTruthBridge.selectedUiUrl, overview]);
 
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
@@ -555,6 +557,62 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             </button>
                                         </div>
                                     </div>
+
+                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+                                                    <Cpu size={18} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="text-sm font-medium text-white">Local Truth</h5>
+                                                    <p className="mt-0.5 text-xs text-white/40">localhost als echte Arbeitsinstanz</p>
+                                                </div>
+                                            </div>
+                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
+                                                localTruthBridge.state === 'ready'
+                                                    ? 'border-violet-400/20 bg-violet-500/12 text-violet-100'
+                                                    : localTruthBridge.state === 'core_only' || localTruthBridge.state === 'ui_only'
+                                                        ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                        : 'border-white/10 bg-white/[0.04] text-white/60'
+                                            }`}>
+                                                {localTruthBridge.state === 'ready'
+                                                    ? 'Bereit'
+                                                    : localTruthBridge.state === 'core_only'
+                                                        ? 'Core bereit'
+                                                        : localTruthBridge.state === 'ui_only'
+                                                            ? 'UI bereit'
+                                                            : localTruthBridge.state === 'checking'
+                                                                ? 'Prueft'
+                                                                : 'Noch nicht da'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-white/60">
+                                            {localTruthBridge.error
+                                                || 'Hier wird geprueft, ob lokale UI und lokaler Core fuer echte Konten und echte Integrationen erreichbar sind.'}
+                                        </p>
+                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] text-white/55">
+                                            UI: <span className="text-white/78">{localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}</span>
+                                            <br />
+                                            Core: <span className="text-white/78">{localTruthBridge.selectedCoreUrl || overview?.runtime?.local_truth?.core_candidates?.[0] || 'http://127.0.0.1:8081/v3/health'}</span>
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={() => void localTruthBridge.refresh()}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/12 px-3 py-2 text-xs text-violet-100 transition-colors hover:border-violet-300/35 hover:bg-violet-500/18"
+                                            >
+                                                <RefreshCw size={14} />
+                                                Localhost pruefen
+                                            </button>
+                                            <button
+                                                onClick={openLocalTruthSurface}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                            >
+                                                <ExternalLink size={14} />
+                                                Local Truth oeffnen
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </section>
 
@@ -627,6 +685,10 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.demo_mirror || 'https://hq.saimor.world'}</span> zeigt dieselbe Oberflaeche, bleibt aber dein Demo-Spiegel.</p>
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login'}</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control'}</span> ist der operative Runtime- und Integrationsleitstand.</p>
+                                        </div>
+                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[11px] text-white/55">
+                                            <div>Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
+                                            <div className="mt-1">Letzte Pruefung: <span className="text-white/78">{localTruthBridge.lastCheckedAt || 'noch keine'}</span></div>
                                         </div>
                                     </div>
                                 </div>

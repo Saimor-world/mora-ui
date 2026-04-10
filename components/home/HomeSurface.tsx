@@ -12,6 +12,7 @@ import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -115,6 +116,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const [privateArea, setPrivateArea] = useState<PrivateAreaSurface | null>(null);
     const [isUniversePortalHovered, setIsUniversePortalHovered] = useState(false);
     const { overview: integrationsOverview, browserBridge } = useIntegrationsOverview();
+    const localTruthBridge = useLocalTruthBridge(integrationsOverview);
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -203,6 +205,25 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
             data: { initialUrl: 'about:saimor-connect' },
         });
     }, [revealPane]);
+
+    const openLocalTruth = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        const url = localTruthBridge.selectedUiUrl
+            || integrationsOverview?.runtime?.surfaces?.local_truth
+            || 'http://127.0.0.1:3000/home';
+
+        if (localTruthBridge.state === 'ready' || localTruthBridge.state === 'core_only' || localTruthBridge.state === 'ui_only') {
+            window.open(url, '_blank', 'noopener,noreferrer');
+            return;
+        }
+
+        revealPane('browser-connect', {
+            type: 'browser',
+            title: 'Browser',
+            size: { width: 1160, height: 760 },
+            data: { initialUrl: integrationsOverview?.runtime?.surfaces?.connect_surface || 'about:saimor-connect' },
+        });
+    }, [integrationsOverview, localTruthBridge.selectedUiUrl, localTruthBridge.state, revealPane]);
 
     const openUniverse = useCallback(() => {
         setCoreMode('explore');
@@ -326,6 +347,15 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const calendarStatusLabel = integrationsOverview?.calendar?.configured
         ? (integrationsOverview.calendar.email || 'Kalender verbunden')
         : 'Kalender vorbereiten';
+    const localTruthStatusLabel = localTruthBridge.state === 'ready'
+        ? 'Local Truth bereit'
+        : localTruthBridge.state === 'core_only'
+            ? 'Core lokal bereit'
+            : localTruthBridge.state === 'ui_only'
+                ? 'UI lokal bereit'
+                : localTruthBridge.state === 'checking'
+                    ? 'Localhost pruefen'
+                    : 'Local Truth starten';
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
@@ -677,7 +707,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-2">
                             <button
                                 type="button"
                                 onClick={openBrowserConnect}
@@ -711,6 +741,17 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{calendarStatusLabel}</div>
                             </button>
+                            <button
+                                type="button"
+                                onClick={openLocalTruth}
+                                className="rounded-[18px] border border-white/[0.05] bg-white/[0.022] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
+                            >
+                                <div className="flex items-center gap-2 text-violet-200/76">
+                                    <Wrench size={14} />
+                                    <span className="text-[10px] uppercase tracking-[0.16em]">Local Truth</span>
+                                </div>
+                                <div className="mt-2 text-[12px] text-white/82">{localTruthStatusLabel}</div>
+                            </button>
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -729,6 +770,22 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             >
                                 <Mail size={12} />
                                 Post oeffnen
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openLocalTruth}
+                                className="inline-flex items-center gap-2 rounded-full border border-violet-400/14 bg-violet-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/80 transition-colors hover:border-violet-300/24 hover:bg-violet-500/[0.13]"
+                            >
+                                <Wrench size={12} />
+                                Local Truth oeffnen
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void localTruthBridge.refresh()}
+                                className="inline-flex items-center gap-2 rounded-full border border-violet-400/14 bg-violet-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/80 transition-colors hover:border-violet-300/24 hover:bg-violet-500/[0.13]"
+                            >
+                                <Wrench size={12} />
+                                Localhost pruefen
                             </button>
                             <button
                                 type="button"

@@ -49,8 +49,11 @@ export interface IntegrationsOverview {
             ollama_api_url?: string;
             startup_script?: string;
             startup_command?: string;
+            ui_start_command?: string;
             routing_profile?: string;
             available?: boolean;
+            ui_candidates?: string[];
+            core_candidates?: string[];
         };
         cloud_mirror?: {
             recommended_provider?: string | null;
@@ -64,6 +67,7 @@ export interface IntegrationsOverview {
             demo_mirror?: string;
             owner_console?: string;
             operations_console?: string;
+            connect_surface?: string;
         };
     };
     capabilities?: {

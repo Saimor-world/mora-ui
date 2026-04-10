@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
 import {
     ArrowLeft,
     ArrowRight,
@@ -92,6 +93,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const { overview, browserBridge, loadOverview } = useIntegrationsOverview();
+    const localTruthBridge = useLocalTruthBridge(overview);
 
     const initialUrl = useMemo(
         () => normalizeUrl(typeof pane?.data?.initialUrl === 'string' ? pane.data.initialUrl : START_URL),
@@ -187,6 +189,14 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     const openProvider = useCallback((url: string) => {
         navigate(url);
     }, [navigate]);
+
+    const openLocalTruth = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        const url = localTruthBridge.selectedUiUrl
+            || overview?.runtime?.surfaces?.local_truth
+            || 'http://127.0.0.1:3000/home';
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }, [localTruthBridge.selectedUiUrl, overview]);
 
     if (!pane) return null;
 
@@ -374,6 +384,49 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             ? 'Lokale Runtime ist vorbereitet. Browser, Mail und Kalender koennen an dieselbe Wahrheitsinstanz haengen.'
                                             : 'Die lokale Runtime wird vorbereitet und ueber localhost zur eigentlichen Produktionswahrheit.'}
                                     </div>
+                                    <div className="mt-3 rounded-2xl border border-white/8 bg-black/18 px-3.5 py-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="text-xs text-white/72">
+                                                {localTruthBridge.state === 'ready'
+                                                    ? 'Lokale UI und Core erreichbar'
+                                                    : localTruthBridge.state === 'core_only'
+                                                        ? 'Lokaler Core erreichbar'
+                                                        : localTruthBridge.state === 'ui_only'
+                                                            ? 'Lokale UI erreichbar'
+                                                            : localTruthBridge.state === 'checking'
+                                                                ? 'Lokale Verbindung wird geprueft'
+                                                                : 'Lokale Verbindung noch nicht bereit'}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => void localTruthBridge.refresh()}
+                                                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white/78"
+                                            >
+                                                Pruefen
+                                            </button>
+                                        </div>
+                                        <div className="mt-2 text-[11px] leading-relaxed text-white/48">
+                                            {localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={openLocalTruth}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
+                                            >
+                                                <Globe size={14} />
+                                                Lokal oeffnen
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={copyCurrentUrl}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                            >
+                                                <Copy size={14} />
+                                                Aktuelle URL kopieren
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -466,6 +519,49 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
                                         Die echte Kontoanbindung wird auf localhost und nicht auf dem Demo-Mirror abgeschlossen.
+                                    </div>
+                                    <div className="mt-3 rounded-2xl border border-white/8 bg-black/18 px-3.5 py-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="text-xs text-white/72">
+                                                {localTruthBridge.state === 'ready'
+                                                    ? 'Lokale UI und Core erreichbar'
+                                                    : localTruthBridge.state === 'core_only'
+                                                        ? 'Lokaler Core erreichbar'
+                                                        : localTruthBridge.state === 'ui_only'
+                                                            ? 'Lokale UI erreichbar'
+                                                            : localTruthBridge.state === 'checking'
+                                                                ? 'Lokale Verbindung wird geprueft'
+                                                                : 'Lokale Verbindung noch nicht bereit'}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => void localTruthBridge.refresh()}
+                                                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white/78"
+                                            >
+                                                Pruefen
+                                            </button>
+                                        </div>
+                                        <div className="mt-2 text-[11px] leading-relaxed text-white/48">
+                                            {localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={openLocalTruth}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
+                                            >
+                                                <Globe size={14} />
+                                                Lokal oeffnen
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={copyCurrentUrl}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                            >
+                                                <Copy size={14} />
+                                                Aktuelle URL kopieren
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
