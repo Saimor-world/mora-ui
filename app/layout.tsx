@@ -5,9 +5,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
-import { usePaneStore } from "@/lib/store/paneStore";
 import { PaneManager } from "@/components/mora/PaneManager";
-import { UserAvatar } from "@/components/user/UserAvatar";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -34,7 +32,6 @@ export default function RootLayout({
   const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
   const activeFolderId = useMoraStore((state) => state.activeFolderId);
   const coreError = useMoraStore((state) => state.coreError);
-  const openPane = usePaneStore((state) => state.openPane);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -116,19 +113,6 @@ export default function RootLayout({
             {mounted && (
               <>
                 <PaneManager />
-                {showBar && (
-                  <div className="transition-opacity duration-500 opacity-100 pointer-events-auto">
-                    <UserAvatar
-                      onClick={() => openPane({
-                        id: 'settings-main',
-                        type: 'settings',
-                        title: 'Settings',
-                        size: { width: 700, height: 500 }
-                      })}
-                      showLabel={true}
-                    />
-                  </div>
-                )}
                 <Toaster position="top-right" />
               </>
             )}

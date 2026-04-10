@@ -1122,7 +1122,7 @@ export const Dock = () => {
                             role={user?.role}
                             roleLabel={viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
                             subtitle="Konto und Dateien"
-                            imageUrl={user?.avatar}
+                            preferInitials
                             compact
                             embedded
                             className="min-w-[220px] px-0 py-0"
