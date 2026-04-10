@@ -43,6 +43,7 @@ import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
+import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -430,27 +431,6 @@ export const Dock = () => {
             default: return '#10B981';
         }
     }, [orbState]);
-
-    const userAccent = useMemo(() => {
-        switch (user?.role) {
-            case 'owner':
-            case 'system_owner':
-                return '#D4AF37';
-            case 'admin':
-                return '#10B981';
-            case 'member':
-                return '#06B6D4';
-            default:
-                return '#10B981';
-        }
-    }, [user?.role]);
-
-    const userInitials = useMemo(() => {
-        const raw = (user?.name || 'D').trim();
-        const parts = raw.split(/\s+/).filter(Boolean);
-        if (parts.length === 0) return 'D';
-        return parts.slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('') || 'D';
-    }, [user?.name]);
 
     const handleDockClick = useCallback((action: string) => {
         switch (action) {
@@ -1136,80 +1116,17 @@ export const Dock = () => {
                     )}
 
                     {/* LEFT: IDENTITY POD */}
-                    <DockPod className="flex shrink-0 items-center gap-2 px-2.5 py-2" isStandardMode={isStandardMode}>
-                        <div
-                            className="relative h-12 w-12 rounded-full shrink-0"
-                            title={user?.name || 'Benutzer'}
-                            style={!isStandardMode ? { filter: `drop-shadow(0 0 18px ${userAccent}35)` } : {}}
-                        >
-                            {!isStandardMode && (
-                                <div
-                                    className="absolute inset-[-3px] rounded-full border"
-                                    style={{ borderColor: `${userAccent}55` }}
-                                />
-                            )}
-                            <div
-                                className={`absolute inset-0 rounded-full ${isStandardMode ? 'border border-[#0078D4]/30 bg-white' : 'border border-white/10 bg-black/20'}`}
-                            />
-                            {!isStandardMode && (
-                                <>
-                                    <div
-                                        className="absolute inset-[-6px] rounded-full pointer-events-none"
-                                        style={{
-                                            background: `radial-gradient(circle at 32% 28%, ${userAccent}35 0%, transparent 58%)`,
-                                            filter: 'blur(14px)',
-                                        }}
-                                    />
-                                    <div
-                                        className="absolute inset-[1px] rounded-full pointer-events-none"
-                                        style={{
-                                            border: `1px solid ${userAccent}33`,
-                                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -8px 16px rgba(0,0,0,0.22)`,
-                                        }}
-                                    />
-                                </>
-                            )}
-                            <div className="absolute inset-[3px] rounded-full overflow-hidden">
-                                <PlasmaOrb
-                                    color={userAccent}
-                                    state={orbState as any}
-                                    size={40}
-                                />
-                            </div>
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <span className="text-white/90 text-[13px] font-semibold tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
-                                    {userInitials}
-                                </span>
-                            </div>
-                            <div
-                                className="absolute right-0 bottom-0 w-3 h-3 rounded-full border border-black/70"
-                                style={{
-                                    backgroundColor: orbState === 'alert'
-                                        ? '#F87171'
-                                        : orbState === 'thinking'
-                                            ? '#60A5FA'
-                                            : '#34D399',
-                                    boxShadow: `0 0 8px ${orbState === 'alert'
-                                        ? '#F87171'
-                                        : orbState === 'thinking'
-                                            ? '#60A5FA'
-                                            : '#34D399'}`
-                                }}
-                            />
-                        </div>
-                        <div className="hidden sm:flex min-w-0 flex-col text-left">
-                            <span className={`truncate max-w-[106px] text-[13px] font-semibold ${isStandardMode ? 'text-gray-800' : 'text-white/88'
-                                }`}>
-                                {user?.name || 'Benutzer'}
-                            </span>
-                            <span className={`text-[10px] uppercase tracking-[0.18em] font-medium ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/68'
-                                }`}>
-                                {viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
-                            </span>
-                            <span className={`mt-1 text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/32'}`}>
-                                Konto und Dateien
-                            </span>
-                        </div>
+                    <DockPod className="flex shrink-0 items-center gap-2 px-2 py-2" isStandardMode={isStandardMode}>
+                        <AccountIdentityPod
+                            name={user?.name || 'Benutzer'}
+                            role={user?.role}
+                            roleLabel={viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
+                            subtitle="Konto und Dateien"
+                            imageUrl={user?.avatar}
+                            compact
+                            embedded
+                            className="min-w-[220px] px-0 py-0"
+                        />
                         <AdminModeSwitcher />
                         <button
                             onClick={() => openPane({

@@ -75,13 +75,13 @@ export const CoreLayer: React.FC = () => {
                         exit="exit"
                     >
                         <div className="absolute inset-0">
-                            <div className="absolute inset-0 scale-[1.032] opacity-[0.46] saturate-[0.62] [filter:blur(1.35px)]">
+                            <div className="absolute inset-0 scale-[1.05] opacity-[0.3] saturate-[0.52] [filter:blur(2.25px)]">
                                 <UniverseView />
                             </div>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(18,42,58,0.18),rgba(4,10,14,0.4)_34%,rgba(2,6,9,0.7)_100%)]" />
-                            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,9,0.76)_0%,rgba(2,8,9,0.44)_20%,rgba(2,8,9,0.16)_40%,rgba(2,8,9,0.16)_60%,rgba(2,8,9,0.44)_80%,rgba(2,8,9,0.76)_100%)]" />
-                            <div className="absolute inset-x-[18%] top-[14%] h-[23rem] rounded-full bg-cyan-400/[0.024] blur-[148px]" />
-                            <div className="absolute inset-x-[24%] bottom-[9%] h-[16rem] rounded-full bg-emerald-400/[0.018] blur-[136px]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(15,36,50,0.26),rgba(4,10,14,0.56)_34%,rgba(2,6,9,0.82)_100%)]" />
+                            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,9,0.84)_0%,rgba(2,8,9,0.58)_18%,rgba(2,8,9,0.18)_38%,rgba(2,8,9,0.18)_62%,rgba(2,8,9,0.58)_82%,rgba(2,8,9,0.84)_100%)]" />
+                            <div className="absolute inset-x-[18%] top-[14%] h-[23rem] rounded-full bg-cyan-400/[0.016] blur-[148px]" />
+                            <div className="absolute inset-x-[24%] bottom-[9%] h-[16rem] rounded-full bg-emerald-400/[0.012] blur-[136px]" />
                             <motion.div
                                 className="absolute inset-0 pointer-events-none"
                                 initial={false}
@@ -92,7 +92,7 @@ export const CoreLayer: React.FC = () => {
                                     transition: { duration: prefersReducedMotion ? 0.14 : 0.72, ease: [0.24, 0.96, 0.16, 1] as const },
                                 }}
                                 style={{
-                                    background: 'linear-gradient(90deg, rgba(2, 8, 9, 0.9) 0%, rgba(2, 8, 9, 0.5) 18%, rgba(2, 8, 9, 0.08) 50%, rgba(2, 8, 9, 0.5) 82%, rgba(2, 8, 9, 0.9) 100%)',
+                                    background: 'linear-gradient(90deg, rgba(2, 8, 9, 0.94) 0%, rgba(2, 8, 9, 0.64) 18%, rgba(2, 8, 9, 0.16) 50%, rgba(2, 8, 9, 0.64) 82%, rgba(2, 8, 9, 0.94) 100%)',
                                 }}
                             />
                         </div>

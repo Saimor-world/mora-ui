@@ -261,11 +261,11 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
     const overlayBriefing = useMemo(() => {
         const compact = briefing.replace(/\s+/g, ' ').trim();
-        if (compact.length <= 76) return compact;
-        return `${compact.slice(0, 73).trimEnd()}...`;
+        if (compact.length <= 112) return compact;
+        return `${compact.slice(0, 109).trimEnd()}...`;
     }, [briefing]);
 
-    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 2), [deptTiles]);
+    const featuredDeptTiles = useMemo(() => deptTiles.slice(0, 4), [deptTiles]);
     const overlayRecentActivityItems = useMemo(() => recentActivityItems.slice(0, 3), [recentActivityItems]);
     const overlayPrivateItems = useMemo(
         () => privateArea?.latestItems?.slice(0, 2) ?? [],
@@ -374,7 +374,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute left-8 top-28 w-[min(330px,calc(100vw-37rem))]">
+                <div className="absolute left-8 top-28 w-[min(360px,calc(100vw-37rem))]">
                     <div className="pointer-events-auto rounded-[30px] border border-white/[0.045] bg-[linear-gradient(160deg,rgba(5,16,18,0.14),rgba(4,10,13,0.02))] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.08)] backdrop-blur-[14px]">
                         <div className="flex items-start justify-between gap-4">
                             <div>
@@ -399,7 +399,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         <p
                             data-testid="briefing-text"
-                            className="mt-3 text-[11px] font-light leading-relaxed text-white/50"
+                            className="mt-3 text-[11px] font-light leading-relaxed text-white/56"
                         >
                             {overlayBriefing}
                         </p>
@@ -469,7 +469,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/40">Privater Bereich</div>
-                                    <div className="mt-1 text-[12px] text-white/56">Eigene Inhalte direkt aus deinem Konto.</div>
+                                    <div className="mt-1 text-[12px] text-white/56">Eigene Inhalte, Notizen und Dateien aus deinem Konto.</div>
                                 </div>
                                 <button
                                     type="button"
@@ -610,7 +610,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(320px,calc(100vw-38rem))]">
+                <div className="absolute bottom-[8.25rem] right-8 w-[min(360px,calc(100vw-38rem))]">
                     <div className="pointer-events-auto rounded-[24px] border border-white/[0.05] bg-[linear-gradient(160deg,rgba(5,16,18,0.18),rgba(4,10,13,0.03))] p-3.5 shadow-[0_12px_28px_rgba(0,0,0,0.08)] backdrop-blur-[14px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>

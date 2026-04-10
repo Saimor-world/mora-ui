@@ -80,6 +80,7 @@ import { UniverseControls, type ViewMode as UniverseViewMode } from '@/component
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
+import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 
 // V12: Connection Status, Quick Tips, Greeting & Stats
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner';
@@ -150,15 +151,14 @@ const LoadingScreen: React.FC = () => (
             <div className="relative w-[calc(100vw-36px)] rounded-[28px] border border-emerald-500/12 bg-[linear-gradient(180deg,rgba(9,22,18,0.54),rgba(4,10,10,0.74))] px-5 py-4 shadow-[0_-8px_30px_rgba(16,185,129,0.08),0_18px_42px_rgba(0,0,0,0.5)] backdrop-blur-xl">
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/45 to-transparent" />
                 <div className="flex items-center gap-4">
-                    <div className="relative h-14 w-14 rounded-full">
-                        <div className="absolute inset-[-4px] rounded-full border border-amber-300/20" />
-                        <div className="absolute inset-0 rounded-full border border-white/10 bg-black/20" />
-                        <div className="absolute inset-[4px] rounded-full bg-[radial-gradient(circle_at_35%_30%,rgba(255,231,160,0.2),rgba(50,34,6,0.85)_68%)]" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="h-3 w-3 rounded-full bg-amber-200/70" />
-                        </div>
-                        <div className="absolute right-0 bottom-0 h-3 w-3 rounded-full border border-black/60 bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
-                    </div>
+                    <AccountIdentityPod
+                        name="SAIMOR"
+                        role="system_owner"
+                        roleLabel="Systemstart"
+                        subtitle="Mora erwacht..."
+                        compact
+                        className="min-w-[224px]"
+                    />
                     <div className="flex-1">
                         <div className="h-[1px] w-full bg-gradient-to-r from-emerald-400/18 via-transparent to-transparent" />
                     </div>
