@@ -14,7 +14,8 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
 import { useMoraStore } from '@/lib/store/moraState';
-import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare } from 'lucide-react';
+import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
+import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 interface MailAttachment {
     filename: string;
@@ -40,10 +41,11 @@ interface MailPaneProps {
 }
 
 export function MailPane({ id = 'mail-main' }: MailPaneProps) {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const { activeCompanyId, loadTree } = useMoraStore();
     const pane = getPane(id);
+    const { overview, browserBridge } = useIntegrationsOverview();
 
     const [mails, setMails] = useState<MailObject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -165,6 +167,25 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
 
     if (!pane) return null;
 
+    const openBrowserConnect = () => {
+        openPane({
+            id: 'browser-connect',
+            type: 'browser',
+            title: 'Browser',
+            size: { width: 1160, height: 760 },
+            data: { initialUrl: 'about:saimor-connect' },
+        });
+    };
+
+    const openIntegrations = () => {
+        openPane({
+            id: 'integrations-main',
+            type: 'integrations',
+            title: 'Integrationen',
+            size: { width: 980, height: 740 },
+        });
+    };
+
     return (
         <GlassPanel
             title="Post"
@@ -215,6 +236,51 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                             >
                                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {!viewingMail && !composing && (
+                    <div className="border-b border-white/6 px-4 py-3">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Konten & Kommunikation</div>
+                                    <div className="mt-1 text-sm text-white">
+                                        {overview?.mail?.configured
+                                            ? (overview.mail.email || 'Postfach verbunden')
+                                            : overview?.capabilities?.mail_local_mode
+                                                ? 'Lokaler Mail-Modus'
+                                                : 'Noch kein Postfach verbunden'}
+                                    </div>
+                                    <div className="mt-1 text-xs text-white/50">
+                                        {browserBridge.permission === 'granted'
+                                            ? 'Browser ist freigegeben und kann Signale, Mail und Kalender mittragen.'
+                                            : 'Browser-Freigaben und Mail-Verbindung lassen sich direkt aus dem OS heraus vorbereiten.'}
+                                    </div>
+                                </div>
+                                <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55">
+                                    {overview?.mail?.configured ? 'Verbunden' : 'Vorbereitung'}
+                                </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={openBrowserConnect}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
+                                >
+                                    <Globe size={14} />
+                                    Browser verbinden
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={openIntegrations}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                                >
+                                    <Wrench size={14} />
+                                    Integrationen
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

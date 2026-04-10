@@ -1,11 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
-import { coreGet, corePost } from '@/lib/api/coreClient';
+import { corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 import { toast } from 'sonner';
 
 interface MailOverview {
@@ -78,11 +79,6 @@ interface IntegrationsOverview {
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
-}
-
-interface BrowserBridgeState {
-    supported: boolean;
-    permission: NotificationPermission | 'unsupported';
 }
 
 const statusTone = (status?: string) => {
@@ -211,47 +207,16 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const pane = getPane(id);
     const surfaceProfile = useSurfaceProfile();
 
-    const [overview, setOverview] = useState<IntegrationsOverview | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [browserBridge, setBrowserBridge] = useState<BrowserBridgeState>({
-        supported: false,
-        permission: 'unsupported',
-    });
+    const {
+        overview,
+        isLoading,
+        error,
+        browserBridge,
+        loadOverview,
+        refreshBrowserBridge,
+    } = useIntegrationsOverview();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
-
-    const refreshBrowserBridge = useCallback(() => {
-        if (typeof window === 'undefined' || typeof Notification === 'undefined') {
-            setBrowserBridge({ supported: false, permission: 'unsupported' });
-            return;
-        }
-        setBrowserBridge({
-            supported: true,
-            permission: Notification.permission,
-        });
-    }, []);
-
-    const loadOverview = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const data = await coreGet('/v3/integrations/overview');
-            setOverview(data || null);
-        } catch (err: any) {
-            setError(err?.message || 'Integrationen konnten nicht geladen werden.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadOverview();
-    }, [loadOverview]);
-
-    useEffect(() => {
-        refreshBrowserBridge();
-    }, [refreshBrowserBridge]);
 
     const ownerBlocked = useMemo(() => {
         const mailBlocked = overview?.mail?.status === 'owner_only' || overview?.mail?.status === 'forbidden_demo';

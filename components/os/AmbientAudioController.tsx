@@ -40,8 +40,8 @@ export const AmbientAudioController: React.FC = () => {
         ? coreMode
         : 'secondary';
     const surfaceVolumeMultiplier = viewLevel === 'core'
-        ? (coreMode === 'home' ? 0.0035 : 1)
-        : 0.055;
+        ? (coreMode === 'home' ? 0.18 : 1)
+        : 0.08;
     const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
 
     useEffect(() => {

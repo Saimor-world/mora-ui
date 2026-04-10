@@ -44,26 +44,39 @@ export const InteractionAudioController: React.FC = () => {
 
             const startedAt = context.currentTime;
             const oscillator = context.createOscillator();
+            const harmonic = context.createOscillator();
             const gain = context.createGain();
+            const harmonicGain = context.createGain();
             const filter = context.createBiquadFilter();
 
             oscillator.type = intensity === 'firm' ? 'triangle' : 'sine';
             oscillator.frequency.setValueAtTime(intensity === 'firm' ? 520 : 420, startedAt);
             oscillator.frequency.exponentialRampToValueAtTime(intensity === 'firm' ? 740 : 560, startedAt + 0.055);
+            harmonic.type = 'sine';
+            harmonic.frequency.setValueAtTime(intensity === 'firm' ? 880 : 640, startedAt);
+            harmonic.frequency.exponentialRampToValueAtTime(intensity === 'firm' ? 1160 : 820, startedAt + 0.05);
 
             filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(1800, startedAt);
+            filter.frequency.setValueAtTime(2200, startedAt);
 
             gain.gain.setValueAtTime(0.0001, startedAt);
-            gain.gain.exponentialRampToValueAtTime(intensity === 'firm' ? 0.04 : 0.026, startedAt + 0.012);
+            gain.gain.exponentialRampToValueAtTime(intensity === 'firm' ? 0.048 : 0.032, startedAt + 0.012);
             gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + (intensity === 'firm' ? 0.19 : 0.15));
+            harmonicGain.gain.setValueAtTime(0.0001, startedAt);
+            harmonicGain.gain.exponentialRampToValueAtTime(intensity === 'firm' ? 0.014 : 0.009, startedAt + 0.018);
+            harmonicGain.gain.exponentialRampToValueAtTime(0.0001, startedAt + (intensity === 'firm' ? 0.17 : 0.13));
 
             oscillator.connect(filter);
+            harmonic.connect(filter);
             filter.connect(gain);
+            filter.connect(harmonicGain);
             gain.connect(context.destination);
+            harmonicGain.connect(context.destination);
 
             oscillator.start(startedAt);
+            harmonic.start(startedAt);
             oscillator.stop(startedAt + (intensity === 'firm' ? 0.18 : 0.14));
+            harmonic.stop(startedAt + (intensity === 'firm' ? 0.16 : 0.12));
         };
 
         const resolveTarget = (target: EventTarget | null) => {

@@ -80,6 +80,7 @@ import { UniverseControls, type ViewMode as UniverseViewMode } from '@/component
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
+import { IdentityMedallion } from '@/components/os/shell/IdentityMedallion';
 
 // V12: Connection Status, Quick Tips, Greeting & Stats
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner';
@@ -123,11 +124,13 @@ const LoadingScreen: React.FC = () => (
     <div className="relative w-full h-screen bg-gradient-to-b from-[#0a1a14] to-[#030806] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(24,134,154,0.12),rgba(3,8,8,0)_34%)]" />
         <div className="flex flex-col items-center gap-6">
-            {/* Pulsing Orb */}
             <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/10 animate-pulse" />
-                <div className="absolute inset-2 rounded-full bg-emerald-500/20 animate-ping" style={{ animationDuration: '2s' }} />
-                <div className="absolute inset-4 rounded-full bg-emerald-400/30 animate-pulse" style={{ animationDuration: '1.5s' }} />
+                <IdentityMedallion
+                    name="Demo"
+                    role="system_owner"
+                    size={64}
+                    className="drop-shadow-[0_0_24px_rgba(16,185,129,0.18)]"
+                />
             </div>
             <div className="flex flex-col items-center gap-2">
                 <span className="text-emerald-400/60 text-xs font-medium tracking-[0.4em] uppercase">

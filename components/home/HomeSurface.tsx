@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit } from 'lucide-react';
+import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
@@ -11,6 +11,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -113,12 +114,13 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const recentItems   = useActivityStore((s) => s.recentItems);
     const [privateArea, setPrivateArea] = useState<PrivateAreaSurface | null>(null);
     const [isUniversePortalHovered, setIsUniversePortalHovered] = useState(false);
+    const { overview: integrationsOverview, browserBridge } = useIntegrationsOverview();
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'mail' | 'integrations' | 'browser';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -165,6 +167,31 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
             title: 'Finder',
             size: { width: 1280, height: 820 },
             data: { showUpload: true },
+        });
+    }, [revealPane]);
+
+    const openMail = useCallback(() => {
+        revealPane('mail-main', {
+            type: 'mail',
+            title: 'Post',
+            size: { width: 960, height: 720 },
+        });
+    }, [revealPane]);
+
+    const openIntegrations = useCallback(() => {
+        revealPane('integrations-main', {
+            type: 'integrations',
+            title: 'Integrationen',
+            size: { width: 980, height: 740 },
+        });
+    }, [revealPane]);
+
+    const openBrowserConnect = useCallback(() => {
+        revealPane('browser-connect', {
+            type: 'browser',
+            title: 'Browser',
+            size: { width: 1160, height: 760 },
+            data: { initialUrl: 'about:saimor-connect' },
         });
     }, [revealPane]);
 
@@ -275,6 +302,21 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
         () => deptTiles.filter(({ active }) => active).length,
         [deptTiles]
     );
+    const browserStatusLabel = browserBridge.permission === 'granted'
+        ? 'Browser bereit'
+        : browserBridge.permission === 'denied'
+            ? 'Browser blockiert'
+            : browserBridge.permission === 'default'
+                ? 'Browser freigeben'
+                : 'Browser lokal';
+    const mailStatusLabel = integrationsOverview?.mail?.configured
+        ? (integrationsOverview.mail.email || 'Mail verbunden')
+        : integrationsOverview?.capabilities?.mail_local_mode
+            ? 'Lokaler Mail-Modus'
+            : 'Mail verbinden';
+    const calendarStatusLabel = integrationsOverview?.calendar?.configured
+        ? (integrationsOverview.calendar.email || 'Kalender verbunden')
+        : 'Kalender vorbereiten';
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
@@ -610,12 +652,91 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
-                <div className="absolute bottom-[8.25rem] right-8 w-[min(360px,calc(100vw-38rem))]">
+                <div className="absolute bottom-[8.25rem] right-8 flex w-[min(392px,calc(100vw-38rem))] flex-col gap-3">
+                    <div className="pointer-events-auto rounded-[24px] border border-white/[0.05] bg-[linear-gradient(160deg,rgba(5,16,18,0.22),rgba(4,10,13,0.04))] p-3.5 shadow-[0_12px_28px_rgba(0,0,0,0.08)] backdrop-blur-[14px]">
+                        <div className="mb-3 flex items-start justify-between gap-4">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Konten & Kommunikation</div>
+                                <div className="mt-1 text-[12px] text-white/48">Browser, Postfach und Kalender als lokale Arbeitsbruecke.</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={openIntegrations}
+                                className="rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/50 transition-colors hover:border-white/12 hover:bg-white/[0.05] hover:text-white/68"
+                            >
+                                Verwalten
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                type="button"
+                                onClick={openBrowserConnect}
+                                className="rounded-[18px] border border-white/[0.05] bg-white/[0.022] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
+                            >
+                                <div className="flex items-center gap-2 text-cyan-200/76">
+                                    <Globe size={14} />
+                                    <span className="text-[10px] uppercase tracking-[0.16em]">Browser</span>
+                                </div>
+                                <div className="mt-2 text-[12px] text-white/82">{browserStatusLabel}</div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openMail}
+                                className="rounded-[18px] border border-white/[0.05] bg-white/[0.022] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
+                            >
+                                <div className="flex items-center gap-2 text-emerald-200/76">
+                                    <Mail size={14} />
+                                    <span className="text-[10px] uppercase tracking-[0.16em]">Mail</span>
+                                </div>
+                                <div className="mt-2 text-[12px] text-white/82">{mailStatusLabel}</div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openBrowserConnect}
+                                className="rounded-[18px] border border-white/[0.05] bg-white/[0.022] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
+                            >
+                                <div className="flex items-center gap-2 text-orange-200/76">
+                                    <CalendarDays size={14} />
+                                    <span className="text-[10px] uppercase tracking-[0.16em]">Kalender</span>
+                                </div>
+                                <div className="mt-2 text-[12px] text-white/82">{calendarStatusLabel}</div>
+                            </button>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={openBrowserConnect}
+                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/14 bg-cyan-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-cyan-100/80 transition-colors hover:border-cyan-300/24 hover:bg-cyan-500/[0.13]"
+                            >
+                                <Bell size={12} />
+                                Browser verbinden
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openMail}
+                                className="inline-flex items-center gap-2 rounded-full border border-emerald-400/14 bg-emerald-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-emerald-100/80 transition-colors hover:border-emerald-300/24 hover:bg-emerald-500/[0.13]"
+                            >
+                                <Mail size={12} />
+                                Post oeffnen
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openIntegrations}
+                                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-white/58 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/76"
+                            >
+                                <Wrench size={12} />
+                                Integrationen
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="pointer-events-auto rounded-[24px] border border-white/[0.05] bg-[linear-gradient(160deg,rgba(5,16,18,0.18),rgba(4,10,13,0.03))] p-3.5 shadow-[0_12px_28px_rgba(0,0,0,0.08)] backdrop-blur-[14px]">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
-                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt berührt</div>
-                                <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivität statt statischer Home-Daten.</div>
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt beruehrt</div>
+                                <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivitaet statt statischer Home-Daten.</div>
                             </div>
                             <button
                                 type="button"
@@ -628,7 +749,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
                         {recentActivityItems.length === 0 ? (
                             <p data-testid="recent-items-empty" className="text-sm text-white/30">
-                                Noch keine Aktivität. Starte im Finder.
+                                Noch keine Aktivitaet. Starte im Finder.
                             </p>
                         ) : (
                             <ul className="space-y-2">

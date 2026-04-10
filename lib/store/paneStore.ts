@@ -4,7 +4,7 @@ import { useActivityStore } from '@/lib/store/activityStore';
 export interface PaneConfig {
     id: string;
     type: 'document' | 'settings' | 'apps' | 'grid' | 'space' | 'search'
-    | 'team' | 'mail' | 'integrations' | 'calendar' | 'terminal' | 'notes'
+    | 'team' | 'mail' | 'integrations' | 'browser' | 'calendar' | 'terminal' | 'notes'
     | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline' | 'mora-hub' | 'actions' | 'work-session' | 'meine-dateien';
 
     title: string;
