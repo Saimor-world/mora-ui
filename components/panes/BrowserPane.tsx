@@ -7,6 +7,7 @@ import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 import {
     ArrowLeft,
     ArrowRight,
+    Copy,
     ExternalLink,
     Globe,
     Mail,
@@ -42,6 +43,50 @@ const providerUrl = (provider?: string) => {
     }
 };
 
+type ConnectSurface = {
+    kind: 'mail' | 'calendar' | 'account';
+    title: string;
+    eyebrow: string;
+    description: string;
+    tone: string;
+    actionLabel: string;
+};
+
+const getConnectSurface = (url: string): ConnectSurface | null => {
+    const lower = url.toLowerCase();
+    if (lower.includes('mail.google.com') || lower.includes('outlook.office.com/mail') || lower.includes('outlook.live.com/mail')) {
+        return {
+            kind: 'mail',
+            title: 'Postfach sicher verbinden',
+            eyebrow: 'Mail Connect',
+            description: 'Gmail und Outlook blockieren eingebettete Logins im Browser-OS. Auf localhost oeffnest du den echten Auth-Flow extern und kommst danach mit verbundenem Konto zurueck.',
+            tone: 'emerald',
+            actionLabel: 'Postfach extern autorisieren',
+        };
+    }
+    if (lower.includes('calendar.google.com') || lower.includes('outlook.office.com/calendar')) {
+        return {
+            kind: 'calendar',
+            title: 'Kalender sicher verbinden',
+            eyebrow: 'Calendar Connect',
+            description: 'Kalender-Provider erlauben die echte Anmeldung nicht als eingebetteten Frame. Der sichere Weg ist der externe Auth-Flow mit Rueckkehr ins OS.',
+            tone: 'orange',
+            actionLabel: 'Kalender extern autorisieren',
+        };
+    }
+    if (lower.includes('accounts.google.com') || lower.includes('login.microsoftonline.com')) {
+        return {
+            kind: 'account',
+            title: 'Konto ueber Browser Bridge verbinden',
+            eyebrow: 'Account Connect',
+            description: 'Die eigentliche Anmeldung laeuft ausserhalb des eingebetteten Frames. SAIMOR nutzt diese Seite als Connect-Maske und springt danach in die lokale Wahrheitsinstanz zurueck.',
+            tone: 'cyan',
+            actionLabel: 'Extern weiter',
+        };
+    }
+    return null;
+};
+
 export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
@@ -67,6 +112,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
 
     const committedUrl = history[historyIndex] || START_URL;
     const isInternalStart = committedUrl === START_URL;
+    const connectSurface = useMemo(() => getConnectSurface(committedUrl), [committedUrl]);
 
     const navigate = useCallback((nextUrl: string, replace: boolean = false) => {
         const normalized = normalizeUrl(nextUrl);
@@ -127,6 +173,15 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     const openExternal = useCallback(() => {
         if (typeof window === 'undefined' || isInternalStart) return;
         window.open(committedUrl, '_blank', 'noopener,noreferrer');
+    }, [committedUrl, isInternalStart]);
+
+    const copyCurrentUrl = useCallback(async () => {
+        if (typeof navigator === 'undefined' || !committedUrl || isInternalStart) return;
+        try {
+            await navigator.clipboard.writeText(committedUrl);
+        } catch {
+            // no-op: clipboard availability differs across browsers
+        }
     }, [committedUrl, isInternalStart]);
 
     const openProvider = useCallback((url: string) => {
@@ -318,6 +373,99 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {overview?.runtime?.local_truth?.available
                                             ? 'Lokale Runtime ist vorbereitet. Browser, Mail und Kalender koennen an dieselbe Wahrheitsinstanz haengen.'
                                             : 'Die lokale Runtime wird vorbereitet und ueber localhost zur eigentlichen Produktionswahrheit.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : connectSurface ? (
+                        <div className="grid h-full grid-cols-[1.05fr_0.95fr] gap-6 p-6">
+                            <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(5,18,22,0.78),rgba(4,10,13,0.45))] p-6 backdrop-blur-xl">
+                                <div className={`text-[10px] uppercase tracking-[0.26em] ${connectSurface.tone === 'emerald' ? 'text-emerald-200/55' : connectSurface.tone === 'orange' ? 'text-orange-200/55' : 'text-cyan-200/55'}`}>
+                                    {connectSurface.eyebrow}
+                                </div>
+                                <h2 className="mt-3 text-[28px] font-light text-white">{connectSurface.title}</h2>
+                                <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/58">
+                                    {connectSurface.description}
+                                </p>
+
+                                <div className="mt-6 rounded-[24px] border border-white/10 bg-black/18 p-4">
+                                    <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Warum kein eingebetteter Login?</div>
+                                    <p className="mt-2 text-sm leading-relaxed text-white/58">
+                                        Provider wie Google und Microsoft setzen Sicherheitsheader, die eingebettete Logins in fremden Frames bewusst blockieren.
+                                        Die echte Verbindung laeuft deshalb ueber den Browser selbst, waehrend SAIMOR hier nur die lokale Connect-Oberflaeche zeigt.
+                                    </p>
+                                </div>
+
+                                <div className="mt-6 flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={openExternal}
+                                        className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition-all ${
+                                            connectSurface.tone === 'emerald'
+                                                ? 'border-emerald-400/18 bg-emerald-500/[0.12] text-emerald-100 hover:bg-emerald-500/[0.2]'
+                                                : connectSurface.tone === 'orange'
+                                                    ? 'border-orange-400/18 bg-orange-500/[0.12] text-orange-100 hover:bg-orange-500/[0.2]'
+                                                    : 'border-cyan-400/18 bg-cyan-500/[0.12] text-cyan-100 hover:bg-cyan-500/[0.2]'
+                                        }`}
+                                    >
+                                        <ExternalLink size={16} />
+                                        {connectSurface.actionLabel}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={copyCurrentUrl}
+                                        className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/72 transition-all hover:border-white/18 hover:bg-white/[0.08]"
+                                    >
+                                        <Copy size={16} />
+                                        URL kopieren
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={openIntegrationsPane}
+                                        className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/72 transition-all hover:border-white/18 hover:bg-white/[0.08]"
+                                    >
+                                        <ShieldCheck size={16} />
+                                        Integrationen
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-white/35">Browser Bridge</div>
+                                    <div className="mt-2 text-lg text-white">
+                                        {browserBridge.permission === 'granted'
+                                            ? 'Browser freigegeben'
+                                            : browserBridge.permission === 'denied'
+                                                ? 'Browser blockiert'
+                                                : browserBridge.permission === 'default'
+                                                    ? 'Freigabe ausstehend'
+                                                    : 'Nicht verfuegbar'}
+                                    </div>
+                                    <div className="mt-2 text-xs leading-relaxed text-white/56">
+                                        Die Browser Bridge meldet dir Benachrichtigungen, Mail- und Kalenderstatus direkt im OS zurueck.
+                                    </div>
+                                </div>
+
+                                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-white/35">Mail</div>
+                                    <div className="mt-2 text-lg text-white">
+                                        {overview?.mail?.configured ? (overview.mail.email || 'Verbunden') : 'Noch nicht verbunden'}
+                                    </div>
+                                    <div className="mt-2 text-xs leading-relaxed text-white/56">
+                                        {overview?.capabilities?.mail_local_mode
+                                            ? 'Mail lebt im lokalen Wahrheitsmodus und spiegelt nur als Demo auf HQ.'
+                                            : 'Postfach kann jetzt vorbereitet und danach direkt im OS genutzt werden.'}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-white/35">Local Truth</div>
+                                    <div className="mt-2 text-lg text-white">
+                                        {overview?.runtime?.local_truth?.configured_model || overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}
+                                    </div>
+                                    <div className="mt-2 text-xs leading-relaxed text-white/56">
+                                        Die echte Kontoanbindung wird auf localhost und nicht auf dem Demo-Mirror abgeschlossen.
                                     </div>
                                 </div>
                             </div>

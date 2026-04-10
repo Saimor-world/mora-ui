@@ -171,12 +171,21 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     }, [revealPane]);
 
     const openMail = useCallback(() => {
+        if (!integrationsOverview?.mail?.configured) {
+            revealPane('browser-connect', {
+                type: 'browser',
+                title: 'Browser',
+                size: { width: 1160, height: 760 },
+                data: { initialUrl: 'about:saimor-connect' },
+            });
+            return;
+        }
         revealPane('mail-main', {
             type: 'mail',
             title: 'Post',
             size: { width: 960, height: 720 },
         });
-    }, [revealPane]);
+    }, [integrationsOverview?.mail?.configured, revealPane]);
 
     const openIntegrations = useCallback(() => {
         revealPane('integrations-main', {
