@@ -75,13 +75,33 @@ export const CoreLayer: React.FC = () => {
                         exit="exit"
                     >
                         <div className="absolute inset-0">
-                            <div className="absolute inset-0 scale-[1.05] opacity-[0.3] saturate-[0.52] [filter:blur(2.25px)]">
+                            <div className="absolute inset-0 scale-[1.08] opacity-[0.22] saturate-[0.42] [filter:blur(4px)]">
                                 <UniverseView />
                             </div>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(15,36,50,0.26),rgba(4,10,14,0.56)_34%,rgba(2,6,9,0.82)_100%)]" />
-                            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,9,0.84)_0%,rgba(2,8,9,0.58)_18%,rgba(2,8,9,0.18)_38%,rgba(2,8,9,0.18)_62%,rgba(2,8,9,0.58)_82%,rgba(2,8,9,0.84)_100%)]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(12,28,39,0.34),rgba(4,10,14,0.72)_34%,rgba(2,6,9,0.9)_100%)]" />
+                            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,9,0.92)_0%,rgba(2,8,9,0.68)_18%,rgba(2,8,9,0.24)_38%,rgba(2,8,9,0.24)_62%,rgba(2,8,9,0.68)_82%,rgba(2,8,9,0.92)_100%)]" />
                             <div className="absolute inset-x-[18%] top-[14%] h-[23rem] rounded-full bg-cyan-400/[0.016] blur-[148px]" />
                             <div className="absolute inset-x-[24%] bottom-[9%] h-[16rem] rounded-full bg-emerald-400/[0.012] blur-[136px]" />
+                            <motion.div
+                                className="absolute inset-y-0 left-0 w-[23%] pointer-events-none"
+                                initial={false}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: '-12%', transition: { duration: prefersReducedMotion ? 0.14 : 0.7, ease: [0.24, 0.96, 0.16, 1] as const } }}
+                                style={{
+                                    background: 'linear-gradient(90deg, rgba(2, 8, 9, 0.95) 0%, rgba(2, 8, 9, 0.78) 52%, rgba(2, 8, 9, 0) 100%)',
+                                    backdropFilter: 'blur(2px)',
+                                }}
+                            />
+                            <motion.div
+                                className="absolute inset-y-0 right-0 w-[23%] pointer-events-none"
+                                initial={false}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: '12%', transition: { duration: prefersReducedMotion ? 0.14 : 0.7, ease: [0.24, 0.96, 0.16, 1] as const } }}
+                                style={{
+                                    background: 'linear-gradient(270deg, rgba(2, 8, 9, 0.95) 0%, rgba(2, 8, 9, 0.78) 52%, rgba(2, 8, 9, 0) 100%)',
+                                    backdropFilter: 'blur(2px)',
+                                }}
+                            />
                             <motion.div
                                 className="absolute inset-0 pointer-events-none"
                                 initial={false}

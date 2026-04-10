@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench } from 'lucide-react';
+import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
@@ -455,6 +455,27 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                     </div>
                 </div>
 
+                <div className="absolute left-1/2 top-28 w-[min(360px,calc(100vw-48rem))] -translate-x-1/2">
+                    <div className="pointer-events-auto rounded-[26px] border border-emerald-400/12 bg-[linear-gradient(160deg,rgba(6,16,18,0.48),rgba(4,10,13,0.14))] px-5 py-4 shadow-[0_22px_60px_rgba(0,0,0,0.24)] backdrop-blur-[18px]">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-emerald-400/18 bg-emerald-500/[0.12] text-emerald-100">
+                                <Sparkles size={15} />
+                            </div>
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/54">Mora</div>
+                                <div className="mt-0.5 text-[18px] font-light text-white/90">
+                                    {greeting}, {firstName || 'du'}.
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-3 text-[13px] leading-relaxed text-white/62">
+                            {browserBridge.permission === 'granted'
+                                ? 'Browser und Home sind bereit. Wenn du eintauchst, oeffnet sich die Live-Topographie vollstaendig.'
+                                : 'Home bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen in der Mitte oeffnet den ganzen Universumsraum.'}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="absolute left-8 top-28 w-[min(360px,calc(100vw-37rem))]">
                     <div className="pointer-events-auto rounded-[30px] border border-white/[0.045] bg-[linear-gradient(160deg,rgba(5,16,18,0.14),rgba(4,10,13,0.02))] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.08)] backdrop-blur-[14px]">
                         <div className="flex items-start justify-between gap-4">
@@ -489,6 +510,21 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <HomeChip label="Bereiche" value={activeDepartmentCount} />
                             <HomeChip label="Zuletzt" value={recentActivityItems.length} />
                             <HomeChip label="Privat" value={(privateArea?.documentCount ?? 0) + (privateArea?.fileCount ?? 0)} />
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                            <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
+                                <div className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/44">Browser</div>
+                                <div className="mt-1 text-[11px] text-white/76">{browserStatusLabel}</div>
+                            </div>
+                            <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
+                                <div className="text-[9px] uppercase tracking-[0.16em] text-emerald-200/44">Mail</div>
+                                <div className="mt-1 text-[11px] text-white/76">{mailStatusLabel}</div>
+                            </div>
+                            <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
+                                <div className="text-[9px] uppercase tracking-[0.16em] text-violet-200/44">Local</div>
+                                <div className="mt-1 text-[11px] text-white/76">{localTruthStatusLabel}</div>
+                            </div>
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-2">

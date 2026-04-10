@@ -1121,11 +1121,29 @@ export const Dock = () => {
                             name={user?.name || 'Benutzer'}
                             role={user?.role}
                             roleLabel={viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
-                            subtitle="Konto und Dateien"
+                            subtitle="Konto, Privatbereich und Dateien"
                             preferInitials
                             compact
                             embedded
-                            className="min-w-[220px] px-0 py-0"
+                            variant="dock"
+                            className="min-w-[272px] px-0 py-0"
+                            actionSlot={(
+                                <button
+                                    onClick={() => openPane({
+                                        id: 'meine-dateien',
+                                        type: 'meine-dateien',
+                                        title: 'Privater Bereich',
+                                        size: { width: 920, height: 720 },
+                                    })}
+                                    title="Privater Bereich"
+                                    aria-label="Privaten Bereich oeffnen"
+                                    data-interaction-sound="soft"
+                                    className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-white/62 transition-all duration-200 hover:border-white/18 hover:bg-white/[0.08] hover:text-white/88"
+                                >
+                                    <FolderHeart size={16} />
+                                    <span className="hidden 2xl:inline text-[10px] uppercase tracking-[0.16em]">Privat</span>
+                                </button>
+                            )}
                         />
                         <AdminModeSwitcher />
                         <button
@@ -1138,7 +1156,7 @@ export const Dock = () => {
                             title="Privater Bereich"
                             aria-label="Privaten Bereich öffnen"
                             data-interaction-sound="soft"
-                            className="flex h-11 items-center justify-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-3 text-white/46 transition-all duration-200 hover:border-white/14 hover:bg-white/[0.06] hover:text-white/78"
+                            className="hidden"
                         >
                             <FolderHeart size={18} />
                             <span className="hidden 2xl:inline text-[11px] uppercase tracking-[0.16em]">Privat</span>
