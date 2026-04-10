@@ -25,6 +25,8 @@ const withDefaultUiCandidates = (overview?: IntegrationsOverview | null) => {
         return candidates;
     }
     return [
+        'http://127.0.0.1:3000/',
+        'http://localhost:3000/',
         'http://127.0.0.1:3000/home',
         'http://localhost:3000/home',
         'http://127.0.0.1:3003/home',
