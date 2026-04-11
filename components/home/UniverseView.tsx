@@ -694,14 +694,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
-        if (focusedPlanetId) ids.add(focusedPlanetId);
-        semanticPreviewPlanetIds.forEach((id) => ids.add(id));
+        if (isHomeUniversePreview) {
+            if (focusedPlanetId) ids.add(focusedPlanetId);
+            semanticPreviewPlanetIds.forEach((id) => ids.add(id));
+            return ids;
+        }
+
+        visiblePlanets.forEach((planet) => ids.add(planet.id));
         return ids;
-    }, [focusedPlanetId, semanticPreviewPlanetIds]);
+    }, [focusedPlanetId, isHomeUniversePreview, semanticPreviewPlanetIds, visiblePlanets]);
     const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered);
     const visibleSemanticPaths = useMemo(
-        () => semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id),
-        [semanticPaths, semanticPreviewPathId]
+        () => isHomeUniversePreview
+            ? semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id)
+            : semanticPaths,
+        [isHomeUniversePreview, semanticPaths, semanticPreviewPathId]
     );
 
     return (
@@ -933,7 +940,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         strokeWidth={connection.highlighted ? 0.16 + connection.intensity * 0.22 : 0.08 + connection.intensity * 0.1}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: connection.highlighted ? 0.22 : 0.08 + connection.intensity * 0.03 }}
+                        animate={{
+                            opacity: isHomeUniversePreview
+                                ? (connection.highlighted ? 0.22 : 0.08 + connection.intensity * 0.03)
+                                : (connection.highlighted ? 0.32 : 0.12 + connection.intensity * 0.05)
+                        }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
                 ))}
@@ -943,11 +954,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
-                    const baseOpacity = path.highlighted || isPreviewedPath
-                        ? 0.74
-                        : isFocusedPath
-                            ? 0.28
-                            : 0;
+                    const baseOpacity = isHomeUniversePreview
+                        ? (
+                            path.highlighted || isPreviewedPath
+                                ? 0.74
+                                : isFocusedPath
+                                    ? 0.28
+                                    : 0
+                        )
+                        : (
+                            path.highlighted || isPreviewedPath
+                                ? 0.82
+                                : isFocusedPath
+                                    ? 0.34
+                                    : Math.max(0.14, 0.08 + path.strength * 0.18)
+                        );
 
                     return (
                         <g key={path.id}>
@@ -1190,16 +1211,24 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             {locked ? (
                                 <div
                                     data-testid={`locked-planet-${p.id}`}
-                                    onClick={() => setLockedTooltipDeptId(p.id)}
+                                    onClick={() => {
+                                        if (isHomeUniversePreview) {
+                                            setCoreMode('explore');
+                                            return;
+                                        }
+                                        setLockedTooltipDeptId(p.id);
+                                    }}
                                     style={{ opacity: 0.4, cursor: 'pointer', filter: 'grayscale(0.6)' }}
                                 >
                                     <Planet
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
-                                        onHover={(hovered) => handlePlanetHover(p.id, hovered)}
+                                        onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
-                                            // Locked: outer wrapper handles click (tooltip). Block navigation.
+                                            if (isHomeUniversePreview) {
+                                                setCoreMode('explore');
+                                            }
                                         }}
                                         health={health}
                                         activity={activity}
@@ -1211,8 +1240,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
                                     isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
-                                    onHover={(hovered) => handlePlanetHover(p.id, hovered)}
+                                    onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                     onClick={() => {
+                                        if (isHomeUniversePreview) {
+                                            setCoreMode('explore');
+                                            return;
+                                        }
                                         navigateToDepartment(p.id);
                                     }}
                                     health={health}
