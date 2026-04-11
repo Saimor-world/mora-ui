@@ -49,7 +49,7 @@ export const Planet: React.FC<PlanetProps> = ({
     // Dwell timer: prevent blink when cursor briefly leaves the planet
     const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleMouseEnter = useCallback((e: React.MouseEvent) => {
+    const handleMouseEnter = useCallback((e: React.PointerEvent | React.MouseEvent) => {
         if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
         setIsHovered(true);
         onHover?.(true);
@@ -87,16 +87,18 @@ export const Planet: React.FC<PlanetProps> = ({
     const Icon = iconOverride || style.icon;
 
     return (
-        <motion.div
+        <motion.button
             ref={planetRef}
-            className="absolute cursor-pointer group pointer-events-auto"
+            type="button"
+            aria-label={`${department.name} oeffnen`}
+            className="absolute group pointer-events-auto border-0 bg-transparent p-0 text-left cursor-pointer"
             style={{
                 left: position.x,
                 top: position.y,
                 transform: 'translate(-50%, -50%)',
             }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            onPointerEnter={handleMouseEnter}
+            onPointerLeave={handleMouseLeave}
             onClick={onClick}
             animate={{
                 y: isHovered || isActive ? [0, -4, 0] : [0, -2, 0],
@@ -424,6 +426,6 @@ export const Planet: React.FC<PlanetProps> = ({
                 </AnimatePresence>,
                 document.body
             )}
-        </motion.div>
+        </motion.button>
     );
 };

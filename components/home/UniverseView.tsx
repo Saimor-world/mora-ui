@@ -579,6 +579,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             setHoverPlanetId(planetId);
             setInsightPlanetId(planetId);
             setHeldInsightPlanetId(planetId);
+            setSemanticPreviewPathId(null);
             return;
         }
 
@@ -692,24 +693,29 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         []
     );
 
+    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered);
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
+        if (focusedPlanetId) ids.add(focusedPlanetId);
+        semanticPreviewPlanetIds.forEach((id) => ids.add(id));
+        return ids;
+    }, [focusedPlanetId, semanticPreviewPlanetIds]);
+    const visibleSemanticPaths = useMemo(() => {
         if (isHomeUniversePreview) {
-            if (focusedPlanetId) ids.add(focusedPlanetId);
-            semanticPreviewPlanetIds.forEach((id) => ids.add(id));
-            return ids;
+            return semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id);
         }
 
-        visiblePlanets.forEach((planet) => ids.add(planet.id));
-        return ids;
-    }, [focusedPlanetId, isHomeUniversePreview, semanticPreviewPlanetIds, visiblePlanets]);
-    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered);
-    const visibleSemanticPaths = useMemo(
-        () => isHomeUniversePreview
-            ? semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id)
-            : semanticPaths,
-        [isHomeUniversePreview, semanticPaths, semanticPreviewPathId]
-    );
+        if (!hasUniverseInteraction) {
+            return [];
+        }
+
+        return semanticPaths.filter((path) =>
+            path.highlighted ||
+            path.fromId === focusedPlanetId ||
+            path.toId === focusedPlanetId ||
+            semanticPreviewPathId === path.id
+        );
+    }, [focusedPlanetId, hasUniverseInteraction, isHomeUniversePreview, semanticPaths, semanticPreviewPathId]);
 
     return (
         <div
@@ -1246,6 +1252,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                             setCoreMode('explore');
                                             return;
                                         }
+                                        clearHoverRelease();
+                                        setHoverPlanetId(p.id);
+                                        setHeldInsightPlanetId(p.id);
+                                        setInsightPlanetId(p.id);
+                                        setSemanticPreviewPathId(null);
                                         navigateToDepartment(p.id);
                                     }}
                                     health={health}
