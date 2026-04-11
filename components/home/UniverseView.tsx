@@ -290,7 +290,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             setHeldInsightPlanetId(null);
             setInsightPlanetId(null);
             setSemanticPreviewPathId(null);
-        }, 1400);
+        }, 700);
     }, [clearHoverRelease, isInsightRailHovered]);
 
     useEffect(() => (
@@ -578,7 +578,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             clearHoverRelease();
             setHoverPlanetId(planetId);
             setInsightPlanetId(planetId);
-            setHeldInsightPlanetId(planetId);
             setSemanticPreviewPathId(null);
             return;
         }
