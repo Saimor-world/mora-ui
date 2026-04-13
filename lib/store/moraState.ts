@@ -130,7 +130,8 @@ export interface NameConflictState {
 // ROLE-BASED ACCESS CONTROL - Phase 6.3
 // ═══════════════════════════════════════════════════════════════════════════
 export type UserRole = 'owner' | 'admin' | 'system_owner' | 'manager' | 'member' | 'demo';
-export type OperationalState = 'operational' | 'setup_required';
+import type { OperationalState } from '@/lib/types/session';
+export type { OperationalState };
 
 export interface User {
     id: string;

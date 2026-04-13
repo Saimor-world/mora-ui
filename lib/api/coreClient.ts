@@ -1,5 +1,5 @@
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode, NodeVisibility } from '@/lib/types/core';
-import type { OperationalState } from '@/lib/store/moraState';
+import type { OperationalState } from '@/lib/types/session';
 
 type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | 'demo';
 
@@ -12,6 +12,11 @@ type AccountRole = 'admin' | 'owner' | 'system_owner' | 'manager' | 'member' | '
  */
 export function getCoreBaseUrl(): string {
     if (typeof window !== 'undefined') {
+        const host = window.location.hostname;
+        if (host === '127.0.0.1' || host === 'localhost') {
+            const localCoreHost = host === 'localhost' ? 'localhost' : '127.0.0.1';
+            return `http://${localCoreHost}:8081`;
+        }
         return '/api/core';
     }
     const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '').trim();
