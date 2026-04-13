@@ -6,6 +6,7 @@
 jest.mock('@/lib/api/coreClient', () => ({
     coreGet: jest.fn(),
     corePost: jest.fn(),
+    getCoreBaseUrl: jest.fn(() => 'http://localhost:8081'),
 }));
 
 import { buildWsUrl, fetchRealtimeStats, broadcastRealtimeEvent } from '@/lib/api/realtimeClient';
