@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 function makeQueryClient() {
-  return new QueryClient({
+  const client = new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 5 * 60 * 1000,
@@ -17,6 +17,20 @@ function makeQueryClient() {
       },
     },
   });
+
+  // QueryCache → orb bridge: reflects query activity in the orb state.
+  // Dynamic import avoids circular dependency (orbStore → awarenessClient → queryClient).
+  client.getQueryCache().subscribe(async (event) => {
+    const { useOrbStore } = await import('@/lib/store/orbStore');
+    if (event.type === 'updated' && event.action.type === 'fetch') {
+      useOrbStore.getState().setOrbState('thinking');
+    }
+    if (event.type === 'updated' && event.action.type === 'success') {
+      useOrbStore.getState().setOrbState('idle');
+    }
+  });
+
+  return client;
 }
 
 let browserQueryClient: QueryClient | undefined;
