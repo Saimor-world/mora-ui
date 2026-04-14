@@ -18,6 +18,8 @@ const makeWrapper = () => {
 };
 
 describe('useCompanies', () => {
+  beforeEach(() => jest.clearAllMocks());
+
   it('fetches companies list', async () => {
     const { result } = renderHook(() => useCompanies(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
