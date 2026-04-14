@@ -25,6 +25,10 @@ interface OrbStoreState {
   initializeMindLoop(): void;
 }
 
+// Module-level guard — prevents duplicate MindLoop subscriptions if
+// multiple components call initializeMindLoop() on mount.
+let mindLoopInitialized = false;
+
 export const useOrbStore = create<OrbStoreState>((set, get) => ({
   orbState: 'idle',
   speculativeState: undefined,
@@ -55,6 +59,8 @@ export const useOrbStore = create<OrbStoreState>((set, get) => ({
     set({ lastAnswerSource: source, lastAnswerSourceMode: mode, lastAnswerScopeLabel: label }),
 
   initializeMindLoop: () => {
+    if (mindLoopInitialized) return;
+    mindLoopInitialized = true;
     // Lazy require to avoid circular dependency — mindLoop may import from stores
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { mindLoop } = require('@/lib/intelligence/mindLoop');
