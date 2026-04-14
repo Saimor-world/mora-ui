@@ -85,25 +85,45 @@ jest.mock('@/lib/store/moraState', () => {
         nodesByFolder: {},
         nodesByCompany: {},
         loadNodesForFolder: jest.fn(),
-        treeData: [],
-        loadTree: jest.fn().mockResolvedValue([]),
-        isLoadingTree: false,
-        addFolder: jest.fn(),
-        loadedNodes: {},
-        loadChildren: jest.fn(),
-        updateNode: jest.fn(),
-        deleteNode: jest.fn(),
-        updateFolder: jest.fn(),
-        deleteFolder: jest.fn(),
-        updateSpace: jest.fn(),
-        deleteSpace: jest.fn(),
-        addNode: jest.fn(),
+        loadNodesForCompany: jest.fn().mockResolvedValue([]),
+        loadedNodes: new Set(),
+        loadChildren: jest.fn().mockResolvedValue([]),
     };
     const useMoraStore = (selector?: (s: any) => unknown) =>
         selector ? selector(store) : store;
     useMoraStore.getState = () => store;
     return { useMoraStore };
 });
+
+jest.mock('@tanstack/react-query', () => {
+    const mockQueryClient = {
+        getQueryData: jest.fn().mockReturnValue(undefined),
+        invalidateQueries: jest.fn().mockResolvedValue(undefined),
+    };
+    return {
+        useQueryClient: jest.fn(() => mockQueryClient),
+        useQuery: jest.fn(() => ({ data: undefined, isFetching: false })),
+    };
+});
+
+jest.mock('@/lib/queries/useTree', () => {
+    const stableEmptyTree: never[] = [];
+    return {
+        useTree: jest.fn(() => ({ data: stableEmptyTree, isFetching: false })),
+    };
+});
+
+jest.mock('@/lib/api/orgClient', () => ({
+    createFolder: jest.fn().mockResolvedValue({}),
+    createNode: jest.fn().mockResolvedValue({}),
+    updateNode: jest.fn().mockResolvedValue({}),
+    deleteNode: jest.fn().mockResolvedValue(undefined),
+    updateFolder: jest.fn().mockResolvedValue({}),
+    deleteFolder: jest.fn().mockResolvedValue(undefined),
+    updateSpace: jest.fn().mockResolvedValue({}),
+    deleteSpace: jest.fn().mockResolvedValue(undefined),
+    fetchTree: jest.fn().mockResolvedValue([]),
+}));
 
 jest.mock('@/lib/api/coreClient', () => ({
     fetchFolderContext: jest.fn().mockResolvedValue(null),
@@ -118,10 +138,13 @@ jest.mock('@/lib/api/coreClient', () => ({
 
 jest.mock('@/lib/api/filesClient', () => ({
     uploadCompanyFile: jest.fn(),
+    listCompanyFiles: jest.fn().mockResolvedValue([]),
     requestCreateNodeFromFile: jest.fn(),
     confirmCreateNodeFromFile: jest.fn(),
     rejectCreateNodeFromFile: jest.fn(),
     getFileNode: jest.fn(),
+    downloadCompanyFile: jest.fn(),
+    relocateCompanyFile: jest.fn(),
 }));
 
 jest.mock('@/lib/api/realtimeClient', () => ({

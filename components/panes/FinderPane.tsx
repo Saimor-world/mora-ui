@@ -46,6 +46,19 @@ import {
     openNodeLike,
     openSourceFileLike,
 } from '@/lib/utils/contentOpen';
+import {
+    createFolder as orgCreateFolder,
+    createNode as orgCreateNode,
+    updateNode as orgUpdateNode,
+    deleteNode as orgDeleteNode,
+    updateFolder as orgUpdateFolder,
+    deleteFolder as orgDeleteFolder,
+    updateSpace as orgUpdateSpace,
+    deleteSpace as orgDeleteSpace,
+} from '@/lib/api/orgClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
+import { useTree } from '@/lib/queries/useTree';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -182,15 +195,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         nodesByFolder,
         nodesByCompany,
         loadNodesForFolder,
-        // DATA CONSISTENCY FIX: Use shared treeData from store instead of local state
-        treeData,
-        loadTree,
-        isLoadingTree,
-        addFolder,
         loadedNodes,
         loadChildren,
-        updateNode, deleteNode, updateFolder, deleteFolder, updateSpace, deleteSpace, addNode
     } = useMoraStore();
+    const queryClient = useQueryClient();
+    const { data: treeData, isFetching: isLoadingTree } = useTree(activeCompanyId);
     const pane = getPane(id);
     const surfaceProfile = useSurfaceProfile();
 
@@ -249,11 +258,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         if (!newName) return;
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space' || contextMenu.item.type === 'department') {
-                if (contextMenu.item.type === 'space') await updateSpace(contextMenu.item.id, { name: newName });
-                else if (contextMenu.item.type === 'folder') await updateFolder(contextMenu.item.id, { name: newName });
-                else toast.error("Bereiche koennen hier nicht umbenannt werden");
+                if (contextMenu.item.type === 'space') {
+                    await orgUpdateSpace(contextMenu.item.id, { name: newName });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                } else if (contextMenu.item.type === 'folder') {
+                    await orgUpdateFolder(contextMenu.item.id, { name: newName });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                } else toast.error("Bereiche koennen hier nicht umbenannt werden");
             } else {
-                await updateNode(contextMenu.item.id, { title: newName });
+                await orgUpdateNode(contextMenu.item.id, { title: newName });
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
             }
             loadContent();
             toast.success('Umbenannt');
@@ -270,10 +284,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
-                if (contextMenu.item.type === 'space') await deleteSpace(contextMenu.item.id);
-                else await deleteFolder(contextMenu.item.id);
+                if (contextMenu.item.type === 'space') {
+                    await orgDeleteSpace(contextMenu.item.id);
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                } else {
+                    await orgDeleteFolder(contextMenu.item.id);
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                }
             } else {
-                await deleteNode(contextMenu.item.id);
+                await orgDeleteNode(contextMenu.item.id);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
             }
             loadContent();
             toast.success('Geloescht');
@@ -363,7 +383,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                     // Folder move not fully supported in pure API yet without parent update
                     toast.info("Ordner koennen hier noch nicht verschoben werden");
                 } else {
-                    await updateNode(clipboard.id, { folder_id: targetFolderId || undefined });
+                    await orgUpdateNode(clipboard.id, { folder_id: targetFolderId || undefined });
                     toast.success('Element verschoben');
                 }
             } else {
@@ -375,7 +395,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         toast.error('Bitte zuerst eine Organisation waehlen.');
                         return;
                     }
-                    await addNode({
+                    await orgCreateNode({
                         company_id: resolvedCompanyId,
                         folder_id: targetFolderId || undefined,
                         title: `${clipboard.item.name || clipboard.item.title} (Kopie)`,
@@ -383,6 +403,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                         content: clipboard.item.content || '',
                         metadata: clipboard.item.metadata || {}
                     } as any);
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
                     toast.success('Inhalt dupliziert');
                 }
             }
@@ -987,7 +1008,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
             // Fallback to Departments list
             // Fallback to Departments list
-            const depts = useMoraStore.getState().departments || [];
+            const depts = (queryClient.getQueryData<any[]>(queryKeys.departments(activeCompanyId)) ?? []);
 
             // STRICT MERGE: Tree items + Departments list
             const uniqueItems = mergeUnique(items, depts);
@@ -1197,17 +1218,17 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [isDeepView, resolvedCompanyId]);
 
-    // DATA CONSISTENCY FIX: Use loadTree from store instead of direct fetchTree
+    // DATA CONSISTENCY FIX: Use TanStack Query instead of direct fetchTree
     // This ensures both Universe and Finder use the same data source
     const loadContent = useCallback(async (opts?: { preferCache?: boolean }) => {
         try {
-            const existingTree = useMoraStore.getState().treeData;
+            const existingTree = queryClient.getQueryData(queryKeys.tree(resolvedCompanyId ?? ''));
             const shouldReuseTree = opts?.preferCache === true && Array.isArray(existingTree) && existingTree.length > 0;
             if (resolvedCompanyId) {
                 await useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
             }
             if (!shouldReuseTree) {
-                await loadTree(undefined, resolvedCompanyId || undefined);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
             }
             if (resolvedCompanyId) {
                 const filesPayload = await listCompanyFiles(resolvedCompanyId);
@@ -1218,7 +1239,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         } catch (e) {
             console.error("Tree load failed", e);
         }
-    }, [loadTree, resolvedCompanyId]);
+    }, [queryClient, resolvedCompanyId]);
 
     const relocateFinderFile = useCallback(async (
         item: any,
@@ -1527,9 +1548,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     useEffect(() => {
         if (searchQuery.trim() && rawTree.length === 0 && !isLoadingTree && !searchTriggeredLoad) {
             setSearchTriggeredLoad(true);
-            loadTree().finally(() => setSearchTriggeredLoad(false));
+            queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? activeCompanyId ?? '') }).finally(() => setSearchTriggeredLoad(false));
         }
-    }, [searchQuery, rawTree.length, isLoadingTree, searchTriggeredLoad, loadTree]);
+    }, [searchQuery, rawTree.length, isLoadingTree, searchTriggeredLoad, queryClient, resolvedCompanyId, activeCompanyId]);
 
     // Filter items by search query (RECURSIVE)
     // Always search the full tree for consistent results
@@ -3011,11 +3032,12 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                     // Determine if we're in a space or folder
                                     const node = findNodeInTree(treeData || [], currentFolderId);
                                     if (node?.type === 'space') {
-                                        await addFolder({
+                                        await orgCreateFolder({
                                             space_id: currentFolderId,
                                             name: newFolderName.trim(),
                                             color: '#10b981'
                                         });
+                                        await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
                                     } else {
                                         // TODO: Create subfolder API
                                         toast.info('Subfolder creation coming soon');
