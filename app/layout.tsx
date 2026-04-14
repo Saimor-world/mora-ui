@@ -12,6 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { usePathname } from "next/navigation";
 import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
 import { StandardModeHandler } from "@/components/ui/StandardModeHandler";
+import { QueryProvider } from "@/lib/queryClient";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -106,18 +107,20 @@ export default function RootLayout({
         <meta name="description" content="Intelligent System" />
       </head>
       <body className={`${inter.className} ${jetbrainsMono.variable} antialiased bg-[#030806] overflow-hidden`} suppressHydrationWarning>
-        <ErrorBoundary>
-          <MoraSessionProvider>
-            <StandardModeHandler />
-            {children}
-            {mounted && (
-              <>
-                <PaneManager />
-                <Toaster position="top-right" />
-              </>
-            )}
-          </MoraSessionProvider>
-        </ErrorBoundary>
+        <QueryProvider>
+          <ErrorBoundary>
+            <MoraSessionProvider>
+              <StandardModeHandler />
+              {children}
+              {mounted && (
+                <>
+                  <PaneManager />
+                  <Toaster position="top-right" />
+                </>
+              )}
+            </MoraSessionProvider>
+          </ErrorBoundary>
+        </QueryProvider>
       </body>
     </html>
   );
