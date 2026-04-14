@@ -58,13 +58,23 @@ describe('useDepartments', () => {
 describe('useCreateDepartment', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('calls createDepartment and invalidates queries', async () => {
-    const { result } = renderHook(
-      () => useCreateDepartment('c1'),
-      { wrapper: makeWrapper() }
+  it('calls createDepartment and invalidates departments + tree queries', async () => {
+    const qc = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false }
+      }
+    });
+    const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
     );
+    const { result } = renderHook(() => useCreateDepartment('c1'), { wrapper });
     await result.current.mutateAsync({ name: 'Design', company_id: 'c1' });
+
     expect(orgClient.createDepartment).toHaveBeenCalledWith({ name: 'Design', company_id: 'c1' });
+    expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: expect.arrayContaining(['departments']) }));
+    expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: expect.arrayContaining(['tree']) }));
   });
 });
 
