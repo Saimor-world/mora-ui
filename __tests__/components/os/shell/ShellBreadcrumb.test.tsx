@@ -16,17 +16,39 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
+import { useNavStore } from '@/lib/store/navStore';
 import { useMoraStore } from '@/lib/store/moraState';
+
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: jest.fn(),
+}));
 
 jest.mock('@/lib/store/moraState', () => ({
     useMoraStore: jest.fn(),
 }));
 
+const mockUseNavStore = useNavStore as jest.MockedFunction<typeof useNavStore>;
 const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
 
 function renderWith(state: Record<string, unknown>) {
+    // Nav fields go to navStore, collection data stays in moraState
+    const navState = {
+        viewLevel: state.viewLevel,
+        activeDepartmentId: state.activeDepartmentId,
+        activeSpaceId: state.activeSpaceId,
+        navigateToExplore: state.navigateToExplore,
+        navigateToDepartment: state.navigateToDepartment,
+        navigateToSpace: state.navigateToSpace,
+    };
+    const moraState = {
+        departments: state.departments,
+        spacesByDepartment: state.spacesByDepartment,
+    };
+    mockUseNavStore.mockImplementation((selector?: any) =>
+        selector ? selector(navState) : navState
+    );
     mockUseMoraStore.mockImplementation((selector?: any) =>
-        selector ? selector(state) : state
+        selector ? selector(moraState) : moraState
     );
     return render(<ShellBreadcrumb />);
 }

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
-import { useMoraStore } from '@/lib/store/moraState';
 import { Suspense } from 'react';
 import { useSession } from "next-auth/react";
 import { readCookie } from '@/lib/auth/cookies';
@@ -16,6 +15,20 @@ function RootPageContent() {
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
     const [showLockScreen, setShowLockScreen] = useState(false);
+    const [allowWelcomeFallback, setAllowWelcomeFallback] = useState(false);
+
+    useEffect(() => {
+        if (status !== 'loading') {
+            setAllowWelcomeFallback(false);
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            setAllowWelcomeFallback(true);
+        }, 1800);
+
+        return () => window.clearTimeout(timeout);
+    }, [status]);
 
     // Root entry must not auto-forward into the app.
     // A valid session should surface as an explicit "continue session" choice,
@@ -44,7 +57,7 @@ function RootPageContent() {
     const userName = session?.user?.email?.split('@')[0] || 'User';
 
     // Show loading while session check happens
-    if (status === 'loading') {
+    if (status === 'loading' && !allowWelcomeFallback) {
         return (
             <div className="relative w-full h-screen bg-[#030806] flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />

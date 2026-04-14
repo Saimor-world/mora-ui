@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { CoreLayer } from '@/components/home/CoreLayer';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
@@ -20,7 +20,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
  * CoreLayer owns the Home/Explore split so ViewPort stays a pure hierarchy router.
  */
 export const ViewPort: React.FC = () => {
-    const viewLevel = useMoraStore((state) => state.viewLevel);
+    const viewLevel = useNavStore((state) => state.viewLevel);
     const prefersReducedMotion = useReducedMotion();
     const effectiveViewLevel = viewLevel === 'folder' ? 'space' : viewLevel;
 

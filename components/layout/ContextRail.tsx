@@ -3,6 +3,8 @@
 import React, { useState, useCallback } from 'react';
 import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2, Users, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,14 +28,16 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
  * - Logout redirects to WelcomeScreen (/)
  */
 export const ContextRail: React.FC = () => {
-    const { navigateToCore, viewLevel, viewMode, setViewMode, loadTree, resetStore, isStandardMode } = useMoraStore();
+    const { navigateToCore, viewLevel, viewMode, setViewMode, isStandardMode } = useNavStore();
+    const { resetStore } = useSessionStore();
+    const { loadTree } = useMoraStore();
     const { currentAccount, logout } = useAccountStore();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const router = useRouter();
     const surfaceProfile = useSurfaceProfile();
 
-    const user = useMoraStore(state => state.user);
+    const user = useSessionStore(state => state.user);
 
     const getCurrentRole = useCallback(() => {
         return user?.role || currentAccount?.role || 'member';

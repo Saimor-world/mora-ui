@@ -8,6 +8,10 @@ import {
     Music2, Pause, Play, SkipForward, Sparkles, Brain
 } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { getCoreDockItems } from '@/lib/surface/surfaceRegistry';
 
@@ -348,25 +352,25 @@ const DockPod: React.FC<DockPodProps> = ({
 );
 
 export const Dock = () => {
-    const navigateToCore = useMoraStore((s) => s.navigateToCore);
-    const navigateToDepartment = useMoraStore((s) => s.navigateToDepartment);
-    const navigateToSpace = useMoraStore((s) => s.navigateToSpace);
-    const navigateToFolder = useMoraStore((s) => s.navigateToFolder);
-    const orbState = useMoraStore((s) => s.orbState);
-    const user = useMoraStore((s) => s.user);
-    const companies = useMoraStore((s) => s.companies);
+    const navigateToCore = useNavStore((s) => s.navigateToCore);
+    const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
+    const navigateToSpace = useNavStore((s) => s.navigateToSpace);
+    const navigateToFolder = useNavStore((s) => s.navigateToFolder);
+    const orbState = useOrbStore((s) => s.orbState);
+    const user = useSessionStore((s) => s.user);
+    const { data: companies = [] } = useCompanies();
     const departments = useMoraStore((s) => s.departments);
     const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
     const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeSpaceId = useMoraStore((s) => s.activeSpaceId);
-    const activeFolderId = useMoraStore((s) => s.activeFolderId);
-    const setActiveCompany = useMoraStore((s) => s.setActiveCompany);
-    const viewMode = useMoraStore((s) => s.viewMode);
-    const viewLevel = useMoraStore((s) => s.viewLevel);
-    const isStandardMode = useMoraStore((s) => s.isStandardMode);
-    const updateUserSettings = useMoraStore((s) => s.updateUserSettings);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
+    const setActiveCompany = useNavStore((s) => s.setActiveCompany);
+    const viewMode = useNavStore((s) => s.viewMode);
+    const viewLevel = useNavStore((s) => s.viewLevel);
+    const isStandardMode = useNavStore((s) => s.isStandardMode);
+    const updateUserSettings = useSessionStore((s) => s.updateUserSettings);
 
     const panes = usePaneStore((s) => s.panes);
     const restorePane = usePaneStore((s) => s.restorePane);
@@ -397,9 +401,13 @@ export const Dock = () => {
         () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
         [ambientTracks, ambientAudio.trackId]
     );
+    const operationalCompanyCount = useMemo(
+        () => (surfaceProfile.isLocalTruthSurface ? 1 : (activeCompany ? 1 : safeCompanies.length)),
+        [activeCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface]
+    );
     const companyContextLabel = useMemo(
-        () => formatCompanyContextLabel(surfaceProfile, safeCompanies.length),
-        [surfaceProfile, safeCompanies.length]
+        () => formatCompanyContextLabel(surfaceProfile, operationalCompanyCount),
+        [surfaceProfile, operationalCompanyCount]
     );
     const activeDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
@@ -496,11 +504,12 @@ export const Dock = () => {
         activeSpaces,
         activeFolders,
         foldersBySpace,
-        companyCount: safeCompanies.length,
+        companyCount: operationalCompanyCount,
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent,
         isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
+        isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         viewLevel,
         activeCompany,
@@ -510,11 +519,12 @@ export const Dock = () => {
         activeSpaces,
         activeFolders,
         foldersBySpace,
-        safeCompanies.length,
+        operationalCompanyCount,
         safeDepartments.length,
         user?.active_company_name,
         accent,
         surfaceProfile.isPublicDemoSurface,
+        surfaceProfile.isLocalTruthSurface,
     ]);
 
     const scopeLabel = shellContext.scopeLabel;

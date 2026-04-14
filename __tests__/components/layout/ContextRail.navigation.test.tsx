@@ -2,10 +2,31 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ContextRail } from '@/components/layout/ContextRail';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { useMoraStore } from '@/lib/store/moraState';
 
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: jest.fn(),
+}));
+
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: jest.fn((selector?: any) => {
+        const state = {
+            user: null,
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true, isLoggingOut: false,
+            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
+        };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
+}));
+
 jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+    useMoraStore: jest.fn((selector?: any) => {
+        const state = { loadTree: jest.fn() };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -60,11 +81,39 @@ jest.mock('@/lib/hooks/useUser', () => ({
     resetUserState: jest.fn(),
 }));
 
+const mockUseNavStore = useNavStore as jest.MockedFunction<typeof useNavStore>;
 const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
 
 function renderWithState(state: Record<string, unknown>) {
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
-    (mockUseMoraStore as any).getState = () => state;
+    // Nav fields go to navStore
+    const navState = {
+        navigateToCore: state.navigateToCore,
+        viewLevel: state.viewLevel,
+        viewMode: state.viewMode,
+        setViewMode: state.setViewMode,
+        isStandardMode: state.isStandardMode ?? false,
+        navigateToExplore: state.navigateToExplore,
+    };
+    mockUseNavStore.mockImplementation((selector?: any) => (selector ? selector(navState) : navState));
+    (mockUseNavStore as any).getState = () => ({
+        ...navState,
+        companies: state.companies,
+        setActiveCompany: state.setActiveCompany,
+        loadDepartments: state.loadDepartments,
+        loadNodesForCompany: state.loadNodesForCompany,
+    });
+    // moraState fields that remain
+    const moraStateFields = {
+        loadTree: state.loadTree ?? jest.fn(),
+        companies: state.companies,
+        setActiveCompany: state.setActiveCompany,
+        loadDepartments: state.loadDepartments ?? jest.fn(),
+        loadNodesForCompany: state.loadNodesForCompany ?? jest.fn(),
+        resetStore: state.resetStore ?? jest.fn(),
+        user: state.user,
+    };
+    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(moraStateFields) : moraStateFields));
+    (mockUseMoraStore as any).getState = () => moraStateFields;
     return render(<ContextRail />);
 }
 

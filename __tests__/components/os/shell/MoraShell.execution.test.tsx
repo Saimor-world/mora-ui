@@ -35,23 +35,48 @@ jest.mock('@/lib/hooks/useUser', () => ({
 jest.mock('@/lib/store/moraState', () => ({
     useMoraStore: (selector?: any) => {
         const store = {
-            user: { role: 'admin', tenant_id: 'tenant-1' },
-            viewMode: 'workspace',
-            viewLevel: 'company',
-            orbState: 'idle',
             orbNotifications: [],
-            activeCompanyId: 'company-1',
             companies: [],
-            resetStore: jest.fn(),
-            isLoggingOut: false,
             departments: [],
-            isStandardMode: false,
-            activeDepartmentId: null,
-            activeSpaceId: null,
-            activeFolderId: null,
+            spacesByDepartment: {},
+            foldersBySpace: {},
         };
         return selector ? selector(store) : store;
     },
+}));
+
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: jest.fn((selector?: any) => {
+        const state = {
+            viewLevel: 'company', coreMode: 'home', viewMode: 'workspace',
+            activeCompanyId: 'company-1', activeDepartmentId: null, activeSpaceId: null, activeFolderId: null,
+            isStandardMode: false, nameConflict: null,
+            navigateToCore: jest.fn(), navigateToDepartment: jest.fn(),
+            navigateToSpace: jest.fn(), navigateToFolder: jest.fn(), navigateToExplore: jest.fn(),
+            setActiveCompany: jest.fn(), setViewMode: jest.fn(), setIsStandardMode: jest.fn(),
+            cancelNameConflict: jest.fn(), setNameConflict: jest.fn(),
+        };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
+}));
+
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: jest.fn((selector?: any) => {
+        const state = {
+            user: { role: 'admin', tenant_id: 'tenant-1' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: true, canEditSettings: true, canViewAnalytics: false },
+            hasBooted: true, isLoggingOut: false,
+            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
+        };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
+}));
+
+jest.mock('@/lib/store/orbStore', () => ({
+    useOrbStore: jest.fn((selector?: any) => {
+        const state = { orbState: 'idle', setOrbState: jest.fn() };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
 }));
 
 jest.mock('@/lib/auth/useAccount', () => ({

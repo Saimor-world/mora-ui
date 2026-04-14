@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { useNavStore } from "@/lib/store/navStore";
+import { useSessionStore } from "@/lib/store/sessionStore";
 import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
 import { PaneManager } from "@/components/mora/PaneManager";
@@ -30,8 +32,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
-  const activeFolderId = useMoraStore((state) => state.activeFolderId);
+  const activeSpaceId = useNavStore((state) => state.activeSpaceId);
+  const activeFolderId = useNavStore((state) => state.activeFolderId);
   const coreError = useMoraStore((state) => state.coreError);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -60,7 +62,7 @@ export default function RootLayout({
   }, [coreError]);
 
   // Interface Scaling Logic
-  const user = useMoraStore((state) => state.user);
+  const user = useSessionStore((state) => state.user);
   const userScale = user?.settings?.scale;
 
   useEffect(() => {

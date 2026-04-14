@@ -2,11 +2,45 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Dock } from '@/components/mora/Dock';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: jest.fn(),
+}));
+
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: jest.fn((selector?: any) => {
+        const state = {
+            user: { role: 'member', name: 'User' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true, isLoggingOut: false,
+            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
+            updateUserSettings: jest.fn(),
+        };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
+}));
+
+jest.mock('@/lib/store/orbStore', () => ({
+    useOrbStore: jest.fn((selector?: any) => {
+        const state = { orbState: 'idle', setOrbState: jest.fn() };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
+}));
+
 jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+    useMoraStore: jest.fn((selector?: any) => {
+        const state = { departments: [], spacesByDepartment: {}, foldersBySpace: {} };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
+}));
+
+jest.mock('@/lib/queries/useCompanies', () => ({
+    useCompanies: jest.fn(() => ({ data: [] })),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -56,11 +90,11 @@ jest.mock('framer-motion', () => {
     };
 });
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
+const mockUseNavStore = useNavStore as jest.MockedFunction<typeof useNavStore>;
 const mockUsePaneStore = usePaneStore as jest.MockedFunction<typeof usePaneStore>;
 
 function renderWithState(state: Record<string, unknown>) {
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
+    mockUseNavStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
     const paneState = {
         openPane: jest.fn(),
         panes: [],

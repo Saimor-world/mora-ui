@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { useNavStore } from '@/lib/store/navStore';
 import { useMoraStore } from '@/lib/store/moraState';
 
 /**
@@ -12,14 +13,14 @@ import { useMoraStore } from '@/lib/store/moraState';
  * still useful while panes and overlays are open.
  */
 export const ShellBreadcrumb: React.FC = () => {
-    const viewLevel = useMoraStore((state) => state.viewLevel);
-    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
-    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
+    const viewLevel = useNavStore((state) => state.viewLevel);
+    const activeDepartmentId = useNavStore((state) => state.activeDepartmentId);
+    const activeSpaceId = useNavStore((state) => state.activeSpaceId);
+    const navigateToExplore = useNavStore((state) => state.navigateToExplore);
+    const navigateToDepartment = useNavStore((state) => state.navigateToDepartment);
+    const navigateToSpace = useNavStore((state) => state.navigateToSpace);
     const departments = useMoraStore((state) => state.departments);
     const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
-    const navigateToExplore = useMoraStore((state) => state.navigateToExplore);
-    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
-    const navigateToSpace = useMoraStore((state) => state.navigateToSpace);
 
     if (viewLevel !== 'folder') return null;
 
