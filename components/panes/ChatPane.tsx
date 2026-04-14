@@ -18,7 +18,9 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
@@ -470,10 +472,9 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
 
 // ─── Context-Aware Chat Suggestions ───
 const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSelect }) => {
-    const viewLevel = useMoraStore((s) => s.viewLevel);
-    const departments = useMoraStore((s) => s.departments);
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const orbState = useMoraStore((s) => s.orbState);
+    const { viewLevel, activeDepartmentId, activeCompanyId } = useNavStore();
+    const orbState = useOrbStore((s) => s.orbState);
+    const { data: departments } = useDepartments(activeCompanyId);
     const safeDepartments = React.useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     const suggestions = React.useMemo(() => {
@@ -532,20 +533,21 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     const activeSessionId = useWorkSessionStore((s) => s.activeSessionId);
     const setActiveSession = useWorkSessionStore((s) => s.setActiveSession);
     const {
-        departments,
         isStandardMode,
         activeCompanyId,
         activeDepartmentId,
         activeSpaceId,
         activeFolderId,
         viewLevel,
-    } = useMoraStore();
+    } = useNavStore();
+    const { data: departments } = useDepartments(activeCompanyId);
     const pane = getPane(id);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     // Scope derivation for MoraContextLabel
-    const activeDepartment = useMoraStore((s) =>
-        s.departments?.find((d) => d.id === s.activeDepartmentId)
+    const activeDepartment = useMemo(
+        () => safeDepartments.find((d) => d.id === activeDepartmentId) ?? undefined,
+        [safeDepartments, activeDepartmentId]
     );
 
     const derivedScope = useMemo((): { scope: MoraScope; sourceName?: string } => {
@@ -566,8 +568,7 @@ export function ChatPane({ id = 'chat-main' }: ChatPaneProps) {
     } = useMoraStream();
 
     const [messages, setMessages] = useState<Message[]>(() => {
-        const depts = useMoraStore.getState().departments;
-        const safe = Array.isArray(depts) ? depts : [];
+        const safe: Array<{ name: string }> = [];
         const d1 = safe[0]?.name ?? 'R&D';
         const d2 = safe[1]?.name ?? 'Product';
         return [{
@@ -791,7 +792,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 message: `Navigiere zu ${dept.name}`,
                 source: 'ai',
             });
-            useMoraStore.getState().navigateToDepartment(deptId);
+            useNavStore.getState().navigateToDepartment(deptId);
 
             return `✨ Ich navigiere zu **${dept.name}**! Schau auf die Planeten links.`;
         }

@@ -2,7 +2,9 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { VisibilityModal } from '@/components/content/VisibilityModal';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import type { NodeVisibility } from '@/lib/types/core';
 import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient';
 import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
@@ -168,7 +170,9 @@ function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex
 
 export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const { activeCompanyId, companies, user } = useMoraStore();  // Added user for autoExecuteActions
+    const { activeCompanyId } = useNavStore();
+    const { data: companies = [] } = useCompanies();
+    const user = useSessionStore(s => s.user);
     const pane = getPane(id);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const activeCompanyName = useMemo(

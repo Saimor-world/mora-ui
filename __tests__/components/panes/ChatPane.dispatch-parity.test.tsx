@@ -124,16 +124,39 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
-const _parityMoraStore = {
-    departments: [], isStandardMode: false, activeCompanyId: 'c1',
-    activeDepartmentId: null, activeSpaceId: 's1', activeFolderId: null,
-    viewLevel: 'space', orbState: 'idle', navigateToDepartment: jest.fn(),
+const _parityNavStore = {
+    isStandardMode: false,
+    activeCompanyId: 'c1',
+    activeDepartmentId: null,
+    activeSpaceId: 's1',
+    activeFolderId: null,
+    viewLevel: 'space',
+    viewMode: 'workspace',
+    coreMode: 'home',
+    nameConflict: null,
+    navigateToDepartment: jest.fn(),
 };
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: Object.assign(
-        (selector?: any) => selector ? selector(_parityMoraStore) : _parityMoraStore,
-        { getState: () => _parityMoraStore },
+jest.mock('@/lib/store/navStore', () => ({
+    useMoraStore: undefined, // explicit no-op if accidentally imported
+    useNavStore: Object.assign(
+        (selector?: any) => selector ? selector(_parityNavStore) : _parityNavStore,
+        { getState: () => _parityNavStore },
     ),
+}));
+
+jest.mock('@/lib/store/orbStore', () => ({
+    useOrbStore: (selector?: any) => {
+        const store = { orbState: 'idle' };
+        return selector ? selector(store) : store;
+    },
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: jest.fn(() => ({
+        data: [],
+        isLoading: false,
+        error: null,
+    })),
 }));
 
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));

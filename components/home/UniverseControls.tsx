@@ -1,9 +1,14 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
+import { useFolders } from '@/lib/queries/useFolders';
 import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
@@ -31,38 +36,32 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     disableContextSwitch = false,
     companyCountLabel,
 }) => {
-    const user = useMoraStore((state) => state.user);
-    const viewLevel = useMoraStore((state) => state.viewLevel);
-    const coreMode = useMoraStore((state) => state.coreMode);
-    const setCoreMode = useMoraStore((state) => state.setCoreMode);
-    const departments = useMoraStore((state) => state.departments);
-    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
-    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
-    const activeFolderId = useMoraStore((state) => state.activeFolderId);
-    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
-    const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
+    const user = useSessionStore((state) => state.user);
+    const { viewLevel, coreMode, setCoreMode, activeDepartmentId, activeSpaceId, activeFolderId } = useNavStore();
+    const surfaceProfile = useSurfaceProfile();
+
+    const { data: departments = [] } = useDepartments(activeCompany?.id ?? null);
+    const { data: activeSpaces = [] } = useSpaces(activeDepartmentId);
+    const { data: activeFolders = [] } = useFolders(activeSpaceId);
 
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const activeDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
         [safeDepartments, activeDepartmentId]
     );
-    const activeSpaces = useMemo(
-        () => activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [],
-        [activeDepartmentId, spacesByDepartment]
-    );
     const activeSpace = useMemo(
         () => activeSpaces.find((space) => space.id === activeSpaceId) ?? null,
         [activeSpaces, activeSpaceId]
-    );
-    const activeFolders = useMemo(
-        () => activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [],
-        [activeSpaceId, foldersBySpace]
     );
     const activeFolder = useMemo(
         () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
         [activeFolders, activeFolderId]
     );
+    const foldersBySpace = useMemo(
+        () => activeSpaceId ? { [activeSpaceId]: activeFolders } : {},
+        [activeSpaceId, activeFolders]
+    );
+    const operationalCompanyCount = surfaceProfile.isLocalTruthSurface ? 1 : (activeCompany ? 1 : companies.length);
 
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
@@ -73,11 +72,12 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         activeSpaces,
         activeFolders,
         foldersBySpace,
-        companyCount: companies.length,
+        companyCount: operationalCompanyCount,
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent: activeDepartment?.color || '#10B981',
         isPublicDemoSurface: disableContextSwitch,
+        isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         viewLevel,
         activeCompany,
@@ -87,10 +87,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         activeSpaces,
         activeFolders,
         foldersBySpace,
-        companies.length,
-        safeDepartments.length,
+        operationalCompanyCount,
+        safeDepartments,
         user?.active_company_name,
         disableContextSwitch,
+        surfaceProfile.isLocalTruthSurface,
     ]);
     const surfaceLabel = useMemo(() => {
         if (viewLevel !== 'core') return shellContext.scopeLabel;
@@ -112,44 +113,58 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     };
 
     const showCoreSurfaceSwitch = viewLevel === 'core';
+    const showModeSwitches = visibleModes.length > 1 && !surfaceProfile.isLocalTruthSurface;
+    const contextModeLabel = surfaceProfile.isLocalTruthSurface
+        ? 'Lokale Instanz'
+        : workspaceLabel || 'Kontext';
+    const showCompanySwitcher = Boolean(activeCompany && companies.length > 1 && !disableContextSwitch && !surfaceProfile.isLocalTruthSurface);
 
     return (
-        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1040px,calc(100vw-2rem))] -translate-x-1/2 items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-2.5 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1040px,calc(100vw-2rem))] lg:w-[min(900px,calc(100vw-22rem))] -translate-x-1/2 items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-2.5 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
             <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">
-                {visibleModes.includes('owner') && (
-                    <ControlButton
-                        isActive={viewMode === 'owner'}
-                        onClick={() => setViewMode('owner')}
-                        icon={Shield}
-                        label="Owner"
-                    />
-                )}
+                {showModeSwitches ? (
+                    <>
+                        {visibleModes.includes('owner') && (
+                            <ControlButton
+                                isActive={viewMode === 'owner'}
+                                onClick={() => setViewMode('owner')}
+                                icon={Shield}
+                                label="Owner"
+                            />
+                        )}
 
-                {visibleModes.includes('owner') && visibleModes.includes('workspace') && (
-                    <div className="h-5 w-px bg-white/12" />
-                )}
+                        {visibleModes.includes('owner') && visibleModes.includes('workspace') && (
+                            <div className="h-5 w-px bg-white/12" />
+                        )}
 
-                {visibleModes.includes('workspace') && (
-                    <ControlButton
-                        isActive={viewMode === 'workspace'}
-                        onClick={() => setViewMode('workspace')}
-                        icon={LayoutGrid}
-                        label={workspaceLabel || 'Kontext'}
-                    />
-                )}
+                        {visibleModes.includes('workspace') && (
+                            <ControlButton
+                                isActive={viewMode === 'workspace'}
+                                onClick={() => setViewMode('workspace')}
+                                icon={LayoutGrid}
+                                label={workspaceLabel || 'Kontext'}
+                            />
+                        )}
 
-                {visibleModes.includes('workspace') && visibleModes.includes('demo') && (
-                    <div className="h-5 w-px bg-white/12" />
-                )}
+                        {visibleModes.includes('workspace') && visibleModes.includes('demo') && (
+                            <div className="h-5 w-px bg-white/12" />
+                        )}
 
-                {visibleModes.includes('demo') && (
-                    <ControlButton
-                        isActive={viewMode === 'demo'}
-                        onClick={() => setViewMode('demo')}
-                        icon={Activity}
-                        label="Demo"
-                        showLabelAlways={true}
-                    />
+                        {visibleModes.includes('demo') && (
+                            <ControlButton
+                                isActive={viewMode === 'demo'}
+                                onClick={() => setViewMode('demo')}
+                                icon={Activity}
+                                label="Demo"
+                                showLabelAlways={true}
+                            />
+                        )}
+                    </>
+                ) : (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.10] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-emerald-100">
+                        <LayoutGrid size={13} />
+                        <span>{contextModeLabel}</span>
+                    </div>
                 )}
             </div>
 
@@ -186,7 +201,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </div>
             )}
 
-            {activeCompany && companies.length > 1 && !disableContextSwitch && (
+            {showCompanySwitcher && (
                 <button
                     type="button"
                     onClick={handleContextClick}

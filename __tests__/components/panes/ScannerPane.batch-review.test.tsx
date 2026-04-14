@@ -45,11 +45,37 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: () => ({
-        activeCompanyId: 'company-1',
-        user: { settings: { autoExecuteActions: false } },
-    }),
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (selector?: any) => {
+        const store = {
+            activeCompanyId: 'company-1',
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            activeFolderId: null,
+            viewLevel: 'core',
+            viewMode: 'workspace',
+            coreMode: 'home',
+            isStandardMode: false,
+            nameConflict: null,
+        };
+        return selector ? selector(store) : store;
+    },
+}));
+
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: (selector?: any) => {
+        const store = {
+            user: { id: 'u-1', role: 'admin', settings: { autoExecuteActions: false } },
+            permissions: { canCreate: true, canDelete: true, canAdmin: true, canEditSettings: true, canViewAnalytics: true },
+            hasBooted: true,
+            isLoggingOut: false,
+        };
+        return selector ? selector(store) : store;
+    },
+}));
+
+jest.mock('@/lib/queries/useCompanies', () => ({
+    useCompanies: jest.fn(() => ({ data: [{ id: 'company-1', name: 'Test Corp' }], isLoading: false })),
 }));
 
 jest.mock('@/components/layers/GlassPanel', () => ({

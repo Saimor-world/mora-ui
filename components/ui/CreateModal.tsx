@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 
 interface CreateModalProps {
     isOpen: boolean;
@@ -13,7 +13,7 @@ interface CreateModalProps {
 }
 
 export const CreateModal: React.FC<CreateModalProps> = ({ isOpen, onClose, title, children }) => {
-    const isStandardMode = useMoraStore(state => state.isStandardMode);
+    const isStandardMode = useNavStore(state => state.isStandardMode);
 
     return (
         <AnimatePresence>

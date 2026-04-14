@@ -127,22 +127,38 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
-const _pillMoraStore = {
-    departments: [],
+const _pillNavStore = {
     isStandardMode: false,
     activeCompanyId: 'company-1',
     activeDepartmentId: null,
     activeSpaceId: 'space-1',
     activeFolderId: null,
     viewLevel: 'space',
-    orbState: 'idle',
+    viewMode: 'workspace',
+    coreMode: 'home',
+    nameConflict: null,
     navigateToDepartment: jest.fn(),
 };
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: Object.assign(
-        (selector?: any) => selector ? selector(_pillMoraStore) : _pillMoraStore,
-        { getState: () => _pillMoraStore },
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: Object.assign(
+        (selector?: any) => selector ? selector(_pillNavStore) : _pillNavStore,
+        { getState: () => _pillNavStore },
     ),
+}));
+
+jest.mock('@/lib/store/orbStore', () => ({
+    useOrbStore: (selector?: any) => {
+        const store = { orbState: 'idle' };
+        return selector ? selector(store) : store;
+    },
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: jest.fn(() => ({
+        data: [],
+        isLoading: false,
+        error: null,
+    })),
 }));
 
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));

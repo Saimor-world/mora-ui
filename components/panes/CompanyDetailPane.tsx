@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { Building2, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { coreDelete } from '@/lib/api/coreClient';
@@ -21,7 +23,8 @@ interface CompanyDetailPaneProps {
  */
 export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, companyId, companyName }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
-    const { companies, loadCompanies } = useMoraStore();
+    const { data: companies = [] } = useCompanies();
+    const queryClient = useQueryClient();
     const pane = getPane(id);
     const safeCompanies = Array.isArray(companies) ? companies : [];
 
@@ -48,7 +51,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
         try {
             await coreDelete(`/v3/companies/${companyId}`);
             toast.success(`"${company?.name}" wurde geloescht`);
-            await loadCompanies();
+            await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
             removePane(id);
         } catch (error: any) {
             toast.error(error.message || 'Organisation konnte nicht geloescht werden');

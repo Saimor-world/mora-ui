@@ -37,22 +37,53 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: Object.assign(
+        (selector?: (s: any) => unknown) => {
+            const store = {
+                activeCompanyId: 'c1',
+                activeDepartmentId: null,
+                activeSpaceId: null,
+                activeFolderId: null,
+                viewLevel: 'core',
+                viewMode: 'workspace',
+                coreMode: 'home',
+                isStandardMode: false,
+                nameConflict: null,
+                setViewLevel: jest.fn(),
+                setActiveDepartment: jest.fn(),
+                setActiveSpace: jest.fn(),
+                setActiveFolder: jest.fn(),
+                navigateToDepartment: jest.fn(),
+            };
+            return selector ? selector(store) : store;
+        },
+        { getState: () => ({
+            activeCompanyId: 'c1',
+            setViewLevel: jest.fn(),
+            setActiveDepartment: jest.fn(),
+            setActiveSpace: jest.fn(),
+            setActiveFolder: jest.fn(),
+            navigateToDepartment: jest.fn(),
+        }) }
+    ),
+}));
+
+jest.mock('@/lib/queries/useCompanies', () => ({
+    useCompanies: jest.fn(() => ({ data: [{ id: 'c1', name: 'Acme' }], isLoading: false })),
+}));
+
 jest.mock('@/lib/store/moraState', () => {
     const store = {
-        activeCompanyId: 'c1',
         user: { id: 'u1' },
-        companies: [{ id: 'c1', name: 'Acme' }],
         isStandardMode: false,
         departments: [],
-        setActiveDepartment: jest.fn(),
-        setActiveSpace: jest.fn(),
-        setViewLevel: jest.fn(),
-        setActiveFolder: jest.fn(),
         spacesByDepartment: {},
         loadSpacesForDepartment: jest.fn(),
         foldersBySpace: {},
         loadFoldersForSpace: jest.fn(),
         nodesByFolder: {},
+        nodesByCompany: {},
         loadNodesForFolder: jest.fn(),
         treeData: [],
         loadTree: jest.fn().mockResolvedValue([]),

@@ -2,6 +2,11 @@
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
+import { useFolders } from '@/lib/queries/useFolders';
+import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Star } from '@/components/mora/Star';
@@ -45,20 +50,12 @@ const getFreshnessWeight = (value?: string | null) => {
  */
 export const DepartmentLayer: React.FC = () => {
     // Granular store selectors — prevents rerender on unrelated store mutations
-    const activeDepartmentId = useMoraStore(s => s.activeDepartmentId);
-    const activeCompanyId = useMoraStore(s => s.activeCompanyId);
-    const departments = useMoraStore(s => s.departments);
-    const spacesByDepartment = useMoraStore(s => s.spacesByDepartment);
-    const foldersBySpace = useMoraStore(s => s.foldersBySpace);
-    const isLoadingSpaces = useMoraStore(s => s.isLoadingSpaces);
-    const treeData = useMoraStore(s => s.treeData);
-    const loadSpacesForDepartment = useMoraStore(s => s.loadSpacesForDepartment);
-    const loadFoldersForSpace = useMoraStore(s => s.loadFoldersForSpace);
-    const navigateToExplore = useMoraStore(s => s.navigateToExplore);
-    const navigateToSpace = useMoraStore(s => s.navigateToSpace);
-    const navigateToFolder = useMoraStore(s => s.navigateToFolder);
-    const addSpace = useMoraStore(s => s.addSpace);
-    const setActiveSpace = useMoraStore(s => s.setActiveSpace);
+    const { activeDepartmentId, activeCompanyId, navigateToExplore, navigateToSpace, navigateToFolder, setActiveSpace } = useNavStore();
+    const { addSpace } = useMoraStore(s => ({ addSpace: s.addSpace }));
+
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: spaces = [], isLoading: isLoadingSpaces } = useSpaces(activeDepartmentId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
     const { openPane } = usePaneStore();
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
@@ -86,16 +83,13 @@ export const DepartmentLayer: React.FC = () => {
         return docs;
     }, [activeDepartmentId, safeTreeData]);
 
-    const spaces = useMemo(() => {
-        if (!activeDepartmentId) return [];
-        const value = spacesByDepartment[activeDepartmentId];
-        return Array.isArray(value) ? value : [];
-    }, [activeDepartmentId, spacesByDepartment]);
-
     const prefersReducedMotion = useReducedMotion();
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
     const [hoveredSpaceAnchor, setHoveredSpaceAnchor] = useState<{ id: string; x: number; y: number } | null>(null);
     const orbitContainerRef = useRef<HTMLDivElement | null>(null);
+
+    // Fetch folders for the hovered space (hover preview) — auto-fetches when hoveredSpaceId changes
+    const { data: hoveredFolders = [] } = useFolders(hoveredSpaceId);
 
     // Mobile guard: orbit radii are fixed pixels and overflow narrow viewports.
     const [viewportWidth, setViewportWidth] = useState<number>(
@@ -125,12 +119,6 @@ export const DepartmentLayer: React.FC = () => {
      * Pattern mirrors SpaceLayer's isAnyHoveredRef — do not change to state.
      */
     const hoveredSpaceIdRef = useRef<string | null>(null);
-
-    useEffect(() => {
-        if (activeDepartmentId && !spacesByDepartment[activeDepartmentId]) {
-            loadSpacesForDepartment(activeDepartmentId);
-        }
-    }, [activeDepartmentId, spacesByDepartment, loadSpacesForDepartment]);
 
     useEffect(() => {
         let cancelled = false;
@@ -333,17 +321,6 @@ export const DepartmentLayer: React.FC = () => {
         };
     }, [orbitFrame.height, orbitFrame.width]);
 
-    const hoveredFolders = useMemo(() => (
-        hoveredSpaceId ? (foldersBySpace[hoveredSpaceId] || []) : []
-    ), [hoveredSpaceId, foldersBySpace]);
-
-    useEffect(() => {
-        if (!hoveredSpaceId) return;
-        if (!foldersBySpace[hoveredSpaceId]) {
-            loadFoldersForSpace(hoveredSpaceId);
-        }
-    }, [hoveredSpaceId, foldersBySpace, loadFoldersForSpace]);
-
     const hoveredPreviewFolders = useMemo(() => {
         if (!hoveredSpaceId || !hoveredSpacePosition || hoveredFolders.length === 0) return [];
 
@@ -427,26 +404,14 @@ export const DepartmentLayer: React.FC = () => {
         });
     }, [hoveredSpaceId, hoveredSpacePosition, hoveredFolders, previewSafeBounds]);
 
-    useEffect(() => {
-        const preloadableSpaces = spaces
-            .filter((space) => !foldersBySpace[space.id] && (space.folder_count ?? 0) > 0)
-            .slice(0, 8);
-
-        preloadableSpaces.forEach((space) => {
-            void loadFoldersForSpace(space.id);
-        });
-    }, [spaces, foldersBySpace, loadFoldersForSpace]);
-
     const spaceSignals = useMemo(() => {
         const entries = spaces.map((space) => {
-            const loadedFolders = foldersBySpace[space.id] || [];
-            const folderTotal = Math.max(space.folder_count ?? 0, loadedFolders.length);
-            const docTotal = loadedFolders.reduce((sum, folder) => sum + (folder.node_count || 0), 0);
-            const signal = folderTotal * 1.25 + docTotal * 0.32;
+            const folderTotal = space.folder_count ?? 0;
+            const signal = folderTotal * 1.25;
 
             return [space.id, {
                 folderTotal,
-                docTotal,
+                docTotal: 0,
                 signal,
             }] as const;
         });
@@ -460,7 +425,7 @@ export const DepartmentLayer: React.FC = () => {
                 intensity: Math.max(0.18, Math.min(1, value.signal / strongestSignal)),
             },
         ]));
-    }, [spaces, foldersBySpace]);
+    }, [spaces]);
 
     const hoveredLaneSummary = useMemo(
         () => hoveredPreviewFolders.reduce<Record<PreviewLane, { count: number; docs: number }>>((accumulator, entry) => {
@@ -511,21 +476,16 @@ export const DepartmentLayer: React.FC = () => {
     }, [hoveredPreviewFolders]);
 
     const totalFolders = useMemo(
-        () => spaces.reduce((sum, space) => sum + (space.folder_count ?? (foldersBySpace[space.id] || []).length), 0),
-        [spaces, foldersBySpace]
+        () => spaces.reduce((sum, space) => sum + (space.folder_count ?? 0), 0),
+        [spaces]
     );
 
     const docsCount = useMemo(() => {
         if (typeof departmentDocsFromApi === 'number') {
             return Math.max(0, departmentDocsFromApi);
         }
-        const fromLoadedFolders = spaces.reduce((sum, space) => {
-            const spaceFolders = foldersBySpace[space.id] || [];
-            return sum + spaceFolders.reduce((folderSum, folder) => folderSum + (folder.node_count || 0), 0);
-        }, 0);
-        if (fromLoadedFolders > 0) return fromLoadedFolders;
         return departmentDocs.length;
-    }, [departmentDocsFromApi, spaces, foldersBySpace, departmentDocs.length]);
+    }, [departmentDocsFromApi, departmentDocs.length]);
 
     const handleNavigateToExplore = useCallback(() => {
         navigateToExplore();
@@ -837,7 +797,7 @@ export const DepartmentLayer: React.FC = () => {
                                             department_id: activeDepartmentId,
                                             color,
                                             description: space.description || undefined,
-                                            folder_count: space.folder_count ?? (foldersBySpace[space.id] || []).length
+                                            folder_count: space.folder_count ?? 0
                                         }}
                                         position={{ x: 0, y: 0 }}
                                         size="xl"

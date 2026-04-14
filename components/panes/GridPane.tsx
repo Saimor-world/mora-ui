@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { Grid, FileText, Image, Video, File, Folder, Search, Filter, RefreshCw, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchNodesByCompany } from '@/lib/api/coreClient';
@@ -39,7 +39,7 @@ const getNodeColor = (type: string) => {
 
 export const GridPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
-    const { activeCompanyId } = useMoraStore();
+    const { activeCompanyId } = useNavStore();
     const pane = getPane(id);
 
     const [nodes, setNodes] = useState<CoreNode[]>([]);

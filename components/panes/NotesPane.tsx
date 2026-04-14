@@ -5,7 +5,7 @@ import { Check, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useContextStore } from '@/lib/store/contextStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { fetchPersonalHomeNote, savePersonalHomeNote } from '@/lib/api/coreClient';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -25,7 +25,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 export const NotesPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const personalSpaceId = useContextStore((s) => s.personalSpaceId);
-    const user = useMoraStore((s) => s.user);
+    const user = useSessionStore((s) => s.user);
     const pane = getPane(id);
 
     const [content, setContent] = useState('');

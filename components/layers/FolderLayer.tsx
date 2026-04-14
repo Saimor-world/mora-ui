@@ -2,6 +2,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
+import { useFolders } from '@/lib/queries/useFolders';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { Zap, Network, LayoutGrid, List, Plus, Search, X, FileText, Box, Link as LinkIcon, CheckSquare, Folder as FolderIcon, RotateCcw } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -48,24 +53,22 @@ const TYPE_COLORS: Record<string, string> = {
 
 export const FolderLayer: React.FC = () => {
     // ... (Keep existing hooks) ...
+    const { activeSpaceId, activeFolderId, activeDepartmentId, activeCompanyId, navigateToSpace, viewLevel } = useNavStore();
     const {
-        activeSpaceId,
-        activeFolderId,
-        activeDepartmentId,
-        foldersBySpace,
         nodesByFolder,
         isLoadingNodes,
-        departments,
-        spacesByDepartment,
-        navigateToSpace,
-        loadFoldersForSpace,
         loadNodesForFolder,
         addNode,
-        viewLevel,
         addFolder,
         deleteFolder,
     } = useMoraStore();
     const { openPane } = usePaneStore();
+    const queryClient = useQueryClient();
+
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: spaces = [] } = useSpaces(activeDepartmentId);
+    const { data: spaceFoldersList = [] } = useFolders(activeSpaceId);
+
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     // ... (Keep state) ...
@@ -91,7 +94,7 @@ export const FolderLayer: React.FC = () => {
         try {
             await addFolder({ space_id: activeSpaceId, name: fallbackName });
             toast.success(`Folder "${fallbackName}" created`);
-            await loadFoldersForSpace(activeSpaceId);
+            void queryClient.invalidateQueries({ queryKey: ['folders', activeSpaceId] });
         } catch (e: any) {
             toast.error(e?.message || "Failed to create folder");
         }
@@ -103,7 +106,7 @@ export const FolderLayer: React.FC = () => {
             await deleteFolder(activeFolderId);
             toast.success("Folder deleted");
             if (activeSpaceId) {
-                await loadFoldersForSpace(activeSpaceId);
+                void queryClient.invalidateQueries({ queryKey: ['folders', activeSpaceId] });
             }
         } catch (e: any) {
             toast.error(e?.message || "Failed to delete folder");
@@ -112,13 +115,12 @@ export const FolderLayer: React.FC = () => {
 
     // ... (Keep context data) ...
     const currentFolder = useMemo(() => {
-        if (!activeSpaceId || !activeFolderId) return null;
-        const spaceFolders = foldersBySpace[activeSpaceId];
-        return (Array.isArray(spaceFolders) ? spaceFolders : []).find(f => f.id === activeFolderId);
-    }, [activeSpaceId, activeFolderId, foldersBySpace]);
+        if (!activeFolderId) return null;
+        return spaceFoldersList.find(f => f.id === activeFolderId) ?? null;
+    }, [activeFolderId, spaceFoldersList]);
 
     const currentDepartment = safeDepartments.find(d => d.id === activeDepartmentId);
-    const currentSpace = (Array.isArray(spacesByDepartment[activeDepartmentId || '']) ? spacesByDepartment[activeDepartmentId || ''] : []).find(s => s.id === activeSpaceId);
+    const currentSpace = spaces.find(s => s.id === activeSpaceId);
 
     const nodes = useMemo(
         () => (activeFolderId ? (nodesByFolder[activeFolderId] || []) : []),

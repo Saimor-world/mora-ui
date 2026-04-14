@@ -4,6 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
 
 export interface BreadcrumbItem {
     label: string;
@@ -116,16 +120,14 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
     const RiskIcon = currentRisk.icon;
 
     // Scope signal: prefer real API scope (from v3/chat SSE preamble) over store-derived
-    const { activeCompanyId, activeDepartmentId, activeSpaceId, companies, departments, spacesByDepartment, lastChatScope } = useMoraStore();
-    const safeCompanies = Array.isArray(companies) ? companies : [];
-    const safeDepartments = Array.isArray(departments) ? departments : [];
-    const safeSpacesByDepartment = spacesByDepartment && typeof spacesByDepartment === 'object' ? spacesByDepartment : {};
-    const allSpaces = Object.values(safeSpacesByDepartment)
-        .filter((value): value is any[] => Array.isArray(value))
-        .flat();
-    const company = safeCompanies.find(c => c.id === activeCompanyId);
-    const dept = safeDepartments.find(d => d.id === activeDepartmentId);
-    const space = allSpaces.find(s => s.id === activeSpaceId);
+    const { activeCompanyId, activeDepartmentId, activeSpaceId } = useNavStore();
+    const { lastChatScope } = useMoraStore();
+    const { data: companies = [] } = useCompanies();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: spaces = [] } = useSpaces(activeDepartmentId);
+    const company = companies.find(c => c.id === activeCompanyId);
+    const dept = departments.find(d => d.id === activeDepartmentId);
+    const space = spaces.find(s => s.id === activeSpaceId);
     // Use API-resolved names if available (e.g. company_name, department_name from v3/chat)
     const apiScope = lastChatScope?.resolved_scope;
     const scopeParts = apiScope

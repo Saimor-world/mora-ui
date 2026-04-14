@@ -39,7 +39,8 @@ import {
 } from "@/lib/api/coreClient";
 import type { TerminalSession, TerminalInputResult, TerminalSessionState } from "@/lib/api/coreClient";
 import { buildChatContext } from "@/lib/api/moraAgentClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useSessionStore } from "@/lib/store/sessionStore";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -104,7 +105,8 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
     whoami: {
         description: "Angemeldete Rolle und Nutzer anzeigen",
         handler: async () => {
-            const { user, activeCompanyId } = useMoraStore.getState();
+            const { user } = useSessionStore.getState();
+            const { activeCompanyId } = useNavStore.getState();
             if (!user) return "Nicht angemeldet";
             return [
                 `Nutzer:    ${user.email ?? "unbekannt"}`,
@@ -153,7 +155,7 @@ export function TerminalPane({ id = "terminal-main" }: TerminalPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } =
         usePaneStore();
     const pane = getPane(id);
-    const user = useMoraStore((state) => state.user);
+    const user = useSessionStore((state) => state.user);
 
     const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
     const connectionStateRef = useRef<ConnectionState>("checking");

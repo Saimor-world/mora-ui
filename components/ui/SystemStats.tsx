@@ -18,6 +18,7 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 export const SystemStats: React.FC = () => {
     const departments = useMoraStore((s) => s.departments);
     const companies = useMoraStore((s) => s.companies);
+    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
     const nodesByFolder = useMoraStore((s) => s.nodesByFolder);
     const orbState = useMoraStore((s) => s.orbState);
     const surfaceProfile = useSurfaceProfile();
@@ -27,6 +28,7 @@ export const SystemStats: React.FC = () => {
 
     // Count total nodes
     const totalNodes = Object.values(nodesByFolder).flat().length;
+    const activeCompany = companies.find((company) => company.id === activeCompanyId);
 
     // Simulated uptime counter
     useEffect(() => {
@@ -88,7 +90,7 @@ export const SystemStats: React.FC = () => {
                         {surfaceProfile.isPublicDemoSurface
                             ? 'Beispielsystem'
                             : surfaceProfile.isLocalTruthSurface
-                                ? 'Interne Instanz'
+                                ? (activeCompany?.name || 'Aktive Instanz')
                                 : companies.length === 1
                                     ? '1 Organisation'
                                     : `${companies.length} Organisationen`}

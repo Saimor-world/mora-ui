@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useCompanies } from "@/lib/queries/useCompanies";
 import MoraPlayground from "@/components/mora/MoraPlayground";
 import MoraUpdatesFeed from "@/components/mora/MoraUpdatesFeed";
 import { MoraMemory, MemoryStats } from "@/components/mora/MoraMemory";
@@ -52,9 +53,8 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const { removePane, minimizePane, focusPane, getPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const viewLevel = useMoraStore((s) => s.viewLevel);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const companies = useMoraStore((s) => s.companies);
+    const { viewLevel, activeCompanyId } = useNavStore();
+    const { data: companies = [] } = useCompanies();
     const safeCompanies = Array.isArray(companies) ? companies : [];
     const resolvedCompanyId = activeCompanyId || safeCompanies[0]?.id || null;
     const surfaceProfile = useSurfaceProfile();

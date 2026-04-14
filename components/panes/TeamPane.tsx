@@ -22,7 +22,7 @@ import { buildChatContext } from "@/lib/api/moraAgentClient";
 import { realtime } from "@/lib/api/realtimeClient";
 import { toast } from "sonner";
 import { usePaneStore } from "@/lib/store/paneStore";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useSessionStore } from "@/lib/store/sessionStore";
 import { useMoraContext } from "@/lib/mora/useMoraContext";
 import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { GlassPanel } from "@/components/layers/GlassPanel";
@@ -74,7 +74,7 @@ export const TeamPane: React.FC<Props> = ({ id = 'team-main', onClose }) => {
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore(state => state.activePaneId === id);
-    const { user } = useMoraStore();
+    const { user } = useSessionStore();
     const ctx = useMoraContext();
 
     const [members, setMembers] = useState<TeamMember[]>([]);

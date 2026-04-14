@@ -12,7 +12,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TerminalPane } from '@/components/panes/TerminalPane';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import {
     createTerminalSession,
     executeSessionInput,
@@ -77,8 +78,10 @@ function openTerminal() {
 }
 
 function setAuthenticated() {
-    useMoraStore.setState({
-        user: { id: 'u-1', name: 'Max', email: 'max@firma.de', role: 'admin' },
+    useSessionStore.setState({
+        user: { id: 'u-1', name: 'Max', email: 'max@firma.de', role: 'admin' } as any,
+    });
+    useNavStore.setState({
         activeCompanyId: 'company-1',
     });
 }
@@ -89,7 +92,8 @@ describe('TerminalPane session-lifecycle fields', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         usePaneStore.getState().reset();
-        useMoraStore.setState({ user: null, activeCompanyId: null });
+        useSessionStore.setState({ user: null });
+        useNavStore.setState({ activeCompanyId: null });
         openTerminal();
     });
 

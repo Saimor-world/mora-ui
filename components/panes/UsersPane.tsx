@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, Shield, Crown, User, Mail, Search, RefreshCw, Settings, Copy, Check } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { coreGet, corePost, fetchAdminUsers, patchAdminUser, patchUserCompanyBinding, AdminUser, AdminUserPatch } from '@/lib/api/coreClient';
@@ -62,9 +64,9 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
     const [inviteLink, setInviteLink] = useState<string | null>(null);
     const [linkCopied, setLinkCopied] = useState(false);
 
-    const { viewMode } = useMoraStore();
-    const currentUser = useMoraStore(s => s.user);
-    const departments = useMoraStore(s => s.departments);
+    const { viewMode, activeCompanyId } = useNavStore();
+    const currentUser = useSessionStore(s => s.user);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
     const isAdmin = checkIsAdmin(currentUser?.role);
 
     // Load team members

@@ -10,7 +10,7 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { CoreLayer } from '@/components/home/CoreLayer';
 
 // ── Mock child surfaces ──────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ jest.mock('framer-motion', () => ({
 
 // ── Store helpers ────────────────────────────────────────────────────────────
 const setCoreMode = (mode: 'home' | 'explore') => {
-    useMoraStore.setState({ coreMode: mode });
+    useNavStore.setState({ coreMode: mode });
 };
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ const setCoreMode = (mode: 'home' | 'explore') => {
 describe('CoreLayer', () => {
     beforeEach(() => {
         // Reset to default state before each test
-        useMoraStore.setState({
+        useNavStore.setState({
             coreMode: 'home',
             viewLevel: 'core',
         } as any);

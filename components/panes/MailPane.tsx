@@ -13,7 +13,9 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
@@ -43,7 +45,8 @@ interface MailPaneProps {
 export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const { activeCompanyId, loadTree } = useMoraStore();
+    const { activeCompanyId } = useNavStore();
+    const queryClient = useQueryClient();
     const pane = getPane(id);
     const { overview, browserBridge } = useIntegrationsOverview();
 
@@ -139,7 +142,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             });
 
             if (activeCompanyId) {
-                await loadTree(undefined, activeCompanyId);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
             }
 
         } catch (err) {

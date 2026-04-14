@@ -59,9 +59,14 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) => {
-        const store = { user: { role: 'member' } };
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: (selector?: any) => {
+        const store = {
+            user: { role: 'member' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true,
+            isLoggingOut: false,
+        };
         return selector ? selector(store) : store;
     },
 }));

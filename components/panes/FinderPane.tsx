@@ -5,6 +5,8 @@ import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
 import { setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
@@ -170,18 +172,15 @@ function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex
 
 export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { activeCompanyId, setViewLevel, setActiveDepartment, setActiveSpace, setActiveFolder } = useNavStore();
+    const { data: companies = [] } = useCompanies();
     const {
-        activeCompanyId,
-        companies,
-        setViewLevel,
-        setActiveDepartment,
-        setActiveSpace,
-        setActiveFolder,
         spacesByDepartment,
         loadSpacesForDepartment,
         foldersBySpace,
         loadFoldersForSpace,
         nodesByFolder,
+        nodesByCompany,
         loadNodesForFolder,
         // DATA CONSISTENCY FIX: Use shared treeData from store instead of local state
         treeData,
@@ -1204,7 +1203,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         try {
             const existingTree = useMoraStore.getState().treeData;
             const shouldReuseTree = opts?.preferCache === true && Array.isArray(existingTree) && existingTree.length > 0;
-            if (globalSearch && resolvedCompanyId) {
+            if (resolvedCompanyId) {
                 await useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
             }
             if (!shouldReuseTree) {
@@ -1219,7 +1218,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         } catch (e) {
             console.error("Tree load failed", e);
         }
-    }, [globalSearch, loadTree, resolvedCompanyId]);
+    }, [loadTree, resolvedCompanyId]);
 
     const relocateFinderFile = useCallback(async (
         item: any,
@@ -1577,14 +1576,32 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         const hidden = new Set(contextlessFiles.map((file) => file.id));
         return filteredFiles.filter((file) => !hidden.has(file.id));
     }, [contextlessFiles, filteredFiles]);
+    const rootCompanyNodes = useMemo(() => {
+        if (!resolvedCompanyId) return [];
+        return (nodesByCompany[resolvedCompanyId] || []).map((node) => ({
+            ...node,
+            name: node.title || node.name,
+        }));
+    }, [nodesByCompany, resolvedCompanyId]);
+    const displayFiles = useMemo(() => {
+        if (currentFolderId || searchQuery.trim() || globalSearch) return mainFiles;
+        const merged = new Map<string, any>();
+        rootCompanyNodes.forEach((item) => {
+            if (item?.id) merged.set(item.id, item);
+        });
+        mainFiles.forEach((item) => {
+            if (item?.id) merged.set(item.id, item);
+        });
+        return Array.from(merged.values());
+    }, [currentFolderId, globalSearch, mainFiles, rootCompanyNodes, searchQuery]);
     const selectedEntry = useMemo(() => {
         if (!selectedNodeId) return null;
         const selectedFolder = filteredFolders.find((folder) => folder.id === selectedNodeId);
         if (selectedFolder) return { kind: 'folder' as const, item: selectedFolder };
-        const selectedFile = filteredFiles.find((file) => file.id === selectedNodeId);
+        const selectedFile = displayFiles.find((file) => file.id === selectedNodeId);
         if (selectedFile) return { kind: 'file' as const, item: selectedFile };
         return null;
-    }, [filteredFiles, filteredFolders, selectedNodeId]);
+    }, [displayFiles, filteredFolders, selectedNodeId]);
 
     // Get current level type for UI hints
     const currentLevelType = useMemo(() => {
@@ -1785,7 +1802,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                 </div>
                                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                    <div className="mt-1 text-lg font-semibold text-white/88">{mainFiles.length}</div>
+                                    <div className="mt-1 text-lg font-semibold text-white/88">{displayFiles.length}</div>
                                 </div>
                                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
@@ -2131,7 +2148,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                         </div>
                                                         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
                                                             <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{mainFiles.length}</div>
+                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{displayFiles.length}</div>
                                                         </div>
                                                         {contextlessFiles.length > 0 && (
                                                             <div className="rounded-2xl border border-amber-500/[0.1] bg-amber-500/[0.05] px-3 py-2.5">
@@ -2216,16 +2233,16 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             )}
 
-                                            {mainFiles.length > 0 && (
+                                            {displayFiles.length > 0 && (
                                                 <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte und Dateien</p>
-                                                            <p className="mt-1 text-[12px] text-white/34">Direkt oeffnen, lesen oder weiterverarbeiten.</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">{currentFolderId ? 'Direkt oeffnen, lesen oder weiterverarbeiten.' : 'Aktuelle Inhalte dieser Instanz, auch wenn sie in Bereichen liegen.'}</p>
                                                         </div>
                                                     </div>
                                                     <div className={fileGridClass}>
-                                            {mainFiles.map(file => {
+                                            {displayFiles.map(file => {
                                                 const isResonant = resonanceIds.includes(file.id);
                                                 const isSelected = selectedNodeId === file.id;
                                                 const Icon = TYPE_ICONS[file.type] || FileText;

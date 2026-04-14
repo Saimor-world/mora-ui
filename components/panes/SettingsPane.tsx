@@ -4,10 +4,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSession } from "next-auth/react";
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2 } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
-import { updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace } from '@/lib/api/coreClient';
+import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
@@ -33,7 +39,15 @@ const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const { data: session } = useSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
-    const { user, updateUserSettings, departments, treeData, loadTree, loadDepartments, activeCompanyId, isStandardMode, setIsStandardMode, companies, loadCompanies } = useMoraStore();
+    const { activeCompanyId, isStandardMode, setIsStandardMode } = useNavStore();
+    const { user, updateUserSettings } = useSessionStore();
+    const { data: companies = [] } = useCompanies();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
+    const queryClient = useQueryClient();
+    const loadCompanies = () => queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
+    const loadDepartments = (_companyId?: string | null) => queryClient.invalidateQueries({ queryKey: queryKeys.departments(activeCompanyId) });
+    const loadTree = () => queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
     const surfaceProfile = useSurfaceProfile();
     const pane = getPane(id);
 
@@ -1372,7 +1386,7 @@ useEffect(() => {
                                             if (token) headers['Authorization'] = `Bearer ${token}`;
                                             headers['X-User-ID'] = userId;
 
-                                            const res = await fetch('/api/core/v1/demo/reset-instance', {
+                                            const res = await fetch(`${getCoreBaseUrl()}/v1/demo/reset-instance`, {
                                                 method: 'POST',
                                                 headers
                                             });
@@ -1411,7 +1425,7 @@ useEffect(() => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-white/60">Core API</span>
-                                    <span className="text-xs text-white/50 font-mono">{process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '/api/core'}</span>
+                                    <span className="text-xs text-white/50 font-mono">{getCoreBaseUrl()}</span>
                                 </div>
                             </div>
                         </div>

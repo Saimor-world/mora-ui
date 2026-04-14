@@ -11,7 +11,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { UsersPane } from '@/components/panes/UsersPane';
-import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import * as coreClient from '@/lib/api/coreClient';
 import * as inviteClient from '@/lib/api/inviteClient';
@@ -51,15 +50,29 @@ jest.mock('@/lib/api/inviteClient', () => ({
     createInvite: jest.fn(),
 }));
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: jest.fn(),
+}));
+
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: jest.fn(),
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: jest.fn(),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: jest.fn(),
 }));
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+
+const mockUseNavStore = useNavStore as jest.MockedFunction<typeof useNavStore>;
+const mockUseSessionStore = useSessionStore as jest.MockedFunction<typeof useSessionStore>;
+const mockUseDepartments = useDepartments as jest.MockedFunction<typeof useDepartments>;
 const mockUsePaneStore = usePaneStore as jest.MockedFunction<typeof usePaneStore>;
 const mockFetchAdminUsers = coreClient.fetchAdminUsers as jest.MockedFunction<typeof coreClient.fetchAdminUsers>;
 const mockCoreGet = coreClient.coreGet as jest.MockedFunction<typeof coreClient.coreGet>;
@@ -68,12 +81,28 @@ const mockCreateInvite = inviteClient.createInvite as jest.MockedFunction<typeof
 const PANE = { id: 'users-main', size: { width: 640, height: 560 }, position: { x: 100, y: 100 }, zIndex: 10 };
 
 function setupStore(role: 'owner' | 'admin' | 'member') {
-    const state: any = {
-        viewMode: 'standard',
-        user: { id: 'u-1', name: 'Test User', role },
-        departments: [],
+    const navState: any = {
+        viewMode: 'workspace',
+        viewLevel: 'core',
+        coreMode: 'home',
+        activeCompanyId: 'c-1',
+        activeDepartmentId: null,
+        activeSpaceId: null,
+        activeFolderId: null,
+        isStandardMode: false,
+        nameConflict: null,
     };
-    mockUseMoraStore.mockImplementation((selector?: any) => selector ? selector(state) : state);
+    mockUseNavStore.mockImplementation((selector?: any) => selector ? selector(navState) : navState);
+
+    const sessionState: any = {
+        user: { id: 'u-1', name: 'Test User', role },
+        permissions: { canCreate: true, canDelete: false, canAdmin: role !== 'member', canEditSettings: false, canViewAnalytics: false },
+        hasBooted: true,
+        isLoggingOut: false,
+    };
+    mockUseSessionStore.mockImplementation((selector?: any) => selector ? selector(sessionState) : sessionState);
+
+    mockUseDepartments.mockReturnValue({ data: [], isLoading: false, error: null } as any);
 
     mockUsePaneStore.mockImplementation((selector?: any) => {
         const store: any = {
