@@ -69,6 +69,59 @@ describe('useCreateNode — optimistic update', () => {
     await result.current.mutateAsync({ title: 'New Doc', folder_id: 'f1', type: 'document' });
     expect(orgClient.createNode).toHaveBeenCalledWith({ title: 'New Doc', folder_id: 'f1', type: 'document' });
   });
+
+  it('applies optimistic update to cache before server responds', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    qc.setQueryData(['nodes', 'f1'], [mockNode]);
+
+    // Block the createNode call so we can inspect intermediate state
+    let resolveCreate!: (value: unknown) => void;
+    (orgClient.createNode as jest.Mock).mockImplementationOnce(
+      () => new Promise((res) => { resolveCreate = res; })
+    );
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCreateNode('f1'), { wrapper });
+
+    // Fire mutation without awaiting
+    result.current.mutate({ title: 'Optimistic Doc', folder_id: 'f1', type: 'document' });
+
+    // Give onMutate a tick to run
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Optimistic entry should appear in cache immediately
+    const cache = qc.getQueryData<typeof mockNode[]>(['nodes', 'f1']);
+    expect(cache).toHaveLength(2);
+    expect(cache![1].title).toBe('Optimistic Doc');
+
+    // Resolve the server call
+    resolveCreate({ id: 'n2', title: 'Optimistic Doc', folder_id: 'f1', type: 'document' });
+  });
+
+  it('rolls back optimistic update when server returns an error', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+    qc.setQueryData(['nodes', 'f1'], [mockNode]);
+
+    (orgClient.createNode as jest.Mock).mockRejectedValueOnce(new Error('Server error'));
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCreateNode('f1'), { wrapper });
+
+    try {
+      await result.current.mutateAsync({ title: 'Failing Doc', folder_id: 'f1', type: 'document' });
+    } catch {
+      // expected to fail
+    }
+
+    // Cache should be rolled back to original state
+    const cache = qc.getQueryData<typeof mockNode[]>(['nodes', 'f1']);
+    expect(cache).toHaveLength(1);
+    expect(cache![0].id).toBe('n1');
+  });
 });
 
 describe('useUpdateNode', () => {
@@ -103,8 +156,6 @@ describe('useDeleteNode', () => {
     await result.current.mutateAsync('n1');
 
     expect(orgClient.deleteNode).toHaveBeenCalledWith('n1');
-    expect(invalidateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: expect.arrayContaining(['nodes']) })
-    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['nodes', 'f1'], exact: false });
   });
 });
