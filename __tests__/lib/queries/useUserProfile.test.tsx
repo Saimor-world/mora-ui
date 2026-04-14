@@ -34,10 +34,13 @@ describe('useUserProfile', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
-  it('does not refetch on window focus', () => {
+  it('does not refetch on window focus', async () => {
+    const { fetchUserProfile } = jest.requireMock('@/lib/api/coreClient');
     const { result } = renderHook(() => useUserProfile(), { wrapper: makeWrapper() });
-    // Verify that refetchOnWindowFocus is false (implementation detail)
-    // This test validates the hook is configured correctly
-    expect(result.current.status).toBeDefined();
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const callsBefore = (fetchUserProfile as jest.Mock).mock.calls.length;
+    window.dispatchEvent(new Event('focus'));
+    await new Promise((r) => setTimeout(r, 50));
+    expect((fetchUserProfile as jest.Mock).mock.calls.length).toBe(callsBefore);
   });
 });
