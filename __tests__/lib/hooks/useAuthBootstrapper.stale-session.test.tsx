@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { signOut } from 'next-auth/react';
 import * as coreClient from '@/lib/api/coreClient';
@@ -27,6 +28,8 @@ jest.mock('next-auth/react', () => ({
 jest.mock('@/lib/api/coreClient', () => ({
     coreGet: jest.fn(),
     authLogout: jest.fn(),
+    fetchUserProfile: jest.fn().mockResolvedValue(null),
+    fetchCompanies: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('@/lib/auth/sessionLifecycle', () => ({
@@ -40,6 +43,13 @@ function Probe() {
     return null;
 }
 
+function makeWrapper() {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return function Wrapper({ children }: { children: React.ReactNode }) {
+        return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+    };
+}
+
 describe('useAuthBootstrapper stale session handling', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -51,7 +61,7 @@ describe('useAuthBootstrapper stale session handling', () => {
     });
 
     it('tears down auth and redirects to root when the session is neustart (72h+)', async () => {
-        render(<Probe />);
+        render(<Probe />, { wrapper: makeWrapper() });
 
         await waitFor(() => {
             expect(coreClient.authLogout).toHaveBeenCalled();
@@ -63,7 +73,7 @@ describe('useAuthBootstrapper stale session handling', () => {
 
     it('does NOT tear down auth for erwachen tier (13h — under 72h threshold)', async () => {
         localStorage.setItem('last_activity', new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString());
-        render(<Probe />);
+        render(<Probe />, { wrapper: makeWrapper() });
 
         await new Promise((resolve) => setTimeout(resolve, 200));
         expect(coreClient.authLogout).not.toHaveBeenCalled();

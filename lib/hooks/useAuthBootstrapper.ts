@@ -1,273 +1,266 @@
-import { useEffect, useState } from 'react';
+'use client';
+
+import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { coreGet } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useSession, signOut } from 'next-auth/react';
+import { useUserProfile } from '@/lib/queries/useUserProfile';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier } from '@/lib/auth/sessionLifecycle';
+import type { UserProfile } from '@/lib/api/authClient';
+import type { User, UserRole } from '@/lib/types/mora';
 
-const BOOTSTRAP_HEALTH_ATTEMPTS = 4;
-const BOOTSTRAP_HEALTH_RETRY_MS = 1200;
+// ---------------------------------------------------------------------------
+// Type mapping: UserProfile (authClient) → User (sessionStore)
+// ---------------------------------------------------------------------------
+
+function mapProfileToUser(profile: UserProfile): User {
+    return {
+        id: profile.user_id,
+        name: profile.full_name ?? profile.email ?? 'Unknown',
+        email: profile.email,
+        role: profile.role as UserRole,
+        tenant_id: profile.tenant_id,
+        operational_state: profile.operational_state,
+        setup_required: profile.setup_required,
+        active_company_id: profile.active_company_id,
+        active_company_name: profile.active_company_name,
+        company_count: profile.company_count,
+        scope_source: profile.scope_source,
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 /**
  * useAuthBootstrapper
- * 
- * Ensures a valid session exists. If not authenticated, redirects to root.
- * Prevents redirect loops by checking current path.
- * Also loads initial data after auth is confirmed.
+ *
+ * Declarative session bootstrap — useUserProfile + useCompanies run
+ * automatically via TanStack Query. Side effects (store population,
+ * company selection, stale-session teardown) run reactively in useEffect.
+ *
+ * Stale session detection: if `last_activity` is 72 h+ old (neustart tier),
+ * we tear down auth (authLogout + signOut) and redirect to root before any
+ * data is loaded.
  */
 export function useAuthBootstrapper() {
     const router = useRouter();
     const pathname = usePathname();
     const { data: session, status } = useSession();
-    const [isBootstrapped, setIsBootstrapped] = useState(false);
-    const [authError, setAuthError] = useState<string | null>(null);
+
+    // Declarative query hooks — fire as soon as the component mounts.
+    // The queries themselves handle re-fetch, caching, and error states.
+    const { data: profile } = useUserProfile();
+    const { data: companies } = useCompanies({ enabled: !!profile });
+
+    const setUser = useSessionStore((s) => s.setUser);
+    const setHasBooted = useSessionStore((s) => s.setHasBooted);
+    const isLoggingOut = useSessionStore((s) => s.isLoggingOut);
+    const setIsLoggingOut = useSessionStore((s) => s.setIsLoggingOut);
+    const hasBooted = useSessionStore((s) => s.hasBooted);
+
+    const setActiveCompany = useNavStore((s) => s.setActiveCompany);
+    const setViewMode = useNavStore((s) => s.setViewMode);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const viewMode = useNavStore((s) => s.viewMode);
+
     const sessionUser = session?.user as any;
     const sessionEmail = sessionUser?.email || null;
-    const sessionName = sessionUser?.name || null;
     const sessionAccessToken = sessionUser?.accessToken || null;
     const sessionTenantId = sessionUser?.tenant_id || null;
 
+    // ---------------------------------------------------------------------------
+    // Stale session + token bridge effect
+    // Runs whenever NextAuth status settles; does not depend on profile data.
+    // ---------------------------------------------------------------------------
+    const staleTeardownRan = useRef(false);
+
     useEffect(() => {
-        // Only run in browser
         if (typeof window === 'undefined') return;
         if (status === 'loading') return;
-        if (status === 'authenticated' && isBootstrapped) return;
 
-        const bootstrap = async () => {
-            const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-            const probeCoreHealth = async () => {
-                for (let attempt = 0; attempt < BOOTSTRAP_HEALTH_ATTEMPTS; attempt += 1) {
-                    const health = await coreGet('/v3/health', { skipAuth: true, isOptional: true });
-                    if (health) return health;
-                    if (attempt < BOOTSTRAP_HEALTH_ATTEMPTS - 1) {
-                        await wait(BOOTSTRAP_HEALTH_RETRY_MS);
-                    }
-                }
-                return null;
-            };
-
-            // Purge legacy branding artifacts (e.g. "Foerderlogiken"/encoding artifacts) from localStorage.
-            // Older builds could persist a stale "default workspace" name which causes cross-browser drift.
-            try {
-                const suspect = ["foerderlogiken", "förderlogiken"];
-                const keys: string[] = [];
-                for (let i = 0; i < localStorage.length; i += 1) {
-                    const key = localStorage.key(i);
-                    if (key) keys.push(key);
-                }
-                keys.forEach((key) => {
-                    const value = localStorage.getItem(key);
-                    const hay = `${key}::${value ?? ""}`.toLowerCase();
-                    if (suspect.some((s) => hay.includes(s))) {
-                        localStorage.removeItem(key);
-                    }
-                });
-            } catch {
-                // best-effort cleanup
-            }
-            const hasNextAuth = status === 'authenticated';
-            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
-            const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
+        // --- Stale session check (neustart tier → 72h+) ---
+        if (!staleTeardownRan.current) {
             const lastActivity = localStorage.getItem('last_activity');
-            // readCookie uses document.cookie — cannot detect HttpOnly cookies set by Core.
-            // hasCoreSession is intentionally kept for non-HttpOnly fallback paths.
-            const hasCoreSession = !!readCookie('mora_session');
-            // mora_session from Core is HttpOnly — browser sends it automatically but JS
-            // cannot read it. If we are on a protected route and NextAuth has settled to
-            // unauthenticated, still probe /v3/auth/session so the cookie gets validated
-            // server-side. This prevents HttpOnly sessions from being silently rejected.
-            const mayHaveHttpOnlySession = status === 'unauthenticated' && pathname !== '/';
-
             if (getSessionTier(lastActivity) === 'neustart' && pathname !== '/') {
+                staleTeardownRan.current = true;
                 const teardown: Promise<unknown>[] = [authLogout()];
                 if (status === 'authenticated') {
                     teardown.push(signOut({ redirect: false }));
                 }
-                await Promise.allSettled(teardown);
-                clearClientSessionArtifacts();
-                setAuthError('Session expired. Please log in again.');
-                router.replace('/');
+                Promise.allSettled(teardown).then(() => {
+                    clearClientSessionArtifacts();
+                    router.replace('/');
+                });
                 return;
             }
+        }
 
-            if (hasNextAuth || hasLegacyToken || hasCoreSession || mayHaveHttpOnlySession) {
-                try {
-                    // SYNC: If NextAuth is authenticated, ensure the token is in localStorage for coreClient
-                    const currentToken = hasNextAuth ? sessionAccessToken : hasLegacyToken;
-                    if (hasNextAuth && currentToken) {
-                        // Only use localStorage token as a dev fallback. Production should rely on cookies/session.
-                        if (isLocalhost) localStorage.setItem('saimor_dev_token', currentToken);
-                        localStorage.setItem('last_user_name', sessionEmail?.split('@')[0] || 'User');
-                        if (sessionEmail) localStorage.setItem('last_user_email', sessionEmail);
+        // --- NextAuth token bridge (dev / localhost only) ---
+        if (status === 'authenticated' && sessionAccessToken) {
+            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            if (isLocalhost) localStorage.setItem('saimor_dev_token', sessionAccessToken);
+            if (sessionEmail) {
+                localStorage.setItem('last_user_name', sessionEmail.split('@')[0] || 'User');
+                localStorage.setItem('last_user_email', sessionEmail);
+            }
+            writeCookie('mora_auth_token', sessionAccessToken, 7);
+        }
 
-                        // Bridge NextAuth -> Core API cookie.
-                        // coreClient/filesClient/realtimeClient rely on mora_auth_token.
-                        writeCookie('mora_auth_token', currentToken, 7);
-                    }
+        // --- Unauthenticated redirect ---
+        if (status === 'unauthenticated' && pathname !== '/') {
+            const hasCoreSession = !!readCookie('mora_session');
+            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+            const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
+            if (!hasCoreSession && !hasLegacyToken) {
+                deleteCookie('mora_session');
+                deleteCookie('mora_auth_token');
+                router.push('/');
+            }
+        }
+    }, [status, pathname, sessionAccessToken, sessionEmail, router]);
 
-                    // Check core availability first to avoid auth redirect loops.
-                    // Use a short startup retry window so a cold probe does not flash an error screen.
-                    const health = await probeCoreHealth();
-                    if (!health) {
-                        const apiUrl = process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || 'the API server';
-                        setAuthError(`Core unavailable. Check connection to ${apiUrl}.`);
-                        return;
-                    }
-                    setAuthError(null);
+    // ---------------------------------------------------------------------------
+    // Profile → sessionStore effect
+    // Runs whenever the profile query resolves or changes.
+    // ---------------------------------------------------------------------------
+    useEffect(() => {
+        if (!profile) return;
 
-                    // Verify token validity with Backend.
-                    // skipAuth: true — mora_session is HttpOnly and invisible to coreRequest's
-                    // token guard. credentials:'include' (set inside coreRequest) forwards all
-                    // cookies including HttpOnly, so the Core can validate via mora_session.
-                    // Bearer token paths (NextAuth, legacy devToken) still work because those
-                    // tokens are set as readable cookies (mora_auth_token) which are also forwarded.
-                    const result = await coreGet('/v3/auth/session', { isOptional: true, skipAuth: true });
+        const user = mapProfileToUser(profile);
+        setUser(user);
 
-                    if (result && result.user_id) {
-                        // Auth is valid! Now load data
-                        const store = useMoraStore.getState();
-                        const tenantId = result.tenant_id || sessionTenantId;
+        // Persist role + tenant to localStorage for components that read them directly
+        if (profile.role) localStorage.setItem('saimor_role', profile.role);
+        if (profile.tenant_id) localStorage.setItem('saimor_tenant', profile.tenant_id);
 
-                        // Fix: Update user in store immediately so loadCompanies can use it
-                        store.setUser({
-                            id: result.user_id,
-                            email: result.email || sessionEmail || 'user@saimor.io',
-                            name: result.name || result.email?.split('@')[0] || sessionName || 'User',
-                            role: result.role || 'member',
-                            settings: result.settings || {},
-                            tenant_id: tenantId,
-                            operational_state: result.operational_state,
-                            setup_required:    result.setup_required,
-                            active_company_id: result.active_company_id,
-                            active_company_name: result.active_company_name,
-                            company_count:     result.company_count,
-                            scope_source:      result.scope_source,
-                        });
+        // Normalize view mode for demo tenants
+        const tenantId = profile.tenant_id || sessionTenantId;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+        const storedViewMode =
+            typeof window !== 'undefined' ? localStorage.getItem('saimor_view_mode') : null;
 
-                        // Normalize view mode for demo tenants to avoid cross-browser drift
-                        const storedViewMode = typeof window !== 'undefined'
-                            ? localStorage.getItem('saimor_view_mode')
-                            : null;
-                        if (tenantId === TENANT_DEMO) {
-                            if (storedViewMode !== 'demo' && storedViewMode !== 'workspace') {
-                                store.setViewMode('workspace');
-                            }
-                        } else if (storedViewMode === 'demo') {
-                            store.setViewMode('workspace');
-                        }
+        if (tenantId === TENANT_DEMO) {
+            if (storedViewMode !== 'demo' && storedViewMode !== 'workspace') {
+                setViewMode('workspace');
+            }
+        } else if (storedViewMode === 'demo') {
+            setViewMode('workspace');
+        }
+        if (isLocalhost && storedViewMode !== 'workspace') {
+            setViewMode('workspace');
+        }
 
-                        // Update role and tenant from backend to ensure consistency
-                        if (result.role) {
-                            localStorage.setItem('saimor_role', result.role);
-                        }
-                        if (tenantId) {
-                            localStorage.setItem('saimor_tenant', tenantId);
-                        }
+        setHasBooted(true);
+    }, [profile, setUser, setHasBooted, setViewMode, sessionTenantId]);
 
-                        // Load companies in the background
-                        await store.loadCompanies({ prefetchTree: false }).catch(console.error);
+    // ---------------------------------------------------------------------------
+    // Company selection effect
+    // Runs when both profile AND companies have resolved.
+    // ---------------------------------------------------------------------------
+    useEffect(() => {
+        if (!profile || !companies || companies.length === 0) return;
 
-                        // RESTORE ACTIVE COMPANY
-                        const freshState = useMoraStore.getState();
-                        const companies = freshState.companies;
-                        const currentActive = freshState.activeCompanyId;
-                        const viewMode = freshState.viewMode;
-                        const role = result.role || freshState.user?.role || 'member';
+        const tenantId = profile.tenant_id || sessionTenantId;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+        const role = profile.role;
 
-                        const storedCompanyId = localStorage.getItem('last_company_id');
-                        let storedWorkspaceName = localStorage.getItem('last_workspace');
+        const storedCompanyId =
+            typeof window !== 'undefined' ? localStorage.getItem('last_company_id') : null;
+        let storedWorkspaceName =
+            typeof window !== 'undefined' ? localStorage.getItem('last_workspace') : null;
 
-                        // Purge legacy brand names (e.g. foerderlogiken) from cached workspace
-                        if (storedWorkspaceName) {
-                            const normalized = storedWorkspaceName.toLowerCase();
-                            if (normalized.includes('foerderlogiken')) {
-                                localStorage.removeItem('last_workspace');
-                                storedWorkspaceName = null;
-                            }
-                        }
+        // Purge legacy brand names from cached workspace
+        if (storedWorkspaceName) {
+            const normalized = storedWorkspaceName.toLowerCase();
+            if (normalized.includes('foerderlogiken') || normalized.includes('förderlogiken')) {
+                localStorage.removeItem('last_workspace');
+                storedWorkspaceName = null;
+            }
+        }
 
-                        const isDemoTenant = tenantId === TENANT_DEMO;
-                        const demoCompanies = companies.filter(c => c.is_demo);
-                        const hqCompanies = companies.filter(c => c.tenant_id === TENANT_HQ);
-                        const tenantCompanies = tenantId
-                            ? companies.filter(c => c.tenant_id === tenantId)
-                            : companies;
+        const isDemoTenantFlag = tenantId === TENANT_DEMO;
+        const demoCompanies = companies.filter((c) => c.is_demo);
+        const hqCompanies = companies.filter((c) => c.tenant_id === TENANT_HQ);
+        const tenantCompanies = tenantId
+            ? companies.filter((c) => c.tenant_id === tenantId)
+            : companies;
 
-                        let allowedCompanies = companies;
-                        if (isDemoTenant) {
-                            allowedCompanies = companies;
-                        } else if (viewMode === 'demo') {
-                            allowedCompanies = demoCompanies;
-                        } else if (viewMode === 'workspace') {
-                            allowedCompanies = tenantCompanies;
-                        } else if (viewMode === 'owner' && role !== 'system_owner') {
-                            allowedCompanies = tenantCompanies;
-                        }
+        let allowedCompanies = companies;
+        if (isLocalhost) {
+            allowedCompanies = companies.filter((c) => !c.is_demo);
+            if (!allowedCompanies.length) allowedCompanies = companies;
+        } else if (isDemoTenantFlag) {
+            allowedCompanies = companies;
+        } else if (viewMode === 'demo') {
+            allowedCompanies = demoCompanies;
+        } else if (viewMode === 'workspace') {
+            allowedCompanies = tenantCompanies;
+        } else if (viewMode === 'owner' && role !== 'system_owner') {
+            allowedCompanies = tenantCompanies;
+        }
 
-                        let selectedCompanyId: string | null = null;
-                        if (currentActive && allowedCompanies.some(c => c.id === currentActive)) {
-                            selectedCompanyId = currentActive;
-                        } else if (storedCompanyId && allowedCompanies.some(c => c.id === storedCompanyId)) {
-                            selectedCompanyId = storedCompanyId;
-                        } else if (storedWorkspaceName) {
-                            const found = allowedCompanies.find(c => c.name === storedWorkspaceName);
-                            if (found) {
-                                selectedCompanyId = found.id;
-                            }
-                        } else if (allowedCompanies.length > 0) {
-                            if (isDemoTenant) {
-                                selectedCompanyId = viewMode === 'workspace'
-                                    ? (hqCompanies[0]?.id || demoCompanies[0]?.id || allowedCompanies[0].id)
-                                    : (demoCompanies[0]?.id || hqCompanies[0]?.id || allowedCompanies[0].id);
-                            } else {
-                                selectedCompanyId = allowedCompanies[0].id;
-                            }
-                        }
-
-                        if (selectedCompanyId) {
-                            store.setActiveCompany(selectedCompanyId);
-                            localStorage.setItem('last_company_id', selectedCompanyId);
-                        } else {
-                            // Fallback if no company selected
-                            await store.loadTree(tenantId).catch(() => { });
-                        }
-
-                        setIsBootstrapped(true);
-                        return;
-                    }
-                } catch (err) {
-                    console.log('Token/Data loading failed', err);
-                }
-
-                // If we reach here, verification failed but core is reachable.
-                // Clear session to prevent redirect loops and return to login.
-                if (status === 'authenticated') {
-                    setAuthError('Session expired. Please log in again.');
-                    await signOut({ redirect: false });
-                }
-
-                if (pathname !== '/') {
-                    localStorage.removeItem('saimor_dev_token');
-                    localStorage.removeItem('mora_session');
-                    deleteCookie('mora_session');
-                    deleteCookie('mora_auth_token');
-                    router.push('/');
-                }
-            } else if (status === 'unauthenticated' || status === 'loading') {
-                // Wait for loading, but redirect if unauthenticated
-                if (status === 'unauthenticated' && pathname !== '/') {
-                    setAuthError('Authentication required');
-                    router.push('/');
+        const pickAllowedCompanyId = (...candidates: Array<string | null | undefined>) => {
+            for (const candidate of candidates) {
+                if (candidate && allowedCompanies.some((c) => c.id === candidate)) {
+                    return candidate;
                 }
             }
+            return null;
         };
 
-        bootstrap();
-    }, [router, pathname, status, isBootstrapped, sessionAccessToken, sessionEmail, sessionName, sessionTenantId]);
+        let selectedCompanyId: string | null = null;
+        if (activeCompanyId && allowedCompanies.some((c) => c.id === activeCompanyId)) {
+            selectedCompanyId = activeCompanyId;
+        } else if (storedCompanyId && allowedCompanies.some((c) => c.id === storedCompanyId)) {
+            selectedCompanyId = storedCompanyId;
+        } else if (storedWorkspaceName) {
+            const found = allowedCompanies.find((c) => c.name === storedWorkspaceName);
+            if (found) selectedCompanyId = found.id;
+        } else if (allowedCompanies.length > 0) {
+            if (isDemoTenantFlag) {
+                selectedCompanyId =
+                    viewMode === 'workspace'
+                        ? (hqCompanies[0]?.id || demoCompanies[0]?.id || allowedCompanies[0].id)
+                        : (demoCompanies[0]?.id || hqCompanies[0]?.id || allowedCompanies[0].id);
+            } else if (isLocalhost) {
+                selectedCompanyId =
+                    pickAllowedCompanyId(
+                        sessionUser?.active_company_id,
+                        profile.active_company_id,
+                        hqCompanies[0]?.id,
+                    ) ||
+                    allowedCompanies.find((c) => !c.is_demo)?.id ||
+                    allowedCompanies[0].id;
+            } else {
+                selectedCompanyId = allowedCompanies[0].id;
+            }
+        }
 
-    return { isBootstrapped, authError };
+        if (selectedCompanyId) {
+            setActiveCompany(selectedCompanyId);
+        }
+    }, [profile, companies, sessionTenantId, viewMode, activeCompanyId, setActiveCompany, sessionUser?.active_company_id]);
+
+    // ---------------------------------------------------------------------------
+    // Logout detection effect
+    // ---------------------------------------------------------------------------
+    useEffect(() => {
+        if (status === 'loading') return;
+        if (isLoggingOut && status === 'unauthenticated') {
+            setIsLoggingOut(false);
+        }
+    }, [status, isLoggingOut, setIsLoggingOut]);
+
+    return { isBootstrapped: hasBooted };
 }
-
