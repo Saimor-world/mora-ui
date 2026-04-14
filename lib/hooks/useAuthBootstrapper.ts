@@ -169,6 +169,9 @@ export function useAuthBootstrapper() {
     useEffect(() => {
         if (!profile || !companies || companies.length === 0) return;
 
+        // Only run company selection on first load — once a company is active, we don't re-select.
+        if (activeCompanyId) return;
+
         const tenantId = profile.tenant_id || sessionTenantId;
         const isLocalhost =
             typeof window !== 'undefined' &&
@@ -250,6 +253,8 @@ export function useAuthBootstrapper() {
         if (selectedCompanyId) {
             setActiveCompany(selectedCompanyId);
         }
+        // viewMode is intentionally included: switching to demo/owner mode should re-select the
+        // appropriate company for that context.
     }, [profile, companies, sessionTenantId, viewMode, activeCompanyId, setActiveCompany, sessionUser?.active_company_id]);
 
     // ---------------------------------------------------------------------------
