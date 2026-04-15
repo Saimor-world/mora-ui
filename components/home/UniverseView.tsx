@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useOrbStore } from '@/lib/store/orbStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -18,22 +18,12 @@ import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
-
-type DepartmentMetricSet = {
-    nodes: number;
-    spaces: number;
-    folders: number;
-    health: number;
-};
-
-type SemanticDriver = 'content' | 'structure' | 'health';
-
-type SemanticDriverMeta = {
-    label: string;
-    accent: string;
-    dashArray: string;
-    reason: string;
-};
+import {
+    buildSemanticEdgeKey,
+    resolveDepartmentSimilarityProfile,
+    SEMANTIC_DRIVER_META,
+    type DepartmentMetricSet,
+} from '@/lib/universe/semanticSimilarity';
 
 const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
     'technology & ai': { x: 25, y: 36 },
@@ -48,38 +38,6 @@ const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
 const normalizeUniverseKey = (value: string | null | undefined) =>
     (value || '').trim().toLowerCase();
 
-const metricAffinity = (left: number, right: number) => {
-    const baseline = Math.max(1, left, right);
-    return Math.max(0, 1 - Math.abs(left - right) / baseline);
-};
-
-const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
-    content: { label: 'Dokumente', accent: '#7dd3fc', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
-    structure: { label: 'Struktur', accent: '#c4b5fd', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
-    health: { label: 'Health', accent: '#fbbf24', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
-};
-
-const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');
-
-const resolveDepartmentSimilarityProfile = (
-    left: DepartmentMetricSet,
-    right: DepartmentMetricSet
-) => {
-    const contributions: Record<SemanticDriver, number> = {
-        content: metricAffinity(left.nodes, right.nodes) * 0.4,
-        structure: metricAffinity(left.spaces, right.spaces) * 0.2 + metricAffinity(left.folders, right.folders) * 0.25,
-        health: metricAffinity(left.health, right.health) * 0.15,
-    };
-
-    const dominantDriver = (Object.entries(contributions).sort((leftEntry, rightEntry) => rightEntry[1] - leftEntry[1])[0]?.[0] || 'content') as SemanticDriver;
-    const semanticAffinity = contributions.content + contributions.structure + contributions.health;
-
-    return {
-        semanticAffinity,
-        dominantDriver,
-        contributions,
-    };
-};
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -88,7 +46,7 @@ const resolveDepartmentSimilarityProfile = (
  */
 
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
-    const { setOrbState, orbState } = useMoraStore(s => ({ setOrbState: s.setOrbState, orbState: s.orbState }));
+    const { setOrbState, orbState } = useOrbStore(s => ({ setOrbState: s.setOrbState, orbState: s.orbState }));
     const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment } = useNavStore();
     const user = useSessionStore(s => s.user);
 

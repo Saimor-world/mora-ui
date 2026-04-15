@@ -35,6 +35,7 @@ import {
 import { useAccountStore } from "@/lib/auth/useAccount";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { toast } from "@/lib/toast";
+import { asArray, mergeUnique } from '@/lib/utils/collections';
 
 import { mindLoop } from "@/lib/intelligence/mindLoop"; // Phase 8.1 Integration
 import type { OrbState } from "@/lib/api/awarenessClient";
@@ -60,21 +61,6 @@ import { ROLE_PERMISSIONS, getPermissions } from './moraTypes';
 export type { MoraState, ViewLevel, ViewMode, CoreMode, UiScopeHints, ScopeContract, ResolvedScope, LastChatScopeState, NameConflictState, UserRole, User, OperationalSessionPatch, Permissions };
 export type { OperationalState } from './moraTypes';
 export { ROLE_PERMISSIONS, getPermissions };
-
-// Helper: Merge lists and deduplicate by ID
-const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null)[]): T[] => {
-    const map = new Map<string, T>();
-    lists.forEach(list => {
-        if (list) {
-            list.forEach(item => {
-                if (item?.id) map.set(item.id, item);
-            });
-        }
-    });
-    return Array.from(map.values());
-};
-
-const asArray = <T>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
 const getStandardModeKey = (companyId?: string | null) =>
     companyId ? `saimor_standard_mode_${companyId}` : 'saimor_standard_mode_default';

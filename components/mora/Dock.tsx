@@ -48,6 +48,7 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
+import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -59,17 +60,6 @@ import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
  * - Floating minimized panes above
  * - German labels
  */
-
-interface DockItem {
-    icon: React.ComponentType<any>;
-    label: string;
-    shortcut: string | null;
-    action: string;
-    description: string;
-    disabled?: boolean;
-    badge?: number;
-    hidden?: boolean;
-}
 
 // ─── Magnetic Dock Icon ──────────────────────────────────────────────────────
 interface MagneticDockIconProps {
@@ -185,15 +175,6 @@ export const SessionChip: React.FC<SessionChipProps> = ({ planId, openPane, isSt
             Plan aktiv
         </button>
     );
-};
-
-const MINIMIZED_ICON_MAP: Record<string, React.ComponentType<any>> = {
-    finder: FolderOpen,
-    chat: MessageCircle,
-    team: Users,
-    search: Search,
-    notes: FileText,
-    settings: Settings,
 };
 
 interface DockNowPlayingProps {

@@ -4,7 +4,8 @@
 import React, { useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { updateUserMemberships, type AdminRosterUser } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
 
 interface MembershipEditorProps {
     user: AdminRosterUser;
@@ -26,7 +27,8 @@ export const MembershipEditor: React.FC<MembershipEditorProps> = ({
     onClose,
     onSaved,
 }) => {
-    const departments = useMoraStore((s) => s.departments ?? []);
+    const { activeCompanyId } = useNavStore();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
     const [selected, setSelected] = useState<Set<string>>(
         new Set(user.department_memberships.map((d) => d.id))
     );

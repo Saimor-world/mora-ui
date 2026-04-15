@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, AlertCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useChatStore } from '@/lib/store/chatStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -121,7 +121,7 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
 
     // Scope signal: prefer real API scope (from v3/chat SSE preamble) over store-derived
     const { activeCompanyId, activeDepartmentId, activeSpaceId } = useNavStore();
-    const { lastChatScope } = useMoraStore();
+    const lastChatScope = useChatStore((s) => s.lastChatScope);
     const { data: companies = [] } = useCompanies();
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const { data: spaces = [] } = useSpaces(activeDepartmentId);

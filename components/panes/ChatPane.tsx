@@ -40,6 +40,7 @@ import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextLabel';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
+import { detectMemoryIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
 
 interface PendingAction {
     tool_name: string;
@@ -59,34 +60,6 @@ interface Message {
     pendingAction?: PendingAction;
     /** set when the agent produced a work-session plan; used to open WorkSessionPane */
     planId?: string;
-}
-
-// Memory keywords that trigger save hint (German)
-const MEMORY_KEYWORDS = [
-    'merke dir', 'merk dir', 'speicher das', 'speichere das',
-    'wichtig:', 'wichtig ist', 'vergiss nicht', 'erinnere dich',
-    'remember', 'save this', 'note that', 'keep in mind'
-];
-
-// Detect memory intent in user message
-function detectMemoryIntent(text: string): boolean {
-    const lower = text.toLowerCase();
-    return MEMORY_KEYWORDS.some(kw => lower.includes(kw));
-}
-
-// Extract the insight content from a memory request
-function extractInsightFromRequest(text: string): string {
-    let content = text;
-    // Remove common prefixes
-    const prefixes = [
-        'merke dir,?', 'merk dir,?', 'speicher das,?', 'speichere das,?',
-        'wichtig:', 'vergiss nicht,?', 'erinnere dich,?',
-        'remember,?', 'save this,?', 'note that,?', 'keep in mind,?'
-    ];
-    for (const prefix of prefixes) {
-        content = content.replace(new RegExp(`^${prefix}\\s*`, 'i'), '');
-    }
-    return content.trim();
 }
 
 function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {

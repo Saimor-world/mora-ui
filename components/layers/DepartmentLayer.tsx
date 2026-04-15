@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { useFolders } from '@/lib/queries/useFolders';
 import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createSpace } from '@/lib/api/orgClient';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
@@ -51,7 +53,14 @@ const getFreshnessWeight = (value?: string | null) => {
 export const DepartmentLayer: React.FC = () => {
     // Granular store selectors — prevents rerender on unrelated store mutations
     const { activeDepartmentId, activeCompanyId, navigateToExplore, navigateToSpace, navigateToFolder, setActiveSpace } = useNavStore();
-    const { addSpace } = useMoraStore(s => ({ addSpace: s.addSpace }));
+    const queryClient = useQueryClient();
+    const addSpaceMutation = useMutation({
+        mutationFn: createSpace,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.spaces(activeDepartmentId) });
+        },
+    });
+    const addSpace = addSpaceMutation.mutate;
 
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const { data: spaces = [], isLoading: isLoadingSpaces } = useSpaces(activeDepartmentId);

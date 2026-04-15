@@ -2,7 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench, Sparkles } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
 import { authLogout, fetchMyContent } from '@/lib/api/coreClient';
@@ -94,14 +98,13 @@ function kindLabel(kind: RecentKind): string {
  */
 export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode = false }) => {
     // ── store selectors ────────────────────────────────────────────────────
-    const user        = useMoraStore((s) => s.user);
-    const departments = useMoraStore((s) => s.departments);
-    const treeData    = useMoraStore((s) => s.treeData);
-    const companies   = useMoraStore((s) => s.companies);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const resetStore  = useMoraStore((s) => s.resetStore);
-    const setUser     = useMoraStore((s) => s.setUser);
-    const setCoreMode = useMoraStore((s) => s.setCoreMode);
+    const user        = useSessionStore((s) => s.user);
+    const resetStore  = useSessionStore((s) => s.resetStore);
+    const setUser     = useSessionStore((s) => s.setUser);
+    const { activeCompanyId, setCoreMode } = useNavStore();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] }    = useTree(activeCompanyId);
+    const { data: companies = [] }   = useCompanies();
 
     const openPane         = usePaneStore((s) => s.openPane);
     const getPane          = usePaneStore((s) => s.getPane);
