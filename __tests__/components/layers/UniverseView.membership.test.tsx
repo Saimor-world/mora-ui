@@ -79,8 +79,8 @@ jest.mock('@/lib/store/sessionStore', () => ({
     }),
 }));
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn((selector) => {
+jest.mock('@/lib/store/orbStore', () => ({
+    useOrbStore: jest.fn((selector) => {
         const state = {
             orbState: 'idle',
             setOrbState: jest.fn(),

@@ -2,13 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CoreFolder } from '@/lib/types/core';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { useFolders } from '@/lib/queries/useFolders';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { createFolder } from '@/lib/api/orgClient';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { ArrowLeft, FolderOpen, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -138,9 +140,8 @@ type PositionedFolder = RankedFolder & {
 
 export const SpaceLayer: React.FC = () => {
     const { activeSpaceId, activeDepartmentId, activeCompanyId, activeFolderId, viewLevel, navigateToDepartment, navigateToExplore, navigateToFolder } = useNavStore();
-    const nodesByFolder = useMoraStore((state) => state.nodesByFolder);
-    const orbState = useMoraStore((state) => state.orbState);
-    const addFolder = useMoraStore((state) => state.addFolder);
+    const nodesByFolder: Record<string, unknown[]> = {};
+    const orbState = useOrbStore((state) => state.orbState);
 
     const queryClient = useQueryClient();
     const { data: departments = [] } = useDepartments(activeCompanyId);
@@ -378,11 +379,12 @@ export const SpaceLayer: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            await addFolder({
+            await createFolder({
                 space_id: activeSpaceId,
                 name: formData.name.trim(),
                 color: formData.color,
             });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.folders(activeSpaceId) });
             setFormData({ name: '', color: FOLDER_COLORS[0].value });
             setIsCreateModalOpen(false);
         } catch (error) {

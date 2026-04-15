@@ -4,16 +4,19 @@ import { fetchUserProfile } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
 
 const patchOperationalSession = jest.fn();
-const loadCompanies = jest.fn().mockResolvedValue(undefined);
+const invalidateQueries = jest.fn().mockResolvedValue(undefined);
 
-let mockState: any = {
+let mockSessionState: any = {
     user: { operational_state: 'setup_required' },
     patchOperationalSession,
-    loadCompanies,
 };
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector: (s: any) => any) => selector(mockState),
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: (selector: (s: any) => any) => selector(mockSessionState),
+}));
+
+jest.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ invalidateQueries }),
 }));
 
 jest.mock('@/lib/api/coreClient', () => ({
@@ -33,10 +36,10 @@ const mockRealtime = realtime as jest.Mocked<typeof realtime>;
 describe('useOperationalFlip', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockState = {
+        invalidateQueries.mockResolvedValue(undefined);
+        mockSessionState = {
             user: { operational_state: 'setup_required' },
             patchOperationalSession,
-            loadCompanies,
         };
     });
 
@@ -48,14 +51,14 @@ describe('useOperationalFlip', () => {
     });
 
     it('does not subscribe when already operational', () => {
-        mockState.user = { operational_state: 'operational' };
+        mockSessionState.user = { operational_state: 'operational' };
 
         renderHook(() => useOperationalFlip());
 
         expect(mockRealtime.on).not.toHaveBeenCalled();
     });
 
-    it('patches operational session fields and reloads companies after a realtime flip event', async () => {
+    it('patches operational session fields and invalidates companies after a realtime flip event', async () => {
         mockFetchUserProfile.mockResolvedValue({
             user_id: 'u-1',
             role: 'owner',
@@ -84,7 +87,7 @@ describe('useOperationalFlip', () => {
                 company_count: 1,
                 scope_source: 'tenant_default_company',
             });
-            expect(loadCompanies).toHaveBeenCalled();
+            expect(invalidateQueries).toHaveBeenCalled();
         });
     });
 });

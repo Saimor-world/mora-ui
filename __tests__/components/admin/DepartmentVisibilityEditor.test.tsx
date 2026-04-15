@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { DepartmentVisibilityEditor } from '@/components/admin/DepartmentVisibilityEditor';
 import { updateDepartmentVisibility } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
 
 jest.mock('@/lib/api/coreClient', () => ({
     updateDepartmentVisibility: jest.fn(),
@@ -16,10 +15,24 @@ const mockDepartments = [
     { id: 'd-fin', name: 'Finance', visibility: 'visible' as const, order: 2, slug: 'finance', tenant_id: 't-1' },
 ];
 
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (sel?: (s: any) => unknown) => {
+        const s = { activeCompanyId: 'company-1' };
+        return sel ? sel(s) : s;
+    }
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: () => ({ data: mockDepartments, isLoading: false })
+}));
+
+jest.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ invalidateQueries: jest.fn() }),
+}));
+
 describe('DepartmentVisibilityEditor', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        useMoraStore.setState({ departments: mockDepartments });
     });
 
     it('lists all departments', () => {

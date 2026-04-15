@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MembershipEditor } from '@/components/admin/MembershipEditor';
 import { updateUserMemberships } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
 
 jest.mock('@/lib/api/coreClient', () => ({
     updateUserMemberships: jest.fn(),
@@ -25,13 +24,27 @@ const mockDepartments = [
     { id: 'd-all', name: 'Allgemein', visibility: 'public' as const, order: 2, slug: 'allgemein', tenant_id: 't-1' },
 ];
 
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (sel?: (s: any) => unknown) => {
+        const s = { activeCompanyId: 'company-1' };
+        return sel ? sel(s) : s;
+    }
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: () => ({ data: mockDepartments, isLoading: false })
+}));
+
+jest.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ invalidateQueries: jest.fn() }),
+}));
+
 describe('MembershipEditor', () => {
     const onClose = jest.fn();
     const onSaved = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
-        useMoraStore.setState({ departments: mockDepartments });
     });
 
     it('shows the user name', () => {

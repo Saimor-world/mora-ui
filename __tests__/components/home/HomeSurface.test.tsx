@@ -2,7 +2,6 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { HomeSurface } from '@/components/home/HomeSurface';
-import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { useActivityStore } from '@/lib/store/activityStore';
@@ -30,7 +29,61 @@ jest.mock('framer-motion', () => ({
     useReducedMotion: () => false,
 }));
 
-const mockAuthLogout   = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
+// ── stable module-level refs (must be outside jest.mock factories) ─────────
+
+const STABLE_DEPTS = [
+    { id: 'dept-rd',      name: 'R&D'     },
+    { id: 'dept-product', name: 'Product' },
+    { id: 'dept-growth',  name: 'Growth'  },
+];
+const STABLE_TREE = [
+    { id: 'dept-rd',      children: [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }] },
+    { id: 'dept-product', children: [] },
+    { id: 'dept-growth',  children: [] },
+];
+const STABLE_USER = { id: 'u-1', name: 'Anna Mueller', role: 'member' };
+
+// ── mutable state holders ──────────────────────────────────────────────────
+
+let mockNavState: any = {};
+let mockSessionState: any = {};
+let mockDepts: any[] = STABLE_DEPTS;
+let mockTree: any[] = STABLE_TREE;
+
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (sel?: (s: any) => unknown) => {
+        return sel ? sel(mockNavState) : mockNavState;
+    },
+}));
+
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: (sel?: (s: any) => unknown) => {
+        return sel ? sel(mockSessionState) : mockSessionState;
+    },
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: () => ({ data: mockDepts, isLoading: false }),
+}));
+
+jest.mock('@/lib/queries/useTree', () => ({
+    useTree: () => ({ data: mockTree, isLoading: false }),
+}));
+
+jest.mock('@/lib/queries/useCompanies', () => ({
+    useCompanies: () => ({ data: [], isLoading: false }),
+}));
+
+jest.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({ invalidateQueries: jest.fn() }),
+    useMutation: (_opts: any) => ({
+        mutate: jest.fn(),
+        mutateAsync: jest.fn().mockResolvedValue({}),
+        isPending: false,
+    }),
+}));
+
+const mockAuthLogout    = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
 const mockClearArtifacts = sessionLifecycle.clearClientSessionArtifacts as jest.MockedFunction<typeof sessionLifecycle.clearClientSessionArtifacts>;
 
 const openPane     = jest.fn();
@@ -46,17 +99,8 @@ const setUser       = jest.fn();
 
 // ── fixtures ───────────────────────────────────────────────────────────────
 
-const depts = [
-    { id: 'dept-rd',     name: 'R&D'          },
-    { id: 'dept-product', name: 'Product'     },
-    { id: 'dept-growth',  name: 'Growth'      },
-];
-
-const treeWithActivity = [
-    { id: 'dept-rd',      children: [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }] },
-    { id: 'dept-product', children: [] },
-    { id: 'dept-growth',  children: [] },
-];
+const depts = STABLE_DEPTS;
+const treeWithActivity = STABLE_TREE;
 
 // ── setup ──────────────────────────────────────────────────────────────────
 
@@ -65,24 +109,29 @@ beforeEach(() => {
     mockAuthLogout.mockResolvedValue({ success: true } as any);
     localStorage.clear();
 
+    // Reset mutable state holders
+    mockDepts = STABLE_DEPTS;
+    mockTree  = STABLE_TREE;
+
+    mockNavState = {
+        activeCompanyId: 'co-1',
+        coreMode: 'home',
+        isStandardMode: false,
+        setCoreMode: jest.fn(),
+    };
+
+    mockSessionState = {
+        user: STABLE_USER,
+        resetStore,
+        setUser,
+    };
+
     usePaneStore.setState({
         openPane, getPane, focusPane, restorePane,
         updatePane, updatePanePosition, updatePaneSize,
     } as any);
 
     useAccountStore.setState({ logout: accountLogout } as any);
-
-    useMoraStore.setState({
-        user:          { id: 'u-1', name: 'Anna Mueller', role: 'member' },
-        activeCompanyId: 'co-1',
-        coreMode:      'home',
-        isStandardMode: false,
-        departments:   depts,
-        treeData:      treeWithActivity,
-        resetStore,
-        setUser,
-    } as any);
-
     useActivityStore.setState({ recentItems: [] });
 });
 
@@ -97,7 +146,7 @@ describe('HomeSurface — rendering', () => {
     });
 
     it('renders "Arbeitsplatz" heading when no user', async () => {
-        useMoraStore.setState({ user: null } as any);
+        mockSessionState = { ...mockSessionState, user: null };
         render(<HomeSurface />);
         await waitFor(() => {
             expect(screen.getByText('Arbeitsplatz')).toBeInTheDocument();
@@ -146,7 +195,7 @@ describe('HomeSurface — Department Pulse Tiles', () => {
     });
 
     it('does not render dept tiles when departments list is empty', () => {
-        useMoraStore.setState({ departments: [] } as any);
+        mockDepts = [];
         render(<HomeSurface />);
         expect(screen.queryByTestId('dept-pulse-tiles')).not.toBeInTheDocument();
     });
