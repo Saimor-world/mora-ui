@@ -5,7 +5,7 @@
  * Five awareness modes: idle > focus > thinking > alert > insight
  */
 
-import { useMoraStore } from '@/lib/store/moraState';
+import { useOrbStore } from '@/lib/store/orbStore';
 
 export type OrbState = 'idle' | 'focus' | 'thinking' | 'alert' | 'insight' | 'curious' | 'learning' | 'watching';
 
@@ -18,9 +18,7 @@ let legacyTimeout: NodeJS.Timeout | null = null;
  * P1-B: Uses speculative state for instant 0ms reaction
  */
 export function setFocus() {
-    const store = useMoraStore.getState();
-    if (store.coreError) return;
-    store.setSpeculativeState('focus', 1200);
+    useOrbStore.getState().setSpeculativeState('focus', 1200);
 }
 
 /**
@@ -28,9 +26,7 @@ export function setFocus() {
  * P1-B: Uses speculative state for instant 0ms reaction
  */
 export function setThinking() {
-    const store = useMoraStore.getState();
-    if (store.coreError) return; // Only error blocks thinking
-    store.setSpeculativeState('thinking', 3000);
+    useOrbStore.getState().setSpeculativeState('thinking', 3000);
 }
 
 /**
@@ -39,7 +35,7 @@ export function setThinking() {
  */
 export function setAlert() {
     // Alerts are critical, so we use a long TTL or manual clear logic
-    useMoraStore.getState().setSpeculativeState('alert', 10000);
+    useOrbStore.getState().setSpeculativeState('alert', 10000);
 }
 
 /**
@@ -47,27 +43,21 @@ export function setAlert() {
  * P1-B: Uses speculative state for instant 0ms reaction
  */
 export function setInsight() {
-    const store = useMoraStore.getState();
-    if (store.coreError) return;
-    store.setSpeculativeState('insight', 4000);
+    useOrbStore.getState().setSpeculativeState('insight', 4000);
 }
 
 /**
  * Set Orb to curious state — Mora has noticed something interesting
  */
 export function setCurious() {
-    const store = useMoraStore.getState();
-    if (store.coreError) return;
-    store.setSpeculativeState('curious', 3000);
+    useOrbStore.getState().setSpeculativeState('curious', 3000);
 }
 
 /**
  * Set Orb to learning state — Mora is processing/absorbing new context
  */
 export function setLearning() {
-    const store = useMoraStore.getState();
-    if (store.coreError) return;
-    store.setSpeculativeState('learning', 3500);
+    useOrbStore.getState().setSpeculativeState('learning', 3500);
 }
 
 // UPGRADE A1: Notification system for micro-sparks
@@ -125,11 +115,9 @@ export function getNotifications(): OrbNotification[] {
  * Only if no error is present
  */
 export function setIdle() {
-    const store = useMoraStore.getState();
-    if (!store.coreError) {
-        store.clearSpeculativeState();
-        store.setOrbState('idle');
-    }
+    const store = useOrbStore.getState();
+    store.clearSpeculativeState();
+    store.setOrbState('idle');
 }
 
 /**
@@ -137,13 +125,7 @@ export function setIdle() {
  * Call this when coreError changes
  */
 export function updateOrbFromSystemState() {
-    const store = useMoraStore.getState();
-
-    if (store.coreError) {
-        setAlert(); // Changed from setWarning
-    } else {
-        setIdle();
-    }
+    setIdle();
 }
 
 /**

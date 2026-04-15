@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Sparkles, Command, X, ArrowRight, Zap, FileText, Folder, Globe, Map } from 'lucide-react';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { CoreNode, CoreSpace, CoreFolder, CoreDepartment } from '@/lib/types/core';
 
@@ -27,12 +27,10 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
     const [isLoading, setIsLoading] = useState(false);
 
     // Store Data
-    const {
-        activeCompanyId,
-        navigateToDepartment,
-        navigateToSpace,
-        navigateToFolder
-    } = useMoraStore();
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
+    const navigateToSpace = useNavStore((s) => s.navigateToSpace);
+    const navigateToFolder = useNavStore((s) => s.navigateToFolder);
 
     const { openPane } = usePaneStore();
 

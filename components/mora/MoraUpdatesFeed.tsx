@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
 import { realtime } from "@/lib/api/realtimeClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
 import { Activity, RefreshCw, Check, Info, ChevronRight, Clock } from "lucide-react";
@@ -108,14 +108,12 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
     showHilToggle = true,
     className,
 }) => {
-    const {
-        activeCompanyId,
-        activeDepartmentId,
-        navigateToCore,
-        navigateToDepartment,
-        navigateToSpace,
-        navigateToFolder,
-    } = useMoraStore();
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const navigateToCore = useNavStore((s) => s.navigateToCore);
+    const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
+    const navigateToSpace = useNavStore((s) => s.navigateToSpace);
+    const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const { openPane } = usePaneStore();
     const { hilEnabled, setHilEnabled } = useHilToggle();
 

@@ -28,6 +28,10 @@ jest.mock('@/lib/store/moraState', () => ({
     useMoraStore: (selector?: any) => selector ? selector(storeState) : storeState,
 }));
 
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (selector?: any) => selector ? selector(storeState) : storeState,
+}));
+
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {

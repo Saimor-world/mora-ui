@@ -3,6 +3,10 @@
 
 import { useMemo } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useChatStore } from '@/lib/store/chatStore';
 import { useMemoryPendingCount } from '@/lib/hooks/useMemoryPendingCount';
 import { useMemoryOverview } from '@/lib/hooks/useMemoryOverview';
 import type { OrbState } from '@/lib/api/awarenessClient';
@@ -72,27 +76,27 @@ function deriveScopeLevel(
  * the departments / spacesByDepartment / foldersBySpace collections.
  */
 export function useMoraContext(): MoraContextSnapshot {
-    const orbState = useMoraStore((s) => s.orbState);
+    const orbState = useOrbStore((s) => s.orbState);
     const coreError = useMoraStore((s) => s.coreError);
-    const lastChatScope = useMoraStore((s) => s.lastChatScope);
+    const lastChatScope = useChatStore((s) => s.lastChatScope);
     const companies = useMoraStore((s) => s.companies);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     // Store uses ID-only fields — not full entity objects.
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeSpaceId = useMoraStore((s) => s.activeSpaceId);
-    const activeFolderId = useMoraStore((s) => s.activeFolderId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
     // Entity collections for name resolution.
     const departments = useMoraStore((s) => s.departments);
     const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
     const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
 
-    // Answer provenance — wired from store (MR18/MR19 backend now live)
-    const storeAnswerSource = useMoraStore((s) => s.lastAnswerSource);
-    const storeAnswerSourceMode = useMoraStore((s) => s.lastAnswerSourceMode);
-    const storeAnswerScopeLabel = useMoraStore((s) => s.lastAnswerScopeLabel);
+    // Answer provenance — wired from orbStore (MR18/MR19 backend now live)
+    const storeAnswerSource = useOrbStore((s) => s.lastAnswerSource);
+    const storeAnswerSourceMode = useOrbStore((s) => s.lastAnswerSourceMode);
+    const storeAnswerScopeLabel = useOrbStore((s) => s.lastAnswerScopeLabel);
 
     // Session user — for isOperational derivation and pre-chat company label
-    const user = useMoraStore((s) => s.user);
+    const user = useSessionStore((s) => s.user);
 
     const memoryPendingCount = useMemoryPendingCount();
     const memoryOverview = useMemoryOverview();
@@ -196,5 +200,5 @@ export function useMoraContext(): MoraContextSnapshot {
         storeAnswerSource, storeAnswerSourceMode, storeAnswerScopeLabel,
         memoryOverview,
         user,
-    ]);
+    ]); // deps intentionally include both moraStore and focused stores during migration
 }

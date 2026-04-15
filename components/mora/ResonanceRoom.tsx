@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useOrbStore } from "@/lib/store/orbStore";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useUser } from "@/lib/hooks/useUser";
 import { coreGet, learnInsight } from "@/lib/api/coreClient";
@@ -79,13 +81,13 @@ export const ResonanceRoom: React.FC<Props> = ({
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const { role } = useUser();
-    const orbState = useMoraStore((s) => s.orbState);
-    const viewMode = useMoraStore((s) => s.viewMode);
+    const orbState = useOrbStore((s) => s.orbState);
+    const viewMode = useNavStore((s) => s.viewMode);
     const coreError = useMoraStore((s) => s.coreError);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeSpaceId = useMoraStore((s) => s.activeSpaceId);
-    const activeFolderId = useMoraStore((s) => s.activeFolderId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
 
 
 
@@ -253,7 +255,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                     // Navigation state changes happen per tool, but presence is
                     // dispatched ONCE per response. point_at beats navigate.
 // ---
-                    const store = useMoraStore.getState();
+                    const navStore = useNavStore.getState();
                     let presenceNavigate: Parameters<typeof dispatchMoraPresence>[0] | null = null;
                     let presencePoint: Parameters<typeof dispatchMoraPresence>[0] | null = null;
 
@@ -267,13 +269,13 @@ export const ResonanceRoom: React.FC<Props> = ({
 
                             switch (target_type) {
                                 case 'department':
-                                    store.navigateToDepartment(target_id);
+                                    navStore.navigateToDepartment(target_id);
                                     break;
                                 case 'space':
-                                    store.navigateToSpace(target_id);
+                                    navStore.navigateToSpace(target_id);
                                     break;
                                 case 'folder':
-                                    store.navigateToFolder(target_id);
+                                    navStore.navigateToFolder(target_id);
                                     break;
                                 case 'node':
                                     usePaneStore.getState().openPane({

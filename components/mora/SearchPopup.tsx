@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { searchGlobal, corePost } from '@/lib/api/coreClient';
@@ -67,7 +69,12 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     onQueryChange,
     onMoraChat
 }) => {
-    const { departments, navigateToDepartment, navigateToSpace, setOrbState, isStandardMode, activeCompanyId } = useMoraStore();
+    const departments = useMoraStore((s) => s.departments);
+    const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
+    const navigateToSpace = useNavStore((s) => s.navigateToSpace);
+    const setOrbState = useOrbStore((s) => s.setOrbState);
+    const isStandardMode = useNavStore((s) => s.isStandardMode);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { openPane } = usePaneStore();
 
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);

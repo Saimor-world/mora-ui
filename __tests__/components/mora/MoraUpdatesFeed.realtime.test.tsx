@@ -15,7 +15,7 @@ jest.mock('@/lib/api/realtimeClient', () => ({
   },
 }));
 
-const storeState = {
+const NAV_STORE_STATE = {
   activeCompanyId: 'co-1',
   activeDepartmentId: 'dep-1',
   navigateToCore: jest.fn(),
@@ -24,8 +24,8 @@ const storeState = {
   navigateToFolder: jest.fn(),
 };
 
-jest.mock('@/lib/store/moraState', () => ({
-  useMoraStore: (selector?: (s: any) => any) => selector ? selector(storeState) : storeState,
+jest.mock('@/lib/store/navStore', () => ({
+  useNavStore: (selector?: (s: any) => any) => selector ? selector(NAV_STORE_STATE) : NAV_STORE_STATE,
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({

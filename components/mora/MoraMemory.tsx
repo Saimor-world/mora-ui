@@ -19,7 +19,7 @@ import {
     searchMemory as searchMemoryApi,
     type MemoryOverviewLayer,
 } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useMemory } from "@/lib/hooks/useMemory";
 import { useMemorySurface } from "@/lib/hooks/useMemorySurface";
@@ -478,7 +478,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     showStats = true,
     companyId = null,
 }) => {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { openPane } = usePaneStore();
     const surfaceProfile = useSurfaceProfile();
     const resolvedCompanyId = companyId ?? activeCompanyId ?? null;

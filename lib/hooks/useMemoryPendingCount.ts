@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getMemoryPending } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
 
 export function useMemoryPendingCount(manualCompanyId?: string | null) {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const scopedCompanyId =
         manualCompanyId !== undefined
             ? manualCompanyId

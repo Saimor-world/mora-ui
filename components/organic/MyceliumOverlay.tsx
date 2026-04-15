@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 
 /**
  * MYCELIUM NEURAL OVERLAY (V9 Cinematic Reference)
@@ -30,7 +32,10 @@ interface Particle {
 
 export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { departments, activeSpaceId, activeFolderId, orbState } = useMoraStore();
+    const departments = useMoraStore((s) => s.departments);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
+    const orbState = useOrbStore((s) => s.orbState);
 
     const [shimmerIntensity, setShimmerIntensity] = useState(0);
     const departmentCount = Array.isArray(departments) ? departments.length : 0;

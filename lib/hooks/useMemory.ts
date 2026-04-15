@@ -9,7 +9,7 @@ import {
     rejectMemoryItem,
     type MemoryDebugScope,
 } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { toast } from 'sonner';
 
 interface ReviewItem {
@@ -30,7 +30,7 @@ interface MemoryMetrics {
 }
 
 export function useMemory(manualCompanyId?: string | null) {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const [pendingItems, setPendingItems] = useState<ReviewItem[]>([]);
     const [metrics, setMetrics] = useState<MemoryMetrics | null>(null);
     const [debugScope, setDebugScope] = useState<MemoryDebugScope | null>(null);

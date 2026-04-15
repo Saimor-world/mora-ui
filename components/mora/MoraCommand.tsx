@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { Send, Sparkles } from 'lucide-react';
 import { askMora, AgentAction } from '@/lib/api/agencyClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from '@/lib/toast';
 
@@ -17,15 +18,15 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
     const [thinking, setThinking] = useState(false);
 
     // Context accessors
-    const viewLevel = useMoraStore(s => s.viewLevel);
-    const setOrbState = useMoraStore(s => s.setOrbState);
+    const viewLevel = useNavStore(s => s.viewLevel);
+    const setOrbState = useOrbStore(s => s.setOrbState);
 
     // Navigation actions
-    const navigateToDepartment = useMoraStore(s => s.navigateToDepartment);
-    const navigateToSpace = useMoraStore(s => s.navigateToSpace);
-    const navigateToFolder = useMoraStore(s => s.navigateToFolder);
-    const navigateToCore = useMoraStore(s => s.navigateToCore);
-    const setActiveCompany = useMoraStore(s => s.setActiveCompany);
+    const navigateToDepartment = useNavStore(s => s.navigateToDepartment);
+    const navigateToSpace = useNavStore(s => s.navigateToSpace);
+    const navigateToFolder = useNavStore(s => s.navigateToFolder);
+    const navigateToCore = useNavStore(s => s.navigateToCore);
+    const setActiveCompany = useNavStore(s => s.setActiveCompany);
 
     // Pane actions for opening documents
     const openPane = usePaneStore(s => s.openPane);

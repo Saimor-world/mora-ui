@@ -11,12 +11,12 @@ import {
     Grid,
     Layout
 } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 
 export const PhysicsDock = () => {
     const mouseX = useMotionValue(Infinity);
     const { openPane } = usePaneStore();
-    const { viewMode } = useMoraStore();
+    const viewMode = useNavStore((s) => s.viewMode);
 
     return (
         <motion.div

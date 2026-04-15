@@ -3,7 +3,9 @@
 import { useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { getCoreBaseUrl } from "@/lib/api/coreClient";
-import { useMoraStore, type LastChatScopeState, type ScopeContract, type UiScopeHints } from "@/lib/store/moraState";
+import type { LastChatScopeState, ScopeContract, UiScopeHints } from "@/lib/store/moraState";
+import { useOrbStore } from "@/lib/store/orbStore";
+import { useChatStore } from "@/lib/store/chatStore";
 import type { OrbState } from "@/lib/api/awarenessClient";
 
 export interface ChatMessage {
@@ -251,13 +253,13 @@ export function useMoraStream(): UseMoraStreamReturn {
                             }
 
                             if (json.orbState) {
-                                useMoraStore.getState().setOrbState(json.orbState);
+                                useOrbStore.getState().setOrbState(json.orbState);
                                 continue;
                             }
 
                             const scopeUpdate = extractScopeUpdate(json);
                             if (scopeUpdate) {
-                                useMoraStore.getState().setLastChatScope(scopeUpdate);
+                                useChatStore.getState().setLastChatScope(scopeUpdate);
                                 setLastResolvedScope(
                                     Object.keys(scopeUpdate.resolved_scope).length > 0
                                         ? (scopeUpdate.resolved_scope as ResolvedScope)
@@ -275,7 +277,7 @@ export function useMoraStream(): UseMoraStreamReturn {
                                 const validSource = VALID_SOURCES.has(rawSource ?? '')
                                     ? (rawSource as 'memory' | 'context' | 'inference')
                                     : null;
-                                useMoraStore.getState().setAnswerProvenance(
+                                useOrbStore.getState().setAnswerProvenance(
                                     validSource,
                                     rawMode,
                                     rawLabel ?? null,

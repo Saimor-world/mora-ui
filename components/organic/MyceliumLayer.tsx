@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { MyceliumField3D } from './MyceliumField3D';
 import { mapNodesToMycelium, type MyceliumNode } from '@/lib/utils/myceliumDataMapper';
 import { getRelationsForSpace } from '@/lib/api/relationsClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import type { CoreNode } from '@/lib/types/core';
 
@@ -27,7 +27,7 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
     variant = 'space',
     onNodeClick
 }) => {
-    const activeSpaceId = useMoraStore(s => s.activeSpaceId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
     const activeNodeId = usePaneStore(s => {
         if (!s.activePaneId) return null;
         const pane = s.panes.find(p => p.id === s.activePaneId);

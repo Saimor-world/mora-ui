@@ -22,6 +22,9 @@ import {
     Brain,
 } from "lucide-react";
 import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useSessionStore } from "@/lib/store/sessionStore";
+import { useCompanies } from "@/lib/queries/useCompanies";
 import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
@@ -66,21 +69,20 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     const listRef = useRef<HTMLDivElement>(null);
 
     // Store access
-    const {
-        departments,
-        companies,
-        spacesByDepartment,
-        activeCompanyId,
-        activeDepartmentId,
-        activeSpaceId,
-        activeFolderId,
-        viewLevel,
-        navigateToCore,
-        setActiveCompany,
-        setViewMode,
-        navigateToDepartment,
-        navigateToSpace
-    } = useMoraStore();
+    const departments = useMoraStore((s) => s.departments);
+    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
+    const { data: companiesData = [] } = useCompanies();
+    const companies = companiesData;
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
+    const viewLevel = useNavStore((s) => s.viewLevel);
+    const navigateToCore = useNavStore((s) => s.navigateToCore);
+    const setActiveCompany = useNavStore((s) => s.setActiveCompany);
+    const setViewMode = useNavStore((s) => s.setViewMode);
+    const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
+    const navigateToSpace = useNavStore((s) => s.navigateToSpace);
 
     const { openPane, panes, minimizePane } = usePaneStore();
 

@@ -20,6 +20,8 @@ import {
     ChevronUp,
 } from "lucide-react";
 import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useOrbStore } from "@/lib/store/orbStore";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
 import MoraUpdatesFeed from "./MoraUpdatesFeed";
@@ -163,14 +165,14 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     compact = false,
     className,
 }) => {
-    const orbState = useMoraStore((s) => s.orbState);
-    const viewMode = useMoraStore((s) => s.viewMode);
-    const viewLevel = useMoraStore((s) => s.viewLevel);
+    const orbState = useOrbStore((s) => s.orbState);
+    const viewMode = useNavStore((s) => s.viewMode);
+    const viewLevel = useNavStore((s) => s.viewLevel);
     // cursorAgent — 1.0 gated (CursorAgent component is future-tier; local stub for UI)
     const cursorAgent = useMemo(() => ({ active: false, action: 'idle' as const }), []);
     const departments = useMoraStore((s) => s.departments);
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { hilEnabled, setHilEnabled } = useHilToggle();
     const { openPane, getPane, minimizePane } = usePaneStore();
     const [showMemory, setShowMemory] = useState(false);
