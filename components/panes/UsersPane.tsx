@@ -131,7 +131,7 @@ export const UsersPane: React.FC<{ id?: string }> = ({ id = 'users-main' }) => {
         };
 
         loadMembers();
-    }, [isAdmin]);
+    }, [isAdmin, activeCompanyId]);
 
     const combinedMembers = [...members, ...invites];
 

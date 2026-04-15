@@ -59,22 +59,9 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { useTree } from '@/lib/queries/useTree';
+import { mergeUnique } from '@/lib/utils/collections';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-// Helper: Merge lists and deduplicate by ID
-const mergeUnique = <T extends { id: string }>(...lists: (T[] | undefined | null)[]): T[] => {
-    const map = new Map<string, T>();
-    lists.forEach(list => {
-        if (list) {
-            list.forEach(item => {
-                if (item?.id) map.set(item.id, item);
-            });
-        }
-    });
-    return Array.from(map.values());
-};
-
 
 interface IntakeContext {
     suggested_category?: string;
@@ -256,20 +243,22 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
         const newName = prompt("Umbenennen:", contextMenu.item.name || contextMenu.item.title);
         if (!newName) return;
+        // Use ref so this always reads the current company ID regardless of when it runs.
+        const companyId = resolvedCompanyIdRef.current ?? '';
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space' || contextMenu.item.type === 'department') {
                 if (contextMenu.item.type === 'space') {
                     await orgUpdateSpace(contextMenu.item.id, { name: newName });
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
                 } else if (contextMenu.item.type === 'folder') {
                     await orgUpdateFolder(contextMenu.item.id, { name: newName });
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
                 } else toast.error("Bereiche koennen hier nicht umbenannt werden");
             } else {
                 await orgUpdateNode(contextMenu.item.id, { title: newName });
-                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             }
-            loadContent();
+            void loadContent();
             toast.success('Umbenannt');
         } catch (e: any) { toast.error(e.message || 'Umbenennen fehlgeschlagen'); }
         setContextMenu(null);
@@ -282,20 +271,21 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setContextMenu(null);
             return;
         }
+        const companyId = resolvedCompanyIdRef.current ?? '';
         try {
             if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
                 if (contextMenu.item.type === 'space') {
                     await orgDeleteSpace(contextMenu.item.id);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
                 } else {
                     await orgDeleteFolder(contextMenu.item.id);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
                 }
             } else {
                 await orgDeleteNode(contextMenu.item.id);
-                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             }
-            loadContent();
+            void loadContent();
             toast.success('Geloescht');
         } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
         setContextMenu(null);
@@ -752,8 +742,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, [resolvedCompanyId, safeCompanies]);
 
     const previousResolvedCompanyIdRef = useRef<string | null>(resolvedCompanyId);
+    // Kept in sync so handlers defined before this useMemo always read the current value.
+    const resolvedCompanyIdRef = useRef<string | null>(resolvedCompanyId);
 
     useEffect(() => {
+        resolvedCompanyIdRef.current = resolvedCompanyId;
         contextCacheRef.current.clear();
     }, [resolvedCompanyId]);
 
@@ -1313,7 +1306,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, [initialQuery]);
 
     // Realtime node updates handler
-    useEffect(() => { currentFolderIdRef.current = currentFolderId; }, [currentFolderId]);
     const realtimeBatchRef = useRef<any[]>([]);
     const realtimeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
