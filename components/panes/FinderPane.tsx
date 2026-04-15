@@ -234,62 +234,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setContextMenu({ x: e.clientX, y: e.clientY, item, type });
     }, []);
 
-    const handleRename = async () => {
-        if (!contextMenu?.item) return;
-        if (contextMenu.item.type === 'file') {
-            toast.info('Dateien koennen hier noch nicht umbenannt werden');
-            setContextMenu(null);
-            return;
-        }
-        const newName = prompt("Umbenennen:", contextMenu.item.name || contextMenu.item.title);
-        if (!newName) return;
-        // Use ref so this always reads the current company ID regardless of when it runs.
-        const companyId = resolvedCompanyIdRef.current ?? '';
-        try {
-            if (contextMenu.type === 'folder' || contextMenu.item.type === 'space' || contextMenu.item.type === 'department') {
-                if (contextMenu.item.type === 'space') {
-                    await orgUpdateSpace(contextMenu.item.id, { name: newName });
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                } else if (contextMenu.item.type === 'folder') {
-                    await orgUpdateFolder(contextMenu.item.id, { name: newName });
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                } else toast.error("Bereiche koennen hier nicht umbenannt werden");
-            } else {
-                await orgUpdateNode(contextMenu.item.id, { title: newName });
-                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-            }
-            void loadContent();
-            toast.success('Umbenannt');
-        } catch (e: any) { toast.error(e.message || 'Umbenennen fehlgeschlagen'); }
-        setContextMenu(null);
-    };
-
-    const handleDelete = async () => {
-        if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
-        if (contextMenu.item.type === 'file') {
-            toast.info('Dateien koennen hier noch nicht geloescht werden');
-            setContextMenu(null);
-            return;
-        }
-        const companyId = resolvedCompanyIdRef.current ?? '';
-        try {
-            if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
-                if (contextMenu.item.type === 'space') {
-                    await orgDeleteSpace(contextMenu.item.id);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                } else {
-                    await orgDeleteFolder(contextMenu.item.id);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                }
-            } else {
-                await orgDeleteNode(contextMenu.item.id);
-                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-            }
-            void loadContent();
-            toast.success('Geloescht');
-        } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
-        setContextMenu(null);
-    };
 
     const canOpenSourceFile = useCallback((item: any) => item?.type !== 'file' && Boolean(getNodeSourceFileId(item)), []);
 
@@ -349,59 +293,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [activeCompanyId, navigationContext, openPane, paneCompanyId]);
 
-    const handleCopy = () => {
-        if (!contextMenu?.item) return;
-        setClipboard({ id: contextMenu.item.id, item: contextMenu.item, mode: 'copy' });
-        toast.success('In Zwischenablage kopiert');
-        setContextMenu(null);
-    };
-
-    const handleCut = () => {
-        if (!contextMenu?.item) return;
-        setClipboard({ id: contextMenu.item.id, item: contextMenu.item, mode: 'cut' });
-        toast.success('Zum Verschieben markiert');
-        setContextMenu(null);
-    };
-
-    const handlePaste = async () => {
-        if (!clipboard) return;
-        try {
-            const targetFolderId = currentFolderId; // Null for root/company
-            if (clipboard.mode === 'cut') {
-                // Move
-                if (clipboard.item.type === 'folder' || clipboard.item.type === 'space') {
-                    // Folder move not fully supported in pure API yet without parent update
-                    toast.info("Ordner koennen hier noch nicht verschoben werden");
-                } else {
-                    await orgUpdateNode(clipboard.id, { folder_id: targetFolderId || undefined });
-                    toast.success('Element verschoben');
-                }
-            } else {
-                // Copy (Duplicate) - Requires creating new node
-                if (['folder', 'space', 'department'].includes(clipboard.item.type)) {
-                    toast.info("Ordner koennen hier noch nicht dupliziert werden");
-                } else {
-                    if (!resolvedCompanyId) {
-                        toast.error('Bitte zuerst eine Organisation waehlen.');
-                        return;
-                    }
-                    await orgCreateNode({
-                        company_id: resolvedCompanyId,
-                        folder_id: targetFolderId || undefined,
-                        title: `${clipboard.item.name || clipboard.item.title} (Kopie)`,
-                        type: clipboard.item.type,
-                        content: clipboard.item.content || '',
-                        metadata: clipboard.item.metadata || {}
-                    } as any);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
-                    toast.success('Inhalt dupliziert');
-                }
-            }
-            void loadContent();
-            setClipboard(null);
-        } catch (e: any) { toast.error(e.message || 'Einfuegen fehlgeschlagen'); }
-        setContextMenu(null);
-    };
 
     const handleOpen = () => {
         if (!contextMenu?.item) return;
@@ -584,15 +475,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            const selectedFiles = Array.from(e.target.files);
-            // Reset input so same file can be re-selected
-            e.target.value = '';
-            await handleUpload(selectedFiles);
-        }
-    };
-
     // Navigation
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [backStack, setBackStack] = useState<Array<string | null>>([]);
@@ -742,11 +624,8 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     }, [resolvedCompanyId, safeCompanies]);
 
     const previousResolvedCompanyIdRef = useRef<string | null>(resolvedCompanyId);
-    // Kept in sync so handlers defined before this useMemo always read the current value.
-    const resolvedCompanyIdRef = useRef<string | null>(resolvedCompanyId);
 
     useEffect(() => {
-        resolvedCompanyIdRef.current = resolvedCompanyId;
         contextCacheRef.current.clear();
     }, [resolvedCompanyId]);
 
@@ -1234,6 +1113,116 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [queryClient, resolvedCompanyId]);
 
+    const handleRename = useCallback(async () => {
+        if (!contextMenu?.item) return;
+        if (contextMenu.item.type === 'file') {
+            toast.info('Dateien koennen hier noch nicht umbenannt werden');
+            setContextMenu(null);
+            return;
+        }
+        const newName = prompt("Umbenennen:", contextMenu.item.name || contextMenu.item.title);
+        if (!newName) return;
+        const companyId = resolvedCompanyId ?? '';
+        try {
+            if (contextMenu.type === 'folder' || contextMenu.item.type === 'space' || contextMenu.item.type === 'department') {
+                if (contextMenu.item.type === 'space') {
+                    await orgUpdateSpace(contextMenu.item.id, { name: newName });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+                } else if (contextMenu.item.type === 'folder') {
+                    await orgUpdateFolder(contextMenu.item.id, { name: newName });
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+                } else toast.error("Bereiche koennen hier nicht umbenannt werden");
+            } else {
+                await orgUpdateNode(contextMenu.item.id, { title: newName });
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+            }
+            void loadContent();
+            toast.success('Umbenannt');
+        } catch (e: any) { toast.error(e.message || 'Umbenennen fehlgeschlagen'); }
+        setContextMenu(null);
+    }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgUpdateSpace, orgUpdateFolder, orgUpdateNode]);
+
+    const handleDelete = useCallback(async () => {
+        if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
+        if (contextMenu.item.type === 'file') {
+            toast.info('Dateien koennen hier noch nicht geloescht werden');
+            setContextMenu(null);
+            return;
+        }
+        const companyId = resolvedCompanyId ?? '';
+        try {
+            if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
+                if (contextMenu.item.type === 'space') {
+                    await orgDeleteSpace(contextMenu.item.id);
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+                } else {
+                    await orgDeleteFolder(contextMenu.item.id);
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+                }
+            } else {
+                await orgDeleteNode(contextMenu.item.id);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+            }
+            void loadContent();
+            toast.success('Geloescht');
+        } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
+        setContextMenu(null);
+    }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgDeleteSpace, orgDeleteFolder, orgDeleteNode]);
+
+    const handleCopy = useCallback(() => {
+        if (!contextMenu?.item) return;
+        setClipboard({ id: contextMenu.item.id, item: contextMenu.item, mode: 'copy' });
+        toast.success('In Zwischenablage kopiert');
+        setContextMenu(null);
+    }, [contextMenu]);
+
+    const handleCut = useCallback(() => {
+        if (!contextMenu?.item) return;
+        setClipboard({ id: contextMenu.item.id, item: contextMenu.item, mode: 'cut' });
+        toast.success('Zum Verschieben markiert');
+        setContextMenu(null);
+    }, [contextMenu]);
+
+    const handlePaste = useCallback(async () => {
+        if (!clipboard) return;
+        try {
+            const targetFolderId = currentFolderId; // Null for root/company
+            if (clipboard.mode === 'cut') {
+                // Move
+                if (clipboard.item.type === 'folder' || clipboard.item.type === 'space') {
+                    // Folder move not fully supported in pure API yet without parent update
+                    toast.info("Ordner koennen hier noch nicht verschoben werden");
+                } else {
+                    await orgUpdateNode(clipboard.id, { folder_id: targetFolderId || undefined });
+                    toast.success('Element verschoben');
+                }
+            } else {
+                // Copy (Duplicate) - Requires creating new node
+                if (['folder', 'space', 'department'].includes(clipboard.item.type)) {
+                    toast.info("Ordner koennen hier noch nicht dupliziert werden");
+                } else {
+                    if (!resolvedCompanyId) {
+                        toast.error('Bitte zuerst eine Organisation waehlen.');
+                        return;
+                    }
+                    await orgCreateNode({
+                        company_id: resolvedCompanyId,
+                        folder_id: targetFolderId || undefined,
+                        title: `${clipboard.item.name || clipboard.item.title} (Kopie)`,
+                        type: clipboard.item.type,
+                        content: clipboard.item.content || '',
+                        metadata: clipboard.item.metadata || {}
+                    } as any);
+                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+                    toast.success('Inhalt dupliziert');
+                }
+            }
+            void loadContent();
+            setClipboard(null);
+        } catch (e: any) { toast.error(e.message || 'Einfuegen fehlgeschlagen'); }
+        setContextMenu(null);
+    }, [clipboard, currentFolderId, resolvedCompanyId, queryClient, loadContent, orgUpdateNode]);
+
     const relocateFinderFile = useCallback(async (
         item: any,
         options: { folderId?: string; autoRoute?: boolean; successMessage: string }
@@ -1445,6 +1434,15 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             }
         }
     }, [findNodeInTree, loadContent, rawTree, resolveUploadFolderId, resolvedCompanyId]);
+
+    const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const selectedFiles = Array.from(e.target.files);
+            // Reset input so same file can be re-selected
+            e.target.value = '';
+            await handleUpload(selectedFiles);
+        }
+    }, [handleUpload]);
 
     // Integrated Drag & Drop Handlers
     const handleDragEnter = useCallback((e: React.DragEvent) => {
