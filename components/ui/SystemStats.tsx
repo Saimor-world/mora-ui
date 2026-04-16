@@ -3,7 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Cpu, Database, Zap } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useNodes } from '@/lib/queries/useNodes';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
@@ -16,18 +20,20 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
  * - Memory usage (simulated)
  */
 export const SystemStats: React.FC = () => {
-    const departments = useMoraStore((s) => s.departments);
-    const companies = useMoraStore((s) => s.companies);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const nodesByFolder = useMoraStore((s) => s.nodesByFolder);
-    const orbState = useMoraStore((s) => s.orbState);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
+    const orbState = useOrbStore((s) => s.orbState);
+    const { data: companies = [] } = useCompanies();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    // Use active folder's nodes for the count (best approximation without full cache scan)
+    const { data: nodes = [] } = useNodes(activeFolderId);
     const surfaceProfile = useSurfaceProfile();
 
     const [uptime, setUptime] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
 
-    // Count total nodes
-    const totalNodes = Object.values(nodesByFolder).flat().length;
+    // Count nodes in the active folder
+    const totalNodes = nodes.length;
     const activeCompany = companies.find((company) => company.id === activeCompanyId);
 
     // Simulated uptime counter

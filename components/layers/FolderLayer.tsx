@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { useFolders } from '@/lib/queries/useFolders';
+import { useNodes, useCreateNode } from '@/lib/queries/useNodes';
+import { useCreateFolder, useDeleteFolder } from '@/lib/queries/useFolders';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { Zap, Network, LayoutGrid, List, Plus, Search, X, FileText, Box, Link as LinkIcon, CheckSquare, Folder as FolderIcon, RotateCcw } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -54,16 +55,13 @@ const TYPE_COLORS: Record<string, string> = {
 export const FolderLayer: React.FC = () => {
     // ... (Keep existing hooks) ...
     const { activeSpaceId, activeFolderId, activeDepartmentId, activeCompanyId, navigateToSpace, viewLevel } = useNavStore();
-    const {
-        nodesByFolder,
-        isLoadingNodes,
-        loadNodesForFolder,
-        addNode,
-        addFolder,
-        deleteFolder,
-    } = useMoraStore();
     const { openPane } = usePaneStore();
     const queryClient = useQueryClient();
+
+    const { data: nodes = [], isLoading: isLoadingNodes } = useNodes(activeFolderId);
+    const createNodeMutation = useCreateNode(activeFolderId);
+    const createFolderMutation = useCreateFolder(activeSpaceId, activeCompanyId);
+    const deleteFolderMutation = useDeleteFolder(activeSpaceId, activeCompanyId);
 
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const { data: spaces = [] } = useSpaces(activeDepartmentId);
@@ -92,9 +90,8 @@ export const FolderLayer: React.FC = () => {
         if (!activeSpaceId) return toast.error("No space selected");
         const fallbackName = `Folder ${Math.floor(Date.now() / 1000)}`;
         try {
-            await addFolder({ space_id: activeSpaceId, name: fallbackName });
+            await createFolderMutation.mutateAsync({ space_id: activeSpaceId, name: fallbackName });
             toast.success(`Folder "${fallbackName}" created`);
-            void queryClient.invalidateQueries({ queryKey: ['folders', activeSpaceId] });
         } catch (e: any) {
             toast.error(e?.message || "Failed to create folder");
         }
@@ -103,11 +100,8 @@ export const FolderLayer: React.FC = () => {
     const handleDeleteFolder = async () => {
         if (!activeFolderId) return toast.error("No folder selected");
         try {
-            await deleteFolder(activeFolderId);
+            await deleteFolderMutation.mutateAsync(activeFolderId);
             toast.success("Folder deleted");
-            if (activeSpaceId) {
-                void queryClient.invalidateQueries({ queryKey: ['folders', activeSpaceId] });
-            }
         } catch (e: any) {
             toast.error(e?.message || "Failed to delete folder");
         }
@@ -122,10 +116,7 @@ export const FolderLayer: React.FC = () => {
     const currentDepartment = safeDepartments.find(d => d.id === activeDepartmentId);
     const currentSpace = spaces.find(s => s.id === activeSpaceId);
 
-    const nodes = useMemo(
-        () => (activeFolderId ? (nodesByFolder[activeFolderId] || []) : []),
-        [activeFolderId, nodesByFolder]
-    );
+    // nodes is provided by useNodes(activeFolderId) above
 
     // ... (Keep filter logic) ...
     const filteredNodes = useMemo(() => {
@@ -136,13 +127,6 @@ export const FolderLayer: React.FC = () => {
             (n as any).content?.toLowerCase().includes(query)
         );
     }, [nodes, searchQuery]);
-
-    // ... (Keep load logic) ...
-    useEffect(() => {
-        if (activeFolderId) {
-            loadNodesForFolder(activeFolderId);
-        }
-    }, [activeFolderId, loadNodesForFolder]);
 
     useEffect(() => {
         if (activeFolderId && viewMode === 'mycelium') {
@@ -234,7 +218,7 @@ export const FolderLayer: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            await addNode({
+            await createNodeMutation.mutateAsync({
                 folder_id: activeFolderId,
                 title: formData.name.trim(),
                 type: formData.type,
@@ -255,7 +239,7 @@ export const FolderLayer: React.FC = () => {
         setIsScanning(true);
         try {
             const result = await triggerFolderScan(activeFolderId);
-            await loadNodesForFolder(activeFolderId);
+            await queryClient.invalidateQueries({ queryKey: ['nodes', activeFolderId] });
             // CORRECT — report_node_id is the ID of the created report node in the knowledge graph
             const reportNode = nodes.find(n => (n as any).id === result.report_node_id);
             if (reportNode) handleNodeClick(reportNode);
@@ -408,7 +392,7 @@ export const FolderLayer: React.FC = () => {
                                             Delete Folder
                                         </button>
                                         <button
-                                            onClick={() => activeFolderId && loadNodesForFolder(activeFolderId)}
+                                            onClick={() => activeFolderId && queryClient.invalidateQueries({ queryKey: ['nodes', activeFolderId] })}
                                             className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                                             title="Refresh Folder"
                                         >

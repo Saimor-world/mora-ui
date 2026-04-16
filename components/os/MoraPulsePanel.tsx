@@ -6,7 +6,13 @@ import {
     PanelTopOpen,
     Sparkles,
 } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
+import { useFolders } from '@/lib/queries/useFolders';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import {
     RITUAL_SCENES,
@@ -46,17 +52,18 @@ const formatDateLabel = (value: Date) => new Intl.DateTimeFormat('de-DE', {
 }).format(value);
 
 export const MoraPulsePanel: React.FC = () => {
-    const user = useMoraStore((state) => state.user);
-    const companies = useMoraStore((state) => state.companies);
-    const activeCompanyId = useMoraStore((state) => state.activeCompanyId);
-    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
-    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
-    const activeFolderId = useMoraStore((state) => state.activeFolderId);
-    const departments = useMoraStore((state) => state.departments);
-    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
-    const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
-    const orbState = useMoraStore((state) => state.orbState);
-    const viewLevel = useMoraStore((state) => state.viewLevel);
+    const user = useSessionStore((state) => state.user);
+    const { data: companiesData = [] } = useCompanies();
+    const companies = companiesData;
+    const activeCompanyId = useNavStore((state) => state.activeCompanyId);
+    const activeDepartmentId = useNavStore((state) => state.activeDepartmentId);
+    const activeSpaceId = useNavStore((state) => state.activeSpaceId);
+    const activeFolderId = useNavStore((state) => state.activeFolderId);
+    const viewLevel = useNavStore((state) => state.viewLevel);
+    const orbState = useOrbStore((state) => state.orbState);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: activeSpaces = [] } = useSpaces(activeDepartmentId);
+    const { data: activeFolders = [] } = useFolders(activeSpaceId);
 
     const [now, setNow] = useState(() => new Date());
     const [isDeckOpen, setIsDeckOpen] = useState(false);
@@ -79,17 +86,9 @@ export const MoraPulsePanel: React.FC = () => {
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
         [safeDepartments, activeDepartmentId]
     );
-    const activeSpaces = useMemo(
-        () => activeDepartmentId ? (spacesByDepartment[activeDepartmentId] || []) : [],
-        [activeDepartmentId, spacesByDepartment]
-    );
     const activeSpace = useMemo(
         () => activeSpaces.find((space) => space.id === activeSpaceId) ?? null,
         [activeSpaces, activeSpaceId]
-    );
-    const activeFolders = useMemo(
-        () => activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [],
-        [activeSpaceId, foldersBySpace]
     );
     const activeFolder = useMemo(
         () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
@@ -111,6 +110,12 @@ export const MoraPulsePanel: React.FC = () => {
         return () => window.removeEventListener(SAIMOR_COMMAND_DECK_STATE_EVENT, handleDeckState as EventListener);
     }, []);
 
+    // Build a foldersBySpace record from the current space's folders for shellContext
+    const foldersBySpaceForContext = useMemo(() => {
+        if (!activeSpaceId || !activeFolders.length) return {};
+        return { [activeSpaceId]: activeFolders };
+    }, [activeSpaceId, activeFolders]);
+
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
         activeCompany,
@@ -119,7 +124,7 @@ export const MoraPulsePanel: React.FC = () => {
         activeFolders,
         activeSpace,
         activeSpaces,
-        foldersBySpace,
+        foldersBySpace: foldersBySpaceForContext,
         companyCount: safeCompanies.length,
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
@@ -131,7 +136,7 @@ export const MoraPulsePanel: React.FC = () => {
         activeFolders,
         activeSpace,
         activeSpaces,
-        foldersBySpace,
+        foldersBySpaceForContext,
         safeCompanies.length,
         safeDepartments.length,
         surfaceProfile.isPublicDemoSurface,

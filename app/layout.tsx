@@ -5,7 +5,6 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { useNavStore } from "@/lib/store/navStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
-import { useMoraStore } from "@/lib/store/moraState";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
 import { PaneManager } from "@/components/mora/PaneManager";
 import { Toaster } from "sonner";
@@ -34,7 +33,6 @@ export default function RootLayout({
 }>) {
   const activeSpaceId = useNavStore((state) => state.activeSpaceId);
   const activeFolderId = useNavStore((state) => state.activeFolderId);
-  const coreError = useMoraStore((state) => state.coreError);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -56,10 +54,10 @@ export default function RootLayout({
     }
   }, [activeSpaceId, activeFolderId]);
 
-  // Update orb when error state changes
+  // Update orb when layout mounts
   useEffect(() => {
     updateOrbFromSystemState();
-  }, [coreError]);
+  }, []);
 
   // Interface Scaling Logic
   const user = useSessionStore((state) => state.user);

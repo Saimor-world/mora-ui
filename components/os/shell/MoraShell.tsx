@@ -24,8 +24,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Store
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -269,8 +269,8 @@ export const MoraShell: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const storeOrbState = useOrbStore((s) => s.orbState);
-    // orbNotifications and companies remain on moraState during incremental migration
-    const { orbNotifications, companies } = useMoraStore();
+    const { data: companiesData = [] } = useCompanies();
+    const companies = companiesData;
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));

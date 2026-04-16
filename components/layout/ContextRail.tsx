@@ -2,8 +2,10 @@
 
 import React, { useState, useCallback } from 'react';
 import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2, Users, Sparkles } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
@@ -30,7 +32,8 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 export const ContextRail: React.FC = () => {
     const { navigateToCore, viewLevel, viewMode, setViewMode, isStandardMode } = useNavStore();
     const { resetStore } = useSessionStore();
-    const { loadTree } = useMoraStore();
+    const queryClient = useQueryClient();
+    const { data: companiesData = [] } = useCompanies();
     const { currentAccount, logout } = useAccountStore();
     const [showSettings, setShowSettings] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
@@ -69,8 +72,8 @@ export const ContextRail: React.FC = () => {
         navigateToCore();
 
         // RESET Active Company to User's Company (Fix for "No Data after Demo")
-        const { companies, setActiveCompany, loadDepartments, loadNodesForCompany } = useMoraStore.getState();
-        const safeCompanies = Array.isArray(companies) ? companies : [];
+        const setActiveCompany = useNavStore.getState().setActiveCompany;
+        const safeCompanies = Array.isArray(companiesData) ? companiesData : [];
 
         // P1 Fix: Safe access with explicit null check
         const userCompany = safeCompanies.find(c => c.tenant_id === tenantId) ?? safeCompanies[0] ?? null;
@@ -81,15 +84,13 @@ export const ContextRail: React.FC = () => {
                 localStorage.setItem('last_company_id', userCompany.id);
                 localStorage.setItem('last_workspace', userCompany.name);
             }
-            await loadDepartments(userCompany.id);
-            loadNodesForCompany(userCompany.id).catch(console.warn);
+            void queryClient.invalidateQueries({ queryKey: queryKeys.departments(userCompany.id) });
         } else {
             // Fallback if no user company found
             setActiveCompany(null);
-            await loadDepartments();
         }
 
-        loadTree();
+        void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) });
     };
 
     const navItems = [
@@ -99,8 +100,8 @@ export const ContextRail: React.FC = () => {
             label: 'Start',
             action: handleHomeClick
         },
-        { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
-        { id: 'activity', icon: Activity, label: 'Aktivitaet', action: () => { closeOverlays(); navigateToCore(); loadTree(); openChatDock(); } },
+        { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
+        { id: 'activity', icon: Activity, label: 'Aktivitaet', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
         { id: 'chat', icon: MessageSquare, label: "Mora", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
