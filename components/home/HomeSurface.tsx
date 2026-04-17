@@ -15,8 +15,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
-import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -118,8 +117,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const recentItems   = useActivityStore((s) => s.recentItems);
     const [privateArea, setPrivateArea] = useState<PrivateAreaSurface | null>(null);
     const [isUniversePortalHovered, setIsUniversePortalHovered] = useState(false);
-    const { overview: integrationsOverview, browserBridge } = useIntegrationsOverview();
-    const localTruthBridge = useLocalTruthBridge(integrationsOverview);
+    const {
+        overview: integrationsOverview,
+        browserBridge,
+        localTruthBridge,
+        summary: communicationSummary,
+    } = useCommunicationSurface();
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -211,9 +214,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
     const openLocalTruth = useCallback(() => {
         if (typeof window === 'undefined') return;
-        const url = localTruthBridge.selectedUiUrl
-            || integrationsOverview?.runtime?.surfaces?.local_truth
-            || 'http://127.0.0.1:3000/home';
+        const url = communicationSummary.localTruthUrl;
 
         if (localTruthBridge.state === 'ready' || localTruthBridge.state === 'core_only' || localTruthBridge.state === 'ui_only') {
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -224,9 +225,9 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
             type: 'browser',
             title: 'Browser',
             size: { width: 1160, height: 760 },
-            data: { initialUrl: integrationsOverview?.runtime?.surfaces?.connect_surface || 'about:saimor-connect' },
+            data: { initialUrl: communicationSummary.connectSurfaceUrl },
         });
-    }, [integrationsOverview, localTruthBridge.selectedUiUrl, localTruthBridge.state, revealPane]);
+    }, [communicationSummary.connectSurfaceUrl, communicationSummary.localTruthUrl, localTruthBridge.state, revealPane]);
 
     const openUniverse = useCallback(() => {
         setCoreMode('explore');
@@ -335,30 +336,10 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
         () => deptTiles.filter(({ active }) => active).length,
         [deptTiles]
     );
-    const browserStatusLabel = browserBridge.permission === 'granted'
-        ? 'Browser bereit'
-        : browserBridge.permission === 'denied'
-            ? 'Browser blockiert'
-            : browserBridge.permission === 'default'
-                ? 'Browser freigeben'
-                : 'Browser lokal';
-    const mailStatusLabel = integrationsOverview?.mail?.configured
-        ? (integrationsOverview.mail.email || 'Mail verbunden')
-        : integrationsOverview?.capabilities?.mail_local_mode
-            ? 'Lokaler Mail-Modus'
-            : 'Mail verbinden';
-    const calendarStatusLabel = integrationsOverview?.calendar?.configured
-        ? (integrationsOverview.calendar.email || 'Kalender verbunden')
-        : 'Kalender vorbereiten';
-    const localTruthStatusLabel = localTruthBridge.state === 'ready'
-        ? 'Local Truth bereit'
-        : localTruthBridge.state === 'core_only'
-            ? 'Core lokal bereit'
-            : localTruthBridge.state === 'ui_only'
-                ? 'UI lokal bereit'
-                : localTruthBridge.state === 'checking'
-                    ? 'Localhost pruefen'
-                    : 'Local Truth starten';
+    const browserStatusLabel = communicationSummary.browserStatusLabel;
+    const mailStatusLabel = communicationSummary.mailStatusLabel;
+    const calendarStatusLabel = communicationSummary.calendarStatusLabel;
+    const localTruthStatusLabel = communicationSummary.localTruthStatusLabel;
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchNodes,
+  fetchNodesByCompany,
   createNode,
   updateNode,
   deleteNode,
@@ -18,12 +19,24 @@ interface UseNodesOptions {
 }
 
 export function useNodes(folderId: string | null | undefined, options?: UseNodesOptions) {
+  const normalizedOptions = options ? { ...options } : undefined;
   return useQuery({
-    queryKey: queryKeys.nodes(folderId, options),
-    queryFn: () => fetchNodes(folderId!, options),
+    queryKey: queryKeys.nodes(folderId, normalizedOptions),
+    queryFn: () => fetchNodes(folderId!, normalizedOptions),
     staleTime: STALE_TIMES.nodes,
     refetchOnWindowFocus: true, // nodes only — returning to a folder shows fresh content
     enabled: !!folderId,
+  });
+}
+
+export function useCompanyNodes(companyId: string | null | undefined, options?: { limit?: number; offset?: number }) {
+  const normalizedOptions = options ? { ...options } : undefined;
+  return useQuery({
+    queryKey: queryKeys.companyNodes(companyId, normalizedOptions),
+    queryFn: () => fetchNodesByCompany(companyId!, normalizedOptions),
+    staleTime: STALE_TIMES.nodes,
+    refetchOnWindowFocus: true,
+    enabled: !!companyId,
   });
 }
 

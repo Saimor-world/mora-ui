@@ -3,7 +3,8 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
 
 /**
  * ShellBreadcrumb — deep-location anchor for folder work only.
@@ -16,17 +17,18 @@ export const ShellBreadcrumb: React.FC = () => {
     const viewLevel = useNavStore((state) => state.viewLevel);
     const activeDepartmentId = useNavStore((state) => state.activeDepartmentId);
     const activeSpaceId = useNavStore((state) => state.activeSpaceId);
+    const activeCompanyId = useNavStore((state) => state.activeCompanyId);
     const navigateToExplore = useNavStore((state) => state.navigateToExplore);
     const navigateToDepartment = useNavStore((state) => state.navigateToDepartment);
     const navigateToSpace = useNavStore((state) => state.navigateToSpace);
-    const departments = useMoraStore((state) => state.departments);
-    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: spaces = [] } = useSpaces(activeDepartmentId);
 
     if (viewLevel !== 'folder') return null;
 
-    const dept = departments?.find((department) => department.id === activeDepartmentId) ?? null;
+    const dept = departments.find((department) => department.id === activeDepartmentId) ?? null;
     const space = activeSpaceId && dept
-        ? (spacesByDepartment?.[dept.id] ?? []).find((entry) => entry.id === activeSpaceId) ?? null
+        ? spaces.find((entry) => entry.id === activeSpaceId) ?? null
         : null;
 
     return (

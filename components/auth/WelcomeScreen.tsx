@@ -334,6 +334,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const handleLogin = async (overrides?: { email?: string; password?: string }) => {
         const loginEmail = overrides?.email ?? email;
         const loginPassword = overrides?.password ?? password;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 
         if (!loginEmail || !loginPassword) {
             toast.error("Bitte E-Mail und Passwort eingeben");
@@ -364,14 +367,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
             }
 
-            const result = await signIn("credentials", {
-                redirect: false,
-                username: loginEmail,
-                password: loginPassword
-            });
+            if (!isLocalhost) {
+                const result = await signIn("credentials", {
+                    redirect: false,
+                    username: loginEmail,
+                    password: loginPassword
+                });
 
-            if (result?.error) {
-                console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                if (result?.error) {
+                    console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                }
             }
 
             if (response.ok && data?.success) {
@@ -397,6 +402,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     const handleRegister = async () => {
         const usingInvite = inviteCode.trim().length > 0;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
         // Comprehensive input validation
         if (!email || !email.trim()) {
             toast.error('E-Mail-Adresse ist erforderlich');
@@ -443,13 +451,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const data = await response.json();
             const role = data.role || selectedRole;
 
-            const syncResult = await signIn("credentials", {
-                redirect: false,
-                username: email,
-                password: password
-            });
-            if (syncResult?.error) {
-                console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+            if (!isLocalhost) {
+                const syncResult = await signIn("credentials", {
+                    redirect: false,
+                    username: email,
+                    password: password
+                });
+                if (syncResult?.error) {
+                    console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+                }
             }
 
             saveAuthState(role, email, data.tenant_id, null);

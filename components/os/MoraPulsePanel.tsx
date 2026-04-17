@@ -125,12 +125,20 @@ export const MoraPulsePanel: React.FC = () => {
         activeSpace,
         activeSpaces,
         foldersBySpace: foldersBySpaceForContext,
-        companyCount: safeCompanies.length,
+        companyCount:
+            surfaceProfile.isLocalTruthSurface ||
+            !!activeCompanyId ||
+            !!activeCompany ||
+            !!user?.active_company_name
+                ? 1
+                : safeCompanies.length,
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
+        isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         activeCompany,
+        activeCompanyId,
         activeDepartment,
         activeFolder,
         activeFolders,
@@ -140,6 +148,7 @@ export const MoraPulsePanel: React.FC = () => {
         safeCompanies.length,
         safeDepartments.length,
         surfaceProfile.isPublicDemoSurface,
+        surfaceProfile.isLocalTruthSurface,
         user?.active_company_name,
         viewLevel,
     ]);

@@ -1,11 +1,17 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Spotlight } from '@/components/mora/Spotlight';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
-// Stable mock state references (prevent infinite render loops)
-const STABLE_DEPARTMENTS: any[] = [];
-const STABLE_SPACES_BY_DEPT: Record<string, any[]> = {};
+jest.mock('@/lib/queries/useTree', () => {
+    const stableEmptyTree: never[] = [];
+    return {
+        useTree: jest.fn(() => ({ data: stableEmptyTree, isFetching: false })),
+    };
+});
 
 const mockNavigateToCore = jest.fn();
 const mockSetActiveCompany = jest.fn();
@@ -13,50 +19,28 @@ const mockSetViewMode = jest.fn();
 const mockNavigateToDepartment = jest.fn();
 const mockNavigateToSpace = jest.fn();
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: (s: any) => unknown) => {
-        const store = {
-            departments: STABLE_DEPARTMENTS,
-            spacesByDepartment: STABLE_SPACES_BY_DEPT,
-        };
-        return selector ? selector(store) : store;
-    },
-}));
-
-jest.mock('@/lib/store/navStore', () => ({
-    useNavStore: (selector?: (s: any) => unknown) => {
-        const store = {
-            activeCompanyId: 'co-1',
-            activeDepartmentId: null,
-            activeSpaceId: null,
-            activeFolderId: null,
-            viewLevel: 'core',
-            navigateToCore: mockNavigateToCore,
-            setActiveCompany: mockSetActiveCompany,
-            setViewMode: mockSetViewMode,
-            navigateToDepartment: mockNavigateToDepartment,
-            navigateToSpace: mockNavigateToSpace,
-        };
-        return selector ? selector(store) : store;
-    },
-}));
-
-jest.mock('@/lib/queries/useCompanies', () => ({
-    useCompanies: () => ({ data: [] }),
-}));
-
 const minimizePane = jest.fn();
 const openPane = jest.fn();
 
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: () => ({
-        openPane,
-        panes: [
-            { id: 'pane-1', minimized: false },
-            { id: 'pane-2', minimized: true },
-        ],
-        minimizePane,
-    }),
+    usePaneStore: (sel?: (s: any) => unknown) => {
+        const s = {
+            openPane,
+            panes: [
+                { id: 'pane-1', minimized: false },
+                { id: 'pane-2', minimized: true },
+            ],
+            minimizePane,
+            activePaneId: 'pane-test',
+            removePane: jest.fn(),
+            updatePanePosition: jest.fn(),
+            updatePaneSize: jest.fn(),
+            focusPane: jest.fn(),
+            getPane: () => STABLE_PANE,
+        };
+        return sel ? sel(s) : s;
+    },
 }));
 
 jest.mock('@/lib/api/moraAgentClient', () => ({
@@ -90,15 +74,33 @@ jest.mock('@/lib/utils/openMoraCenter', () => ({
     openMoraCenter: jest.fn(),
 }));
 
+beforeEach(resetAllStores);
+
 describe('Spotlight core navigation contract', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
     it('Home action resets to core home via navigateToCore', () => {
-        const onClose = jest.fn();
+        useNavStore.setState({
+            activeCompanyId: 'co-1',
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            activeFolderId: null,
+            viewLevel: 'core',
+            navigateToCore: mockNavigateToCore,
+            setActiveCompany: mockSetActiveCompany,
+            setViewMode: mockSetViewMode,
+            navigateToDepartment: mockNavigateToDepartment,
+            navigateToSpace: mockNavigateToSpace,
+        } as any);
 
-        render(<Spotlight isOpen={true} onClose={onClose} />);
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), []);
+        qc.setQueryData(queryKeys.departments('co-1'), []);
+
+        const onClose = jest.fn();
+        renderWithProviders(<Spotlight isOpen={true} onClose={onClose} />, { queryClient: qc });
 
         fireEvent.change(screen.getByPlaceholderText('Resonanz erzeugen...'), { target: { value: 'home' } });
         const homeButton = screen.getAllByRole('button').find((button) => button.textContent?.includes('Home'));

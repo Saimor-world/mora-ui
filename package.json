@@ -3,7 +3,7 @@
   "version": "1.5.0-beta",
   "private": true,
   "scripts": {
-    "predev": "npx kill-port 3000 3001 3003 --silent || true",
+    "predev": "node -e \"process.exit(0)\"",
     "dev": "next dev -p 3000",
     "dev:preview": "next dev -p 3003",
     "dev:core": "powershell -ExecutionPolicy Bypass -File ..\\\\scripts\\\\dev-start.ps1",

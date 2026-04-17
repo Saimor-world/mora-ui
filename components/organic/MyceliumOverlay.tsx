@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
 import { useOrbStore } from '@/lib/store/orbStore';
 
 /**
@@ -32,7 +32,8 @@ interface Particle {
 
 export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const departments = useMoraStore((s) => s.departments);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
     const activeFolderId = useNavStore((s) => s.activeFolderId);
     const orbState = useOrbStore((s) => s.orbState);

@@ -52,10 +52,14 @@ describe('Root page session entry', () => {
         mockStatus = 'unauthenticated';
         mockSleepParam = null;
         mockReadCookie.mockReturnValue(undefined);
+        localStorage.clear();
     });
 
     it('does not auto-redirect to /home when a session exists', async () => {
-        mockStatus = 'authenticated';
+        localStorage.setItem('last_user_email', 'anna@example.com');
+        mockReadCookie.mockImplementation((name: string) => (
+            name === 'mora_session' ? 'local-session' : undefined
+        ));
 
         render(<RootPage />);
 
@@ -66,8 +70,11 @@ describe('Root page session entry', () => {
     });
 
     it('shows the lock screen when sleep=true and a session exists', async () => {
-        mockStatus = 'authenticated';
         mockSleepParam = 'true';
+        localStorage.setItem('last_user_email', 'anna@example.com');
+        mockReadCookie.mockImplementation((name: string) => (
+            name === 'mora_session' ? 'local-session' : undefined
+        ));
 
         render(<RootPage />);
 

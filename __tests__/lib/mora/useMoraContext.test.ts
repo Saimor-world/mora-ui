@@ -5,7 +5,12 @@
 // Mock the stores that useMoraContext reads from
 
 // Stable references to avoid infinite render loops
-const BASE_ORB_STORE = {
+const BASE_ORB_STORE: {
+    orbState: 'idle';
+    lastAnswerSource: string | null;
+    lastAnswerSourceMode: string | null;
+    lastAnswerScopeLabel: string | null;
+} = {
     orbState: 'idle' as const,
     lastAnswerSource: null,
     lastAnswerSourceMode: null,
@@ -27,7 +32,13 @@ const BASE_SESSION_STORE = {
     user: null as null | Record<string, unknown>,
 };
 
-const BASE_MORA_STORE = {
+const BASE_MORA_STORE: {
+    coreError: string | null;
+    companies: any[];
+    departments: any[];
+    spacesByDepartment: Record<string, any[]>;
+    foldersBySpace: Record<string, any[]>;
+} = {
     coreError: null,
     companies: [] as any[],
     departments: [] as any[],
@@ -77,6 +88,24 @@ jest.mock('@/lib/store/moraState', () => ({
     },
 }));
 
+// Mutable data for TanStack Query hook mocks — controlled via mockStores()
+let mockCompaniesData: any[] = [];
+let mockDepartmentsData: any[] = [];
+let mockTreeData: any[] = [];
+
+// Mock TanStack Query hooks — not under test here
+jest.mock('@/lib/queries/useCompanies', () => ({
+    useCompanies: () => ({ data: mockCompaniesData, isFetching: false }),
+}));
+
+jest.mock('@/lib/queries/useDepartments', () => ({
+    useDepartments: () => ({ data: mockDepartmentsData, isFetching: false }),
+}));
+
+jest.mock('@/lib/queries/useTree', () => ({
+    useTree: () => ({ data: mockTreeData, isFetching: false }),
+}));
+
 // Mock sub-hooks that make API calls — not under test here
 jest.mock('@/lib/hooks/useMemoryPendingCount', () => ({
     useMemoryPendingCount: () => 0,
@@ -120,6 +149,8 @@ function mockStores(overrides: {
         companies: overrides.companies ?? [],
         coreError: overrides.coreError ?? null,
     };
+    // Sync TanStack Query mocks with store overrides
+    mockCompaniesData = overrides.companies ?? [];
 }
 
 beforeEach(() => {
@@ -128,6 +159,9 @@ beforeEach(() => {
     navOverrides = {};
     sessionOverrides = {};
     moraOverrides = {};
+    mockCompaniesData = [];
+    mockDepartmentsData = [];
+    mockTreeData = [];
 });
 
 describe('isOperational — backend truth', () => {

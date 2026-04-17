@@ -451,7 +451,7 @@ export const ScannerPane: React.FC<{ id: string }> = ({ id }) => {
             // Default to false — require review unless user has explicitly enabled auto-execution.
             const autoExecute = intakeSeed.source === 'mycelium'
                 ? false
-                : (user?.settings?.autoExecuteActions ?? false);
+                : Boolean((user?.settings as Record<string, unknown> | undefined)?.autoExecuteActions);
             const response: FileCreateNodeResponse = await requestCreateNodeFromFile(uploaded.id, {
                 autoExecute,
                 batchId: intakeSeed.batchId,

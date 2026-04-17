@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
 
 /**
  * V12: Mora Greeting
@@ -46,8 +47,8 @@ const getGreeting = (name?: string) => {
 
 export const MoraGreeting: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
-    const user = useMoraStore((s) => s.user);
-    const viewMode = useMoraStore((s) => s.viewMode);
+    const user = useSessionStore((s) => s.user);
+    const viewMode = useNavStore((s) => s.viewMode);
 
     useEffect(() => {
         // Check if we should show greeting

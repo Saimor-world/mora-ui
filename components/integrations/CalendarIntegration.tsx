@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Check, AlertCircle, RefreshCw, Link2 } from 'lucide-react';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
+import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 
 interface CalendarIntegrationStatus {
     configured: boolean;
@@ -36,9 +37,19 @@ export const CalendarIntegration: React.FC = () => {
     const handleConnect = async () => {
         setIsConnecting(true);
         try {
-            const res = await corePost('/v3/integrations/calendar/connect', {});
+            const res = await corePost('/v3/integrations/calendar/connect', {
+                return_to: getCalendarOAuthReturnTo(),
+            });
             if (res?.auth_url) {
-                window.open(res.auth_url, '_blank', 'noopener,noreferrer');
+                const result = await openCalendarOAuthPopup(res.auth_url);
+                if (result.ok) {
+                    toast.success('Kalender verbunden');
+                    await loadStatus();
+                } else if (result.reason === 'blocked') {
+                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                } else if (result.reason !== 'closed') {
+                    toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
+                }
             } else {
                 toast.error('Verbindungs-URL nicht verfügbar');
             }

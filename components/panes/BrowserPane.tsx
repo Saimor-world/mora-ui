@@ -3,8 +3,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
-import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { corePost } from '@/lib/api/coreClient';
+import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
+import { toast } from 'sonner';
 import {
     ArrowLeft,
     ArrowRight,
@@ -92,8 +94,13 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const { overview, browserBridge, loadOverview } = useIntegrationsOverview();
-    const localTruthBridge = useLocalTruthBridge(overview);
+    const {
+        overview,
+        browserBridge,
+        loadOverview,
+        localTruthBridge,
+        summary,
+    } = useCommunicationSurface();
 
     const initialUrl = useMemo(
         () => normalizeUrl(typeof pane?.data?.initialUrl === 'string' ? pane.data.initialUrl : START_URL),
@@ -104,6 +111,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     const [history, setHistory] = useState<string[]>([initialUrl]);
     const [historyIndex, setHistoryIndex] = useState(0);
     const [iframeKey, setIframeKey] = useState(0);
+    const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
     useEffect(() => {
         setAddress(initialUrl);
@@ -172,6 +180,44 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
         });
     }, [openPane]);
 
+    const openCalendarPane = useCallback(() => {
+        openPane({
+            id: 'calendar-main',
+            type: 'calendar',
+            title: 'Kalender',
+            size: { width: 980, height: 760 },
+        });
+    }, [openPane]);
+
+    const connectGoogleCalendar = useCallback(async () => {
+        setIsConnectingCalendar(true);
+        try {
+            const res = await corePost('/v3/integrations/calendar/connect', {
+                return_to: getCalendarOAuthReturnTo(),
+            });
+            const authUrl = res?.auth_url;
+            if (!authUrl) {
+                toast.error('Google-Kalender-Verbindung ist nicht sauber konfiguriert');
+                return;
+            }
+
+            const result = await openCalendarOAuthPopup(authUrl);
+            if (result.ok) {
+                toast.success('Kalender verbunden');
+                await loadOverview();
+                openCalendarPane();
+            } else if (result.reason === 'blocked') {
+                toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+            } else if (result.reason !== 'closed') {
+                toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
+            }
+        } catch (error: any) {
+            toast.error(error?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
+        } finally {
+            setIsConnectingCalendar(false);
+        }
+    }, [loadOverview, openCalendarPane]);
+
     const openExternal = useCallback(() => {
         if (typeof window === 'undefined' || isInternalStart) return;
         window.open(committedUrl, '_blank', 'noopener,noreferrer');
@@ -192,11 +238,9 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
 
     const openLocalTruth = useCallback(() => {
         if (typeof window === 'undefined') return;
-        const url = localTruthBridge.selectedUiUrl
-            || overview?.runtime?.surfaces?.local_truth
-            || 'http://127.0.0.1:3000/home';
+        const url = summary.localTruthUrl;
         window.open(url, '_blank', 'noopener,noreferrer');
-    }, [localTruthBridge.selectedUiUrl, overview]);
+    }, [summary.localTruthUrl]);
 
     if (!pane) return null;
 
@@ -305,7 +349,13 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => openProvider('https://calendar.google.com/')}
+                                        onClick={() => {
+                                            if (summary.calendarConfigured) {
+                                                openCalendarPane();
+                                                return;
+                                            }
+                                            void connectGoogleCalendar();
+                                        }}
                                         className="rounded-[22px] border border-orange-400/14 bg-orange-500/[0.08] px-4 py-4 text-left transition-all hover:border-orange-300/28 hover:bg-orange-500/[0.14]"
                                     >
                                         <div className="flex items-center gap-2 text-orange-100">
@@ -313,7 +363,11 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             <span className="text-sm font-medium">Kalender</span>
                                         </div>
                                         <div className="mt-2 text-xs text-white/56">
-                                            {overview?.calendar?.email || 'Kalender verbinden oder direkt oeffnen'}
+                                            {summary.calendarConfigured
+                                                ? (overview?.calendar?.email || 'Kalender im OS oeffnen')
+                                                : isConnectingCalendar
+                                                    ? 'Google-Kalender wird verbunden...'
+                                                    : 'Google-Kalender direkt mit SAIMOR verbinden'}
                                         </div>
                                     </button>
                                     <button
@@ -352,13 +406,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         <span className="text-sm font-medium">Browser-Status</span>
                                     </div>
                                     <div className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-xs text-white/70">
-                                        {browserBridge.permission === 'granted'
-                                            ? 'Benachrichtigungen freigegeben'
-                                            : browserBridge.permission === 'denied'
-                                                ? 'Benachrichtigungen blockiert'
-                                                : browserBridge.permission === 'default'
-                                                    ? 'Benachrichtigungen noch nicht freigegeben'
-                                                    : 'Browser-Freigaben hier nicht verfuegbar'}
+                                        {summary.browserPermissionSummary}
                                     </div>
                                 </div>
 
@@ -368,7 +416,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {overview?.mail?.configured ? (overview.mail.email || 'Verbunden') : 'Noch nicht verbunden'}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
-                                        {overview?.capabilities?.mail_local_mode
+                                        {summary.mailLocalMode
                                             ? 'Lokaler Mail-Modus aktiv. Die echte Verbindung wird im lokalen Wahrheitsmodus gepflegt.'
                                             : 'Mail kann hier fuer localhost vorbereitet und spaeter direkt im OS genutzt werden.'}
                                     </div>
@@ -387,15 +435,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     <div className="mt-3 rounded-2xl border border-white/8 bg-black/18 px-3.5 py-3">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="text-xs text-white/72">
-                                                {localTruthBridge.state === 'ready'
-                                                    ? 'Lokale UI und Core erreichbar'
-                                                    : localTruthBridge.state === 'core_only'
-                                                        ? 'Lokaler Core erreichbar'
-                                                        : localTruthBridge.state === 'ui_only'
-                                                            ? 'Lokale UI erreichbar'
-                                                            : localTruthBridge.state === 'checking'
-                                                                ? 'Lokale Verbindung wird geprueft'
-                                                                : 'Lokale Verbindung noch nicht bereit'}
+                                                {summary.localTruthStatusLabel}
                                             </div>
                                             <button
                                                 type="button"
@@ -406,7 +446,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             </button>
                                         </div>
                                         <div className="mt-2 text-[11px] leading-relaxed text-white/48">
-                                            {localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}
+                                            {summary.localTruthUrl}
                                         </div>
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <button
@@ -452,7 +492,13 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                 <div className="mt-6 flex flex-wrap gap-3">
                                     <button
                                         type="button"
-                                        onClick={openExternal}
+                                        onClick={() => {
+                                            if (connectSurface.kind === 'calendar') {
+                                                void connectGoogleCalendar();
+                                                return;
+                                            }
+                                            openExternal();
+                                        }}
                                         className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition-all ${
                                             connectSurface.tone === 'emerald'
                                                 ? 'border-emerald-400/18 bg-emerald-500/[0.12] text-emerald-100 hover:bg-emerald-500/[0.2]'
@@ -462,7 +508,11 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         }`}
                                     >
                                         <ExternalLink size={16} />
-                                        {connectSurface.actionLabel}
+                                        {connectSurface.kind === 'calendar' && isConnectingCalendar
+                                            ? 'Verbinde...'
+                                            : connectSurface.kind === 'calendar'
+                                                ? 'Kalender in SAIMOR verbinden'
+                                                : connectSurface.actionLabel}
                                     </button>
                                     <button
                                         type="button"
@@ -487,13 +537,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                 <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                                     <div className="text-[10px] uppercase tracking-[0.24em] text-white/35">Browser Bridge</div>
                                     <div className="mt-2 text-lg text-white">
-                                        {browserBridge.permission === 'granted'
-                                            ? 'Browser freigegeben'
-                                            : browserBridge.permission === 'denied'
-                                                ? 'Browser blockiert'
-                                                : browserBridge.permission === 'default'
-                                                    ? 'Freigabe ausstehend'
-                                                    : 'Nicht verfuegbar'}
+                                        {summary.browserPermissionSummary}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
                                         Die Browser Bridge meldet dir Benachrichtigungen, Mail- und Kalenderstatus direkt im OS zurueck.
@@ -506,7 +550,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {overview?.mail?.configured ? (overview.mail.email || 'Verbunden') : 'Noch nicht verbunden'}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
-                                        {overview?.capabilities?.mail_local_mode
+                                        {summary.mailLocalMode
                                             ? 'Mail lebt im lokalen Wahrheitsmodus und spiegelt nur als Demo auf HQ.'
                                             : 'Postfach kann jetzt vorbereitet und danach direkt im OS genutzt werden.'}
                                     </div>
@@ -523,15 +567,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     <div className="mt-3 rounded-2xl border border-white/8 bg-black/18 px-3.5 py-3">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="text-xs text-white/72">
-                                                {localTruthBridge.state === 'ready'
-                                                    ? 'Lokale UI und Core erreichbar'
-                                                    : localTruthBridge.state === 'core_only'
-                                                        ? 'Lokaler Core erreichbar'
-                                                        : localTruthBridge.state === 'ui_only'
-                                                            ? 'Lokale UI erreichbar'
-                                                            : localTruthBridge.state === 'checking'
-                                                                ? 'Lokale Verbindung wird geprueft'
-                                                                : 'Lokale Verbindung noch nicht bereit'}
+                                                {summary.localTruthStatusLabel}
                                             </div>
                                             <button
                                                 type="button"
@@ -542,7 +578,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             </button>
                                         </div>
                                         <div className="mt-2 text-[11px] leading-relaxed text-white/48">
-                                            {localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}
+                                            {summary.localTruthUrl}
                                         </div>
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <button

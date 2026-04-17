@@ -734,7 +734,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         // Navigation commands
         if (lower.includes('zeig') || lower.includes('zeige') || lower.includes('show') || lower.includes('geh zu') || lower.includes('go to')) {
             // Find department name
-            for (const dept of departments) {
+            for (const dept of safeDepartments) {
                 if (lower.includes(dept.name.toLowerCase())) {
                     return { type: 'navigate', target: dept.id };
                 }
@@ -752,7 +752,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         }
 
         return { type: 'chat' };
-    }, [departments]);
+    }, [safeDepartments]);
 
     // Execute navigation
     const executeNavigation = useCallback((deptId: string) => {

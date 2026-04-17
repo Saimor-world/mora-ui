@@ -7,7 +7,7 @@
  *
  * Surfaces: SearchPane, MoraUpdatesFeed
  *
- * Architecture note: useCompanies/useDepartments are kept mocked here
+ * Architecture note: useCompanies/useDepartments/useTree are kept mocked here
  * because SearchPane's empty-query branch calls setResults([]) which
  * creates a new array reference, causing an infinite loop when real
  * TanStack Query hooks add their initialization renders. The navStore
@@ -21,24 +21,8 @@ import '@testing-library/jest-dom';
 import { resetAllStores } from '../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 
-// ─── moraState: still needed — SearchPane reads spacesByDepartment etc. ───────
-
-const moraState = {
-    departments: [] as any[],
-    spacesByDepartment: {} as Record<string, any[]>,
-    nodesByCompany: {} as Record<string, any[]>,
-    setActiveDepartment: jest.fn(),
-    setActiveSpace: jest.fn(),
-    setViewLevel: jest.fn(),
-};
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) =>
-        selector ? selector(moraState) : moraState,
-}));
-
 // ─── Query hooks: stable references prevent infinite buildLocalResults cascade ─
-// useDepartments is in buildLocalResults' dep array. A new [] on every call
+// useDepartments/useTree are in buildLocalResults' dep chain. A new [] on every call
 // recreates the useCallback, triggering the search effect on every render.
 // Stable references inside the factory closure are the fix.
 
@@ -50,6 +34,11 @@ jest.mock('@/lib/queries/useCompanies', () => {
 jest.mock('@/lib/queries/useDepartments', () => {
     const stableDepts: never[] = [];
     return { useDepartments: () => ({ data: stableDepts, isFetching: false }) };
+});
+
+jest.mock('@/lib/queries/useTree', () => {
+    const stableTree: never[] = [];
+    return { useTree: () => ({ data: stableTree, isFetching: false }) };
 });
 
 // ─── paneStore — stable fake ──────────────────────────────────────────────────

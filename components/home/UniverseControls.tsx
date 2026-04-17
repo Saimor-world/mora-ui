@@ -37,7 +37,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     companyCountLabel,
 }) => {
     const user = useSessionStore((state) => state.user);
-    const { viewLevel, coreMode, setCoreMode, activeDepartmentId, activeSpaceId, activeFolderId } = useNavStore();
+    const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
 
     const { data: departments = [] } = useDepartments(activeCompany?.id ?? null);
@@ -61,7 +61,10 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         () => activeSpaceId ? { [activeSpaceId]: activeFolders } : {},
         [activeSpaceId, activeFolders]
     );
-    const operationalCompanyCount = surfaceProfile.isLocalTruthSurface ? 1 : (activeCompany ? 1 : companies.length);
+    const operationalCompanyCount =
+        surfaceProfile.isLocalTruthSurface || !!activeCompanyId || !!activeCompany
+            ? 1
+            : companies.length;
 
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
@@ -117,7 +120,13 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     const contextModeLabel = surfaceProfile.isLocalTruthSurface
         ? 'Lokale Instanz'
         : workspaceLabel || 'Kontext';
-    const showCompanySwitcher = Boolean(activeCompany && companies.length > 1 && !disableContextSwitch && !surfaceProfile.isLocalTruthSurface);
+    const showCompanySwitcher = Boolean(
+        activeCompany &&
+        companies.length > 1 &&
+        !disableContextSwitch &&
+        !surfaceProfile.isLocalTruthSurface &&
+        !activeCompanyId
+    );
 
     return (
         <div className="fixed top-6 left-1/2 z-50 flex w-[min(1040px,calc(100vw-2rem))] lg:w-[min(900px,calc(100vw-22rem))] -translate-x-1/2 items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-2.5 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
@@ -213,7 +222,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                         Organisationen
                     </span>
                     <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/68">
-                        {companyCountLabel || companies.length}
+                        {companyCountLabel || operationalCompanyCount}
                     </span>
                 </button>
             )}

@@ -5,15 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { Suspense } from 'react';
-import { useSession } from "next-auth/react";
 import { readCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
+import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 
 function RootPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { data: session, status } = useSession();
+    const { data: session, status } = useRuntimeSession();
     const [showLockScreen, setShowLockScreen] = useState(false);
     const [allowWelcomeFallback, setAllowWelcomeFallback] = useState(false);
 

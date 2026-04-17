@@ -260,7 +260,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         clearUniverseInteractionState();
         setIsInsightRailHovered(false);
         setLockedTooltipDeptId(null);
-    }, [clearHoverRelease, clearUniverseInteractionState, coreMode]);
+    }, [clearHoverRelease, clearUniverseInteractionState, coreMode, setIsInsightRailHovered]);
 
     // Legacy fallback layout for non-demo or unknown department sets.
     const rings = useMemo(() => [
@@ -1186,7 +1186,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const healthFromAPI = deptStats?.health;
 
                     // Capacity: % of nodes relative to largest department
-                    const capacity = maxNodes > 0 ? Math.round((nodeCount / maxNodes) * 100) : 0;
+                    const capacity = nodeCount > 0 && maxNodes > 0
+                        ? Math.round((nodeCount / maxNodes) * 100)
+                        : null;
                     // Activity: Document count (shown as "X Docs" in hover)
                     const activity = nodeCount;
                     // Health: From API if available, otherwise calculate

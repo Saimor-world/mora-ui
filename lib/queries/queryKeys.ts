@@ -54,6 +54,9 @@ export const queryKeys = {
   nodes: (folderId?: string | null, options?: Record<string, unknown>) =>
     options ? ['nodes', folderId, options] : ['nodes', folderId],
 
+  companyNodes: (companyId?: string | null, options?: Record<string, unknown>) =>
+    options ? ['companyNodes', companyId, options] : ['companyNodes', companyId],
+
   tree: (companyId?: string | null) =>
     companyId ? ['tree', companyId] : ['tree'],
 

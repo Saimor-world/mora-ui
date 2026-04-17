@@ -3,7 +3,7 @@
 import React from 'react';
 import { Settings2, X } from 'lucide-react';
 import { useContextStore } from '@/lib/store/contextStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
 /**
@@ -16,7 +16,7 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
  * - Always-visible exit while in admin mode
  */
 export const AdminModeSwitcher: React.FC = () => {
-    const user = useMoraStore((s) => s.user);
+    const user = useSessionStore((s) => s.user);
     const { isAdminMode, setAdminMode } = useContextStore();
     const surfaceProfile = useSurfaceProfile();
 

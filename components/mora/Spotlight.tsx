@@ -21,10 +21,11 @@ import {
     Wrench,
     Brain,
 } from "lucide-react";
-import { useMoraStore } from "@/lib/store/moraState";
 import { useNavStore } from "@/lib/store/navStore";
+import { useDepartments } from "@/lib/queries/useDepartments";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { useCompanies } from "@/lib/queries/useCompanies";
+import { useTree } from "@/lib/queries/useTree";
 import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
@@ -68,12 +69,11 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    // Store access
-    const departments = useMoraStore((s) => s.departments);
-    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
-    const { data: companiesData = [] } = useCompanies();
-    const companies = companiesData;
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: companiesData = [] } = useCompanies();
+    const { data: treeData = [] } = useTree(activeCompanyId);
+    const companies = companiesData;
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
     const activeFolderId = useNavStore((s) => s.activeFolderId);
@@ -85,6 +85,22 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     const navigateToSpace = useNavStore((s) => s.navigateToSpace);
 
     const { openPane, panes, minimizePane } = usePaneStore();
+
+    const spacesByDepartment = useMemo(() => {
+        const derived: Record<string, Array<{ id: string; name: string }>> = {};
+        const visit = (nodes: any[]) => {
+            nodes.forEach((node) => {
+                if (node?.type === "department" && Array.isArray(node.children)) {
+                    derived[node.id] = node.children
+                        .filter((child: any) => child?.type === "space")
+                        .map((child: any) => ({ id: child.id, name: child.name }));
+                }
+                if (Array.isArray(node?.children)) visit(node.children);
+            });
+        };
+        if (Array.isArray(treeData)) visit(treeData as any[]);
+        return derived;
+    }, [treeData]);
 
     // Reset Mora state on open/close or query change (if query clears @mora)
     useEffect(() => {

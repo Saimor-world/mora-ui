@@ -4,7 +4,6 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
@@ -59,6 +58,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { useTree } from '@/lib/queries/useTree';
+import { useCompanyNodes } from '@/lib/queries/useNodes';
 import { mergeUnique } from '@/lib/utils/collections';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -168,25 +168,69 @@ function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex
     };
 }
 
+function deriveFinderMaps(tree: CoreTreeNode[]) {
+    const spacesByDepartment: Record<string, any[]> = {};
+    const foldersBySpace: Record<string, any[]> = {};
+    const nodesByFolder: Record<string, any[]> = {};
+
+    const walk = (nodes: CoreTreeNode[], context: { departmentId?: string; spaceId?: string } = {}) => {
+        nodes.forEach((node) => {
+            if (node.type === 'department') {
+                const spaces = (node.children || []).filter((child) => child.type === 'space');
+                spacesByDepartment[node.id] = spaces.map((space) => ({
+                    id: space.id,
+                    type: space.type,
+                    name: space.name,
+                    color: space.color,
+                    folder_count: (space.children || []).filter((child) => child.type === 'folder').length,
+                }));
+                walk(node.children || [], { departmentId: node.id });
+                return;
+            }
+
+            if (node.type === 'space') {
+                const folders = (node.children || []).filter((child) => child.type === 'folder');
+                foldersBySpace[node.id] = folders.map((folder) => ({
+                    id: folder.id,
+                    type: folder.type,
+                    name: folder.name,
+                    color: folder.color,
+                    node_count: (folder.children || []).filter((child) => child.type === 'node').length,
+                }));
+                walk(node.children || [], { ...context, spaceId: node.id });
+                return;
+            }
+
+            if (node.type === 'folder') {
+                nodesByFolder[node.id] = (node.children || [])
+                    .filter((child) => child.type === 'node')
+                    .map((child) => ({
+                        id: child.id,
+                        type: child.nodeType || 'document',
+                        title: child.name,
+                        name: child.name,
+                        folder_id: node.id,
+                        space_id: context.spaceId,
+                        department_id: context.departmentId,
+                    }));
+                walk(node.children || [], context);
+            }
+        });
+    };
+
+    walk(tree);
+    return { spacesByDepartment, foldersBySpace, nodesByFolder };
+}
+
 
 
 export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { activeCompanyId, setViewLevel, setActiveDepartment, setActiveSpace, setActiveFolder } = useNavStore();
     const { data: companies = [] } = useCompanies();
-    const {
-        spacesByDepartment,
-        loadSpacesForDepartment,
-        foldersBySpace,
-        loadFoldersForSpace,
-        nodesByFolder,
-        nodesByCompany,
-        loadNodesForFolder,
-        loadedNodes,
-        loadChildren,
-    } = useMoraStore();
     const queryClient = useQueryClient();
     const { data: treeData, isFetching: isLoadingTree } = useTree(activeCompanyId);
+    const { data: companyNodesData = [] } = useCompanyNodes(activeCompanyId, { limit: 200 });
     const pane = getPane(id);
     const surfaceProfile = useSurfaceProfile();
 
@@ -208,8 +252,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     const globalSearch = pane?.data?.globalSearch as boolean | undefined;
     const navigationContext = pane?.data?.navigationContext as FinderNavigationContext | undefined;
 
-    const [files, setFiles] = useState<any[]>([]);
-    const [folders, setFolders] = useState<any[]>([]);
     const [companyFiles, setCompanyFiles] = useState<CompanyFileRecord[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [showUpload, setShowUpload] = useState(autoShowUpload || false);
@@ -360,7 +402,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setActiveSpace(null);
             setActiveFolder(null);
             setViewLevel('department');
-            void loadSpacesForDepartment(departmentId);
             toast.success('Department im Universe geoeffnet');
             setContextMenu(null);
             return;
@@ -377,7 +418,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             setActiveSpace(spaceId);
             setActiveFolder(null);
             setViewLevel('space');
-            void loadFoldersForSpace(spaceId);
             toast.success('Bereich im Universe geoeffnet');
             setContextMenu(null);
             return;
@@ -395,12 +435,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         // Keep Universe in L2/L3 layers. Finder owns folder navigation locally.
         setActiveFolder(null);
         setViewLevel(resolvedSpaceId ? 'space' : (resolvedDepartmentId ? 'department' : 'core'));
-        if (resolvedSpaceId) {
-            void loadFoldersForSpace(resolvedSpaceId);
-        } else if (resolvedDepartmentId) {
-            void loadSpacesForDepartment(resolvedDepartmentId);
-        }
-        void loadNodesForFolder(folderId);
 
         openPane({
             id: 'finder-main',
@@ -419,9 +453,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         setContextMenu(null);
     }, [
         contextMenu,
-        loadFoldersForSpace,
-        loadNodesForFolder,
-        loadSpacesForDepartment,
         openPane,
         activeCompanyId,
         paneCompanyId,
@@ -746,6 +777,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
 
     // DATA CONSISTENCY FIX: Stabilize rawTree to prevent infinite loops (useEffect deps)
     const rawTree = useMemo(() => treeData || [], [treeData]);
+    const { spacesByDepartment, foldersBySpace, nodesByFolder } = useMemo(
+        () => deriveFinderMaps(rawTree),
+        [rawTree]
+    );
 
     // Helper to find node in tree
     const findNodeInTree = useCallback((nodes: CoreTreeNode[], targetId: string): CoreTreeNode | null => {
@@ -845,10 +880,9 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             const roots = Array.isArray(rawTree) ? rawTree : [rawTree];
             traverse(roots);
 
-            // If global search but no results from tree, check nodesByCompany
+            // If global search but no results from tree, check company-level node cache
             if (globalSearch && results.files.length === 0 && resolvedCompanyId) {
-                const companyNodes = useMoraStore.getState().nodesByCompany[resolvedCompanyId] || [];
-                companyNodes.forEach(node => {
+                companyNodesData.forEach(node => {
                     results.files.push({ ...node, name: node.title || node.name });
                 });
             }
@@ -896,11 +930,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         // 2. DRILLED DOWN VIEW vs DEEP VIEW
         if (isDeepView && resolvedCompanyId) {
             // DEEP VIEW: Show ALL files in the company, ignoring folders
-            const allNodes = useMoraStore.getState().nodesByCompany[resolvedCompanyId] || [];
             return {
                 folders: [],
                 files: [
-                    ...allNodes.filter(n => !['folder', 'space', 'department'].includes(n.type))
+                    ...companyNodesData.filter(n => !['folder', 'space', 'department'].includes(n.type))
                         .map(n => ({ ...n, name: n.title || n.name })),
                     ...standaloneCompanyFiles.map(toFinderFileItem),
                 ]
@@ -953,7 +986,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             folders: Array.from(folderMap.values()),
             files: Array.from(fileMap.values())
         };
-    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem]);
+    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem, companyNodesData, activeCompanyId, queryClient]);
 
     // Effect to update breadcrumbs only when necessary
     useEffect(() => {
@@ -1052,43 +1085,14 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return () => window.clearTimeout(timeout);
     }, [contextHint, currentFolderId]);
 
-    // Effect to handle view content and lazy loading
-    useEffect(() => {
-        if (currentFolderId) {
-            const targetNode = findNodeInTree(rawTree, currentFolderId);
-
-            if (targetNode) {
-                const hasChildren = targetNode.children && targetNode.children.length > 0;
-                const isLoaded = loadedNodes.has(targetNode.id);
-
-                if (['department', 'space', 'folder'].includes(targetNode.type)) {
-                    if (!hasChildren && !isLoaded) {
-                        setIsLoading(true);
-                        loadChildren(targetNode.id, targetNode.type as any)
-                            .finally(() => setIsLoading(false));
-                        return;
-                    }
-                }
-            } else if (!nodesByFolder[currentFolderId]) {
-                // Direct folder context can be valid even before full tree resolution.
-                setIsLoading(true);
-                loadNodesForFolder(currentFolderId)
-                    .finally(() => setIsLoading(false));
-                return;
-            }
-        }
-
-        const content = getCurrentContent();
-        setFiles(content.files);
-        setFolders(content.folders);
-    }, [currentFolderId, rawTree, getCurrentContent, findNodeInTree, loadedNodes, loadChildren, nodesByFolder, loadNodesForFolder]);
+    const currentContent = useMemo(() => getCurrentContent(), [getCurrentContent]);
 
     // SIDE EFFECT: Load ALL company nodes when "Deep View" is enabled
     useEffect(() => {
         if (isDeepView && resolvedCompanyId) {
-            useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
+            void queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(resolvedCompanyId), exact: false });
         }
-    }, [isDeepView, resolvedCompanyId]);
+    }, [isDeepView, resolvedCompanyId, queryClient]);
 
     // DATA CONSISTENCY FIX: Use TanStack Query instead of direct fetchTree
     // This ensures both Universe and Finder use the same data source
@@ -1097,7 +1101,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             const existingTree = queryClient.getQueryData(queryKeys.tree(resolvedCompanyId ?? ''));
             const shouldReuseTree = opts?.preferCache === true && Array.isArray(existingTree) && existingTree.length > 0;
             if (resolvedCompanyId) {
-                await useMoraStore.getState().loadNodesForCompany(resolvedCompanyId);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(resolvedCompanyId), exact: false });
             }
             if (!shouldReuseTree) {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
@@ -1271,10 +1275,6 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         // Priority: startFolderId > startSpaceId > departmentId > root
         if (startFolderId) {
             resetNavigationRoot(startFolderId);
-            const folderNode = findNodeInTree(treeData, startFolderId);
-            if (!folderNode) {
-                void loadNodesForFolder(startFolderId);
-            }
         } else if (startSpaceId) {
             // Find the space in tree and navigate to it
             const spaceNode = findNodeInTree(treeData, startSpaceId);
@@ -1285,7 +1285,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
             resetNavigationRoot(departmentId);
         }
         appliedStartKeyRef.current = startKey;
-    }, [treeData, resolvedCompanyId, startFolderId, startSpaceId, departmentId, findNodeInTree, loadNodesForFolder, resetNavigationRoot]);
+    }, [treeData, resolvedCompanyId, startFolderId, startSpaceId, departmentId, findNodeInTree, resetNavigationRoot]);
 
     // Sync search query from pane data (important for Chat -> Finder updates)
     useEffect(() => {
@@ -1546,7 +1546,7 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
     // Always search the full tree for consistent results
     const filteredContent = useMemo(() => {
         const q = searchQuery.trim();
-        if (!q) return { files, folders };
+        if (!q) return currentContent;
 
         // Always search full tree for search queries (not just current folder)
         // This ensures "Handbuch" is found regardless of navigation state
@@ -1557,10 +1557,10 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         // Fallback: search local files/folders if tree not available
         const localResults = { files: [] as any[], folders: [] as any[] };
         const lq = q.toLowerCase();
-        files.forEach(f => { if ((f.name || '').toLowerCase().includes(lq)) localResults.files.push(f); });
-        folders.forEach(f => { if ((f.name || '').toLowerCase().includes(lq)) localResults.folders.push(f); });
+        currentContent.files.forEach(f => { if ((f.name || '').toLowerCase().includes(lq)) localResults.files.push(f); });
+        currentContent.folders.forEach(f => { if ((f.name || '').toLowerCase().includes(lq)) localResults.folders.push(f); });
         return localResults;
-    }, [files, folders, searchQuery, rawTree, deepSearch]);
+    }, [currentContent, searchQuery, rawTree, deepSearch]);
 
     const filteredFiles = filteredContent.files;
     const filteredFolders = filteredContent.folders;
@@ -1588,12 +1588,11 @@ export const FinderPane: React.FC<{ id: string }> = ({ id }) => {
         return filteredFiles.filter((file) => !hidden.has(file.id));
     }, [contextlessFiles, filteredFiles]);
     const rootCompanyNodes = useMemo(() => {
-        if (!resolvedCompanyId) return [];
-        return (nodesByCompany[resolvedCompanyId] || []).map((node) => ({
+        return companyNodesData.map((node) => ({
             ...node,
             name: node.title || node.name,
         }));
-    }, [nodesByCompany, resolvedCompanyId]);
+    }, [companyNodesData]);
     const displayFiles = useMemo(() => {
         if (currentFolderId || searchQuery.trim() || globalSearch) return mainFiles;
         const merged = new Map<string, any>();

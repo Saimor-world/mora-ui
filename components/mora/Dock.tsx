@@ -7,8 +7,9 @@ import {
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
     Music2, Pause, Play, SkipForward, Sparkles, Brain
 } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -49,6 +50,7 @@ import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
+import type { CoreTreeNode } from '@/lib/types/core';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -332,6 +334,47 @@ const DockPod: React.FC<DockPodProps> = ({
     </div>
 );
 
+type DockDerivedSpace = {
+    id: string;
+    name: string;
+    color?: string | null;
+    folder_count?: number | null;
+};
+
+type DockDerivedFolder = {
+    id: string;
+    name: string;
+    color?: string | null;
+    node_count?: number | null;
+};
+
+function deriveDockStructure(tree: CoreTreeNode[]) {
+    const spacesByDepartment: Record<string, DockDerivedSpace[]> = {};
+    const foldersBySpace: Record<string, DockDerivedFolder[]> = {};
+
+    tree.forEach((department) => {
+        if (department.type !== 'department') return;
+        const spaces = (department.children || []).filter((child) => child.type === 'space');
+        spacesByDepartment[department.id] = spaces.map((space) => {
+            const folders = (space.children || []).filter((child) => child.type === 'folder');
+            foldersBySpace[space.id] = folders.map((folder) => ({
+                id: folder.id,
+                name: folder.name,
+                color: folder.color,
+                node_count: (folder.children || []).filter((child) => child.type === 'node').length,
+            }));
+            return {
+                id: space.id,
+                name: space.name,
+                color: space.color,
+                folder_count: folders.length,
+            };
+        });
+    });
+
+    return { spacesByDepartment, foldersBySpace };
+}
+
 export const Dock = () => {
     const navigateToCore = useNavStore((s) => s.navigateToCore);
     const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
@@ -340,11 +383,11 @@ export const Dock = () => {
     const orbState = useOrbStore((s) => s.orbState);
     const user = useSessionStore((s) => s.user);
     const { data: companies = [] } = useCompanies();
-    const departments = useMoraStore((s) => s.departments);
-    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
-    const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const { data: departmentsData = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
+    const departments = departmentsData;
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
     const activeFolderId = useNavStore((s) => s.activeFolderId);
     const setActiveCompany = useNavStore((s) => s.setActiveCompany);
@@ -369,6 +412,11 @@ export const Dock = () => {
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const safeTree = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+    const { spacesByDepartment, foldersBySpace } = useMemo(
+        () => deriveDockStructure(safeTree),
+        [safeTree]
+    );
     const ambientAudio = useMemo(() => resolveAmbientAudioSettings(user?.settings), [user?.settings]);
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualSceneId = useMemo(() => getEffectiveRitualScene(ritualSettings), [ritualSettings]);

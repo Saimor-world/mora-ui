@@ -18,7 +18,8 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useChatStore } from '@/lib/store/chatStore';
 import { fetchAwarenessPulse, type OrbState } from '@/lib/api/awarenessClient';
 import { coreGet, getApiVersionPerformance, type ApiVersionPerformance } from '@/lib/api/coreClient';
 import { useUiPerfMetrics } from '@/lib/hooks/useUiPerfMetrics';
@@ -63,8 +64,8 @@ function relativeTime(ts: number): string {
 export function IntelligenceDiagnostics() {
     const [visible, setVisible] = useState(false);
     const perf = useUiPerfMetrics(visible);
-    const orbState = useMoraStore((s) => s.orbState);
-    const lastChatScope = useMoraStore((s) => s.lastChatScope);
+    const orbState = useOrbStore((s) => s.orbState);
+    const lastChatScope = useChatStore((s) => s.lastChatScope);
     const prevOrbRef = useRef<OrbState>(orbState);
     const [state, setState] = useState<DiagnosticsState>({
         orbState,

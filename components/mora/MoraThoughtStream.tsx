@@ -3,8 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { coreGet } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
-import { Brain, Sparkles } from "lucide-react";
+import { Brain } from "lucide-react";
 
 interface Thought {
     ts: string;
@@ -24,13 +23,11 @@ export const MoraThoughtStream: React.FC = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [activeThought, setActiveThought] = useState<Thought | null>(null);
     const [hasRealData, setHasRealData] = useState(false);
+    const [streamError, setStreamError] = useState<string | null>(null);
     const lastFetchedRef = useRef<string | null>(null);
-    const { coreError } = useMoraStore();
 
     // Polling backend for newest thoughts with exponential backoff
     useEffect(() => {
-        if (coreError) return;
-
         let isMounted = true;
         let timeoutId: NodeJS.Timeout;
         let interval = 30000; // Start at 30s (less aggressive)
@@ -48,17 +45,20 @@ export const MoraThoughtStream: React.FC = () => {
                         setThoughts(newThoughts);
                         setCurrentIndex(0);
                         setHasRealData(true);
+                        setStreamError(null);
                     }
                     // Success - reset backoff
                     interval = 30000;
                 } else {
                     // No data - hide the component
                     setHasRealData(false);
+                    setStreamError(null);
                 }
             } catch (error) {
                 // Apply backoff on error, hide component
                 interval = Math.min(interval * 1.5, maxInterval);
                 setHasRealData(false);
+                setStreamError(error instanceof Error ? error.message : "thought-stream-offline");
             }
             if (isMounted) {
                 timeoutId = setTimeout(fetchThoughts, interval);
@@ -71,7 +71,7 @@ export const MoraThoughtStream: React.FC = () => {
             isMounted = false;
             clearTimeout(timeoutId);
         };
-    }, [coreError]);
+    }, []);
 
     // 1. Cycle through fetched thoughts
     useEffect(() => {
@@ -103,7 +103,7 @@ export const MoraThoughtStream: React.FC = () => {
     }, [currentIndex, thoughts]);
 
     // Only show if we have REAL data from backend
-    if (!activeThought || coreError || !hasRealData) return null;
+    if (!activeThought || streamError || !hasRealData) return null;
 
     return (
         <div className="fixed bottom-28 left-6 z-40 pointer-events-none max-w-xs">

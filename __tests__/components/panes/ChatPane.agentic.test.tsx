@@ -1,6 +1,10 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const mockStreamSend = jest.fn();
 const mockExecuteAgenticLoop = jest.fn();
@@ -63,64 +67,29 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
+const STABLE_PANE = { id: 'chat-main', type: 'chat', title: 'Chat', size: { width: 900, height: 700 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
   usePaneStore: (selector?: any) => {
     const store = {
       removePane: jest.fn(),
       minimizePane: jest.fn(),
       focusPane: jest.fn(),
-      getPane: () => ({
-        id: 'chat-main',
-        size: { width: 900, height: 700 },
-        position: { x: 0, y: 0 },
-        zIndex: 1,
-        data: {},
-      }),
+      getPane: () => STABLE_PANE,
       updatePanePosition: jest.fn(),
       updatePaneSize: jest.fn(),
       openPane: (...args: any[]) => mockOpenPane(...args),
+      panes: [STABLE_PANE],
+      activePaneId: 'chat-main',
     };
     return selector ? selector(store) : store;
   },
 }));
 
-const _agentNavStore = {
-  isStandardMode: false,
-  activeCompanyId: 'company-1',
-  activeDepartmentId: null,
-  activeSpaceId: 'space-1',
-  activeFolderId: null,
-  viewLevel: 'space',
-  viewMode: 'workspace',
-  coreMode: 'home',
-  nameConflict: null,
-  navigateToDepartment: jest.fn(),
-};
-jest.mock('@/lib/store/navStore', () => ({
-  useNavStore: Object.assign(
-    (selector?: any) => selector ? selector(_agentNavStore) : _agentNavStore,
-    { getState: () => _agentNavStore },
-  ),
-}));
-
-jest.mock('@/lib/store/orbStore', () => ({
-  useOrbStore: (selector?: any) => {
-    const store = { orbState: 'idle' };
-    return selector ? selector(store) : store;
-  },
-}));
-
-jest.mock('@/lib/queries/useDepartments', () => ({
-  useDepartments: jest.fn(() => ({
-    data: [{ id: 'dept-1', name: 'Marketing' }],
-    isLoading: false,
-    error: null,
-  })),
-}));
-
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 
 import { ChatPane } from '@/components/panes/ChatPane';
+
+beforeEach(resetAllStores);
 
 describe('ChatPane agentic file ops', () => {
   beforeAll(() => {
@@ -136,7 +105,30 @@ describe('ChatPane agentic file ops', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    useNavStore.setState({
+      isStandardMode: false,
+      activeCompanyId: 'company-1',
+      activeDepartmentId: null,
+      activeSpaceId: 'space-1',
+      activeFolderId: null,
+      viewLevel: 'space',
+      viewMode: 'workspace',
+      coreMode: 'home',
+      nameConflict: null,
+      navigateToDepartment: jest.fn(),
+    } as any);
+    // attach getState for components calling useNavStore.getState()
+    (useNavStore as any).getState = () => useNavStore.getState();
+
+    useOrbStore.setState({ orbState: 'idle' } as any);
   });
+
+  function renderPane() {
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.departments('company-1'), [{ id: 'dept-1', name: 'Marketing' }]);
+    return renderWithProviders(<ChatPane id="chat-main" />, { queryClient: qc });
+  }
 
   test('routes create-folder intent into pending confirmation instead of streaming', async () => {
     mockExecuteAgenticLoop.mockResolvedValue({
@@ -155,7 +147,7 @@ describe('ChatPane agentic file ops', () => {
       }],
     });
 
-    render(<ChatPane id="chat-main" />);
+    renderPane();
 
     fireEvent.change(screen.getByPlaceholderText(/Schreib Mora/i), {
       target: { value: 'Erstelle einen Ordner Q4 Marketing' },
@@ -191,7 +183,7 @@ describe('ChatPane agentic file ops', () => {
       }],
     });
 
-    render(<ChatPane id="chat-main" />);
+    renderPane();
 
     fireEvent.change(screen.getByPlaceholderText(/Schreib Mora/i), {
       target: { value: 'Benenne diese Datei in Budget 2027.pdf um' },
@@ -214,7 +206,7 @@ describe('ChatPane agentic file ops', () => {
   test('routes non-file prompts through streaming chat', async () => {
     mockStreamSend.mockResolvedValue('Hier ist ein Statusupdate.');
 
-    render(<ChatPane id="chat-main" />);
+    renderPane();
 
     fireEvent.change(screen.getByPlaceholderText(/Schreib Mora/i), {
       target: { value: 'Was gibt es Neues?' },
@@ -244,7 +236,7 @@ describe('ChatPane agentic file ops', () => {
       }],
     });
 
-    render(<ChatPane id="chat-main" />);
+    renderPane();
     const textarea = screen.getByPlaceholderText(/Schreib Mora/i);
     fireEvent.change(textarea, { target: { value: 'Erstelle eine Notiz Launch Briefing' } });
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, preventDefault: jest.fn() });
@@ -270,7 +262,7 @@ describe('ChatPane agentic file ops', () => {
       }],
     });
 
-    render(<ChatPane id="chat-main" />);
+    renderPane();
     const textarea = screen.getByPlaceholderText(/Schreib Mora/i);
     fireEvent.change(textarea, { target: { value: 'Erstelle einen Entwurf Q4 Launch' } });
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, preventDefault: jest.fn() });
@@ -297,7 +289,7 @@ describe('ChatPane agentic file ops', () => {
       }],
     });
 
-    render(<ChatPane id="chat-main" />);
+    renderPane();
     const textarea = screen.getByPlaceholderText(/Schreib Mora/i);
     fireEvent.change(textarea, { target: { value: 'Aktualisiere diese Notiz mit Neuem Inhalt' } });
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, preventDefault: jest.fn() });

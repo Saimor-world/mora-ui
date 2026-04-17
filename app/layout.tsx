@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { useNavStore } from "@/lib/store/navStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
@@ -14,17 +13,6 @@ import { usePathname } from "next/navigation";
 import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
 import { StandardModeHandler } from "@/components/ui/StandardModeHandler";
 import { QueryProvider } from "@/lib/queryClient";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-mora-mono",
-});
 
 export default function RootLayout({
   children,
@@ -82,7 +70,9 @@ export default function RootLayout({
     };
 
     // Fallback order: API Setting > LocalStorage > Default (1)
-    const activeScale = userScale ?? parseFloat(localStorage.getItem('saimor_scale') || '1');
+    const activeScale = typeof userScale === 'number'
+      ? userScale
+      : parseFloat(localStorage.getItem('saimor_scale') || '1');
     applyScale(activeScale);
 
     // Listen for storage changes (cross-tab sync)
@@ -106,7 +96,7 @@ export default function RootLayout({
         <title>SAIMOR | Mora OS</title>
         <meta name="description" content="Intelligent System" />
       </head>
-      <body className={`${inter.className} ${jetbrainsMono.variable} antialiased bg-[#030806] overflow-hidden`} suppressHydrationWarning>
+      <body className="font-sans antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
         <QueryProvider>
           <ErrorBoundary>
             <MoraSessionProvider>

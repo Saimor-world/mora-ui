@@ -14,6 +14,8 @@ import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { coreGet, corePost } from "@/lib/api/coreClient";
 import { toast } from "sonner";
+import { useCommunicationSurface } from "@/lib/hooks/useCommunicationSurface";
+import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from "@/lib/integrations/calendarOAuth";
 import {
     Calendar as CalendarIcon,
     ChevronLeft,
@@ -23,7 +25,9 @@ import {
     MapPin,
     Users,
     X,
-    Sparkles
+    Sparkles,
+    Globe,
+    Wrench
 } from "lucide-react";
 
 interface CalendarEvent {
@@ -42,9 +46,11 @@ interface CalendarPaneProps {
 }
 
 export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const pane = getPane(id);
+    const { summary } = useCommunicationSurface();
+    const [isConnectingAccount, setIsConnectingAccount] = useState(false);
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -192,6 +198,52 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
 
     if (!pane) return null;
 
+    const openBrowserConnect = () => {
+        openPane({
+            id: 'browser-connect',
+            type: 'browser',
+            title: 'Browser',
+            size: { width: 1160, height: 760 },
+            data: { initialUrl: summary.connectSurfaceUrl },
+        });
+    };
+
+    const openIntegrations = () => {
+        openPane({
+            id: 'integrations-main',
+            type: 'integrations',
+            title: 'Integrationen',
+            size: { width: 980, height: 740 },
+        });
+    };
+
+    const connectCalendarAccount = async () => {
+        setIsConnectingAccount(true);
+        try {
+            const res = await corePost('/v3/integrations/calendar/connect', {
+                return_to: getCalendarOAuthReturnTo(),
+            });
+            const authUrl = res?.auth_url;
+            if (!authUrl) {
+                toast.error('Google-Kalender-Verbindung ist noch nicht sauber konfiguriert');
+                return;
+            }
+            const result = await openCalendarOAuthPopup(authUrl);
+            if (result.ok) {
+                toast.success('Kalender verbunden');
+                fetchEvents();
+            } else if (result.reason === 'blocked') {
+                toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+            } else if (result.reason !== 'closed') {
+                toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
+            }
+        } catch (e: any) {
+            toast.error(e?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
+        } finally {
+            setIsConnectingAccount(false);
+        }
+    };
+
     const monthNames = [
         "Januar", "Februar", "März", "April", "Mai", "Juni",
         "Juli", "August", "September", "Oktober", "November", "Dezember"
@@ -250,6 +302,42 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
                         >
                             <ChevronRight size={16} />
                         </button>
+                    </div>
+                </div>
+
+                <div className="border-b border-white/6 px-4 py-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Kalender & Verbindungen</div>
+                                <div className="mt-1 text-sm text-white">{summary.calendarStatusLabel}</div>
+                                <div className="mt-1 text-xs text-white/50">
+                                    Kalender, Browser-Bridge und Local Truth muessen denselben Verbindungszustand teilen.
+                                </div>
+                            </div>
+                            <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55">
+                                {summary.calendarConfigured ? 'Verbunden' : 'Vorbereitung'}
+                            </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={connectCalendarAccount}
+                                disabled={isConnectingAccount}
+                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18] disabled:opacity-50"
+                            >
+                                <Globe size={14} />
+                                {isConnectingAccount ? 'Verbinde...' : 'Google verbinden'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openIntegrations}
+                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
+                            >
+                                <Wrench size={14} />
+                                Integrationen
+                            </button>
+                        </div>
                     </div>
                 </div>
 

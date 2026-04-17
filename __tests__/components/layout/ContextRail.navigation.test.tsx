@@ -1,43 +1,15 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ContextRail } from '@/components/layout/ContextRail';
+import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const STABLE_COMPANIES = [{ id: 'co-1', name: 'Workspace', tenant_id: 'tenant-1' }];
 
-jest.mock('@/lib/store/navStore', () => ({
-    useNavStore: jest.fn(),
-}));
-
-jest.mock('@/lib/store/sessionStore', () => ({
-    useSessionStore: jest.fn((selector?: any) => {
-        const state = {
-            user: null,
-            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
-            hasBooted: true, isLoggingOut: false,
-            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
-        };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
-jest.mock('@/lib/queries/useCompanies', () => ({
-    useCompanies: () => ({ data: STABLE_COMPANIES }),
-}));
-
-jest.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ invalidateQueries: jest.fn() }),
-}));
-
-jest.mock('@/lib/queries/queryKeys', () => ({
-    queryKeys: {
-        tree: (id?: string) => ['tree', id],
-        departments: (id?: string) => ['departments', id],
-    },
-}));
-
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: {
         getState: () => ({ openPane: jest.fn() }),
@@ -106,23 +78,31 @@ jest.mock('@/lib/auth/roles', () => ({
     roleLabel: (r: string) => r,
 }));
 
-const mockUseNavStore = useNavStore as jest.MockedFunction<typeof useNavStore>;
+beforeEach(resetAllStores);
 
 function renderWithState(state: Record<string, unknown>) {
-    const navState = {
+    useNavStore.setState({
         navigateToCore: state.navigateToCore ?? jest.fn(),
         viewLevel: state.viewLevel ?? 'core',
         viewMode: state.viewMode ?? 'workspace',
         setViewMode: state.setViewMode ?? jest.fn(),
         isStandardMode: state.isStandardMode ?? false,
         activeCompanyId: 'co-1',
-    };
-    mockUseNavStore.mockImplementation((selector?: any) => (selector ? selector(navState) : navState));
-    (mockUseNavStore as any).getState = () => ({
-        ...navState,
         setActiveCompany: state.setActiveCompany ?? jest.fn(),
-    });
-    return render(<ContextRail />);
+    } as any);
+
+    useSessionStore.setState({
+        user: null,
+        permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+        hasBooted: true,
+        isLoggingOut: false,
+        resetStore: jest.fn(),
+        setIsLoggingOut: jest.fn(),
+    } as any);
+
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.companies(), STABLE_COMPANIES);
+    return renderWithProviders(<ContextRail />, { queryClient: qc });
 }
 
 describe('ContextRail core navigation contract', () => {

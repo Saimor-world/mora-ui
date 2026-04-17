@@ -63,6 +63,7 @@ interface BuildShellContextSnapshotArgs {
     userCompanyName?: string | null;
     accent?: string;
     isPublicDemoSurface?: boolean;
+    isLocalTruthSurface?: boolean;
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -125,6 +126,7 @@ export const buildShellContextSnapshot = ({
     userCompanyName,
     accent = '#10B981',
     isPublicDemoSurface = false,
+    isLocalTruthSurface = false,
 }: BuildShellContextSnapshotArgs): ShellContextSnapshot => {
     const scopeLabel = getShellScopeLabel(viewLevel);
     const companyTitle = activeCompany?.name || userCompanyName || 'Organisation';
@@ -196,24 +198,32 @@ export const buildShellContextSnapshot = ({
         title: companyTitle,
         subtitle: isPublicDemoSurface
             ? 'Kuratiertes Beispielsystem'
+            : isLocalTruthSurface
+                ? 'Single-Company-Instanz'
             : companyCount > 1
                 ? `${companyCount} Organisationen aktiv`
                 : 'Single-Company-Instanz',
         description: isPublicDemoSurface
             ? 'Simple Coffee Group zeigt die kuratierte Beispielstruktur von SAIMOR. Wähle eine Abteilung und gehe dann in die sichtbare Arbeitsstruktur.'
+            : isLocalTruthSurface
+                ? 'Diese lokale Instanz arbeitet mit genau einer aktiven Organisation. Von hier aus gehst du direkt in Abteilungen und Struktur.'
             : companyCount > 1
                 ? 'Diese Instanz zeigt mehrere Organisationen. Waehle zuerst den richtigen Kontext und gehe dann tiefer.'
                 : 'Diese Instanz ist auf eine Organisation zugeschnitten. Waehle die passende Abteilung und gehe dann in die Struktur.',
         signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
         signalB: isPublicDemoSurface
             ? 'Beispielstruktur'
+            : isLocalTruthSurface
+                ? '1 Organisation'
             : companyCount > 1
                 ? `${companyCount} Organisationen`
                 : '1 Organisation',
         accent,
-        nextMoveLabel: isPublicDemoSurface ? 'Abteilung oeffnen' : companyCount > 1 ? 'Organisation waehlen' : 'Abteilung waehlen',
+        nextMoveLabel: isPublicDemoSurface ? 'Abteilung oeffnen' : isLocalTruthSurface ? 'Abteilung waehlen' : companyCount > 1 ? 'Organisation waehlen' : 'Abteilung waehlen',
         nextMoveHint: isPublicDemoSurface
             ? 'Öffne die passende Abteilung und gehe von dort in die sichtbare Beispielstruktur.'
+            : isLocalTruthSurface
+            ? 'Die lokale Instanz hat nur einen aktiven Organisationskontext. Waehle direkt die passende Abteilung.'
             : companyCount > 1
             ? 'Diese Instanz hat mehrere Organisationen. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
             : 'Waehle zuerst die passende Abteilung und geh dann in die operative Struktur.',

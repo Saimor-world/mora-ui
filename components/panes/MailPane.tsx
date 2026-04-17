@@ -17,7 +17,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 
 interface MailAttachment {
     filename: string;
@@ -48,7 +48,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const { activeCompanyId } = useNavStore();
     const queryClient = useQueryClient();
     const pane = getPane(id);
-    const { overview, browserBridge } = useIntegrationsOverview();
+    const { overview, browserBridge, summary } = useCommunicationSurface();
 
     const [mails, setMails] = useState<MailObject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -250,20 +250,16 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                 <div>
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Konten & Kommunikation</div>
                                     <div className="mt-1 text-sm text-white">
-                                        {overview?.mail?.configured
-                                            ? (overview.mail.email || 'Postfach verbunden')
-                                            : overview?.capabilities?.mail_local_mode
-                                                ? 'Lokaler Mail-Modus'
-                                                : 'Noch kein Postfach verbunden'}
+                                        {summary.mailStatusLabel}
                                     </div>
                                     <div className="mt-1 text-xs text-white/50">
-                                        {browserBridge.permission === 'granted'
+                                        {summary.browserPermission === 'granted'
                                             ? 'Browser ist freigegeben und kann Signale, Mail und Kalender mittragen.'
                                             : 'Browser-Freigaben und Mail-Verbindung lassen sich direkt aus dem OS heraus vorbereiten.'}
                                     </div>
                                 </div>
                                 <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55">
-                                    {overview?.mail?.configured ? 'Verbunden' : 'Vorbereitung'}
+                                    {summary.mailConfigured ? 'Verbunden' : 'Vorbereitung'}
                                 </div>
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2">

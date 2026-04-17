@@ -6,9 +6,9 @@ import { CalendarIntegration } from '@/components/integrations/CalendarIntegrati
 import { corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
-import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { toast } from 'sonner';
+import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 
 interface MailOverview {
     configured?: boolean;
@@ -215,8 +215,9 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         browserBridge,
         loadOverview,
         refreshBrowserBridge,
-    } = useIntegrationsOverview();
-    const localTruthBridge = useLocalTruthBridge(overview);
+        localTruthBridge,
+        summary,
+    } = useCommunicationSurface();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
@@ -230,14 +231,6 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
         [overview]
     );
-
-    const browserPermissionLabel = browserBridge.permission === 'granted'
-        ? 'Aktiv'
-        : browserBridge.permission === 'denied'
-            ? 'Blockiert'
-            : browserBridge.permission === 'default'
-                ? 'Noch nicht freigegeben'
-                : 'Nicht verfuegbar';
 
     const requestBrowserNotifications = useCallback(async () => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
@@ -305,29 +298,38 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
 
     const openLocalTruthSurface = useCallback(() => {
         if (typeof window === 'undefined') return;
-        const url = localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home';
+        const url = summary.localTruthUrl;
         window.open(url, '_blank', 'noopener,noreferrer');
-    }, [localTruthBridge.selectedUiUrl, overview]);
+    }, [summary.localTruthUrl]);
 
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
         try {
-            const res = await corePost('/v3/integrations/calendar/connect', {});
+            const res = await corePost('/v3/integrations/calendar/connect', {
+                return_to: getCalendarOAuthReturnTo(),
+            });
             const authUrl = res?.auth_url;
             if (!authUrl) {
                 toast.error('Google-Kalender-Verbindung ist noch nicht sauber konfiguriert');
                 return;
             }
             if (typeof window !== 'undefined') {
-                window.open(authUrl, '_blank', 'noopener,noreferrer');
+                const result = await openCalendarOAuthPopup(authUrl);
+                if (result.ok) {
+                    toast.success('Kalender verbunden');
+                    await loadOverview();
+                } else if (result.reason === 'blocked') {
+                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                } else if (result.reason !== 'closed') {
+                    toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
+                }
             }
-            toast.success('Google-Weiterleitung geoeffnet');
         } catch (err: any) {
             toast.error(err?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
         } finally {
             setIsConnectingCalendar(false);
         }
-    }, []);
+    }, [loadOverview]);
 
     const copyGemmaCommand = useCallback(async () => {
         const command = overview?.runtime?.local_truth?.startup_command
@@ -461,7 +463,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             </div>
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'degraded' : 'not_configured')}`}>
-                                                {browserPermissionLabel}
+                                                {summary.browserStatusLabel}
                                             </span>
                                         </div>
                                         <p className="text-xs leading-relaxed text-white/60">
@@ -576,15 +578,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                         ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
                                                         : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
-                                                {localTruthBridge.state === 'ready'
-                                                    ? 'Bereit'
-                                                    : localTruthBridge.state === 'core_only'
-                                                        ? 'Core bereit'
-                                                        : localTruthBridge.state === 'ui_only'
-                                                            ? 'UI bereit'
-                                                            : localTruthBridge.state === 'checking'
-                                                                ? 'Prueft'
-                                                                : 'Noch nicht da'}
+                                                {summary.localTruthStatusLabel}
                                             </span>
                                         </div>
                                         <p className="text-xs leading-relaxed text-white/60">
@@ -592,7 +586,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 || 'Hier wird geprueft, ob lokale UI und lokaler Core fuer echte Konten und echte Integrationen erreichbar sind.'}
                                         </p>
                                         <div className="mt-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] text-white/55">
-                                            UI: <span className="text-white/78">{localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}</span>
+                                            UI: <span className="text-white/78">{summary.localTruthUrl}</span>
                                             <br />
                                             Core: <span className="text-white/78">{localTruthBridge.selectedCoreUrl || overview?.runtime?.local_truth?.core_candidates?.[0] || 'http://127.0.0.1:8081/v3/health'}</span>
                                         </div>

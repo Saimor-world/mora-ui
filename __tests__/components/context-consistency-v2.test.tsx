@@ -3,7 +3,7 @@
  *
  * Surfaces: SearchPane, MoraUpdatesFeed
  *
- * Architecture note: useCompanies/useDepartments are kept mocked (see v1 file).
+ * Architecture note: useCompanies/useDepartments/useTree are kept mocked (see v1 file).
  * navStore is real — Zustand subscriptions drive company-switch re-renders.
  */
 
@@ -12,22 +12,6 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import '@testing-library/jest-dom';
 import { resetAllStores } from '../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
-
-// ─── moraState: still needed for SearchPane ───────────────────────────────────
-
-const moraState = {
-    departments: [] as any[],
-    spacesByDepartment: {} as Record<string, any[]>,
-    nodesByCompany: {} as Record<string, any[]>,
-    setActiveDepartment: jest.fn(),
-    setActiveSpace: jest.fn(),
-    setViewLevel: jest.fn(),
-};
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) =>
-        selector ? selector(moraState) : moraState,
-}));
 
 // ─── Query hooks: stable references prevent infinite buildLocalResults cascade ─
 
@@ -39,6 +23,11 @@ jest.mock('@/lib/queries/useCompanies', () => {
 jest.mock('@/lib/queries/useDepartments', () => {
     const stableDepts: never[] = [];
     return { useDepartments: () => ({ data: stableDepts, isFetching: false }) };
+});
+
+jest.mock('@/lib/queries/useTree', () => {
+    const stableTree: never[] = [];
+    return { useTree: () => ({ data: stableTree, isFetching: false }) };
 });
 
 // ─── paneStore — stable fake ──────────────────────────────────────────────────

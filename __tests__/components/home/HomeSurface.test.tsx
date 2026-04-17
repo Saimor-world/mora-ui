@@ -7,6 +7,10 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { useActivityStore } from '@/lib/store/activityStore';
 import * as coreClient from '@/lib/api/coreClient';
 import * as sessionLifecycle from '@/lib/auth/sessionLifecycle';
+import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 // ── mocks ──────────────────────────────────────────────────────────────────
 
@@ -29,59 +33,19 @@ jest.mock('framer-motion', () => ({
     useReducedMotion: () => false,
 }));
 
-// ── stable module-level refs (must be outside jest.mock factories) ─────────
+// ── stable module-level refs ─────────────────────────────────────────────
 
 const STABLE_DEPTS = [
-    { id: 'dept-rd',      name: 'R&D'     },
-    { id: 'dept-product', name: 'Product' },
-    { id: 'dept-growth',  name: 'Growth'  },
+    { id: 'dept-rd',      name: 'R&D',     company_id: 'co-1', color: '#10b981' },
+    { id: 'dept-product', name: 'Product', company_id: 'co-1', color: '#06b6d4' },
+    { id: 'dept-growth',  name: 'Growth',  company_id: 'co-1', color: '#8b5cf6' },
 ];
 const STABLE_TREE = [
     { id: 'dept-rd',      children: [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }] },
     { id: 'dept-product', children: [] },
     { id: 'dept-growth',  children: [] },
 ];
-const STABLE_USER = { id: 'u-1', name: 'Anna Mueller', role: 'member' };
-
-// ── mutable state holders ──────────────────────────────────────────────────
-
-let mockNavState: any = {};
-let mockSessionState: any = {};
-let mockDepts: any[] = STABLE_DEPTS;
-let mockTree: any[] = STABLE_TREE;
-
-jest.mock('@/lib/store/navStore', () => ({
-    useNavStore: (sel?: (s: any) => unknown) => {
-        return sel ? sel(mockNavState) : mockNavState;
-    },
-}));
-
-jest.mock('@/lib/store/sessionStore', () => ({
-    useSessionStore: (sel?: (s: any) => unknown) => {
-        return sel ? sel(mockSessionState) : mockSessionState;
-    },
-}));
-
-jest.mock('@/lib/queries/useDepartments', () => ({
-    useDepartments: () => ({ data: mockDepts, isLoading: false }),
-}));
-
-jest.mock('@/lib/queries/useTree', () => ({
-    useTree: () => ({ data: mockTree, isLoading: false }),
-}));
-
-jest.mock('@/lib/queries/useCompanies', () => ({
-    useCompanies: () => ({ data: [], isLoading: false }),
-}));
-
-jest.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ invalidateQueries: jest.fn() }),
-    useMutation: (_opts: any) => ({
-        mutate: jest.fn(),
-        mutateAsync: jest.fn().mockResolvedValue({}),
-        isPending: false,
-    }),
-}));
+const STABLE_USER = { id: 'u-1', name: 'Anna Mueller', role: 'member' as const, email: 'anna@example.com' };
 
 const mockAuthLogout    = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
 const mockClearArtifacts = sessionLifecycle.clearClientSessionArtifacts as jest.MockedFunction<typeof sessionLifecycle.clearClientSessionArtifacts>;
@@ -105,26 +69,23 @@ const treeWithActivity = STABLE_TREE;
 // ── setup ──────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
+    resetAllStores();
     jest.clearAllMocks();
     mockAuthLogout.mockResolvedValue({ success: true } as any);
     localStorage.clear();
 
-    // Reset mutable state holders
-    mockDepts = STABLE_DEPTS;
-    mockTree  = STABLE_TREE;
-
-    mockNavState = {
+    useNavStore.setState({
         activeCompanyId: 'co-1',
         coreMode: 'home',
         isStandardMode: false,
         setCoreMode: jest.fn(),
-    };
+    } as any);
 
-    mockSessionState = {
+    useSessionStore.setState({
         user: STABLE_USER,
         resetStore,
         setUser,
-    };
+    } as any);
 
     usePaneStore.setState({
         openPane, getPane, focusPane, restorePane,
@@ -135,26 +96,34 @@ beforeEach(() => {
     useActivityStore.setState({ recentItems: [] });
 });
 
+function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.departments('co-1'), depsData);
+    qc.setQueryData(queryKeys.tree('co-1'), treeData);
+    qc.setQueryData(queryKeys.companies(), [{ id: 'co-1', name: 'Test Corp' }]);
+    return renderWithProviders(<HomeSurface />, { queryClient: qc });
+}
+
 // ── rendering ──────────────────────────────────────────────────────────────
 
 describe('HomeSurface — rendering', () => {
     it('renders a personalised greeting with first name', async () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         await waitFor(() => {
             expect(screen.getByText(/Anna/)).toBeInTheDocument();
         });
     });
 
     it('renders "Arbeitsplatz" heading when no user', async () => {
-        mockSessionState = { ...mockSessionState, user: null };
-        render(<HomeSurface />);
+        useSessionStore.setState({ user: null, resetStore, setUser } as any);
+        renderWithDepts();
         await waitFor(() => {
             expect(screen.getByText('Arbeitsplatz')).toBeInTheDocument();
         });
     });
 
     it('renders the logout button', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('home-logout')).toBeInTheDocument();
     });
 });
@@ -163,18 +132,18 @@ describe('HomeSurface — rendering', () => {
 
 describe('HomeSurface — Mora Briefing Strip', () => {
     it('renders the briefing strip', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('briefing-strip')).toBeInTheDocument();
     });
 
     it('renders briefing text from buildBriefing()', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('briefing-text')).toHaveTextContent('R&D ist aktiv — 3 Inhalte.');
     });
 
     it('calls buildBriefing with departments and treeData from store', () => {
         const { buildBriefing } = require('@/lib/home/briefing');
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(buildBriefing).toHaveBeenCalledWith(depts, treeWithActivity);
     });
 });
@@ -183,37 +152,36 @@ describe('HomeSurface — Mora Briefing Strip', () => {
 
 describe('HomeSurface — Department Pulse Tiles', () => {
     it('renders dept-pulse-tiles when departments are present', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('dept-pulse-tiles')).toBeInTheDocument();
     });
 
     it('renders a tile per department (up to 6)', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         depts.forEach((d) => {
             expect(screen.getByTestId(`dept-tile-${d.id}`)).toBeInTheDocument();
         });
     });
 
     it('does not render dept tiles when departments list is empty', () => {
-        mockDepts = [];
-        render(<HomeSurface />);
+        renderWithDepts([]);
         expect(screen.queryByTestId('dept-pulse-tiles')).not.toBeInTheDocument();
     });
 
     it('active dept tile shows Inhalte count', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         const tile = screen.getByTestId('dept-tile-dept-rd');
         expect(tile).toHaveTextContent('3 Inhalte');
     });
 
     it('quiet dept tile shows "ruhig"', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         const tile = screen.getByTestId('dept-tile-dept-product');
         expect(tile).toHaveTextContent('ruhig');
     });
 
     it('clicking a dept tile opens finder with departmentId', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         fireEvent.click(screen.getByTestId('dept-tile-dept-rd'));
         expect(openPane).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -228,12 +196,12 @@ describe('HomeSurface — Department Pulse Tiles', () => {
 
 describe('HomeSurface — Zuletzt berührt', () => {
     it('always renders the recent-items section', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('recent-items-section')).toBeInTheDocument();
     });
 
     it('shows empty state when activityStore is empty', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('recent-items-empty')).toBeInTheDocument();
     });
 
@@ -245,7 +213,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
             ],
         } as any);
 
-        render(<HomeSurface />);
+        renderWithDepts();
         await waitFor(() => {
             expect(screen.getAllByTestId('recent-item')).toHaveLength(2);
             expect(screen.getByText('Projektplan Q2.md')).toBeInTheDocument();
@@ -263,7 +231,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
         }));
         useActivityStore.setState({ recentItems: manyItems } as any);
 
-        render(<HomeSurface />);
+        renderWithDepts();
         await waitFor(() => {
             expect(screen.getAllByTestId('recent-item')).toHaveLength(5);
         });
@@ -276,7 +244,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
             ],
         } as any);
 
-        render(<HomeSurface />);
+        renderWithDepts();
         await waitFor(() => screen.getByText('Bericht Q1.md'));
         fireEvent.click(screen.getByTestId('recent-item').querySelector('button')!);
 
@@ -295,7 +263,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
             ],
         } as any);
 
-        render(<HomeSurface />);
+        renderWithDepts();
         await waitFor(() => screen.getByText('Finder'));
         fireEvent.click(screen.getByTestId('recent-item').querySelector('button')!);
 
@@ -309,22 +277,22 @@ describe('HomeSurface — Zuletzt berührt', () => {
 
 describe('HomeSurface — Quick Actions', () => {
     it('renders Finder öffnen button', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('qa-finder')).toBeInTheDocument();
     });
 
     it('renders Mora fragen button', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('qa-mora')).toBeInTheDocument();
     });
 
     it('renders Datei hochladen button', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         expect(screen.getByTestId('qa-upload')).toBeInTheDocument();
     });
 
     it('Finder öffnen opens finder-main pane', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         fireEvent.click(screen.getByTestId('qa-finder'));
         expect(openPane).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'finder', id: 'finder-main' })
@@ -332,7 +300,7 @@ describe('HomeSurface — Quick Actions', () => {
     });
 
     it('Mora fragen opens chat-main pane', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         fireEvent.click(screen.getByTestId('qa-mora'));
         expect(openPane).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'chat', id: 'chat-main' })
@@ -340,7 +308,7 @@ describe('HomeSurface — Quick Actions', () => {
     });
 
     it('Datei hochladen opens finder with showUpload: true', () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         fireEvent.click(screen.getByTestId('qa-upload'));
         expect(openPane).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -355,7 +323,7 @@ describe('HomeSurface — Quick Actions', () => {
 
 describe('HomeSurface — logout', () => {
     it('calls server logout and clears client state on button click', async () => {
-        render(<HomeSurface />);
+        renderWithDepts();
         fireEvent.click(screen.getByTestId('home-logout'));
 
         await waitFor(() => {

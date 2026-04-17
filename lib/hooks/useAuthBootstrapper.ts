@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 import { useUserProfile } from '@/lib/queries/useUserProfile';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -11,6 +11,7 @@ import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier } from '@/lib/auth/sessionLifecycle';
+import { isLocalRuntimeHost, useRuntimeSession } from '@/lib/auth/runtimeSession';
 import type { UserProfile } from '@/lib/api/authClient';
 import type { User, UserRole } from '@/lib/types/mora';
 
@@ -52,7 +53,7 @@ function mapProfileToUser(profile: UserProfile): User {
 export function useAuthBootstrapper() {
     const router = useRouter();
     const pathname = usePathname();
-    const { data: session, status } = useSession();
+    const { data: session, status } = useRuntimeSession();
 
     // Declarative query hooks — fire as soon as the component mounts.
     // The queries themselves handle re-fetch, caching, and error states.
@@ -91,7 +92,10 @@ export function useAuthBootstrapper() {
             if (getSessionTier(lastActivity) === 'neustart' && pathname !== '/') {
                 staleTeardownRan.current = true;
                 const teardown: Promise<unknown>[] = [authLogout()];
-                if (status === 'authenticated') {
+                const shouldSignOutNextAuth =
+                    status === 'authenticated' &&
+                    (!isLocalRuntimeHost() || !readCookie('mora_session'));
+                if (shouldSignOutNextAuth) {
                     teardown.push(signOut({ redirect: false }));
                 }
                 Promise.allSettled(teardown).then(() => {
@@ -267,5 +271,8 @@ export function useAuthBootstrapper() {
         }
     }, [status, isLoggingOut, setIsLoggingOut]);
 
-    return { isBootstrapped: hasBooted };
+    return {
+        isBootstrapped: hasBooted,
+        authError: null as string | null,
+    };
 }

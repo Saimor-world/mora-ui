@@ -6,6 +6,7 @@ import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { signOut } from 'next-auth/react';
 import * as coreClient from '@/lib/api/coreClient';
 import * as sessionLifecycle from '@/lib/auth/sessionLifecycle';
+import { readCookie } from '@/lib/auth/cookies';
 
 const mockReplace = jest.fn();
 
@@ -38,6 +39,12 @@ jest.mock('@/lib/auth/sessionLifecycle', () => ({
     touchSessionActivity: jest.fn(),
 }));
 
+jest.mock('@/lib/auth/cookies', () => ({
+    readCookie: jest.fn(),
+    writeCookie: jest.fn(),
+    deleteCookie: jest.fn(),
+}));
+
 function Probe() {
     useAuthBootstrapper();
     return null;
@@ -56,8 +63,12 @@ describe('useAuthBootstrapper stale session handling', () => {
         localStorage.clear();
         // 73h ago → neustart tier (72h+ threshold)
         localStorage.setItem('last_activity', new Date(Date.now() - 73 * 60 * 60 * 1000).toISOString());
+        localStorage.setItem('last_user_email', 'demo@saimor.io');
         (coreClient.authLogout as jest.Mock).mockResolvedValue({ success: true });
         (signOut as jest.Mock).mockResolvedValue(undefined);
+        (readCookie as jest.Mock).mockImplementation((name: string) => (
+            name === 'mora_session' ? 'local-session' : undefined
+        ));
     });
 
     it('tears down auth and redirects to root when the session is neustart (72h+)', async () => {
@@ -65,7 +76,7 @@ describe('useAuthBootstrapper stale session handling', () => {
 
         await waitFor(() => {
             expect(coreClient.authLogout).toHaveBeenCalled();
-            expect(signOut).toHaveBeenCalledWith({ redirect: false });
+            expect(signOut).not.toHaveBeenCalled();
             expect(sessionLifecycle.clearClientSessionArtifacts).toHaveBeenCalled();
             expect(mockReplace).toHaveBeenCalledWith('/');
         });

@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useSession } from "next-auth/react";
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -17,6 +16,7 @@ import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, upda
 import { toast } from '@/lib/toast';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 import {
     AMBIENT_AUDIO_STORAGE_KEYS,
     DEFAULT_AMBIENT_AUDIO_VOLUME,
@@ -37,7 +37,7 @@ const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 
 export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
-    const { data: session } = useSession();
+    const { data: session } = useRuntimeSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { activeCompanyId, isStandardMode, setIsStandardMode } = useNavStore();
     const { user, updateUserSettings } = useSessionStore();
@@ -85,6 +85,7 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
     const [brandingName, setBrandingName] = useState('');
     const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
     const [brandingSaving, setBrandingSaving] = useState(false);
+    const userSettings = useMemo(() => (user?.settings ?? {}) as Record<string, unknown>, [user?.settings]);
 
         const activeCompany = useMemo(() => safeCompanies.find(c => c.id === activeCompanyId) || null, [safeCompanies, activeCompanyId]);
 
@@ -139,15 +140,20 @@ export const SettingsPane: React.FC<{ id: string }> = ({ id }) => {
 
 useEffect(() => {
         if (user?.settings) {
-            setTheme(user.settings.theme || 'deep-space');
-            setLanguage(user.settings.language || 'en');
-            setReducedMotion(user.settings.reduced_motion || false);
-            setInterfaceScale(user.settings.scale || 1);
-            const ambientAudio = resolveAmbientAudioSettings(user.settings);
+            const themeValue = typeof userSettings.theme === 'string' ? userSettings.theme : 'deep-space';
+            const languageValue = typeof userSettings.language === 'string' ? userSettings.language : 'en';
+            const reducedMotionValue = typeof userSettings.reduced_motion === 'boolean' ? userSettings.reduced_motion : false;
+            const scaleValue = typeof userSettings.scale === 'number' ? userSettings.scale : 1;
+
+            setTheme(themeValue);
+            setLanguage(languageValue);
+            setReducedMotion(reducedMotionValue);
+            setInterfaceScale(scaleValue);
+            const ambientAudio = resolveAmbientAudioSettings(userSettings);
             setAmbientAudioEnabled(ambientAudio.enabled);
             setAmbientAudioVolume(ambientAudio.volume);
             setAmbientAudioTrackId(ambientAudio.trackId);
-            setAmbientSceneTrackMap(resolveAmbientSceneTrackMap(user.settings));
+            setAmbientSceneTrackMap(resolveAmbientSceneTrackMap(userSettings));
             return;
         }
         if (typeof window !== 'undefined') {
@@ -161,7 +167,7 @@ useEffect(() => {
             setAmbientAudioTrackId(ambientAudio.trackId);
             setAmbientSceneTrackMap(resolveAmbientSceneTrackMap());
         }
-    }, [user?.settings]);
+    }, [user?.settings, userSettings]);
 
     useEffect(() => {
         let isMounted = true;

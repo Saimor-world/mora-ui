@@ -53,8 +53,8 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
-            onMouseEnter={onPointerEnter}
-            onMouseLeave={onPointerLeave}
+            onPointerEnter={onPointerEnter}
+            onPointerLeave={onPointerLeave}
         >
             <div
                 className="pointer-events-none absolute inset-x-0 top-0 h-24"

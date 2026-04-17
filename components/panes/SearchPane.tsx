@@ -3,15 +3,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, FileText, Folder, Building2, Clock, Sparkles } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
 import { useNavStore } from '@/lib/store/navStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
 import { getSearchResolution, getSearchResultSubtitle, mapRawSearchResult, openSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
+import type { CoreTreeNode } from '@/lib/types/core';
 
 /**
  * SearchPane - Universal Search Interface
@@ -24,6 +25,64 @@ import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
  */
 
 type SearchResult = OpenableSearchResult & { source?: 'local' | 'mora' };
+
+function flattenTreeSearchResults(tree: CoreTreeNode[], companyId: string | null | undefined): SearchResult[] {
+    const results: SearchResult[] = [];
+    const walk = (
+        nodes: CoreTreeNode[],
+        context: {
+            departmentId?: string;
+            spaceId?: string;
+            folderId?: string;
+            path: string[];
+        }
+    ) => {
+        nodes.forEach((node) => {
+            const nextPath = [...context.path, node.name];
+            const baseResult: SearchResult = {
+                id: node.id,
+                type: node.type === 'node' ? 'node' : node.type,
+                title: node.name,
+                subtitle: nextPath.join(' > '),
+                path: nextPath.join(' > '),
+                icon:
+                    node.type === 'department'
+                        ? Building2
+                        : node.type === 'space' || node.type === 'folder'
+                            ? Folder
+                            : FileText,
+                source: 'local',
+                companyId: companyId || undefined,
+                departmentId: context.departmentId,
+                spaceId: context.spaceId,
+                folderId: context.folderId,
+                nodeId: node.type === 'node' ? node.id : undefined,
+            };
+
+            if (node.type === 'department') {
+                baseResult.departmentId = node.id;
+            } else if (node.type === 'space') {
+                baseResult.spaceId = node.id;
+            } else if (node.type === 'folder') {
+                baseResult.folderId = node.id;
+            }
+
+            results.push(baseResult);
+
+            if (!node.children?.length) return;
+
+            walk(node.children, {
+                departmentId: node.type === 'department' ? node.id : context.departmentId,
+                spaceId: node.type === 'space' ? node.id : context.spaceId,
+                folderId: node.type === 'folder' ? node.id : context.folderId,
+                path: nextPath,
+            });
+        });
+    };
+
+    walk(tree, { path: [] });
+    return results;
+}
 
 export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
@@ -39,16 +98,13 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     const inputRef = useRef<HTMLInputElement>(null);
     const searchRequestRef = useRef(0);
 
-    const {
-        spacesByDepartment,
-        nodesByCompany,
-        setActiveDepartment,
-        setActiveSpace,
-        setViewLevel
-    } = useMoraStore();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const setActiveDepartment = useNavStore((s) => s.setActiveDepartment);
+    const setActiveSpace = useNavStore((s) => s.setActiveSpace);
+    const setViewLevel = useNavStore((s) => s.setViewLevel);
     const { data: companies = [] } = useCompanies();
     const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
 
     // Must be initialised after activeCompanyId is available (avoids TDZ)
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
@@ -58,13 +114,10 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
         [safeCompanies, activeCompanyId]
     );
 
-    // Flatten spaces and nodes for searching (Memoized to prevent infinite re-render loops)
-    const allSpaces = React.useMemo(() => Object.values(spacesByDepartment).flat(), [spacesByDepartment]);
-    const allNodes = React.useMemo(() => {
-        return activeCompanyId && nodesByCompany[activeCompanyId]
-            ? nodesByCompany[activeCompanyId]
-            : [];
-    }, [activeCompanyId, nodesByCompany]);
+    const localTreeResults = React.useMemo(
+        () => flattenTreeSearchResults(Array.isArray(treeData) ? treeData : [], activeCompanyId),
+        [treeData, activeCompanyId]
+    );
 
     // Focus input on mount
     useEffect(() => {
@@ -124,40 +177,29 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
                     title: dept.name,
                     subtitle: 'Department',
                     icon: Building2,
+                    companyId: activeCompanyId || undefined,
+                    departmentId: dept.id,
                     source: 'local'
                 });
             }
         });
 
-        allSpaces.forEach(space => {
-            if (space.name.toLowerCase().includes(lowerQuery)) {
-                searchResults.push({
-                    id: space.id,
-                    type: 'space',
-                    title: space.name,
-                    subtitle: 'Space',
-                    icon: Folder,
-                    source: 'local'
-                });
+        localTreeResults.forEach((result) => {
+            if (
+                result.title.toLowerCase().includes(lowerQuery)
+                || result.subtitle?.toLowerCase().includes(lowerQuery)
+                || result.path?.toLowerCase().includes(lowerQuery)
+            ) {
+                searchResults.push(result);
             }
         });
 
-        allNodes.forEach(node => {
-            if (node.title?.toLowerCase().includes(lowerQuery) ||
-                node.content?.toLowerCase().includes(lowerQuery)) {
-                searchResults.push({
-                    id: node.id,
-                    type: 'node',
-                    title: node.title || 'Untitled',
-                    subtitle: node.content?.substring(0, 50) || 'Element',
-                    icon: FileText,
-                    source: 'local'
-                });
-            }
+        const deduped = new Map<string, SearchResult>();
+        searchResults.forEach((result) => {
+            deduped.set(`${result.type}:${result.id}`, result);
         });
-
-        return searchResults.slice(0, 10);
-    }, [departments, allSpaces, allNodes]);
+        return Array.from(deduped.values()).slice(0, 10);
+    }, [departments, localTreeResults, activeCompanyId]);
 
     // Search logic
     useEffect(() => {

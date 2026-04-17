@@ -45,7 +45,7 @@ export function createTestQueryClient(): QueryClient {
             warn: () => {},
             error: () => {},
         } as any,
-    });
+    } as any);
 }
 
 // ─── Store reset helpers ──────────────────────────────────────────────────────

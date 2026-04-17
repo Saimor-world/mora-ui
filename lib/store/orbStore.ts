@@ -61,11 +61,11 @@ export const useOrbStore = create<OrbStoreState>((set, get) => ({
   initializeMindLoop: () => {
     if (mindLoopInitialized) return;
     mindLoopInitialized = true;
-    // Lazy require to avoid circular dependency — mindLoop may import from stores
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { mindLoop } = require('@/lib/intelligence/mindLoop');
-    mindLoop.subscribe((level: OrbStateValue) => {
-      get().setOrbState(level);
+    // Lazy dynamic import keeps initialization one-way without the deprecated require path.
+    void import('@/lib/intelligence/mindLoop').then(({ mindLoop }) => {
+      mindLoop.subscribe((level: OrbStateValue) => {
+        get().setOrbState(level);
+      });
     });
   },
 }));

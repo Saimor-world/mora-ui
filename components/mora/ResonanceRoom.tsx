@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMoraStore } from "@/lib/store/moraState";
 import { useNavStore } from "@/lib/store/navStore";
 import { useOrbStore } from "@/lib/store/orbStore";
 import { usePaneStore } from "@/lib/store/paneStore";
@@ -76,6 +75,7 @@ export const ResonanceRoom: React.FC<Props> = ({
     const [isTyping, setIsTyping] = useState(false);
     const [moraIsThinking, setMoraIsThinking] = useState(false);
     const [latestThought, setLatestThought] = useState<string | null>(null);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -83,7 +83,6 @@ export const ResonanceRoom: React.FC<Props> = ({
     const { role } = useUser();
     const orbState = useOrbStore((s) => s.orbState);
     const viewMode = useNavStore((s) => s.viewMode);
-    const coreError = useMoraStore((s) => s.coreError);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
@@ -109,7 +108,7 @@ export const ResonanceRoom: React.FC<Props> = ({
 
     // Poll MORA's conscious stream with exponential backoff
     useEffect(() => {
-        if (!isOpen || coreError) return;
+        if (!isOpen) return;
 
         let isMounted = true;
         let timeoutId: NodeJS.Timeout;
@@ -123,6 +122,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                     const latest = res.thoughts[0];
                     if (latest.thought !== latestThought) {
                         setLatestThought(latest.thought);
+                        setConnectionError(null);
 
                         // Only add to messages if it's genuinely new and not a response
                         if (latest.type === "reflection") {
@@ -146,6 +146,7 @@ export const ResonanceRoom: React.FC<Props> = ({
             } catch (e) {
                 // Apply backoff on error
                 interval = Math.min(interval * 1.5, maxInterval);
+                setConnectionError(e instanceof Error ? e.message : "resonance-offline");
             }
             if (isMounted) {
                 timeoutId = setTimeout(fetchThoughts, interval);
@@ -158,7 +159,7 @@ export const ResonanceRoom: React.FC<Props> = ({
             isMounted = false;
             clearTimeout(timeoutId);
         };
-    }, [isOpen, coreError, latestThought]);
+    }, [isOpen, latestThought]);
 
     // Handle sending a message
     const handleSend = async () => {
@@ -415,7 +416,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 </h2>
                                 <p className="text-[10px] text-emerald-500/50 uppercase tracking-widest">
                                     {moraIsThinking ? "MORA reflektiert..." :
-                                        coreError ? "Eingeschraenkte Verbindung" :
+                                        connectionError ? "Eingeschraenkte Verbindung" :
                                             viewMode === 'demo' ? "Demokontext" : "Aktiver Dialog"}
                                 </p>
                             </div>

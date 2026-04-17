@@ -1,7 +1,12 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import UniverseView from '@/components/home/UniverseView';
 import * as coreClient from '@/lib/api/coreClient';
+import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 jest.mock('@/lib/api/coreClient', () => ({
     ...jest.requireActual('@/lib/api/coreClient'),
@@ -13,8 +18,6 @@ jest.mock('@/lib/api/coreClient', () => ({
 jest.mock('@/components/mora/Planet', () => ({
     Planet: ({ department }: any) => <div data-testid={`planet-${department.id}`}>{department.name}</div>,
 }));
-
-// LockedPlanetTooltip — use real implementation so "Mitgliedschaft" text renders
 
 // Suppress heavy sub-components not under test
 jest.mock('@/components/layers/LayerInsightRail', () => ({
@@ -33,60 +36,6 @@ jest.mock('framer-motion', () => ({
         line: (p: any) => <line {...p} />,
     },
     useReducedMotion: () => false,
-}));
-
-// Query hook mocks
-jest.mock('@/lib/queries/useDepartments', () => ({
-    useDepartments: jest.fn().mockReturnValue({ data: [], isLoading: false, error: null }),
-}));
-jest.mock('@/lib/queries/useTree', () => ({
-    useTree: jest.fn().mockReturnValue({ data: [], isLoading: false, error: null }),
-}));
-jest.mock('@/lib/queries/useCompanies', () => ({
-    useCompanies: jest.fn().mockReturnValue({ data: [{ id: 'company-1', name: 'Test Corp' }], isLoading: false }),
-}));
-
-// Store mocks
-jest.mock('@/lib/store/navStore', () => ({
-    useNavStore: jest.fn((selector) => {
-        const state = {
-            activeCompanyId: 'company-1',
-            activeDepartmentId: null,
-            activeSpaceId: null,
-            activeFolderId: null,
-            viewLevel: 'core',
-            coreMode: 'explore',
-            viewMode: 'workspace',
-            isStandardMode: false,
-            nameConflict: null,
-            setCoreMode: jest.fn(),
-            navigateToCore: jest.fn(),
-            navigateToDepartment: jest.fn(),
-            navigateToSpace: jest.fn(),
-            navigateToFolder: jest.fn(),
-            navigateToExplore: jest.fn(),
-        };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
-jest.mock('@/lib/store/sessionStore', () => ({
-    useSessionStore: jest.fn((selector) => {
-        const state = {
-            user: { id: 'u-1', name: 'Max', email: 'max@firma.de', role: 'member' },
-        };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
-jest.mock('@/lib/store/orbStore', () => ({
-    useOrbStore: jest.fn((selector) => {
-        const state = {
-            orbState: 'idle',
-            setOrbState: jest.fn(),
-        };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
 }));
 
 jest.mock('@/lib/store/contextStore', () => ({
@@ -114,15 +63,48 @@ const memberships = [
     { department_id: 'dept-eng', department_name: 'Engineering' },
 ];
 
+beforeEach(resetAllStores);
+
 describe('UniverseView membership-scoped rendering', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockFetchDepartmentStats.mockResolvedValue([]);
 
-        // Set departments via query hook mock
-        const { useDepartments } = require('@/lib/queries/useDepartments');
-        (useDepartments as jest.Mock).mockReturnValue({ data: departments, isLoading: false, error: null });
+        useNavStore.setState({
+            activeCompanyId: 'company-1',
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            activeFolderId: null,
+            viewLevel: 'core',
+            coreMode: 'explore',
+            viewMode: 'workspace',
+            isStandardMode: false,
+            nameConflict: null,
+            setCoreMode: jest.fn(),
+            navigateToCore: jest.fn(),
+            navigateToDepartment: jest.fn(),
+            navigateToSpace: jest.fn(),
+            navigateToFolder: jest.fn(),
+            navigateToExplore: jest.fn(),
+        } as any);
+
+        useSessionStore.setState({
+            user: { id: 'u-1', name: 'Max', email: 'max@firma.de', role: 'member' },
+        } as any);
+
+        useOrbStore.setState({
+            orbState: 'idle',
+            setOrbState: jest.fn(),
+        } as any);
     });
+
+    function renderView() {
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.departments('company-1'), departments);
+        qc.setQueryData(queryKeys.tree('company-1'), []);
+        qc.setQueryData(queryKeys.companies(), [{ id: 'company-1', name: 'Test Corp' }]);
+        return renderWithProviders(<UniverseView />, { queryClient: qc });
+    }
 
     it('shows member and public departments normally', async () => {
         mockFetchUserMemberships.mockResolvedValue({
@@ -130,7 +112,7 @@ describe('UniverseView membership-scoped rendering', () => {
             personal_space_id: 'space-test',
             has_department_assignments: true,
         });
-        render(<UniverseView />);
+        renderView();
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-eng')).toBeInTheDocument(); // member
             expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument(); // public
@@ -143,7 +125,7 @@ describe('UniverseView membership-scoped rendering', () => {
             personal_space_id: 'space-test',
             has_department_assignments: true,
         });
-        render(<UniverseView />);
+        renderView();
         await waitFor(() => {
             expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
         });
@@ -155,7 +137,7 @@ describe('UniverseView membership-scoped rendering', () => {
             personal_space_id: 'space-test',
             has_department_assignments: true,
         });
-        render(<UniverseView />);
+        renderView();
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
         });
@@ -168,7 +150,7 @@ describe('UniverseView membership-scoped rendering', () => {
             personal_space_id: 'space-test',
             has_department_assignments: true,
         });
-        render(<UniverseView />);
+        renderView();
         // Click the locked planet once it's stable in the DOM, then verify tooltip renders
         await waitFor(() => {
             const lockedPlanet = screen.getByTestId('locked-planet-dept-fin');
@@ -179,7 +161,7 @@ describe('UniverseView membership-scoped rendering', () => {
 
     it('restricts to public/visible departments only when membership API returns null', async () => {
         mockFetchUserMemberships.mockResolvedValue(null);
-        render(<UniverseView />);
+        renderView();
         await waitFor(() => {
             // public department always renders
             expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument();
@@ -193,7 +175,7 @@ describe('UniverseView membership-scoped rendering', () => {
 
     it('restricts to public/visible departments when membership request rejects', async () => {
         mockFetchUserMemberships.mockRejectedValue(new Error('membership failed'));
-        render(<UniverseView />);
+        renderView();
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument();
             expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
