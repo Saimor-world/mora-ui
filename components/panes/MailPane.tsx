@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 
 interface MailAttachment {
     filename: string;
@@ -49,6 +50,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const queryClient = useQueryClient();
     const pane = getPane(id);
     const { overview, browserBridge, summary } = useCommunicationSurface();
+    const { mailPreview } = useCommunicationLiveData();
 
     const [mails, setMails] = useState<MailObject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -189,6 +191,8 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         });
     };
 
+    const latestMail = mailPreview[0] ?? null;
+
     return (
         <GlassPanel
             title="Post"
@@ -257,6 +261,13 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                             ? 'Browser ist freigegeben und kann Signale, Mail und Kalender mittragen.'
                                             : 'Browser-Freigaben und Mail-Verbindung lassen sich direkt aus dem OS heraus vorbereiten.'}
                                     </div>
+                                    {latestMail ? (
+                                        <div className="mt-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Neueste Nachricht</div>
+                                            <div className="mt-1 text-xs text-white/82">{latestMail.subject}</div>
+                                            <div className="mt-1 truncate text-[11px] text-white/48">{latestMail.from}</div>
+                                        </div>
+                                    ) : null}
                                 </div>
                                 <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55">
                                     {summary.mailConfigured ? 'Verbunden' : 'Vorbereitung'}

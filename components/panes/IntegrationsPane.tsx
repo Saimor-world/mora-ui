@@ -7,6 +7,7 @@ import { corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { toast } from 'sonner';
 import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 
@@ -182,7 +183,8 @@ const SummaryCard: React.FC<{
     status?: string;
     description: string;
     meta?: string | null;
-}> = ({ icon, title, status, description, meta }) => (
+    detail?: string | null;
+}> = ({ icon, title, status, description, meta, detail }) => (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -199,6 +201,7 @@ const SummaryCard: React.FC<{
             </span>
         </div>
         <p className="text-xs leading-relaxed text-white/65">{description}</p>
+        {detail ? <p className="mt-3 text-[11px] text-white/42">{detail}</p> : null}
     </div>
 );
 
@@ -218,6 +221,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         localTruthBridge,
         summary,
     } = useCommunicationSurface();
+    const { mailPreview, calendarPreview } = useCommunicationLiveData();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
 
@@ -231,6 +235,8 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
         [overview]
     );
+    const latestMail = mailPreview[0] ?? null;
+    const nextEvent = calendarPreview[0] ?? null;
 
     const requestBrowserNotifications = useCallback(async () => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
@@ -694,6 +700,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     status={overview?.mail?.status}
                                     description={buildMailDescription(overview || undefined)}
                                     meta={overview?.mail?.provider ? `Provider: ${overview.mail.provider}` : null}
+                                    detail={latestMail ? `${latestMail.from}: ${latestMail.subject}` : 'Nach dem Verbinden erscheinen neue Nachrichten direkt im OS.'}
                                 />
                                 <SummaryCard
                                     icon={<Calendar size={18} />}
@@ -701,6 +708,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     status={overview?.calendar?.status}
                                     description={buildCalendarDescription(overview || undefined)}
                                     meta={overview?.calendar?.provider ? `Provider: ${overview.calendar.provider}` : null}
+                                    detail={nextEvent ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ''}` : 'Naechste Termine erscheinen direkt in Home, Kalender und Integrationen.'}
                                 />
                                 <SummaryCard
                                     icon={<Bot size={18} />}

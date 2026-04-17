@@ -15,6 +15,7 @@ import { usePaneStore } from "@/lib/store/paneStore";
 import { coreGet, corePost } from "@/lib/api/coreClient";
 import { toast } from "sonner";
 import { useCommunicationSurface } from "@/lib/hooks/useCommunicationSurface";
+import { useCommunicationLiveData } from "@/lib/hooks/useCommunicationLiveData";
 import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from "@/lib/integrations/calendarOAuth";
 import {
     Calendar as CalendarIcon,
@@ -50,6 +51,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
     const isActive = usePaneStore((state) => state.activePaneId === id);
     const pane = getPane(id);
     const { summary } = useCommunicationSurface();
+    const { calendarPreview } = useCommunicationLiveData();
     const [isConnectingAccount, setIsConnectingAccount] = useState(false);
 
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -250,6 +252,7 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
     ];
 
     const weekDays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+    const nextEvent = calendarPreview[0] ?? null;
 
     return (
         <GlassPanel
@@ -314,6 +317,15 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
                                 <div className="mt-1 text-xs text-white/50">
                                     Kalender, Browser-Bridge und Local Truth muessen denselben Verbindungszustand teilen.
                                 </div>
+                                {nextEvent ? (
+                                    <div className="mt-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                        <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Naechster Termin</div>
+                                        <div className="mt-1 text-xs text-white/82">{nextEvent.title}</div>
+                                        <div className="mt-1 text-[11px] text-white/48">
+                                            {[nextEvent.date, nextEvent.time].filter(Boolean).join(' · ') || 'Zeit wird geladen'}
+                                        </div>
+                                    </div>
+                                ) : null}
                             </div>
                             <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55">
                                 {summary.calendarConfigured ? 'Verbunden' : 'Vorbereitung'}
@@ -343,6 +355,18 @@ export function CalendarPane({ id = "calendar-main" }: CalendarPaneProps) {
 
                 {/* Calendar Grid */}
                 <div className="flex-1 p-4 overflow-hidden">
+                    {calendarPreview.length > 0 && (
+                        <div className="mb-4 grid gap-2 md:grid-cols-3">
+                            {calendarPreview.slice(0, 3).map((event) => (
+                                <div key={event.id} className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                                    <div className="truncate text-xs text-white/82">{event.title}</div>
+                                    <div className="mt-1 text-[11px] text-white/42">
+                                        {[event.date, event.time].filter(Boolean).join(' · ') || 'Termin'}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     {/* Week day headers */}
                     <div className="grid grid-cols-7 mb-2">
                         {weekDays.map(day => (
