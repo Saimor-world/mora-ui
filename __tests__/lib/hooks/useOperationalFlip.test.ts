@@ -1,24 +1,13 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
+import React from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
 import { fetchUserProfile } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
+import { resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
-const patchOperationalSession = jest.fn();
-const invalidateQueries = jest.fn().mockResolvedValue(undefined);
-
-let mockSessionState: any = {
-    user: { operational_state: 'setup_required' },
-    patchOperationalSession,
-};
-
-jest.mock('@/lib/store/sessionStore', () => ({
-    useSessionStore: (selector: (s: any) => any) => selector(mockSessionState),
-}));
-
-jest.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({ invalidateQueries }),
-}));
-
+// I/O boundaries — fine to mock
 jest.mock('@/lib/api/coreClient', () => ({
     fetchUserProfile: jest.fn(),
 }));
@@ -33,27 +22,41 @@ jest.mock('@/lib/api/realtimeClient', () => ({
 const mockFetchUserProfile = fetchUserProfile as jest.MockedFunction<typeof fetchUserProfile>;
 const mockRealtime = realtime as jest.Mocked<typeof realtime>;
 
+beforeEach(resetAllStores);
+
 describe('useOperationalFlip', () => {
+    let patchOperationalSession: jest.Mock;
+    let qc: ReturnType<typeof createTestQueryClient>;
+
     beforeEach(() => {
         jest.clearAllMocks();
-        invalidateQueries.mockResolvedValue(undefined);
-        mockSessionState = {
+        patchOperationalSession = jest.fn();
+        qc = createTestQueryClient();
+
+        useSessionStore.setState({
             user: { operational_state: 'setup_required' },
             patchOperationalSession,
-        };
+        } as any);
     });
 
+    function wrapper({ children }: { children: React.ReactNode }) {
+        return React.createElement(QueryClientProvider, { client: qc }, children);
+    }
+
     it('subscribes to setup-completion realtime events only while setup is required', () => {
-        renderHook(() => useOperationalFlip());
+        renderHook(() => useOperationalFlip(), { wrapper });
 
         expect(mockRealtime.on).toHaveBeenCalledWith('company_created', expect.any(Function));
         expect(mockRealtime.on).toHaveBeenCalledWith('setup_complete', expect.any(Function));
     });
 
     it('does not subscribe when already operational', () => {
-        mockSessionState.user = { operational_state: 'operational' };
+        useSessionStore.setState({
+            user: { operational_state: 'operational' },
+            patchOperationalSession,
+        } as any);
 
-        renderHook(() => useOperationalFlip());
+        renderHook(() => useOperationalFlip(), { wrapper });
 
         expect(mockRealtime.on).not.toHaveBeenCalled();
     });
@@ -71,8 +74,13 @@ describe('useOperationalFlip', () => {
             scope_source: 'tenant_default_company',
         });
 
-        renderHook(() => useOperationalFlip());
-        const handler = (mockRealtime.on as jest.Mock).mock.calls.find(([event]) => event === 'company_created')?.[1];
+        // Spy on the real QueryClient instead of mocking react-query
+        const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+
+        renderHook(() => useOperationalFlip(), { wrapper });
+        const handler = (mockRealtime.on as jest.Mock).mock.calls.find(
+            ([event]) => event === 'company_created'
+        )?.[1];
 
         await act(async () => {
             await handler?.({});
@@ -87,7 +95,7 @@ describe('useOperationalFlip', () => {
                 company_count: 1,
                 scope_source: 'tenant_default_company',
             });
-            expect(invalidateQueries).toHaveBeenCalled();
+            expect(invalidateSpy).toHaveBeenCalled();
         });
     });
 });

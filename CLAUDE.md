@@ -193,9 +193,11 @@ Mora verhält sich nicht wie ein typischer Chatbot. Sie ist:
 npx jest --no-coverage --testPathPattern="__tests__"
 ```
 
-- Baseline: ~511 passing, 6 pre-existing failures.
-- Mock ALL stores + framer-motion + GlassPanel in component tests.
-- Declare stable array/object references **outside** `jest.mock()` factories to prevent infinite render loops.
+- Baseline: ~502 passing, 15 pre-existing failures (surfaceRegistry/ScannerPane/UsersPane.pilot/Breadcrumb/UniverseView).
+- **No-mock architecture**: use `useNavStore.setState()` / `queryClient.setQueryData()` instead of mocking stores or query hooks.
+- Mock only I/O boundaries (`coreClient`, `realtimeClient`) and UI libraries (framer-motion, GlassPanel).
+- Declare stable array/object references **inside** `jest.mock()` factory closures to prevent infinite render loops.
+- `useDepartments` mock: must return a stable `[]` reference — a new `[]` on every call breaks `buildLocalResults` deps.
 
 ### Git Gotchas
 

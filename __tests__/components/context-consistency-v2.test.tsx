@@ -1,36 +1,51 @@
+/**
+ * Context Consistency V2 — company-switch stale state tests (variant 2)
+ *
+ * Surfaces: SearchPane, MoraUpdatesFeed
+ *
+ * Architecture note: useCompanies/useDepartments are kept mocked (see v1 file).
+ * navStore is real — Zustand subscriptions drive company-switch re-renders.
+ */
+
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { resetAllStores } from '../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
 
-const storeState = {
+// ─── moraState: still needed for SearchPane ───────────────────────────────────
+
+const moraState = {
     departments: [] as any[],
     spacesByDepartment: {} as Record<string, any[]>,
     nodesByCompany: {} as Record<string, any[]>,
-    activeCompanyId: 'company-alpha' as string | null,
-    activeDepartmentId: null as string | null,
     setActiveDepartment: jest.fn(),
     setActiveSpace: jest.fn(),
     setViewLevel: jest.fn(),
-    navigateToCore: jest.fn(),
-    navigateToDepartment: jest.fn(),
-    navigateToSpace: jest.fn(),
-    navigateToFolder: jest.fn(),
 };
+
+jest.mock('@/lib/store/moraState', () => ({
+    useMoraStore: (selector?: any) =>
+        selector ? selector(moraState) : moraState,
+}));
+
+// ─── Query hooks: stable references prevent infinite buildLocalResults cascade ─
+
+jest.mock('@/lib/queries/useCompanies', () => {
+    const stableCompanies = [{ id: 'company-alpha', name: 'Alpha Co' }];
+    return { useCompanies: () => ({ data: stableCompanies, isFetching: false }) };
+});
+
+jest.mock('@/lib/queries/useDepartments', () => {
+    const stableDepts: never[] = [];
+    return { useDepartments: () => ({ data: stableDepts, isFetching: false }) };
+});
+
+// ─── paneStore — stable fake ──────────────────────────────────────────────────
 
 const mockGetPane = jest.fn();
 const mockOpenPane = jest.fn();
 const mockRemovePane = jest.fn();
-const mockSearchGlobal = jest.fn();
-const mockSearchSemantic = jest.fn();
-const mockCoreGet = jest.fn();
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) => selector ? selector(storeState) : storeState,
-}));
-
-jest.mock('@/lib/store/navStore', () => ({
-    useNavStore: (selector?: any) => selector ? selector(storeState) : storeState,
-}));
 
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
@@ -48,11 +63,23 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
+// ─── I/O boundaries ──────────────────────────────────────────────────────────
+
+const mockSearchGlobal = jest.fn();
+const mockSearchSemantic = jest.fn();
+const mockCoreGet = jest.fn();
+
 jest.mock('@/lib/api/coreClient', () => ({
     searchGlobal: (...args: any[]) => mockSearchGlobal(...args),
     searchSemantic: (...args: any[]) => mockSearchSemantic(...args),
     coreGet: (...args: any[]) => mockCoreGet(...args),
 }));
+
+jest.mock('@/lib/api/realtimeClient', () => ({
+    realtime: { on: jest.fn(), off: jest.fn() },
+}));
+
+// ─── UI-only mocks ────────────────────────────────────────────────────────────
 
 jest.mock('@/components/layers/GlassPanel', () => ({
     GlassPanel: ({ children }: any) => <div>{children}</div>,
@@ -66,14 +93,6 @@ jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-jest.mock('@/lib/api/realtimeClient', () => ({
-    realtime: { on: jest.fn(), off: jest.fn() },
-}));
-
-jest.mock('@/lib/hooks/useHilToggle', () => ({
-    useHilToggle: () => ({ hilEnabled: false, setHilEnabled: jest.fn() }),
-}));
-
 jest.mock('@/lib/mora/presenceEvents', () => ({
     dispatchMoraPresence: jest.fn(),
 }));
@@ -82,8 +101,16 @@ jest.mock('@/lib/toast', () => ({
     toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
 }));
 
+jest.mock('@/lib/hooks/useHilToggle', () => ({
+    useHilToggle: () => ({ hilEnabled: false, setHilEnabled: jest.fn() }),
+}));
+
+// ─── Imports after mocks ──────────────────────────────────────────────────────
+
 import { SearchPane } from '@/components/panes/SearchPane';
 import { MoraUpdatesFeed } from '@/components/mora/MoraUpdatesFeed';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function renderSearchPane() {
     mockGetPane.mockReturnValue({
@@ -96,28 +123,41 @@ function renderSearchPane() {
     return render(<SearchPane id="search-main" />);
 }
 
+// ─── Setup / teardown ─────────────────────────────────────────────────────────
+
+beforeEach(() => {
+    resetAllStores();
+    jest.clearAllMocks();
+
+    useNavStore.setState({
+        activeCompanyId: 'company-alpha',
+        activeDepartmentId: null,
+        navigateToCore: jest.fn(),
+        navigateToDepartment: jest.fn(),
+        navigateToSpace: jest.fn(),
+        navigateToFolder: jest.fn(),
+    } as any);
+
+    mockSearchSemantic.mockResolvedValue([]);
+    mockSearchGlobal.mockResolvedValue({ results: [] });
+    mockCoreGet.mockResolvedValue({ events: [] });
+});
+
+afterEach(() => {
+    cleanup();
+    jest.clearAllTimers();
+    jest.useRealTimers();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+
 describe('Context Consistency V2', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-        storeState.activeCompanyId = 'company-alpha';
-        storeState.activeDepartmentId = null;
-        mockSearchSemantic.mockResolvedValue([]);
-        mockSearchGlobal.mockResolvedValue({ results: [] });
-        mockCoreGet.mockResolvedValue({ events: [] });
-    });
-
-    afterEach(() => {
-        cleanup();
-        jest.clearAllTimers();
-        jest.useRealTimers();
-    });
-
     it('clears stale SearchPane results immediately after company switch', async () => {
         mockSearchGlobal.mockResolvedValueOnce({
             results: [{ id: 'node-alpha', type: 'node', title: 'Alpha-Dokument', name: 'Alpha-Dokument' }],
         });
 
-        const { rerender } = renderSearchPane();
+        renderSearchPane();
         fireEvent.change(screen.getByRole('textbox'), { target: { value: 'bericht' } });
 
         await waitFor(() => expect(screen.getByText('Alpha-Dokument')).toBeInTheDocument());
@@ -129,9 +169,9 @@ describe('Context Consistency V2', () => {
         );
         mockSearchSemantic.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve([]), 200)));
 
-        storeState.activeCompanyId = 'company-beta';
+        // Real navStore fires subscriptions → component re-renders without explicit rerender()
         await act(async () => {
-            rerender(<SearchPane id="search-main" />);
+            useNavStore.setState({ activeCompanyId: 'company-beta' } as any);
         });
 
         expect(screen.queryByText('Alpha-Dokument')).not.toBeInTheDocument();
@@ -169,7 +209,7 @@ describe('Context Consistency V2', () => {
             }],
         });
 
-        const { rerender } = render(<MoraUpdatesFeed scope="company" showHeader={false} />);
+        render(<MoraUpdatesFeed scope="company" showHeader={false} />);
 
         await act(async () => {
             await Promise.resolve();
@@ -192,9 +232,8 @@ describe('Context Consistency V2', () => {
             }), 500))
         );
 
-        storeState.activeCompanyId = 'company-beta';
         await act(async () => {
-            rerender(<MoraUpdatesFeed scope="company" showHeader={false} />);
+            useNavStore.setState({ activeCompanyId: 'company-beta' } as any);
             await Promise.resolve();
             await Promise.resolve();
         });

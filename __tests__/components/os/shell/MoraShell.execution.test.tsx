@@ -8,9 +8,13 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { WORK_SESSION_PLAN_EVENT } from '@/lib/utils/moraExplanation';
+import { renderWithProviders, resetAllStores } from '../../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 
 // ── heavy dependency mocks ─────────────────────────────────────────────────
 
@@ -32,53 +36,6 @@ jest.mock('@/lib/hooks/useUser', () => ({
     resetUserState: jest.fn(),
 }));
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) => {
-        const store = {
-            orbNotifications: [],
-            companies: [],
-            departments: [],
-            spacesByDepartment: {},
-            foldersBySpace: {},
-        };
-        return selector ? selector(store) : store;
-    },
-}));
-
-jest.mock('@/lib/store/navStore', () => ({
-    useNavStore: jest.fn((selector?: any) => {
-        const state = {
-            viewLevel: 'company', coreMode: 'home', viewMode: 'workspace',
-            activeCompanyId: 'company-1', activeDepartmentId: null, activeSpaceId: null, activeFolderId: null,
-            isStandardMode: false, nameConflict: null,
-            navigateToCore: jest.fn(), navigateToDepartment: jest.fn(),
-            navigateToSpace: jest.fn(), navigateToFolder: jest.fn(), navigateToExplore: jest.fn(),
-            setActiveCompany: jest.fn(), setViewMode: jest.fn(), setIsStandardMode: jest.fn(),
-            cancelNameConflict: jest.fn(), setNameConflict: jest.fn(),
-        };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
-jest.mock('@/lib/store/sessionStore', () => ({
-    useSessionStore: jest.fn((selector?: any) => {
-        const state = {
-            user: { role: 'admin', tenant_id: 'tenant-1' },
-            permissions: { canCreate: false, canDelete: false, canAdmin: true, canEditSettings: true, canViewAnalytics: false },
-            hasBooted: true, isLoggingOut: false,
-            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
-        };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
-jest.mock('@/lib/store/orbStore', () => ({
-    useOrbStore: jest.fn((selector?: any) => {
-        const state = { orbState: 'idle', setOrbState: jest.fn() };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
 jest.mock('@/lib/auth/useAccount', () => ({
     useAccountStore: (selector?: any) => {
         const store = { logout: jest.fn() };
@@ -86,13 +43,20 @@ jest.mock('@/lib/auth/useAccount', () => ({
     },
 }));
 
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {
             reset: jest.fn(),
             openPane: jest.fn(),
-            panes: [],
+            panes: [STABLE_PANE],
             removePane: jest.fn(),
+            activePaneId: 'pane-test',
+            updatePanePosition: jest.fn(),
+            updatePaneSize: jest.fn(),
+            minimizePane: jest.fn(),
+            focusPane: jest.fn(),
+            getPane: () => STABLE_PANE,
         };
         return selector ? selector(store) : store;
     },
@@ -244,6 +208,8 @@ jest.mock('@/lib/constants/tenants', () => ({
 
 import { MoraShell } from '@/components/os/shell/MoraShell';
 
+beforeEach(resetAllStores);
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function fireSessionEvent(detail: Record<string, unknown>) {
@@ -268,10 +234,31 @@ const BASE_SUMMARY = {
 describe.skip('MoraShell execution card', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+
+        useNavStore.setState({
+            viewLevel: 'company', coreMode: 'home', viewMode: 'workspace',
+            activeCompanyId: 'company-1', activeDepartmentId: null, activeSpaceId: null, activeFolderId: null,
+            isStandardMode: false, nameConflict: null,
+            navigateToCore: jest.fn(), navigateToDepartment: jest.fn(),
+            navigateToSpace: jest.fn(), navigateToFolder: jest.fn(), navigateToExplore: jest.fn(),
+            setActiveCompany: jest.fn(), setViewMode: jest.fn(), setIsStandardMode: jest.fn(),
+            cancelNameConflict: jest.fn(), setNameConflict: jest.fn(),
+        } as any);
+
+        useSessionStore.setState({
+            user: { role: 'admin', tenant_id: 'tenant-1' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: true, canEditSettings: true, canViewAnalytics: false },
+            hasBooted: true, isLoggingOut: false,
+            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
+        } as any);
+
+        useOrbStore.setState({
+            orbState: 'idle', setOrbState: jest.fn(),
+        } as any);
     });
 
     it('state running: card has border-blue-400/28 class and "Laeuft gerade" text', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({ ...BASE_SUMMARY, state: 'running' });
 
@@ -284,7 +271,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('state waiting_confirmation: card has border-amber-400/28 class and "Freigabe erforderlich" text', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({ ...BASE_SUMMARY, state: 'waiting_confirmation' });
 
@@ -297,7 +284,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('state done: "Abgeschlossen" renders', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({ ...BASE_SUMMARY, state: 'done' });
 
@@ -307,7 +294,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('running with running_step_title: step title renders in card body', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({ ...BASE_SUMMARY, state: 'running', running_step_title: 'Datei lesen' });
 
@@ -317,7 +304,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('running without running_step_title: getSessionBodyText fallback renders', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         // No running_step_title — fallback should show "Mora arbeitet am Arbeitsplan."
         fireSessionEvent({ ...BASE_SUMMARY, state: 'running', stats: { total_steps: 0, completed_steps: 0 } });
@@ -328,7 +315,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('waiting with next_message: renders next_message text', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({
             ...BASE_SUMMARY,
@@ -342,7 +329,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('waiting with no next_message but pending_confirmation_title: renders that title', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({
             ...BASE_SUMMARY,
@@ -356,7 +343,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('waiting with neither next_message nor pending_confirmation_title: fallback renders', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({
             ...BASE_SUMMARY,
@@ -370,7 +357,7 @@ describe.skip('MoraShell execution card', () => {
     });
 
     it('waiting with next_label: renders next_label as secondary hint', async () => {
-        render(<MoraShell />);
+        renderWithProviders(<MoraShell />);
 
         fireSessionEvent({
             ...BASE_SUMMARY,

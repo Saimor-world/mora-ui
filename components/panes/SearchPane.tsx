@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, FileText, Folder, Building2, Clock, Sparkles } from 'lucide-react';
 import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
@@ -37,15 +40,15 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     const searchRequestRef = useRef(0);
 
     const {
-        companies,
-        departments,
         spacesByDepartment,
         nodesByCompany,
-        activeCompanyId,
         setActiveDepartment,
         setActiveSpace,
         setViewLevel
     } = useMoraStore();
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: companies = [] } = useCompanies();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
 
     // Must be initialised after activeCompanyId is available (avoids TDZ)
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
@@ -159,7 +162,9 @@ export const SearchPane: React.FC<{ id?: string }> = ({ id = 'search-main' }) =>
     // Search logic
     useEffect(() => {
         if (!query.trim()) {
-            setResults([]);
+            // Functional update preserves the same [] reference when already empty,
+            // preventing an infinite re-render loop (new [] !== old [] via Object.is).
+            setResults((prev) => (prev.length === 0 ? prev : []));
             setSearchMode(null);
             setSearchHint(null);
             setIsSearching(false);

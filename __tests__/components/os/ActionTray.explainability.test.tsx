@@ -6,17 +6,14 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ActionTray } from '@/components/os/ActionTray';
+import { renderWithProviders, resetAllStores } from '../../test-utils';
 
 const openPane = jest.fn();
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector: (state: { isStandardMode: boolean }) => unknown) =>
-        selector({ isStandardMode: false }),
-}));
-
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector: (state: { openPane: typeof openPane }) => unknown) =>
         selector({ openPane }),
@@ -65,6 +62,8 @@ function makeFolderEvent() {
     };
 }
 
+beforeEach(resetAllStores);
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('ActionTray — Gelernt prefix', () => {
@@ -76,7 +75,7 @@ describe('ActionTray — Gelernt prefix', () => {
             isLoading: false,
             error: null,
         });
-        render(<ActionTray />);
+        renderWithProviders(<ActionTray />);
         fireEvent.click(screen.getByTitle('Action tray'));
         expect(screen.getByText('Gelernt: Finance > Reports')).toBeInTheDocument();
     });
@@ -87,7 +86,7 @@ describe('ActionTray — Gelernt prefix', () => {
             isLoading: false,
             error: null,
         });
-        render(<ActionTray />);
+        renderWithProviders(<ActionTray />);
         fireEvent.click(screen.getByTitle('Action tray'));
         expect(screen.queryByText(/^Gelernt:/)).not.toBeInTheDocument();
         expect(screen.getByText('Finance > Reports')).toBeInTheDocument();
@@ -99,7 +98,7 @@ describe('ActionTray — Gelernt prefix', () => {
             isLoading: false,
             error: null,
         });
-        render(<ActionTray />);
+        renderWithProviders(<ActionTray />);
         fireEvent.click(screen.getByTitle('Action tray'));
         expect(screen.queryByText(/^Gelernt:/)).not.toBeInTheDocument();
     });
