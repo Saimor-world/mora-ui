@@ -23,6 +23,7 @@ import {
     resolveDepartmentSimilarityProfile,
     SEMANTIC_DRIVER_META,
     type DepartmentMetricSet,
+    type SemanticDriver,
 } from '@/lib/universe/semanticSimilarity';
 
 const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
@@ -46,7 +47,8 @@ const normalizeUniverseKey = (value: string | null | undefined) =>
  */
 
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
-    const { setOrbState, orbState } = useOrbStore(s => ({ setOrbState: s.setOrbState, orbState: s.orbState }));
+    const setOrbState = useOrbStore((s) => s.setOrbState);
+    const orbState = useOrbStore((s) => s.orbState);
     const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment } = useNavStore();
     const user = useSessionStore(s => s.user);
 
@@ -60,11 +62,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
-    const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
+    const [activePlanetId, setActivePlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
-    const [isInsightRailHovered, setIsInsightRailHovered] = useState(false);
-    const [isFocusBridgeHovered, setIsFocusBridgeHovered] = useState(false);
-    const [heldInsightPlanetId, setHeldInsightPlanetId] = useState<string | null>(null);
+    // isInsightRailHovered is kept as state (drives hasUniverseInteraction / visibleSemanticPaths)
+    // AND mirrored to a ref so callbacks always read the current value without stale closures.
+    const [isInsightRailHovered, setIsInsightRailHoveredState] = useState(false);
+    const isInsightRailHoveredRef = useRef(false);
+    const setIsInsightRailHovered = useCallback((value: boolean) => {
+        isInsightRailHoveredRef.current = value;
+        setIsInsightRailHoveredState(value);
+    }, []);
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [isCoreLogoHovered, setIsCoreLogoHovered] = useState(false);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
@@ -74,8 +81,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
-    // Space count is derived from API stats when available; tree-based fallback omits spaces detail.
-    const totalSpaceCount: number = 0;
 
     // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
     useEffect(() => {
@@ -224,21 +229,24 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const clearUniverseInteractionState = useCallback(() => {
         setHoverPlanetId(null);
-        setHeldInsightPlanetId(null);
-        setInsightPlanetId(null);
+        setActivePlanetId(null);
         setSemanticPreviewPathId(null);
-        setIsFocusBridgeHovered(false);
     }, []);
 
     const scheduleHoverRelease = useCallback(() => {
         clearHoverRelease();
         hoverClearRef.current = setTimeout(() => {
-            if (isInsightRailHovered || isFocusBridgeHovered) {
+            // Always read from ref — the closure would otherwise capture a stale
+            // isInsightRailHovered value from the render when the timer was scheduled.
+            if (isInsightRailHoveredRef.current) {
                 return;
             }
-            clearUniverseInteractionState();
+            setHoverPlanetId(null);
+            setSemanticPreviewPathId(null);
+            setLockedTooltipDeptId(null);
+            setActivePlanetId(null);
         }, coreMode === 'home' ? 320 : 1700);
-    }, [clearHoverRelease, clearUniverseInteractionState, coreMode, isFocusBridgeHovered, isInsightRailHovered]);
+    }, [clearHoverRelease, coreMode]);
 
     useEffect(() => (
         () => {
@@ -251,7 +259,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         clearHoverRelease();
         clearUniverseInteractionState();
         setIsInsightRailHovered(false);
-        setIsFocusBridgeHovered(false);
         setLockedTooltipDeptId(null);
     }, [clearHoverRelease, clearUniverseInteractionState, coreMode]);
 
@@ -329,7 +336,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
-    const focusedPlanetId = heldInsightPlanetId || hoverPlanetId || insightPlanetId || null;
+    const totalSpaceCount = useMemo(
+        () => Object.values(departmentMetrics).reduce((sum, metric) => sum + (metric.spaces || 0), 0),
+        [departmentMetrics]
+    );
+    const focusedPlanetId = activePlanetId || hoverPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -487,18 +498,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const focusedPlanetMetrics = focusedPlanet
         ? (departmentMetrics[focusedPlanet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 })
         : null;
-    const focusBridgeStyle = useMemo(() => {
-        if (!focusedPlanet) return null;
-
-        const bridgeWidth = Math.max(18, focusedPlanet.x - 8);
-        const bridgeTop = `calc(${focusedPlanet.y}% - 96px)`;
-
-        return {
-            top: bridgeTop,
-            width: `${bridgeWidth}%`,
-            height: '192px',
-        } as const;
-    }, [focusedPlanet]);
     const focusedSemanticLinks = useMemo(() => {
         if (!focusedPlanet) return [];
 
@@ -539,22 +538,32 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     useEffect(() => {
         setSemanticPreviewPathId(null);
-    }, [activeDepartmentId, insightPlanetId]);
+        setHoverPlanetId(null);
+        setActivePlanetId(null);
+        setIsInsightRailHovered(false);
+    }, [activeDepartmentId, setIsInsightRailHovered]);
 
     const handlePlanetHover = useCallback((planetId: string, hovered: boolean) => {
         if (hovered) {
             clearHoverRelease();
             setHoverPlanetId(planetId);
-            setInsightPlanetId(planetId);
+            // Sticky: activePlanetId keeps the rail alive even after hoverPlanetId clears
+            // (when cursor moves between planet and rail). Without this, the rail unmounts
+            // the instant the cursor leaves the planet, before the user reaches the rail.
+            setActivePlanetId(planetId);
             setSemanticPreviewPathId(null);
+            setLockedTooltipDeptId(null);
             return;
         }
 
         setHoverPlanetId((current) => (current === planetId ? null : current));
-        if (!isInsightRailHovered && !isFocusBridgeHovered) {
+        // Read from ref: by the time this fires (after Planet's 220ms dwell timer),
+        // the user may have already moved into the InsightRail. The state value would
+        // still be false here (captured at callback creation), but the ref is current.
+        if (!isInsightRailHoveredRef.current) {
             scheduleHoverRelease();
         }
-    }, [clearHoverRelease, scheduleHoverRelease, isFocusBridgeHovered, isInsightRailHovered]);
+    }, [clearHoverRelease, scheduleHoverRelease]);
 
     const handleSemanticPreview = (pathId: string | null) => {
         setSemanticPreviewPathId(pathId);
@@ -562,6 +571,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const handleSemanticNavigate = (departmentId: string) => {
         setSemanticPreviewPathId(null);
+        setActivePlanetId(departmentId);
         navigateToDepartment(departmentId);
     };
 
@@ -604,7 +614,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             letterSpacing: spacing
         };
     }, [displayCompanyName]);
-    const showOrganizationAggregate = !isPublicDemoSurface && !surfaceProfile.isLocalTruthSurface && !currentCompany && companies.length > 1;
+    // Guard: use activeCompanyId (not currentCompany) to avoid showing global org count
+    // while the companies query is still hydrating (currentCompany = undefined transiently).
+    const effectiveCompanyCount = surfaceProfile.isLocalTruthSurface
+        ? 1
+        : (activeCompanyId || currentCompany ? 1 : safeCompanies.length);
+    const showOrganizationAggregate = !isPublicDemoSurface && !surfaceProfile.isLocalTruthSurface && !activeCompanyId && safeCompanies.length > 1;
     const isHomeUniversePreview = coreMode === 'home';
     const centerSummary = useMemo(() => {
         const departmentCount = visiblePlanets.length;
@@ -688,23 +703,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const handleUniversePointerLeave = useCallback(() => {
         resetUniverseParallax();
 
-        if (isInsightRailHovered || isFocusBridgeHovered) {
+        if (isInsightRailHoveredRef.current) {
             return;
         }
-
-        if (heldInsightPlanetId) {
-            scheduleHoverRelease();
-            return;
-        }
-
-        clearHoverRelease();
-        clearUniverseInteractionState();
+        scheduleHoverRelease();
     }, [
-        clearHoverRelease,
-        clearUniverseInteractionState,
-        heldInsightPlanetId,
-        isFocusBridgeHovered,
-        isInsightRailHovered,
         resetUniverseParallax,
         scheduleHoverRelease,
     ]);
@@ -819,30 +822,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     />
                 ))}
             </motion.div>
-
-            {focusedPlanet && focusedPlanetMetrics && focusBridgeStyle ? (
-                <div
-                    className="absolute left-0 z-[27] pointer-events-auto bg-transparent"
-                    style={focusBridgeStyle}
-                    onMouseEnter={() => {
-                        clearHoverRelease();
-                        setIsFocusBridgeHovered(true);
-                        if (focusedPlanet) {
-                            setHeldInsightPlanetId(focusedPlanet.id);
-                            setInsightPlanetId(focusedPlanet.id);
-                        }
-                    }}
-                    onMouseLeave={() => {
-                        setIsFocusBridgeHovered(false);
-                        if (focusedPlanet && heldInsightPlanetId === focusedPlanet.id) {
-                            setHeldInsightPlanetId(null);
-                        }
-                        if (!hoverPlanetId && !isInsightRailHovered) {
-                            scheduleHoverRelease();
-                        }
-                    }}
-                />
-            ) : null}
 
             {/* 2. CENTER HUB (The Core) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pb-20">
@@ -1100,18 +1079,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     forceExpanded={Boolean(focusedPlanetId) || Boolean(semanticPreviewPathId) || isInsightRailHovered}
                     onPointerEnter={() => {
                         setIsInsightRailHovered(true);
-                        setIsFocusBridgeHovered(false);
-                        setHeldInsightPlanetId(focusedPlanet.id);
-                        setInsightPlanetId(focusedPlanet.id);
+                        setActivePlanetId(focusedPlanet.id);
                         clearHoverRelease();
                     }}
                     onPointerLeave={() => {
                         setIsInsightRailHovered(false);
-                        setIsFocusBridgeHovered(false);
-                        setHeldInsightPlanetId(null);
-                        if (!hoverPlanetId) {
-                            scheduleHoverRelease();
+                        if (hoverPlanetId) {
+                            setActivePlanetId(hoverPlanetId);
+                            return;
                         }
+                        setActivePlanetId(null);
+                        scheduleHoverRelease();
                     }}
                     metrics={[
                         { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
@@ -1243,7 +1221,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                                 setCoreMode('explore');
                                             }
                                         }}
-                                        showTooltip={false}
                                         health={health}
                                         activity={activity}
                                         capacity={capacity}
@@ -1263,24 +1240,32 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                             return;
                                         }
                                         clearHoverRelease();
-                                        setHeldInsightPlanetId(null);
                                         setHoverPlanetId(null);
-                                        setInsightPlanetId(p.id);
+                                        setActivePlanetId(p.id);
                                         setSemanticPreviewPathId(null);
+                                        setLockedTooltipDeptId(null);
                                         navigateToDepartment(p.id);
                                     }}
-                                    showTooltip={false}
                                     health={health}
                                     activity={activity}
                                     capacity={capacity}
                                 />
                             )}
                             {lockedTooltipDeptId === p.id && (
-                                <LockedPlanetTooltip
-                                    name={p.name}
-                                    description={(p as any).description}
-                                    onDismiss={() => setLockedTooltipDeptId(null)}
-                                />
+                                <div
+                                    className="absolute z-50"
+                                    style={{
+                                        left: `${p.x}%`,
+                                        top: `${p.y}%`,
+                                        transform: 'translate(72px, -50%)',
+                                    }}
+                                >
+                                    <LockedPlanetTooltip
+                                        name={p.name}
+                                        description={(p as any).description}
+                                        onDismiss={() => setLockedTooltipDeptId(null)}
+                                    />
+                                </div>
                             )}
                         </React.Fragment>
                     );
@@ -1349,9 +1334,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
                                     label={showOrganizationAggregate ? 'Organisationen' : 'Bereiche'}
-                                    value={showOrganizationAggregate ? `${companies.length}` : `${totalSpaceCount}`}
+                                    value={showOrganizationAggregate ? `${effectiveCompanyCount}` : `${totalSpaceCount}`}
                                     status="stable"
-                                    progress={Math.min((showOrganizationAggregate ? companies.length : totalSpaceCount) * 20, 100)}
+                                    progress={Math.min((showOrganizationAggregate ? effectiveCompanyCount : totalSpaceCount) * 20, 100)}
                                 />
                                 <InsightCard
                                     icon={<Zap className="w-4 h-4" />}
