@@ -15,7 +15,7 @@ import { authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier, formatAbsenceText, touchSessionActivity, type SessionTier } from '@/lib/auth/sessionLifecycle';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
-import { signIn } from "next-auth/react";
+import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
@@ -368,7 +368,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
             if (!isLocalhost) {
-                const result = await signIn("credentials", {
+                const result = await bridgeNextAuthSignIn({
+                    provider: "credentials",
                     redirect: false,
                     username: loginEmail,
                     password: loginPassword
@@ -452,7 +453,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const role = data.role || selectedRole;
 
             if (!isLocalhost) {
-                const syncResult = await signIn("credentials", {
+                const syncResult = await bridgeNextAuthSignIn({
+                    provider: "credentials",
                     redirect: false,
                     username: email,
                     password: password

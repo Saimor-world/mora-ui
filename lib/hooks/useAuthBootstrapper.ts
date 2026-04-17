@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { bridgeNextAuthSignOut } from '@/lib/auth/nextAuthBridge';
 import { useUserProfile } from '@/lib/queries/useUserProfile';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -96,7 +96,7 @@ export function useAuthBootstrapper() {
                     status === 'authenticated' &&
                     (!isLocalRuntimeHost() || !readCookie('mora_session'));
                 if (shouldSignOutNextAuth) {
-                    teardown.push(signOut({ redirect: false }));
+                    teardown.push(bridgeNextAuthSignOut({ redirect: false }));
                 }
                 Promise.allSettled(teardown).then(() => {
                     clearClientSessionArtifacts();

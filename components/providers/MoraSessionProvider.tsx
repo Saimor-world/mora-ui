@@ -7,8 +7,13 @@ import { SessionContext, SessionProvider } from "next-auth/react";
 import { isLocalRuntimeHost, readLocalRuntimeSessionSnapshot } from "@/lib/auth/runtimeSession";
 
 export const MoraSessionProvider = ({ children }: { children: React.ReactNode }) => {
+    const [hasMounted, setHasMounted] = useState(false);
     const isLocal = typeof window !== "undefined" && isLocalRuntimeHost();
     const [snapshot, setSnapshot] = useState(() => readLocalRuntimeSessionSnapshot());
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     useEffect(() => {
         if (!isLocal) return undefined;
@@ -47,7 +52,7 @@ export const MoraSessionProvider = ({ children }: { children: React.ReactNode })
         };
     }, [snapshot]);
 
-    if (isLocal) {
+    if (!hasMounted || isLocal) {
         return <SessionContext.Provider value={localContextValue}>{children}</SessionContext.Provider>;
     }
 

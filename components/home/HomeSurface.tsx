@@ -16,6 +16,7 @@ import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -123,6 +124,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
         localTruthBridge,
         summary: communicationSummary,
     } = useCommunicationSurface();
+    const { mailPreview, calendarPreview } = useCommunicationLiveData();
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -340,6 +342,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const mailStatusLabel = communicationSummary.mailStatusLabel;
     const calendarStatusLabel = communicationSummary.calendarStatusLabel;
     const localTruthStatusLabel = communicationSummary.localTruthStatusLabel;
+    const nextCalendarEvent = calendarPreview[0] ?? null;
+    const latestMail = mailPreview[0] ?? null;
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
@@ -504,10 +508,20 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
                                 <div className="text-[9px] uppercase tracking-[0.16em] text-emerald-200/44">Mail</div>
                                 <div className="mt-1 text-[11px] text-white/76">{mailStatusLabel}</div>
+                                {latestMail ? (
+                                    <div className="mt-1 truncate text-[10px] text-white/46">
+                                        {latestMail.from}: {latestMail.subject}
+                                    </div>
+                                ) : null}
                             </div>
                             <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
                                 <div className="text-[9px] uppercase tracking-[0.16em] text-violet-200/44">Local</div>
                                 <div className="mt-1 text-[11px] text-white/76">{localTruthStatusLabel}</div>
+                                {nextCalendarEvent ? (
+                                    <div className="mt-1 truncate text-[10px] text-white/46">
+                                        {nextCalendarEvent.title}
+                                    </div>
+                                ) : null}
                             </div>
                         </div>
 
@@ -749,6 +763,9 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                     <span className="text-[10px] uppercase tracking-[0.16em]">Mail</span>
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{mailStatusLabel}</div>
+                                <div className="mt-1 text-[10px] text-white/48">
+                                    {latestMail ? `${latestMail.from}: ${latestMail.subject}` : 'Neueste Nachrichten erscheinen direkt hier im OS.'}
+                                </div>
                             </button>
                             <button
                                 type="button"
@@ -760,6 +777,9 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                     <span className="text-[10px] uppercase tracking-[0.16em]">Kalender</span>
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{calendarStatusLabel}</div>
+                                <div className="mt-1 text-[10px] text-white/48">
+                                    {nextCalendarEvent ? `${nextCalendarEvent.title}${nextCalendarEvent.time ? ` · ${nextCalendarEvent.time}` : ''}` : 'Naechste Termine werden nach Connect direkt eingeblendet.'}
+                                </div>
                             </button>
                             <button
                                 type="button"
