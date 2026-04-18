@@ -42,6 +42,7 @@ jest.mock('@/lib/api/cognitionClient', () => ({
 }));
 
 jest.mock('@/lib/api/coreClient', () => ({
+    coreGet: jest.fn().mockResolvedValue(null),
     learnInsight: jest.fn(),
     searchMemory: jest.fn().mockResolvedValue([]),
     fetchWorkSessionPlan: (...args: any[]) => mockFetchWorkSessionPlan(...args),
@@ -124,7 +125,7 @@ jest.mock('@/lib/store/paneStore', () => ({
 
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 
-import { ChatPane } from '@/components/panes/ChatPane';
+import ChatApp from '@/apps/chat';
 
 beforeEach(resetAllStores);
 
@@ -157,7 +158,7 @@ function renderPane() {
 
     const qc = createTestQueryClient();
     qc.setQueryData(queryKeys.departments('c1'), []);
-    return renderWithProviders(<ChatPane id="chat-main" />, { queryClient: qc });
+    return renderWithProviders(<ChatApp paneId="chat-main" initialData={{}} />, { queryClient: qc });
 }
 
 async function sendMessageAndAwaitDispatch(text = 'erstelle eine notiz') {

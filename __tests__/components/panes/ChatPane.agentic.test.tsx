@@ -27,6 +27,7 @@ jest.mock('@/lib/api/cognitionClient', () => ({
 }));
 
 jest.mock('@/lib/api/coreClient', () => ({
+  coreGet: jest.fn().mockResolvedValue(null),
   learnInsight: jest.fn(),
   searchMemory: jest.fn().mockResolvedValue([]),
 }));
@@ -87,7 +88,7 @@ jest.mock('@/lib/store/paneStore', () => ({
 
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 
-import { ChatPane } from '@/components/panes/ChatPane';
+import ChatApp from '@/apps/chat';
 
 beforeEach(resetAllStores);
 
@@ -127,7 +128,7 @@ describe('ChatPane agentic file ops', () => {
   function renderPane() {
     const qc = createTestQueryClient();
     qc.setQueryData(queryKeys.departments('company-1'), [{ id: 'dept-1', name: 'Marketing' }]);
-    return renderWithProviders(<ChatPane id="chat-main" />, { queryClient: qc });
+    return renderWithProviders(<ChatApp paneId="chat-main" initialData={{}} />, { queryClient: qc });
   }
 
   test('routes create-folder intent into pending confirmation instead of streaming', async () => {
