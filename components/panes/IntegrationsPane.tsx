@@ -81,6 +81,23 @@ interface IntegrationsOverview {
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
+    setup?: {
+        mail?: {
+            mode?: string;
+            detail?: string;
+            required_fields?: string[];
+            optional_fields?: string[];
+            provider_options?: string[];
+        };
+        calendar?: {
+            mode?: string;
+            configured?: boolean;
+            required_env?: string[];
+            missing_env?: string[];
+            redirect_url?: string;
+            provider?: string;
+        };
+    };
 }
 
 const statusTone = (status?: string) => {
@@ -158,7 +175,7 @@ const buildMailDescription = (overview?: IntegrationsOverview) => {
     if (mail.configured) {
         return mail.email ? `Verbunden mit ${mail.email}.` : 'Postfach ist eingerichtet.';
     }
-    return 'Noch keine Mail-Verbindung eingerichtet. Erwartet werden EMAIL_IMAP_HOST / EMAIL_IMAP_USER / EMAIL_IMAP_PASSWORD sowie SMTP_HOST / SMTP_USER / SMTP_PASSWORD im Core.';
+    return overview?.setup?.mail?.detail || 'Noch keine Mail-Verbindung eingerichtet. Hinterlege Provider, E-Mail und App-Passwort im Integrationsbereich.';
 };
 
 const buildCalendarDescription = (overview?: IntegrationsOverview) => {
@@ -169,7 +186,11 @@ const buildCalendarDescription = (overview?: IntegrationsOverview) => {
         return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
     }
     if (!caps?.calendar_oauth_enabled) {
-        return 'Kalender-OAuth ist serverseitig noch nicht aktiviert. Erwartet werden GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=http://127.0.0.1:8081/v1/auth/google/callback.';
+        const missing = overview?.setup?.calendar?.missing_env || [];
+        const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v1/auth/google/callback';
+        return missing.length > 0
+            ? `Kalender-OAuth ist serverseitig noch nicht aktiviert. Es fehlen ${missing.join(' / ')}. Redirect: ${redirect}.`
+            : `Kalender-OAuth ist serverseitig noch nicht aktiviert. Redirect: ${redirect}.`;
     }
     if (calendar.configured) {
         return calendar.email ? `Verbunden mit ${calendar.email}.` : 'Kalender ist eingerichtet.';

@@ -77,6 +77,25 @@ export interface IntegrationsOverview {
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
+    setup?: {
+        mail?: {
+            mode?: string;
+            requires_owner?: boolean;
+            required_fields?: string[];
+            optional_fields?: string[];
+            provider_options?: string[];
+            detail?: string;
+        };
+        calendar?: {
+            mode?: string;
+            requires_owner?: boolean;
+            configured?: boolean;
+            required_env?: string[];
+            missing_env?: string[];
+            redirect_url?: string;
+            provider?: string;
+        };
+    };
 }
 
 export interface BrowserBridgeState {

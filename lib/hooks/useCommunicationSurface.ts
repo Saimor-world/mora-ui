@@ -62,6 +62,14 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
         const calendarConfigured = Boolean(overview?.calendar?.configured);
         const mailLocalMode = Boolean(overview?.capabilities?.mail_local_mode || overview?.mail?.status === 'local');
         const calendarOauthEnabled = Boolean(overview?.capabilities?.calendar_oauth_enabled);
+        const mailSetupDetail = typeof overview?.setup?.mail?.detail === 'string' ? overview.setup.mail.detail : null;
+        const calendarMissingEnv = Array.isArray(overview?.setup?.calendar?.missing_env) ? overview.setup.calendar.missing_env : [];
+        const calendarRedirectUrl = typeof overview?.setup?.calendar?.redirect_url === 'string'
+            ? overview.setup.calendar.redirect_url
+            : LOCAL_GOOGLE_CALLBACK;
+        const calendarSetupDetail = calendarMissingEnv.length > 0
+            ? `Im Core fehlen: ${calendarMissingEnv.join(' / ')}. Redirect: ${calendarRedirectUrl}.`
+            : CALENDAR_OAUTH_DETAIL;
 
         const mailStatusLabel = mailConfigured
             ? (overview?.mail?.email || 'Mail verbunden')
@@ -102,14 +110,14 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         ? 'Dieses Konto kann Mail-Verbindungen nicht selbst verwalten.'
                         : mailLocalMode
                             ? 'Der Server laeuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
-                            : MAIL_SETUP_DETAIL,
+                            : (mailSetupDetail || MAIL_SETUP_DETAIL),
             calendarStatusDetail:
                 calendarConfigured
                     ? 'Der verbundene Kalender wird im OS gelesen und fuer Home, Kalender und Mora genutzt.'
                     : !ownerManageable
                         ? 'Dieses Konto kann Kalender-Verbindungen nicht selbst verwalten.'
                         : !calendarOauthEnabled
-                            ? CALENDAR_OAUTH_DETAIL
+                            ? calendarSetupDetail
                             : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
             browserConnectable: integrations.browserBridge.supported,
             browserPermission,
