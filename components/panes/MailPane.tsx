@@ -13,12 +13,14 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
+import { normalizeList } from '@/lib/api/http';
 import { useNavStore } from '@/lib/store/navStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 
 interface MailAttachment {
     filename: string;
@@ -73,12 +75,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         setError(null);
         try {
             const response = await coreGet('/v3/mail/messages');
-            let fetchedMails: MailObject[] = [];
-            if (response && Array.isArray(response)) {
-                fetchedMails = response;
-            } else if (response && response.items) {
-                fetchedMails = response.items;
-            }
+            const fetchedMails = normalizeList<MailObject>(response, ['messages', 'emails', 'mail', 'items', 'data']);
             setMails(fetchedMails);
 
             // Notification Logic
@@ -90,6 +87,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             }
             prevCountRef.current = fetchedMails.length;
             initializedRef.current = true;
+            broadcastCommunicationSync('mail-fetch');
 
         } catch (err: any) {
             console.error("Failed to load mail:", err);
@@ -115,6 +113,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                 snippet: mail.snippet
             });
 
+            broadcastCommunicationSync('mail-commit');
             toast.success("In Mycelium gespeichert");
         } catch (err) {
             console.error("Save failed", err);
@@ -146,6 +145,8 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             if (activeCompanyId) {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
             }
+
+            broadcastCommunicationSync('mail-to-mora');
 
         } catch (err) {
             console.error('[MailPane] Commit error:', err);
@@ -484,6 +485,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                                 content: composeBody,
                                                 text_content: composeBody
                                             });
+                                            broadcastCommunicationSync('mail-send');
                                             toast.success("Gesendet");
                                             setComposing(false);
                                             setComposeTo("");

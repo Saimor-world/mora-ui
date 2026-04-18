@@ -42,6 +42,7 @@ import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextL
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { detectMemoryIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
 import type { AppProps } from '@/lib/apps/types';
+import { buildCommunicationContextMessage, useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 
 interface PendingAction {
     tool_name: string;
@@ -536,6 +537,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         messages: streamHistory,
         clearHistory,
     } = useMoraStream();
+    const { mailPreview, calendarPreview } = useCommunicationLiveData();
 
     const [messages, setMessages] = useState<Message[]>(() => {
         const safe: Array<{ name: string }> = [];
@@ -578,6 +580,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         receipt: ReturnType<typeof buildOpenIntentReceipt>;
     } | null>(null);
     const moraCtx = useMoraContext();
+    const communicationContextMessage = useMemo(
+        () => buildCommunicationContextMessage(mailPreview, calendarPreview),
+        [mailPreview, calendarPreview]
+    );
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);
     const [memoryBasisCompanyId, setMemoryBasisCompanyId] = useState<string | null>(null);
@@ -1079,8 +1085,12 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     .slice(-10)
                     .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
+                const streamHistoryWithCommunication = communicationContextMessage
+                    ? [{ role: 'assistant' as const, content: communicationContextMessage }, ...historyForStream]
+                    : historyForStream;
+
                 const fullReply = await streamSend(content, {
-                    history: historyForStream,
+                    history: streamHistoryWithCommunication,
                     context: buildChatContext({
                         session_id: "chat_pane",
                         pane_id: paneId,
@@ -1134,6 +1144,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         messages,
         parseIntent,
         setActiveSession,
+        communicationContextMessage,
         streamError,
         streamSend,
         viewLevel,

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
+import { normalizeList } from "@/lib/api/http";
+import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from "@/lib/integrations/communicationEvents";
 
 type MailPreviewItem = {
     id: string;
@@ -25,6 +27,48 @@ type CommunicationLiveData = {
     isLoading: boolean;
     refresh: () => Promise<void>;
 };
+
+export function buildCommunicationContextMessage(
+    mailPreview: MailPreviewItem[],
+    calendarPreview: CalendarPreviewItem[]
+): string | null {
+    const mailLines = mailPreview
+        .slice(0, 3)
+        .map((item) => {
+            const parts = [item.from, item.subject].filter(Boolean);
+            const snippet = item.snippet?.trim();
+            return snippet ? `- ${parts.join(" — ")} | ${snippet}` : `- ${parts.join(" — ")}`;
+        });
+
+    const calendarLines = calendarPreview
+        .slice(0, 3)
+        .map((item) => {
+            const dateTime = [item.date, item.time].filter(Boolean).join(" ");
+            const location = item.location?.trim() ? ` @ ${item.location.trim()}` : "";
+            return `- ${dateTime || "Termin"} — ${item.title}${location}`;
+        });
+
+    if (mailLines.length === 0 && calendarLines.length === 0) {
+        return null;
+    }
+
+    const sections: string[] = [
+        "Lokaler Kommunikationskontext aus SAIMOR.",
+        "Verwende ihn nur, wenn die Nutzerfrage Mail, Kalender, Kommunikation oder aktuelle Signale betrifft. Erfinde nichts dazu.",
+    ];
+
+    if (mailLines.length > 0) {
+        sections.push("Aktuelle Mail-Signale:");
+        sections.push(...mailLines);
+    }
+
+    if (calendarLines.length > 0) {
+        sections.push("Aktuelle Kalender-Signale:");
+        sections.push(...calendarLines);
+    }
+
+    return sections.join("\n");
+}
 
 function toIsoDate(value: Date) {
     return value.toISOString().slice(0, 10);
@@ -50,17 +94,8 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 ),
             ]);
 
-            const mailItems = Array.isArray(mailData)
-                ? mailData
-                : Array.isArray(mailData?.items)
-                    ? mailData.items
-                    : [];
-
-            const calendarItems = Array.isArray(calendarData)
-                ? calendarData
-                : Array.isArray(calendarData?.items)
-                    ? calendarData.items
-                    : [];
+            const mailItems = normalizeList<any>(mailData, ["messages", "emails", "mail", "data"]);
+            const calendarItems = normalizeList<any>(calendarData, ["events", "appointments", "calendar", "data"]);
 
             setMailPreview(
                 mailItems.slice(0, 3).map((item: any) => ({
@@ -89,6 +124,30 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
     useEffect(() => {
         if (!autoLoad) return;
         void refresh();
+    }, [autoLoad, refresh]);
+
+    useEffect(() => {
+        if (!autoLoad || typeof window === "undefined") return;
+
+        const sync = () => {
+            void refresh();
+        };
+
+        const onStorage = (event: StorageEvent) => {
+            if (event.key === getCommunicationSyncStorageKey()) {
+                void refresh();
+            }
+        };
+
+        window.addEventListener(COMMUNICATION_SYNC_EVENT, sync as EventListener);
+        window.addEventListener("storage", onStorage);
+        window.addEventListener("focus", sync);
+
+        return () => {
+            window.removeEventListener(COMMUNICATION_SYNC_EVENT, sync as EventListener);
+            window.removeEventListener("storage", onStorage);
+            window.removeEventListener("focus", sync);
+        };
     }, [autoLoad, refresh]);
 
     return useMemo(

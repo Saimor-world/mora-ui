@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { coreGet, corePost } from '@/lib/api/coreClient';
+import { normalizeList } from '@/lib/api/http';
+import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 
 export interface CalendarEvent {
   id: string;
@@ -16,8 +18,9 @@ export function useCalendarEvents() {
 
   useEffect(() => {
     coreGet('/v3/calendar/events', { isOptional: true }).then((data) => {
-      setEvents(Array.isArray(data) ? (data as CalendarEvent[]) : []);
+      setEvents(normalizeList<CalendarEvent>(data, ['events', 'appointments', 'calendar', 'data']));
       setIsLoading(false);
+      broadcastCommunicationSync('calendar-fetch');
     });
   }, []);
 
@@ -29,6 +32,7 @@ export function useCalendarEvents() {
     const saved = await corePost('/v3/calendar/events', { title, date, time, duration: 60, color: 'bg-emerald-500' });
     if (saved && typeof saved === 'object') {
       setEvents(prev => prev.map(e => e.id === tempId ? saved as CalendarEvent : e));
+      broadcastCommunicationSync('calendar-create');
     } else {
       setEvents(prev => prev.filter(e => e.id !== tempId));
     }
