@@ -344,7 +344,9 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             <span className="text-sm font-medium">Mail</span>
                                         </div>
                                         <div className="mt-2 text-xs text-white/56">
-                                            {overview?.mail?.email || 'Postfach verbinden oder Mail im Browser oeffnen'}
+                                            {summary.mailConfigured
+                                                ? (overview?.mail?.email || 'Postfach im Browser oeffnen')
+                                                : summary.mailStatusDetail}
                                         </div>
                                     </button>
                                     <button
@@ -352,6 +354,10 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         onClick={() => {
                                             if (summary.calendarConfigured) {
                                                 openCalendarPane();
+                                                return;
+                                            }
+                                            if (!summary.calendarOauthEnabled) {
+                                                openIntegrationsPane();
                                                 return;
                                             }
                                             void connectGoogleCalendar();
@@ -365,6 +371,8 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         <div className="mt-2 text-xs text-white/56">
                                             {summary.calendarConfigured
                                                 ? (overview?.calendar?.email || 'Kalender im OS oeffnen')
+                                                : !summary.calendarOauthEnabled
+                                                    ? summary.calendarStatusDetail
                                                 : isConnectingCalendar
                                                     ? 'Google-Kalender wird verbunden...'
                                                     : 'Google-Kalender direkt mit SAIMOR verbinden'}
@@ -416,9 +424,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {overview?.mail?.configured ? (overview.mail.email || 'Verbunden') : 'Noch nicht verbunden'}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
-                                        {summary.mailLocalMode
-                                            ? 'Lokaler Mail-Modus aktiv. Die echte Verbindung wird im lokalen Wahrheitsmodus gepflegt.'
-                                            : 'Mail kann hier fuer localhost vorbereitet und spaeter direkt im OS genutzt werden.'}
+                                        {summary.mailStatusDetail}
                                     </div>
                                 </div>
 
@@ -550,9 +556,17 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {overview?.mail?.configured ? (overview.mail.email || 'Verbunden') : 'Noch nicht verbunden'}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
-                                        {summary.mailLocalMode
-                                            ? 'Mail lebt im lokalen Wahrheitsmodus und spiegelt nur als Demo auf HQ.'
-                                            : 'Postfach kann jetzt vorbereitet und danach direkt im OS genutzt werden.'}
+                                        {summary.mailStatusDetail}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                                    <div className="text-[10px] uppercase tracking-[0.24em] text-white/35">Kalender</div>
+                                    <div className="mt-2 text-lg text-white">
+                                        {overview?.calendar?.configured ? (overview.calendar.email || 'Verbunden') : 'Noch nicht verbunden'}
+                                    </div>
+                                    <div className="mt-2 text-xs leading-relaxed text-white/56">
+                                        {summary.calendarStatusDetail}
                                     </div>
                                 </div>
 

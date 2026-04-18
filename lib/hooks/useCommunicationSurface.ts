@@ -53,17 +53,27 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         ? 'Browser freigeben'
                         : 'Browser lokal';
 
-        const mailStatusLabel = overview?.mail?.configured
-            ? (overview.mail.email || 'Mail verbunden')
-            : overview?.capabilities?.mail_local_mode
-                ? 'Lokaler Mail-Modus'
-                : 'Mail verbinden';
+        const ownerManageable = Boolean(overview?.capabilities?.owner_manageable);
+        const mailConfigured = Boolean(overview?.mail?.configured);
+        const calendarConfigured = Boolean(overview?.calendar?.configured);
+        const mailLocalMode = Boolean(overview?.capabilities?.mail_local_mode || overview?.mail?.status === 'local');
+        const calendarOauthEnabled = Boolean(overview?.capabilities?.calendar_oauth_enabled);
 
-        const calendarStatusLabel = overview?.calendar?.configured
-            ? (overview.calendar.email || 'Kalender verbunden')
-            : overview?.capabilities?.calendar_oauth_enabled
-                ? 'Kalender verbinden'
-                : 'Kalender vorbereiten';
+        const mailStatusLabel = mailConfigured
+            ? (overview?.mail?.email || 'Mail verbunden')
+            : !ownerManageable
+                ? 'Nur fuer Eigentuemer'
+                : mailLocalMode
+                    ? 'Lokaler Postfachmodus'
+                    : 'Mail nicht eingerichtet';
+
+        const calendarStatusLabel = calendarConfigured
+            ? (overview?.calendar?.email || 'Kalender verbunden')
+            : !ownerManageable
+                ? 'Nur fuer Eigentuemer'
+                : !calendarOauthEnabled
+                    ? 'OAuth im Core fehlt'
+                    : 'Kalender nicht eingerichtet';
 
         const localTruthStatusLabel =
             localTruthBridge.state === 'ready'
@@ -81,6 +91,22 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
             mailStatusLabel,
             calendarStatusLabel,
             localTruthStatusLabel,
+            mailStatusDetail:
+                mailConfigured
+                    ? 'Das verbundene Postfach wird direkt im OS gelesen und von Mora mitverwendet.'
+                    : !ownerManageable
+                        ? 'Dieses Konto kann Mail-Verbindungen nicht selbst verwalten.'
+                        : mailLocalMode
+                            ? 'Der Server laeuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
+                            : 'Lege jetzt IMAP/SMTP-Zugangsdaten im Integrationsbereich ab, damit echte Mails im OS erscheinen.',
+            calendarStatusDetail:
+                calendarConfigured
+                    ? 'Der verbundene Kalender wird im OS gelesen und fuer Home, Kalender und Mora genutzt.'
+                    : !ownerManageable
+                        ? 'Dieses Konto kann Kalender-Verbindungen nicht selbst verwalten.'
+                        : !calendarOauthEnabled
+                            ? 'Google-Kalender-OAuth ist im lokalen Core noch nicht konfiguriert.'
+                            : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
             browserConnectable: integrations.browserBridge.supported,
             browserPermission,
             browserPermissionSummary:
@@ -91,10 +117,11 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         : browserPermission === 'default'
                             ? 'Benachrichtigungen noch nicht freigegeben'
                             : 'Browser-Freigaben hier nicht verfuegbar',
-            mailConfigured: Boolean(overview?.mail?.configured),
-            calendarConfigured: Boolean(overview?.calendar?.configured),
-            mailLocalMode: Boolean(overview?.capabilities?.mail_local_mode || overview?.mail?.status === 'local'),
-            calendarOauthEnabled: Boolean(overview?.capabilities?.calendar_oauth_enabled),
+            mailConfigured,
+            calendarConfigured,
+            mailLocalMode,
+            calendarOauthEnabled,
+            ownerManageable,
             localTruthReachable: localTruthBridge.state === 'ready'
                 || localTruthBridge.state === 'core_only'
                 || localTruthBridge.state === 'ui_only',

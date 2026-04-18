@@ -182,11 +182,10 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
     const openMail = useCallback(() => {
         if (!integrationsOverview?.mail?.configured) {
-            revealPane('browser-connect', {
-                type: 'browser',
-                title: 'Browser',
-                size: { width: 1160, height: 760 },
-                data: { initialUrl: 'about:saimor-connect' },
+            revealPane('integrations-main', {
+                type: 'integrations',
+                title: 'Integrationen',
+                size: { width: 980, height: 740 },
             });
             return;
         }
@@ -213,6 +212,23 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
             data: { initialUrl: 'about:saimor-connect' },
         });
     }, [revealPane]);
+
+    const openCalendarSetup = useCallback(() => {
+        if (!communicationSummary.ownerManageable || !communicationSummary.calendarOauthEnabled) {
+            revealPane('integrations-main', {
+                type: 'integrations',
+                title: 'Integrationen',
+                size: { width: 980, height: 740 },
+            });
+            return;
+        }
+        revealPane('browser-connect', {
+            type: 'browser',
+            title: 'Browser',
+            size: { width: 1160, height: 760 },
+            data: { initialUrl: 'https://calendar.google.com/' },
+        });
+    }, [communicationSummary.calendarOauthEnabled, communicationSummary.ownerManageable, revealPane]);
 
     const openLocalTruth = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -342,6 +358,8 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const mailStatusLabel = communicationSummary.mailStatusLabel;
     const calendarStatusLabel = communicationSummary.calendarStatusLabel;
     const localTruthStatusLabel = communicationSummary.localTruthStatusLabel;
+    const mailStatusDetail = communicationSummary.mailStatusDetail;
+    const calendarStatusDetail = communicationSummary.calendarStatusDetail;
     const nextCalendarEvent = calendarPreview[0] ?? null;
     const latestMail = mailPreview[0] ?? null;
 
@@ -764,12 +782,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{mailStatusLabel}</div>
                                 <div className="mt-1 text-[10px] text-white/48">
-                                    {latestMail ? `${latestMail.from}: ${latestMail.subject}` : 'Neueste Nachrichten erscheinen direkt hier im OS.'}
+                                    {latestMail ? `${latestMail.from}: ${latestMail.subject}` : mailStatusDetail}
                                 </div>
                             </button>
                             <button
                                 type="button"
-                                onClick={openBrowserConnect}
+                                onClick={openCalendarSetup}
                                 className="rounded-[18px] border border-white/[0.05] bg-white/[0.022] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
                             >
                                 <div className="flex items-center gap-2 text-orange-200/76">
@@ -778,7 +796,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{calendarStatusLabel}</div>
                                 <div className="mt-1 text-[10px] text-white/48">
-                                    {nextCalendarEvent ? `${nextCalendarEvent.title}${nextCalendarEvent.time ? ` · ${nextCalendarEvent.time}` : ''}` : 'Naechste Termine werden nach Connect direkt eingeblendet.'}
+                                    {nextCalendarEvent ? `${nextCalendarEvent.title}${nextCalendarEvent.time ? ` · ${nextCalendarEvent.time}` : ''}` : calendarStatusDetail}
                                 </div>
                             </button>
                             <button
