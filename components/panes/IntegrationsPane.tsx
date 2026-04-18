@@ -834,6 +834,19 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                                    <div className="xl:col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4">
+                                        <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">Mehrnutzer-Vertrag</p>
+                                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                                            <div className="rounded-xl border border-cyan-400/10 bg-cyan-500/[0.05] px-3 py-3 text-xs leading-relaxed text-cyan-100/78">
+                                                <div className="font-medium text-cyan-100">Serverweit</div>
+                                                Google OAuth Client ID, Secret und Redirect gehoeren zur SAIMOR-Plattform. Ohne diese App-Konfiguration kann kein Nutzer den Kalender verbinden.
+                                            </div>
+                                            <div className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.05] px-3 py-3 text-xs leading-relaxed text-emerald-100/78">
+                                                <div className="font-medium text-emerald-100">Pro Nutzer</div>
+                                                Mail-Zugangsdaten sowie Google-Refresh-Tokens werden pro Nutzer gespeichert. Mora, Home, Mail und Kalender arbeiten danach auf genau diesem Nutzerkontext.
+                                            </div>
+                                        </div>
+                                    </div>
                                     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
                                         <div className="mb-4">
                                             <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>

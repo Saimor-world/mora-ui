@@ -122,6 +122,9 @@ export const CalendarIntegration: React.FC = () => {
                                 ? 'Starte den OAuth-Flow direkt aus dem OS. Nach erfolgreichem Login erscheinen echte Events in Home, Kalender und Mora.'
                                 : 'Der OAuth-Flow ist serverseitig noch nicht komplett konfiguriert. Setze zuerst die fehlenden Werte im Core.'}
                         </p>
+                        <p className="mt-2 text-[11px] text-cyan-100/60">
+                            Die Google-OAuth-App ist serverweit. Der verbundene Kalender und die Tokens werden danach pro Nutzer gespeichert.
+                        </p>
                         <p className="mt-2 text-cyan-100/70">
                             Redirect: <span className="text-cyan-50">{redirectUrl}</span>
                         </p>
