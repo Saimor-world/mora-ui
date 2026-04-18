@@ -19,10 +19,9 @@ interface NodeRelation {
     source_name?: string;
 }
 
-export default function DocumentApp({ paneId }: AppProps) {
+export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const { openPane } = usePaneStore();
-    const pane = usePaneStore((s) => s.getPane(paneId));
-    const docData = (pane?.data || {}) as {
+    const docData = initialData as {
         nodeId?: string;
         content?: string;
         name?: string;

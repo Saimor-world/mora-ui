@@ -37,7 +37,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'settings':
             return <SettingsPane id={pane.id} />;
         case 'document':
-            return <DocumentPane id={pane.id} />;
+            return <DocumentPane id={pane.id} data={pane.data} />;
         case 'team':
             return <TeamPane id={pane.id} />;
         case 'notes':
