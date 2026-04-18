@@ -225,7 +225,7 @@ function deriveFinderMaps(tree: CoreTreeNode[]) {
 
 
 
-export default function FinderApp({ paneId }: AppProps) {
+export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const id = paneId;
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
     const { activeCompanyId, setViewLevel, setActiveDepartment, setActiveSpace, setActiveFolder } = useNavStore();
@@ -238,21 +238,21 @@ export default function FinderApp({ paneId }: AppProps) {
 
     // UNIFIED FINDER: Can start at any level
     // Quick Access: Filter by department if provided
-    const departmentId = pane?.data?.departmentId as string | undefined;
-    const departmentName = pane?.data?.departmentName as string | undefined;
+    const departmentId = initialData?.departmentId as string | undefined;
+    const departmentName = initialData?.departmentName as string | undefined;
     // Space-level start (for Moon clicks)
-    const startSpaceId = pane?.data?.spaceId as string | undefined;
+    const startSpaceId = initialData?.spaceId as string | undefined;
     // Folder-level start (for direct folder access)
-    const startFolderId = pane?.data?.folderId as string | undefined;
+    const startFolderId = initialData?.folderId as string | undefined;
     // Optional company hint from caller (used when store has no active company yet)
-    const paneCompanyId = pane?.data?.companyId as string | undefined;
+    const paneCompanyId = initialData?.companyId as string | undefined;
     // Auto-show upload on open
-    const autoShowUpload = pane?.data?.showUpload as boolean | undefined;
+    const autoShowUpload = initialData?.showUpload as boolean | undefined;
     // Initial search query
-    const initialQuery = pane?.data?.query as string | undefined;
+    const initialQuery = initialData?.query as string | undefined;
     // Global search mode - search across ALL levels (Windows Explorer style)
-    const globalSearch = pane?.data?.globalSearch as boolean | undefined;
-    const navigationContext = pane?.data?.navigationContext as FinderNavigationContext | undefined;
+    const globalSearch = initialData?.globalSearch as boolean | undefined;
+    const navigationContext = initialData?.navigationContext as FinderNavigationContext | undefined;
 
     const [companyFiles, setCompanyFiles] = useState<CompanyFileRecord[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -1842,7 +1842,7 @@ export default function FinderApp({ paneId }: AppProps) {
                                         type="button"
                                         onClick={() => updatePane(id, {
                                             data: {
-                                                ...(pane?.data || {}),
+                                                ...initialData,
                                                 navigationContext: undefined,
                                             }
                                         })}
