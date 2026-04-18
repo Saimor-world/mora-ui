@@ -141,6 +141,15 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 900, height: 680 },
   },
   {
+    id: 'meine-dateien',
+    name: 'Meine Dateien',
+    description: 'Persönliche Inhalte und Dateien',
+    icon: 'Folder',
+    color: 'slate',
+    category: 'core',
+    defaultSize: { width: 680, height: 560 },
+  },
+  {
     id: 'terminal',
     name: 'Terminal',
     description: 'Kommandozeile',

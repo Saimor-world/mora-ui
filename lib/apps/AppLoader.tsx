@@ -34,6 +34,7 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   canvas:          dynamic(() => import('@/apps/canvas'),        { ssr: false, loading: () => <AppSkeleton /> }),
   grid:            dynamic(() => import('@/apps/grid'),          { ssr: false, loading: () => <AppSkeleton /> }),
   apps:            dynamic(() => import('@/apps/apps'),          { ssr: false, loading: () => <AppSkeleton /> }),
+  'meine-dateien': dynamic(() => import('@/apps/meine-dateien'), { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
 /** Sorted list of all app ids registered in APP_MAP. Used by tests to guard registry consistency. */

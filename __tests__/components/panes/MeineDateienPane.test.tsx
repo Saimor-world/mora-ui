@@ -74,10 +74,12 @@ const mockResponse: UserContentResponse = {
 describe('MeineDateienPane', () => {
     beforeEach(() => jest.clearAllMocks());
 
-    it('shows loading state initially', () => {
+    it('shows loading state initially', async () => {
         mockFetch.mockImplementation(() => new Promise(() => {}));
         render(<MeineDateienPane />);
-        expect(screen.getByTestId('meine-dateien-loading')).toBeInTheDocument();
+        // findByTestId waits for AppLoader's dynamic import to resolve before the
+        // app renders its own loading indicator (same pattern as ScannerPane tests)
+        expect(await screen.findByTestId('meine-dateien-loading')).toBeInTheDocument();
     });
 
     it('shows folder section with folder names', async () => {
