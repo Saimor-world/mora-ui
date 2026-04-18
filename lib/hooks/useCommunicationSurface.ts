@@ -150,3 +150,73 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
         summary,
     };
 }
+
+type CommunicationContextSummary = ReturnType<typeof useCommunicationSurface>['summary'];
+type CommunicationContextOverview = ReturnType<typeof useCommunicationSurface>['overview'];
+
+interface CommunicationPreviewItem {
+    subject?: string;
+    from?: string;
+    snippet?: string;
+    title?: string;
+    date?: string;
+    time?: string;
+    location?: string;
+}
+
+export function buildCommunicationOperationalContextMessage(
+    summary: CommunicationContextSummary,
+    overview: CommunicationContextOverview,
+    mailPreview: CommunicationPreviewItem[],
+    calendarPreview: CommunicationPreviewItem[]
+): string | null {
+    const sections: string[] = [
+        'Lokaler Kommunikationskontext aus SAIMOR.',
+        'Nutze ihn nur fuer Mail, Kalender, Kommunikation, Priorisierung oder aktuelle Signale.',
+    ];
+
+    const hasMailData = mailPreview.length > 0;
+    const hasCalendarData = calendarPreview.length > 0;
+
+    sections.push('Kommunikationsstatus:');
+    sections.push(`- Mail: ${summary.mailStatusLabel}${summary.mailStatusDetail ? ` | ${summary.mailStatusDetail}` : ''}`);
+    sections.push(`- Kalender: ${summary.calendarStatusLabel}${summary.calendarStatusDetail ? ` | ${summary.calendarStatusDetail}` : ''}`);
+    sections.push(`- Browser: ${summary.browserStatusLabel}${summary.browserPermissionSummary ? ` | ${summary.browserPermissionSummary}` : ''}`);
+    sections.push(`- Local Truth: ${summary.localTruthStatusLabel}`);
+
+    if (hasMailData) {
+        sections.push('Aktuelle Mail-Signale:');
+        mailPreview.slice(0, 3).forEach((item) => {
+            const parts = [item.from, item.subject].filter(Boolean);
+            const snippet = item.snippet?.trim();
+            sections.push(snippet ? `- ${parts.join(' | ')} | ${snippet}` : `- ${parts.join(' | ')}`);
+        });
+    } else if (!summary.mailConfigured) {
+        sections.push('- Mail hat derzeit keine Live-Daten, weil die Verbindung noch nicht eingerichtet ist.');
+    } else {
+        sections.push('- Mail ist verbunden, aber es liegen aktuell keine frischen Nachrichten im Vorschauzeitraum vor.');
+    }
+
+    if (hasCalendarData) {
+        sections.push('Aktuelle Kalender-Signale:');
+        calendarPreview.slice(0, 3).forEach((item) => {
+            const dateTime = [item.date, item.time].filter(Boolean).join(' ');
+            const location = item.location?.trim() ? ` @ ${item.location.trim()}` : '';
+            sections.push(`- ${dateTime || 'Termin'} | ${item.title || 'Termin'}${location}`);
+        });
+    } else if (!summary.calendarConfigured) {
+        sections.push('- Kalender hat derzeit keine Live-Daten, weil OAuth oder die Verbindung noch nicht eingerichtet ist.');
+    } else {
+        sections.push('- Kalender ist verbunden, aber es liegen aktuell keine Termine im Vorschauzeitraum vor.');
+    }
+
+    if (overview?.setup?.calendar?.missing_env?.length) {
+        sections.push(`- Kalender-OAuth fehlt im Core noch bei: ${overview.setup.calendar.missing_env.join(', ')}.`);
+    }
+
+    if (!summary.ownerManageable) {
+        sections.push('- Dieses Konto kann Verbindungen nicht selbst verwalten; Mail/Kalender sind owner-gesteuert.');
+    }
+
+    return sections.join('\n');
+}

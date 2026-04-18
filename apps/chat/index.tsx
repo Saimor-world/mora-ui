@@ -42,7 +42,8 @@ import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextL
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { detectMemoryIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
 import type { AppProps } from '@/lib/apps/types';
-import { buildCommunicationContextMessage, useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { buildCommunicationOperationalContextMessage, useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 
 interface PendingAction {
     tool_name: string;
@@ -538,6 +539,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         clearHistory,
     } = useMoraStream();
     const { mailPreview, calendarPreview } = useCommunicationLiveData();
+    const { overview: communicationOverview, summary: communicationSummary } = useCommunicationSurface();
 
     const [messages, setMessages] = useState<Message[]>(() => {
         const safe: Array<{ name: string }> = [];
@@ -581,8 +583,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     } | null>(null);
     const moraCtx = useMoraContext();
     const communicationContextMessage = useMemo(
-        () => buildCommunicationContextMessage(mailPreview, calendarPreview),
-        [mailPreview, calendarPreview]
+        () => buildCommunicationOperationalContextMessage(
+            communicationSummary,
+            communicationOverview,
+            mailPreview,
+            calendarPreview,
+        ),
+        [calendarPreview, communicationOverview, communicationSummary, mailPreview]
     );
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);

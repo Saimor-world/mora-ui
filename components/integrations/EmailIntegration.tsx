@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Check, X, RefreshCw, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { coreGet, corePost, coreDelete } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
+import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 
 interface MailIntegrationStatus {
     configured: boolean;
@@ -73,6 +74,7 @@ export const EmailIntegration: React.FC = () => {
             toast.success('E-Mail-Integration gespeichert');
             setAppPassword('');
             await loadStatus();
+            broadcastCommunicationSync('mail-config-save');
         } catch (e: any) {
             toast.error(e.message || 'Speichern fehlgeschlagen');
         } finally {
@@ -104,6 +106,7 @@ export const EmailIntegration: React.FC = () => {
             setAppPassword('');
             setConfirmingDelete(false);
             await loadStatus();
+            broadcastCommunicationSync('mail-config-delete');
         } catch (e) {
             toast.error('Entfernen fehlgeschlagen');
             setConfirmingDelete(false);
