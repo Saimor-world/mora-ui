@@ -95,6 +95,7 @@ export interface IntegrationsOverview {
             missing_env?: string[];
             redirect_url?: string;
             provider?: string;
+            source?: string;
         };
     };
 }

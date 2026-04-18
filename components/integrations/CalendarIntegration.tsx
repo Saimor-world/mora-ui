@@ -16,16 +16,33 @@ interface CalendarIntegrationStatus {
     calendar_id?: string;
 }
 
+interface CalendarProviderConfigStatus {
+    configured: boolean;
+    source: string;
+    client_id_preview?: string;
+    redirect_url?: string;
+    required_fields?: string[];
+    missing_fields?: string[];
+}
+
 export const CalendarIntegration: React.FC = () => {
     const [status, setStatus] = useState<CalendarIntegrationStatus | null>(null);
+    const [providerConfig, setProviderConfig] = useState<CalendarProviderConfigStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isConnecting, setIsConnecting] = useState(false);
+    const [isSavingConfig, setIsSavingConfig] = useState(false);
+    const [clientId, setClientId] = useState('');
+    const [clientSecret, setClientSecret] = useState('');
+    const [redirectInput, setRedirectInput] = useState('http://127.0.0.1:8081/v1/auth/google/callback');
     const { overview } = useIntegrationsOverview();
 
     const loadStatus = async () => {
         try {
             const data = await coreGet('/v3/integrations/calendar');
             setStatus(data);
+            const providerData = await coreGet('/v3/integrations/calendar/provider-config', { isOptional: true });
+            setProviderConfig(providerData || null);
+            if (providerData?.redirect_url) setRedirectInput(providerData.redirect_url);
         } catch (e) {
             console.error('Failed to load calendar status:', e);
         } finally {
@@ -44,6 +61,29 @@ export const CalendarIntegration: React.FC = () => {
         ? calendarSetup.redirect_url
         : 'http://127.0.0.1:8081/v1/auth/google/callback';
     const oauthReady = Boolean(overview?.capabilities?.calendar_oauth_enabled);
+
+    const handleSaveProviderConfig = async () => {
+        if (!clientId.trim() || !clientSecret.trim()) {
+            toast.error('Client ID und Client Secret sind erforderlich');
+            return;
+        }
+        setIsSavingConfig(true);
+        try {
+            await corePost('/v3/integrations/calendar/provider-config', {
+                client_id: clientId.trim(),
+                client_secret: clientSecret.trim(),
+                redirect_url: redirectInput.trim() || redirectUrl,
+            });
+            toast.success('Google-OAuth-Konfiguration gespeichert');
+            setClientSecret('');
+            await loadStatus();
+            broadcastCommunicationSync('calendar-provider-config-save');
+        } catch (e: any) {
+            toast.error(e?.message || 'Google-OAuth-Konfiguration konnte nicht gespeichert werden');
+        } finally {
+            setIsSavingConfig(false);
+        }
+    };
 
     const handleConnect = async () => {
         setIsConnecting(true);
@@ -125,6 +165,12 @@ export const CalendarIntegration: React.FC = () => {
                         <p className="mt-2 text-[11px] text-cyan-100/60">
                             Die Google-OAuth-App ist serverweit. Der verbundene Kalender und die Tokens werden danach pro Nutzer gespeichert.
                         </p>
+                        {providerConfig?.source && (
+                            <p className="mt-2 text-[11px] text-cyan-100/60">
+                                Quelle: <span className="text-cyan-50">{providerConfig.source === 'tenant' ? 'Tenant-Konfiguration' : 'Core-Env'}</span>
+                                {providerConfig.client_id_preview ? ` · ${providerConfig.client_id_preview}` : ''}
+                            </p>
+                        )}
                         <p className="mt-2 text-cyan-100/70">
                             Redirect: <span className="text-cyan-50">{redirectUrl}</span>
                         </p>
@@ -137,6 +183,55 @@ export const CalendarIntegration: React.FC = () => {
                                 ))}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {!oauthReady && (
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
+                        <div>
+                            <h5 className="text-sm font-medium text-white">Google OAuth fuer diesen Tenant</h5>
+                            <p className="mt-1 text-xs leading-relaxed text-white/55">
+                                Diese Konfiguration ist tenantweit. Nutzer verbinden danach ihren eigenen Kalender im OS und speichern ihre Tokens separat.
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-white/40">Client ID</label>
+                            <input
+                                type="text"
+                                value={clientId}
+                                onChange={(e) => setClientId(e.target.value)}
+                                placeholder="Google OAuth Client ID"
+                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-white/40">Client Secret</label>
+                            <input
+                                type="password"
+                                value={clientSecret}
+                                onChange={(e) => setClientSecret(e.target.value)}
+                                placeholder="Google OAuth Client Secret"
+                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs text-white/40">Redirect URL</label>
+                            <input
+                                type="text"
+                                value={redirectInput}
+                                onChange={(e) => setRedirectInput(e.target.value)}
+                                placeholder="http://127.0.0.1:8081/v1/auth/google/callback"
+                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none"
+                            />
+                        </div>
+                        <button
+                            onClick={handleSaveProviderConfig}
+                            disabled={isSavingConfig || !clientId.trim() || !clientSecret.trim()}
+                            className="inline-flex items-center gap-2 rounded-lg bg-cyan-500/20 border border-cyan-500/30 px-3 py-2 text-xs text-cyan-100 transition-all hover:bg-cyan-500/30 disabled:opacity-50"
+                        >
+                            <RefreshCw size={14} className={isSavingConfig ? 'animate-spin' : ''} />
+                            {isSavingConfig ? 'Speichern...' : 'OAuth fuer Tenant speichern'}
+                        </button>
                     </div>
                 )}
 
