@@ -9,7 +9,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'Folder',
     color: 'blue',
     category: 'core',
-    defaultSize: { width: 860, height: 600 },
+    defaultSize: { width: 900, height: 620 },
   },
   {
     id: 'document',
@@ -57,7 +57,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'ScanLine',
     color: 'teal',
     category: 'intelligence',
-    defaultSize: { width: 780, height: 580 },
+    defaultSize: { width: 840, height: 600 },
   },
   {
     id: 'search',
@@ -87,7 +87,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'Calendar',
     color: 'green',
     category: 'workspace',
-    defaultSize: { width: 680, height: 560 },
+    defaultSize: { width: 840, height: 620 },
   },
   {
     id: 'tasks',
@@ -117,7 +117,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'Users',
     color: 'blue',
     category: 'people',
-    defaultSize: { width: 760, height: 580 },
+    defaultSize: { width: 780, height: 620 },
   },
   {
     id: 'users',
@@ -126,7 +126,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'UserCog',
     color: 'slate',
     category: 'people',
-    defaultSize: { width: 720, height: 540 },
+    defaultSize: { width: 760, height: 600 },
     requiresRole: ['owner', 'admin'],
   },
 
@@ -165,7 +165,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'Settings',
     color: 'slate',
     category: 'system',
-    defaultSize: { width: 700, height: 560 },
+    defaultSize: { width: 700, height: 500 },
     singleton: true,
   },
 

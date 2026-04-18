@@ -31,27 +31,25 @@ interface AppEntry {
     icon: LucideIcon;
     color: string;
     category: string;
-    width?: number;
-    height?: number;
 }
 
 const ALL_APPS: AppEntry[] = [
     // Core
-    { name: 'Finder',          type: 'finder',       icon: Folder,         color: 'text-emerald-400',  category: 'core',          width: 900,  height: 620 },
+    { name: 'Finder',          type: 'finder',       icon: Folder,         color: 'text-emerald-400',  category: 'core' },
     { name: 'Alle Inhalte',    type: 'grid',         icon: Grid,           color: 'text-emerald-300',  category: 'core' },
-    { name: 'Suche',           type: 'search',       icon: Search,         color: 'text-emerald-400',  category: 'core',          width: 640,  height: 500 },
-    { name: 'Notizen',         type: 'notes',        icon: StickyNote,     color: 'text-yellow-400',   category: 'core',          width: 480,  height: 420 },
-    { name: 'Scanner',         type: 'scanner',      icon: ScanLine,       color: 'text-purple-400',   category: 'core',          width: 840,  height: 600 },
+    { name: 'Suche',           type: 'search',       icon: Search,         color: 'text-emerald-400',  category: 'core' },
+    { name: 'Notizen',         type: 'notes',        icon: StickyNote,     color: 'text-yellow-400',   category: 'core' },
+    { name: 'Scanner',         type: 'scanner',      icon: ScanLine,       color: 'text-purple-400',   category: 'core' },
     // Workspace
-    { name: 'Aufgaben',        type: 'tasks',        icon: SquareCheckBig, color: 'text-orange-400',   category: 'workspace',     width: 900,  height: 580 },
-    { name: 'Zeitverlauf',     type: 'timeline',     icon: Activity,       color: 'text-rose-400',     category: 'workspace',     width: 540,  height: 620 },
-    { name: 'Canvas',          type: 'canvas',       icon: PenTool,        color: 'text-violet-400',   category: 'workspace',     width: 900,  height: 660 },
-    { name: 'Kalender',        type: 'calendar',     icon: Calendar,       color: 'text-orange-400',   category: 'workspace',     width: 840,  height: 620 },
+    { name: 'Aufgaben',        type: 'tasks',        icon: SquareCheckBig, color: 'text-orange-400',   category: 'workspace' },
+    { name: 'Zeitverlauf',     type: 'timeline',     icon: Activity,       color: 'text-rose-400',     category: 'workspace' },
+    { name: 'Canvas',          type: 'canvas',       icon: PenTool,        color: 'text-violet-400',   category: 'workspace' },
+    { name: 'Kalender',        type: 'calendar',     icon: Calendar,       color: 'text-orange-400',   category: 'workspace' },
     // Collaboration
-    { name: 'Team',            type: 'team',         icon: Users,          color: 'text-emerald-400',  category: 'collaboration', width: 780,  height: 620 },
-    { name: 'Benutzer',        type: 'users',        icon: Users,          color: 'text-emerald-300',  category: 'collaboration', width: 760,  height: 600 },
+    { name: 'Team',            type: 'team',         icon: Users,          color: 'text-emerald-400',  category: 'collaboration' },
+    { name: 'Benutzer',        type: 'users',        icon: Users,          color: 'text-emerald-300',  category: 'collaboration' },
     // System
-    { name: 'Einstellungen',   type: 'settings',     icon: Settings,       color: 'text-white/80',     category: 'system',        width: 700,  height: 500 },
+    { name: 'Einstellungen',   type: 'settings',     icon: Settings,       color: 'text-white/80',     category: 'system' },
 ];
 
 // ─── AppLibraryApp ────────────────────────────────────────────────────────────
@@ -73,11 +71,12 @@ export default function AppLibraryApp({ paneId }: AppProps) {
     });
 
     const handleAppClick = (app: AppEntry) => {
+        const manifest = getAppManifest(app.type);
         openPane({
             id: `${app.type}-main`,
             type: app.type,
             title: app.name,
-            size: { width: app.width ?? 800, height: app.height ?? 600 },
+            size: manifest?.defaultSize ?? { width: 800, height: 600 },
         });
         removePane(paneId);
     };
