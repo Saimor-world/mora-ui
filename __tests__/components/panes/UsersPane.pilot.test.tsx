@@ -165,10 +165,12 @@ describe('UsersPane — P1: Invite link shown after submit', () => {
 
 describe('UsersPane — P5: Dead MoreVertical row action removed', () => {
     it('has no unclickable actions menu button in member rows', async () => {
-        setupAndRender('member');
+        // Mock must be set BEFORE render: the app fetches on mount, not on demand.
+        // Setting mockCoreGet after render means the component already resolved with [].
         mockCoreGet.mockResolvedValue([
             { id: 'u-2', name: 'Anna Schmidt', email: 'anna@co.com', role: 'member', status: 'active', last_seen: null },
         ]);
+        setupAndRender('member');
 
         await waitFor(() => {
             expect(screen.getByText('Anna Schmidt')).toBeInTheDocument();
