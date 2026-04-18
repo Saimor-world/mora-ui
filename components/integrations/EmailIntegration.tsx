@@ -5,6 +5,7 @@ import { Mail, Check, X, RefreshCw, Eye, EyeOff, AlertCircle } from 'lucide-reac
 import { coreGet, corePost, coreDelete } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
+import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 interface MailIntegrationStatus {
     configured: boolean;
@@ -33,12 +34,17 @@ export const EmailIntegration: React.FC = () => {
     const [customHost, setCustomHost] = useState('');
     const [customPort, setCustomPort] = useState('993');
     const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const { overview } = useIntegrationsOverview();
 
     useEffect(() => {
         loadStatus();
     }, []);
 
     const isLocalMode = status?.status === 'local';
+    const mailSetup = overview?.setup?.mail;
+    const requiredFields = Array.isArray(mailSetup?.required_fields) ? mailSetup.required_fields : [];
+    const optionalFields = Array.isArray(mailSetup?.optional_fields) ? mailSetup.optional_fields : [];
+    const providerOptions = Array.isArray(mailSetup?.provider_options) ? mailSetup.provider_options : [];
 
     const loadStatus = async () => {
         try {
@@ -162,6 +168,34 @@ export const EmailIntegration: React.FC = () => {
             )}
 
             <div className="p-6 rounded-xl bg-white/5 border border-white/10 space-y-5">
+                {(!status?.configured || isLocalMode) && (
+                    <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/8 px-4 py-3 text-xs text-emerald-100/85">
+                        <div className="font-medium text-emerald-100">Lokale Mail-Einrichtung</div>
+                        <p className="mt-1 leading-relaxed text-emerald-100/75">
+                            {mailSetup?.detail || 'Diese Verbindung wird direkt im OS gespeichert und danach von Mail, Home und Mora genutzt.'}
+                        </p>
+                        {providerOptions.length > 0 && (
+                            <p className="mt-2 text-emerald-100/70">
+                                Anbieter: <span className="text-emerald-50">{providerOptions.join(' / ')}</span>
+                            </p>
+                        )}
+                        {requiredFields.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {requiredFields.map((field) => (
+                                    <span key={field} className="rounded-full border border-emerald-400/20 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-wider text-emerald-100/75">
+                                        {field}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        {optionalFields.length > 0 && (
+                            <p className="mt-2 text-[11px] text-emerald-100/60">
+                                Optional: {optionalFields.join(' / ')}
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 <div className="space-y-2">
                     <label className="text-xs uppercase tracking-wider text-white/40">Anbieter</label>
                     <div className="flex gap-3">

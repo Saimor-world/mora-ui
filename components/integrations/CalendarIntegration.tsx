@@ -6,6 +6,7 @@ import { coreGet, corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
+import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 interface CalendarIntegrationStatus {
     configured: boolean;
@@ -19,6 +20,7 @@ export const CalendarIntegration: React.FC = () => {
     const [status, setStatus] = useState<CalendarIntegrationStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isConnecting, setIsConnecting] = useState(false);
+    const { overview } = useIntegrationsOverview();
 
     const loadStatus = async () => {
         try {
@@ -34,6 +36,14 @@ export const CalendarIntegration: React.FC = () => {
     useEffect(() => {
         loadStatus();
     }, []);
+
+    const calendarSetup = overview?.setup?.calendar;
+    const missingEnv = Array.isArray(calendarSetup?.missing_env) ? calendarSetup.missing_env : [];
+    const requiredEnv = Array.isArray(calendarSetup?.required_env) ? calendarSetup.required_env : [];
+    const redirectUrl = typeof calendarSetup?.redirect_url === 'string'
+        ? calendarSetup.redirect_url
+        : 'http://127.0.0.1:8081/v1/auth/google/callback';
+    const oauthReady = Boolean(overview?.capabilities?.calendar_oauth_enabled);
 
     const handleConnect = async () => {
         setIsConnecting(true);
@@ -104,6 +114,29 @@ export const CalendarIntegration: React.FC = () => {
             </div>
 
             <div className="p-6 rounded-xl bg-white/5 border border-white/10 space-y-4">
+                {(!status?.configured || !oauthReady) && (
+                    <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/8 px-4 py-3 text-xs text-cyan-100/85">
+                        <div className="font-medium text-cyan-100">Google-Kalender lokal verbinden</div>
+                        <p className="mt-1 leading-relaxed text-cyan-100/75">
+                            {oauthReady
+                                ? 'Starte den OAuth-Flow direkt aus dem OS. Nach erfolgreichem Login erscheinen echte Events in Home, Kalender und Mora.'
+                                : 'Der OAuth-Flow ist serverseitig noch nicht komplett konfiguriert. Setze zuerst die fehlenden Werte im Core.'}
+                        </p>
+                        <p className="mt-2 text-cyan-100/70">
+                            Redirect: <span className="text-cyan-50">{redirectUrl}</span>
+                        </p>
+                        {(missingEnv.length > 0 || requiredEnv.length > 0) && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {(missingEnv.length > 0 ? missingEnv : requiredEnv).map((field) => (
+                                    <span key={field} className="rounded-full border border-cyan-400/20 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-wider text-cyan-100/75">
+                                        {field}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {status?.email && (
                     <div className="text-xs text-white/55">
                         Konto: <span className="text-white/80">{status.email}</span>
@@ -118,13 +151,15 @@ export const CalendarIntegration: React.FC = () => {
                 <div className="flex gap-2">
                     <button
                         onClick={handleConnect}
-                        disabled={isConnecting}
+                        disabled={isConnecting || !oauthReady}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs hover:bg-emerald-500/30 transition-all disabled:opacity-50"
                     >
                         <Link2 size={14} />
                         {isConnecting
                             ? 'Verbinden...'
-                            : status?.configured ? 'Neu verbinden' : 'Verbinden'
+                            : !oauthReady
+                                ? 'Core zuerst konfigurieren'
+                                : status?.configured ? 'Neu verbinden' : 'Verbinden'
                         }
                     </button>
                     <button
