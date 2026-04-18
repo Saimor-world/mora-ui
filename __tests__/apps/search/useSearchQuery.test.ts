@@ -5,20 +5,20 @@ jest.mock('@/lib/api/coreClient', () => ({
   searchSemantic: jest.fn().mockResolvedValue([]),
 }));
 
-// Stable state object inside factory — prevents new references on every render
-// which would cause infinite re-render loops via buildLocalResults dependency
-jest.mock('@/lib/store/moraState', () => {
-  const stableState = {
-    companies: [],
-    departments: [],
-    spacesByDepartment: {},
-    nodesByCompany: {},
-    activeCompanyId: null,
-    setActiveDepartment: jest.fn(),
-    setActiveSpace: jest.fn(),
-    setViewLevel: jest.fn(),
-  };
-  return { useMoraStore: (selector: any) => selector(stableState) };
+jest.mock('@/lib/store/navStore', () => {
+  const { create } = require('zustand');
+  const store = create(() => ({ activeCompanyId: null }));
+  return { useNavStore: (sel?: any) => sel ? store(sel) : store.getState(), ...store };
+});
+
+jest.mock('@/lib/queries/useDepartments', () => {
+  const stableDepts: never[] = [];
+  return { useDepartments: () => ({ data: stableDepts, isFetching: false }) };
+});
+
+jest.mock('@/lib/queries/useTree', () => {
+  const stableTree: never[] = [];
+  return { useTree: () => ({ data: stableTree, isFetching: false }) };
 });
 
 import { useSearchQuery } from '@/apps/search/hooks/useSearchQuery';

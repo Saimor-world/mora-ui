@@ -15,8 +15,8 @@ export function useCalendarEvents() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    coreGet<CalendarEvent[]>('/v3/calendar/events', { isOptional: true }).then((data) => {
-      setEvents(Array.isArray(data) ? data : []);
+    coreGet('/v3/calendar/events', { isOptional: true }).then((data) => {
+      setEvents(Array.isArray(data) ? (data as CalendarEvent[]) : []);
       setIsLoading(false);
     });
   }, []);
@@ -26,9 +26,9 @@ export function useCalendarEvents() {
     const optimistic: CalendarEvent = { id: tempId, title, date, time, color: 'bg-emerald-500' };
     setEvents(prev => [...prev, optimistic]);
 
-    const saved = await corePost<CalendarEvent>('/v3/calendar/events', { title, date, time, duration: 60, color: 'bg-emerald-500' });
-    if (saved) {
-      setEvents(prev => prev.map(e => e.id === tempId ? saved : e));
+    const saved = await corePost('/v3/calendar/events', { title, date, time, duration: 60, color: 'bg-emerald-500' });
+    if (saved && typeof saved === 'object') {
+      setEvents(prev => prev.map(e => e.id === tempId ? saved as CalendarEvent : e));
     } else {
       setEvents(prev => prev.filter(e => e.id !== tempId));
     }

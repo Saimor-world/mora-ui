@@ -96,20 +96,13 @@ jest.mock('@/lib/hooks/useHilToggle', () => ({
 
 // ─── Imports after mocks ──────────────────────────────────────────────────────
 
-import { SearchPane } from '@/components/panes/SearchPane';
+import SearchApp from '@/apps/search';
 import { MoraUpdatesFeed } from '@/components/mora/MoraUpdatesFeed';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function renderSearchPane() {
-    mockGetPane.mockReturnValue({
-        id: 'search-main',
-        size: { width: 860, height: 680 },
-        position: { x: 100, y: 80 },
-        zIndex: 10,
-        data: {},
-    });
-    return render(<SearchPane id="search-main" />);
+    return render(<SearchApp paneId="search-main" initialData={{}} />);
 }
 
 // ─── Setup / teardown ─────────────────────────────────────────────────────────

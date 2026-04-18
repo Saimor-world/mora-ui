@@ -77,7 +77,7 @@ jest.mock('@/lib/utils/searchOpen', () => ({
 }));
 
 // ── Import component AFTER mocks ──────────────────────────────────────────────
-import SearchPane from '@/components/panes/SearchPane';
+import SearchApp from '@/apps/search';
 
 const mockSearchSemantic = searchSemantic as jest.Mock;
 const mockSearchGlobal = searchGlobal as jest.Mock;
@@ -106,7 +106,7 @@ describe('SearchPane — semantic result scope_path priority', () => {
         const qc = createTestQueryClient();
         qc.setQueryData(queryKeys.companies(), STABLE_COMPANIES);
         qc.setQueryData(queryKeys.departments('company-1'), STABLE_DEPARTMENTS);
-        renderWithProviders(<SearchPane id="search-test" />, { queryClient: qc });
+        renderWithProviders(<SearchApp paneId="search-test" initialData={{}} />, { queryClient: qc });
 
         // Trigger the search via React's synthetic event system.
         const input = screen.getByPlaceholderText(/Suche nach/i);
