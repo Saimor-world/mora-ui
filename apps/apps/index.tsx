@@ -8,7 +8,6 @@ import {
     Activity,
     Calendar,
     Folder,
-    Globe,
     Grid,
     PenTool,
     ScanLine,
@@ -51,7 +50,6 @@ const ALL_APPS: AppEntry[] = [
     // Collaboration
     { name: 'Team',            type: 'team',         icon: Users,          color: 'text-emerald-400',  category: 'collaboration', width: 780,  height: 620 },
     { name: 'Benutzer',        type: 'users',        icon: Users,          color: 'text-emerald-300',  category: 'collaboration', width: 760,  height: 600 },
-    { name: 'Browser',         type: 'browser',      icon: Globe,          color: 'text-cyan-300',     category: 'collaboration', width: 1160, height: 760 },
     // System
     { name: 'Einstellungen',   type: 'settings',     icon: Settings,       color: 'text-white/80',     category: 'system',        width: 700,  height: 500 },
 ];
