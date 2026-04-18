@@ -17,6 +17,8 @@ import { queryKeys } from '@/lib/queries/queryKeys';
 jest.mock('@/lib/api/coreClient', () => ({
     authLogout: jest.fn(),
     fetchMyContent: jest.fn().mockResolvedValue(null),
+    // useCommunicationLiveData (added in 1aef20c) calls coreGet for mail/calendar polling
+    coreGet: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@/lib/auth/sessionLifecycle', () => ({

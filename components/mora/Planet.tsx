@@ -74,8 +74,8 @@ export const Planet: React.FC<PlanetProps> = ({
 
     const hasCapacity = typeof capacity === 'number' && Number.isFinite(capacity);
     const ringProgress = hasCapacity ? Math.max(0, Math.min(100, capacity)) : 0;
-    const ringBaseOpacity = isHovered || isActive ? 0.22 : 0.1;
-    const ringProgressOpacity = isHovered || isActive ? 0.88 : 0.46;
+    const ringBaseOpacity = isHovered || isActive ? 0.24 : 0.09;
+    const ringProgressOpacity = isHovered || isActive ? 0.72 : 0.22;
     const capacityTone = style.border;
     const neutralRingTone = 'rgba(226, 232, 240, 0.16)';
     const orbitTone = 'rgba(148, 163, 184, 0.18)';
@@ -141,7 +141,7 @@ export const Planet: React.FC<PlanetProps> = ({
                             r="35.5"
                             fill="none"
                             stroke={capacityTone}
-                            strokeWidth={isHovered || isActive ? 1.55 : 1.15}
+                            strokeWidth={isHovered || isActive ? 1.35 : 0.95}
                             strokeDasharray="223"
                             strokeDashoffset={223 - (223 * (ringProgress / 100))}
                             strokeLinecap="round"
@@ -206,8 +206,8 @@ export const Planet: React.FC<PlanetProps> = ({
                     '--orb-glow': `${style.glow}08`,
                     '--orb-border': `${style.border}30`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 78px ${style.glow}46, 0 22px 52px rgba(0,0,0,0.46), inset 0 0 36px ${style.glow}22, inset 2px 2px 8px rgba(255,255,255,0.3)`
-                        : `0 18px 44px rgba(0,0,0,0.44), inset 0 0 18px ${style.glow}10, inset 1px 1px 2px rgba(255,255,255,0.15)`,
+                        ? `0 0 44px ${style.glow}28, 0 18px 44px rgba(0,0,0,0.46), inset 0 0 22px ${style.glow}14, inset 2px 2px 6px rgba(255,255,255,0.26)`
+                        : `0 14px 36px rgba(0,0,0,0.42), inset 0 0 14px ${style.glow}0C, inset 1px 1px 2px rgba(255,255,255,0.14)`,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.08 }}
                 animate={{
