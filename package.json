@@ -12,7 +12,7 @@
     "lint": "next lint",
     "test": "jest",
     "test:e2e": "playwright test",
-    "verify:types": "npx tsc --noEmit",
+    "verify:types": "npx tsc --noEmit -p tsconfig.verify.json",
     "verify:critical-flow": "node scripts/check-critical-flow-gate.mjs",
     "verify:mr16:smoke": "npm run verify:types && npm run verify:critical-flow && npx playwright test e2e/finder-from-l3.spec.ts"
   },

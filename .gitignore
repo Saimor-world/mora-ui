@@ -6,6 +6,7 @@
 .next
 node_modules
 tsconfig.tsbuildinfo
+tsconfig.verify.tsbuildinfo
 next-env.d.ts
 .worktrees/
 .superpowers/
