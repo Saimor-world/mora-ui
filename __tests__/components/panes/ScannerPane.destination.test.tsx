@@ -175,7 +175,7 @@ afterEach(() => {
 function renderPane() {
     const qc = createTestQueryClient();
     qc.setQueryData(queryKeys.companies(), [{ id: 'company-1', name: 'Test Corp' }]);
-    return renderWithProviders(<ScannerPane id="scanner-main" />, { queryClient: qc });
+    return renderWithProviders(<ScannerPane id="scanner-main" data={STABLE_PANE.data} />, { queryClient: qc });
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -200,7 +200,8 @@ describe('ScannerPane — destination threading V2', () => {
 
     test('sequential confirms: batchResultSummary carries folderId from ConfirmationCard result', async () => {
         renderPane();
-        fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        // findByRole waits for AppLoader's dynamic import to resolve before clicking
+        fireEvent.click(await screen.findByRole('button', { name: /Alle hochladen/i }));
         await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
         fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 

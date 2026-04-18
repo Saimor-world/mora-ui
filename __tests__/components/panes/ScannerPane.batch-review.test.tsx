@@ -188,7 +188,7 @@ beforeEach(() => {
 function renderPane() {
     const qc = createTestQueryClient();
     qc.setQueryData(queryKeys.companies(), [{ id: 'company-1', name: 'Test Corp' }]);
-    return renderWithProviders(<ScannerPane id="scanner-main" />, { queryClient: qc });
+    return renderWithProviders(<ScannerPane id="scanner-main" data={STABLE_PANE.data} />, { queryClient: qc });
 }
 
 describe('ScannerPane batch review', () => {
