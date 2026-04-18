@@ -132,6 +132,15 @@ export const APP_REGISTRY: AppManifest[] = [
 
   // ── System ────────────────────────────────────────────────────────────────
   {
+    id: 'apps',
+    name: 'Apps',
+    description: 'App-Bibliothek und Launcher',
+    icon: 'Grid',
+    color: 'slate',
+    category: 'system',
+    defaultSize: { width: 900, height: 680 },
+  },
+  {
     id: 'terminal',
     name: 'Terminal',
     description: 'Kommandozeile',
