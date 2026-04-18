@@ -43,20 +43,20 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'notes':
             return <NotesPane id={pane.id} />;
         case 'finder':
-            return <FinderPane id={pane.id} />;
+            return <FinderPane id={pane.id} data={pane.data} />;
         case 'space':
-            return <FinderPane id={pane.id} />;
+            return <FinderPane id={pane.id} data={pane.data} />;
         case 'chat':
-            return <ChatPane id={pane.id} />;
+            return <ChatPane id={pane.id} data={pane.data} />;
         case 'meine-dateien':
             return <MeineDateienPane id={pane.id} />;
 
         case 'grid':
             return <GridPane id={pane.id} />;
         case 'search':
-            return <SearchPane id={pane.id} />;
+            return <SearchPane id={pane.id} data={pane.data} />;
         case 'scanner':
-            return <ScannerPane id={pane.id} />;
+            return <ScannerPane id={pane.id} data={pane.data} />;
         case 'users':
             return <UsersPane id={pane.id} />;
         case 'mail':
