@@ -158,7 +158,7 @@ const buildMailDescription = (overview?: IntegrationsOverview) => {
     if (mail.configured) {
         return mail.email ? `Verbunden mit ${mail.email}.` : 'Postfach ist eingerichtet.';
     }
-    return 'Noch keine Mail-Verbindung eingerichtet.';
+    return 'Noch keine Mail-Verbindung eingerichtet. Erwartet werden EMAIL_IMAP_HOST / EMAIL_IMAP_USER / EMAIL_IMAP_PASSWORD sowie SMTP_HOST / SMTP_USER / SMTP_PASSWORD im Core.';
 };
 
 const buildCalendarDescription = (overview?: IntegrationsOverview) => {
@@ -169,7 +169,7 @@ const buildCalendarDescription = (overview?: IntegrationsOverview) => {
         return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
     }
     if (!caps?.calendar_oauth_enabled) {
-        return 'Kalender-OAuth ist serverseitig noch nicht aktiviert.';
+        return 'Kalender-OAuth ist serverseitig noch nicht aktiviert. Erwartet werden GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=http://127.0.0.1:8081/v1/auth/google/callback.';
     }
     if (calendar.configured) {
         return calendar.email ? `Verbunden mit ${calendar.email}.` : 'Kalender ist eingerichtet.';

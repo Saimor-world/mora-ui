@@ -6,6 +6,10 @@ import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
 
 const DEFAULT_LOCAL_UI = 'http://127.0.0.1:3000/home';
 const DEFAULT_CONNECT_SURFACE = 'about:saimor-connect';
+const LOCAL_GOOGLE_CALLBACK = 'http://127.0.0.1:8081/v1/auth/google/callback';
+
+const MAIL_SETUP_DETAIL = 'Setze im Core echte Mail-Zugangsdaten: EMAIL_IMAP_HOST / EMAIL_IMAP_USER / EMAIL_IMAP_PASSWORD sowie SMTP_HOST / SMTP_USER / SMTP_PASSWORD.';
+const CALENDAR_OAUTH_DETAIL = `Setze im Core GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=${LOCAL_GOOGLE_CALLBACK}.`;
 
 const providerMailUrl = (provider?: string) => {
     switch ((provider || '').toLowerCase()) {
@@ -98,14 +102,14 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         ? 'Dieses Konto kann Mail-Verbindungen nicht selbst verwalten.'
                         : mailLocalMode
                             ? 'Der Server laeuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
-                            : 'Lege jetzt IMAP/SMTP-Zugangsdaten im Integrationsbereich ab, damit echte Mails im OS erscheinen.',
+                            : MAIL_SETUP_DETAIL,
             calendarStatusDetail:
                 calendarConfigured
                     ? 'Der verbundene Kalender wird im OS gelesen und fuer Home, Kalender und Mora genutzt.'
                     : !ownerManageable
                         ? 'Dieses Konto kann Kalender-Verbindungen nicht selbst verwalten.'
                         : !calendarOauthEnabled
-                            ? 'Google-Kalender-OAuth ist im lokalen Core noch nicht konfiguriert.'
+                            ? CALENDAR_OAUTH_DETAIL
                             : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
             browserConnectable: integrations.browserBridge.supported,
             browserPermission,
