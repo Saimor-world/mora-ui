@@ -25,12 +25,23 @@ import type { AppProps } from '@/lib/apps/types';
 
 // ─── App catalogue ────────────────────────────────────────────────────────────
 
+type AppCategory = 'core' | 'workspace' | 'collaboration' | 'system';
+
+const CATEGORY_ORDER: AppCategory[] = ['core', 'workspace', 'collaboration', 'system'];
+
+const CATEGORY_LABELS: Record<AppCategory, string> = {
+    core:          'Kern',
+    workspace:     'Arbeitsbereich',
+    collaboration: 'Zusammenarbeit',
+    system:        'System',
+};
+
 interface AppEntry {
     name: string;
     type: PaneType;
     icon: LucideIcon;
     color: string;
-    category: string;
+    category: AppCategory;
 }
 
 const ALL_APPS: AppEntry[] = [
@@ -101,27 +112,40 @@ export default function AppLibraryApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="grid grid-cols-4 gap-4 p-4 overflow-y-auto">
-                {visibleApps.map((app) => {
-                    const manifest = getAppManifest(app.type);
-                    const isNew = manifest?.isNew ?? false;
+            <div className="overflow-y-auto p-4 space-y-5">
+                {CATEGORY_ORDER.map(category => {
+                    const section = visibleApps.filter(a => a.category === category);
+                    if (!section.length) return null;
                     return (
-                        <div
-                            key={app.type}
-                            onClick={() => handleAppClick(app)}
-                            className="relative aspect-square rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all flex flex-col items-center justify-center gap-3 group cursor-pointer"
-                        >
-                            {isNew && (
-                                <span className="absolute top-2 right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
-                                    Neu
-                                </span>
-                            )}
-                            <div className={`p-3 rounded-xl bg-black/20 ${app.color}`}>
-                                <app.icon size={28} />
+                        <div key={category}>
+                            <p className="text-[10px] uppercase tracking-widest text-white/25 pb-2.5 pl-0.5">
+                                {CATEGORY_LABELS[category]}
+                            </p>
+                            <div className="grid grid-cols-4 gap-3">
+                                {section.map(app => {
+                                    const manifest = getAppManifest(app.type);
+                                    const isNew = manifest?.isNew ?? false;
+                                    return (
+                                        <div
+                                            key={app.type}
+                                            onClick={() => handleAppClick(app)}
+                                            className="relative aspect-square rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                                        >
+                                            {isNew && (
+                                                <span className="absolute top-2 right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
+                                                    Neu
+                                                </span>
+                                            )}
+                                            <div className={`p-3 rounded-xl bg-black/20 ${app.color}`}>
+                                                <app.icon size={28} />
+                                            </div>
+                                            <span className="text-sm text-white/60 group-hover:text-white transition-colors text-center leading-tight px-1">
+                                                {app.name}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <span className="text-sm text-white/60 group-hover:text-white transition-colors text-center leading-tight px-1">
-                                {app.name}
-                            </span>
                         </div>
                     );
                 })}
