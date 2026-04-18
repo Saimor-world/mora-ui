@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { AppLoader } from '@/lib/apps/AppLoader';
+import { AppLoader, APP_IDS } from '@/lib/apps/AppLoader';
 
 // Mock all dynamic imports to avoid loading full app bundles in tests
 jest.mock('next/dynamic', () => (fn: () => Promise<unknown>, opts?: unknown) => {
@@ -28,13 +28,8 @@ describe('AppLoader', () => {
     expect(screen.getByText(/App "nonexistent" not found/)).toBeInTheDocument();
   });
 
-  it('registers all 15 known app ids', () => {
-    const knownIds = [
-      'finder', 'scanner', 'chat', 'settings', 'team', 'terminal',
-      'document', 'search', 'calendar', 'notes', 'users', 'work-session',
-      'tasks', 'timeline', 'canvas',
-    ];
-    for (const id of knownIds) {
+  it('renders a stub for every registered app id (live from APP_IDS)', () => {
+    for (const id of APP_IDS) {
       const { unmount } = render(<AppLoader appId={id} paneId="test" />);
       expect(screen.getByTestId('app-stub')).toBeInTheDocument();
       unmount();

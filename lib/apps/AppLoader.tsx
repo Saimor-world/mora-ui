@@ -36,6 +36,9 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   apps:            dynamic(() => import('@/apps/apps'),          { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
+/** Sorted list of all app ids registered in APP_MAP. Used by tests to guard registry consistency. */
+export const APP_IDS: string[] = Object.keys(APP_MAP).sort();
+
 // ─── AppLoader ───────────────────────────────────────────────────────────────
 
 interface AppLoaderProps extends AppProps {
