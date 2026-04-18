@@ -42,19 +42,19 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     grid:             'app',
     search:           'app',
     space:            'app',
-    mail:             'app',
     calendar:         'app',
-    integrations:     'app',
     browser:          'app',
     'mora-hub':       'app',
-    apps:             'app',       // AppLibrary — promoted (15 apps registered)
+    apps:             'app',       // AppLibrary — promoted (16 apps registered)
 
     // ── App Platform additions ──────────────────────────────────────────────
     timeline:        'app',       // Activity feed
     tasks:           'app',       // Kanban board
     canvas:          'app',       // Whiteboard
 
-    // Future / gated
+    // Future / gated (no working backend or in forbidden scope)
+    mail:            'future',
+    integrations:    'future',
     terminal:        'future',
     actions:         'future',
     'work-session':  'future',

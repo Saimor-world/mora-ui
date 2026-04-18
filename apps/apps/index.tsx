@@ -5,25 +5,21 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
     Activity,
-    Box,
     Calendar,
-    FileText,
     Folder,
     Globe,
     Grid,
-    Mail,
     PenTool,
     ScanLine,
     Search,
     Settings,
     SquareCheckBig,
     StickyNote,
-    Terminal,
     Users,
-    Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
+import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import type { AppProps } from '@/lib/apps/types';
 
 // ─── App catalogue ────────────────────────────────────────────────────────────
@@ -38,7 +34,7 @@ interface AppEntry {
     height?: number;
 }
 
-const APPS: AppEntry[] = [
+const ALL_APPS: AppEntry[] = [
     // Core
     { name: 'Finder',          type: 'finder',       icon: Folder,         color: 'text-emerald-400',  category: 'core',          width: 900,  height: 620 },
     { name: 'Alle Inhalte',    type: 'grid',         icon: Grid,           color: 'text-emerald-300',  category: 'core' },
@@ -53,13 +49,13 @@ const APPS: AppEntry[] = [
     // Collaboration
     { name: 'Team',            type: 'team',         icon: Users,          color: 'text-emerald-400',  category: 'collaboration', width: 780,  height: 620 },
     { name: 'Benutzer',        type: 'users',        icon: Users,          color: 'text-emerald-300',  category: 'collaboration', width: 760,  height: 600 },
-    { name: 'Post',            type: 'mail',         icon: Mail,           color: 'text-red-400',      category: 'collaboration', width: 860,  height: 640 },
     { name: 'Browser',         type: 'browser',      icon: Globe,          color: 'text-cyan-300',     category: 'collaboration', width: 1160, height: 760 },
     // System
-    { name: 'Terminal',        type: 'terminal',     icon: Terminal,       color: 'text-mora-gold',    category: 'system',        width: 860,  height: 560 },
-    { name: 'Integrationen',   type: 'integrations', icon: Wrench,         color: 'text-blue-300',     category: 'system',        width: 760,  height: 560 },
     { name: 'Einstellungen',   type: 'settings',     icon: Settings,       color: 'text-white/80',     category: 'system',        width: 700,  height: 500 },
 ];
+
+// Only show apps that are enabled in the surface registry (not future-gated)
+const VISIBLE_APPS = ALL_APPS.filter(a => isPaneEnabled(a.type));
 
 // ─── AppLibraryApp ────────────────────────────────────────────────────────────
 
@@ -101,7 +97,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
             resizable
         >
             <div className="grid grid-cols-4 gap-4 p-4 overflow-y-auto">
-                {APPS.map((app) => (
+                {VISIBLE_APPS.map((app) => (
                     <div
                         key={app.type}
                         onClick={() => handleAppClick(app)}
