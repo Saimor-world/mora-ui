@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { coreGet } from '@/lib/api/coreClient';
+import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from '@/lib/integrations/communicationEvents';
 
 export interface MailOverview {
     configured?: boolean;
@@ -144,6 +145,31 @@ export function useIntegrationsOverview(autoLoad: boolean = true) {
     useEffect(() => {
         refreshBrowserBridge();
     }, [refreshBrowserBridge]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handleSync = () => {
+            void loadOverview();
+            refreshBrowserBridge();
+        };
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === getCommunicationSyncStorageKey()) {
+                void loadOverview();
+            }
+        };
+
+        window.addEventListener(COMMUNICATION_SYNC_EVENT, handleSync as EventListener);
+        window.addEventListener('storage', handleStorage);
+        window.addEventListener('focus', handleSync);
+
+        return () => {
+            window.removeEventListener(COMMUNICATION_SYNC_EVENT, handleSync as EventListener);
+            window.removeEventListener('storage', handleStorage);
+            window.removeEventListener('focus', handleSync);
+        };
+    }, [loadOverview, refreshBrowserBridge]);
 
     return {
         overview,

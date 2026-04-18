@@ -130,7 +130,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'mail' | 'integrations' | 'browser';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'mail' | 'calendar' | 'integrations' | 'browser';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -214,7 +214,7 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     }, [revealPane]);
 
     const openCalendarSetup = useCallback(() => {
-        if (!communicationSummary.ownerManageable || !communicationSummary.calendarOauthEnabled) {
+        if (!communicationSummary.ownerManageable || !communicationSummary.calendarOauthEnabled || !integrationsOverview?.calendar?.configured) {
             revealPane('integrations-main', {
                 type: 'integrations',
                 title: 'Integrationen',
@@ -222,13 +222,12 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
             });
             return;
         }
-        revealPane('browser-connect', {
-            type: 'browser',
-            title: 'Browser',
-            size: { width: 1160, height: 760 },
-            data: { initialUrl: 'https://calendar.google.com/' },
+        revealPane('calendar-main', {
+            type: 'calendar',
+            title: 'Kalender',
+            size: { width: 840, height: 620 },
         });
-    }, [communicationSummary.calendarOauthEnabled, communicationSummary.ownerManageable, revealPane]);
+    }, [communicationSummary.calendarOauthEnabled, communicationSummary.ownerManageable, integrationsOverview?.calendar?.configured, revealPane]);
 
     const openLocalTruth = useCallback(() => {
         if (typeof window === 'undefined') return;
