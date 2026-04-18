@@ -9,7 +9,7 @@ const DEFAULT_CONNECT_SURFACE = 'about:saimor-connect';
 const LOCAL_GOOGLE_CALLBACK = 'http://127.0.0.1:8081/v1/auth/google/callback';
 
 const MAIL_SETUP_DETAIL = 'Setze im Core echte Mail-Zugangsdaten: EMAIL_IMAP_HOST / EMAIL_IMAP_USER / EMAIL_IMAP_PASSWORD sowie SMTP_HOST / SMTP_USER / SMTP_PASSWORD.';
-const CALENDAR_OAUTH_DETAIL = `Setze im Core GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=${LOCAL_GOOGLE_CALLBACK}.`;
+const CALENDAR_OAUTH_DETAIL = `Setze Google Calendar OAuth tenantweit in SAIMOR oder als Core-Fallback: GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=${LOCAL_GOOGLE_CALLBACK}.`;
 
 const providerMailUrl = (provider?: string) => {
     switch ((provider || '').toLowerCase()) {
@@ -64,11 +64,12 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
         const calendarOauthEnabled = Boolean(overview?.capabilities?.calendar_oauth_enabled);
         const mailSetupDetail = typeof overview?.setup?.mail?.detail === 'string' ? overview.setup.mail.detail : null;
         const calendarMissingEnv = Array.isArray(overview?.setup?.calendar?.missing_env) ? overview.setup.calendar.missing_env : [];
+        const calendarConfigSource = typeof overview?.setup?.calendar?.source === 'string' ? overview.setup.calendar.source : null;
         const calendarRedirectUrl = typeof overview?.setup?.calendar?.redirect_url === 'string'
             ? overview.setup.calendar.redirect_url
             : LOCAL_GOOGLE_CALLBACK;
         const calendarSetupDetail = calendarMissingEnv.length > 0
-            ? `Im Core fehlen: ${calendarMissingEnv.join(' / ')}. Redirect: ${calendarRedirectUrl}.`
+            ? `${calendarConfigSource === 'tenant' ? 'Im Tenant fehlen' : 'Im Core fehlen'}: ${calendarMissingEnv.join(' / ')}. Redirect: ${calendarRedirectUrl}.`
             : CALENDAR_OAUTH_DETAIL;
 
         const mailStatusLabel = mailConfigured
