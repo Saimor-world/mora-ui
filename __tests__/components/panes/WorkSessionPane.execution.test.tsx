@@ -144,7 +144,7 @@ describe('WorkSessionPane — execution continuity', () => {
         setupPane(plan);
 
         await act(async () => {
-            render(<WorkSessionPane id="ws-test" />);
+            render(<WorkSessionPane id="ws-test" data={{ plan }} />);
         });
 
         // There should be a div with border-l-2 in the document
@@ -170,7 +170,7 @@ describe('WorkSessionPane — execution continuity', () => {
         setupPane(plan);
 
         await act(async () => {
-            render(<WorkSessionPane id="ws-test" />);
+            render(<WorkSessionPane id="ws-test" data={{ plan }} />);
         });
 
         const accented = document.querySelector('.border-l-2');
@@ -191,7 +191,7 @@ describe('WorkSessionPane — execution continuity', () => {
         setupPane(plan);
 
         await act(async () => {
-            render(<WorkSessionPane id="ws-test" />);
+            render(<WorkSessionPane id="ws-test" data={{ plan }} />);
         });
 
         const accented = document.querySelector('.border-l-2');
@@ -212,7 +212,7 @@ describe('WorkSessionPane — execution continuity', () => {
         setupPane(runningPlan);
 
         await act(async () => {
-            render(<WorkSessionPane id="ws-test" />);
+            render(<WorkSessionPane id="ws-test" data={{ plan: runningPlan }} />);
         });
 
         expect(mockDispatchWorkSessionPlan).toHaveBeenCalledWith(
@@ -237,7 +237,7 @@ describe('WorkSessionPane — execution continuity', () => {
         setupPane(waitingPlan);
 
         await act(async () => {
-            render(<WorkSessionPane id="ws-test" />);
+            render(<WorkSessionPane id="ws-test" data={{ plan: waitingPlan }} />);
         });
 
         expect(mockDispatchWorkSessionPlan).toHaveBeenCalledWith(
