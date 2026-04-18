@@ -3,7 +3,8 @@ import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Clock, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
@@ -11,13 +12,10 @@ import { useSearchQuery } from './hooks/useSearchQuery';
 
 export default function SearchApp({ paneId, initialData }: AppProps) {
   const { removePane, openPane } = usePaneStore();
-  const { activeCompanyId, companies, setActiveDepartment, setActiveSpace, setViewLevel } = useMoraStore((s) => ({
-    activeCompanyId: s.activeCompanyId,
-    companies: s.companies,
-    setActiveDepartment: s.setActiveDepartment,
-    setActiveSpace: s.setActiveSpace,
-    setViewLevel: s.setViewLevel,
-  }));
+  const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+  const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
+  const navigateToSpace = useNavStore((s) => s.navigateToSpace);
+  const { data: companies = [] } = useCompanies();
 
   const safeCompanies = Array.isArray(companies) ? companies : [];
   const activeCompanyName = safeCompanies.find(c => c.id === activeCompanyId)?.name ?? null;
@@ -51,8 +49,8 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
     localStorage.setItem('saimor_recent_searches', JSON.stringify(newRecent));
 
     switch (result.type) {
-      case 'department': setActiveDepartment(result.departmentId || result.id); setViewLevel('department'); removePane(paneId); break;
-      case 'space':      setActiveSpace(result.spaceId || result.id); setViewLevel('space'); removePane(paneId); break;
+      case 'department': navigateToDepartment(result.departmentId || result.id); removePane(paneId); break;
+      case 'space':      navigateToSpace(result.spaceId || result.id); removePane(paneId); break;
       default:
         await openSearchResult(result, openPane, { companyId: activeCompanyId || result.companyId });
         removePane(paneId);

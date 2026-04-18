@@ -1,10 +1,31 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { searchGlobal, searchSemantic } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
 import { getSearchResultSubtitle, mapRawSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { FileText, Building2, Folder } from 'lucide-react';
+import type { CoreTreeNode } from '@/lib/types/core';
 
 export type SearchResult = OpenableSearchResult & { source?: 'local' | 'mora' };
+
+function flattenTree(nodes: CoreTreeNode[], path: string[] = []): SearchResult[] {
+  const out: SearchResult[] = [];
+  for (const node of nodes) {
+    const nodePath = [...path, node.name];
+    out.push({
+      id: node.id,
+      type: node.type as SearchResult['type'],
+      title: node.name,
+      subtitle: nodePath.join(' › '),
+      path: nodePath.join(' › '),
+      icon: node.type === 'department' ? Building2 : node.type === 'node' ? FileText : Folder,
+      source: 'local',
+    });
+    if (node.children?.length) out.push(...flattenTree(node.children, nodePath));
+  }
+  return out;
+}
 
 export function useSearchQuery(initialQuery = '') {
   const [query, setQuery] = useState(initialQuery);
@@ -15,36 +36,31 @@ export function useSearchQuery(initialQuery = '') {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchRequestRef = useRef(0);
 
-  const { departments, spacesByDepartment, nodesByCompany, activeCompanyId } = useMoraStore((s) => ({
-    departments: s.departments,
-    spacesByDepartment: s.spacesByDepartment,
-    nodesByCompany: s.nodesByCompany,
-    activeCompanyId: s.activeCompanyId,
-  }));
+  const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+  const { data: departments = [] } = useDepartments(activeCompanyId);
+  const { data: treeData = [] } = useTree(activeCompanyId);
 
-  const allSpaces = useMemo(() => Object.values(spacesByDepartment).flat(), [spacesByDepartment]);
-  const allNodes = useMemo(
-    () => (activeCompanyId && nodesByCompany[activeCompanyId]) ? nodesByCompany[activeCompanyId] : [],
-    [activeCompanyId, nodesByCompany],
+  // Flattened tree nodes for local search — stable reference when query empty
+  const localTreeResults = useMemo(
+    () => flattenTree(Array.isArray(treeData) ? treeData : []),
+    [treeData],
   );
 
   const buildLocalResults = useCallback((q: string): SearchResult[] => {
     const lq = q.toLowerCase();
     const out: SearchResult[] = [];
-    departments.forEach(d => {
+    (Array.isArray(departments) ? departments : []).forEach(d => {
       if (d.name.toLowerCase().includes(lq))
-        out.push({ id: d.id, type: 'department', title: d.name, subtitle: 'Department', icon: Building2, source: 'local' });
+        out.push({ id: d.id, type: 'department', title: d.name, subtitle: 'Abteilung', icon: Building2, source: 'local' });
     });
-    allSpaces.forEach(s => {
-      if (s.name.toLowerCase().includes(lq))
-        out.push({ id: s.id, type: 'space', title: s.name, subtitle: 'Space', icon: Folder, source: 'local' });
+    localTreeResults.forEach(r => {
+      if (r.title.toLowerCase().includes(lq) || r.subtitle?.toLowerCase().includes(lq))
+        out.push(r);
     });
-    allNodes.forEach(n => {
-      if (n.title?.toLowerCase().includes(lq) || n.content?.toLowerCase().includes(lq))
-        out.push({ id: n.id, type: 'node', title: n.title || 'Untitled', subtitle: n.content?.substring(0, 50) || 'Element', icon: FileText, source: 'local' });
-    });
-    return out.slice(0, 10);
-  }, [departments, allSpaces, allNodes]);
+    const deduped = new Map<string, SearchResult>();
+    out.forEach(r => { deduped.set(`${r.type}:${r.id}`, r); });
+    return Array.from(deduped.values()).slice(0, 10);
+  }, [departments, localTreeResults]);
 
   useEffect(() => {
     if (!query.trim()) {
