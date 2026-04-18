@@ -30,6 +30,15 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 480, height: 420 },
     singleton: true,
   },
+  {
+    id: 'grid',
+    name: 'Alle Inhalte',
+    description: 'Alle Knoten in der Übersicht',
+    icon: 'Grid',
+    color: 'green',
+    category: 'core',
+    defaultSize: { width: 900, height: 640 },
+  },
 
   // ── Intelligence ──────────────────────────────────────────────────────────
   {
