@@ -27,6 +27,7 @@ interface PaneShellProps {
 
 export function PaneShell({ id, children, title, defaultWidth = 720, defaultHeight = 580 }: PaneShellProps) {
   const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+  const isActive = usePaneStore(s => s.activePaneId === id);
   const pane = getPane(id);
   if (!pane) return null;
 
@@ -43,7 +44,7 @@ export function PaneShell({ id, children, title, defaultWidth = 720, defaultHeig
       onClose={() => removePane(id)}
       onMinimize={() => minimizePane(id)}
       onFocus={() => focusPane(id)}
-      isActive={true}
+      isActive={isActive}
       zIndex={pane.zIndex}
       showCloseButton
       showMinimizeButton

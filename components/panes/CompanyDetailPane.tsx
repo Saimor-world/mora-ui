@@ -23,6 +23,7 @@ interface CompanyDetailPaneProps {
  */
 export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, companyId, companyName }) => {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === id);
     const { data: companies = [] } = useCompanies();
     const queryClient = useQueryClient();
     const pane = getPane(id);
@@ -73,7 +74,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
