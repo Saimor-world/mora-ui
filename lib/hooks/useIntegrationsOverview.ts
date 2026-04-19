@@ -85,6 +85,10 @@ export interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
                     supported_actions?: string[];
                 };
                 core?: {
@@ -93,6 +97,10 @@ export interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
                     supported_actions?: string[];
                 };
                 assistant?: {
@@ -100,8 +108,10 @@ export interface IntegrationsOverview {
                     service_id?: string;
                     status?: string;
                     reachable?: boolean;
+                    status_code?: number | null;
                     available?: boolean;
                     configured_model?: string;
+                    error?: string;
                     supported_actions?: string[];
                 };
             };

@@ -92,6 +92,10 @@ interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
                     supported_actions?: string[];
                 };
                 core?: {
@@ -100,6 +104,10 @@ interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
                     supported_actions?: string[];
                 };
                 assistant?: {
@@ -107,8 +115,10 @@ interface IntegrationsOverview {
                     service_id?: string;
                     status?: string;
                     reachable?: boolean;
+                    status_code?: number | null;
                     available?: boolean;
                     configured_model?: string;
+                    error?: string;
                     supported_actions?: string[];
                 };
             };
@@ -856,7 +866,12 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div>
                                                             <div className="text-xs font-medium text-white">{service.title}</div>
-                                                            <div className="mt-1 text-[11px] text-white/45">{humanizeRuntimeState(service.state)}</div>
+                                                    <div className="mt-1 text-[11px] text-white/45">{humanizeRuntimeState(service.state)}</div>
+                                                            {'process_count' in service && typeof (service as any).process_count === 'number' ? (
+                                                                <div className="mt-1 text-[10px] text-white/35">
+                                                                    Prozesse: {(service as any).process_count}
+                                                                </div>
+                                                            ) : null}
                                                         </div>
                                                         <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${
                                                             service.state === 'ready'
@@ -885,6 +900,11 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 );
                                                             })}
                                                     </div>
+                                                    {'pids' in service && Array.isArray((service as any).pids) && (service as any).pids.length > 0 ? (
+                                                        <div className="mt-2 text-[10px] text-white/35">
+                                                            PID: {(service as any).pids.join(', ')}
+                                                        </div>
+                                                    ) : null}
                                                 </div>
                                             ))}
                                         </div>
