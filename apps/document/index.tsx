@@ -53,6 +53,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             try {
                 setIsLoading(true);
                 setLoadError(null);
+                setImageLoadError(false);
                 const nodeData = await fetchNodeDetails(nodeId);
                 if (cancelled) return;
                 if (!nodeData) { setLoadError('Dokument nicht gefunden oder kein Zugriff.'); return; }

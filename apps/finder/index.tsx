@@ -539,6 +539,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         }
         currentFolderIdRef.current = targetFolderId;
         setCurrentFolderId(targetFolderId);
+        setContextMenu(null);
     }, []);
 
     const navigateBack = useCallback(() => {
@@ -589,18 +590,26 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             // Do not hijack navigation keys while typing
             if (editable) return;
 
+            if (e.key === 'Escape') {
+                setContextMenu(null);
+                return;
+            }
+
             if (e.altKey && e.key === 'ArrowLeft') {
                 e.preventDefault();
+                setContextMenu(null);
                 navigateBack();
                 return;
             }
             if (e.altKey && e.key === 'ArrowRight') {
                 e.preventDefault();
+                setContextMenu(null);
                 navigateForward();
                 return;
             }
             if (e.altKey && e.key === 'ArrowUp') {
                 e.preventDefault();
+                setContextMenu(null);
                 navigateUp();
                 return;
             }

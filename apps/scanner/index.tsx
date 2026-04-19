@@ -849,16 +849,25 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
     const bulkReject = async () => {
         if (pendingActions.length === 0) return;
         setIsBatchProcessing(true);
+        const snapshot = [...pendingActions];
+        let successCount = 0;
+        const failedActions: typeof snapshot = [];
         try {
-            const snapshot = [...pendingActions];
             for (const action of snapshot) {
-                await rejectPendingAction(action);
+                try {
+                    await rejectPendingAction(action);
+                    successCount++;
+                } catch (error) {
+                    console.error('Reject failed for action', action.action_id, error);
+                    failedActions.push(action);
+                }
             }
-            setPendingActions([]);
-            toast.info(snapshot.length === 1 ? 'Datei verworfen' : `${snapshot.length} Dateien verworfen`);
-        } catch (error) {
-            console.error('Bulk reject failed', error);
-            toast.error('Batch konnte nicht vollständig verworfen werden.');
+            setPendingActions(failedActions);
+            if (failedActions.length === 0) {
+                toast.info(snapshot.length === 1 ? 'Datei verworfen' : `${snapshot.length} Dateien verworfen`);
+            } else {
+                toast.info(`${successCount} verworfen, ${failedActions.length} fehlgeschlagen.`);
+            }
         } finally {
             setIsBatchProcessing(false);
         }
