@@ -52,6 +52,7 @@ export interface IntegrationsOverview {
             mode?: string;
             state?: string;
             action_endpoint_template?: string;
+            jobs_endpoint?: string;
             supported_actions?: string[];
             startup_script?: string;
             startup_scripts?: {

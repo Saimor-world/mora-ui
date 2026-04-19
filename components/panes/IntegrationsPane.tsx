@@ -1,9 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
-import { corePost } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
@@ -156,6 +156,16 @@ interface IntegrationsOverview {
 }
 
 type RuntimePlatform = 'windows' | 'linux';
+type RuntimeJob = {
+    job_id: string;
+    service_id?: string;
+    action?: string;
+    status?: string;
+    accepted_at?: string;
+    started_at?: string | null;
+    finished_at?: string | null;
+    error?: string | null;
+};
 
 const DEFAULT_LOCAL_TRUTH_COMMANDS: Record<RuntimePlatform, string> = {
     windows: 'Set-Location C:\\saimor; .\\scripts\\Start-LocalTruth.ps1 -ForceRestart',
@@ -324,6 +334,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [runtimeActionKey, setRuntimeActionKey] = useState<string | null>(null);
+    const [runtimeJobs, setRuntimeJobs] = useState<RuntimeJob[]>([]);
 
     const assistantProviders = useMemo(
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
@@ -450,6 +461,20 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [localTruthStartupCommands]);
 
+    const loadRuntimeJobs = useCallback(async () => {
+        if (!canControlRuntime) {
+            setRuntimeJobs([]);
+            return;
+        }
+        try {
+            const payload = await coreGet(overview?.runtime?.local_truth?.jobs_endpoint || '/v3/system/runtime/jobs', { isOptional: true });
+            const items = Array.isArray(payload?.items) ? payload.items : [];
+            setRuntimeJobs(items.slice(0, 6));
+        } catch {
+            setRuntimeJobs([]);
+        }
+    }, [canControlRuntime, overview?.runtime?.local_truth?.jobs_endpoint]);
+
     const runRuntimeAction = useCallback(async (serviceId: 'local_truth' | 'ui' | 'core', action: 'start' | 'stop' | 'restart') => {
         const actionKey = `${serviceId}:${action}`;
         setRuntimeActionKey(actionKey);
@@ -461,10 +486,12 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
             }
             toast.success(`${serviceId} -> ${action} wurde eingereiht`);
             await loadOverview();
+            await loadRuntimeJobs();
             if (typeof window !== 'undefined') {
                 window.setTimeout(() => {
                     void loadOverview();
                     void localTruthBridge.refresh();
+                    void loadRuntimeJobs();
                 }, 1800);
             }
         } catch (err: any) {
@@ -472,7 +499,19 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         } finally {
             setRuntimeActionKey(null);
         }
-    }, [loadOverview, localTruthBridge]);
+    }, [loadOverview, loadRuntimeJobs, localTruthBridge]);
+
+    useEffect(() => {
+        void loadRuntimeJobs();
+    }, [loadRuntimeJobs]);
+
+    useEffect(() => {
+        if (!canControlRuntime || runtimeActionKey === null) return;
+        const timer = window.setInterval(() => {
+            void loadRuntimeJobs();
+        }, 1500);
+        return () => window.clearInterval(timer);
+    }, [canControlRuntime, runtimeActionKey, loadRuntimeJobs]);
 
     if (!pane) return null;
 
@@ -897,6 +936,35 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             <div>Runtime: <span className="text-white/78">{overview?.runtime?.local_truth?.state || 'unknown'}</span></div>
                                             <div className="mt-1">Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
                                             <div className="mt-1">Letzte Pruefung: <span className="text-white/78">{localTruthBridge.lastCheckedAt || 'noch keine'}</span></div>
+                                        </div>
+                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3">
+                                            <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Runtime Jobs</div>
+                                            <div className="mt-3 space-y-2">
+                                                {canControlRuntime ? runtimeJobs.length > 0 ? runtimeJobs.map((job) => (
+                                                    <div key={job.job_id} className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-white/80">{job.service_id} · {job.action}</span>
+                                                            <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${
+                                                                job.status === 'succeeded'
+                                                                    ? 'border-emerald-400/20 bg-emerald-500/12 text-emerald-100'
+                                                                    : job.status === 'failed'
+                                                                        ? 'border-red-400/20 bg-red-500/12 text-red-100'
+                                                                        : job.status === 'running'
+                                                                            ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                                            : 'border-white/10 bg-white/[0.04] text-white/60'
+                                                            }`}>
+                                                                {job.status || 'unknown'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mt-1 text-white/45">{job.job_id}</div>
+                                                        {job.error ? <div className="mt-1 text-red-200/80">{job.error}</div> : null}
+                                                    </div>
+                                                )) : (
+                                                    <div className="text-[11px] text-white/45">Noch keine Runtime-Aktionen protokolliert.</div>
+                                                ) : (
+                                                    <div className="text-[11px] text-white/45">Nur der System-Eigentuemer sieht Runtime-Jobs.</div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
