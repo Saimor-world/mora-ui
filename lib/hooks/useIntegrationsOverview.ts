@@ -49,8 +49,29 @@ export interface IntegrationsOverview {
             recommended_model?: string;
             ollama_api_url?: string;
             startup_script?: string;
+            startup_scripts?: {
+                windows?: string;
+                linux?: string;
+            };
             startup_command?: string;
+            startup_commands?: {
+                windows?: string;
+                linux?: string;
+            };
             ui_start_command?: string;
+            ui_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            core_start_command?: string;
+            core_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            platform_notes?: {
+                windows?: string;
+                linux?: string;
+            };
             routing_profile?: string;
             available?: boolean;
             ui_candidates?: string[];

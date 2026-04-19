@@ -56,7 +56,29 @@ interface IntegrationsOverview {
             recommended_model?: string;
             ollama_api_url?: string;
             startup_script?: string;
+            startup_scripts?: {
+                windows?: string;
+                linux?: string;
+            };
             startup_command?: string;
+            startup_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            ui_start_command?: string;
+            ui_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            core_start_command?: string;
+            core_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            platform_notes?: {
+                windows?: string;
+                linux?: string;
+            };
             routing_profile?: string;
             available?: boolean;
         };
@@ -99,6 +121,19 @@ interface IntegrationsOverview {
         };
     };
 }
+
+type RuntimePlatform = 'windows' | 'linux';
+
+const DEFAULT_LOCAL_TRUTH_COMMANDS: Record<RuntimePlatform, string> = {
+    windows: 'Set-Location C:\\saimor; .\\scripts\\Start-LocalTruth.ps1 -ForceRestart',
+    linux: 'bash ./scripts/start-local-truth.sh --force-restart',
+};
+
+const detectRuntimePlatform = (): RuntimePlatform => {
+    if (typeof navigator === 'undefined') return 'windows';
+    const signature = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
+    return signature.includes('win') ? 'windows' : 'linux';
+};
 
 const statusTone = (status?: string) => {
     switch (status) {
@@ -250,6 +285,14 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
         [overview]
     );
+    const runtimePlatform = useMemo<RuntimePlatform>(() => detectRuntimePlatform(), []);
+    const localTruthStartupCommand = useMemo(() => {
+        const commands = overview?.runtime?.local_truth?.startup_commands;
+        if (runtimePlatform === 'linux') {
+            return commands?.linux || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.linux;
+        }
+        return commands?.windows || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.windows;
+    }, [overview, runtimePlatform]);
     const latestMail = mailPreview[0] ?? null;
     const nextEvent = calendarPreview[0] ?? null;
 
@@ -353,15 +396,13 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     }, [loadOverview]);
 
     const copyGemmaCommand = useCallback(async () => {
-        const command = overview?.runtime?.local_truth?.startup_command
-            || 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1';
         try {
-            await navigator.clipboard.writeText(command);
-            toast.success('Gemma-Startbefehl kopiert');
+            await navigator.clipboard.writeText(localTruthStartupCommand);
+            toast.success(`Startbefehl fuer ${runtimePlatform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
         } catch {
             toast.error('Befehl konnte nicht kopiert werden');
         }
-    }, [overview]);
+    }, [localTruthStartupCommand, runtimePlatform]);
 
     if (!pane) return null;
 
@@ -534,15 +575,6 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <Mail size={14} />
                                                 Post oeffnen
                                             </button>
-                                            {ownerBlocked ? (
-                                                <button
-                                                    onClick={openOwnerConsole}
-                                                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
-                                                >
-                                                    <ExternalLink size={14} />
-                                                    Owner Console
-                                                </button>
-                                            ) : null}
                                         </div>
                                     </div>
 
@@ -667,15 +699,21 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
                                         </p>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            {overview?.runtime?.local_truth?.startup_command || 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1'}
+                                            {localTruthStartupCommand}
                                         </div>
+                                        <p className="mt-2 text-[11px] text-white/45">
+                                            Laufzeitprofil: <span className="text-white/70">{runtimePlatform === 'windows' ? 'Windows / PowerShell' : 'Linux / Bash'}</span>
+                                            {overview?.runtime?.local_truth?.platform_notes?.[runtimePlatform]
+                                                ? ` · ${overview.runtime.local_truth.platform_notes[runtimePlatform]}`
+                                                : ''}
+                                        </p>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
                                                 onClick={copyGemmaCommand}
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
                                             >
                                                 <Copy size={14} />
-                                                Startbefehl kopieren
+                                                Startbefehl fuer {runtimePlatform === 'windows' ? 'Windows' : 'Linux'} kopieren
                                             </button>
                                             <button
                                                 onClick={openOperationsControl}
