@@ -20,6 +20,7 @@ import {
     getFileNode,
     downloadCompanyFile,
     relocateCompanyFile,
+    deleteCompanyFile,
     type CompanyFileRecord,
     type FileIntakeDestination,
     type FileIntakeNext,
@@ -1165,30 +1166,26 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
     const handleDelete = useCallback(async () => {
         if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
-        if (contextMenu.item.type === 'file') {
-            toast.info('Dateien koennen hier noch nicht geloescht werden');
-            setContextMenu(null);
-            return;
-        }
         const companyId = resolvedCompanyId ?? '';
         try {
-            if (contextMenu.type === 'folder' || contextMenu.item.type === 'space') {
-                if (contextMenu.item.type === 'space') {
-                    await orgDeleteSpace(contextMenu.item.id);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                } else {
-                    await orgDeleteFolder(contextMenu.item.id);
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                }
+            if (contextMenu.item.type === 'space') {
+                await orgDeleteSpace(contextMenu.item.id);
+            } else if (contextMenu.item.type === 'folder') {
+                await orgDeleteFolder(contextMenu.item.id);
+            } else if (contextMenu.item.type === 'file') {
+                // Raw file record (pre-intake or contextless) — delete via files API
+                await deleteCompanyFile(contextMenu.item.id);
+                setCompanyFiles(prev => prev.filter(f => f.id !== contextMenu.item.id));
             } else {
+                // Routed tree nodes (text, pdf, markdown, image, etc.)
                 await orgDeleteNode(contextMenu.item.id);
-                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             }
+            await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             void loadContent();
             toast.success('Geloescht');
         } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
         setContextMenu(null);
-    }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgDeleteSpace, orgDeleteFolder, orgDeleteNode]);
+    }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgDeleteSpace, orgDeleteFolder, orgDeleteNode, deleteCompanyFile]);
 
     const handleCopy = useCallback(() => {
         if (!contextMenu?.item) return;

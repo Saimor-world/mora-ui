@@ -1,4 +1,4 @@
-import { coreGet, corePost, CoreError, getCoreBaseUrl } from './coreClient';
+import { coreGet, corePost, coreDelete, CoreError, getCoreBaseUrl } from './coreClient';
 
 export interface FilePreview {
     previewAvailable: boolean;
@@ -326,5 +326,10 @@ export const relocateCompanyFile = async (
 /** Query where a file's node ended up — use as fallback if create-node response lacks folder_id */
 export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {
     return coreGet(`/v3/files/${fileId}/node`) as Promise<FileNodeStatus>;
+};
+
+/** Permanently delete a raw file record (pre-intake or unrouted) */
+export const deleteCompanyFile = async (fileId: string): Promise<void> => {
+    return coreDelete(`/v3/files/${fileId}`) as Promise<void>;
 };
 
