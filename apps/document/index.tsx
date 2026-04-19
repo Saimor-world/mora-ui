@@ -5,6 +5,7 @@ import {
     Link, Loader2, Paperclip, RefreshCw, Search, Sparkles, UploadCloud, X,
 } from 'lucide-react';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
+import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
 import { getCompanyFileUrl } from '@/lib/api/filesClient';
@@ -20,7 +21,9 @@ interface NodeRelation {
 }
 
 export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
-    const { openPane } = usePaneStore();
+    const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === paneId);
+    const pane = getPane(paneId);
     const docData = initialData as {
         nodeId?: string;
         content?: string;
@@ -232,7 +235,29 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
         );
     };
 
+    if (!pane) return null;
+
     return (
+        <GlassPanel
+            title={name || 'Dokument'}
+            paneId={paneId}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            padding={0}
+            onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
+            onResize={(w, h) => updatePaneSize(paneId, w, h)}
+            onClose={() => removePane(paneId)}
+            onMinimize={() => minimizePane(paneId)}
+            onFocus={() => focusPane(paneId)}
+            isActive={isActive}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
+        >
         <div className="flex flex-col h-full">
             {navigationContext && (
                 <div className="px-3 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
@@ -313,5 +338,6 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 </div>
             )}
         </div>
+        </GlassPanel>
     );
 }

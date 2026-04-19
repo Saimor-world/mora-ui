@@ -24,15 +24,26 @@ jest.mock('@/lib/utils/searchOpen', () => ({
   openNavigationOutcome: jest.fn(),
 }));
 
+jest.mock('@/components/layers/GlassPanel', () => ({
+  GlassPanel: ({ children }: { children: React.ReactNode }) => <div data-testid="glass-panel">{children}</div>,
+}));
+
 const mockPane = {
   id: 'doc-1', type: 'document', title: 'Dokument',
-  position: { x: 0, y: 0 }, zIndex: 1, minimized: false, data: {},
+  position: { x: 0, y: 0 }, size: { width: 720, height: 560 },
+  zIndex: 1, minimized: false, data: {},
 };
 jest.mock('@/lib/store/paneStore', () => ({
   usePaneStore: (selector?: any) => {
     const store = {
       openPane: jest.fn(),
+      removePane: jest.fn(),
+      minimizePane: jest.fn(),
+      focusPane: jest.fn(),
       getPane: jest.fn().mockReturnValue(mockPane),
+      updatePanePosition: jest.fn(),
+      updatePaneSize: jest.fn(),
+      activePaneId: 'doc-1',
     };
     return selector ? selector(store) : store;
   },
@@ -45,5 +56,10 @@ describe('DocumentApp', () => {
     render(<DocumentApp paneId="doc-1" initialData={{}} />);
     // No nodeId → skips fetch, goes straight to empty-document state
     expect(await screen.findByText(/Dieser Eintrag hat noch keinen Textinhalt/i)).toBeInTheDocument();
+  });
+
+  it('renders inside a GlassPanel wrapper', async () => {
+    render(<DocumentApp paneId="doc-1" initialData={{}} />);
+    expect(await screen.findByTestId('glass-panel')).toBeInTheDocument();
   });
 });
