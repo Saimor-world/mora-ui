@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Copy, Download, File, FileImage, FileText, FileVideo, FolderOpen,
     Link, Loader2, Paperclip, RefreshCw, Search, Sparkles, UploadCloud, X,
@@ -48,13 +48,26 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const [loadError, setLoadError] = useState<string | null>(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [imageLoadError, setImageLoadError] = useState(false);
+    // Ref: true during a focus-triggered background refresh — UI stays visible
+    const isBackgroundRefetch = useRef(false);
+    const prevIsActiveRef = useRef(false);
+
+    // Silent refresh when the pane regains focus — picks up renames/moves from other panes
+    useEffect(() => {
+        if (isActive && !prevIsActiveRef.current && nodeId) {
+            isBackgroundRefetch.current = true;
+            setReloadKey(k => k + 1);
+        }
+        prevIsActiveRef.current = isActive;
+    }, [isActive, nodeId]);
 
     useEffect(() => {
         let cancelled = false;
         async function loadDocument() {
             if (!nodeId) { setIsLoading(false); return; }
             try {
-                setIsLoading(true);
+                // Block UI only on initial load; background refetches run silently
+                if (!isBackgroundRefetch.current) setIsLoading(true);
                 setLoadError(null);
                 setImageLoadError(false);
                 const nodeData = await fetchNodeDetails(nodeId);
@@ -69,9 +82,15 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 setRelations(Array.isArray(nodeRelations) ? nodeRelations : []);
             } catch (error: any) {
                 if (cancelled) return;
-                setLoadError(error?.message || 'Dokument konnte nicht geladen werden');
+                // Background refetch errors don't replace UI with error screen
+                if (!isBackgroundRefetch.current) {
+                    setLoadError(error?.message || 'Dokument konnte nicht geladen werden');
+                }
             } finally {
-                if (!cancelled) setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                    isBackgroundRefetch.current = false;
+                }
             }
         }
         void loadDocument();

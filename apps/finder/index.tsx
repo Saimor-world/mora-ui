@@ -481,6 +481,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     // Create folder modal
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
+    // Rename modal — replaces native prompt()
+    const [renameTarget, setRenameTarget] = useState<{ id: string; type: string; currentName: string } | null>(null);
+    const [renameValue, setRenameValue] = useState('');
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -1129,34 +1132,36 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         }
     }, [queryClient, resolvedCompanyId]);
 
-    const handleRename = useCallback(async () => {
+    const handleRename = useCallback(() => {
         if (!contextMenu?.item) return;
-        if (contextMenu.item.type === 'file') {
-            toast.info('Dateien koennen hier noch nicht umbenannt werden');
-            setContextMenu(null);
-            return;
-        }
-        const newName = prompt("Umbenennen:", contextMenu.item.name || contextMenu.item.title);
-        if (!newName) return;
+        const currentName = contextMenu.item.name || contextMenu.item.title || '';
+        setRenameTarget({ id: contextMenu.item.id, type: contextMenu.item.type || 'node', currentName });
+        setRenameValue(currentName);
+        setContextMenu(null);
+    }, [contextMenu]);
+
+    const submitRename = useCallback(async () => {
+        if (!renameTarget || !renameValue.trim()) return;
         const companyId = resolvedCompanyId ?? '';
         try {
-            if (contextMenu.type === 'folder' || contextMenu.item.type === 'space' || contextMenu.item.type === 'department') {
-                if (contextMenu.item.type === 'space') {
-                    await orgUpdateSpace(contextMenu.item.id, { name: newName });
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                } else if (contextMenu.item.type === 'folder') {
-                    await orgUpdateFolder(contextMenu.item.id, { name: newName });
-                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
-                } else toast.error("Bereiche koennen hier nicht umbenannt werden");
+            if (renameTarget.type === 'space') {
+                await orgUpdateSpace(renameTarget.id, { name: renameValue.trim() });
+            } else if (renameTarget.type === 'folder') {
+                await orgUpdateFolder(renameTarget.id, { name: renameValue.trim() });
             } else {
-                await orgUpdateNode(contextMenu.item.id, { title: newName });
-                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
+                // nodes (text, pdf, image, etc.) and raw file records with a node ID
+                await orgUpdateNode(renameTarget.id, { title: renameValue.trim() });
             }
+            await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             void loadContent();
             toast.success('Umbenannt');
-        } catch (e: any) { toast.error(e.message || 'Umbenennen fehlgeschlagen'); }
-        setContextMenu(null);
-    }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgUpdateSpace, orgUpdateFolder, orgUpdateNode]);
+        } catch (e: any) {
+            toast.error(e.message || 'Umbenennen fehlgeschlagen');
+        } finally {
+            setRenameTarget(null);
+            setRenameValue('');
+        }
+    }, [renameTarget, renameValue, resolvedCompanyId, queryClient, loadContent, orgUpdateSpace, orgUpdateFolder, orgUpdateNode]);
 
     const handleDelete = useCallback(async () => {
         if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
@@ -3130,6 +3135,41 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                 )
             }
 
+            {/* Rename Modal */}
+            {renameTarget && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
+                    <div className="bg-[#0a1a12] border border-white/10 rounded-2xl p-6 w-[380px] shadow-2xl">
+                        <h3 className="text-base font-medium text-white mb-1">Umbenennen</h3>
+                        <p className="text-[12px] text-white/40 mb-4 truncate">{renameTarget.currentName}</p>
+                        <form onSubmit={async (e) => { e.preventDefault(); await submitRename(); }}>
+                            <input
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white focus:border-emerald-500/50 outline-none mb-4"
+                                autoFocus
+                                onFocus={(e) => e.target.select()}
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setRenameTarget(null); setRenameValue(''); }}
+                                    className="flex-1 py-2 rounded-lg border border-white/10 text-white/60 hover:bg-white/5"
+                                >
+                                    Abbrechen
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!renameValue.trim() || renameValue.trim() === renameTarget.currentName}
+                                    className="flex-1 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Speichern
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

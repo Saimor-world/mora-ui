@@ -1358,6 +1358,9 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                             }
                             toast.success(result?.destination_summary || 'Inhalt aus Datei angelegt');
                             window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                            // Sync Finder + all OS panes observing the file tree
+                            void queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
+                            void queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(activeCompanyId) });
                         }}
                         onRejected={async () => {
                             const active = activePendingAction;
