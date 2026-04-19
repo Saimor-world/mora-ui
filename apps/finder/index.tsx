@@ -1648,8 +1648,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (selectedFolder) return { kind: 'folder' as const, item: selectedFolder };
         const selectedFile = displayFiles.find((file) => file.id === selectedNodeId);
         if (selectedFile) return { kind: 'file' as const, item: selectedFile };
+        // Contextless files are excluded from displayFiles — check that bucket too
+        const selectedContextless = contextlessFiles.find((file) => file.id === selectedNodeId);
+        if (selectedContextless) return { kind: 'file' as const, item: selectedContextless };
         return null;
-    }, [displayFiles, filteredFolders, selectedNodeId]);
+    }, [contextlessFiles, displayFiles, filteredFolders, selectedNodeId]);
 
     // Get current level type for UI hints
     const currentLevelType = useMemo(() => {
