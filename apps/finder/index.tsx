@@ -467,7 +467,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
     const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('compact');
-    const [showContextlessZone, setShowContextlessZone] = useState(false);
+    const [showContextlessZone, setShowContextlessZone] = useState(true);
     const nextDensity = useCallback(() => {
         setCardDensity(d => d === 'compact' ? 'cozy' : d === 'cozy' ? 'showcase' : 'compact');
     }, []);
@@ -1599,6 +1599,25 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         const hidden = new Set(contextlessFiles.map((file) => file.id));
         return filteredFiles.filter((file) => !hidden.has(file.id));
     }, [contextlessFiles, filteredFiles]);
+    const [isAutoRoutingAll, setIsAutoRoutingAll] = useState(false);
+    const handleAutoRouteAll = useCallback(async () => {
+        if (!contextlessFiles.length) return;
+        setIsAutoRoutingAll(true);
+        let succeeded = 0;
+        for (const file of contextlessFiles) {
+            try {
+                await relocateFinderFile(file, { autoRoute: true, successMessage: '' });
+                succeeded++;
+            } catch {
+                // continue — one failure shouldn't stop the rest
+            }
+        }
+        setIsAutoRoutingAll(false);
+        if (succeeded > 0) {
+            toast.success(`${succeeded} ${succeeded === 1 ? 'Datei' : 'Dateien'} automatisch eingeordnet`);
+        }
+    }, [contextlessFiles, relocateFinderFile]);
+
     const rootCompanyNodes = useMemo(() => {
         return companyNodesData.map((node) => ({
             ...node,
@@ -2068,7 +2087,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     <RefreshCw size={16} className={(isLoading || isLoadingTree) ? 'animate-spin' : ''} />
                                 </button>
 
-                                {currentLevelType !== 'company' && currentLevelType !== 'department' && (
+                                {currentLevelType === 'space' && (
                                     <button
                                         onClick={() => setIsCreateFolderOpen(true)}
                                         className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-2 text-blue-300 transition-all hover:bg-blue-500/20"
@@ -2390,6 +2409,17 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <span className="shrink-0 rounded-full border border-amber-500/15 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/50">{contextlessFiles.length}</span>
+                                                            {contextlessFiles.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => void handleAutoRouteAll()}
+                                                                    disabled={isAutoRoutingAll}
+                                                                    className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/[0.08] px-2.5 py-1 text-[10px] text-amber-200/70 transition-colors hover:border-amber-400/30 hover:bg-amber-500/14 hover:text-amber-100/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    <Sparkles size={10} className={isAutoRoutingAll ? 'animate-pulse' : ''} />
+                                                                    {isAutoRoutingAll ? 'Einordnen...' : 'Alle einordnen'}
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setShowContextlessZone((prev) => !prev)}
@@ -2423,9 +2453,16 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                                         </div>
                                                                         <span className="rounded-full border border-amber-500/10 bg-amber-500/[0.06] px-2 py-0.5 text-[9px] uppercase tracking-[0.16em] text-amber-200/40">Ohne Bereich</span>
                                                                     </div>
-                                                                    <div className="space-y-1.5">
+                                                                    <div className="space-y-2">
                                                                         <span className={`${cardTitleClass} line-clamp-2 leading-snug break-words text-white/60`} title={displayName}>{displayName}</span>
-                                                                        <p className="text-[11px] text-white/28">Noch keiner Struktur zugeordnet</p>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => { e.stopPropagation(); void handleAutoRouteFile(file); }}
+                                                                            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/20 bg-amber-500/[0.08] px-2 py-0.5 text-[10px] text-amber-300/60 transition-all hover:border-amber-400/35 hover:bg-amber-500/14 hover:text-amber-200/90"
+                                                                        >
+                                                                            <Sparkles size={10} />
+                                                                            Einordnen
+                                                                        </button>
                                                                     </div>
                                                                     {isSelected && (
                                                                         <div className="absolute inset-0 rounded-[28px] border border-amber-400/20 pointer-events-none" />
@@ -2435,8 +2472,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         })}
                                                     </div>
                                                     ) : (
-                                                        <div className="rounded-2xl border border-amber-500/10 bg-black/10 px-4 py-4 text-[12px] leading-relaxed text-white/44">
-                                                            Diese Dateien bleiben bewusst aus dem normalen Arbeitsstrom heraus, bis sie einem Bereich, Ordner oder klaren Kontext zugeordnet sind.
+                                                        <div className="rounded-2xl border border-amber-500/10 bg-black/10 px-4 py-3 text-[11px] text-white/38">
+                                                            {contextlessFiles.length === 1 ? '1 Datei' : `${contextlessFiles.length} Dateien`} warten auf Einordnung.
                                                         </div>
                                                     )}
                                                 </div>
@@ -3025,9 +3062,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             <Clipboard size={14} /> Element einfuegen
                                         </button>
                                     )}
-                                    <button onClick={() => setIsCreateFolderOpen(true)} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
-                                        <FolderIcon size={14} /> Neuer Ordner
-                                    </button>
+                                    {currentLevelType === 'space' && (
+                                        <button onClick={() => setIsCreateFolderOpen(true)} className="w-full text-left px-3 py-1.5 hover:bg-white/10 flex items-center gap-2">
+                                            <FolderIcon size={14} /> Neuer Ordner
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -3047,19 +3086,13 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 e.preventDefault();
                                 if (!newFolderName.trim() || !currentFolderId) return;
                                 try {
-                                    // Determine if we're in a space or folder
-                                    const node = findNodeInTree(treeData || [], currentFolderId);
-                                    if (node?.type === 'space') {
-                                        await orgCreateFolder({
-                                            space_id: currentFolderId,
-                                            name: newFolderName.trim(),
-                                            color: '#10b981'
-                                        });
-                                        await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
-                                    } else {
-                                        // TODO: Create subfolder API
-                                        toast.info('Subfolder creation coming soon');
-                                    }
+                                    // currentLevelType === 'space' is guaranteed by the button guard
+                                    await orgCreateFolder({
+                                        space_id: currentFolderId,
+                                        name: newFolderName.trim(),
+                                        color: '#10b981'
+                                    });
+                                    await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
                                     setNewFolderName('');
                                     setIsCreateFolderOpen(false);
                                     loadContent();

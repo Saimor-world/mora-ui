@@ -1,11 +1,13 @@
 'use client';
 import React, { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { VisibilityModal } from '@/components/content/VisibilityModal';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import type { NodeVisibility } from '@/lib/types/core';
 import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient';
 import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
@@ -175,6 +177,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
     const { activeCompanyId } = useNavStore();
     const { data: companies = [] } = useCompanies();
     const user = useSessionStore(s => s.user);
+    const queryClient = useQueryClient();
     const pane = getPane(paneId);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const activeCompanyName = useMemo(
@@ -419,8 +422,11 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
 
         markFileOutcome(active.file_id, 'confirmed', resultText, confirmedFolderId, confirmedNodeId);
         window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+        // Notify all OS panes that observe the file tree (Finder, Document, etc.)
+        void queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(activeCompanyId) });
         return active;
-    }, [buildResolvedResultText, markFileOutcome, resolveDestinationFolderId, resolveDestinationNodeId]);
+    }, [activeCompanyId, buildResolvedResultText, markFileOutcome, queryClient, resolveDestinationFolderId, resolveDestinationNodeId]);
 
     const rejectPendingAction = useCallback(async (active: PendingAction) => {
         await rejectCreateNodeFromFile(active.file_id, active.confirmation_token);
@@ -530,6 +536,9 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     ...(confirmedNodeId ? { confirmedNodeId } : {}),
                 } : f));
                 window.dispatchEvent(new CustomEvent('saimor:inbox-refresh'));
+                // Sync Finder + other OS panes — file now lives in the tree
+                void queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
+                void queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(activeCompanyId) });
                 toast.success(response.destination_summary || `Inhalt angelegt: ${fileObject.name}`);
                 return;
             }
