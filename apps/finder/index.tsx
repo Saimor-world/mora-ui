@@ -1143,6 +1143,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
     const submitRename = useCallback(async () => {
         if (!renameTarget || !renameValue.trim()) return;
+        if (renameTarget.type === 'department') {
+            toast.error('Bereiche können hier nicht umbenannt werden');
+            setRenameTarget(null); setRenameValue('');
+            return;
+        }
         const companyId = resolvedCompanyId ?? '';
         try {
             if (renameTarget.type === 'space') {

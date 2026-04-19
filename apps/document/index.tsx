@@ -285,7 +285,6 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         chips={[
                             ...(navigationContext.label ? [{ label: navigationContext.label }] : []),
                             ...(navigationContext.path ? [{ label: navigationContext.path }] : []),
-                            ...(folderId || navigationContext.folderId ? [{ label: `Zielordner: ${navigationContext.folderId || folderId}` }] : []),
                         ]}
                         actions={(navigationContext.folderId || folderId) ? (
                             <button type="button"
@@ -311,6 +310,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         : <FileText size={18} className="text-blue-400" />}
                     <span className="text-sm text-white/80 font-medium truncate max-w-[300px]">{name}</span>
                     <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">{fileExtension || type || 'doc'}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">Nur lesen</span>
                     {sourceFileId && <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">Mit Original</span>}
                 </div>
                 <div className="flex items-center gap-2">
@@ -322,6 +322,23 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                     )}
                     {sourceFileId && (
                         <button onClick={() => void handleOpenOriginal()} className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors" title="Originaldatei oeffnen"><Paperclip size={16} /></button>
+                    )}
+                    {(folderId || navigationContext?.folderId) && (
+                        <button
+                            onClick={() => openNavigationOutcome({
+                                title: 'Ordner geöffnet',
+                                message: `Ordner von „${name}" wurde im Finder geöffnet.`,
+                                targetType: 'folder',
+                                label: name || 'Dokument',
+                                folderId: folderId || navigationContext?.folderId,
+                                companyId: companyId || navigationContext?.companyId,
+                                source: 'search',
+                            }, openPane)}
+                            className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+                            title="Im Ordner öffnen"
+                        >
+                            <FolderOpen size={16} />
+                        </button>
                     )}
                     <button onClick={() => setReloadKey((p) => p + 1)} className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors" title="Neu laden"><RefreshCw size={16} /></button>
                 </div>
