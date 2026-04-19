@@ -501,6 +501,7 @@ const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 
 export default function ChatApp({ paneId, initialData }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === paneId);
     const activePlanId = useWorkSessionStore((s) => s.activePlanId);
     const activeSessionId = useWorkSessionStore((s) => s.activeSessionId);
     const setActiveSession = useWorkSessionStore((s) => s.setActiveSession);
@@ -1632,7 +1633,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             onClose={() => removePane(paneId)}
             onMinimize={() => minimizePane(paneId)}
             onFocus={() => focusPane(paneId)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton

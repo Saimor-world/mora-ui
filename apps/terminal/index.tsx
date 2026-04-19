@@ -139,6 +139,7 @@ const MORA_COMMANDS_NETWORK = new Set(["providers"]);
 export default function TerminalApp({ paneId }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } =
         usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === paneId);
     const pane = getPane(paneId);
     const user = useSessionStore((state) => state.user);
 
@@ -570,7 +571,7 @@ export default function TerminalApp({ paneId }: AppProps) {
             onClose={() => removePane(paneId)}
             onMinimize={() => minimizePane(paneId)}
             onFocus={() => focusPane(paneId)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton

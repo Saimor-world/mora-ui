@@ -41,6 +41,7 @@ export default function SettingsApp({ paneId }: AppProps) {
     const id = paneId;
     const { data: session } = useRuntimeSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === paneId);
     const { activeCompanyId, isStandardMode, setIsStandardMode } = useNavStore();
     const { user, updateUserSettings } = useSessionStore();
     const { data: companies = [] } = useCompanies();
@@ -384,7 +385,7 @@ useEffect(() => {
             onClose={() => removePane(id)}
             onMinimize={() => minimizePane(id)}
             onFocus={() => focusPane(id)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             paneId={id}
             showCloseButton

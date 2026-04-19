@@ -39,6 +39,7 @@ const DEFAULT_ROLE_CONFIG = { icon: User, color: 'text-white/60', bg: 'bg-white/
 
 export default function UsersApp({ paneId }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === paneId);
     const pane = getPane(paneId);
 
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -201,7 +202,7 @@ export default function UsersApp({ paneId }: AppProps) {
             onClose={() => removePane(paneId)}
             onMinimize={() => minimizePane(paneId)}
             onFocus={() => focusPane(paneId)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
