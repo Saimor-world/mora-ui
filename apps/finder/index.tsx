@@ -233,7 +233,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const { activeCompanyId, setViewLevel, setActiveDepartment, setActiveSpace, setActiveFolder } = useNavStore();
     const { data: companies = [] } = useCompanies();
     const queryClient = useQueryClient();
-    const { data: treeData, isFetching: isLoadingTree } = useTree(activeCompanyId);
+    const { data: treeData, isFetching: isLoadingTree, isError: isTreeError } = useTree(activeCompanyId);
     const { data: companyNodesData = [] } = useCompanyNodes(activeCompanyId, { limit: 200 });
     const pane = getPane(id);
     const surfaceProfile = useSurfaceProfile();
@@ -2165,6 +2165,28 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         title="Es ist noch keine Organisation ausgewählt."
                                         body="Wähle eine Organisation im Hauptmenü aus, um Dateien, Ordner und Inhalte im Finder zu sehen."
                                         chips={[{ label: 'Instanz: nicht verbunden' }]}
+                                        className="w-full max-w-xl"
+                                    />
+                                </motion.div>
+                            ) : isTreeError ? (
+                                <motion.div
+                                    key="tree-error"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="flex items-center justify-center h-full"
+                                >
+                                    <CommandReceipt
+                                        tone="red"
+                                        icon={AlertCircle}
+                                        label="Finder nicht erreichbar"
+                                        title="Struktur konnte nicht geladen werden."
+                                        body="Verbindung zum Core unterbrochen oder Timeout. Bitte erneut versuchen."
+                                        actions={
+                                            <button type="button" onClick={() => void loadContent()}
+                                                className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/14 px-3.5 py-2 text-[11px] font-medium text-red-50 transition-colors hover:border-red-300/35 hover:bg-red-500/22">
+                                                <RefreshCw size={13} />Erneut laden
+                                            </button>
+                                        }
                                         className="w-full max-w-xl"
                                     />
                                 </motion.div>
