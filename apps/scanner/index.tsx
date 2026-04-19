@@ -898,8 +898,8 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
         >
             <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5">
-                    <span className="rounded-full border border-purple-400/15 bg-purple-500/10 px-2.5 py-1 text-[11px] text-purple-100/85">
-                        {activeCompanyName ? `Einordnung fuer ${activeCompanyName}` : 'Organisationskontext fehlt'}
+                    <span className={`rounded-full border px-2.5 py-1 text-[11px] ${activeCompanyName ? 'border-purple-400/15 bg-purple-500/10 text-purple-100/85' : 'border-amber-500/30 bg-amber-500/10 text-amber-200/90'}`}>
+                        {activeCompanyName ? `Einordnung fuer ${activeCompanyName}` : 'Keine Organisation – Upload nicht möglich'}
                     </span>
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55">
                         Globaler Drop landet in Mycelium, lokale Dropzonen bleiben im aktuellen Finder-Kontext.
@@ -967,8 +967,9 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         {pendingCount > 0 && (
                             <button
                                 onClick={handleUploadAllClick}
-                                disabled={isBatchProcessing}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition-colors"
+                                disabled={isBatchProcessing || !activeCompanyId}
+                                title={!activeCompanyId ? 'Bitte zuerst eine Organisation im Hauptmenü auswählen' : undefined}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${!activeCompanyId ? 'cursor-not-allowed border-white/10 bg-white/5 text-white/30' : 'bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30'}`}
                             >
                                 {isBatchProcessing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                                 <span className="text-sm">{isBatchProcessing ? 'Verarbeite...' : 'Alle hochladen'}</span>

@@ -2079,10 +2079,10 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 )}
 
                                 <button
-                                    onClick={() => currentFolderId && fileInputRef.current?.click()}
-                                    disabled={!currentFolderId}
-                                    title={!currentFolderId ? 'Navigiere in einen Ordner, um Dateien hochzuladen' : 'Datei hochladen'}
-                                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-lg transition-all ${currentFolderId ? 'bg-emerald-500 text-black shadow-emerald-500/20 hover:bg-emerald-400' : 'cursor-not-allowed bg-emerald-500/20 text-emerald-500/40 opacity-50'}`}
+                                    onClick={() => currentLevelType === 'folder' && fileInputRef.current?.click()}
+                                    disabled={currentLevelType !== 'folder'}
+                                    title={currentLevelType !== 'folder' ? 'Navigiere in einen Ordner, um Dateien hochzuladen' : 'Datei hochladen'}
+                                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-lg transition-all ${currentLevelType === 'folder' ? 'bg-emerald-500 text-black shadow-emerald-500/20 hover:bg-emerald-400' : 'cursor-not-allowed bg-emerald-500/20 text-emerald-500/40 opacity-50'}`}
                                 >
                                     <Upload size={14} />
                                     <span className="hidden sm:inline">Upload</span>
