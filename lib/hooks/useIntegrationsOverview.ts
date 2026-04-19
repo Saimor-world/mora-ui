@@ -51,6 +51,8 @@ export interface IntegrationsOverview {
             contract_version?: string;
             mode?: string;
             state?: string;
+            action_endpoint_template?: string;
+            supported_actions?: string[];
             startup_script?: string;
             startup_scripts?: {
                 windows?: string;
@@ -82,6 +84,7 @@ export interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    supported_actions?: string[];
                 };
                 core?: {
                     kind?: string;
@@ -89,6 +92,7 @@ export interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    supported_actions?: string[];
                 };
                 assistant?: {
                     kind?: string;
@@ -97,6 +101,7 @@ export interface IntegrationsOverview {
                     reachable?: boolean;
                     available?: boolean;
                     configured_model?: string;
+                    supported_actions?: string[];
                 };
             };
             routing_profile?: string;

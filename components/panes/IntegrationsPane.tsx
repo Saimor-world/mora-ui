@@ -8,6 +8,7 @@ import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, Refres
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 import { toast } from 'sonner';
 import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 
@@ -58,6 +59,8 @@ interface IntegrationsOverview {
             contract_version?: string;
             mode?: string;
             state?: string;
+            action_endpoint_template?: string;
+            supported_actions?: string[];
             startup_script?: string;
             startup_scripts?: {
                 windows?: string;
@@ -89,6 +92,7 @@ interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    supported_actions?: string[];
                 };
                 core?: {
                     kind?: string;
@@ -96,6 +100,7 @@ interface IntegrationsOverview {
                     status?: string;
                     reachable?: boolean;
                     status_code?: number | null;
+                    supported_actions?: string[];
                 };
                 assistant?: {
                     kind?: string;
@@ -104,6 +109,7 @@ interface IntegrationsOverview {
                     reachable?: boolean;
                     available?: boolean;
                     configured_model?: string;
+                    supported_actions?: string[];
                 };
             };
             routing_profile?: string;
@@ -314,8 +320,10 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         summary,
     } = useCommunicationSurface();
     const { mailPreview, calendarPreview } = useCommunicationLiveData();
+    const runtimeSession = useRuntimeSession();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
+    const [runtimeActionKey, setRuntimeActionKey] = useState<string | null>(null);
 
     const assistantProviders = useMemo(
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
@@ -329,6 +337,8 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         };
     }, [overview]);
     const runtimeServices = overview?.runtime?.local_truth?.services;
+    const runtimeRole = runtimeSession.data?.user?.role;
+    const canControlRuntime = runtimeRole === 'system_owner';
     const latestMail = mailPreview[0] ?? null;
     const nextEvent = calendarPreview[0] ?? null;
 
@@ -439,6 +449,30 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
             toast.error('Befehl konnte nicht kopiert werden');
         }
     }, [localTruthStartupCommands]);
+
+    const runRuntimeAction = useCallback(async (serviceId: 'local_truth' | 'ui' | 'core', action: 'start' | 'stop' | 'restart') => {
+        const actionKey = `${serviceId}:${action}`;
+        setRuntimeActionKey(actionKey);
+        try {
+            const result = await corePost(`/v3/system/runtime/actions/${serviceId}`, { action });
+            if (!result?.accepted) {
+                toast.error('Runtime-Aktion wurde nicht angenommen');
+                return;
+            }
+            toast.success(`${serviceId} -> ${action} wurde eingereiht`);
+            await loadOverview();
+            if (typeof window !== 'undefined') {
+                window.setTimeout(() => {
+                    void loadOverview();
+                    void localTruthBridge.refresh();
+                }, 1800);
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Runtime-Aktion konnte nicht gestartet werden');
+        } finally {
+            setRuntimeActionKey(null);
+        }
+    }, [loadOverview, localTruthBridge]);
 
     if (!pane) return null;
 
@@ -757,6 +791,68 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                         <p className="mt-2 text-[11px] text-white/45">
                                             SAIMOR nutzt denselben Runtime-Vertrag auf beiden Host-Systemen: gleicher Core, gleiche UI, gleiche Dienste. Unterschiedlich sind nur die Host-Launcher.
+                                        </p>
+                                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                                            {[
+                                                {
+                                                    serviceId: 'local_truth' as const,
+                                                    title: 'Local Truth',
+                                                    state: overview?.runtime?.local_truth?.state,
+                                                    supportedActions: overview?.runtime?.local_truth?.supported_actions || [],
+                                                },
+                                                {
+                                                    serviceId: 'ui' as const,
+                                                    title: 'UI',
+                                                    state: runtimeServices?.ui?.status,
+                                                    supportedActions: runtimeServices?.ui?.supported_actions || [],
+                                                },
+                                                {
+                                                    serviceId: 'core' as const,
+                                                    title: 'Core',
+                                                    state: runtimeServices?.core?.status,
+                                                    supportedActions: runtimeServices?.core?.supported_actions || [],
+                                                },
+                                            ].map((service) => (
+                                                <div key={service.serviceId} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div>
+                                                            <div className="text-xs font-medium text-white">{service.title}</div>
+                                                            <div className="mt-1 text-[11px] text-white/45">{humanizeRuntimeState(service.state)}</div>
+                                                        </div>
+                                                        <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${
+                                                            service.state === 'ready'
+                                                                ? 'border-emerald-400/20 bg-emerald-500/12 text-emerald-100'
+                                                                : service.state === 'degraded' || service.state === 'partial'
+                                                                    ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                                    : 'border-white/10 bg-white/[0.04] text-white/60'
+                                                        }`}>
+                                                            {humanizeRuntimeState(service.state)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-3 flex flex-wrap gap-2">
+                                                        {(['start', 'stop', 'restart'] as const)
+                                                            .filter((action) => service.supportedActions.includes(action))
+                                                            .map((action) => {
+                                                                const actionKey = `${service.serviceId}:${action}`;
+                                                                return (
+                                                                    <button
+                                                                        key={action}
+                                                                        onClick={() => void runRuntimeAction(service.serviceId, action)}
+                                                                        disabled={!canControlRuntime || runtimeActionKey !== null}
+                                                                        className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] text-white/75 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+                                                                    >
+                                                                        {runtimeActionKey === actionKey ? 'Laeuft...' : action}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="mt-3 text-[11px] text-white/45">
+                                            {canControlRuntime
+                                                ? 'Als System-Eigentuemer kannst du die lokale Runtime jetzt direkt aus dem OS starten, stoppen und neu anstoen.'
+                                                : 'Runtime-Aktionen sind bewusst nur fuer den System-Eigentuemer freigegeben.'}
                                         </p>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
