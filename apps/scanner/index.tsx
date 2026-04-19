@@ -715,10 +715,16 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
         const reviewed = files.filter((file) => file.reviewOutcome);
         if (reviewed.length === 0 || pendingActions.length > 0) return null;
 
-        const buckets = new Map<string, { count: number; confirmed: number; rejected: number; folderId?: string }>();
+        const buckets = new Map<string, {
+            count: number;
+            confirmed: number;
+            rejected: number;
+            folderId?: string;
+            confirmedFiles: Array<{ id: string; name: string; nodeId?: string; folderId?: string }>;
+        }>();
         reviewed.forEach((file) => {
             const label = buildRoutePath(file.intakeContext);
-            const current = buckets.get(label) || { count: 0, confirmed: 0, rejected: 0 };
+            const current = buckets.get(label) || { count: 0, confirmed: 0, rejected: 0, confirmedFiles: [] };
             current.count += 1;
             if (file.reviewOutcome === 'confirmed') {
                 current.confirmed += 1;
@@ -726,6 +732,13 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                 if (!current.folderId && file.confirmedFolderId) {
                     current.folderId = file.confirmedFolderId;
                 }
+                // Track individual confirmed files for per-document navigation
+                current.confirmedFiles.push({
+                    id: file.id,
+                    name: file.name,
+                    nodeId: file.confirmedNodeId,
+                    folderId: file.confirmedFolderId,
+                });
             }
             if (file.reviewOutcome === 'rejected') current.rejected += 1;
             buckets.set(label, current);
@@ -1115,28 +1128,45 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                                 )}
                                 <div className="mt-3 space-y-2">
                                     {batchResultSummary.routes.map((route) => (
-                                        <div key={route.path || 'unknown'} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-black/15 px-3 py-2">
-                                            <div className="min-w-0 text-sm text-white/80 truncate">{route.path || 'Unbekannter Pfad'}</div>
-                                            <div className="shrink-0 flex items-center gap-2 text-[11px]">
-                                                {route.confirmed > 0 && (
-                                                    <span className="rounded-full border border-emerald-400/15 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">
-                                                        {route.confirmed} eingeordnet
-                                                    </span>
-                                                )}
-                                                {route.rejected > 0 && (
-                                                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-white/60">
-                                                        {route.rejected} verworfen
-                                                    </span>
-                                                )}
-                                                {route.folderId && (
-                                                    <button
-                                                        onClick={() => openConfirmedFolder(route.folderId!, route.path || 'Zielordner', route.path)}
-                                                        className="text-emerald-300/70 hover:text-emerald-200 transition-colors"
-                                                    >
-                                                        Öffnen →
-                                                    </button>
-                                                )}
+                                        <div key={route.path || 'unknown'} className="rounded-lg border border-white/8 bg-black/15 px-3 py-2">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="min-w-0 text-sm text-white/80 truncate">{route.path || 'Unbekannter Pfad'}</div>
+                                                <div className="shrink-0 flex items-center gap-2 text-[11px]">
+                                                    {route.confirmed > 0 && (
+                                                        <span className="rounded-full border border-emerald-400/15 bg-emerald-500/10 px-2 py-0.5 text-emerald-100">
+                                                            {route.confirmed} eingeordnet
+                                                        </span>
+                                                    )}
+                                                    {route.rejected > 0 && (
+                                                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-white/60">
+                                                            {route.rejected} verworfen
+                                                        </span>
+                                                    )}
+                                                    {route.folderId && (
+                                                        <button
+                                                            onClick={() => openConfirmedFolder(route.folderId!, route.path || 'Zielordner', route.path)}
+                                                            className="text-emerald-300/70 hover:text-emerald-200 transition-colors"
+                                                        >
+                                                            Öffnen →
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
+                                            {/* Per-document links for multi-file routes */}
+                                            {route.confirmedFiles.length > 1 && (
+                                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-white/[0.06] pt-2">
+                                                    {route.confirmedFiles.map((cf) => cf.nodeId && (
+                                                        <button
+                                                            key={cf.id}
+                                                            onClick={() => openConfirmedDocument(cf.nodeId!, cf.name, cf.folderId, route.path)}
+                                                            className="text-[11px] text-cyan-300/65 hover:text-cyan-200 transition-colors truncate max-w-[200px]"
+                                                            title={cf.name}
+                                                        >
+                                                            {cf.name} →
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
