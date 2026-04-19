@@ -228,6 +228,7 @@ function deriveFinderMaps(tree: CoreTreeNode[]) {
 export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const id = paneId;
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore(s => s.activePaneId === id);
     const { activeCompanyId, setViewLevel, setActiveDepartment, setActiveSpace, setActiveFolder } = useNavStore();
     const { data: companies = [] } = useCompanies();
     const queryClient = useQueryClient();
@@ -1729,7 +1730,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                 onClose={() => removePane(id)}
                 onMinimize={() => minimizePane(id)}
                 onFocus={() => focusPane(id)}
-                isActive={true}
+                isActive={isActive}
                 zIndex={pane.zIndex}
                 showCloseButton
                 showMinimizeButton
@@ -2112,6 +2113,23 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             { label: `Pfad: ${currentPathLabel}` },
                                             { label: searchQuery ? `Suche: ${searchQuery}` : 'Kein Suchfilter' },
                                         ]}
+                                        className="w-full max-w-xl"
+                                    />
+                                </motion.div>
+                            ) : !resolvedCompanyId ? (
+                                <motion.div
+                                    key="no-company"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="flex items-center justify-center h-full"
+                                >
+                                    <CommandReceipt
+                                        tone="slate"
+                                        icon={AlertCircle}
+                                        label="Keine Instanz aktiv"
+                                        title="Es ist noch keine Organisation ausgewählt."
+                                        body="Wähle eine Organisation im Hauptmenü aus, um Dateien, Ordner und Inhalte im Finder zu sehen."
+                                        chips={[{ label: 'Instanz: nicht verbunden' }]}
                                         className="w-full max-w-xl"
                                     />
                                 </motion.div>

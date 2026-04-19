@@ -44,6 +44,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [reloadKey, setReloadKey] = useState(0);
+    const [imageLoadError, setImageLoadError] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -174,16 +175,27 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
         if (isImage) {
             return (
                 <div className="h-full flex items-center justify-center p-4 bg-black/20">
-                    {previewUrl ? (
+                    {previewUrl && !imageLoadError ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previewUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
+                        <img src={previewUrl} alt={name} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" onError={() => setImageLoadError(true)} />
                     ) : content ? (
                         <div className="text-center max-w-md">
                             <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
                             <p className="text-white/70 text-sm mb-2">Bild-Beschreibung:</p>
                             <p className="text-white/50 text-sm italic">{content}</p>
                         </div>
-                    ) : <div className="text-center text-white/50"><FileImage size={64} className="mx-auto mb-4 text-purple-400/50" /><p>Keine Vorschau verfuegbar</p></div>}
+                    ) : (
+                        <div className="text-center text-white/50">
+                            <FileImage size={64} className="mx-auto mb-4 text-purple-400/50" />
+                            <p>{imageLoadError ? 'Bild konnte nicht geladen werden.' : 'Keine Vorschau verfuegbar'}</p>
+                            {sourceFileId && (
+                                <button type="button" onClick={() => void handleOpenOriginal()}
+                                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-2 text-[11px] font-medium text-white/70 transition-colors hover:border-white/25 hover:bg-white/[0.1] hover:text-white">
+                                    <Paperclip size={13} />Originaldatei öffnen
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -208,6 +220,12 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                     title="Dieser Eintrag hat noch keinen Textinhalt."
                     body="Mora zeigt bewusst keinen erfundenen Inhalt."
                     chips={[...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []), ...(sourceFileId ? [{ label: `Original: ${sourceFileName}` }] : [{ label: 'Keine Vorschau verfuegbar' }])]}
+                    actions={sourceFileId ? (
+                        <button type="button" onClick={() => void handleOpenOriginal()}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-2 text-[11px] font-medium text-white/70 transition-colors hover:border-white/25 hover:bg-white/[0.1] hover:text-white">
+                            <Paperclip size={13} />Originaldatei öffnen
+                        </button>
+                    ) : undefined}
                     className="w-full max-w-xl" />
             </div>
         );

@@ -817,16 +817,30 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
     const bulkConfirm = async () => {
         if (pendingActions.length === 0) return;
         setIsBatchProcessing(true);
+        const snapshot = [...pendingActions];
+        let successCount = 0;
+        let failCount = 0;
+        const failedActions: typeof snapshot = [];
         try {
-            const snapshot = [...pendingActions];
             for (const action of snapshot) {
-                await confirmPendingAction(action, batchVisibility);
+                try {
+                    await confirmPendingAction(action, batchVisibility);
+                    successCount++;
+                } catch (error) {
+                    console.error('Confirm failed for action', action.action_id, error);
+                    failCount++;
+                    failedActions.push(action);
+                }
             }
-            setPendingActions([]);
-            toast.success(snapshot.length === 1 ? 'Datei eingeordnet' : `${snapshot.length} Dateien eingeordnet`);
-        } catch (error) {
-            console.error('Bulk confirm failed', error);
-            toast.error('Batch konnte nicht vollständig eingeordnet werden.');
+            // Remove only the successfully processed actions
+            setPendingActions(failedActions);
+            if (failCount === 0) {
+                toast.success(snapshot.length === 1 ? 'Datei eingeordnet' : `${snapshot.length} Dateien eingeordnet`);
+            } else if (successCount > 0) {
+                toast.success(`${successCount} eingeordnet, ${failCount} fehlgeschlagen.`);
+            } else {
+                toast.error('Batch konnte nicht eingeordnet werden.');
+            }
         } finally {
             setIsBatchProcessing(false);
         }
@@ -866,7 +880,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
             onClose={() => removePane(paneId)}
             onMinimize={() => minimizePane(paneId)}
             onFocus={() => focusPane(paneId)}
-            isActive={true}
+            isActive={isActive}
             zIndex={pane.zIndex}
             showCloseButton
             showMinimizeButton
