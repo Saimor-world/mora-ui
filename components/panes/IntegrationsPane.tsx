@@ -55,6 +55,9 @@ interface IntegrationsOverview {
             configured_model?: string;
             recommended_model?: string;
             ollama_api_url?: string;
+            contract_version?: string;
+            mode?: string;
+            state?: string;
             startup_script?: string;
             startup_scripts?: {
                 windows?: string;
@@ -78,6 +81,30 @@ interface IntegrationsOverview {
             platform_notes?: {
                 windows?: string;
                 linux?: string;
+            };
+            services?: {
+                ui?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                };
+                core?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                };
+                assistant?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    available?: boolean;
+                    configured_model?: string;
+                };
             };
             routing_profile?: string;
             available?: boolean;
@@ -168,6 +195,21 @@ const humanizeIntegrationStatus = (status?: string) => {
             return 'Im Demo-Modus gesperrt';
         case 'unavailable':
             return 'Nicht verfuegbar';
+        default:
+            return 'Unbekannt';
+    }
+};
+
+const humanizeRuntimeState = (state?: string) => {
+    switch (state) {
+        case 'ready':
+            return 'Bereit';
+        case 'degraded':
+            return 'Eingeschraenkt';
+        case 'partial':
+            return 'Teilweise bereit';
+        case 'offline':
+            return 'Offline';
         default:
             return 'Unbekannt';
     }
@@ -286,6 +328,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
             linux: commands?.linux || DEFAULT_LOCAL_TRUTH_COMMANDS.linux,
         };
     }, [overview]);
+    const runtimeServices = overview?.runtime?.local_truth?.services;
     const latestMail = mailPreview[0] ?? null;
     const nextEvent = calendarPreview[0] ?? null;
 
@@ -680,18 +723,32 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             </div>
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
-                                                overview?.runtime?.local_truth?.available
+                                                overview?.runtime?.local_truth?.state === 'ready'
                                                     ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
-                                                    : 'border-white/10 bg-white/[0.04] text-white/60'
+                                                    : overview?.runtime?.local_truth?.state === 'degraded' || overview?.runtime?.local_truth?.state === 'partial'
+                                                        ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                        : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
-                                                {overview?.runtime?.local_truth?.available ? 'Bereit' : 'Vorbereitet'}
+                                                {humanizeRuntimeState(overview?.runtime?.local_truth?.state)}
                                             </span>
                                         </div>
                                         <p className="mt-4 text-xs leading-relaxed text-white/60">
                                             Verwende lokal <span className="text-cyan-100">{overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}</span> fuer schnellen privaten Betrieb.
                                             Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
                                         </p>
+                                        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                UI: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.ui?.status)}</span>
+                                            </div>
+                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                Core: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.core?.status)}</span>
+                                            </div>
+                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                Assistant: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.assistant?.status)}</span>
+                                            </div>
+                                        </div>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
+                                            <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/40">Windows Host</div>
                                             {localTruthStartupCommands.windows}
                                         </div>
                                         <div className="mt-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
@@ -741,7 +798,8 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control'}</span> ist der operative Runtime- und Integrationsleitstand.</p>
                                         </div>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[11px] text-white/55">
-                                            <div>Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
+                                            <div>Runtime: <span className="text-white/78">{overview?.runtime?.local_truth?.state || 'unknown'}</span></div>
+                                            <div className="mt-1">Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
                                             <div className="mt-1">Letzte Pruefung: <span className="text-white/78">{localTruthBridge.lastCheckedAt || 'noch keine'}</span></div>
                                         </div>
                                     </div>

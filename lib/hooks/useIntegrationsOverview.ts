@@ -48,6 +48,9 @@ export interface IntegrationsOverview {
             configured_model?: string;
             recommended_model?: string;
             ollama_api_url?: string;
+            contract_version?: string;
+            mode?: string;
+            state?: string;
             startup_script?: string;
             startup_scripts?: {
                 windows?: string;
@@ -71,6 +74,30 @@ export interface IntegrationsOverview {
             platform_notes?: {
                 windows?: string;
                 linux?: string;
+            };
+            services?: {
+                ui?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                };
+                core?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                };
+                assistant?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    available?: boolean;
+                    configured_model?: string;
+                };
             };
             routing_profile?: string;
             available?: boolean;
