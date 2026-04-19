@@ -129,12 +129,6 @@ const DEFAULT_LOCAL_TRUTH_COMMANDS: Record<RuntimePlatform, string> = {
     linux: 'bash ./scripts/start-local-truth.sh --force-restart',
 };
 
-const detectRuntimePlatform = (): RuntimePlatform => {
-    if (typeof navigator === 'undefined') return 'windows';
-    const signature = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
-    return signature.includes('win') ? 'windows' : 'linux';
-};
-
 const statusTone = (status?: string) => {
     switch (status) {
         case 'available':
@@ -285,14 +279,13 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
         [overview]
     );
-    const runtimePlatform = useMemo<RuntimePlatform>(() => detectRuntimePlatform(), []);
-    const localTruthStartupCommand = useMemo(() => {
+    const localTruthStartupCommands = useMemo(() => {
         const commands = overview?.runtime?.local_truth?.startup_commands;
-        if (runtimePlatform === 'linux') {
-            return commands?.linux || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.linux;
-        }
-        return commands?.windows || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.windows;
-    }, [overview, runtimePlatform]);
+        return {
+            windows: commands?.windows || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.windows,
+            linux: commands?.linux || DEFAULT_LOCAL_TRUTH_COMMANDS.linux,
+        };
+    }, [overview]);
     const latestMail = mailPreview[0] ?? null;
     const nextEvent = calendarPreview[0] ?? null;
 
@@ -395,14 +388,14 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         }
     }, [loadOverview]);
 
-    const copyGemmaCommand = useCallback(async () => {
+    const copyRuntimeCommand = useCallback(async (platform: RuntimePlatform) => {
         try {
-            await navigator.clipboard.writeText(localTruthStartupCommand);
-            toast.success(`Startbefehl fuer ${runtimePlatform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
+            await navigator.clipboard.writeText(localTruthStartupCommands[platform]);
+            toast.success(`Startbefehl fuer ${platform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
         } catch {
             toast.error('Befehl konnte nicht kopiert werden');
         }
-    }, [localTruthStartupCommand, runtimePlatform]);
+    }, [localTruthStartupCommands]);
 
     if (!pane) return null;
 
@@ -699,21 +692,29 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
                                         </p>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            {localTruthStartupCommand}
+                                            {localTruthStartupCommands.windows}
+                                        </div>
+                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
+                                            <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/40">Linux Host</div>
+                                            {localTruthStartupCommands.linux}
                                         </div>
                                         <p className="mt-2 text-[11px] text-white/45">
-                                            Laufzeitprofil: <span className="text-white/70">{runtimePlatform === 'windows' ? 'Windows / PowerShell' : 'Linux / Bash'}</span>
-                                            {overview?.runtime?.local_truth?.platform_notes?.[runtimePlatform]
-                                                ? ` · ${overview.runtime.local_truth.platform_notes[runtimePlatform]}`
-                                                : ''}
+                                            SAIMOR nutzt denselben Runtime-Vertrag auf beiden Host-Systemen: gleicher Core, gleiche UI, gleiche Dienste. Unterschiedlich sind nur die Host-Launcher.
                                         </p>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
-                                                onClick={copyGemmaCommand}
+                                                onClick={() => void copyRuntimeCommand('windows')}
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
                                             >
                                                 <Copy size={14} />
-                                                Startbefehl fuer {runtimePlatform === 'windows' ? 'Windows' : 'Linux'} kopieren
+                                                Windows kopieren
+                                            </button>
+                                            <button
+                                                onClick={() => void copyRuntimeCommand('linux')}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
+                                            >
+                                                <Copy size={14} />
+                                                Linux kopieren
                                             </button>
                                             <button
                                                 onClick={openOperationsControl}
