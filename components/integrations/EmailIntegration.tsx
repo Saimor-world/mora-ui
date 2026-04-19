@@ -128,7 +128,7 @@ export const EmailIntegration: React.FC = () => {
         );
     }
 
-    if (status?.status === 'forbidden_demo' || status?.status === 'owner_only') {
+    if (status?.status === 'forbidden_demo') {
         return (
             <div className="p-6 rounded-xl bg-white/5 border border-white/10">
                 <div className="flex items-center gap-3 text-white/60">

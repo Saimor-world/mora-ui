@@ -61,6 +61,7 @@ export const CalendarIntegration: React.FC = () => {
         ? calendarSetup.redirect_url
         : 'http://127.0.0.1:8081/v1/auth/google/callback';
     const oauthReady = Boolean(overview?.capabilities?.calendar_oauth_enabled);
+    const ownerManageable = Boolean(overview?.capabilities?.owner_manageable);
 
     const handleSaveProviderConfig = async () => {
         if (!clientId.trim() || !clientSecret.trim()) {
@@ -121,7 +122,7 @@ export const CalendarIntegration: React.FC = () => {
         );
     }
 
-    if (status?.status === 'owner_only') {
+    if (false && status?.status === 'owner_only') {
         return (
             <div className="p-6 rounded-xl bg-white/5 border border-white/10">
                 <div className="flex items-center gap-3 text-white/60">
@@ -186,7 +187,7 @@ export const CalendarIntegration: React.FC = () => {
                     </div>
                 )}
 
-                {!oauthReady && (
+                {!oauthReady && ownerManageable && (
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
                         <div>
                             <h5 className="text-sm font-medium text-white">Google OAuth fuer diesen Tenant</h5>
@@ -235,6 +236,13 @@ export const CalendarIntegration: React.FC = () => {
                     </div>
                 )}
 
+                {!oauthReady && !ownerManageable && (
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-relaxed text-white/60">
+                        Die Google-OAuth-App fuer diesen Tenant muss zuerst von einem Eigentuemer eingerichtet werden.
+                        Sobald das erfolgt ist, kannst du deinen persoenlichen Kalender direkt hier im OS verbinden.
+                    </div>
+                )}
+
                 {status?.email && (
                     <div className="text-xs text-white/55">
                         Konto: <span className="text-white/80">{status.email}</span>
@@ -256,7 +264,9 @@ export const CalendarIntegration: React.FC = () => {
                         {isConnecting
                             ? 'Verbinden...'
                             : !oauthReady
-                                ? 'Core zuerst konfigurieren'
+                                ? ownerManageable
+                                    ? 'OAuth fuer Tenant einrichten'
+                                    : 'Eigentuemer muss OAuth freischalten'
                                 : status?.configured ? 'Neu verbinden' : 'Verbinden'
                         }
                     </button>

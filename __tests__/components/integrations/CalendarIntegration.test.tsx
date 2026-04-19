@@ -124,7 +124,7 @@ describe('CalendarIntegration', () => {
     it('saves tenant Google OAuth config from the owner form when OAuth is not ready', async () => {
         mockCoreGetRoutes({
             overview: {
-                capabilities: { calendar_oauth_enabled: false },
+                capabilities: { calendar_oauth_enabled: false, owner_manageable: true },
                 setup: {
                     calendar: {
                         source: 'env',
@@ -190,5 +190,45 @@ describe('CalendarIntegration', () => {
         await waitFor(() => {
             expect(communicationEvents.broadcastCommunicationSync).toHaveBeenCalledWith('calendar-provider-config-save');
         });
+    });
+
+    it('shows a member-safe hint instead of the tenant OAuth form when OAuth is not ready', async () => {
+        mockCoreGetRoutes({
+            overview: {
+                capabilities: { calendar_oauth_enabled: false, owner_manageable: false },
+                setup: {
+                    calendar: {
+                        source: 'env',
+                        redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                        required_env: [
+                            'GOOGLE_CALENDAR_CLIENT_ID',
+                            'GOOGLE_CALENDAR_CLIENT_SECRET',
+                            'GOOGLE_CALENDAR_REDIRECT_URL',
+                        ],
+                        missing_env: [
+                            'GOOGLE_CALENDAR_CLIENT_ID',
+                            'GOOGLE_CALENDAR_CLIENT_SECRET',
+                        ],
+                    },
+                },
+            },
+            calendarStatus: {
+                configured: false,
+                status: 'not_configured',
+            },
+            providerConfig: {
+                configured: false,
+                source: 'env',
+                redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                required_fields: [],
+                missing_fields: ['GOOGLE_CALENDAR_CLIENT_ID'],
+            },
+        });
+
+        renderWithProviders(<CalendarIntegration />);
+
+        expect(await screen.findByText(/muss zuerst von einem Eigentuemer eingerichtet werden/i)).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'OAuth fuer Tenant speichern' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Eigentuemer muss OAuth freischalten' })).toBeDisabled();
     });
 });

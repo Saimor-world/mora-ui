@@ -74,19 +74,15 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
 
         const mailStatusLabel = mailConfigured
             ? (overview?.mail?.email || 'Mail verbunden')
-            : !ownerManageable
-                ? 'Nur fuer Eigentuemer'
-                : mailLocalMode
-                    ? 'Lokaler Postfachmodus'
-                    : 'Mail nicht eingerichtet';
+            : mailLocalMode
+                ? 'Lokaler Postfachmodus'
+                : 'Mail nicht eingerichtet';
 
         const calendarStatusLabel = calendarConfigured
             ? (overview?.calendar?.email || 'Kalender verbunden')
-            : !ownerManageable
-                ? 'Nur fuer Eigentuemer'
-                : !calendarOauthEnabled
-                    ? 'OAuth im Core fehlt'
-                    : 'Kalender nicht eingerichtet';
+            : !calendarOauthEnabled
+                ? 'OAuth fuer Tenant fehlt'
+                : 'Kalender nicht eingerichtet';
 
         const localTruthStatusLabel =
             localTruthBridge.state === 'ready'
@@ -107,19 +103,17 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
             mailStatusDetail:
                 mailConfigured
                     ? 'Das verbundene Postfach wird direkt im OS gelesen und von Mora mitverwendet.'
-                    : !ownerManageable
-                        ? 'Dieses Konto kann Mail-Verbindungen nicht selbst verwalten.'
-                        : mailLocalMode
-                            ? 'Der Server laeuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
-                            : (mailSetupDetail || MAIL_SETUP_DETAIL),
+                    : mailLocalMode
+                        ? 'Der Server laeuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
+                        : (mailSetupDetail || MAIL_SETUP_DETAIL),
             calendarStatusDetail:
                 calendarConfigured
                     ? 'Der verbundene Kalender wird im OS gelesen und fuer Home, Kalender und Mora genutzt.'
-                    : !ownerManageable
-                        ? 'Dieses Konto kann Kalender-Verbindungen nicht selbst verwalten.'
-                        : !calendarOauthEnabled
+                    : !calendarOauthEnabled
+                        ? (ownerManageable
                             ? calendarSetupDetail
-                            : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
+                            : `Google-OAuth muss tenantweit zuerst von einem Eigentuemer eingerichtet werden. Redirect: ${calendarRedirectUrl}.`)
+                        : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
             browserConnectable: integrations.browserBridge.supported,
             browserPermission,
             browserPermissionSummary:
@@ -215,8 +209,8 @@ export function buildCommunicationOperationalContextMessage(
         sections.push(`- Kalender-OAuth fehlt im Core noch bei: ${overview.setup.calendar.missing_env.join(', ')}.`);
     }
 
-    if (!summary.ownerManageable) {
-        sections.push('- Dieses Konto kann Verbindungen nicht selbst verwalten; Mail/Kalender sind owner-gesteuert.');
+    if (!summary.ownerManageable && !summary.calendarOauthEnabled) {
+        sections.push('- Die tenantweite Google-OAuth-App ist noch nicht eingerichtet; das muss ein Eigentuemer zuerst freischalten.');
     }
 
     return sections.join('\n');

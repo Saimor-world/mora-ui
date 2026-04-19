@@ -166,7 +166,7 @@ const buildMailDescription = (overview?: IntegrationsOverview) => {
     const mail = overview?.mail;
     const caps = overview?.capabilities;
     if (!mail) return 'Mail-Status wird geladen.';
-    if (mail.status === 'owner_only' || mail.status === 'forbidden_demo') {
+    if (mail.status === 'forbidden_demo') {
         return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
     }
     if (mail.status === 'local' || caps?.mail_local_mode) {
@@ -182,13 +182,13 @@ const buildCalendarDescription = (overview?: IntegrationsOverview) => {
     const calendar = overview?.calendar;
     const caps = overview?.capabilities;
     if (!calendar) return 'Kalender-Status wird geladen.';
-    if (calendar.status === 'owner_only') {
-        return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
-    }
     if (!caps?.calendar_oauth_enabled) {
         const missing = overview?.setup?.calendar?.missing_env || [];
         const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v1/auth/google/callback';
-        return missing.length > 0
+        const ownerManageable = Boolean(caps?.owner_manageable);
+        return !ownerManageable
+            ? `Google-OAuth muss tenantweit zuerst von einem Eigentuemer eingerichtet werden. Redirect: ${redirect}.`
+            : missing.length > 0
             ? `Kalender-OAuth ist serverseitig noch nicht aktiviert. Es fehlen ${missing.join(' / ')}. Redirect: ${redirect}.`
             : `Kalender-OAuth ist serverseitig noch nicht aktiviert. Redirect: ${redirect}.`;
     }
@@ -245,12 +245,6 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const { mailPreview, calendarPreview } = useCommunicationLiveData();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
-
-    const ownerBlocked = useMemo(() => {
-        const mailBlocked = overview?.mail?.status === 'owner_only' || overview?.mail?.status === 'forbidden_demo';
-        const calendarBlocked = overview?.calendar?.status === 'owner_only';
-        return Boolean(mailBlocked && calendarBlocked);
-    }, [overview]);
 
     const assistantProviders = useMemo(
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
@@ -819,50 +813,35 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                 </section>
                             </div>
 
-                            {ownerBlocked ? (
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                                    <div className="flex items-start gap-3">
-                                        <AlertCircle className="mt-0.5 text-white/55" size={18} />
-                                        <div>
-                                            <h4 className="text-sm font-medium text-white">Dieser Bereich ist im aktuellen Kontext eingeschraenkt</h4>
-                                            <p className="mt-1 text-sm text-white/55">
-                                                Mail- und Kalender-Integrationen koennen nur im Eigentuemer-Kontext verwaltet werden.
-                                                Die Assistant-Uebersicht bleibt sichtbar, aber die ausfuehrbaren Verbindungen sind hier gesperrt.
-                                            </p>
+                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                                <div className="xl:col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4">
+                                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">Mehrnutzer-Vertrag</p>
+                                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        <div className="rounded-xl border border-cyan-400/10 bg-cyan-500/[0.05] px-3 py-3 text-xs leading-relaxed text-cyan-100/78">
+                                            <div className="font-medium text-cyan-100">Serverweit</div>
+                                            Google OAuth Client ID, Secret und Redirect gehoeren zur SAIMOR-Plattform. Ohne diese App-Konfiguration kann kein Nutzer den Kalender verbinden.
+                                        </div>
+                                        <div className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.05] px-3 py-3 text-xs leading-relaxed text-emerald-100/78">
+                                            <div className="font-medium text-emerald-100">Pro Nutzer</div>
+                                            Mail-Zugangsdaten sowie Google-Refresh-Tokens werden pro Nutzer gespeichert. Mora, Home, Mail und Kalender arbeiten danach auf genau diesem Nutzerkontext.
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                                    <div className="xl:col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4">
-                                        <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">Mehrnutzer-Vertrag</p>
-                                        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                                            <div className="rounded-xl border border-cyan-400/10 bg-cyan-500/[0.05] px-3 py-3 text-xs leading-relaxed text-cyan-100/78">
-                                                <div className="font-medium text-cyan-100">Serverweit</div>
-                                                Google OAuth Client ID, Secret und Redirect gehoeren zur SAIMOR-Plattform. Ohne diese App-Konfiguration kann kein Nutzer den Kalender verbinden.
-                                            </div>
-                                            <div className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.05] px-3 py-3 text-xs leading-relaxed text-emerald-100/78">
-                                                <div className="font-medium text-emerald-100">Pro Nutzer</div>
-                                                Mail-Zugangsdaten sowie Google-Refresh-Tokens werden pro Nutzer gespeichert. Mora, Home, Mail und Kalender arbeiten danach auf genau diesem Nutzerkontext.
-                                            </div>
-                                        </div>
+                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
+                                        <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
                                     </div>
-                                    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                        <div className="mb-4">
-                                            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
-                                            <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
-                                        </div>
-                                        <EmailIntegration />
-                                    </section>
-                                    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                        <div className="mb-4">
-                                            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
-                                            <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
-                                        </div>
-                                        <CalendarIntegration />
-                                    </section>
-                                </div>
-                            )}
+                                    <EmailIntegration />
+                                </section>
+                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
+                                        <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
+                                    </div>
+                                    <CalendarIntegration />
+                                </section>
+                            </div>
                         </div>
                     )}
                 </div>
