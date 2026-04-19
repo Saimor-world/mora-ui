@@ -1194,19 +1194,29 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                                             )}
 
                                             {file.status === 'done' && file.result && (
-                                                <div className="mt-2 space-y-2">
+                                                <div className="mt-2 space-y-1.5">
                                                     <div className="flex items-start gap-2 text-xs text-emerald-400">
                                                         <CheckCircle size={12} className="mt-0.5 shrink-0" />
                                                         <span>{file.result}</span>
                                                     </div>
-                                                    {file.confirmedFolderId && (
-                                                        <button
-                                                            onClick={() => openConfirmedFolder(file.confirmedFolderId!, file.name)}
-                                                            className="text-[11px] text-emerald-300/75 hover:text-emerald-200 transition-colors"
-                                                        >
-                                                            Im Zielordner öffnen →
-                                                        </button>
-                                                    )}
+                                                    <div className="flex items-center gap-3">
+                                                        {file.confirmedNodeId && (
+                                                            <button
+                                                                onClick={() => openConfirmedDocument(file.confirmedNodeId!, file.name, file.confirmedFolderId)}
+                                                                className="text-[11px] text-cyan-300/75 hover:text-cyan-200 transition-colors"
+                                                            >
+                                                                Datei öffnen →
+                                                            </button>
+                                                        )}
+                                                        {file.confirmedFolderId && (
+                                                            <button
+                                                                onClick={() => openConfirmedFolder(file.confirmedFolderId!, file.name)}
+                                                                className="text-[11px] text-emerald-300/60 hover:text-emerald-200 transition-colors"
+                                                            >
+                                                                Im Zielordner öffnen →
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -1336,23 +1346,38 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                             const active = activePendingAction;
                             setPendingActions(prev => prev.slice(1));
                             if (active) {
-                                // Priority 1-3: synchronously extract folderId from result
+                                // Priority 1-3: synchronously extract both IDs from result
                                 // so markFileOutcome (and batchResultSummary) update in the same
                                 // React render tick — no microtask boundary before the state write.
                                 const immediateFolderId: string | undefined =
                                     result?.folder_id ||
                                     result?.destination?.folder_id ||
                                     result?.result?.destination?.folder_id;
+                                const immediateNodeId: string | undefined =
+                                    result?.node_id ||
+                                    result?.destination?.node_id ||
+                                    result?.result?.node_id ||
+                                    result?.result?.destination?.node_id;
                                 const resultText = buildResolvedResultText(
                                     active.intake_context,
                                     immediateFolderId,
                                     result?.result_summary || result?.destination_summary || result?.result?.destination_summary,
                                 );
-                                markFileOutcome(active.file_id, 'confirmed', resultText, immediateFolderId);
-                                // Priority 4: async fallback via getFileNode (only when result lacks folder_id)
-                                if (!immediateFolderId) {
-                                    resolveDestinationFolderId(active, result).then((fallbackId) => {
-                                        if (fallbackId) markFileOutcome(active.file_id, 'confirmed', resultText, fallbackId);
+                                markFileOutcome(active.file_id, 'confirmed', resultText, immediateFolderId, immediateNodeId);
+                                // Priority 4: async fallback via getFileNode for any missing IDs
+                                const needsFolder = !immediateFolderId;
+                                const needsNode = !immediateNodeId;
+                                if (needsFolder || needsNode) {
+                                    Promise.all([
+                                        needsFolder ? resolveDestinationFolderId(active, result) : Promise.resolve(immediateFolderId),
+                                        needsNode ? resolveDestinationNodeId(active, result) : Promise.resolve(immediateNodeId),
+                                    ]).then(([fallbackFolder, fallbackNode]) => {
+                                        if (fallbackFolder || fallbackNode) {
+                                            markFileOutcome(active.file_id, 'confirmed', resultText,
+                                                fallbackFolder ?? immediateFolderId,
+                                                fallbackNode ?? immediateNodeId,
+                                            );
+                                        }
                                     }).catch(() => { /* destination unknown is acceptable */ });
                                 }
                             }
