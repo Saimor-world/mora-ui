@@ -96,7 +96,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 }
                 setStatsMap(map);
             } catch (error) {
-                console.warn('[UniverseView] Failed to load department stats:', error);
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[UniverseView] Failed to load department stats:', error);
+                }
             }
         };
 

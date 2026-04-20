@@ -263,14 +263,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 useNavStore.getState().setActiveCompany(targetCompany.id);
                 void queryClient.invalidateQueries({ queryKey: queryKeys.departments(targetCompany.id) });
             } else {
-                console.warn('Keine Firma für Benutzer gefunden.');
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('Keine Firma für Benutzer gefunden.');
+                }
             }
 
             toast.success("Willkommen zurück!");
             touchSessionActivity();
             onAuthenticated();
         } catch (error) {
-            console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
+            }
             if (sessionTier === 'sofort') {
                 // Auto-resume failed silently — degrade to erwachen
                 setSessionTier('erwachen');
@@ -376,7 +380,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 });
 
                 if (result?.error) {
-                    console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                    }
                 }
             }
 
@@ -392,7 +398,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
         } catch (error: any) {
-            console.error('[WelcomeScreen] Login Fehler:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('[WelcomeScreen] Login Fehler:', error);
+            }
             toast.error(error?.message || "Login fehlgeschlagen");
         } finally {
             setIsLoading(false);
@@ -460,7 +468,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     password: password
                 });
                 if (syncResult?.error) {
-                    console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+                    }
                 }
             }
 
@@ -512,7 +522,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             onAuthenticated();
         } catch (error: any) {
-            console.error('[WelcomeScreen] Registrierung Fehler:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('[WelcomeScreen] Registrierung Fehler:', error);
+            }
             toast.error(error?.message || "Registrierung fehlgeschlagen", { id: toastId });
         } finally {
             setIsLoading(false);
