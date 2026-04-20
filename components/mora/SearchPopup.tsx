@@ -49,6 +49,10 @@ interface SearchResult {
     nodeId?: string;
 }
 
+// Stable empty array — avoids recreating a new reference on every render when
+// useDepartments has not yet resolved, which would cause an infinite useEffect loop.
+const EMPTY_DEPARTMENTS: never[] = [];
+
 interface SearchPopupProps {
     isOpen: boolean;
     onClose: () => void;
@@ -74,7 +78,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     const setOrbState = useOrbStore((s) => s.setOrbState);
     const isStandardMode = useNavStore((s) => s.isStandardMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
-    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: departments = EMPTY_DEPARTMENTS } = useDepartments(activeCompanyId);
     const { openPane } = usePaneStore();
 
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
