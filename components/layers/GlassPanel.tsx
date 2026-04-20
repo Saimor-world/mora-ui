@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion';
 import { X, ChevronLeft, Minus, Maximize2, Minimize2 } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 interface GlassPanelProps {
@@ -131,7 +131,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     isStandardMode: isStandardModeProp = false
 }) => {
     // Use global standard mode from store, fallback to prop
-    const globalStandardMode = useMoraStore(state => state.isStandardMode);
+    const globalStandardMode = useNavStore(state => state.isStandardMode);
     const isStandardMode = isStandardModeProp || globalStandardMode;
     const allowMaximize = showMaximizeButton ?? (showCloseButton || showMinimizeButton);
     const activePaneId = usePaneStore((state) => state.activePaneId);

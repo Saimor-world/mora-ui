@@ -1,25 +1,46 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Spotlight } from '@/components/mora/Spotlight';
-import { useMoraStore } from '@/lib/store/moraState';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
-}));
+jest.mock('@/lib/queries/useTree', () => {
+    const stableEmptyTree: never[] = [];
+    return {
+        useTree: jest.fn(() => ({ data: stableEmptyTree, isFetching: false })),
+    };
+});
+
+const mockNavigateToCore = jest.fn();
+const mockSetActiveCompany = jest.fn();
+const mockSetViewMode = jest.fn();
+const mockNavigateToDepartment = jest.fn();
+const mockNavigateToSpace = jest.fn();
 
 const minimizePane = jest.fn();
 const openPane = jest.fn();
 
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: () => ({
-        openPane,
-        panes: [
-            { id: 'pane-1', minimized: false },
-            { id: 'pane-2', minimized: true },
-        ],
-        minimizePane,
-    }),
+    usePaneStore: (sel?: (s: any) => unknown) => {
+        const s = {
+            openPane,
+            panes: [
+                { id: 'pane-1', minimized: false },
+                { id: 'pane-2', minimized: true },
+            ],
+            minimizePane,
+            activePaneId: 'pane-test',
+            removePane: jest.fn(),
+            updatePanePosition: jest.fn(),
+            updatePaneSize: jest.fn(),
+            focusPane: jest.fn(),
+            getPane: () => STABLE_PANE,
+        };
+        return sel ? sel(s) : s;
+    },
 }));
 
 jest.mock('@/lib/api/moraAgentClient', () => ({
@@ -49,15 +70,11 @@ jest.mock('framer-motion', () => {
     };
 });
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
+jest.mock('@/lib/utils/openMoraCenter', () => ({
+    openMoraCenter: jest.fn(),
+}));
 
-function renderWithState(state: Record<string, unknown>, onClose = jest.fn()) {
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
-    return {
-        onClose,
-        ...render(<Spotlight isOpen={true} onClose={onClose} />),
-    };
-}
+beforeEach(resetAllStores);
 
 describe('Spotlight core navigation contract', () => {
     beforeEach(() => {
@@ -65,29 +82,33 @@ describe('Spotlight core navigation contract', () => {
     });
 
     it('Home action resets to core home via navigateToCore', () => {
-        const navigateToCore = jest.fn();
-        const setActiveCompany = jest.fn();
-        const onClose = jest.fn();
-
-        renderWithState({
-            departments: [],
-            companies: [],
-            spacesByDepartment: {},
+        useNavStore.setState({
             activeCompanyId: 'co-1',
-            navigateToCore,
-            setActiveCompany,
-            setViewMode: jest.fn(),
-            navigateToDepartment: jest.fn(),
-            navigateToSpace: jest.fn(),
-        }, onClose);
+            activeDepartmentId: null,
+            activeSpaceId: null,
+            activeFolderId: null,
+            viewLevel: 'core',
+            navigateToCore: mockNavigateToCore,
+            setActiveCompany: mockSetActiveCompany,
+            setViewMode: mockSetViewMode,
+            navigateToDepartment: mockNavigateToDepartment,
+            navigateToSpace: mockNavigateToSpace,
+        } as any);
+
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), []);
+        qc.setQueryData(queryKeys.departments('co-1'), []);
+
+        const onClose = jest.fn();
+        renderWithProviders(<Spotlight isOpen={true} onClose={onClose} />, { queryClient: qc });
 
         fireEvent.change(screen.getByPlaceholderText('Resonanz erzeugen...'), { target: { value: 'home' } });
         const homeButton = screen.getAllByRole('button').find((button) => button.textContent?.includes('Home'));
         expect(homeButton).toBeDefined();
         fireEvent.click(homeButton!);
 
-        expect(navigateToCore).toHaveBeenCalledTimes(1);
-        expect(setActiveCompany).toHaveBeenCalledWith('co-1');
+        expect(mockNavigateToCore).toHaveBeenCalledTimes(1);
+        expect(mockSetActiveCompany).toHaveBeenCalledWith('co-1');
         expect(minimizePane).toHaveBeenCalledWith('pane-1');
         expect(onClose).toHaveBeenCalledTimes(1);
     });

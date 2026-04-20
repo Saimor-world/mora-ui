@@ -2,7 +2,12 @@
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
@@ -13,22 +18,13 @@ import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
-
-type DepartmentMetricSet = {
-    nodes: number;
-    spaces: number;
-    folders: number;
-    health: number;
-};
-
-type SemanticDriver = 'content' | 'structure' | 'health';
-
-type SemanticDriverMeta = {
-    label: string;
-    accent: string;
-    dashArray: string;
-    reason: string;
-};
+import {
+    buildSemanticEdgeKey,
+    resolveDepartmentSimilarityProfile,
+    SEMANTIC_DRIVER_META,
+    type DepartmentMetricSet,
+    type SemanticDriver,
+} from '@/lib/universe/semanticSimilarity';
 
 const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
     'technology & ai': { x: 25, y: 36 },
@@ -43,38 +39,6 @@ const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
 const normalizeUniverseKey = (value: string | null | undefined) =>
     (value || '').trim().toLowerCase();
 
-const metricAffinity = (left: number, right: number) => {
-    const baseline = Math.max(1, left, right);
-    return Math.max(0, 1 - Math.abs(left - right) / baseline);
-};
-
-const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
-    content: { label: 'Dokumente', accent: '#7dd3fc', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
-    structure: { label: 'Struktur', accent: '#c4b5fd', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
-    health: { label: 'Health', accent: '#fbbf24', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
-};
-
-const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');
-
-const resolveDepartmentSimilarityProfile = (
-    left: DepartmentMetricSet,
-    right: DepartmentMetricSet
-) => {
-    const contributions: Record<SemanticDriver, number> = {
-        content: metricAffinity(left.nodes, right.nodes) * 0.4,
-        structure: metricAffinity(left.spaces, right.spaces) * 0.2 + metricAffinity(left.folders, right.folders) * 0.25,
-        health: metricAffinity(left.health, right.health) * 0.15,
-    };
-
-    const dominantDriver = (Object.entries(contributions).sort((leftEntry, rightEntry) => rightEntry[1] - leftEntry[1])[0]?.[0] || 'content') as SemanticDriver;
-    const semanticAffinity = contributions.content + contributions.structure + contributions.health;
-
-    return {
-        semanticAffinity,
-        dominantDriver,
-        contributions,
-    };
-};
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -83,22 +47,14 @@ const resolveDepartmentSimilarityProfile = (
  */
 
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
-    const {
-        departments,
-        companies,
-        activeCompanyId,
-        activeDepartmentId,
-        setOrbState,
-        orbState,
-        viewMode,
-        user,
-        navigateToCore,
-        navigateToDepartment,
-        treeData,
-        spacesByDepartment
-    } = useMoraStore();
-    const coreMode = useMoraStore((state) => state.coreMode);
-    const setCoreMode = useMoraStore((state) => state.setCoreMode);
+    const setOrbState = useOrbStore((s) => s.setOrbState);
+    const orbState = useOrbStore((s) => s.orbState);
+    const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment } = useNavStore();
+    const user = useSessionStore(s => s.user);
+
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: companies = [] }   = useCompanies();
+    const { data: treeData = [] }    = useTree(activeCompanyId);
 
     const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
     const surfaceProfile = useSurfaceProfile();
@@ -106,10 +62,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
-    const [insightPlanetId, setInsightPlanetId] = useState<string | null>(null);
+    const [activePlanetId, setActivePlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
-    const [isInsightRailHovered, setIsInsightRailHovered] = useState(false);
-    const [heldInsightPlanetId, setHeldInsightPlanetId] = useState<string | null>(null);
+    // isInsightRailHovered is kept as state (drives hasUniverseInteraction / visibleSemanticPaths)
+    // AND mirrored to a ref so callbacks always read the current value without stale closures.
+    const [isInsightRailHovered, setIsInsightRailHoveredState] = useState(false);
+    const isInsightRailHoveredRef = useRef(false);
+    const setIsInsightRailHovered = useCallback((value: boolean) => {
+        isInsightRailHoveredRef.current = value;
+        setIsInsightRailHoveredState(value);
+    }, []);
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [isCoreLogoHovered, setIsCoreLogoHovered] = useState(false);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
@@ -119,13 +81,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
-    const totalSpaceCount = useMemo(
-        () =>
-            Object.values(spacesByDepartment || {}).reduce((sum, spaces) => (
-                sum + (Array.isArray(spaces) ? spaces.length : 0)
-            ), 0),
-        [spacesByDepartment]
-    );
 
     // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
     useEffect(() => {
@@ -245,15 +200,14 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         for (const dept of safeTreeData) {
             if (dept.type === 'department') {
                 const counts = countChildren(Array.isArray(dept.children) ? dept.children : []);
-                const deptSpaces = Array.isArray(spacesByDepartment?.[dept.id]) ? spacesByDepartment[dept.id] : [];
-                const spaces = deptSpaces.length || ((Array.isArray(dept.children) ? dept.children : []).filter((c: any) => c.type === 'space')?.length || 0);
+                const spaces = (Array.isArray(dept.children) ? dept.children : []).filter((c: any) => c.type === 'space')?.length || 0;
                 // Calculate health based on content
                 const health = Math.min(100, (spaces > 0 ? 30 : 0) + (counts.folders > 0 ? 30 : 0) + (counts.nodes > 0 ? 40 : 0));
                 metrics[dept.id] = { nodes: counts.nodes, spaces, folders: counts.folders, health };
             }
         }
         return metrics;
-    }, [statsMap, safeTreeData, spacesByDepartment]);
+    }, [statsMap, safeTreeData]);
 
     // Normalize metrics to percentages
     const maxNodes = useMemo(() => Math.max(1, ...Object.values(departmentMetrics).map(m => m.nodes)), [departmentMetrics]);
@@ -263,16 +217,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         safeCompanies.find(c => c.id === activeCompanyId),
         [safeCompanies, activeCompanyId]);
 
-    // ─── SYNC GUARD (V10.6) ───
-    // Ensures data is loaded without disruptive flashes
-    const lastSyncId = useRef<string | null>(null);
+    // useDepartments(activeCompanyId) auto-fetches when activeCompanyId changes — no manual sync needed.
     const hoverClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => {
-        if (activeCompanyId && activeCompanyId !== lastSyncId.current) {
-            useMoraStore.getState().loadDepartments(activeCompanyId);
-            lastSyncId.current = activeCompanyId;
-        }
-    }, [activeCompanyId]);
 
     const clearHoverRelease = useCallback(() => {
         if (hoverClearRef.current) {
@@ -281,23 +227,40 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         }
     }, []);
 
+    const clearUniverseInteractionState = useCallback(() => {
+        setHoverPlanetId(null);
+        setActivePlanetId(null);
+        setSemanticPreviewPathId(null);
+    }, []);
+
     const scheduleHoverRelease = useCallback(() => {
         clearHoverRelease();
         hoverClearRef.current = setTimeout(() => {
-            if (isInsightRailHovered) {
+            // Always read from ref — the closure would otherwise capture a stale
+            // isInsightRailHovered value from the render when the timer was scheduled.
+            if (isInsightRailHoveredRef.current) {
                 return;
             }
-            setHeldInsightPlanetId(null);
-            setInsightPlanetId(null);
+            setHoverPlanetId(null);
             setSemanticPreviewPathId(null);
-        }, 700);
-    }, [clearHoverRelease, isInsightRailHovered]);
+            setLockedTooltipDeptId(null);
+            setActivePlanetId(null);
+        }, coreMode === 'home' ? 320 : 1700);
+    }, [clearHoverRelease, coreMode]);
 
     useEffect(() => (
         () => {
             clearHoverRelease();
         }
     ), [clearHoverRelease]);
+
+    useEffect(() => {
+        if (coreMode === 'explore') return;
+        clearHoverRelease();
+        clearUniverseInteractionState();
+        setIsInsightRailHovered(false);
+        setLockedTooltipDeptId(null);
+    }, [clearHoverRelease, clearUniverseInteractionState, coreMode, setIsInsightRailHovered]);
 
     // Legacy fallback layout for non-demo or unknown department sets.
     const rings = useMemo(() => [
@@ -373,7 +336,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
-    const focusedPlanetId = hoverPlanetId || heldInsightPlanetId || insightPlanetId || null;
+    const totalSpaceCount = useMemo(
+        () => Object.values(departmentMetrics).reduce((sum, metric) => sum + (metric.spaces || 0), 0),
+        [departmentMetrics]
+    );
+    const focusedPlanetId = activePlanetId || hoverPlanetId || null;
 
     const semanticConnections = useMemo(() => {
         if (visiblePlanets.length < 2) return [];
@@ -571,22 +538,32 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     useEffect(() => {
         setSemanticPreviewPathId(null);
-    }, [activeDepartmentId, insightPlanetId]);
+        setHoverPlanetId(null);
+        setActivePlanetId(null);
+        setIsInsightRailHovered(false);
+    }, [activeDepartmentId, setIsInsightRailHovered]);
 
     const handlePlanetHover = useCallback((planetId: string, hovered: boolean) => {
         if (hovered) {
             clearHoverRelease();
             setHoverPlanetId(planetId);
-            setInsightPlanetId(planetId);
+            // Sticky: activePlanetId keeps the rail alive even after hoverPlanetId clears
+            // (when cursor moves between planet and rail). Without this, the rail unmounts
+            // the instant the cursor leaves the planet, before the user reaches the rail.
+            setActivePlanetId(planetId);
             setSemanticPreviewPathId(null);
+            setLockedTooltipDeptId(null);
             return;
         }
 
         setHoverPlanetId((current) => (current === planetId ? null : current));
-        if (!isInsightRailHovered) {
+        // Read from ref: by the time this fires (after Planet's 220ms dwell timer),
+        // the user may have already moved into the InsightRail. The state value would
+        // still be false here (captured at callback creation), but the ref is current.
+        if (!isInsightRailHoveredRef.current) {
             scheduleHoverRelease();
         }
-    }, [clearHoverRelease, scheduleHoverRelease, isInsightRailHovered]);
+    }, [clearHoverRelease, scheduleHoverRelease]);
 
     const handleSemanticPreview = (pathId: string | null) => {
         setSemanticPreviewPathId(pathId);
@@ -594,6 +571,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const handleSemanticNavigate = (departmentId: string) => {
         setSemanticPreviewPathId(null);
+        setActivePlanetId(departmentId);
         navigateToDepartment(departmentId);
     };
 
@@ -636,6 +614,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             letterSpacing: spacing
         };
     }, [displayCompanyName]);
+    // Guard: use activeCompanyId (not currentCompany) to avoid showing global org count
+    // while the companies query is still hydrating (currentCompany = undefined transiently).
+    const effectiveCompanyCount = surfaceProfile.isLocalTruthSurface
+        ? 1
+        : (activeCompanyId || currentCompany ? 1 : safeCompanies.length);
+    const showOrganizationAggregate = !isPublicDemoSurface && !surfaceProfile.isLocalTruthSurface && !activeCompanyId && safeCompanies.length > 1;
     const isHomeUniversePreview = coreMode === 'home';
     const centerSummary = useMemo(() => {
         const departmentCount = visiblePlanets.length;
@@ -701,7 +685,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [focusedPlanetId, semanticPreviewPlanetIds]);
     const visibleSemanticPaths = useMemo(() => {
         if (isHomeUniversePreview) {
-            return semanticPaths.filter((path) => path.highlighted || semanticPreviewPathId === path.id);
+            return semanticPaths.filter((path) => semanticPreviewPathId === path.id);
         }
 
         if (!hasUniverseInteraction) {
@@ -716,11 +700,23 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         );
     }, [focusedPlanetId, hasUniverseInteraction, isHomeUniversePreview, semanticPaths, semanticPreviewPathId]);
 
+    const handleUniversePointerLeave = useCallback(() => {
+        resetUniverseParallax();
+
+        if (isInsightRailHoveredRef.current) {
+            return;
+        }
+        scheduleHoverRelease();
+    }, [
+        resetUniverseParallax,
+        scheduleHoverRelease,
+    ]);
+
     return (
         <div
             className="relative w-full h-full overflow-hidden text-white bg-transparent"
             onMouseMove={handleUniversePointerMove}
-            onMouseLeave={resetUniverseParallax}
+            onMouseLeave={handleUniversePointerLeave}
         >
             {/* 0. UNIVERSE BACKDROP - single merged stage shared with Home overlays */}
             <div
@@ -827,18 +823,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
-            {focusedPlanet && focusedPlanetMetrics ? (
-                <div
-                    className="absolute left-0 top-20 z-[27] h-[520px] w-[560px] pointer-events-auto bg-transparent"
-                    onMouseEnter={clearHoverRelease}
-                    onMouseLeave={() => {
-                        if (!hoverPlanetId) {
-                            scheduleHoverRelease();
-                        }
-                    }}
-                />
-            ) : null}
-
             {/* 2. CENTER HUB (The Core) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pb-20">
                 <motion.div
@@ -877,7 +861,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <AnimatePresence>
                             {isHomeUniversePreview && isCoreLogoHovered ? (
                                 <motion.div
-                                    className="absolute left-1/2 top-[calc(100%+1.35rem)] w-[320px] -translate-x-1/2 rounded-[24px] border border-cyan-300/14 bg-[linear-gradient(160deg,rgba(6,18,24,0.78),rgba(4,10,13,0.48))] px-5 py-4 text-left shadow-[0_24px_70px_rgba(0,0,0,0.34)] backdrop-blur-[26px]"
+                                    className="absolute left-1/2 top-[calc(100%+1.35rem)] w-[336px] -translate-x-1/2 rounded-[24px] border border-cyan-200/20 bg-[linear-gradient(160deg,rgba(14,34,46,0.86),rgba(5,14,18,0.58))] px-5 py-4 text-left shadow-[0_24px_80px_rgba(0,0,0,0.34)] backdrop-blur-[30px]"
                                     initial={{ opacity: 0, y: 10, scale: 0.96 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -891,10 +875,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         Die Home-Ebene bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen oeffnet den grossen Raum.
                                     </p>
                                     <div className="mt-3 flex flex-wrap gap-2">
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-white/56">
+                                        <span className="rounded-full border border-cyan-200/14 bg-cyan-300/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-cyan-50/76">
                                             {centerSummary.departmentLabel}
                                         </span>
-                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-white/56">
+                                        <span className="rounded-full border border-emerald-200/14 bg-emerald-300/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-emerald-50/76">
                                             {centerSummary.areaLabel}
                                         </span>
                                     </div>
@@ -1089,23 +1073,23 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Beziehungen fuer ${focusedPlanet.name}. Waehle links eine Verbindung, um die Route im Raum zu lesen und direkt ins verbundene Department zu springen.`}
+                    summary={`${focusedPlanetLinkCount} semantische Beziehungen fuer ${focusedPlanet.name}. Hover previewt das Signal, die Rail haelt den Fokus und ein Klick springt direkt in den verbundenen Bereich.`}
                     alwaysExpanded
                     showToggle={false}
                     forceExpanded={Boolean(focusedPlanetId) || Boolean(semanticPreviewPathId) || isInsightRailHovered}
                     onPointerEnter={() => {
                         setIsInsightRailHovered(true);
-                        setHeldInsightPlanetId(focusedPlanet.id);
-                        setInsightPlanetId(focusedPlanet.id);
+                        setActivePlanetId(focusedPlanet.id);
                         clearHoverRelease();
                     }}
                     onPointerLeave={() => {
                         setIsInsightRailHovered(false);
-                        if (!hoverPlanetId) {
-                            scheduleHoverRelease();
+                        if (hoverPlanetId) {
+                            setActivePlanetId(hoverPlanetId);
                             return;
                         }
-                        setHeldInsightPlanetId(hoverPlanetId);
+                        setActivePlanetId(null);
+                        scheduleHoverRelease();
                     }}
                     metrics={[
                         { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
@@ -1202,7 +1186,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const healthFromAPI = deptStats?.health;
 
                     // Capacity: % of nodes relative to largest department
-                    const capacity = maxNodes > 0 ? Math.round((nodeCount / maxNodes) * 100) : 0;
+                    const capacity = nodeCount > 0 && maxNodes > 0
+                        ? Math.round((nodeCount / maxNodes) * 100)
+                        : null;
                     // Activity: Document count (shown as "X Docs" in hover)
                     const activity = nodeCount;
                     // Health: From API if available, otherwise calculate
@@ -1221,6 +1207,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                             setCoreMode('explore');
                                             return;
                                         }
+                                        clearUniverseInteractionState();
+                                        clearHoverRelease();
                                         setLockedTooltipDeptId(p.id);
                                     }}
                                     style={{ opacity: 0.4, cursor: 'pointer', filter: 'grayscale(0.6)' }}
@@ -1228,7 +1216,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     <Planet
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                        isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
+                                        isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet}
                                         onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
                                             if (isHomeUniversePreview) {
@@ -1244,18 +1232,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <Planet
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                    isActive={hoverPlanetId === p.id || isSemanticPreviewPlanet}
+                                    isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet}
                                     onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                     onClick={() => {
                                         if (isHomeUniversePreview) {
+                                            clearUniverseInteractionState();
+                                            clearHoverRelease();
                                             setCoreMode('explore');
                                             return;
                                         }
                                         clearHoverRelease();
-                                        setHoverPlanetId(p.id);
-                                        setHeldInsightPlanetId(p.id);
-                                        setInsightPlanetId(p.id);
+                                        setHoverPlanetId(null);
+                                        setActivePlanetId(p.id);
                                         setSemanticPreviewPathId(null);
+                                        setLockedTooltipDeptId(null);
                                         navigateToDepartment(p.id);
                                     }}
                                     health={health}
@@ -1264,11 +1254,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 />
                             )}
                             {lockedTooltipDeptId === p.id && (
-                                <LockedPlanetTooltip
-                                    name={p.name}
-                                    description={(p as any).description}
-                                    onDismiss={() => setLockedTooltipDeptId(null)}
-                                />
+                                <div
+                                    className="absolute z-50"
+                                    style={{
+                                        left: `${p.x}%`,
+                                        top: `${p.y}%`,
+                                        transform: 'translate(72px, -50%)',
+                                    }}
+                                >
+                                    <LockedPlanetTooltip
+                                        name={p.name}
+                                        description={(p as any).description}
+                                        onDismiss={() => setLockedTooltipDeptId(null)}
+                                    />
+                                </div>
                             )}
                         </React.Fragment>
                     );
@@ -1336,10 +1335,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 />
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
-                                    label={isPublicDemoSurface ? 'Bereiche' : 'Organisationen'}
-                                    value={isPublicDemoSurface ? `${totalSpaceCount}` : `${companies.length}`}
+                                    label={showOrganizationAggregate ? 'Organisationen' : 'Bereiche'}
+                                    value={showOrganizationAggregate ? `${effectiveCompanyCount}` : `${totalSpaceCount}`}
                                     status="stable"
-                                    progress={Math.min((isPublicDemoSurface ? totalSpaceCount : companies.length) * 20, 100)}
+                                    progress={Math.min((showOrganizationAggregate ? effectiveCompanyCount : totalSpaceCount) * 20, 100)}
                                 />
                                 <InsightCard
                                     icon={<Zap className="w-4 h-4" />}

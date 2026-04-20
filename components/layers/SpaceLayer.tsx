@@ -2,8 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CoreFolder } from '@/lib/types/core';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
+import { useFolders } from '@/lib/queries/useFolders';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { createFolder } from '@/lib/api/orgClient';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { ArrowLeft, FolderOpen, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CreateModal } from '@/components/ui/CreateModal';
@@ -132,22 +139,14 @@ type PositionedFolder = RankedFolder & {
 };
 
 export const SpaceLayer: React.FC = () => {
-    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
-    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
-    const activeCompanyId = useMoraStore((state) => state.activeCompanyId);
-    const activeFolderId = useMoraStore((state) => state.activeFolderId);
-    const departments = useMoraStore((state) => state.departments);
-    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
-    const foldersBySpace = useMoraStore((state) => state.foldersBySpace);
-    const nodesByFolder = useMoraStore((state) => state.nodesByFolder);
-    const orbState = useMoraStore((state) => state.orbState);
-    const isLoadingFolders = useMoraStore((state) => state.isLoadingFolders);
-    const viewLevel = useMoraStore((state) => state.viewLevel);
-    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
-    const navigateToExplore = useMoraStore((state) => state.navigateToExplore);
-    const navigateToFolder = useMoraStore((state) => state.navigateToFolder);
-    const loadFoldersForSpace = useMoraStore((state) => state.loadFoldersForSpace);
-    const addFolder = useMoraStore((state) => state.addFolder);
+    const { activeSpaceId, activeDepartmentId, activeCompanyId, activeFolderId, viewLevel, navigateToDepartment, navigateToExplore, navigateToFolder } = useNavStore();
+    const nodesByFolder: Record<string, unknown[]> = {};
+    const orbState = useOrbStore((state) => state.orbState);
+
+    const queryClient = useQueryClient();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: safeSpaces = [] } = useSpaces(activeDepartmentId);
+    const { data: folders = [], isLoading: isLoadingFolders } = useFolders(activeSpaceId);
     const openPane = usePaneStore((state) => state.openPane);
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -168,11 +167,6 @@ export const SpaceLayer: React.FC = () => {
 
     const isMobileViewport = viewportWidth < 600;
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
-    const safeSpaces = useMemo(() => {
-        if (!activeDepartmentId) return [];
-        const value = spacesByDepartment[activeDepartmentId];
-        return Array.isArray(value) ? value : [];
-    }, [activeDepartmentId, spacesByDepartment]);
 
     const currentDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
@@ -183,12 +177,6 @@ export const SpaceLayer: React.FC = () => {
         () => safeSpaces.find((space) => space.id === activeSpaceId) ?? null,
         [safeSpaces, activeSpaceId]
     );
-
-    const folders = useMemo(() => {
-        if (!activeSpaceId) return [];
-        const value = foldersBySpace[activeSpaceId];
-        return Array.isArray(value) ? value : [];
-    }, [activeSpaceId, foldersBySpace]);
 
     const displaySpaceName = useCallback((name: string) => {
         const departmentName = currentDepartment?.name || '';
@@ -275,11 +263,7 @@ export const SpaceLayer: React.FC = () => {
         };
     }, [prefersReducedMotion]);
 
-    useEffect(() => {
-        if (activeSpaceId && !foldersBySpace[activeSpaceId]) {
-            void loadFoldersForSpace(activeSpaceId);
-        }
-    }, [activeSpaceId, foldersBySpace, loadFoldersForSpace]);
+    // useFolders(activeSpaceId) auto-fetches when activeSpaceId changes
 
     const rankedFolders = useMemo(() => {
         const ranked = folders.map((folder, index) => {
@@ -395,11 +379,12 @@ export const SpaceLayer: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            await addFolder({
+            await createFolder({
                 space_id: activeSpaceId,
                 name: formData.name.trim(),
                 color: formData.color,
             });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.folders(activeSpaceId) });
             setFormData({ name: '', color: FOLDER_COLORS[0].value });
             setIsCreateModalOpen(false);
         } catch (error) {
@@ -520,7 +505,7 @@ export const SpaceLayer: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
             >
                 <button
-                    onClick={() => activeSpaceId && loadFoldersForSpace(activeSpaceId)}
+                    onClick={() => activeSpaceId && void queryClient.invalidateQueries({ queryKey: ['folders', activeSpaceId] })}
                     className="rounded-full border border-white/5 bg-white/5 p-2 text-white/40 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
                     title="Ordner aktualisieren"
                     aria-label="Ordner aktualisieren"

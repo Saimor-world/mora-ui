@@ -13,9 +13,14 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { normalizeList } from '@/lib/api/http';
+import { useNavStore } from '@/lib/store/navStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 
 interface MailAttachment {
     filename: string;
@@ -43,9 +48,11 @@ interface MailPaneProps {
 export function MailPane({ id = 'mail-main' }: MailPaneProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const { activeCompanyId, loadTree } = useMoraStore();
+    const { activeCompanyId } = useNavStore();
+    const queryClient = useQueryClient();
     const pane = getPane(id);
-    const { overview, browserBridge } = useIntegrationsOverview();
+    const { overview, browserBridge, summary } = useCommunicationSurface();
+    const { mailPreview } = useCommunicationLiveData();
 
     const [mails, setMails] = useState<MailObject[]>([]);
     const [loading, setLoading] = useState(true);
@@ -68,12 +75,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
         setError(null);
         try {
             const response = await coreGet('/v3/mail/messages');
-            let fetchedMails: MailObject[] = [];
-            if (response && Array.isArray(response)) {
-                fetchedMails = response;
-            } else if (response && response.items) {
-                fetchedMails = response.items;
-            }
+            const fetchedMails = normalizeList<MailObject>(response, ['messages', 'emails', 'mail', 'items', 'data']);
             setMails(fetchedMails);
 
             // Notification Logic
@@ -85,6 +87,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             }
             prevCountRef.current = fetchedMails.length;
             initializedRef.current = true;
+            broadcastCommunicationSync('mail-fetch');
 
         } catch (err: any) {
             console.error("Failed to load mail:", err);
@@ -110,6 +113,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                 snippet: mail.snippet
             });
 
+            broadcastCommunicationSync('mail-commit');
             toast.success("In Mycelium gespeichert");
         } catch (err) {
             console.error("Save failed", err);
@@ -139,8 +143,10 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             });
 
             if (activeCompanyId) {
-                await loadTree(undefined, activeCompanyId);
+                await queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
             }
+
+            broadcastCommunicationSync('mail-to-mora');
 
         } catch (err) {
             console.error('[MailPane] Commit error:', err);
@@ -185,6 +191,10 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
             size: { width: 980, height: 740 },
         });
     };
+
+    const latestMail = mailPreview[0] ?? null;
+    const mailRequiredFields = Array.isArray(overview?.setup?.mail?.required_fields) ? overview.setup.mail.required_fields : [];
+    const showMailSetupHint = !summary.mailConfigured;
 
     return (
         <GlassPanel
@@ -247,20 +257,23 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                 <div>
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Konten & Kommunikation</div>
                                     <div className="mt-1 text-sm text-white">
-                                        {overview?.mail?.configured
-                                            ? (overview.mail.email || 'Postfach verbunden')
-                                            : overview?.capabilities?.mail_local_mode
-                                                ? 'Lokaler Mail-Modus'
-                                                : 'Noch kein Postfach verbunden'}
+                                        {summary.mailStatusLabel}
                                     </div>
                                     <div className="mt-1 text-xs text-white/50">
-                                        {browserBridge.permission === 'granted'
+                                        {summary.browserPermission === 'granted'
                                             ? 'Browser ist freigegeben und kann Signale, Mail und Kalender mittragen.'
                                             : 'Browser-Freigaben und Mail-Verbindung lassen sich direkt aus dem OS heraus vorbereiten.'}
                                     </div>
+                                    {latestMail ? (
+                                        <div className="mt-3 rounded-xl border border-white/8 bg-black/20 px-3 py-2">
+                                            <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Neueste Nachricht</div>
+                                            <div className="mt-1 text-xs text-white/82">{latestMail.subject}</div>
+                                            <div className="mt-1 truncate text-[11px] text-white/48">{latestMail.from}</div>
+                                        </div>
+                                    ) : null}
                                 </div>
                                 <div className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/55">
-                                    {overview?.mail?.configured ? 'Verbunden' : 'Vorbereitung'}
+                                    {summary.mailConfigured ? 'Verbunden' : 'Vorbereitung'}
                                 </div>
                             </div>
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -281,6 +294,26 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                     Integrationen
                                 </button>
                             </div>
+                            {showMailSetupHint ? (
+                                <div className="mt-3 rounded-xl border border-amber-400/15 bg-amber-500/[0.08] px-3 py-3">
+                                    <div className="text-[10px] uppercase tracking-[0.18em] text-amber-200/75">Mail-Setup</div>
+                                    <div className="mt-1 text-xs leading-relaxed text-amber-50/88">
+                                        {summary.mailStatusDetail}
+                                    </div>
+                                    {mailRequiredFields.length > 0 ? (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {mailRequiredFields.map((field) => (
+                                                <span
+                                                    key={field}
+                                                    className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-white/55"
+                                                >
+                                                    {field}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 )}
@@ -308,7 +341,14 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                     {!loading && !error && mails.length === 0 && !viewingMail && (
                         <div className="p-8 text-center text-white/40">
                             <Inbox className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                            <p className="text-sm">Keine Nachrichten im Posteingang</p>
+                            <p className="text-sm">
+                                {summary.mailConfigured ? 'Keine Nachrichten im Posteingang' : summary.mailStatusLabel}
+                            </p>
+                            <p className="mt-2 text-xs leading-relaxed text-white/35">
+                                {summary.mailConfigured
+                                    ? 'Das verbundene Postfach ist leer oder hat aktuell keine sichtbaren Nachrichten.'
+                                    : summary.mailStatusDetail}
+                            </p>
                         </div>
                     )}
 
@@ -474,6 +514,7 @@ export function MailPane({ id = 'mail-main' }: MailPaneProps) {
                                                 content: composeBody,
                                                 text_content: composeBody
                                             });
+                                            broadcastCommunicationSync('mail-send');
                                             toast.success("Gesendet");
                                             setComposing(false);
                                             setComposeTo("");

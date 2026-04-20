@@ -161,7 +161,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         });
         setupPane(plan);
 
-        render(<WorkSessionPane id="ws-test" />);
+        render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
             expect(screen.getByText('Bestaetigt')).toBeInTheDocument();
@@ -183,7 +183,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         });
         setupPane(plan);
 
-        render(<WorkSessionPane id="ws-test" />);
+        render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         // StepRow also renders stepStatusLabels['skipped'] = 'Uebersprungen' for each skipped
         // timeline step, so we confirm the ghost CommandReceipt label is present by checking
@@ -212,7 +212,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         });
         setupPane(plan);
 
-        render(<WorkSessionPane id="ws-test" />);
+        render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         // Allow any async effects to flush
         await waitFor(() => {
@@ -236,7 +236,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         });
         setupPane(plan);
 
-        render(<WorkSessionPane id="ws-test" />);
+        render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
             expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();
@@ -259,7 +259,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         });
         setupPane(plan);
 
-        render(<WorkSessionPane id="ws-test" />);
+        render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
             expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();
@@ -281,7 +281,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         });
         setupPane(plan);
 
-        render(<WorkSessionPane id="ws-test" />);
+        render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
             expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();

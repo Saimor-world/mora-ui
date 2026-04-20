@@ -2,7 +2,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useOrbStore } from "@/lib/store/orbStore";
 
 /**
  * MoraLivingBackground - Premium Ambient Universe
@@ -65,8 +66,8 @@ const GEO_SHAPES = [
 ] as const;
 
 export const MoraLivingBackground: React.FC = () => {
-    const orbState = useMoraStore((s) => s.orbState);
-    const viewLevel = useMoraStore((s) => s.viewLevel);
+    const orbState = useOrbStore((s) => s.orbState);
+    const viewLevel = useNavStore((s) => s.viewLevel);
     const [mounted, setMounted] = React.useState(false);
     const prefersReducedMotion = useReducedMotion();
     const [isDocumentVisible, setIsDocumentVisible] = useState(

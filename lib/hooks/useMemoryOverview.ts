@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getMemoryOverview } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
 
 export interface MemoryOverviewCounts {
     structuredFacts: number;
@@ -17,7 +17,7 @@ const ZERO: MemoryOverviewCounts = {
 };
 
 export function useMemoryOverview(manualCompanyId?: string | null): MemoryOverviewCounts {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     // Null means explicit "no company" and suppresses the fetch.
     const scopedCompanyId =
         manualCompanyId !== undefined

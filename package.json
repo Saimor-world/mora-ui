@@ -1,9 +1,9 @@
 {
   "name": "mora-ui",
-  "version": "1.5.0-beta",
+  "version": "1.0.0-prealpha.1",
   "private": true,
   "scripts": {
-    "predev": "npx kill-port 3000 3001 3003 --silent || true",
+    "predev": "node -e \"process.exit(0)\"",
     "dev": "next dev -p 3000",
     "dev:preview": "next dev -p 3003",
     "dev:core": "powershell -ExecutionPolicy Bypass -File ..\\\\scripts\\\\dev-start.ps1",
@@ -12,7 +12,7 @@
     "lint": "next lint",
     "test": "jest",
     "test:e2e": "playwright test",
-    "verify:types": "npx tsc --noEmit",
+    "verify:types": "npx tsc --noEmit -p tsconfig.verify.json",
     "verify:critical-flow": "node scripts/check-critical-flow-gate.mjs",
     "verify:mr16:smoke": "npm run verify:types && npm run verify:critical-flow && npx playwright test e2e/finder-from-l3.spec.ts"
   },

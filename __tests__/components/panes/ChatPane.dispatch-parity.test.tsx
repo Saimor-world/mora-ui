@@ -1,18 +1,14 @@
 /**
  * ChatPane.dispatch-parity.test.tsx
- *
- * TDD RED -> GREEN: after a sendMessage cycle, all three dispatch sites
- * (Site 1: fetchWorkSessionPlan success; Site 2: null fallback; Site 3: catch)
- * must include last_transition_step_id, last_transition_type, and
- * last_transition_message when the plan carries a post-decision transition.
- *
- * Without this, MoraShell cannot enter isPostDecision mode unless WorkSessionPane
- * is open and its 3s poller has fired.
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 // ── capture mocks declared before any imports ──────────────────────────────
 const mockExecuteAgenticLoop = jest.fn();
@@ -46,6 +42,7 @@ jest.mock('@/lib/api/cognitionClient', () => ({
 }));
 
 jest.mock('@/lib/api/coreClient', () => ({
+    coreGet: jest.fn().mockResolvedValue(null),
     learnInsight: jest.fn(),
     searchMemory: jest.fn().mockResolvedValue([]),
     fetchWorkSessionPlan: (...args: any[]) => mockFetchWorkSessionPlan(...args),
@@ -113,32 +110,24 @@ jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
+const STABLE_PANE = { id: 'chat-main', type: 'chat', title: 'Chat', size: { width: 900, height: 700 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {
             removePane: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(),
-            getPane: () => ({ id: 'chat-main', size: { width: 900, height: 700 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} }),
+            getPane: () => STABLE_PANE,
             updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), openPane: jest.fn(),
+            panes: [STABLE_PANE], activePaneId: 'chat-main',
         };
         return selector ? selector(store) : store;
     },
 }));
 
-const _parityMoraStore = {
-    departments: [], isStandardMode: false, activeCompanyId: 'c1',
-    activeDepartmentId: null, activeSpaceId: 's1', activeFolderId: null,
-    viewLevel: 'space', orbState: 'idle', navigateToDepartment: jest.fn(),
-};
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: Object.assign(
-        (selector?: any) => selector ? selector(_parityMoraStore) : _parityMoraStore,
-        { getState: () => _parityMoraStore },
-    ),
-}));
-
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 
-import { ChatPane } from '@/components/panes/ChatPane';
+import ChatApp from '@/apps/chat';
+
+beforeEach(resetAllStores);
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -150,13 +139,33 @@ function setupCrypto() {
     });
 }
 
+function renderPane() {
+    useNavStore.setState({
+        isStandardMode: false,
+        activeCompanyId: 'c1',
+        activeDepartmentId: null,
+        activeSpaceId: 's1',
+        activeFolderId: null,
+        viewLevel: 'space',
+        viewMode: 'workspace',
+        coreMode: 'home',
+        nameConflict: null,
+        navigateToDepartment: jest.fn(),
+    } as any);
+    (useNavStore as any).getState = () => useNavStore.getState();
+
+    useOrbStore.setState({ orbState: 'idle' } as any);
+
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.departments('c1'), []);
+    return renderWithProviders(<ChatApp paneId="chat-main" initialData={{}} />, { queryClient: qc });
+}
+
 async function sendMessageAndAwaitDispatch(text = 'erstelle eine notiz') {
-    render(<ChatPane id="chat-main" />);
+    renderPane();
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: text } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    // 'erstelle eine notiz' triggers isLikelyFileOperationIntent → executeAgenticLoop path.
-    // Wait for the async sendMessage → executeAgenticLoop → fetchWorkSessionPlan → dispatch chain.
     await waitFor(() => expect(mockDispatchWorkSessionPlan).toHaveBeenCalled(), { timeout: 3000 });
 }
 
@@ -218,7 +227,6 @@ describe('ChatPane dispatch parity — post-decision transition fields', () => {
                 },
             },
         });
-        // fetchWorkSessionPlan returns null → falls to Site 2 path
         mockFetchWorkSessionPlan.mockResolvedValueOnce(null);
 
         await sendMessageAndAwaitDispatch();
@@ -247,7 +255,6 @@ describe('ChatPane dispatch parity — post-decision transition fields', () => {
                 },
             },
         });
-        // fetchWorkSessionPlan throws → falls to Site 3 catch
         mockFetchWorkSessionPlan.mockRejectedValueOnce(new Error('Network failure'));
 
         await sendMessageAndAwaitDispatch();

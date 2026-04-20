@@ -6,7 +6,8 @@ import { Brain, ChevronLeft, ChevronRight, Search, Check, Clock, AlertCircle, Li
 import { create } from 'zustand';
 import { useMemory } from '@/lib/hooks/useMemory';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import {
     searchMemory,
@@ -600,8 +601,8 @@ const DiagnosticsPanel: React.FC<{
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const MemorySidebar: React.FC = () => {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const user = useMoraStore((s) => (s as any).user);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const user = useSessionStore((s) => s.user);
     const resolvedCompanyId = activeCompanyId ?? null;
     const surfaceProfile = useSurfaceProfile();
     const mod = usePlatformModifier();

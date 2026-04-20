@@ -1,6 +1,10 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const mockUpdatePanePosition = jest.fn();
 const mockUpdatePaneSize = jest.fn();
@@ -17,6 +21,21 @@ const mockRejectCreateNodeFromFile = jest.fn();
 const mockFetchFoldersByCompany = jest.fn();
 const mockFetchFolderContext = jest.fn();
 
+const STABLE_PANE = {
+    id: 'scanner-main',
+    size: { width: 920, height: 640 },
+    position: { x: 100, y: 80 },
+    zIndex: 10,
+    data: {
+        source: 'mycelium',
+        batchId: 'batch-1',
+        initialFiles: [
+            new File(['one'], 'brief-one.pdf', { type: 'application/pdf' }),
+            new File(['two'], 'brief-two.pdf', { type: 'application/pdf' }),
+        ],
+    },
+};
+
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {
@@ -26,30 +45,10 @@ jest.mock('@/lib/store/paneStore', () => ({
             updatePanePosition: mockUpdatePanePosition,
             updatePaneSize: mockUpdatePaneSize,
             activePaneId: 'scanner-main',
-            getPane: () => ({
-                id: 'scanner-main',
-                size: { width: 920, height: 640 },
-                position: { x: 100, y: 80 },
-                zIndex: 10,
-                data: {
-                    source: 'mycelium',
-                    batchId: 'batch-1',
-                    initialFiles: [
-                        new File(['one'], 'brief-one.pdf', { type: 'application/pdf' }),
-                        new File(['two'], 'brief-two.pdf', { type: 'application/pdf' }),
-                    ],
-                },
-            }),
+            getPane: () => STABLE_PANE,
         };
         return selector ? selector(store) : store;
     },
-}));
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: () => ({
-        activeCompanyId: 'company-1',
-        user: { settings: { autoExecuteActions: false } },
-    }),
 }));
 
 jest.mock('@/components/layers/GlassPanel', () => ({
@@ -103,6 +102,8 @@ jest.mock('@/components/content/VisibilityModal', () => ({
 }));
 
 import { ScannerPane } from '@/components/panes/ScannerPane';
+
+beforeEach(resetAllStores);
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -163,11 +164,36 @@ beforeEach(() => {
                 target_space_name: 'Kampagnen',
             },
         });
+
+    useNavStore.setState({
+        activeCompanyId: 'company-1',
+        activeDepartmentId: null,
+        activeSpaceId: null,
+        activeFolderId: null,
+        viewLevel: 'core',
+        viewMode: 'workspace',
+        coreMode: 'home',
+        isStandardMode: false,
+        nameConflict: null,
+    } as any);
+
+    useSessionStore.setState({
+        user: { id: 'u-1', role: 'admin', settings: { autoExecuteActions: false } },
+        permissions: { canCreate: true, canDelete: true, canAdmin: true, canEditSettings: true, canViewAnalytics: true },
+        hasBooted: true,
+        isLoggingOut: false,
+    } as any);
 });
+
+function renderPane() {
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.companies(), [{ id: 'company-1', name: 'Test Corp' }]);
+    return renderWithProviders(<ScannerPane id="scanner-main" data={STABLE_PANE.data} />, { queryClient: qc });
+}
 
 describe('ScannerPane batch review', () => {
     test('queues multiple pending reviews and advances after confirmation/rejection', async () => {
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
 
         expect(await screen.findByText(/Mycelium Intake/i)).toBeInTheDocument();
 
@@ -211,7 +237,7 @@ describe('ScannerPane batch review', () => {
     });
 
     test('bulk confirm processes the whole review queue', async () => {
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
 
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
         await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
@@ -230,7 +256,7 @@ describe('ScannerPane batch review', () => {
     });
 
     test('allows correcting the target folder before confirmation', async () => {
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
 
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
         await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());

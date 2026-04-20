@@ -24,7 +24,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Store
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { authLogout } from '@/lib/api/coreClient';
@@ -257,20 +260,17 @@ export const MoraShell: React.FC = () => {
     // Auth
     const { isBootstrapped, authError } = useAuthBootstrapper();
 
-    // Store
-    const {
-        user,
-        // setCursorAgent, cursorAgent — 1.0 gated with CursorAgent component
-        viewMode,
-        viewLevel,
-        coreMode,
-        orbState: storeOrbState,
-        orbNotifications,
-        activeCompanyId,
-        companies,
-        resetStore,
-        isLoggingOut
-    } = useMoraStore();
+    // Store — migrated to new stores
+    const user = useSessionStore((s) => s.user);
+    const resetStore = useSessionStore((s) => s.resetStore);
+    const isLoggingOut = useSessionStore((s) => s.isLoggingOut);
+    const viewMode = useNavStore((s) => s.viewMode);
+    const viewLevel = useNavStore((s) => s.viewLevel);
+    const coreMode = useNavStore((s) => s.coreMode);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const storeOrbState = useOrbStore((s) => s.orbState);
+    const { data: companiesData = [] } = useCompanies();
+    const companies = companiesData;
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
@@ -284,8 +284,20 @@ export const MoraShell: React.FC = () => {
     const surfaceProfile = useSurfaceProfile();
     const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface;
 
+    const preferredLocalCompany = React.useMemo(() => {
+        if (!surfaceProfile.isLocalTruthSurface || !safeCompanies.length) return null;
+
+        return safeCompanies.find((company) => !company.is_demo && company.tenant_id === TENANT_HQ)
+            || safeCompanies.find((company) => !company.is_demo)
+            || safeCompanies[0]
+            || null;
+    }, [safeCompanies, surfaceProfile.isLocalTruthSurface]);
+
     const filteredCompanies = React.useMemo(() => {
         if (!safeCompanies.length) return [];
+        if (surfaceProfile.isLocalTruthSurface) {
+            return preferredLocalCompany ? [preferredLocalCompany] : [];
+        }
         if (isPublicDemoSurface) {
             const demoCompanies = safeCompanies.filter((c) => c.is_demo);
             return demoCompanies.length ? demoCompanies : safeCompanies;
@@ -304,7 +316,7 @@ export const MoraShell: React.FC = () => {
         }
         if (role === 'system_owner') return safeCompanies;
         return tenantId ? safeCompanies.filter((c) => c.tenant_id === tenantId) : safeCompanies;
-    }, [safeCompanies, viewMode, role, tenantId, isPublicDemoSurface]);
+    }, [safeCompanies, viewMode, role, tenantId, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface, preferredLocalCompany]);
 
     const activeCompanyForView = React.useMemo(() => {
         if (filteredCompanies.length === 0) return activeCompany;
@@ -317,11 +329,14 @@ export const MoraShell: React.FC = () => {
         if (isPublicDemoSurface) {
             return hasDemoCompany ? ['demo'] : ['workspace'];
         }
+        if (surfaceProfile.isLocalTruthSurface) {
+            return ['workspace'];
+        }
         if (role === 'system_owner') {
             return hasDemoCompany ? ['owner', 'workspace', 'demo'] : ['owner', 'workspace'];
         }
         return hasDemoCompany ? ['workspace', 'demo'] : ['workspace'];
-    }, [role, hasDemoCompany, isPublicDemoSurface]);
+    }, [role, hasDemoCompany, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface]);
     const scopeLabel = React.useMemo(() => {
         if (viewLevel === 'company') return 'Portfolio';
         if (viewLevel === 'core') return 'Universe';
@@ -334,8 +349,20 @@ export const MoraShell: React.FC = () => {
 
     useEffect(() => {
         if (!isPublicDemoSurface || !hasDemoCompany || viewMode === 'demo') return;
-        useMoraStore.getState().setViewMode('demo');
+        useNavStore.getState().setViewMode('demo');
     }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
+
+    useEffect(() => {
+        if (!surfaceProfile.isLocalTruthSurface || !safeCompanies.length) return;
+
+        if (viewMode !== 'workspace') {
+            useNavStore.getState().setViewMode('workspace');
+        }
+
+        if (preferredLocalCompany && activeCompanyId !== preferredLocalCompany.id) {
+            useNavStore.getState().setActiveCompany(preferredLocalCompany.id);
+        }
+    }, [activeCompanyId, preferredLocalCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface, viewMode]);
 
     useEffect(() => {
         if (isPublicDemoSurface && isAdminMode) {
@@ -505,7 +532,7 @@ export const MoraShell: React.FC = () => {
         }, [openPane]),
         // 1.0 gated: Terminal, MoraHub, Memory shortcuts disabled (future-tier)
         onGoHome: useCallback(() => {
-            useMoraStore.getState().navigateToCore();
+            useNavStore.getState().navigateToCore();
         }, []),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();
@@ -704,11 +731,11 @@ export const MoraShell: React.FC = () => {
                 <UniverseControls
                     viewMode={viewMode}
                     setViewMode={(mode) => {
-                        useMoraStore.getState().setViewMode(mode);
+                        useNavStore.getState().setViewMode(mode);
                     }}
                     activeCompany={displayCompany}
                     companies={filteredCompanies}
-                    onSwitchCompany={(id) => useMoraStore.getState().setActiveCompany(id)}
+                    onSwitchCompany={(id) => useNavStore.getState().setActiveCompany(id)}
                     visibleModes={visibleModes}
                     workspaceLabel={workspaceTabLabel}
                     scopeLabel={scopeLabel}

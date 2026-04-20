@@ -1,13 +1,11 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { ActionTray } from '@/components/os/ActionTray';
+import { renderWithProviders, resetAllStores } from '../../test-utils';
+
 const openPane = jest.fn();
 
-jest.mock('@/lib/store/moraState', () => ({
-  useMoraStore: (selector: (state: { isStandardMode: boolean }) => unknown) =>
-    selector({ isStandardMode: false }),
-}));
-
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
   usePaneStore: (selector: (state: { openPane: typeof openPane }) => unknown) =>
     selector({ openPane }),
@@ -20,6 +18,8 @@ jest.mock('@/lib/hooks/useActionEvents', () => ({
 const { useActionEvents } = jest.requireMock('@/lib/hooks/useActionEvents') as {
   useActionEvents: jest.Mock;
 };
+
+beforeEach(resetAllStores);
 
 describe('ActionTray', () => {
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('ActionTray', () => {
       error: null,
     });
 
-    render(<ActionTray />);
+    renderWithProviders(<ActionTray />);
 
     fireEvent.click(screen.getByTitle('Action tray'));
 
@@ -76,7 +76,7 @@ describe('ActionTray', () => {
       error: null,
     });
 
-    render(<ActionTray />);
+    renderWithProviders(<ActionTray />);
 
     fireEvent.click(screen.getByTitle('Action tray'));
 
@@ -107,7 +107,7 @@ describe('ActionTray', () => {
       error: null,
     });
 
-    render(<ActionTray />);
+    renderWithProviders(<ActionTray />);
     fireEvent.click(screen.getByTitle('Action tray'));
     fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
 
@@ -127,7 +127,7 @@ describe('ActionTray', () => {
       error: null,
     });
 
-    render(<ActionTray />);
+    renderWithProviders(<ActionTray />);
     fireEvent.click(screen.getByTitle('Action tray'));
     fireEvent.click(screen.getByRole('button', { name: /Im Action Center/i }));
 

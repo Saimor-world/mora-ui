@@ -2,7 +2,10 @@
 
 import React, { useState } from 'react';
 import { updateDepartmentVisibility } from '@/lib/api/coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 type Visibility = 'public' | 'visible' | 'private';
 
@@ -12,7 +15,9 @@ type Visibility = 'public' | 'visible' | 'private';
  * Default for new departments: Private.
  */
 export const DepartmentVisibilityEditor: React.FC = () => {
-    const departments = useMoraStore((s) => s.departments ?? []);
+    const { activeCompanyId } = useNavStore();
+    const queryClient = useQueryClient();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [saving, setSaving] = useState<Record<string, boolean>>({});
 
@@ -27,12 +32,7 @@ export const DepartmentVisibilityEditor: React.FC = () => {
             setErrors((prev) => ({ ...prev, [deptId]: 'Speichern fehlgeschlagen.' }));
             return;
         }
-        const currentDepts = useMoraStore.getState().departments ?? [];
-        useMoraStore.setState({
-            departments: currentDepts.map((d) =>
-                d.id === deptId ? { ...d, visibility } : d
-            ),
-        });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.departments(activeCompanyId) });
     };
 
     if (departments.length === 0) {

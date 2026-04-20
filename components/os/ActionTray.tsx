@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, CheckCircle2, ChevronDown, Clock3, FolderOpen, Loader2, PlayCircle, Search, ShieldAlert, XCircle } from 'lucide-react';
 import { useActionEvents, type ActionStatus } from '@/lib/hooks/useActionEvents';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { NAVIGATION_ACTION_INTENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 
@@ -228,7 +228,7 @@ function buildExpandedDetails(evt: ActionEventLike): string[] {
 }
 
 export const ActionTray: React.FC = () => {
-    const isStandardMode = useMoraStore((s) => s.isStandardMode);
+    const isStandardMode = useNavStore((s) => s.isStandardMode);
     const openPane = usePaneStore((s) => s.openPane);
     const [isOpen, setIsOpen] = useState(false);
     const [filter, setFilter] = useState<TrayFilter>('all');

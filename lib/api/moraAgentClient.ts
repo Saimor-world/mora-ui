@@ -1,5 +1,5 @@
 import { corePost, coreGet } from './coreClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 // Types matching Backend Schema
@@ -74,17 +74,17 @@ function mergeChatContext(...parts: Array<ChatContext | undefined>): ChatContext
 }
 
 export function buildChatContext(overrides?: ChatContext): ChatContext | undefined {
-    const state = useMoraStore.getState();
+    const navState = useNavStore.getState();
     const routePath = typeof window !== 'undefined'
         ? `${window.location.pathname}${window.location.search ?? ''}`
         : undefined;
-    const viewLevel = state.viewLevel || undefined;
+    const viewLevel = navState.viewLevel || undefined;
     return mergeChatContext(
         {
-            company_id: state.activeCompanyId || undefined,
-            department_id: state.activeDepartmentId || undefined,
-            space_id: state.activeSpaceId || undefined,
-            folder_id: state.activeFolderId || undefined,
+            company_id: navState.activeCompanyId || undefined,
+            department_id: navState.activeDepartmentId || undefined,
+            space_id: navState.activeSpaceId || undefined,
+            folder_id: navState.activeFolderId || undefined,
             node_id: (() => {
                 const ps = usePaneStore.getState();
                 if (!ps.activePaneId) return undefined;

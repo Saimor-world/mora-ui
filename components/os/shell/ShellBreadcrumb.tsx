@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useSpaces } from '@/lib/queries/useSpaces';
 
 /**
  * ShellBreadcrumb — deep-location anchor for folder work only.
@@ -12,20 +14,21 @@ import { useMoraStore } from '@/lib/store/moraState';
  * still useful while panes and overlays are open.
  */
 export const ShellBreadcrumb: React.FC = () => {
-    const viewLevel = useMoraStore((state) => state.viewLevel);
-    const activeDepartmentId = useMoraStore((state) => state.activeDepartmentId);
-    const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
-    const departments = useMoraStore((state) => state.departments);
-    const spacesByDepartment = useMoraStore((state) => state.spacesByDepartment);
-    const navigateToExplore = useMoraStore((state) => state.navigateToExplore);
-    const navigateToDepartment = useMoraStore((state) => state.navigateToDepartment);
-    const navigateToSpace = useMoraStore((state) => state.navigateToSpace);
+    const viewLevel = useNavStore((state) => state.viewLevel);
+    const activeDepartmentId = useNavStore((state) => state.activeDepartmentId);
+    const activeSpaceId = useNavStore((state) => state.activeSpaceId);
+    const activeCompanyId = useNavStore((state) => state.activeCompanyId);
+    const navigateToExplore = useNavStore((state) => state.navigateToExplore);
+    const navigateToDepartment = useNavStore((state) => state.navigateToDepartment);
+    const navigateToSpace = useNavStore((state) => state.navigateToSpace);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: spaces = [] } = useSpaces(activeDepartmentId);
 
     if (viewLevel !== 'folder') return null;
 
-    const dept = departments?.find((department) => department.id === activeDepartmentId) ?? null;
+    const dept = departments.find((department) => department.id === activeDepartmentId) ?? null;
     const space = activeSpaceId && dept
-        ? (spacesByDepartment?.[dept.id] ?? []).find((entry) => entry.id === activeSpaceId) ?? null
+        ? spaces.find((entry) => entry.id === activeSpaceId) ?? null
         : null;
 
     return (

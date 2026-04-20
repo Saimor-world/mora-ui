@@ -1,14 +1,16 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
-import { corePost } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
 import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
-import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 import { toast } from 'sonner';
+import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 
 interface MailOverview {
     configured?: boolean;
@@ -54,8 +56,72 @@ interface IntegrationsOverview {
             configured_model?: string;
             recommended_model?: string;
             ollama_api_url?: string;
+            contract_version?: string;
+            mode?: string;
+            state?: string;
+            action_endpoint_template?: string;
+            supported_actions?: string[];
             startup_script?: string;
+            startup_scripts?: {
+                windows?: string;
+                linux?: string;
+            };
             startup_command?: string;
+            startup_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            ui_start_command?: string;
+            ui_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            core_start_command?: string;
+            core_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            platform_notes?: {
+                windows?: string;
+                linux?: string;
+            };
+            services?: {
+                ui?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
+                    supported_actions?: string[];
+                };
+                core?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
+                    supported_actions?: string[];
+                };
+                assistant?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                    available?: boolean;
+                    configured_model?: string;
+                    error?: string;
+                    supported_actions?: string[];
+                };
+            };
             routing_profile?: string;
             available?: boolean;
         };
@@ -80,7 +146,41 @@ interface IntegrationsOverview {
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
+    setup?: {
+        mail?: {
+            mode?: string;
+            detail?: string;
+            required_fields?: string[];
+            optional_fields?: string[];
+            provider_options?: string[];
+        };
+        calendar?: {
+            mode?: string;
+            configured?: boolean;
+            required_env?: string[];
+            missing_env?: string[];
+            redirect_url?: string;
+            provider?: string;
+        };
+    };
 }
+
+type RuntimePlatform = 'windows' | 'linux';
+type RuntimeJob = {
+    job_id: string;
+    service_id?: string;
+    action?: string;
+    status?: string;
+    accepted_at?: string;
+    started_at?: string | null;
+    finished_at?: string | null;
+    error?: string | null;
+};
+
+const DEFAULT_LOCAL_TRUTH_COMMANDS: Record<RuntimePlatform, string> = {
+    windows: 'Set-Location C:\\saimor; .\\scripts\\Start-LocalTruth.ps1 -ForceRestart',
+    linux: 'bash ./scripts/start-local-truth.sh --force-restart',
+};
 
 const statusTone = (status?: string) => {
     switch (status) {
@@ -126,6 +226,21 @@ const humanizeIntegrationStatus = (status?: string) => {
     }
 };
 
+const humanizeRuntimeState = (state?: string) => {
+    switch (state) {
+        case 'ready':
+            return 'Bereit';
+        case 'degraded':
+            return 'Eingeschraenkt';
+        case 'partial':
+            return 'Teilweise bereit';
+        case 'offline':
+            return 'Offline';
+        default:
+            return 'Unbekannt';
+    }
+};
+
 const buildAssistantDescription = (assistant?: AssistantOverview) => {
     if (!assistant) return 'Provider-Status wird geladen.';
     if (assistant.status === 'available') {
@@ -148,7 +263,7 @@ const buildMailDescription = (overview?: IntegrationsOverview) => {
     const mail = overview?.mail;
     const caps = overview?.capabilities;
     if (!mail) return 'Mail-Status wird geladen.';
-    if (mail.status === 'owner_only' || mail.status === 'forbidden_demo') {
+    if (mail.status === 'forbidden_demo') {
         return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
     }
     if (mail.status === 'local' || caps?.mail_local_mode) {
@@ -157,18 +272,22 @@ const buildMailDescription = (overview?: IntegrationsOverview) => {
     if (mail.configured) {
         return mail.email ? `Verbunden mit ${mail.email}.` : 'Postfach ist eingerichtet.';
     }
-    return 'Noch keine Mail-Verbindung eingerichtet.';
+    return overview?.setup?.mail?.detail || 'Noch keine Mail-Verbindung eingerichtet. Hinterlege Provider, E-Mail und App-Passwort im Integrationsbereich.';
 };
 
 const buildCalendarDescription = (overview?: IntegrationsOverview) => {
     const calendar = overview?.calendar;
     const caps = overview?.capabilities;
     if (!calendar) return 'Kalender-Status wird geladen.';
-    if (calendar.status === 'owner_only') {
-        return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
-    }
     if (!caps?.calendar_oauth_enabled) {
-        return 'Kalender-OAuth ist serverseitig noch nicht aktiviert.';
+        const missing = overview?.setup?.calendar?.missing_env || [];
+        const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v1/auth/google/callback';
+        const ownerManageable = Boolean(caps?.owner_manageable);
+        return !ownerManageable
+            ? `Google-OAuth muss tenantweit zuerst von einem Eigentuemer eingerichtet werden. Redirect: ${redirect}.`
+            : missing.length > 0
+            ? `Kalender-OAuth ist serverseitig noch nicht aktiviert. Es fehlen ${missing.join(' / ')}. Redirect: ${redirect}.`
+            : `Kalender-OAuth ist serverseitig noch nicht aktiviert. Redirect: ${redirect}.`;
     }
     if (calendar.configured) {
         return calendar.email ? `Verbunden mit ${calendar.email}.` : 'Kalender ist eingerichtet.';
@@ -182,7 +301,8 @@ const SummaryCard: React.FC<{
     status?: string;
     description: string;
     meta?: string | null;
-}> = ({ icon, title, status, description, meta }) => (
+    detail?: string | null;
+}> = ({ icon, title, status, description, meta, detail }) => (
     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <div className="mb-3 flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -199,6 +319,7 @@ const SummaryCard: React.FC<{
             </span>
         </div>
         <p className="text-xs leading-relaxed text-white/65">{description}</p>
+        {detail ? <p className="mt-3 text-[11px] text-white/42">{detail}</p> : null}
     </div>
 );
 
@@ -215,29 +336,32 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         browserBridge,
         loadOverview,
         refreshBrowserBridge,
-    } = useIntegrationsOverview();
-    const localTruthBridge = useLocalTruthBridge(overview);
+        localTruthBridge,
+        summary,
+    } = useCommunicationSurface();
+    const { mailPreview, calendarPreview } = useCommunicationLiveData();
+    const runtimeSession = useRuntimeSession();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
-
-    const ownerBlocked = useMemo(() => {
-        const mailBlocked = overview?.mail?.status === 'owner_only' || overview?.mail?.status === 'forbidden_demo';
-        const calendarBlocked = overview?.calendar?.status === 'owner_only';
-        return Boolean(mailBlocked && calendarBlocked);
-    }, [overview]);
+    const [runtimeActionKey, setRuntimeActionKey] = useState<string | null>(null);
+    const [runtimeJobs, setRuntimeJobs] = useState<RuntimeJob[]>([]);
 
     const assistantProviders = useMemo(
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
         [overview]
     );
-
-    const browserPermissionLabel = browserBridge.permission === 'granted'
-        ? 'Aktiv'
-        : browserBridge.permission === 'denied'
-            ? 'Blockiert'
-            : browserBridge.permission === 'default'
-                ? 'Noch nicht freigegeben'
-                : 'Nicht verfuegbar';
+    const localTruthStartupCommands = useMemo(() => {
+        const commands = overview?.runtime?.local_truth?.startup_commands;
+        return {
+            windows: commands?.windows || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.windows,
+            linux: commands?.linux || DEFAULT_LOCAL_TRUTH_COMMANDS.linux,
+        };
+    }, [overview]);
+    const runtimeServices = overview?.runtime?.local_truth?.services;
+    const runtimeRole = runtimeSession.data?.user?.role;
+    const canControlRuntime = runtimeRole === 'system_owner';
+    const latestMail = mailPreview[0] ?? null;
+    const nextEvent = calendarPreview[0] ?? null;
 
     const requestBrowserNotifications = useCallback(async () => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
@@ -305,40 +429,99 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
 
     const openLocalTruthSurface = useCallback(() => {
         if (typeof window === 'undefined') return;
-        const url = localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home';
+        const url = summary.localTruthUrl;
         window.open(url, '_blank', 'noopener,noreferrer');
-    }, [localTruthBridge.selectedUiUrl, overview]);
+    }, [summary.localTruthUrl]);
 
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
         try {
-            const res = await corePost('/v3/integrations/calendar/connect', {});
+            const res = await corePost('/v3/integrations/calendar/connect', {
+                return_to: getCalendarOAuthReturnTo(),
+            });
             const authUrl = res?.auth_url;
             if (!authUrl) {
                 toast.error('Google-Kalender-Verbindung ist noch nicht sauber konfiguriert');
                 return;
             }
             if (typeof window !== 'undefined') {
-                window.open(authUrl, '_blank', 'noopener,noreferrer');
+                const result = await openCalendarOAuthPopup(authUrl);
+                if (result.ok) {
+                    toast.success('Kalender verbunden');
+                    await loadOverview();
+                } else if (result.reason === 'blocked') {
+                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                } else if (result.reason !== 'closed') {
+                    toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
+                }
             }
-            toast.success('Google-Weiterleitung geoeffnet');
         } catch (err: any) {
             toast.error(err?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
         } finally {
             setIsConnectingCalendar(false);
         }
-    }, []);
+    }, [loadOverview]);
 
-    const copyGemmaCommand = useCallback(async () => {
-        const command = overview?.runtime?.local_truth?.startup_command
-            || 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1';
+    const copyRuntimeCommand = useCallback(async (platform: RuntimePlatform) => {
         try {
-            await navigator.clipboard.writeText(command);
-            toast.success('Gemma-Startbefehl kopiert');
+            await navigator.clipboard.writeText(localTruthStartupCommands[platform]);
+            toast.success(`Startbefehl fuer ${platform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
         } catch {
             toast.error('Befehl konnte nicht kopiert werden');
         }
-    }, [overview]);
+    }, [localTruthStartupCommands]);
+
+    const loadRuntimeJobs = useCallback(async () => {
+        if (!canControlRuntime) {
+            setRuntimeJobs([]);
+            return;
+        }
+        try {
+            const payload = await coreGet(overview?.runtime?.local_truth?.jobs_endpoint || '/v3/system/runtime/jobs', { isOptional: true });
+            const items = Array.isArray(payload?.items) ? payload.items : [];
+            setRuntimeJobs(items.slice(0, 6));
+        } catch {
+            setRuntimeJobs([]);
+        }
+    }, [canControlRuntime, overview?.runtime?.local_truth?.jobs_endpoint]);
+
+    const runRuntimeAction = useCallback(async (serviceId: 'local_truth' | 'ui' | 'core', action: 'start' | 'stop' | 'restart') => {
+        const actionKey = `${serviceId}:${action}`;
+        setRuntimeActionKey(actionKey);
+        try {
+            const result = await corePost(`/v3/system/runtime/actions/${serviceId}`, { action });
+            if (!result?.accepted) {
+                toast.error('Runtime-Aktion wurde nicht angenommen');
+                return;
+            }
+            toast.success(`${serviceId} -> ${action} wurde eingereiht`);
+            await loadOverview();
+            await loadRuntimeJobs();
+            if (typeof window !== 'undefined') {
+                window.setTimeout(() => {
+                    void loadOverview();
+                    void localTruthBridge.refresh();
+                    void loadRuntimeJobs();
+                }, 1800);
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Runtime-Aktion konnte nicht gestartet werden');
+        } finally {
+            setRuntimeActionKey(null);
+        }
+    }, [loadOverview, loadRuntimeJobs, localTruthBridge]);
+
+    useEffect(() => {
+        void loadRuntimeJobs();
+    }, [loadRuntimeJobs]);
+
+    useEffect(() => {
+        if (!canControlRuntime || runtimeActionKey === null) return;
+        const timer = window.setInterval(() => {
+            void loadRuntimeJobs();
+        }, 1500);
+        return () => window.clearInterval(timer);
+    }, [canControlRuntime, runtimeActionKey, loadRuntimeJobs]);
 
     if (!pane) return null;
 
@@ -461,7 +644,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             </div>
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'degraded' : 'not_configured')}`}>
-                                                {browserPermissionLabel}
+                                                {summary.browserStatusLabel}
                                             </span>
                                         </div>
                                         <p className="text-xs leading-relaxed text-white/60">
@@ -511,15 +694,6 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 <Mail size={14} />
                                                 Post oeffnen
                                             </button>
-                                            {ownerBlocked ? (
-                                                <button
-                                                    onClick={openOwnerConsole}
-                                                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
-                                                >
-                                                    <ExternalLink size={14} />
-                                                    Owner Console
-                                                </button>
-                                            ) : null}
                                         </div>
                                     </div>
 
@@ -576,15 +750,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                         ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
                                                         : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
-                                                {localTruthBridge.state === 'ready'
-                                                    ? 'Bereit'
-                                                    : localTruthBridge.state === 'core_only'
-                                                        ? 'Core bereit'
-                                                        : localTruthBridge.state === 'ui_only'
-                                                            ? 'UI bereit'
-                                                            : localTruthBridge.state === 'checking'
-                                                                ? 'Prueft'
-                                                                : 'Noch nicht da'}
+                                                {summary.localTruthStatusLabel}
                                             </span>
                                         </div>
                                         <p className="text-xs leading-relaxed text-white/60">
@@ -592,7 +758,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 || 'Hier wird geprueft, ob lokale UI und lokaler Core fuer echte Konten und echte Integrationen erreichbar sind.'}
                                         </p>
                                         <div className="mt-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] text-white/55">
-                                            UI: <span className="text-white/78">{localTruthBridge.selectedUiUrl || overview?.runtime?.surfaces?.local_truth || 'http://127.0.0.1:3000/home'}</span>
+                                            UI: <span className="text-white/78">{summary.localTruthUrl}</span>
                                             <br />
                                             Core: <span className="text-white/78">{localTruthBridge.selectedCoreUrl || overview?.runtime?.local_truth?.core_candidates?.[0] || 'http://127.0.0.1:8081/v3/health'}</span>
                                         </div>
@@ -640,27 +806,127 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 </div>
                                             </div>
                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
-                                                overview?.runtime?.local_truth?.available
+                                                overview?.runtime?.local_truth?.state === 'ready'
                                                     ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
-                                                    : 'border-white/10 bg-white/[0.04] text-white/60'
+                                                    : overview?.runtime?.local_truth?.state === 'degraded' || overview?.runtime?.local_truth?.state === 'partial'
+                                                        ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                        : 'border-white/10 bg-white/[0.04] text-white/60'
                                             }`}>
-                                                {overview?.runtime?.local_truth?.available ? 'Bereit' : 'Vorbereitet'}
+                                                {humanizeRuntimeState(overview?.runtime?.local_truth?.state)}
                                             </span>
                                         </div>
                                         <p className="mt-4 text-xs leading-relaxed text-white/60">
                                             Verwende lokal <span className="text-cyan-100">{overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}</span> fuer schnellen privaten Betrieb.
                                             Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
                                         </p>
-                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            {overview?.runtime?.local_truth?.startup_command || 'cd C:\\saimor\\saimor-core; $env:OLLAMA_MODEL="gemma4:e2b"; .\\scripts\\Start-Core-Gemma.ps1'}
+                                        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                UI: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.ui?.status)}</span>
+                                            </div>
+                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                Core: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.core?.status)}</span>
+                                            </div>
+                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                Assistant: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.assistant?.status)}</span>
+                                            </div>
                                         </div>
+                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
+                                            <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/40">Windows Host</div>
+                                            {localTruthStartupCommands.windows}
+                                        </div>
+                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
+                                            <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/40">Linux Host</div>
+                                            {localTruthStartupCommands.linux}
+                                        </div>
+                                        <p className="mt-2 text-[11px] text-white/45">
+                                            SAIMOR nutzt denselben Runtime-Vertrag auf beiden Host-Systemen: gleicher Core, gleiche UI, gleiche Dienste. Unterschiedlich sind nur die Host-Launcher.
+                                        </p>
+                                        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                                            {[
+                                                {
+                                                    serviceId: 'local_truth' as const,
+                                                    title: 'Local Truth',
+                                                    state: overview?.runtime?.local_truth?.state,
+                                                    supportedActions: overview?.runtime?.local_truth?.supported_actions || [],
+                                                },
+                                                {
+                                                    serviceId: 'ui' as const,
+                                                    title: 'UI',
+                                                    state: runtimeServices?.ui?.status,
+                                                    supportedActions: runtimeServices?.ui?.supported_actions || [],
+                                                },
+                                                {
+                                                    serviceId: 'core' as const,
+                                                    title: 'Core',
+                                                    state: runtimeServices?.core?.status,
+                                                    supportedActions: runtimeServices?.core?.supported_actions || [],
+                                                },
+                                            ].map((service) => (
+                                                <div key={service.serviceId} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div>
+                                                            <div className="text-xs font-medium text-white">{service.title}</div>
+                                                    <div className="mt-1 text-[11px] text-white/45">{humanizeRuntimeState(service.state)}</div>
+                                                            {'process_count' in service && typeof (service as any).process_count === 'number' ? (
+                                                                <div className="mt-1 text-[10px] text-white/35">
+                                                                    Prozesse: {(service as any).process_count}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                        <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${
+                                                            service.state === 'ready'
+                                                                ? 'border-emerald-400/20 bg-emerald-500/12 text-emerald-100'
+                                                                : service.state === 'degraded' || service.state === 'partial'
+                                                                    ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                                    : 'border-white/10 bg-white/[0.04] text-white/60'
+                                                        }`}>
+                                                            {humanizeRuntimeState(service.state)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-3 flex flex-wrap gap-2">
+                                                        {(['start', 'stop', 'restart'] as const)
+                                                            .filter((action) => service.supportedActions.includes(action))
+                                                            .map((action) => {
+                                                                const actionKey = `${service.serviceId}:${action}`;
+                                                                return (
+                                                                    <button
+                                                                        key={action}
+                                                                        onClick={() => void runRuntimeAction(service.serviceId, action)}
+                                                                        disabled={!canControlRuntime || runtimeActionKey !== null}
+                                                                        className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] text-white/75 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+                                                                    >
+                                                                        {runtimeActionKey === actionKey ? 'Laeuft...' : action}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                    </div>
+                                                    {'pids' in service && Array.isArray((service as any).pids) && (service as any).pids.length > 0 ? (
+                                                        <div className="mt-2 text-[10px] text-white/35">
+                                                            PID: {(service as any).pids.join(', ')}
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="mt-3 text-[11px] text-white/45">
+                                            {canControlRuntime
+                                                ? 'Als System-Eigentuemer kannst du die lokale Runtime jetzt direkt aus dem OS starten, stoppen und neu anstoen.'
+                                                : 'Runtime-Aktionen sind bewusst nur fuer den System-Eigentuemer freigegeben.'}
+                                        </p>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
-                                                onClick={copyGemmaCommand}
+                                                onClick={() => void copyRuntimeCommand('windows')}
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
                                             >
                                                 <Copy size={14} />
-                                                Startbefehl kopieren
+                                                Windows kopieren
+                                            </button>
+                                            <button
+                                                onClick={() => void copyRuntimeCommand('linux')}
+                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
+                                            >
+                                                <Copy size={14} />
+                                                Linux kopieren
                                             </button>
                                             <button
                                                 onClick={openOperationsControl}
@@ -687,8 +953,38 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control'}</span> ist der operative Runtime- und Integrationsleitstand.</p>
                                         </div>
                                         <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[11px] text-white/55">
-                                            <div>Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
+                                            <div>Runtime: <span className="text-white/78">{overview?.runtime?.local_truth?.state || 'unknown'}</span></div>
+                                            <div className="mt-1">Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
                                             <div className="mt-1">Letzte Pruefung: <span className="text-white/78">{localTruthBridge.lastCheckedAt || 'noch keine'}</span></div>
+                                        </div>
+                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3">
+                                            <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Runtime Jobs</div>
+                                            <div className="mt-3 space-y-2">
+                                                {canControlRuntime ? runtimeJobs.length > 0 ? runtimeJobs.map((job) => (
+                                                    <div key={job.job_id} className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-white/80">{job.service_id} · {job.action}</span>
+                                                            <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${
+                                                                job.status === 'succeeded'
+                                                                    ? 'border-emerald-400/20 bg-emerald-500/12 text-emerald-100'
+                                                                    : job.status === 'failed'
+                                                                        ? 'border-red-400/20 bg-red-500/12 text-red-100'
+                                                                        : job.status === 'running'
+                                                                            ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
+                                                                            : 'border-white/10 bg-white/[0.04] text-white/60'
+                                                            }`}>
+                                                                {job.status || 'unknown'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mt-1 text-white/45">{job.job_id}</div>
+                                                        {job.error ? <div className="mt-1 text-red-200/80">{job.error}</div> : null}
+                                                    </div>
+                                                )) : (
+                                                    <div className="text-[11px] text-white/45">Noch keine Runtime-Aktionen protokolliert.</div>
+                                                ) : (
+                                                    <div className="text-[11px] text-white/45">Nur der System-Eigentuemer sieht Runtime-Jobs.</div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -700,6 +996,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     status={overview?.mail?.status}
                                     description={buildMailDescription(overview || undefined)}
                                     meta={overview?.mail?.provider ? `Provider: ${overview.mail.provider}` : null}
+                                    detail={latestMail ? `${latestMail.from}: ${latestMail.subject}` : 'Nach dem Verbinden erscheinen neue Nachrichten direkt im OS.'}
                                 />
                                 <SummaryCard
                                     icon={<Calendar size={18} />}
@@ -707,6 +1004,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     status={overview?.calendar?.status}
                                     description={buildCalendarDescription(overview || undefined)}
                                     meta={overview?.calendar?.provider ? `Provider: ${overview.calendar.provider}` : null}
+                                    detail={nextEvent ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ''}` : 'Naechste Termine erscheinen direkt in Home, Kalender und Integrationen.'}
                                 />
                                 <SummaryCard
                                     icon={<Bot size={18} />}
@@ -796,37 +1094,35 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                 </section>
                             </div>
 
-                            {ownerBlocked ? (
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                                    <div className="flex items-start gap-3">
-                                        <AlertCircle className="mt-0.5 text-white/55" size={18} />
-                                        <div>
-                                            <h4 className="text-sm font-medium text-white">Dieser Bereich ist im aktuellen Kontext eingeschraenkt</h4>
-                                            <p className="mt-1 text-sm text-white/55">
-                                                Mail- und Kalender-Integrationen koennen nur im Eigentuemer-Kontext verwaltet werden.
-                                                Die Assistant-Uebersicht bleibt sichtbar, aber die ausfuehrbaren Verbindungen sind hier gesperrt.
-                                            </p>
+                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                                <div className="xl:col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4">
+                                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">Mehrnutzer-Vertrag</p>
+                                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        <div className="rounded-xl border border-cyan-400/10 bg-cyan-500/[0.05] px-3 py-3 text-xs leading-relaxed text-cyan-100/78">
+                                            <div className="font-medium text-cyan-100">Serverweit</div>
+                                            Google OAuth Client ID, Secret und Redirect gehoeren zur SAIMOR-Plattform. Ohne diese App-Konfiguration kann kein Nutzer den Kalender verbinden.
+                                        </div>
+                                        <div className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.05] px-3 py-3 text-xs leading-relaxed text-emerald-100/78">
+                                            <div className="font-medium text-emerald-100">Pro Nutzer</div>
+                                            Mail-Zugangsdaten sowie Google-Refresh-Tokens werden pro Nutzer gespeichert. Mora, Home, Mail und Kalender arbeiten danach auf genau diesem Nutzerkontext.
                                         </div>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                                    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                        <div className="mb-4">
-                                            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
-                                            <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
-                                        </div>
-                                        <EmailIntegration />
-                                    </section>
-                                    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                        <div className="mb-4">
-                                            <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
-                                            <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
-                                        </div>
-                                        <CalendarIntegration />
-                                    </section>
-                                </div>
-                            )}
+                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
+                                        <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
+                                    </div>
+                                    <EmailIntegration />
+                                </section>
+                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
+                                        <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
+                                    </div>
+                                    <CalendarIntegration />
+                                </section>
+                            </div>
                         </div>
                     )}
                 </div>

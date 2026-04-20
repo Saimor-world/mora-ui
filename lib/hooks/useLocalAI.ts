@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { moraAI, type AIMessage } from '@/lib/ai/localAI';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useCompanies } from '@/lib/queries/useCompanies';
 
 /**
  * useLocalAI Hook
@@ -30,7 +32,9 @@ export function useLocalAI(): UseLocalAIReturn {
     const [response, setResponse] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    const { departments, companies, activeCompanyId } = useMoraStore();
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: companies = [] } = useCompanies();
 
     const checkConnection = useCallback(async (): Promise<boolean> => {
         try {

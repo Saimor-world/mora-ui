@@ -6,7 +6,7 @@ This closeout captures the latest verified UI state and documents what remains o
 
 Integrated documentation updates:
 
-- `TEST_REPORT.md` now includes the current L1/L2/L3/L4 walkthrough and app-level smoke results.
+- `docs/TEST_REPORT.md` includes the current L1/L2/L3/L4 walkthrough and app-level smoke results.
 - Browser-validated areas include:
   - Universe navigation (L1 -> L2 -> L3)
   - Dock actions and shortcuts

@@ -1,11 +1,10 @@
 import { create } from 'zustand';
+import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { useActivityStore } from '@/lib/store/activityStore';
 
 export interface PaneConfig {
     id: string;
-    type: 'document' | 'settings' | 'apps' | 'grid' | 'space' | 'search'
-    | 'team' | 'mail' | 'integrations' | 'browser' | 'calendar' | 'terminal' | 'notes'
-    | 'finder' | 'scanner' | 'users' | 'company-detail' | 'chat' | 'timeline' | 'mora-hub' | 'actions' | 'work-session' | 'meine-dateien';
+    type: PaneType;
 
     title: string;
     position: { x: number; y: number };

@@ -3,14 +3,16 @@
 import { useEffect, useRef } from 'react';
 import { fetchUserProfile } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const OPERATIONAL_FLIP_EVENTS = ['company_created', 'setup_complete'] as const;
 
 export function useOperationalFlip() {
-    const operationalState = useMoraStore((s) => s.user?.operational_state);
-    const patchOperationalSession = useMoraStore((s) => s.patchOperationalSession);
-    const loadCompanies = useMoraStore((s) => s.loadCompanies);
+    const operationalState = useSessionStore((s) => s.user?.operational_state);
+    const patchOperationalSession = useSessionStore((s) => s.patchOperationalSession);
+    const queryClient = useQueryClient();
     const inFlightRef = useRef(false);
 
     useEffect(() => {
@@ -35,7 +37,7 @@ export function useOperationalFlip() {
                     scope_source: session.scope_source,
                 });
 
-                await loadCompanies();
+                await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
             } catch {
                 // Best-effort sync; keep setup state until backend truth flips.
             } finally {
@@ -53,5 +55,5 @@ export function useOperationalFlip() {
                 realtime.off(eventType, handlePotentialOperationalFlip);
             });
         };
-    }, [loadCompanies, operationalState, patchOperationalSession]);
+    }, [operationalState, patchOperationalSession, queryClient]);
 }

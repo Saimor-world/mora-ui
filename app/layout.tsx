@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useSessionStore } from "@/lib/store/sessionStore";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";
 import { PaneManager } from "@/components/mora/PaneManager";
 import { Toaster } from "sonner";
@@ -12,26 +12,15 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { usePathname } from "next/navigation";
 import { MoraSessionProvider } from "@/components/providers/MoraSessionProvider";
 import { StandardModeHandler } from "@/components/ui/StandardModeHandler";
-
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-mora-mono",
-});
+import { QueryProvider } from "@/lib/queryClient";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const activeSpaceId = useMoraStore((state) => state.activeSpaceId);
-  const activeFolderId = useMoraStore((state) => state.activeFolderId);
-  const coreError = useMoraStore((state) => state.coreError);
+  const activeSpaceId = useNavStore((state) => state.activeSpaceId);
+  const activeFolderId = useNavStore((state) => state.activeFolderId);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -53,13 +42,13 @@ export default function RootLayout({
     }
   }, [activeSpaceId, activeFolderId]);
 
-  // Update orb when error state changes
+  // Update orb when layout mounts
   useEffect(() => {
     updateOrbFromSystemState();
-  }, [coreError]);
+  }, []);
 
   // Interface Scaling Logic
-  const user = useMoraStore((state) => state.user);
+  const user = useSessionStore((state) => state.user);
   const userScale = user?.settings?.scale;
 
   useEffect(() => {
@@ -81,7 +70,9 @@ export default function RootLayout({
     };
 
     // Fallback order: API Setting > LocalStorage > Default (1)
-    const activeScale = userScale ?? parseFloat(localStorage.getItem('saimor_scale') || '1');
+    const activeScale = typeof userScale === 'number'
+      ? userScale
+      : parseFloat(localStorage.getItem('saimor_scale') || '1');
     applyScale(activeScale);
 
     // Listen for storage changes (cross-tab sync)
@@ -105,19 +96,21 @@ export default function RootLayout({
         <title>SAIMOR | Mora OS</title>
         <meta name="description" content="Intelligent System" />
       </head>
-      <body className={`${inter.className} ${jetbrainsMono.variable} antialiased bg-[#030806] overflow-hidden`} suppressHydrationWarning>
-        <ErrorBoundary>
-          <MoraSessionProvider>
-            <StandardModeHandler />
-            {children}
-            {mounted && (
-              <>
-                <PaneManager />
-                <Toaster position="top-right" />
-              </>
-            )}
-          </MoraSessionProvider>
-        </ErrorBoundary>
+      <body className="font-sans antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
+        <QueryProvider>
+          <ErrorBoundary>
+            <MoraSessionProvider>
+              <StandardModeHandler />
+              {children}
+              {mounted && (
+                <>
+                  <PaneManager />
+                  <Toaster position="top-right" />
+                </>
+              )}
+            </MoraSessionProvider>
+          </ErrorBoundary>
+        </QueryProvider>
       </body>
     </html>
   );

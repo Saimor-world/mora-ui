@@ -2,7 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench, Sparkles } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
 import { authLogout, fetchMyContent } from '@/lib/api/coreClient';
@@ -11,8 +15,8 @@ import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
-import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -94,14 +98,13 @@ function kindLabel(kind: RecentKind): string {
  */
 export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode = false }) => {
     // ── store selectors ────────────────────────────────────────────────────
-    const user        = useMoraStore((s) => s.user);
-    const departments = useMoraStore((s) => s.departments);
-    const treeData    = useMoraStore((s) => s.treeData);
-    const companies   = useMoraStore((s) => s.companies);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
-    const resetStore  = useMoraStore((s) => s.resetStore);
-    const setUser     = useMoraStore((s) => s.setUser);
-    const setCoreMode = useMoraStore((s) => s.setCoreMode);
+    const user        = useSessionStore((s) => s.user);
+    const resetStore  = useSessionStore((s) => s.resetStore);
+    const setUser     = useSessionStore((s) => s.setUser);
+    const { activeCompanyId, setCoreMode } = useNavStore();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] }    = useTree(activeCompanyId);
+    const { data: companies = [] }   = useCompanies();
 
     const openPane         = usePaneStore((s) => s.openPane);
     const getPane          = usePaneStore((s) => s.getPane);
@@ -115,14 +118,19 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
     const recentItems   = useActivityStore((s) => s.recentItems);
     const [privateArea, setPrivateArea] = useState<PrivateAreaSurface | null>(null);
     const [isUniversePortalHovered, setIsUniversePortalHovered] = useState(false);
-    const { overview: integrationsOverview, browserBridge } = useIntegrationsOverview();
-    const localTruthBridge = useLocalTruthBridge(integrationsOverview);
+    const {
+        overview: integrationsOverview,
+        browserBridge,
+        localTruthBridge,
+        summary: communicationSummary,
+    } = useCommunicationSurface();
+    const { mailPreview, calendarPreview } = useCommunicationLiveData();
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'mail' | 'integrations' | 'browser';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'mail' | 'calendar' | 'integrations' | 'browser';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -174,11 +182,10 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
 
     const openMail = useCallback(() => {
         if (!integrationsOverview?.mail?.configured) {
-            revealPane('browser-connect', {
-                type: 'browser',
-                title: 'Browser',
-                size: { width: 1160, height: 760 },
-                data: { initialUrl: 'about:saimor-connect' },
+            revealPane('integrations-main', {
+                type: 'integrations',
+                title: 'Integrationen',
+                size: { width: 980, height: 740 },
             });
             return;
         }
@@ -206,11 +213,25 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
         });
     }, [revealPane]);
 
+    const openCalendarSetup = useCallback(() => {
+        if (!communicationSummary.ownerManageable || !communicationSummary.calendarOauthEnabled || !integrationsOverview?.calendar?.configured) {
+            revealPane('integrations-main', {
+                type: 'integrations',
+                title: 'Integrationen',
+                size: { width: 980, height: 740 },
+            });
+            return;
+        }
+        revealPane('calendar-main', {
+            type: 'calendar',
+            title: 'Kalender',
+            size: { width: 840, height: 620 },
+        });
+    }, [communicationSummary.calendarOauthEnabled, communicationSummary.ownerManageable, integrationsOverview?.calendar?.configured, revealPane]);
+
     const openLocalTruth = useCallback(() => {
         if (typeof window === 'undefined') return;
-        const url = localTruthBridge.selectedUiUrl
-            || integrationsOverview?.runtime?.surfaces?.local_truth
-            || 'http://127.0.0.1:3000/home';
+        const url = communicationSummary.localTruthUrl;
 
         if (localTruthBridge.state === 'ready' || localTruthBridge.state === 'core_only' || localTruthBridge.state === 'ui_only') {
             window.open(url, '_blank', 'noopener,noreferrer');
@@ -221,9 +242,9 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
             type: 'browser',
             title: 'Browser',
             size: { width: 1160, height: 760 },
-            data: { initialUrl: integrationsOverview?.runtime?.surfaces?.connect_surface || 'about:saimor-connect' },
+            data: { initialUrl: communicationSummary.connectSurfaceUrl },
         });
-    }, [integrationsOverview, localTruthBridge.selectedUiUrl, localTruthBridge.state, revealPane]);
+    }, [communicationSummary.connectSurfaceUrl, communicationSummary.localTruthUrl, localTruthBridge.state, revealPane]);
 
     const openUniverse = useCallback(() => {
         setCoreMode('explore');
@@ -332,30 +353,14 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
         () => deptTiles.filter(({ active }) => active).length,
         [deptTiles]
     );
-    const browserStatusLabel = browserBridge.permission === 'granted'
-        ? 'Browser bereit'
-        : browserBridge.permission === 'denied'
-            ? 'Browser blockiert'
-            : browserBridge.permission === 'default'
-                ? 'Browser freigeben'
-                : 'Browser lokal';
-    const mailStatusLabel = integrationsOverview?.mail?.configured
-        ? (integrationsOverview.mail.email || 'Mail verbunden')
-        : integrationsOverview?.capabilities?.mail_local_mode
-            ? 'Lokaler Mail-Modus'
-            : 'Mail verbinden';
-    const calendarStatusLabel = integrationsOverview?.calendar?.configured
-        ? (integrationsOverview.calendar.email || 'Kalender verbunden')
-        : 'Kalender vorbereiten';
-    const localTruthStatusLabel = localTruthBridge.state === 'ready'
-        ? 'Local Truth bereit'
-        : localTruthBridge.state === 'core_only'
-            ? 'Core lokal bereit'
-            : localTruthBridge.state === 'ui_only'
-                ? 'UI lokal bereit'
-                : localTruthBridge.state === 'checking'
-                    ? 'Localhost pruefen'
-                    : 'Local Truth starten';
+    const browserStatusLabel = communicationSummary.browserStatusLabel;
+    const mailStatusLabel = communicationSummary.mailStatusLabel;
+    const calendarStatusLabel = communicationSummary.calendarStatusLabel;
+    const localTruthStatusLabel = communicationSummary.localTruthStatusLabel;
+    const mailStatusDetail = communicationSummary.mailStatusDetail;
+    const calendarStatusDetail = communicationSummary.calendarStatusDetail;
+    const nextCalendarEvent = calendarPreview[0] ?? null;
+    const latestMail = mailPreview[0] ?? null;
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
@@ -520,10 +525,20 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
                                 <div className="text-[9px] uppercase tracking-[0.16em] text-emerald-200/44">Mail</div>
                                 <div className="mt-1 text-[11px] text-white/76">{mailStatusLabel}</div>
+                                {latestMail ? (
+                                    <div className="mt-1 truncate text-[10px] text-white/46">
+                                        {latestMail.from}: {latestMail.subject}
+                                    </div>
+                                ) : null}
                             </div>
                             <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
                                 <div className="text-[9px] uppercase tracking-[0.16em] text-violet-200/44">Local</div>
                                 <div className="mt-1 text-[11px] text-white/76">{localTruthStatusLabel}</div>
+                                {nextCalendarEvent ? (
+                                    <div className="mt-1 truncate text-[10px] text-white/46">
+                                        {nextCalendarEvent.title}
+                                    </div>
+                                ) : null}
                             </div>
                         </div>
 
@@ -765,10 +780,13 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                     <span className="text-[10px] uppercase tracking-[0.16em]">Mail</span>
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{mailStatusLabel}</div>
+                                <div className="mt-1 text-[10px] text-white/48">
+                                    {latestMail ? `${latestMail.from}: ${latestMail.subject}` : mailStatusDetail}
+                                </div>
                             </button>
                             <button
                                 type="button"
-                                onClick={openBrowserConnect}
+                                onClick={openCalendarSetup}
                                 className="rounded-[18px] border border-white/[0.05] bg-white/[0.022] px-3 py-3 text-left transition-all hover:border-white/10 hover:bg-white/[0.045]"
                             >
                                 <div className="flex items-center gap-2 text-orange-200/76">
@@ -776,6 +794,9 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                                     <span className="text-[10px] uppercase tracking-[0.16em]">Kalender</span>
                                 </div>
                                 <div className="mt-2 text-[12px] text-white/82">{calendarStatusLabel}</div>
+                                <div className="mt-1 text-[10px] text-white/48">
+                                    {nextCalendarEvent ? `${nextCalendarEvent.title}${nextCalendarEvent.time ? ` · ${nextCalendarEvent.time}` : ''}` : calendarStatusDetail}
+                                </div>
                             </button>
                             <button
                                 type="button"

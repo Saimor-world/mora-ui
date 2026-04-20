@@ -1,47 +1,51 @@
 /**
- * Context Consistency V2 — company-switch stale state tests
+ * Context Consistency — company-switch stale state tests
  *
  * After a company switch, each scoped surface must immediately discard
  * state from the previous company rather than letting it linger until
  * the next network response arrives.
  *
  * Surfaces: SearchPane, MoraUpdatesFeed
+ *
+ * Architecture note: useCompanies/useDepartments/useTree are kept mocked here
+ * because SearchPane's empty-query branch calls setResults([]) which
+ * creates a new array reference, causing an infinite loop when real
+ * TanStack Query hooks add their initialization renders. The navStore
+ * is real (not mocked), enabling Zustand subscriptions to drive
+ * the company-switch re-render without needing rerender().
  */
 
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { resetAllStores } from '../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
 
-// ─── Mutable store state (mutate to simulate company switch in tests) ─────────
+// ─── Query hooks: stable references prevent infinite buildLocalResults cascade ─
+// useDepartments/useTree are in buildLocalResults' dep chain. A new [] on every call
+// recreates the useCallback, triggering the search effect on every render.
+// Stable references inside the factory closure are the fix.
 
-const storeState = {
-    departments: [] as any[],
-    spacesByDepartment: {} as Record<string, any[]>,
-    nodesByCompany: {} as Record<string, any[]>,
-    activeCompanyId: 'company-alpha' as string | null,
-    activeDepartmentId: null as string | null,
-    setActiveDepartment: jest.fn(),
-    setActiveSpace: jest.fn(),
-    setViewLevel: jest.fn(),
-    navigateToCore: jest.fn(),
-    navigateToDepartment: jest.fn(),
-    navigateToSpace: jest.fn(),
-    navigateToFolder: jest.fn(),
-};
+jest.mock('@/lib/queries/useCompanies', () => {
+    const stableCompanies = [{ id: 'company-alpha', name: 'Alpha Co' }];
+    return { useCompanies: () => ({ data: stableCompanies, isFetching: false }) };
+});
+
+jest.mock('@/lib/queries/useDepartments', () => {
+    const stableDepts: never[] = [];
+    return { useDepartments: () => ({ data: stableDepts, isFetching: false }) };
+});
+
+jest.mock('@/lib/queries/useTree', () => {
+    const stableTree: never[] = [];
+    return { useTree: () => ({ data: stableTree, isFetching: false }) };
+});
+
+// ─── paneStore — stable fake ──────────────────────────────────────────────────
 
 const mockGetPane = jest.fn();
 const mockOpenPane = jest.fn();
 const mockRemovePane = jest.fn();
-const mockSearchGlobal = jest.fn();
-const mockSearchSemantic = jest.fn();
-const mockCoreGet = jest.fn();
-
-// ─── Module-level mocks (hoisted) ────────────────────────────────────────────
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: any) =>
-        selector ? selector(storeState) : storeState,
-}));
 
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
@@ -59,12 +63,24 @@ jest.mock('@/lib/store/paneStore', () => ({
     },
 }));
 
+// ─── I/O boundaries ──────────────────────────────────────────────────────────
+
+const mockSearchGlobal = jest.fn();
+const mockSearchSemantic = jest.fn();
+const mockCoreGet = jest.fn();
+
 jest.mock('@/lib/api/coreClient', () => ({
     searchGlobal: (...args: any[]) => mockSearchGlobal(...args),
     searchSemantic: (...args: any[]) => mockSearchSemantic(...args),
     coreGet: (...args: any[]) => mockCoreGet(...args),
     fetchSystemStats: jest.fn().mockResolvedValue(null),
 }));
+
+jest.mock('@/lib/api/realtimeClient', () => ({
+    realtime: { on: jest.fn(), off: jest.fn() },
+}));
+
+// ─── UI-only mocks ────────────────────────────────────────────────────────────
 
 jest.mock('@/components/layers/GlassPanel', () => ({
     GlassPanel: ({ children }: any) => <div>{children}</div>,
@@ -88,66 +104,66 @@ jest.mock('@/lib/toast', () => ({
     toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
 }));
 
-jest.mock('@/lib/api/realtimeClient', () => ({
-    realtime: { on: jest.fn(), off: jest.fn() },
-}));
-
 jest.mock('@/lib/hooks/useHilToggle', () => ({
     useHilToggle: () => ({ hilEnabled: false, setHilEnabled: jest.fn() }),
 }));
 
-// ─── Imports (after mocks) ────────────────────────────────────────────────────
+// ─── Imports after mocks ──────────────────────────────────────────────────────
 
-import { SearchPane } from '@/components/panes/SearchPane';
+import SearchApp from '@/apps/search';
 import { MoraUpdatesFeed } from '@/components/mora/MoraUpdatesFeed';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeSearchPane() {
-    mockGetPane.mockReturnValue({
-        id: 'search-main',
-        size: { width: 860, height: 680 },
-        position: { x: 100, y: 80 },
-        zIndex: 10,
-        data: {},
-    });
-    return render(<SearchPane id="search-main" />);
+    return render(<SearchApp paneId="search-main" initialData={{}} />);
 }
+
+// ─── Setup / teardown ─────────────────────────────────────────────────────────
+
+beforeEach(() => {
+    resetAllStores();
+    jest.clearAllMocks();
+
+    // Real navStore drives activeCompanyId for SearchPane + MoraUpdatesFeed
+    useNavStore.setState({
+        activeCompanyId: 'company-alpha',
+        activeDepartmentId: null,
+        navigateToCore: jest.fn(),
+        navigateToDepartment: jest.fn(),
+        navigateToSpace: jest.fn(),
+        navigateToFolder: jest.fn(),
+    } as any);
+
+    mockSearchSemantic.mockResolvedValue([]);
+    mockSearchGlobal.mockResolvedValue({ results: [] });
+    mockCoreGet.mockResolvedValue({ events: [] });
+});
+
+afterEach(() => cleanup());
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SearchPane — stale results cleared on company switch
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('SearchPane — stale results cleared on company switch', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-        storeState.activeCompanyId = 'company-alpha';
-
-        mockSearchSemantic.mockResolvedValue([]);
+    test('stale API results from company-alpha are cleared immediately when switching to company-beta', async () => {
         mockSearchGlobal.mockResolvedValue({
             results: [
                 { id: 'n-alpha-1', type: 'node', title: 'Alpha-Dokument', name: 'Alpha-Dokument' },
             ],
         });
-    });
 
-    afterEach(() => cleanup());
+        makeSearchPane();
 
-    test('stale API results from company-alpha are cleared immediately when switching to company-beta', async () => {
-        const { rerender } = makeSearchPane();
-
-        // Type a query — triggers debounced API search for company-alpha
         const input = screen.getByRole('textbox');
         fireEvent.change(input, { target: { value: 'bericht' } });
 
-        // Wait for company-alpha results to appear
         await waitFor(() =>
             expect(screen.getByText('Alpha-Dokument')).toBeInTheDocument()
         );
 
-        // ── Simulate company switch: new mock returns company-beta results ──
-        // Make the new search take a measurable amount of time so we can assert
-        // the intermediate state (results cleared before new results arrive).
+        // Slow down beta search so we can assert the cleared intermediate state
         mockSearchGlobal.mockImplementation(
             () =>
                 new Promise((resolve) =>
@@ -164,10 +180,9 @@ describe('SearchPane — stale results cleared on company switch', () => {
             () => new Promise((resolve) => setTimeout(() => resolve([]), 200))
         );
 
-        storeState.activeCompanyId = 'company-beta';
-
+        // Switch company via real navStore — Zustand subscriptions trigger re-render
         await act(async () => {
-            rerender(<SearchPane id="search-main" />);
+            useNavStore.setState({ activeCompanyId: 'company-beta' } as any);
         });
 
         // Alpha results must be gone immediately (before beta search resolves)
@@ -182,19 +197,14 @@ describe('SearchPane — stale results cleared on company switch', () => {
 describe('MoraUpdatesFeed — stale events cleared on company switch', () => {
     beforeEach(() => {
         jest.useFakeTimers();
-        jest.clearAllMocks();
-        storeState.activeCompanyId = 'company-alpha';
-        storeState.activeDepartmentId = null;
     });
 
     afterEach(() => {
-        cleanup();
         jest.clearAllTimers();
         jest.useRealTimers();
     });
 
     test('company-alpha events are cleared immediately when switching to company-beta', async () => {
-        // company-alpha fetch returns a visible event summary
         mockCoreGet.mockResolvedValueOnce({
             events: [
                 {
@@ -207,14 +217,11 @@ describe('MoraUpdatesFeed — stale events cleared on company switch', () => {
             ],
         });
 
-        const { rerender } = render(
-            <MoraUpdatesFeed scope="company" showHeader={false} />
-        );
+        render(<MoraUpdatesFeed scope="company" showHeader={false} />);
 
-        // Let the company-alpha fetch resolve
         await act(async () => {
             await Promise.resolve();
-            await Promise.resolve(); // extra tick for state flush
+            await Promise.resolve();
         });
 
         await waitFor(() =>
@@ -223,8 +230,7 @@ describe('MoraUpdatesFeed — stale events cleared on company switch', () => {
             )
         );
 
-        // ── Company switch: company-beta fetch will be slow ──
-        // This lets us assert the intermediate cleared state.
+        // Slow down beta fetch
         mockCoreGet.mockImplementation(
             () =>
                 new Promise((resolve) =>
@@ -246,19 +252,13 @@ describe('MoraUpdatesFeed — stale events cleared on company switch', () => {
                 )
         );
 
-        storeState.activeCompanyId = 'company-beta';
-
-        // Rerender kicks off company-beta's fetchEvents; stale events should
-        // be cleared BEFORE the new fetch completes.
+        // Switch company via real navStore
         await act(async () => {
-            rerender(<MoraUpdatesFeed scope="company" showHeader={false} />);
+            useNavStore.setState({ activeCompanyId: 'company-beta' } as any);
             await Promise.resolve();
             await Promise.resolve();
         });
 
-        // The feed must not be rendering company-alpha's event type label any
-        // more while waiting for company-beta's response.
-        // "Data Change" is the label for event_type "data_change".
         expect(screen.queryByText(/Data Change/i)).not.toBeInTheDocument();
     });
 });

@@ -1,13 +1,15 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ContextRail } from '@/components/layout/ContextRail';
-import { useMoraStore } from '@/lib/store/moraState';
+import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
-}));
+const STABLE_COMPANIES = [{ id: 'co-1', name: 'Workspace', tenant_id: 'tenant-1' }];
 
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: {
         getState: () => ({ openPane: jest.fn() }),
@@ -60,12 +62,47 @@ jest.mock('@/lib/hooks/useUser', () => ({
     resetUserState: jest.fn(),
 }));
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
+jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
+    useSurfaceProfile: () => ({ isPublicDemoSurface: false, isLocalTruthSurface: false }),
+}));
+
+jest.mock('@/lib/api/coreClient', () => ({
+    authLogout: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@/lib/auth/sessionLifecycle', () => ({
+    clearClientSessionArtifacts: jest.fn(),
+}));
+
+jest.mock('@/lib/auth/roles', () => ({
+    roleLabel: (r: string) => r,
+}));
+
+beforeEach(resetAllStores);
 
 function renderWithState(state: Record<string, unknown>) {
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
-    (mockUseMoraStore as any).getState = () => state;
-    return render(<ContextRail />);
+    useNavStore.setState({
+        navigateToCore: state.navigateToCore ?? jest.fn(),
+        viewLevel: state.viewLevel ?? 'core',
+        viewMode: state.viewMode ?? 'workspace',
+        setViewMode: state.setViewMode ?? jest.fn(),
+        isStandardMode: state.isStandardMode ?? false,
+        activeCompanyId: 'co-1',
+        setActiveCompany: state.setActiveCompany ?? jest.fn(),
+    } as any);
+
+    useSessionStore.setState({
+        user: null,
+        permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+        hasBooted: true,
+        isLoggingOut: false,
+        resetStore: jest.fn(),
+        setIsLoggingOut: jest.fn(),
+    } as any);
+
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.companies(), STABLE_COMPANIES);
+    return renderWithProviders(<ContextRail />, { queryClient: qc });
 }
 
 describe('ContextRail core navigation contract', () => {
@@ -76,24 +113,13 @@ describe('ContextRail core navigation contract', () => {
     it('Home button resets to core home via navigateToCore', async () => {
         const navigateToCore = jest.fn();
         const setViewMode = jest.fn();
-        const loadTree = jest.fn();
-        const setActiveCompany = jest.fn();
-        const loadDepartments = jest.fn().mockResolvedValue(undefined);
-        const loadNodesForCompany = jest.fn().mockResolvedValue(undefined);
 
         renderWithState({
             navigateToCore,
             viewLevel: 'space',
             viewMode: 'workspace',
             setViewMode,
-            loadTree,
-            resetStore: jest.fn(),
             isStandardMode: false,
-            user: { role: 'member' },
-            companies: [{ id: 'co-1', name: 'Workspace', tenant_id: 'tenant-1' }],
-            setActiveCompany,
-            loadDepartments,
-            loadNodesForCompany,
         });
 
         fireEvent.click(screen.getByRole('button', { name: 'Start' }));
@@ -105,23 +131,18 @@ describe('ContextRail core navigation contract', () => {
     it('Search button also resets to core home before opening chat', () => {
         const navigateToCore = jest.fn();
         const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
-        const loadTree = jest.fn();
 
         renderWithState({
             navigateToCore,
             viewLevel: 'department',
             viewMode: 'workspace',
             setViewMode: jest.fn(),
-            loadTree,
-            resetStore: jest.fn(),
             isStandardMode: false,
-            user: { role: 'member' },
         });
 
         fireEvent.click(screen.getByRole('button', { name: 'Suche' }));
 
         expect(navigateToCore).toHaveBeenCalledTimes(1);
-        expect(loadTree).toHaveBeenCalledTimes(1);
         expect(dispatchSpy).toHaveBeenCalled();
         dispatchSpy.mockRestore();
     });

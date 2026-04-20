@@ -6,6 +6,7 @@
 .next
 node_modules
 tsconfig.tsbuildinfo
+tsconfig.verify.tsbuildinfo
 next-env.d.ts
 .worktrees/
 .superpowers/
@@ -13,4 +14,3 @@ next-env.d.ts
 # Playwright
 playwright-report/
 test-results/
-.worktrees/

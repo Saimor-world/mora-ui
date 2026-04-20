@@ -8,7 +8,8 @@ import {
     Zap, Rocket, Shield, BookOpen, Cog, Globe,
     ChevronRight, Check
 } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCreateDepartment } from '@/lib/queries/useDepartments';
 import { toast } from 'sonner';
 
 interface DepartmentWizardProps {
@@ -120,7 +121,8 @@ const ICON_OPTIONS = [
 ];
 
 export const DepartmentWizard: React.FC<DepartmentWizardProps> = ({ isOpen, onClose, companyId }) => {
-    const { createDepartment, loadDepartments } = useMoraStore();
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const createDepartmentMutation = useCreateDepartment(activeCompanyId);
 
     const [step, setStep] = useState<'preset' | 'custom'>('preset');
     const [selectedPreset, setSelectedPreset] = useState<typeof DEPARTMENT_PRESETS[0] | null>(null);
@@ -136,13 +138,12 @@ export const DepartmentWizard: React.FC<DepartmentWizardProps> = ({ isOpen, onCl
         setIsCreating(true);
 
         try {
-            await createDepartment({
+            await createDepartmentMutation.mutateAsync({
                 name: preset.name,
                 color: preset.color,
                 company_id: companyId,
                 description: preset.description
             });
-            await loadDepartments(companyId);
             toast.success(`Created ${preset.name} department`);
             onClose();
         } catch (error: any) {
@@ -161,13 +162,12 @@ export const DepartmentWizard: React.FC<DepartmentWizardProps> = ({ isOpen, onCl
 
         setIsCreating(true);
         try {
-            await createDepartment({
+            await createDepartmentMutation.mutateAsync({
                 name: customName,
                 color: customColor,
                 company_id: companyId,
                 icon: customIcon
             });
-            await loadDepartments(companyId);
             toast.success(`Created ${customName} department`);
             onClose();
         } catch (error: any) {

@@ -1,16 +1,38 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
-import { useMoraStore } from '@/lib/store/moraState';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+// ── shared nav store setup ──────────────────────────────────────────────────
+
+const navigateToExplore = jest.fn();
+const navigateToCore = jest.fn();
+const navigateToDepartment = jest.fn();
+const navigateToSpace = jest.fn();
+const navigateToFolder = jest.fn();
+const setActiveSpace = jest.fn();
+
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
+jest.mock('@/lib/store/paneStore', () => ({
+    usePaneStore: (sel?: (s: any) => unknown) => {
+        const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane: jest.fn(), removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE };
+        return sel ? sel(s) : s;
+    }
 }));
 
-jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: () => ({ openPane: jest.fn() }),
+jest.mock('@/lib/store/orbStore', () => ({
+    useOrbStore: (sel?: (s: any) => unknown) => {
+        const s = { orbState: 'idle' };
+        return sel ? sel(s) : s;
+    },
+}));
+
+jest.mock('@/lib/api/coreClient', () => ({
+    fetchSingleDepartmentStats: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('@/components/ui/LoadingState', () => ({
@@ -34,10 +56,6 @@ jest.mock('@/lib/utils/deptStyle', () => ({
     ORBIT_PALETTE: ['#10b981', '#06b6d4', '#8b5cf6'],
 }));
 
-jest.mock('@/lib/api/coreClient', () => ({
-    fetchSingleDepartmentStats: jest.fn().mockResolvedValue(null),
-}));
-
 jest.mock('@/components/layers/LayerInsightRail', () => ({
     LayerInsightRail: ({ children }: { children?: React.ReactNode }) => <div data-testid="layer-insight-rail">{children}</div>,
 }));
@@ -58,14 +76,7 @@ jest.mock('framer-motion', () => {
     };
 });
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
-
-type MockStore = Record<string, unknown>;
-
-function renderWithStore(ui: React.ReactElement, state: MockStore) {
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
-    return render(ui);
-}
+beforeEach(resetAllStores);
 
 describe('Breadcrumb root navigation', () => {
     beforeEach(() => {
@@ -73,26 +84,27 @@ describe('Breadcrumb root navigation', () => {
     });
 
     it('routes Department root click to Explore instead of Home', () => {
-        const navigateToExplore = jest.fn();
-        const navigateToCore = jest.fn();
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.departments('company-1'), [{ id: 'dept-1', name: 'Operations', color: '#10b981' }]);
+        qc.setQueryData(queryKeys.spaces('dept-1'), []);
+        qc.setQueryData(queryKeys.folders(undefined), []);
+        qc.setQueryData(queryKeys.nodes(undefined), []);
+        qc.setQueryData(queryKeys.tree('company-1'), []);
 
-        renderWithStore(<DepartmentLayer />, {
+        useNavStore.setState({
             activeDepartmentId: 'dept-1',
             activeCompanyId: 'company-1',
-            departments: [{ id: 'dept-1', name: 'Operations', color: '#10b981' }],
-            spacesByDepartment: { 'dept-1': [] },
-            foldersBySpace: {},
-            isLoadingSpaces: false,
-            treeData: [],
-            loadSpacesForDepartment: jest.fn(),
-            loadFoldersForSpace: jest.fn(),
+            activeSpaceId: null,
+            activeFolderId: null,
+            viewLevel: 'department',
             navigateToCore,
-            navigateToSpace: jest.fn(),
-            addSpace: jest.fn(),
-            setActiveSpace: jest.fn(),
+            navigateToSpace,
+            navigateToFolder,
+            setActiveSpace,
             navigateToExplore,
-        });
+        } as any);
 
+        renderWithProviders(<DepartmentLayer />, { queryClient: qc });
         fireEvent.click(screen.getByTestId('nav-back-to-universe'));
 
         expect(navigateToExplore).toHaveBeenCalledTimes(1);
@@ -100,28 +112,25 @@ describe('Breadcrumb root navigation', () => {
     });
 
     it('routes Space root breadcrumb click to Explore', () => {
-        const navigateToExplore = jest.fn();
-        const navigateToDepartment = jest.fn();
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.departments('company-1'), [{ id: 'dept-1', name: 'Operations', color: '#10b981' }]);
+        qc.setQueryData(queryKeys.spaces('dept-1'), [{ id: 'space-1', name: 'Ops Workspace', department_id: 'dept-1', order: 0, is_default: false }]);
+        qc.setQueryData(queryKeys.folders('space-1'), []);
+        qc.setQueryData(queryKeys.nodes(undefined), []);
+        qc.setQueryData(queryKeys.tree('company-1'), []);
 
-        renderWithStore(<SpaceLayer />, {
+        useNavStore.setState({
             activeSpaceId: 'space-1',
             activeDepartmentId: 'dept-1',
             activeCompanyId: 'company-1',
-            departments: [{ id: 'dept-1', name: 'Operations', color: '#10b981' }],
-            spacesByDepartment: {
-                'dept-1': [{ id: 'space-1', name: 'Ops Workspace', department_id: 'dept-1', order: 0, is_default: false }],
-            },
-            foldersBySpace: { 'space-1': [] },
-            nodesByFolder: {},
-            orbState: 'idle',
-            isLoadingFolders: false,
+            activeFolderId: null,
             viewLevel: 'space',
             navigateToDepartment,
-            loadFoldersForSpace: jest.fn(),
-            addFolder: jest.fn(),
+            navigateToFolder,
             navigateToExplore,
-        });
+        } as any);
 
+        renderWithProviders(<SpaceLayer />, { queryClient: qc });
         fireEvent.click(screen.getByTestId('nav-root-to-universe'));
 
         expect(navigateToExplore).toHaveBeenCalledTimes(1);
@@ -129,28 +138,25 @@ describe('Breadcrumb root navigation', () => {
     });
 
     it('keeps Space back button navigating to Department', () => {
-        const navigateToExplore = jest.fn();
-        const navigateToDepartment = jest.fn();
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.departments('company-1'), [{ id: 'dept-1', name: 'Operations', color: '#10b981' }]);
+        qc.setQueryData(queryKeys.spaces('dept-1'), [{ id: 'space-1', name: 'Ops Workspace', department_id: 'dept-1', order: 0, is_default: false }]);
+        qc.setQueryData(queryKeys.folders('space-1'), []);
+        qc.setQueryData(queryKeys.nodes(undefined), []);
+        qc.setQueryData(queryKeys.tree('company-1'), []);
 
-        renderWithStore(<SpaceLayer />, {
+        useNavStore.setState({
             activeSpaceId: 'space-1',
             activeDepartmentId: 'dept-1',
             activeCompanyId: 'company-1',
-            departments: [{ id: 'dept-1', name: 'Operations', color: '#10b981' }],
-            spacesByDepartment: {
-                'dept-1': [{ id: 'space-1', name: 'Ops Workspace', department_id: 'dept-1', order: 0, is_default: false }],
-            },
-            foldersBySpace: { 'space-1': [] },
-            nodesByFolder: {},
-            orbState: 'idle',
-            isLoadingFolders: false,
+            activeFolderId: null,
             viewLevel: 'space',
             navigateToDepartment,
-            loadFoldersForSpace: jest.fn(),
-            addFolder: jest.fn(),
+            navigateToFolder,
             navigateToExplore,
-        });
+        } as any);
 
+        renderWithProviders(<SpaceLayer />, { queryClient: qc });
         fireEvent.click(screen.getByTestId('nav-back-to-department'));
 
         expect(navigateToDepartment).toHaveBeenCalledWith('dept-1');

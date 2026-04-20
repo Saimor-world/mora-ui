@@ -1,20 +1,17 @@
 /**
  * UsersPane.pilot.test.tsx
- *
- * Covers pilot-readiness fixes P1, P4, P5:
- *   P1 — Invite link shown in modal with copy button after createInvite() success
- *   P4 — Invite button gated to admin/owner roles only
- *   P5 — Dead MoreVertical row action removed
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { UsersPane } from '@/components/panes/UsersPane';
-import { useMoraStore } from '@/lib/store/moraState';
-import { usePaneStore } from '@/lib/store/paneStore';
 import * as coreClient from '@/lib/api/coreClient';
 import * as inviteClient from '@/lib/api/inviteClient';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -51,43 +48,28 @@ jest.mock('@/lib/api/inviteClient', () => ({
     createInvite: jest.fn(),
 }));
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
-}));
-
+const STABLE_PANE = { id: 'users-main', size: { width: 640, height: 560 }, position: { x: 100, y: 100 }, zIndex: 10 };
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: jest.fn(),
-}));
-
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
-const mockUsePaneStore = usePaneStore as jest.MockedFunction<typeof usePaneStore>;
-const mockFetchAdminUsers = coreClient.fetchAdminUsers as jest.MockedFunction<typeof coreClient.fetchAdminUsers>;
-const mockCoreGet = coreClient.coreGet as jest.MockedFunction<typeof coreClient.coreGet>;
-const mockCreateInvite = inviteClient.createInvite as jest.MockedFunction<typeof inviteClient.createInvite>;
-
-const PANE = { id: 'users-main', size: { width: 640, height: 560 }, position: { x: 100, y: 100 }, zIndex: 10 };
-
-function setupStore(role: 'owner' | 'admin' | 'member') {
-    const state: any = {
-        viewMode: 'standard',
-        user: { id: 'u-1', name: 'Test User', role },
-        departments: [],
-    };
-    mockUseMoraStore.mockImplementation((selector?: any) => selector ? selector(state) : state);
-
-    mockUsePaneStore.mockImplementation((selector?: any) => {
+    usePaneStore: (selector?: any) => {
         const store: any = {
-            getPane: () => PANE,
+            getPane: () => STABLE_PANE,
             removePane: jest.fn(),
             minimizePane: jest.fn(),
             focusPane: jest.fn(),
             updatePanePosition: jest.fn(),
             updatePaneSize: jest.fn(),
             openPane: jest.fn(),
+            activePaneId: 'users-main',
         };
         return selector ? selector(store) : store;
-    });
-}
+    },
+}));
+
+const mockFetchAdminUsers = coreClient.fetchAdminUsers as jest.MockedFunction<typeof coreClient.fetchAdminUsers>;
+const mockCoreGet = coreClient.coreGet as jest.MockedFunction<typeof coreClient.coreGet>;
+const mockCreateInvite = inviteClient.createInvite as jest.MockedFunction<typeof inviteClient.createInvite>;
+
+beforeEach(resetAllStores);
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -95,28 +77,50 @@ beforeEach(() => {
     mockCoreGet.mockResolvedValue([]);
 });
 
+function setupAndRender(role: 'owner' | 'admin' | 'member') {
+    useNavStore.setState({
+        viewMode: 'workspace',
+        viewLevel: 'core',
+        coreMode: 'home',
+        activeCompanyId: 'c-1',
+        activeDepartmentId: null,
+        activeSpaceId: null,
+        activeFolderId: null,
+        isStandardMode: false,
+        nameConflict: null,
+    } as any);
+
+    useSessionStore.setState({
+        user: { id: 'u-1', name: 'Test User', role },
+        permissions: { canCreate: true, canDelete: false, canAdmin: role !== 'member', canEditSettings: false, canViewAnalytics: false },
+        hasBooted: true,
+        isLoggingOut: false,
+    } as any);
+
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.departments('c-1'), []);
+    return renderWithProviders(<UsersPane id="users-main" />, { queryClient: qc });
+}
+
 // ── P4: Admin gate ────────────────────────────────────────────────────────────
 
 describe('UsersPane — P4: Invite button admin gate', () => {
     it('shows Invite button for owner role', async () => {
-        setupStore('owner');
-        render(<UsersPane id="users-main" />);
+        setupAndRender('owner');
         await waitFor(() => {
             expect(screen.getByTestId('invite-button')).toBeInTheDocument();
         });
     });
 
     it('shows Invite button for admin role', async () => {
-        setupStore('admin');
-        render(<UsersPane id="users-main" />);
+        setupAndRender('admin');
         await waitFor(() => {
             expect(screen.getByTestId('invite-button')).toBeInTheDocument();
         });
     });
 
     it('hides Invite button for member role', async () => {
-        setupStore('member');
-        render(<UsersPane id="users-main" />);
+        setupAndRender('member');
         // Give the component time to settle
         await waitFor(() => expect(screen.queryByRole('progressbar')).not.toBeInTheDocument(), { timeout: 500 }).catch(() => {});
         expect(screen.queryByTestId('invite-button')).not.toBeInTheDocument();
@@ -127,13 +131,11 @@ describe('UsersPane — P4: Invite button admin gate', () => {
 
 describe('UsersPane — P1: Invite link shown after submit', () => {
     it('shows invite link display with copy button after successful createInvite', async () => {
-        setupStore('owner');
+        setupAndRender('owner');
         mockCreateInvite.mockResolvedValue({
             token: 'tok-abc',
             invite_link: 'https://saimor.app/invite/tok-abc',
         });
-
-        render(<UsersPane id="users-main" />);
 
         // Open invite modal
         await waitFor(() => screen.getByTestId('invite-button'));
@@ -163,12 +165,12 @@ describe('UsersPane — P1: Invite link shown after submit', () => {
 
 describe('UsersPane — P5: Dead MoreVertical row action removed', () => {
     it('has no unclickable actions menu button in member rows', async () => {
-        setupStore('member');
+        // Mock must be set BEFORE render: the app fetches on mount, not on demand.
+        // Setting mockCoreGet after render means the component already resolved with [].
         mockCoreGet.mockResolvedValue([
             { id: 'u-2', name: 'Anna Schmidt', email: 'anna@co.com', role: 'member', status: 'active', last_seen: null },
         ]);
-
-        render(<UsersPane id="users-main" />);
+        setupAndRender('member');
 
         await waitFor(() => {
             expect(screen.getByText('Anna Schmidt')).toBeInTheDocument();

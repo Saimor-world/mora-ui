@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
 
 export const StandardModeHandler = () => {
-    const isStandardMode = useMoraStore((state) => state.isStandardMode);
+    const isStandardMode = useNavStore((state) => state.isStandardMode);
 
     useEffect(() => {
         if (isStandardMode) {

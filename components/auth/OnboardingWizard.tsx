@@ -7,7 +7,10 @@ import {
     ArrowRight, ArrowLeft, Check, Loader2,
     Plus, X, Zap
 } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 
@@ -58,7 +61,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         { id: '1', name: '', color: DEPARTMENT_COLORS[0], description: '' }
     ]);
 
-    const { loadCompanies, setActiveCompany, loadDepartments, activeCompanyId } = useMoraStore();
+    const setActiveCompany = useNavStore((s) => s.setActiveCompany);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const queryClient = useQueryClient();
+    const { data: companiesData = [] } = useCompanies();
 
     const steps = [
         { title: 'Willkommen', icon: Sparkles },
@@ -108,9 +114,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
         try {
             // 1. Get/Create Company
-            // Company was already created during registration. We need to find its ID.
-            await loadCompanies();
-            const companies = useMoraStore.getState().companies;
+            // Company was already created during registration. Find its ID from TanStack cache.
+            await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
+            const companies = companiesData;
 
             // Find the user's company
             let myCompany = companies.find(c => c.name === companyName && !c.is_demo);
@@ -151,11 +157,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 }
             }
 
-            // 3. Finalize
+            // 3. Finalize — invalidate departments so they reload fresh
             if (myCompany) {
-                // Ensure active company is set (redundant but safe)
                 setActiveCompany(myCompany.id);
-                await loadDepartments(myCompany.id);
+                void queryClient.invalidateQueries({ queryKey: queryKeys.departments(myCompany.id) });
                 console.log('[Onboarding] Active company set:', myCompany.name);
             } else {
                 console.warn('[Onboarding] Could not find created company - proceeding anyway');
@@ -164,11 +169,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             // 4. Mark onboarding as complete
             localStorage.setItem('onboarding_complete', 'true');
             localStorage.setItem('last_workspace', myCompany?.name || companyName);
-
-            // Explicitly reload departments one last time to ensure UI is in sync
-            if (myCompany?.id) {
-                await loadDepartments(myCompany.id);
-            }
 
             toast.success('Môra ist bereit! Willkommen in Ihrer Organisation.', { id: toastId });
 

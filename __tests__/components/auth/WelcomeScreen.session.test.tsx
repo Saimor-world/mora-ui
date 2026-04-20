@@ -2,13 +2,18 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
-import { useMoraStore } from '@/lib/store/moraState';
 import * as coreClient from '@/lib/api/coreClient';
 import * as cookies from '@/lib/auth/cookies';
 import { signIn } from 'next-auth/react';
+import { renderWithProviders, resetAllStores } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+jest.mock('@/lib/queries/queryKeys', () => ({
+    queryKeys: {
+        companies: () => ['companies'],
+        departments: (id?: string) => ['departments', id],
+    },
 }));
 
 jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
@@ -78,29 +83,38 @@ jest.mock('framer-motion', () => {
 
 const HOUR = 60 * 60 * 1000;
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
 const mockCoreGet = coreClient.coreGet as jest.MockedFunction<typeof coreClient.coreGet>;
 const mockAuthLogout = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
 const mockReadCookie = cookies.readCookie as jest.MockedFunction<typeof cookies.readCookie>;
 const mockSignIn = signIn as jest.MockedFunction<typeof signIn>;
 const mockLocationAssign = jest.fn();
 
-const baseState = {
-    setViewMode: jest.fn(),
-    setUser: jest.fn(),
-    navigateToCore: jest.fn(),
-    resetStore: jest.fn(),
-    loadCompanies: jest.fn().mockResolvedValue(undefined),
-    companies: [],
-    setActiveCompany: jest.fn(),
-    loadDepartments: jest.fn().mockResolvedValue(undefined),
-};
+beforeEach(resetAllStores);
 
-function renderWithStore(state: Record<string, unknown> = {}) {
-    const merged = { ...baseState, ...state };
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(merged) : merged));
-    (mockUseMoraStore as any).getState = () => merged;
-    return render(<WelcomeScreen onAuthenticated={jest.fn()} />);
+function renderWithStore(_state: Record<string, unknown> = {}) {
+    useNavStore.setState({
+        setViewMode: jest.fn(),
+        navigateToCore: jest.fn(),
+        viewMode: 'workspace',
+        viewLevel: 'core',
+        isStandardMode: false,
+    } as any);
+    useSessionStore.setState({
+        user: null,
+        resetStore: jest.fn(),
+        setUser: jest.fn(),
+    } as any);
+    // Attach getState so WelcomeScreen can call useNavStore.getState()
+    (useNavStore as any).getState = () => ({
+        setViewMode: jest.fn(),
+        navigateToCore: jest.fn(),
+        setActiveCompany: jest.fn(),
+    });
+    (useSessionStore as any).getState = () => ({
+        resetStore: jest.fn(),
+        setUser: jest.fn(),
+    });
+    return renderWithProviders(<WelcomeScreen onAuthenticated={jest.fn()} />);
 }
 
 describe('WelcomeScreen — Mora Erwachen tiers', () => {
@@ -300,11 +314,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
                     }),
                 })
             );
-            expect(mockSignIn).toHaveBeenCalledWith('credentials', expect.objectContaining({
-                username: 'demo',
-                password: 'demo123',
-                redirect: false,
-            }));
+            expect(mockSignIn).not.toHaveBeenCalled();
             expect(mockLocationAssign).toHaveBeenCalledWith('/home');
         });
     });

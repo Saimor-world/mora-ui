@@ -1,22 +1,15 @@
 /**
  * ChatPane.pill.test.tsx
- * TDD RED → GREEN: active session pill renders when activePlanId + activeSessionTitle are set.
- *
- * Strategy: fire a WORK_SESSION_PLAN_EVENT (which is what the send path does) to seed
- * activeSessionTitle via the plan dispatch. But ChatPane only sets activeSessionTitle
- * when a send completes — so we verify the pill is absent initially AND that the pill
- * JSX element is present in the render output once the title state is populated.
- *
- * Since activeSessionTitle is local state set during sendMessage(), we test:
- * 1. Pill element class/content exists in JSX when activePlanId is truthy AND title set.
- *    We simulate this by directly firing a WORK_SESSION_PLAN_EVENT after render.
- * 2. Pill is absent when activePlanId is null.
  */
 
 import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { WORK_SESSION_PLAN_EVENT } from '@/lib/utils/moraExplanation';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 // ── store mocks (must be declared before component import) ─────────────────
 
@@ -49,6 +42,7 @@ jest.mock('@/lib/api/cognitionClient', () => ({
 }));
 
 jest.mock('@/lib/api/coreClient', () => ({
+    coreGet: jest.fn().mockResolvedValue(null),
     learnInsight: jest.fn(),
     searchMemory: jest.fn().mockResolvedValue([]),
     fetchWorkSessionPlan: jest.fn().mockResolvedValue({
@@ -106,48 +100,29 @@ jest.mock('framer-motion', () => ({
 }));
 
 const mockOpenPane = jest.fn();
+const STABLE_PANE = { id: 'chat-main', type: 'chat', title: 'Chat', size: { width: 900, height: 700 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {
             removePane: jest.fn(),
             minimizePane: jest.fn(),
             focusPane: jest.fn(),
-            getPane: () => ({
-                id: 'chat-main',
-                size: { width: 900, height: 700 },
-                position: { x: 0, y: 0 },
-                zIndex: 1,
-                data: {},
-            }),
+            getPane: () => STABLE_PANE,
             updatePanePosition: jest.fn(),
             updatePaneSize: jest.fn(),
             openPane: (...args: any[]) => mockOpenPane(...args),
+            panes: [STABLE_PANE],
+            activePaneId: 'chat-main',
         };
         return selector ? selector(store) : store;
     },
 }));
 
-const _pillMoraStore = {
-    departments: [],
-    isStandardMode: false,
-    activeCompanyId: 'company-1',
-    activeDepartmentId: null,
-    activeSpaceId: 'space-1',
-    activeFolderId: null,
-    viewLevel: 'space',
-    orbState: 'idle',
-    navigateToDepartment: jest.fn(),
-};
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: Object.assign(
-        (selector?: any) => selector ? selector(_pillMoraStore) : _pillMoraStore,
-        { getState: () => _pillMoraStore },
-    ),
-}));
-
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 
-import { ChatPane } from '@/components/panes/ChatPane';
+import ChatApp from '@/apps/chat';
+
+beforeEach(resetAllStores);
 
 describe('ChatPane session pill', () => {
     beforeAll(() => {
@@ -164,10 +139,32 @@ describe('ChatPane session pill', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockActivePlanId = 'p1';
+
+        useNavStore.setState({
+            isStandardMode: false,
+            activeCompanyId: 'company-1',
+            activeDepartmentId: null,
+            activeSpaceId: 'space-1',
+            activeFolderId: null,
+            viewLevel: 'space',
+            viewMode: 'workspace',
+            coreMode: 'home',
+            nameConflict: null,
+            navigateToDepartment: jest.fn(),
+        } as any);
+        (useNavStore as any).getState = () => useNavStore.getState();
+
+        useOrbStore.setState({ orbState: 'idle' } as any);
     });
 
+    function renderPane() {
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.departments('company-1'), []);
+        return renderWithProviders(<ChatApp paneId="chat-main" initialData={{}} />, { queryClient: qc });
+    }
+
     it('renders "Laeuft: Mein Plan" pill when activePlanId is set and state is running', async () => {
-        render(<ChatPane id="chat-main" />);
+        renderPane();
 
         // Pill should be absent initially (title not yet set)
         expect(screen.queryByText(/Laeuft: Mein Plan/)).not.toBeInTheDocument();
@@ -194,7 +191,7 @@ describe('ChatPane session pill', () => {
     });
 
     it('renders "Wartet: Mein Plan" for waiting_confirmation state', async () => {
-        render(<ChatPane id="chat-main" />);
+        renderPane();
 
         await act(async () => {
             window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {
@@ -215,7 +212,7 @@ describe('ChatPane session pill', () => {
     });
 
     it('renders "Abgeschlossen: Mein Plan" for done state', async () => {
-        render(<ChatPane id="chat-main" />);
+        renderPane();
 
         await act(async () => {
             window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {
@@ -236,7 +233,7 @@ describe('ChatPane session pill', () => {
     });
 
     it('renders "Aktiver Plan: Mein Plan" for default/null state (pending falls through to default)', async () => {
-        render(<ChatPane id="chat-main" />);
+        renderPane();
 
         await act(async () => {
             window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {
@@ -259,7 +256,7 @@ describe('ChatPane session pill', () => {
     it('pill is absent when activePlanId is null', async () => {
         mockActivePlanId = null;
 
-        render(<ChatPane id="chat-main" />);
+        renderPane();
 
         await act(async () => {
             window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, {

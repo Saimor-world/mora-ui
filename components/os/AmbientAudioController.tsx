@@ -13,13 +13,14 @@ import {
     resolveAmbientAudioSettings,
     resolveAmbientSceneTrackMap,
 } from '@/lib/audio/ambientAudio';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
 import { getEffectiveRitualScene, resolveRitualSettings, RITUAL_SCENES } from '@/lib/os/ritualMode';
 
 export const AmbientAudioController: React.FC = () => {
-    const userSettings = useMoraStore((state) => state.user?.settings);
-    const coreMode = useMoraStore((state) => state.coreMode);
-    const viewLevel = useMoraStore((state) => state.viewLevel);
+    const userSettings = useSessionStore((state) => state.user?.settings);
+    const coreMode = useNavStore((state) => state.coreMode);
+    const viewLevel = useNavStore((state) => state.viewLevel);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const objectUrlRef = useRef<string | null>(null);
     const currentTrackIdRef = useRef<string | null>(null);
@@ -40,9 +41,21 @@ export const AmbientAudioController: React.FC = () => {
         ? coreMode
         : 'secondary';
     const surfaceVolumeMultiplier = viewLevel === 'core'
-        ? (coreMode === 'home' ? 0.18 : 1)
-        : 0.08;
+        ? (coreMode === 'home' ? 0.52 : 1)
+        : 0.2;
     const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
+    const clampVolume = useRef((value: number) => Math.max(0, Math.min(1, value)));
+    const tryPlay = useRef(async () => {
+        const audioElement = audioRef.current;
+        if (!audioElement || !audioElement.src) return;
+
+        try {
+            await audioElement.play();
+            autoplayBlockedRef.current = false;
+        } catch {
+            autoplayBlockedRef.current = true;
+        }
+    });
 
     useEffect(() => {
         setAmbientAudio(resolveAmbientAudioSettings(userSettings));
@@ -195,13 +208,14 @@ export const AmbientAudioController: React.FC = () => {
             objectUrlRef.current = objectUrl;
             audioElement.src = objectUrl;
             audioElement.preload = 'auto';
-            audioElement.volume = 0.001;
+            audioElement.muted = false;
+            audioElement.setAttribute('playsinline', 'true');
+            audioElement.volume = clampVolume.current(0.001);
 
             if (ambientAudio.enabled) {
-                try {
-                    await audioElement.play();
-                    autoplayBlockedRef.current = false;
-                } catch {
+                if (interactionReadyRef.current || !autoplayBlockedRef.current) {
+                    await tryPlay.current();
+                } else {
                     autoplayBlockedRef.current = true;
                 }
             }
@@ -241,7 +255,7 @@ export const AmbientAudioController: React.FC = () => {
         const tick = (timestamp: number) => {
             const progress = Math.min(1, (timestamp - startedAt) / durationMs);
             const eased = 1 - Math.pow(1 - progress, 3);
-            audioElement.volume = startVolume + ((targetVolume - startVolume) * eased);
+            audioElement.volume = clampVolume.current(startVolume + ((targetVolume - startVolume) * eased));
             if (progress < 1) {
                 fadeFrameRef.current = requestAnimationFrame(tick);
             } else {
@@ -270,9 +284,7 @@ export const AmbientAudioController: React.FC = () => {
 
         if (!audioElement.src) return;
 
-        audioElement.play().catch(() => {
-            autoplayBlockedRef.current = true;
-        });
+        void tryPlay.current();
     }, [ambientAudio.enabled]);
 
     useEffect(() => {
@@ -283,13 +295,7 @@ export const AmbientAudioController: React.FC = () => {
             const audioElement = audioRef.current;
             if (!audioElement || !audioElement.src) return;
 
-            audioElement.play()
-                .then(() => {
-                    autoplayBlockedRef.current = false;
-                })
-                .catch(() => {
-                    autoplayBlockedRef.current = true;
-                });
+            void tryPlay.current();
         };
 
         window.addEventListener('pointerdown', tryResume, { passive: true });
@@ -310,15 +316,11 @@ export const AmbientAudioController: React.FC = () => {
             const audioElement = audioRef.current;
             if (!audioElement || !audioElement.src) return;
 
-            audioElement.play()
-                .then(() => {
-                    autoplayBlockedRef.current = false;
-                    window.removeEventListener('pointerdown', tryResume);
-                    window.removeEventListener('keydown', tryResume);
-                })
-                .catch(() => {
-                    // Keep waiting for a browser-accepted gesture.
-                });
+            void tryPlay.current();
+            if (!autoplayBlockedRef.current) {
+                window.removeEventListener('pointerdown', tryResume);
+                window.removeEventListener('keydown', tryResume);
+            }
         };
 
         window.addEventListener('pointerdown', tryResume);
@@ -328,6 +330,21 @@ export const AmbientAudioController: React.FC = () => {
             window.removeEventListener('pointerdown', tryResume);
             window.removeEventListener('keydown', tryResume);
         };
+    }, [ambientAudio.enabled, effectiveTrackId]);
+
+    useEffect(() => {
+        const audioElement = audioRef.current;
+        if (!audioElement) return;
+
+        const handleCanPlay = () => {
+            if (!ambientAudio.enabled || !audioElement.src) return;
+            if (!interactionReadyRef.current && autoplayBlockedRef.current) return;
+
+            void tryPlay.current();
+        };
+
+        audioElement.addEventListener('canplay', handleCanPlay);
+        return () => audioElement.removeEventListener('canplay', handleCanPlay);
     }, [ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {

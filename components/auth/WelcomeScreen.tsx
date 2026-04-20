@@ -7,12 +7,15 @@ import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
-import { useMoraStore, type User as MoraUser } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
 import { authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier, formatAbsenceText, touchSessionActivity, type SessionTier } from '@/lib/auth/sessionLifecycle';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
-import { signIn } from "next-auth/react";
+import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
@@ -63,7 +66,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         typeof document === 'undefined' ? true : !document.hidden
     );
 
-    const { setViewMode, setUser, navigateToCore } = useMoraStore();
+    const setViewMode = useNavStore((s) => s.setViewMode);
+    const navigateToCore = useNavStore((s) => s.navigateToCore);
+    const setUser = useSessionStore((s) => s.setUser);
+    const queryClient = useQueryClient();
     const hasInvite = inviteCode.trim().length > 0;
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
     const contextLabel = 'Organisation';
@@ -80,12 +86,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     const handleLogout = React.useCallback(async (showToast = true) => {
         await authLogout();
-        const store = useMoraStore.getState();
         clearClientSessionArtifacts();
-        store.resetStore();
-        store.setUser(null);
-        store.navigateToCore();
-        store.setViewMode('workspace');
+        useSessionStore.getState().resetStore();
+        useSessionStore.getState().setUser(null);
+        useNavStore.getState().navigateToCore();
+        useNavStore.getState().setViewMode('workspace');
         setSessionInfo(null);
         setSessionTier(null);
         setTokenValid(null);
@@ -227,15 +232,21 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
 
     const handleContinueSession = async () => {
-        const savedRole = localStorage.getItem('saimor_role');
         const savedTenantId = localStorage.getItem('saimor_tenant');
-        const store = useMoraStore.getState();
 
         setIsLoading(true);
 
         try {
-            await store.loadCompanies();
-            const companies = useMoraStore.getState().companies;
+            // Refresh companies from server
+            const companies = await queryClient.fetchQuery({
+                queryKey: queryKeys.companies(),
+                queryFn: async () => {
+                    const { fetchCompanies } = await import('@/lib/api/orgClient');
+                    return fetchCompanies();
+                },
+                staleTime: 0,
+            }) as Array<{ id: string; tenant_id: string; [key: string]: any }>;
+
             let targetCompany = null;
 
             // Find User's Company
@@ -249,8 +260,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             // Set Active Company
             if (targetCompany) {
-                store.setActiveCompany(targetCompany.id);
-                await store.loadDepartments(targetCompany.id);
+                useNavStore.getState().setActiveCompany(targetCompany.id);
+                void queryClient.invalidateQueries({ queryKey: queryKeys.departments(targetCompany.id) });
             } else {
                 console.warn('Keine Firma für Benutzer gefunden.');
             }
@@ -323,6 +334,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const handleLogin = async (overrides?: { email?: string; password?: string }) => {
         const loginEmail = overrides?.email ?? email;
         const loginPassword = overrides?.password ?? password;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 
         if (!loginEmail || !loginPassword) {
             toast.error("Bitte E-Mail und Passwort eingeben");
@@ -353,14 +367,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
             }
 
-            const result = await signIn("credentials", {
-                redirect: false,
-                username: loginEmail,
-                password: loginPassword
-            });
+            if (!isLocalhost) {
+                const result = await bridgeNextAuthSignIn({
+                    provider: "credentials",
+                    redirect: false,
+                    username: loginEmail,
+                    password: loginPassword
+                });
 
-            if (result?.error) {
-                console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                if (result?.error) {
+                    console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                }
             }
 
             if (response.ok && data?.success) {
@@ -386,6 +403,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     const handleRegister = async () => {
         const usingInvite = inviteCode.trim().length > 0;
+        const isLocalhost =
+            typeof window !== 'undefined' &&
+            ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
         // Comprehensive input validation
         if (!email || !email.trim()) {
             toast.error('E-Mail-Adresse ist erforderlich');
@@ -432,13 +452,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const data = await response.json();
             const role = data.role || selectedRole;
 
-            const syncResult = await signIn("credentials", {
-                redirect: false,
-                username: email,
-                password: password
-            });
-            if (syncResult?.error) {
-                console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+            if (!isLocalhost) {
+                const syncResult = await bridgeNextAuthSignIn({
+                    provider: "credentials",
+                    redirect: false,
+                    username: email,
+                    password: password
+                });
+                if (syncResult?.error) {
+                    console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+                }
             }
 
             saveAuthState(role, email, data.tenant_id, null);
@@ -449,20 +472,27 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             localStorage.setItem('last_user_email', email);
             localStorage.removeItem('onboarding_complete');
 
-            setUser({
+            useSessionStore.getState().setUser({
                 id: data.user_id,
                 name: email.split('@')[0],
                 email: email,
                 role: role
-            });
+            } as any);
 
-            // Load Initial Data for new user
-            const store = useMoraStore.getState();
-            await store.loadCompanies(); // New company should appear
+            // Load Initial Data for new user — invalidate + refetch companies
+            await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
+            const freshCompanies = await queryClient.fetchQuery({
+                queryKey: queryKeys.companies(),
+                queryFn: async () => {
+                    const { fetchCompanies } = await import('@/lib/api/orgClient');
+                    return fetchCompanies();
+                },
+                staleTime: 0,
+            }) as Array<{ id: string; tenant_id: string; [key: string]: any }>;
             if (data.tenant_id) {
-                const newCompany = store.companies.find(c => c.tenant_id === data.tenant_id);
+                const newCompany = freshCompanies.find(c => c.tenant_id === data.tenant_id);
                 if (newCompany) {
-                    store.setActiveCompany(newCompany.id);
+                    useNavStore.getState().setActiveCompany(newCompany.id);
                 }
             }
 

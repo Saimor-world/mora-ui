@@ -2,10 +2,17 @@
 "use client";
 
 import { useMemo } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useChatStore } from '@/lib/store/chatStore';
 import { useMemoryPendingCount } from '@/lib/hooks/useMemoryPendingCount';
 import { useMemoryOverview } from '@/lib/hooks/useMemoryOverview';
+import { useCompanies } from '@/lib/queries/useCompanies';
+import { useDepartments } from '@/lib/queries/useDepartments';
+import { useTree } from '@/lib/queries/useTree';
 import type { OrbState } from '@/lib/api/awarenessClient';
+import type { CoreTreeNode } from '@/lib/types/core';
 
 // ─── Contract ───────────────────────────────────────────────────────────────
 
@@ -58,41 +65,52 @@ function deriveScopeLevel(
     return 'global';
 }
 
+// ─── Tree traversal helpers ─────────────────────────────────────────────────
+
+function flattenTree(nodes: CoreTreeNode[], type: CoreTreeNode['type']): CoreTreeNode[] {
+    const result: CoreTreeNode[] = [];
+    const walk = (n: CoreTreeNode) => {
+        if (n.type === type) result.push(n);
+        n.children?.forEach(walk);
+    };
+    nodes.forEach(walk);
+    return result;
+}
+
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 /**
  * useMoraContext
  *
- * Normalization hook. Reads moraState + sub-hooks (useMemoryPendingCount,
- * useMemoryOverview). useMemoryOverview polls /v3/memory/overview every 60s.
- * No mutations. Safe to call in any surface.
+ * Normalization hook. Reads focused stores + TanStack Query hooks.
+ * No moraState dependency. No mutations. Safe to call in any surface.
  *
  * NOTE: The store tracks active entities by ID only (activeDepartmentId,
  * activeSpaceId, activeFolderId). Names are resolved by joining against
- * the departments / spacesByDepartment / foldersBySpace collections.
+ * the departments / tree collections.
  */
 export function useMoraContext(): MoraContextSnapshot {
-    const orbState = useMoraStore((s) => s.orbState);
-    const coreError = useMoraStore((s) => s.coreError);
-    const lastChatScope = useMoraStore((s) => s.lastChatScope);
-    const companies = useMoraStore((s) => s.companies);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const orbState = useOrbStore((s) => s.orbState);
+    const lastChatScope = useChatStore((s) => s.lastChatScope);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     // Store uses ID-only fields — not full entity objects.
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeSpaceId = useMoraStore((s) => s.activeSpaceId);
-    const activeFolderId = useMoraStore((s) => s.activeFolderId);
-    // Entity collections for name resolution.
-    const departments = useMoraStore((s) => s.departments);
-    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
-    const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
 
-    // Answer provenance — wired from store (MR18/MR19 backend now live)
-    const storeAnswerSource = useMoraStore((s) => s.lastAnswerSource);
-    const storeAnswerSourceMode = useMoraStore((s) => s.lastAnswerSourceMode);
-    const storeAnswerScopeLabel = useMoraStore((s) => s.lastAnswerScopeLabel);
+    // Entity collections for name resolution — TanStack Query.
+    const { data: companies = [] } = useCompanies();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    // Tree provides all spaces + folders without extra per-department fetches.
+    const { data: treeNodes = [] } = useTree(activeCompanyId);
+
+    // Answer provenance — wired from orbStore (MR18/MR19 backend now live)
+    const storeAnswerSource = useOrbStore((s) => s.lastAnswerSource);
+    const storeAnswerSourceMode = useOrbStore((s) => s.lastAnswerSourceMode);
+    const storeAnswerScopeLabel = useOrbStore((s) => s.lastAnswerScopeLabel);
 
     // Session user — for isOperational derivation and pre-chat company label
-    const user = useMoraStore((s) => s.user);
+    const user = useSessionStore((s) => s.user);
 
     const memoryPendingCount = useMemoryPendingCount();
     const memoryOverview = useMemoryOverview();
@@ -107,9 +125,9 @@ export function useMoraContext(): MoraContextSnapshot {
         // Name resolution helpers
         const safeCompanies = Array.isArray(companies) ? companies : [];
         const safeDepartments = Array.isArray(departments) ? departments : [];
-        // Flatten nested space/folder maps into searchable arrays.
-        const allSpaces = Object.values(spacesByDepartment ?? {}).flat();
-        const allFolders = Object.values(foldersBySpace ?? {}).flat();
+        // Derive all spaces and folders from the cached tree (no extra fetches).
+        const allSpaces = flattenTree(treeNodes, 'space');
+        const allFolders = flattenTree(treeNodes, 'folder');
 
         const activeCompany = safeCompanies.find((c) => c.id === activeCompanyId);
         const activeDepartment = safeDepartments.find((d) => d.id === activeDepartmentId);
@@ -176,7 +194,10 @@ export function useMoraContext(): MoraContextSnapshot {
             scopeReason,
             scopeDroppedFields,
             orbState,
-            isOffline: coreError !== null,
+            // isOffline: no coreError in focused stores — treat as always online.
+            // coreError on moraState is being deprecated; this field will be wired
+            // to a dedicated connectivity store in a future migration step.
+            isOffline: false,
             memoryPendingCount,
             memoryFactCount: memoryOverview.structuredFacts,
             lastScopeUpdateAt,
@@ -188,10 +209,10 @@ export function useMoraContext(): MoraContextSnapshot {
             scopeSource,
         };
     }, [
-        orbState, coreError, lastChatScope,
+        orbState, lastChatScope,
         companies, activeCompanyId,
         activeDepartmentId, activeSpaceId, activeFolderId,
-        departments, spacesByDepartment, foldersBySpace,
+        departments, treeNodes,
         memoryPendingCount,
         storeAnswerSource, storeAnswerSourceMode, storeAnswerScopeLabel,
         memoryOverview,

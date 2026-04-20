@@ -1,8 +1,10 @@
 import React from 'react';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, waitFor } from '@testing-library/react';
 import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
 import { coreGet } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
+import { renderWithProviders, resetAllStores } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
 
 jest.mock('@/lib/api/coreClient', () => ({
   coreGet: jest.fn(),
@@ -15,23 +17,12 @@ jest.mock('@/lib/api/realtimeClient', () => ({
   },
 }));
 
-const storeState = {
-  activeCompanyId: 'co-1',
-  activeDepartmentId: 'dep-1',
-  navigateToCore: jest.fn(),
-  navigateToDepartment: jest.fn(),
-  navigateToSpace: jest.fn(),
-  navigateToFolder: jest.fn(),
-};
-
-jest.mock('@/lib/store/moraState', () => ({
-  useMoraStore: (selector?: (s: any) => any) => selector ? selector(storeState) : storeState,
-}));
-
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
-  usePaneStore: () => ({
-    openPane: jest.fn(),
-  }),
+  usePaneStore: (sel?: (s: any) => unknown) => {
+    const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane: jest.fn(), removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE };
+    return sel ? sel(s) : s;
+  }
 }));
 
 jest.mock('@/lib/hooks/useHilToggle', () => ({
@@ -54,11 +45,22 @@ jest.mock('@/lib/mora/presenceEvents', () => ({
 const mockCoreGet = coreGet as jest.MockedFunction<typeof coreGet>;
 const mockRealtime = realtime as jest.Mocked<typeof realtime>;
 
+beforeEach(resetAllStores);
+
 describe('MoraUpdatesFeed realtime refresh', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     mockCoreGet.mockResolvedValue({ events: [] } as any);
+
+    useNavStore.setState({
+      activeCompanyId: 'co-1',
+      activeDepartmentId: 'dep-1',
+      navigateToCore: jest.fn(),
+      navigateToDepartment: jest.fn(),
+      navigateToSpace: jest.fn(),
+      navigateToFolder: jest.fn(),
+    } as any);
   });
 
   afterEach(() => {
@@ -68,7 +70,7 @@ describe('MoraUpdatesFeed realtime refresh', () => {
   });
 
   it('refreshes after a matching mindloop_event', async () => {
-    render(<MoraUpdatesFeed scope="company" showHeader={false} />);
+    renderWithProviders(<MoraUpdatesFeed scope="company" showHeader={false} />);
 
     await waitFor(() => {
       expect(mockCoreGet).toHaveBeenCalledWith('/v3/mindloop/events?limit=12&company_id=co-1');
@@ -90,7 +92,7 @@ describe('MoraUpdatesFeed realtime refresh', () => {
   });
 
   it('ignores mindloop_event from another company', async () => {
-    render(<MoraUpdatesFeed scope="company" showHeader={false} />);
+    renderWithProviders(<MoraUpdatesFeed scope="company" showHeader={false} />);
 
     await waitFor(() => {
       expect(mockCoreGet).toHaveBeenCalledTimes(1);

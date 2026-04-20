@@ -9,7 +9,7 @@
  */
 
 import { useEffect } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 interface UseShellEventsOptions {
@@ -31,19 +31,19 @@ export function useShellEvents(_options: UseShellEventsOptions) {
 
         const handleNavigateDepartment = (e: CustomEvent<{ departmentId: string }>) => {
             if (e.detail.departmentId) {
-                useMoraStore.getState().navigateToDepartment(e.detail.departmentId);
+                useNavStore.getState().navigateToDepartment(e.detail.departmentId);
             }
         };
 
         const handleNavigateSpace = (e: CustomEvent<{ spaceId: string }>) => {
             if (e.detail.spaceId) {
-                useMoraStore.getState().navigateToSpace(e.detail.spaceId);
+                useNavStore.getState().navigateToSpace(e.detail.spaceId);
             }
         };
 
         const handleNavigateFolder = (e: CustomEvent<{ folderId: string }>) => {
             if (e.detail.folderId) {
-                useMoraStore.getState().navigateToFolder(e.detail.folderId);
+                useNavStore.getState().navigateToFolder(e.detail.folderId);
             }
         };
 

@@ -1,19 +1,14 @@
 /**
  * ScannerPane — destination threading V2
- *
- * Verifies that after file confirmation, batchResultSummary carries per-route folderId
- * and the UI renders navigable "Öffnen →" / "Im Zielordner öffnen →" buttons.
- *
- * Priority chain for folderId:
- *   1. confirm response folder_id
- *   2. confirm response destination.folder_id
- *   3. confirm response result.destination.folder_id
- *   4. getFileNode() fallback
  */
 
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const mockOpenPane = jest.fn();
 const mockUpdatePanePosition = jest.fn();
@@ -29,6 +24,21 @@ const mockGetFileNode = jest.fn();
 const mockFetchFoldersByCompany = jest.fn();
 const mockFetchFolderContext = jest.fn();
 
+const STABLE_PANE = {
+    id: 'scanner-main',
+    size: { width: 920, height: 640 },
+    position: { x: 100, y: 80 },
+    zIndex: 10,
+    data: {
+        source: 'mycelium',
+        batchId: 'batch-dest',
+        initialFiles: [
+            new File(['one'], 'brief-one.pdf', { type: 'application/pdf' }),
+            new File(['two'], 'brief-two.pdf', { type: 'application/pdf' }),
+        ],
+    },
+};
+
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {
@@ -39,30 +49,10 @@ jest.mock('@/lib/store/paneStore', () => ({
             updatePaneSize: mockUpdatePaneSize,
             openPane: mockOpenPane,
             activePaneId: 'scanner-main',
-            getPane: () => ({
-                id: 'scanner-main',
-                size: { width: 920, height: 640 },
-                position: { x: 100, y: 80 },
-                zIndex: 10,
-                data: {
-                    source: 'mycelium',
-                    batchId: 'batch-dest',
-                    initialFiles: [
-                        new File(['one'], 'brief-one.pdf', { type: 'application/pdf' }),
-                        new File(['two'], 'brief-two.pdf', { type: 'application/pdf' }),
-                    ],
-                },
-            }),
+            getPane: () => STABLE_PANE,
         };
         return selector ? selector(store) : store;
     },
-}));
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: () => ({
-        activeCompanyId: 'company-1',
-        user: { settings: { autoExecuteActions: false } },
-    }),
 }));
 
 jest.mock('@/components/layers/GlassPanel', () => ({
@@ -119,6 +109,8 @@ jest.mock('@/components/content/VisibilityModal', () => ({
 
 import { ScannerPane } from '@/components/panes/ScannerPane';
 
+beforeEach(resetAllStores);
+
 beforeEach(() => {
     jest.clearAllMocks();
     mockFetchFoldersByCompany.mockResolvedValue([]);
@@ -155,11 +147,36 @@ beforeEach(() => {
         });
     mockConfirmCreateNodeFromFile.mockResolvedValue({ status: 'executed', folder_id: 'folder-dest-bulk' });
     mockGetFileNode.mockResolvedValue({ status: 'linked', folder_id: 'folder-dest-fallback' });
+
+    useNavStore.setState({
+        activeCompanyId: 'company-1',
+        activeDepartmentId: null,
+        activeSpaceId: null,
+        activeFolderId: null,
+        viewLevel: 'core',
+        viewMode: 'workspace',
+        coreMode: 'home',
+        isStandardMode: false,
+        nameConflict: null,
+    } as any);
+
+    useSessionStore.setState({
+        user: { id: 'u-1', role: 'admin', settings: { autoExecuteActions: false } },
+        permissions: { canCreate: true, canDelete: true, canAdmin: true, canEditSettings: true, canViewAnalytics: true },
+        hasBooted: true,
+        isLoggingOut: false,
+    } as any);
 });
 
 afterEach(() => {
     cleanup();
 });
+
+function renderPane() {
+    const qc = createTestQueryClient();
+    qc.setQueryData(queryKeys.companies(), [{ id: 'company-1', name: 'Test Corp' }]);
+    return renderWithProviders(<ScannerPane id="scanner-main" data={STABLE_PANE.data} />, { queryClient: qc });
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -182,8 +199,9 @@ describe('ScannerPane — destination threading V2', () => {
     // ── Single ConfirmationCard path ──────────────────────────────────────────
 
     test('sequential confirms: batchResultSummary carries folderId from ConfirmationCard result', async () => {
-        render(<ScannerPane id="scanner-main" />);
-        fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
+        renderPane();
+        // findByRole waits for AppLoader's dynamic import to resolve before clicking
+        fireEvent.click(await screen.findByRole('button', { name: /Alle hochladen/i }));
         await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
         fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
 
@@ -214,7 +232,7 @@ describe('ScannerPane — destination threading V2', () => {
     });
 
     test('sequential confirms: single destination → header shows "Im Zielordner öffnen" instead of generic "Finder öffnen"', async () => {
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
         fireEvent.click(screen.getByRole('button', { name: /Alle hochladen/i }));
         await waitFor(() => expect(screen.getByTestId('visibility-modal')).toBeInTheDocument());
         fireEvent.click(screen.getByRole('button', { name: 'Freigeben' }));
@@ -226,9 +244,6 @@ describe('ScannerPane — destination threading V2', () => {
 
         await waitFor(() => expect(screen.getByText(/Batch abgeschlossen/i)).toBeInTheDocument());
 
-        // Single known destination ? personalised header label.
-        // There can now be multiple destination CTAs (header + per-file rows + route row),
-        // so assert presence rather than uniqueness.
         expect(screen.getAllByRole('button').filter((button) => button.textContent?.includes('Im Zielordner')).length).toBeGreaterThan(0);
         // Generic label must NOT appear
         expect(screen.queryByRole('button', { name: /^Finder öffnen →$/ })).not.toBeInTheDocument();
@@ -237,7 +252,7 @@ describe('ScannerPane — destination threading V2', () => {
     // ── Bulk confirm path ─────────────────────────────────────────────────────
 
     test('bulk confirm: per-route "Öffnen →" button calls openPane with folderId from confirm response', async () => {
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
         await uploadBothFiles();
 
         fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
@@ -263,7 +278,7 @@ describe('ScannerPane — destination threading V2', () => {
             destination: { folder_id: 'folder-dest-priority2' },
         });
 
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
         await uploadBothFiles();
         fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
 
@@ -285,7 +300,7 @@ describe('ScannerPane — destination threading V2', () => {
         mockConfirmCreateNodeFromFile.mockResolvedValue({ status: 'executed' }); // no folder_id at all
         mockGetFileNode.mockResolvedValue({ status: 'linked', folder_id: 'folder-dest-fallback' });
 
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
         await uploadBothFiles();
         fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
 
@@ -310,7 +325,7 @@ describe('ScannerPane — destination threading V2', () => {
         mockConfirmCreateNodeFromFile.mockResolvedValue({ status: 'executed' });
         mockGetFileNode.mockResolvedValue({ status: 'not_linked' }); // no folder_id
 
-        render(<ScannerPane id="scanner-main" />);
+        renderPane();
         await uploadBothFiles();
         fireEvent.click(screen.getByRole('button', { name: /Alle einordnen/i }));
 
@@ -322,5 +337,3 @@ describe('ScannerPane — destination threading V2', () => {
         expect(screen.getByRole('button', { name: /Finder öffnen →/ })).toBeInTheDocument();
     });
 });
-
-

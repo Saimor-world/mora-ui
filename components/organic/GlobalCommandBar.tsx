@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Command, FileText, Hash, ArrowRight, Layout, Settings, Plus, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import type { MoraObject } from '@/lib/types';
 
 interface GlobalCommandBarProps {
@@ -16,7 +16,7 @@ interface GlobalCommandBarProps {
 export function GlobalCommandBar({ isOpen, onClose, onNavigate, onSearch, searchResults }: GlobalCommandBarProps) {
     const [query, setQuery] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
-    const isStandardMode = useMoraStore(state => state.isStandardMode);
+    const isStandardMode = useNavStore((state) => state.isStandardMode);
 
     // Handle keyboard navigation
     useEffect(() => {

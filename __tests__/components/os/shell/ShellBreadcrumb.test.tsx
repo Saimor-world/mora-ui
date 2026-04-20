@@ -1,79 +1,145 @@
 /**
  * ShellBreadcrumb.test.tsx
  *
- * TDD RED → GREEN for P3: Shell-level location breadcrumb.
- *
- * Contract:
- *   - Hidden at viewLevel 'core' and 'company' (core surfaces handle their own chrome)
- *   - Visible at 'department', 'space', 'folder'
- *   - Segments: [Root] / [DeptName] / [SpaceName]
- *   - Root click -> navigateToExplore()
- *   - Dept click (from space level) → navigateToDepartment(activeDepartmentId)
- *   - Each segment has data-testid for reliable query
+ * NEW PATTERN: No jest.mock on stores or query hooks.
+ * - Zustand state via useNavStore.setState()
+ * - Query data via queryClient.setQueryData()
+ * - Only external I/O (framer-motion, API clients) gets mocked
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders, resetAllStores, testFixtures } from '../../../test-utils';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+// Only mock what is NOT business logic
+jest.mock('framer-motion', () => ({
+    motion: {
+        div: ({ children, ...p }: any) => <div {...p}>{children}</div>,
+        button: ({ children, ...p }: any) => <button {...p}>{children}</button>,
+    },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function renderWith(state: Record<string, unknown>) {
-    mockUseMoraStore.mockImplementation((selector?: any) =>
-        selector ? selector(state) : state
-    );
-    return render(<ShellBreadcrumb />);
+const { company, department: baseDept, space: baseSpace } = testFixtures;
+
+interface RenderState {
+    viewLevel: string;
+    activeDepartmentId?: string | null;
+    activeSpaceId?: string | null;
+    departments?: typeof baseDept[];
+    spaces?: typeof baseSpace[];
+    navigateToExplore?: jest.Mock;
+    navigateToDepartment?: jest.Mock;
+    navigateToSpace?: jest.Mock;
 }
 
-const baseDept = { id: 'dept-1', name: 'Operations', color: '#10b981' };
-const baseSpace = { id: 'space-1', name: 'Ops Workspace', department_id: 'dept-1', order: 0, is_default: false };
+function renderWith(state: RenderState) {
+    // Pre-populate query cache before render
+    const qc = renderWithProviders(<span />).queryClient; // get a fresh client
+
+    qc.setQueryData(queryKeys.departments(company.id), state.departments ?? []);
+    qc.setQueryData(
+        queryKeys.spaces(state.activeDepartmentId ?? ''),
+        state.spaces ?? []
+    );
+
+    // Set Zustand nav state synchronously before render
+    useNavStore.setState({
+        viewLevel: state.viewLevel as any,
+        activeCompanyId: company.id,
+        activeDepartmentId: state.activeDepartmentId ?? null,
+        activeSpaceId: state.activeSpaceId ?? null,
+        navigateToExplore: state.navigateToExplore ?? jest.fn(),
+        navigateToDepartment: state.navigateToDepartment ?? jest.fn(),
+        navigateToSpace: state.navigateToSpace ?? jest.fn(),
+    } as any);
+
+    return renderWithProviders(<ShellBreadcrumb />, { queryClient: qc });
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+beforeEach(resetAllStores);
 
 describe('ShellBreadcrumb — visibility', () => {
     it('renders nothing at viewLevel core', () => {
-        const { container } = renderWith({ viewLevel: 'core', activeDepartmentId: null, activeSpaceId: null, departments: [], spacesByDepartment: {} });
+        const { container } = renderWith({ viewLevel: 'core' });
         expect(container.firstChild).toBeNull();
     });
 
     it('renders nothing at viewLevel company', () => {
-        const { container } = renderWith({ viewLevel: 'company', activeDepartmentId: null, activeSpaceId: null, departments: [], spacesByDepartment: {} });
+        const { container } = renderWith({ viewLevel: 'company' });
         expect(container.firstChild).toBeNull();
     });
 
     it('renders nothing at viewLevel department (breadcrumb is folder-only)', () => {
-        const { container } = renderWith({ viewLevel: 'department', activeDepartmentId: 'dept-1', activeSpaceId: null, departments: [baseDept], spacesByDepartment: {} });
+        const { container } = renderWith({
+            viewLevel: 'department',
+            activeDepartmentId: baseDept.id,
+            departments: [baseDept],
+        });
         expect(container.firstChild).toBeNull();
     });
 
     it('renders nothing at viewLevel space (breadcrumb is folder-only)', () => {
-        const { container } = renderWith({ viewLevel: 'space', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] } });
+        const { container } = renderWith({
+            viewLevel: 'space',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: baseSpace.id,
+            departments: [baseDept],
+            spaces: [baseSpace],
+        });
         expect(container.firstChild).toBeNull();
     });
 
     it('renders at viewLevel folder', () => {
-        renderWith({ viewLevel: 'folder', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] } });
+        renderWith({
+            viewLevel: 'folder',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: baseSpace.id,
+            departments: [baseDept],
+            spaces: [baseSpace],
+        });
         expect(screen.getByTestId('shell-breadcrumb')).toBeInTheDocument();
     });
 });
 
 describe('ShellBreadcrumb — segments', () => {
     it('shows department name at folder level', () => {
-        renderWith({ viewLevel: 'folder', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] } });
-        expect(screen.getByTestId('breadcrumb-dept')).toHaveTextContent('Operations');
+        renderWith({
+            viewLevel: 'folder',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: baseSpace.id,
+            departments: [baseDept],
+            spaces: [baseSpace],
+        });
+        expect(screen.getByTestId('breadcrumb-dept')).toHaveTextContent(baseDept.name);
     });
 
     it('shows space name at folder level', () => {
-        renderWith({ viewLevel: 'folder', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] } });
-        expect(screen.getByTestId('breadcrumb-space')).toHaveTextContent('Ops Workspace');
+        renderWith({
+            viewLevel: 'folder',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: baseSpace.id,
+            departments: [baseDept],
+            spaces: [baseSpace],
+        });
+        expect(screen.getByTestId('breadcrumb-space')).toHaveTextContent(baseSpace.name);
     });
 
     it('does not show space segment when no space is active', () => {
-        renderWith({ viewLevel: 'folder', activeDepartmentId: 'dept-1', activeSpaceId: null, departments: [baseDept], spacesByDepartment: {} });
+        renderWith({
+            viewLevel: 'folder',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: null,
+            departments: [baseDept],
+        });
         expect(screen.queryByTestId('breadcrumb-space')).not.toBeInTheDocument();
     });
 });
@@ -81,7 +147,14 @@ describe('ShellBreadcrumb — segments', () => {
 describe('ShellBreadcrumb — navigation', () => {
     it('root click calls navigateToExplore', () => {
         const navigateToExplore = jest.fn();
-        renderWith({ viewLevel: 'folder', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] }, navigateToExplore });
+        renderWith({
+            viewLevel: 'folder',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: baseSpace.id,
+            departments: [baseDept],
+            spaces: [baseSpace],
+            navigateToExplore,
+        });
         fireEvent.click(screen.getByTestId('breadcrumb-root'));
         expect(navigateToExplore).toHaveBeenCalledTimes(1);
     });
@@ -89,10 +162,17 @@ describe('ShellBreadcrumb — navigation', () => {
     it('dept click at folder level calls navigateToDepartment', () => {
         const navigateToDepartment = jest.fn();
         const navigateToExplore = jest.fn();
-        renderWith({ viewLevel: 'folder', activeDepartmentId: 'dept-1', activeSpaceId: 'space-1', departments: [baseDept], spacesByDepartment: { 'dept-1': [baseSpace] }, navigateToDepartment, navigateToExplore });
+        renderWith({
+            viewLevel: 'folder',
+            activeDepartmentId: baseDept.id,
+            activeSpaceId: baseSpace.id,
+            departments: [baseDept],
+            spaces: [baseSpace],
+            navigateToDepartment,
+            navigateToExplore,
+        });
         fireEvent.click(screen.getByTestId('breadcrumb-dept'));
-        expect(navigateToDepartment).toHaveBeenCalledWith('dept-1');
+        expect(navigateToDepartment).toHaveBeenCalledWith(baseDept.id);
         expect(navigateToExplore).not.toHaveBeenCalled();
     });
 });
-

@@ -1,6 +1,7 @@
 // __tests__/components/mora/SessionChip.test.tsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { resetAllStores } from '../../test-utils';
 
 // ─── Mock Dock's store / hook deps (module level, pre-import) ─────────────────
 // SessionChip itself has no store reads (all props-driven), but importing Dock.tsx
@@ -9,6 +10,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 const mockOpenPane = jest.fn();
 
+// moraState is a legacy store being migrated — keep its mock
 jest.mock('@/lib/store/moraState', () => ({
     useMoraStore: (selector: (s: any) => unknown) =>
         selector({ isStandardMode: false, orbState: 'idle', user: null, companies: [],
@@ -16,10 +18,11 @@ jest.mock('@/lib/store/moraState', () => ({
                    setActiveDepartment: jest.fn(), setActiveCompany: jest.fn() }),
 }));
 
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector: (s: any) => unknown) =>
         selector({
-            panes: [],
+            panes: [STABLE_PANE],
             openPane: mockOpenPane,
             restorePane: jest.fn(),
             updatePanePosition: jest.fn(),
@@ -28,6 +31,7 @@ jest.mock('@/lib/store/paneStore', () => ({
             focusPane: jest.fn(),
             removePane: jest.fn(),
             getPane: jest.fn(),
+            activePaneId: 'pane-test',
         }),
 }));
 
@@ -67,6 +71,8 @@ jest.mock('@/components/mora/SearchPopup', () => ({
 
 // ─── Import the real SessionChip after mocks are registered ──────────────────
 import { SessionChip } from '@/components/mora/Dock';
+
+beforeEach(resetAllStores);
 
 describe('SessionChip', () => {
     beforeEach(() => {

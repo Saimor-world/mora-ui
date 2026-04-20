@@ -156,3 +156,65 @@ Mora verhält sich nicht wie ein typischer Chatbot. Sie ist:
 
 > "you know what to do to save humanity, we are part of it."
 
+---
+
+## Development Conventions (2026-04)
+
+### State Architecture
+
+| What | Where |
+|------|-------|
+| Server data (nodes, folders, spaces, etc.) | TanStack Query — `lib/queries/use*.ts` |
+| Navigation (company/dept/space/viewLevel) | `useNavStore` (`lib/store/navStore.ts`) |
+| Auth / user / permissions | `useSessionStore` (`lib/store/sessionStore.ts`) |
+| Orb / MindLoop UI state | `useOrbStore` (`lib/store/orbStore.ts`) |
+| Chat messages / scope | `useChatStore` (`lib/store/chatStore.ts`) |
+| Floating windows | `usePaneStore` (`lib/store/paneStore.ts`) |
+| **`useMoraStore`** | ⚠️ **BEING MIGRATED** — do not add new calls |
+
+### TanStack Query Rules
+
+- Version is **v5** — `onSuccess`/`onError` on `useQuery` do NOT work (v4 only). Use `useEffect` on `data` instead.
+- Query keys always come from `lib/queries/queryKeys.ts` — never hardcode arrays.
+- Always `invalidateQueries` after mutations using the matching `queryKeys.*` key.
+- `useMutation.onSuccess` is valid in v5.
+
+### API Conventions
+
+- All HTTP via `coreGet` / `corePost` / `corePatch` (from `lib/api/http.ts`).
+- `isOptional: true` returns `null` on any error — guard with `?? []`.
+- v3 API envelope `{ data, meta }` is unwrapped automatically by `coreRequest()`.
+- `AdminUser` objects use `user_id` field, not `id`.
+
+### Tests
+
+```bash
+# Run all tests
+npx jest --no-coverage --testPathPattern="__tests__"
+```
+
+- Baseline: ~502 passing, 15 pre-existing failures (surfaceRegistry/ScannerPane/UsersPane.pilot/Breadcrumb/UniverseView).
+- **No-mock architecture**: use `useNavStore.setState()` / `queryClient.setQueryData()` instead of mocking stores or query hooks.
+- Mock only I/O boundaries (`coreClient`, `realtimeClient`) and UI libraries (framer-motion, GlassPanel).
+- Declare stable array/object references **inside** `jest.mock()` factory closures to prevent infinite render loops.
+- `useDepartments` mock: must return a stable `[]` reference — a new `[]` on every call breaks `buildLocalResults` deps.
+
+### Git Gotchas
+
+- **index.lock conflict:** `Remove-Item 'C:\saimor\mora-ui\.git\index.lock' -Force`
+- **Active worktree:** `C:/saimor/.claude/worktrees/beautiful-hermann`, branch `stabilize/beta-1.5`
+- **Main migration branch:** `feature/app-platform` → see `docs/superpowers/plans/` for active plans
+
+### CSS
+
+- Do NOT use `@apply` with custom CSS variable tokens — fails in Next.js 15 + Tailwind v3 PostCSS pipeline.
+- Use `hsl(var(--token))` directly in CSS instead.
+
+### Custom Claude Skills
+
+Skills for this project live in `~/.claude/skills/`. Available skills:
+- `saimor-codebase-map` — directory structure, import aliases, API patterns
+- `saimor-tanstack-query` — v5-specific patterns and queryKeys conventions
+- `saimor-test-patterns` — mandatory mock stack for Jest tests
+- `saimor-store-guide` — which store to use, migration status
+

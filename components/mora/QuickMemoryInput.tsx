@@ -6,7 +6,7 @@ import { Brain, Send, X, Lightbulb, Check } from 'lucide-react';
 import { learnInsight } from '@/lib/api/coreClient';
 import { guessCategory, shouldAutoCommit } from '@/lib/memory';
 import { showMemoryLearnedToast } from '@/lib/memory/memoryNotifications';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 
 /**
  * QUICK MEMORY INPUT
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const [input, setInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);

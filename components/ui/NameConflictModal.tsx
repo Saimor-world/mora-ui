@@ -3,11 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X, Sparkles, PenLine } from 'lucide-react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useCreateSpace } from '@/lib/queries/useSpaces';
+import { useCreateFolder } from '@/lib/queries/useFolders';
+import { useCreateDepartment } from '@/lib/queries/useDepartments';
 
 /**
  * NameConflictModal
- * 
+ *
  * Shown when a 409 name_conflict is returned from the backend.
  * Displays:
  *   - The error message
@@ -16,9 +19,10 @@ import { useMoraStore } from '@/lib/store/moraState';
  *   - Cancel / Confirm actions
  */
 export default function NameConflictModal() {
-    const nameConflict = useMoraStore(s => s.nameConflict);
-    const resolveNameConflict = useMoraStore(s => s.resolveNameConflict);
-    const cancelNameConflict = useMoraStore(s => s.cancelNameConflict);
+    const { nameConflict, cancelNameConflict, activeDepartmentId, activeSpaceId, activeCompanyId } = useNavStore();
+    const createSpace = useCreateSpace(activeDepartmentId, activeCompanyId);
+    const createFolder = useCreateFolder(activeSpaceId, activeCompanyId);
+    const createDepartment = useCreateDepartment(activeCompanyId);
 
     const [customName, setCustomName] = useState('');
     const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
@@ -45,9 +49,13 @@ export default function NameConflictModal() {
         folder: 'Folder'
     } as const)[nameConflict.type];
 
-    const handleSubmit = () => {
-        if (!canSubmit) return;
-        resolveNameConflict(finalName);
+    const handleSubmit = async () => {
+        if (!canSubmit || !nameConflict) return;
+        cancelNameConflict();
+        const payload = { ...nameConflict.originalPayload, name: finalName };
+        if (nameConflict.type === 'space') await createSpace.mutateAsync(payload as any);
+        else if (nameConflict.type === 'folder') await createFolder.mutateAsync(payload as any);
+        else await createDepartment.mutateAsync(payload as any);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {

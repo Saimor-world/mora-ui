@@ -19,7 +19,10 @@ import {
     ChevronDown,
     ChevronUp,
 } from "lucide-react";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
+import { useOrbStore } from "@/lib/store/orbStore";
+import { useDepartments } from "@/lib/queries/useDepartments";
+import { useTree } from "@/lib/queries/useTree";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
 import MoraUpdatesFeed from "./MoraUpdatesFeed";
@@ -110,16 +113,19 @@ interface ActionDef {
 // ═══════════════════════════════════════════════════════════════════════════
 // UNIVERSE STATS GRID (merged from IntelligenceDashboard)
 // ═══════════════════════════════════════════════════════════════════════════
-const UniverseStatsGrid: React.FC = () => {
-    const departments = useMoraStore((s) => s.departments);
-    const spacesByDepartment = useMoraStore((s) => s.spacesByDepartment);
-    const foldersBySpace = useMoraStore((s) => s.foldersBySpace);
-    const nodesByFolder = useMoraStore((s) => s.nodesByFolder);
+interface UniverseStatsGridProps {
+    planetCount: number;
+    spaceCount: number;
+    nebulaCount: number;
+    starCount: number;
+}
 
-    const planetCount = departments.length;
-    const spaceCount = Object.values(spacesByDepartment).flat().length;
-    const nebulaCount = Object.values(foldersBySpace).flat().length;
-    const starCount = Object.values(nodesByFolder).flat().length;
+const UniverseStatsGrid: React.FC<UniverseStatsGridProps> = ({
+    planetCount,
+    spaceCount,
+    nebulaCount,
+    starCount,
+}) => {
 
     const stats = [
         { label: "Abteilungen", count: planetCount, color: "emerald" },
@@ -163,14 +169,15 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     compact = false,
     className,
 }) => {
-    const orbState = useMoraStore((s) => s.orbState);
-    const viewMode = useMoraStore((s) => s.viewMode);
-    const viewLevel = useMoraStore((s) => s.viewLevel);
+    const orbState = useOrbStore((s) => s.orbState);
+    const viewMode = useNavStore((s) => s.viewMode);
+    const viewLevel = useNavStore((s) => s.viewLevel);
     // cursorAgent — 1.0 gated (CursorAgent component is future-tier; local stub for UI)
     const cursorAgent = useMemo(() => ({ active: false, action: 'idle' as const }), []);
-    const departments = useMoraStore((s) => s.departments);
-    const activeDepartmentId = useMoraStore((s) => s.activeDepartmentId);
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
     const { hilEnabled, setHilEnabled } = useHilToggle();
     const { openPane, getPane, minimizePane } = usePaneStore();
     const [showMemory, setShowMemory] = useState(false);
@@ -178,6 +185,32 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
 
     const orbConfig = getOrbConfig(orbState, viewMode);
     const StatusIcon = orbConfig.icon;
+    const safeTree = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+
+    const universeCounts = useMemo(() => {
+        let spaceCount = 0;
+        let nebulaCount = 0;
+        let starCount = 0;
+
+        const visit = (nodes: any[]) => {
+            nodes.forEach((node) => {
+                if (node?.type === "space") spaceCount += 1;
+                else if (node?.type === "folder") nebulaCount += 1;
+                else if (node?.type && !["department"].includes(node.type)) starCount += 1;
+
+                if (Array.isArray(node?.children)) visit(node.children);
+            });
+        };
+
+        visit(safeTree as any[]);
+
+        return {
+            planetCount: safeDepartments.length,
+            spaceCount,
+            nebulaCount,
+            starCount,
+        };
+    }, [safeDepartments.length, safeTree]);
 
     // Dynamic context line
     const contextLine = useMemo(() => {
@@ -340,7 +373,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
                             <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 mb-2">
                                 Universe Übersicht
                             </div>
-                            <UniverseStatsGrid />
+                            <UniverseStatsGrid {...universeCounts} />
                         </div>
                     )}
 

@@ -1,16 +1,27 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { Dock } from '@/components/mora/Dock';
-import { useMoraStore } from '@/lib/store/moraState';
-import { usePaneStore } from '@/lib/store/paneStore';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
+// moraState is legacy/deprecated — keep its mock since it's being migrated
 jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn(),
+    useMoraStore: jest.fn((selector?: any) => {
+        const state = { departments: [], spacesByDepartment: {}, foldersBySpace: {} };
+        return typeof selector === 'function' ? selector(state) : state;
+    }),
 }));
 
+const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: jest.fn(),
+    usePaneStore: (sel?: (s: any) => unknown) => {
+        const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane: jest.fn(), removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE, restorePane: jest.fn() };
+        return sel ? sel(s) : s;
+    }
 }));
 
 jest.mock('@/lib/surface/surfaceRegistry', () => ({
@@ -56,19 +67,7 @@ jest.mock('framer-motion', () => {
     };
 });
 
-const mockUseMoraStore = useMoraStore as jest.MockedFunction<typeof useMoraStore>;
-const mockUsePaneStore = usePaneStore as jest.MockedFunction<typeof usePaneStore>;
-
-function renderWithState(state: Record<string, unknown>) {
-    mockUseMoraStore.mockImplementation((selector?: any) => (selector ? selector(state) : state));
-    const paneState = {
-        openPane: jest.fn(),
-        panes: [],
-        restorePane: jest.fn(),
-    };
-    mockUsePaneStore.mockImplementation((selector?: any) => (selector ? selector(paneState) : paneState));
-    return render(<Dock />);
-}
+beforeEach(resetAllStores);
 
 describe('Dock core navigation contract', () => {
     beforeEach(() => {
@@ -78,17 +77,35 @@ describe('Dock core navigation contract', () => {
     it('Home icon uses navigateToCore instead of partial manual reset', () => {
         const navigateToCore = jest.fn();
 
-        renderWithState({
+        useNavStore.setState({
             navigateToCore,
-            orbState: 'idle',
-            user: { role: 'member', name: 'User' },
-            companies: [],
             activeCompanyId: 'co-1',
             setActiveCompany: jest.fn(),
             viewMode: 'workspace',
             isStandardMode: false,
             setIsSearchOpen: jest.fn(),
-        });
+        } as any);
+
+        useSessionStore.setState({
+            user: { role: 'member', name: 'User' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true,
+            isLoggingOut: false,
+            resetStore: jest.fn(),
+            setIsLoggingOut: jest.fn(),
+            updateUserSettings: jest.fn(),
+        } as any);
+
+        useOrbStore.setState({
+            orbState: 'idle',
+            setOrbState: jest.fn(),
+        } as any);
+
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), []);
+        qc.setQueryData(queryKeys.departments('co-1'), []);
+
+        renderWithProviders(<Dock />, { queryClient: qc });
 
         fireEvent.click(screen.getByRole('button', { name: 'Home' }));
 

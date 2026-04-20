@@ -2,7 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import {
     getEffectiveRitualScene,
     RITUAL_SCENES,
@@ -74,10 +76,10 @@ const SCENE_PROFILES: Record<RitualSceneId, {
 };
 
 export const TemporalAtmosphere: React.FC = () => {
-    const orbState = useMoraStore((state) => state.orbState);
-    const viewLevel = useMoraStore((state) => state.viewLevel);
-    const isStandardMode = useMoraStore((state) => state.isStandardMode);
-    const userSettings = useMoraStore((state) => state.user?.settings);
+    const orbState = useOrbStore((state) => state.orbState);
+    const viewLevel = useNavStore((state) => state.viewLevel);
+    const isStandardMode = useNavStore((state) => state.isStandardMode);
+    const userSettings = useSessionStore((state) => state.user?.settings);
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {

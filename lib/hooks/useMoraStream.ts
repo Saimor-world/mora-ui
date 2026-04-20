@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { useSession } from "next-auth/react";
 import { getCoreBaseUrl } from "@/lib/api/coreClient";
-import { useMoraStore, type LastChatScopeState, type ScopeContract, type UiScopeHints } from "@/lib/store/moraState";
+import type { LastChatScopeState, ScopeContract, UiScopeHints } from "@/lib/store/moraState";
+import { useOrbStore } from "@/lib/store/orbStore";
+import { useChatStore } from "@/lib/store/chatStore";
 import type { OrbState } from "@/lib/api/awarenessClient";
+import { useRuntimeSession } from "@/lib/auth/runtimeSession";
 
 export interface ChatMessage {
     role: "user" | "assistant";
@@ -89,7 +91,12 @@ function isLocalhost(): boolean {
 }
 
 function resolveToken(session: any): string {
-    const sessionToken = session?.accessToken ?? session?.token ?? "";
+    const sessionToken =
+        session?.accessToken ??
+        session?.token ??
+        session?.user?.accessToken ??
+        session?.user?.token ??
+        "";
     if (sessionToken) return sessionToken;
 
     const cookieToken = readCookie(AUTH_COOKIE) || readCookie("saimor_auth");
@@ -153,7 +160,7 @@ function extractScopeUpdate(frame: StreamFrame): LastChatScopeState | null {
 }
 
 export function useMoraStream(): UseMoraStreamReturn {
-    const { data: session } = useSession();
+    const { data: session } = useRuntimeSession();
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamingText, setStreamingText] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -251,13 +258,13 @@ export function useMoraStream(): UseMoraStreamReturn {
                             }
 
                             if (json.orbState) {
-                                useMoraStore.getState().setOrbState(json.orbState);
+                                useOrbStore.getState().setOrbState(json.orbState);
                                 continue;
                             }
 
                             const scopeUpdate = extractScopeUpdate(json);
                             if (scopeUpdate) {
-                                useMoraStore.getState().setLastChatScope(scopeUpdate);
+                                useChatStore.getState().setLastChatScope(scopeUpdate);
                                 setLastResolvedScope(
                                     Object.keys(scopeUpdate.resolved_scope).length > 0
                                         ? (scopeUpdate.resolved_scope as ResolvedScope)
@@ -275,7 +282,7 @@ export function useMoraStream(): UseMoraStreamReturn {
                                 const validSource = VALID_SOURCES.has(rawSource ?? '')
                                     ? (rawSource as 'memory' | 'context' | 'inference')
                                     : null;
-                                useMoraStore.getState().setAnswerProvenance(
+                                useOrbStore.getState().setAnswerProvenance(
                                     validSource,
                                     rawMode,
                                     rawLabel ?? null,

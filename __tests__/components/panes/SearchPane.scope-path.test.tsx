@@ -1,11 +1,11 @@
 // __tests__/components/panes/SearchPane.scope-path.test.tsx
-//
-// Verifies Delta 3: SearchPane semantic results use scope_path (top-level) as
-// subtitle, not content preview, when scope_path is present.
 
 import React from 'react';
-import { render, screen, act, fireEvent } from '@testing-library/react';
+import { screen, act, fireEvent } from '@testing-library/react';
 import { searchSemantic, searchGlobal } from '@/lib/api/coreClient';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 // ── Module-level mocks (must be before any import that triggers them) ─────────
 
@@ -34,31 +34,13 @@ jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-// Stable references declared before jest.mock factories are called.
-// Prevents infinite useEffect loops caused by new array/object identity on each render.
-// SearchPane uses: departments → buildLocalResults, spacesByDepartment → allSpaces,
-// nodesByCompany → allNodes. All three feed into useEffect deps via useMemo.
+// Stable references to prevent infinite useEffect loops.
 const STABLE_DEPARTMENTS: never[] = [];
-const STABLE_SPACES_BY_DEPT: Record<string, never[]> = {};
-const STABLE_NODES_BY_COMPANY: Record<string, never[]> = {};
+const STABLE_TREE: never[] = [];
 const STABLE_COMPANIES = [{ id: 'company-1', name: 'Acme' }];
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: (s: any) => unknown) => {
-        const store = {
-            activeCompanyId: 'company-1',
-            user: { id: 'u1' },
-            companies: STABLE_COMPANIES,
-            isStandardMode: false,
-            departments: STABLE_DEPARTMENTS,
-            spacesByDepartment: STABLE_SPACES_BY_DEPT,
-            nodesByCompany: STABLE_NODES_BY_COMPANY,
-            setActiveDepartment: jest.fn(),
-            setActiveSpace: jest.fn(),
-            setViewLevel: jest.fn(),
-        };
-        return selector ? selector(store) : store;
-    },
+jest.mock('@/lib/queries/useTree', () => ({
+    useTree: () => ({ data: STABLE_TREE, isFetching: false }),
 }));
 
 // Stable pane object — identity must not change between renders.
@@ -95,15 +77,19 @@ jest.mock('@/lib/utils/searchOpen', () => ({
 }));
 
 // ── Import component AFTER mocks ──────────────────────────────────────────────
-import SearchPane from '@/components/panes/SearchPane';
+import SearchApp from '@/apps/search';
 
 const mockSearchSemantic = searchSemantic as jest.Mock;
 const mockSearchGlobal = searchGlobal as jest.Mock;
+
+beforeEach(resetAllStores);
 
 describe('SearchPane — semantic result scope_path priority', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockSearchGlobal.mockResolvedValue({ results: [] });
+
+        useNavStore.setState({ activeCompanyId: 'company-1' } as any);
     });
 
     it('shows scope_path as subtitle instead of content preview', async () => {
@@ -117,10 +103,12 @@ describe('SearchPane — semantic result scope_path priority', () => {
             metadata: { title: 'Q4 Report' },
         }]);
 
-        render(<SearchPane id="search-test" />);
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), STABLE_COMPANIES);
+        qc.setQueryData(queryKeys.departments('company-1'), STABLE_DEPARTMENTS);
+        renderWithProviders(<SearchApp paneId="search-test" initialData={{}} />, { queryClient: qc });
 
         // Trigger the search via React's synthetic event system.
-        // fireEvent.change correctly fires the onChange handler that sets `query` state.
         const input = screen.getByPlaceholderText(/Suche nach/i);
 
         await act(async () => {

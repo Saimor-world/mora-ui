@@ -6,7 +6,7 @@ import { Brain, Clock, CheckCircle, AlertCircle, Database, ShieldCheck, Sparkles
 import { useMemory } from '@/lib/hooks/useMemory';
 import { useMemorySurface } from '@/lib/hooks/useMemorySurface';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 
 /**
@@ -26,7 +26,7 @@ interface MemoryWidgetProps {
 export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) => {
     const { metrics, pendingCount, isLoading } = useMemory();
     const { surface } = useMemorySurface();
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const { activeCompanyId } = useNavStore();
     const { openPane } = usePaneStore();
     const isAccountScoped = !activeCompanyId;
 

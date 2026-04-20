@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Eye, EyeOff, Fingerprint, RefreshCw, LogOut, Moon } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { useAccentColor } from '@/lib/hooks/useAccentColor';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { toast } from 'sonner';
@@ -242,7 +242,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
                 >
                     <button
                         onClick={() => {
-                            useMoraStore.getState().resetStore();
+                            useSessionStore.getState().resetStore();
                             onLogout();
                         }}
                         className="flex items-center gap-2 text-sm hover:text-white/60 transition-colors"

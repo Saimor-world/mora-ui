@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getMemoryOverview, type MemoryOverview } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useNavStore } from "@/lib/store/navStore";
 
 export function useMemorySurface(manualCompanyId?: string | null) {
-    const activeCompanyId = useMoraStore((s) => s.activeCompanyId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const scopedCompanyId =
         manualCompanyId !== undefined
             ? manualCompanyId

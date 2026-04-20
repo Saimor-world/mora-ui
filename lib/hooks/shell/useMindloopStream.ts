@@ -7,7 +7,7 @@
 
 import { useEffect } from "react";
 import { getCoreBaseUrl } from "@/lib/api/coreClient";
-import { useMoraStore } from "@/lib/store/moraState";
+import { useOrbStore } from "@/lib/store/orbStore";
 import type { OrbState } from "@/lib/api/awarenessClient";
 
 type StreamEvent = {
@@ -116,7 +116,7 @@ export function useMindloopStream(enabled: boolean) {
         let idleTimer: NodeJS.Timeout | null = null;
 
         const applyState = (state: OrbState, ttlMs: number) => {
-            const store = useMoraStore.getState();
+            const store = useOrbStore.getState();
             store.setOrbState(state);
 
             if (idleTimer) {
@@ -124,9 +124,9 @@ export function useMindloopStream(enabled: boolean) {
                 idleTimer = null;
             }
             idleTimer = setTimeout(() => {
-                const current = useMoraStore.getState().orbState;
+                const current = useOrbStore.getState().orbState;
                 if (current === state && state !== "demo") {
-                    useMoraStore.getState().setOrbState("idle");
+                    useOrbStore.getState().setOrbState("idle");
                 }
             }, ttlMs);
         };

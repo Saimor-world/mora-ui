@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { useMoraStore } from '@/lib/store/moraState';
+import { useNavStore } from '@/lib/store/navStore';
+import { useDepartments } from '@/lib/queries/useDepartments';
 import { Building2, Briefcase, Users, DollarSign, TrendingUp } from 'lucide-react';
 import { Bubble } from './Bubble';
 import { calculateOrbitPositions, calculateDynamicRadius, calculateVisualCenter, type AnchorPoint, positionsToAnchorPoints } from '@/lib/orbit/orbitMath';
@@ -47,11 +48,8 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
     onDepartmentSelect,
     onAnchorPointsUpdate
 }) => {
-    const {
-        departments,
-        activeDepartmentId,
-        navigateToDepartment
-    } = useMoraStore();
+    const { activeCompanyId, activeDepartmentId, navigateToDepartment } = useNavStore();
+    const { data: departments = [] } = useDepartments(activeCompanyId);
 
     // Calculate center from viewport (accounts for sidebars/right panel)
     const calculatedCenter = useMemo(() => {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { coreGet } from '@/lib/api/coreClient';
+import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from '@/lib/integrations/communicationEvents';
 
 export interface MailOverview {
     configured?: boolean;
@@ -47,9 +48,73 @@ export interface IntegrationsOverview {
             configured_model?: string;
             recommended_model?: string;
             ollama_api_url?: string;
+            contract_version?: string;
+            mode?: string;
+            state?: string;
+            action_endpoint_template?: string;
+            jobs_endpoint?: string;
+            supported_actions?: string[];
             startup_script?: string;
+            startup_scripts?: {
+                windows?: string;
+                linux?: string;
+            };
             startup_command?: string;
+            startup_commands?: {
+                windows?: string;
+                linux?: string;
+            };
             ui_start_command?: string;
+            ui_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            core_start_command?: string;
+            core_start_commands?: {
+                windows?: string;
+                linux?: string;
+            };
+            platform_notes?: {
+                windows?: string;
+                linux?: string;
+            };
+            services?: {
+                ui?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
+                    supported_actions?: string[];
+                };
+                core?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                    running?: boolean;
+                    process_count?: number;
+                    pids?: number[];
+                    started_at?: string | null;
+                    supported_actions?: string[];
+                };
+                assistant?: {
+                    kind?: string;
+                    service_id?: string;
+                    status?: string;
+                    reachable?: boolean;
+                    status_code?: number | null;
+                    available?: boolean;
+                    configured_model?: string;
+                    error?: string;
+                    supported_actions?: string[];
+                };
+            };
             routing_profile?: string;
             available?: boolean;
             ui_candidates?: string[];
@@ -76,6 +141,26 @@ export interface IntegrationsOverview {
         calendar_oauth_enabled?: boolean;
         owner_manageable?: boolean;
         assistant_available?: boolean;
+    };
+    setup?: {
+        mail?: {
+            mode?: string;
+            requires_owner?: boolean;
+            required_fields?: string[];
+            optional_fields?: string[];
+            provider_options?: string[];
+            detail?: string;
+        };
+        calendar?: {
+            mode?: string;
+            requires_owner?: boolean;
+            configured?: boolean;
+            required_env?: string[];
+            missing_env?: string[];
+            redirect_url?: string;
+            provider?: string;
+            source?: string;
+        };
     };
 }
 
@@ -125,6 +210,31 @@ export function useIntegrationsOverview(autoLoad: boolean = true) {
     useEffect(() => {
         refreshBrowserBridge();
     }, [refreshBrowserBridge]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handleSync = () => {
+            void loadOverview();
+            refreshBrowserBridge();
+        };
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === getCommunicationSyncStorageKey()) {
+                void loadOverview();
+            }
+        };
+
+        window.addEventListener(COMMUNICATION_SYNC_EVENT, handleSync as EventListener);
+        window.addEventListener('storage', handleStorage);
+        window.addEventListener('focus', handleSync);
+
+        return () => {
+            window.removeEventListener(COMMUNICATION_SYNC_EVENT, handleSync as EventListener);
+            window.removeEventListener('storage', handleStorage);
+            window.removeEventListener('focus', handleSync);
+        };
+    }, [loadOverview, refreshBrowserBridge]);
 
     return {
         overview,

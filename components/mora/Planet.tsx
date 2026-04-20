@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, Users, DollarSign, TrendingUp, Code, LucideIcon, Folder, ArrowRight, Activity, Database } from 'lucide-react';
+import { LucideIcon, Folder, Activity, Database } from 'lucide-react';
 import { getDeptStyle as _getDeptStyle } from '@/lib/utils/deptStyle';
 
 interface PlanetProps {
@@ -23,7 +22,7 @@ interface PlanetProps {
     onHover?: (hovered: boolean) => void;
     health?: number;
     activity?: number;
-    capacity?: number; // V10: Knowledge Capacity / Storage Use
+    capacity?: number | null; // V10: Knowledge Capacity / Storage Use
 }
 
 export const Planet: React.FC<PlanetProps> = ({
@@ -37,42 +36,29 @@ export const Planet: React.FC<PlanetProps> = ({
     onHover,
     health = 98,
     activity = 42,
-    capacity = 65, // Default capacity
+    capacity = null,
     iconOverride
 }) => {
-    const [showContextMenu, setShowContextMenu] = useState(false);
-    const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
     const [isHovered, setIsHovered] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
-    const contextRef = useRef<HTMLDivElement>(null);
-    const planetRef = useRef<HTMLDivElement>(null);
+    const planetRef = useRef<HTMLButtonElement>(null);
     // Dwell timer: prevent blink when cursor briefly leaves the planet
     const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleMouseEnter = useCallback((e: React.PointerEvent | React.MouseEvent) => {
+    const handleMouseEnter = useCallback(() => {
         if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
         setIsHovered(true);
         onHover?.(true);
-        const rect = e.currentTarget.getBoundingClientRect();
-        setContextMenuPos({ x: rect.right + 16, y: rect.top + rect.height / 2 });
-        setShowContextMenu(true);
     }, [onHover]);
 
     const handleMouseLeave = useCallback(() => {
         leaveTimerRef.current = setTimeout(() => {
             setIsHovered(false);
             onHover?.(false);
-            setShowContextMenu(false);
-        }, 300); // 300ms dwell — screenshot-stable, no blink
+        }, 220);
     }, [onHover]);
 
     // Cleanup dwell timer on unmount
     useEffect(() => () => { if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current); }, []);
-
-    // Portal mount check (SSR safety)
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     const sizeMap = {
         sm: { diameter: 60, iconSize: 20 },
@@ -83,15 +69,23 @@ export const Planet: React.FC<PlanetProps> = ({
     const planetSize = sizeMap[size];
 
     // Use shared util — single source of truth across all layers.
-    const style = _getDeptStyle(department.name, department.color);
+    const style = _getDeptStyle(department.name);
     const Icon = iconOverride || style.icon;
+
+    const hasCapacity = typeof capacity === 'number' && Number.isFinite(capacity);
+    const ringProgress = hasCapacity ? Math.max(0, Math.min(100, capacity)) : 0;
+    const ringBaseOpacity = isHovered || isActive ? 0.24 : 0.09;
+    const ringProgressOpacity = isHovered || isActive ? 0.72 : 0.22;
+    const capacityTone = style.border;
+    const neutralRingTone = 'rgba(226, 232, 240, 0.16)';
+    const orbitTone = 'rgba(148, 163, 184, 0.18)';
 
     return (
         <motion.button
             ref={planetRef}
             type="button"
             aria-label={`${department.name} oeffnen`}
-            className="absolute group pointer-events-auto border-0 bg-transparent p-0 text-left cursor-pointer"
+            className="absolute group pointer-events-auto border-0 bg-transparent p-6 -m-6 text-left cursor-pointer touch-manipulation"
             style={{
                 left: position.x,
                 top: position.y,
@@ -99,6 +93,8 @@ export const Planet: React.FC<PlanetProps> = ({
             }}
             onPointerEnter={handleMouseEnter}
             onPointerLeave={handleMouseLeave}
+            onFocus={handleMouseEnter}
+            onBlur={handleMouseLeave}
             onClick={onClick}
             animate={{
                 y: isHovered || isActive ? [0, -4, 0] : [0, -2, 0],
@@ -126,40 +122,51 @@ export const Planet: React.FC<PlanetProps> = ({
                 transition={{ duration: 0.28, ease: 'easeOut' }}
             />
 
-            {/* ═ V10 FUNCTIONAL RINGS (Health & Capacity) ═ */}
-            <div className="absolute inset-[-40px] pointer-events-none flex items-center justify-center">
+            {/* Functional rings: capacity halo + structural orbit */}
+            <div className="absolute inset-[-34px] pointer-events-none flex items-center justify-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
-                    {/* 1. CAPACITY RING (Equator-Tight V10.6) */}
-                    <motion.circle
+                    <circle
                         cx="50"
                         cy="50"
-                        r="34"
+                        r="35.5"
                         fill="none"
-                        stroke={style.glow}
-                        strokeWidth="2.5"
-                        strokeDasharray="213"
-                        strokeDashoffset={213 - (213 * (capacity / 100))}
-                        strokeLinecap="round"
-                        transform="rotate(-90 50 50)"
-                        initial={{ opacity: 0.1 }}
-                        animate={{
-                            opacity: (isActive || isHovered) ? 1 : 0.6,
-                            strokeWidth: isHovered ? 4 : 2.5
-                        }}
+                        stroke={neutralRingTone}
+                        strokeWidth={isHovered || isActive ? '1.05' : '0.85'}
+                        opacity={ringBaseOpacity}
                     />
+                    {hasCapacity && ringProgress > 0 && (
+                        <motion.circle
+                            cx="50"
+                            cy="50"
+                            r="35.5"
+                            fill="none"
+                            stroke={capacityTone}
+                            strokeWidth={isHovered || isActive ? 1.35 : 0.95}
+                            strokeDasharray="223"
+                            strokeDashoffset={223 - (223 * (ringProgress / 100))}
+                            strokeLinecap="round"
+                            transform="rotate(-90 50 50)"
+                            animate={{
+                                opacity: ringProgressOpacity,
+                            }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
+                        />
+                    )}
 
-                    {/* 2. ACTIVITY PULSE (Neural Ripple) */}
                     <motion.circle
                         cx="50"
                         cy="50"
-                        r="40"
+                        r="42"
                         fill="none"
-                        stroke={style.glow}
-                        strokeWidth="0.8"
+                        stroke={orbitTone}
+                        strokeWidth="0.65"
                         strokeDasharray="2 8"
-                        opacity="0.4"
-                        animate={{ opacity: isHovered || isActive ? 0.55 : 0.25 }}
-                        transition={{ duration: 0.2 }}
+                        animate={{
+                            opacity: isHovered || isActive ? 0.12 : 0.035,
+                            scale: isHovered ? 1.03 : 1,
+                        }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        style={{ transformOrigin: '50px 50px' }}
                     />
 
                     <motion.circle
@@ -167,30 +174,15 @@ export const Planet: React.FC<PlanetProps> = ({
                         cy="50"
                         r="46"
                         fill="none"
-                        stroke={`${style.glow}55`}
-                        strokeWidth="0.5"
-                        opacity="0.22"
+                        stroke="rgba(226, 232, 240, 0.1)"
+                        strokeWidth="0.45"
                         animate={{
-                            opacity: isHovered || isActive ? 0.34 : 0.12,
-                            scale: isHovered ? 1.03 : 1,
+                            opacity: isHovered || isActive ? 0.06 : 0.018,
+                            scale: isHovered || isActive ? 1.02 : 1,
                         }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
                         style={{ transformOrigin: '50px 50px' }}
                     />
-
-                    {/* 3. CINEMATIC LABEL CONNECTOR */}
-                    <AnimatePresence>
-                        {(isHovered || isActive) && (
-                            <motion.path
-                                initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{ pathLength: 1, opacity: 1 }}
-                                exit={{ pathLength: 0, opacity: 0 }}
-                                d="M 84 50 L 92 50"
-                                stroke="white"
-                                strokeWidth="0.5"
-                                opacity="0.6"
-                            />
-                        )}
-                    </AnimatePresence>
                 </svg>
             </div>
 
@@ -210,16 +202,21 @@ export const Planet: React.FC<PlanetProps> = ({
                 style={{
                     width: planetSize.diameter,
                     height: planetSize.diameter,
+                    transformOrigin: '50% 50%',
                     '--orb-glow': `${style.glow}08`,
                     '--orb-border': `${style.border}30`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 78px ${style.glow}46, 0 22px 52px rgba(0,0,0,0.46), inset 0 0 36px ${style.glow}22, inset 2px 2px 8px rgba(255,255,255,0.3)`
-                        : `0 18px 44px rgba(0,0,0,0.44), inset 0 0 18px ${style.glow}10, inset 1px 1px 2px rgba(255,255,255,0.15)`,
+                        ? `0 0 44px ${style.glow}28, 0 18px 44px rgba(0,0,0,0.46), inset 0 0 22px ${style.glow}14, inset 2px 2px 6px rgba(255,255,255,0.26)`
+                        : `0 14px 36px rgba(0,0,0,0.42), inset 0 0 14px ${style.glow}0C, inset 1px 1px 2px rgba(255,255,255,0.14)`,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.08 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                 animate={{
-                    rotateZ: isHovered ? [0, 1.2, 0] : 0,
+                    scale: isHovered || isActive ? 1.03 : 1,
+                    rotateZ: isHovered ? 1.2 : 0,
+                }}
+                transition={{
+                    scale: { type: 'spring', stiffness: 280, damping: 24 },
+                    rotateZ: { duration: 0.18, ease: 'easeOut' },
                 }}
             >
                 {/* Subsurface scattering core */}
@@ -277,155 +274,24 @@ export const Planet: React.FC<PlanetProps> = ({
                                     <span>{health}% Health</span>
                                 </div>
                             </div>
-                            {capacity > 0 && (
+                            {hasCapacity && ringProgress > 0 && (
                                 <div className="flex items-center gap-2">
                                     <div className="h-[3px] w-16 rounded-full bg-white/10 overflow-hidden">
                                         <div
                                             className="h-full rounded-full transition-all duration-500"
                                             style={{
-                                                width: `${Math.min(100, capacity)}%`,
-                                                background: capacity > 70 ? '#10B981' : capacity > 30 ? '#F59E0B' : '#6B7280'
+                                                width: `${ringProgress}%`,
+                                                background: ringProgress > 70 ? '#10B981' : ringProgress > 30 ? '#F59E0B' : '#6B7280'
                                             }}
                                         />
                                     </div>
-                                    <span className="text-[7px] text-white/30 font-mono">{capacity}%</span>
+                                    <span className="text-[7px] text-white/30 font-mono">{ringProgress}%</span>
                                 </div>
                             )}
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
-
-            {/* ═ PREMIUM HOVER TOOLTIP (Portal) ═ */}
-            {isMounted && showContextMenu && createPortal(
-                <AnimatePresence>
-                    <motion.div
-                        ref={contextRef}
-                        initial={{ opacity: 0, x: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: -10, scale: 0.95 }}
-                        transition={{
-                            type: 'spring',
-                            stiffness: 220,
-                            damping: 30,
-                        }}
-                        className="fixed z-[9999] pointer-events-none"
-                        style={{
-                            left: contextMenuPos.x,
-                            top: contextMenuPos.y,
-                            transform: 'translateY(-50%)'
-                        }}
-                    >
-                        {/* Glassmorphic Card */}
-                        <div
-                            className="relative px-4 py-3 rounded-xl backdrop-blur-xl border border-white/20 shadow-2xl min-w-[180px]"
-                            style={{
-                                background: 'linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(20,20,30,0.8) 100%)',
-                                boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 60px ${style.glow}15, inset 0 1px 0 rgba(255,255,255,0.1)`
-                            }}
-                        >
-                            {/* Accent Line */}
-                            <div
-                                className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full"
-                                style={{ background: `linear-gradient(180deg, ${style.glow}, ${style.glow}40)` }}
-                            />
-
-                            {/* Content */}
-                            <div className="ml-2">
-                                {/* Name */}
-                                <h4
-                                    className="text-sm font-semibold tracking-wide mb-2"
-                                    style={{ color: style.border }}
-                                >
-                                    {department.name}
-                                </h4>
-
-                                {/* Stats Grid */}
-                                <div className="space-y-2">
-                                    {/* Activity / Docs */}
-                                    <div className="flex items-center justify-between text-xs">
-                                        <div className="flex items-center gap-1.5 text-white/60">
-                                            <Database size={11} className="opacity-70" />
-                                            <span>Documents</span>
-                                        </div>
-                                        <span className="font-mono text-cyan-400">{activity}</span>
-                                    </div>
-
-                                    {/* Health */}
-                                    <div className="flex items-center justify-between text-xs">
-                                        <div className="flex items-center gap-1.5 text-white/60">
-                                            <Activity size={11} className="opacity-70" />
-                                            <span>Health</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-12 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                                                <motion.div
-                                                    className="h-full rounded-full"
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${health}%` }}
-                                                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                                                    style={{
-                                                        background: health > 80 ? '#10B981' : health > 50 ? '#F59E0B' : '#EF4444'
-                                                    }}
-                                                />
-                                            </div>
-                                            <span className="font-mono text-emerald-400 w-8 text-right">{health}%</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Capacity */}
-                                    <div className="flex items-center justify-between text-xs">
-                                        <div className="flex items-center gap-1.5 text-white/60">
-                                            <Folder size={11} className="opacity-70" />
-                                            <span>Capacity</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-12 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                                                <motion.div
-                                                    className="h-full rounded-full"
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${capacity}%` }}
-                                                    transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
-                                                    style={{
-                                                        background: capacity < 70 ? '#10B981' : capacity < 90 ? '#F59E0B' : '#EF4444'
-                                                    }}
-                                                />
-                                            </div>
-                                            <span className="font-mono text-amber-400 w-8 text-right">{capacity}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Description (if available) */}
-                                {department.description && (
-                                    <p className="mt-2 pt-2 border-t border-white/10 text-[10px] text-white/40 leading-relaxed line-clamp-2">
-                                        {department.description}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Corner Glow */}
-                            <div
-                                className="absolute -top-1 -right-1 w-8 h-8 rounded-full blur-xl opacity-30"
-                                style={{ background: style.glow }}
-                            />
-                        </div>
-
-                        {/* Connector Arrow */}
-                        <div
-                            className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2"
-                            style={{
-                                width: 0,
-                                height: 0,
-                                borderTop: '6px solid transparent',
-                                borderBottom: '6px solid transparent',
-                                borderRight: '6px solid rgba(255,255,255,0.15)'
-                            }}
-                        />
-                    </motion.div>
-                </AnimatePresence>,
-                document.body
-            )}
         </motion.button>
     );
 };
