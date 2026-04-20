@@ -2198,7 +2198,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid gap-4 xl:grid-cols-[156px_minmax(0,1fr)_260px]">
+                                        <div className="grid gap-4 xl:grid-cols-[156px_minmax(0,1fr)]">
                                             <aside className="space-y-4">
                                                 <div className="rounded-[22px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.012))] px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.14)]">
                                                     <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Explorer</p>
@@ -2478,113 +2478,6 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             )}
                                             </div>
 
-                                            <aside className="space-y-4">
-                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.016))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)]">
-                                                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Fokus</p>
-                                                    {selectedEntry ? (
-                                                        <>
-                                                            <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/32">
-                                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] text-white/55">
-                                                                    Auswahl
-                                                                </span>
-                                                                <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
-                                                            </div>
-                                                            <div className="mt-3 text-[15px] font-medium leading-snug text-white/90">
-                                                                {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
-                                                            </div>
-                                                            <div className="mt-3 space-y-1.5 text-[11px] leading-relaxed text-white/42">
-                                                                <p>
-                                                                    {selectedEntry.kind === 'folder'
-                                                                        ? `Oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'} im aktuellen Explorer.`
-                                                                        : getContextOpenLabel(selectedEntry.item, 'file')}
-                                                                </p>
-                                                                {selectedEntry.kind === 'file' && selectedEntry.item?.created_at && (
-                                                                    <p>{new Date(selectedEntry.item.created_at).toLocaleDateString()}</p>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) && (
-                                                                    <p>{`${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB`}</p>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && (
-                                                                    <p>{getSourceFileSecondaryLabel(selectedEntry.item)}</p>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && !selectedEntry.item?.folder_id && (
-                                                                    <p className="text-amber-200/58">Noch nicht in einen Ordner eingeordnet.</p>
-                                                                )}
-                                                            </div>
-                                                            <div className="mt-4 flex flex-wrap items-center gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (selectedEntry.kind === 'folder') {
-                                                                            navigateToFolder(selectedEntry.item.id);
-                                                                        } else {
-                                                                            openFinderNode(selectedEntry.item);
-                                                                        }
-                                                                    }}
-                                                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3 py-1.5 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
-                                                                >
-                                                                    <ExternalLink size={13} />
-                                                                    {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
-                                                                </button>
-                                                                {selectedEntry.kind === 'file' && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => void handleAutoRouteFile(selectedEntry.item)}
-                                                                        className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/14 px-3 py-1.5 text-[11px] font-medium text-amber-50 transition-colors hover:border-amber-300/35 hover:bg-amber-500/22"
-                                                                    >
-                                                                        <Sparkles size={13} />
-                                                                        Automatisch einordnen
-                                                                    </button>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && resolveUploadFolderId() && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => void handleMoveFileToCurrentFolder(selectedEntry.item)}
-                                                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                                                    >
-                                                                        <CornerUpLeft size={13} />
-                                                                        In aktuellen Ordner
-                                                                    </button>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => void handleOpenSourceFile(selectedEntry.item)}
-                                                                        className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                                                    >
-                                                                        <Paperclip size={13} />
-                                                                        Quelle
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setSelectedNodeId(null)}
-                                                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                                                >
-                                                                    Auswahl aufheben
-                                                                </button>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="mt-3 text-sm font-medium text-white/78">Noch nichts ausgewaehlt</div>
-                                                            <p className="mt-2 text-[12px] leading-relaxed text-white/42">
-                                                                Waehle links Struktur oder Inhalte aus. Doppelklick oeffnet direkt, ein Klick legt den Fokus hier ab.
-                                                            </p>
-                                                            <div className="mt-4 space-y-2">
-                                                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
-                                                                    <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Startlogik</p>
-                                                                    <p className="mt-2 text-[12px] text-white/44">Struktur zuerst, Inhalte daneben. Dateien ohne Bereich erscheinen getrennt, damit der aktive Arbeitsfluss klar bleibt.</p>
-                                                                </div>
-                                                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
-                                                                    <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
-                                                                    <p className="mt-2 text-[12px] text-white/44">Mit Klein, Mittel und Gross steuerst du, wie dicht oder wie galeristisch der Explorer wirken soll.</p>
-                                                                </div>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </aside>
                                         </div>
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
