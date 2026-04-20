@@ -6,13 +6,12 @@ import {
 } from '@/lib/os/surfaceProfile';
 
 export const useSurfaceProfile = (): SurfaceProfileSnapshot => {
-    const [profile, setProfile] = useState<SurfaceProfileSnapshot>(() => {
-        if (typeof window === 'undefined') return DEFAULT_SURFACE_PROFILE;
-        return resolveSurfaceProfile(window.location.hostname);
-    });
+    // Always start with the default profile so server and client render identically.
+    // The real hostname-based profile is applied after mount in useEffect to avoid
+    // SSR/client hydration mismatches (typeof window differs between environments).
+    const [profile, setProfile] = useState<SurfaceProfileSnapshot>(DEFAULT_SURFACE_PROFILE);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
         setProfile(resolveSurfaceProfile(window.location.hostname));
     }, []);
 
