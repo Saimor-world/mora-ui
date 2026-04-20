@@ -16,7 +16,13 @@ npm run verify:types
 npm run verify:critical-flow
 ```
 
-3. Combined smoke gate
+3. Hermetic OS smoke gate
+
+```bash
+npm run verify:os:smoke
+```
+
+4. Combined live smoke gate
 
 ```bash
 npm run verify:mr16:smoke
@@ -32,6 +38,14 @@ npm run verify:mr16:smoke
 If any check fails, process exits with code `1`.
 
 ## Local/CI Inputs
+
+`verify:os:smoke` is the default CI-safe OS regression gate. It runs a focused,
+fully local Jest subset that covers root session entry, Home surface boot,
+shell breadcrumbs, Dock navigation, and terminal session truth without relying
+on a shared live deployment.
+
+`verify:mr16:smoke` remains a live-environment canary. It is useful for staged
+validation, but it is not the primary hermetic CI signal.
 
 Defaults:
 - `SAIMOR_BASE_URL=https://api.saimor.world`

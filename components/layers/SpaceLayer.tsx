@@ -140,7 +140,6 @@ type PositionedFolder = RankedFolder & {
 
 export const SpaceLayer: React.FC = () => {
     const { activeSpaceId, activeDepartmentId, activeCompanyId, activeFolderId, viewLevel, navigateToDepartment, navigateToExplore, navigateToFolder } = useNavStore();
-    const nodesByFolder: Record<string, unknown[]> = {};
     const orbState = useOrbStore((state) => state.orbState);
 
     const queryClient = useQueryClient();
@@ -266,6 +265,7 @@ export const SpaceLayer: React.FC = () => {
     // useFolders(activeSpaceId) auto-fetches when activeSpaceId changes
 
     const rankedFolders = useMemo(() => {
+        const nodesByFolder: Record<string, unknown[]> = {};
         const ranked = folders.map((folder, index) => {
             const liveNodes = nodesByFolder[folder.id] || [];
             const docCount = liveNodes.length > 0 ? liveNodes.length : (folder.node_count || 0);
@@ -296,7 +296,7 @@ export const SpaceLayer: React.FC = () => {
         const activeEntry = ranked.find((entry) => entry.folder.id === activeFolderId);
         if (!activeEntry) return limited;
         return [...limited.slice(0, Math.max(0, MAX_RENDERED_FOLDERS - 1)), activeEntry];
-    }, [folders, nodesByFolder, activeFolderId]);
+    }, [folders, activeFolderId]);
 
     const laneCounts = useMemo(
         () => rankedFolders.reduce<Record<LaneKey, number>>((accumulator, _, index) => {

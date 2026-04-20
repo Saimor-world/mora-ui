@@ -623,37 +623,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [navigateBack, navigateForward, navigateUp]);
 
-    /**
-     * Click-race guard for folder navigation.
-     * Framer Motion's gesture system can absorb native `dblclick` on animated elements.
-     * Instead we track two rapid clicks ourselves: first click selects, second click
-     * within DOUBLE_CLICK_MS navigates forward -- deterministic in all view modes.
-     */
-    const DOUBLE_CLICK_MS = 300;
-    const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastClickedFolderRef = useRef<string | null>(null);
-
     const handleFolderClick = useCallback((e: React.MouseEvent, folderId: string) => {
         e.stopPropagation();
-        if (
-            lastClickedFolderRef.current === folderId &&
-            clickTimerRef.current !== null
-        ) {
-            // Second click within window -> navigate forward
-            clearTimeout(clickTimerRef.current);
-            clickTimerRef.current = null;
-            lastClickedFolderRef.current = null;
-            navigateToFolder(folderId);
-        } else {
-            // First click -> select only; arm timer
-            if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-            setSelectedNodeId(folderId);
-            lastClickedFolderRef.current = folderId;
-            clickTimerRef.current = setTimeout(() => {
-                clickTimerRef.current = null;
-                lastClickedFolderRef.current = null;
-            }, DOUBLE_CLICK_MS);
-        }
+        navigateToFolder(folderId);
     }, [navigateToFolder]);
 
     // DEEP VIEW STATE
@@ -2347,13 +2319,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                     <motion.div
                                                         key={file.id}
                                                         id={`file-node-${file.id}`}
-                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
+                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); checkResonance(file.id); openFinderNode(file); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
-                                                        onDoubleClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            checkResonance(file.id);
-                                                            openFinderNode(file);
-                                                        }}
                                                         className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
                                                             ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
                                                             : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
@@ -2471,8 +2438,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             return (
                                                                 <motion.div
                                                                     key={file.id}
-                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
-                                                                    onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); openFinderNode(file); }}
+                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); openFinderNode(file); }}
                                                                     onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
                                                                     className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 opacity-70 hover:opacity-90 ${isSelected
                                                                         ? 'bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(245,158,11,0.06))] border-amber-500/35'
@@ -2847,13 +2813,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                     <div
                                                         key={file.id}
                                                         id={`file-node-${file.id}`}
-                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
+                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); checkResonance(file.id); openFinderNode(file); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
-                                                        onDoubleClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            checkResonance(file.id);
-                                                            openFinderNode(file);
-                                                        }}
                                                         className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50'
                                                             : isResonant

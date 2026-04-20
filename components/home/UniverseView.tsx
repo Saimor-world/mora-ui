@@ -324,7 +324,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ...dept,
                 color: dept.color,
                 x: 50 + (ring.rx * Math.cos(angle)), // Circular orbits for stability
-                y: 54 + (ring.ry * Math.sin(angle)), // +4% bias keeps planets away from top edge
+                y: 46 + (ring.ry * Math.sin(angle)), // -4% from center keeps planets clear of the dock
                 angle,
                 rx: ring.rx,
                 ry: ring.ry,

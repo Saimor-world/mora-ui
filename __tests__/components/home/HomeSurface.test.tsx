@@ -25,6 +25,40 @@ jest.mock('@/lib/auth/sessionLifecycle', () => ({
     clearClientSessionArtifacts: jest.fn(),
 }));
 
+jest.mock('@/lib/hooks/useCommunicationLiveData', () => ({
+    useCommunicationLiveData: () => ({
+        mailPreview: [],
+        calendarPreview: [],
+        isLoading: false,
+        refresh: jest.fn(),
+    }),
+}));
+
+jest.mock('@/lib/hooks/useIntegrationsOverview', () => ({
+    useIntegrationsOverview: () => ({
+        overview: null,
+        isLoading: false,
+        error: null,
+        browserBridge: { supported: false, permission: 'unsupported' },
+        loadOverview: jest.fn(),
+        refreshBrowserBridge: jest.fn(),
+    }),
+}));
+
+jest.mock('@/lib/hooks/useLocalTruthBridge', () => ({
+    useLocalTruthBridge: () => ({
+        state: 'offline',
+        isLocalSurface: true,
+        uiReachable: false,
+        coreReachable: false,
+        selectedUiUrl: null,
+        selectedCoreUrl: null,
+        lastCheckedAt: null,
+        error: null,
+        refresh: jest.fn(),
+    }),
+}));
+
 jest.mock('@/lib/home/briefing', () => ({
     buildBriefing: jest.fn((_depts: any, _tree: any) => 'R&D ist aktiv — 3 Inhalte.'),
 }));

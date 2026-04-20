@@ -517,53 +517,6 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             <HomeChip label="Privat" value={(privateArea?.documentCount ?? 0) + (privateArea?.fileCount ?? 0)} />
                         </div>
 
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                            <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
-                                <div className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/44">Browser</div>
-                                <div className="mt-1 text-[11px] text-white/76">{browserStatusLabel}</div>
-                            </div>
-                            <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
-                                <div className="text-[9px] uppercase tracking-[0.16em] text-emerald-200/44">Mail</div>
-                                <div className="mt-1 text-[11px] text-white/76">{mailStatusLabel}</div>
-                                {latestMail ? (
-                                    <div className="mt-1 truncate text-[10px] text-white/46">
-                                        {latestMail.from}: {latestMail.subject}
-                                    </div>
-                                ) : null}
-                            </div>
-                            <div className="rounded-[16px] border border-white/[0.05] bg-white/[0.025] px-3 py-2.5">
-                                <div className="text-[9px] uppercase tracking-[0.16em] text-violet-200/44">Local</div>
-                                <div className="mt-1 text-[11px] text-white/76">{localTruthStatusLabel}</div>
-                                {nextCalendarEvent ? (
-                                    <div className="mt-1 truncate text-[10px] text-white/46">
-                                        {nextCalendarEvent.title}
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                            <button
-                                type="button"
-                                onClick={openUniverse}
-                                data-interaction-sound="firm"
-                                className="rounded-[20px] border border-cyan-400/10 bg-cyan-500/[0.06] px-3.5 py-3 text-left transition-all hover:border-cyan-300/18 hover:bg-cyan-500/[0.11]"
-                            >
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-cyan-100/54">Raum</div>
-                                <div className="mt-2 text-[14px] text-cyan-50/92">Live-Topographie</div>
-                                <div className="mt-1 text-[10px] text-cyan-100/48">Planetenraum</div>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={openFinder}
-                                className="rounded-[20px] border border-emerald-400/10 bg-emerald-500/[0.05] px-3.5 py-3 text-left transition-all hover:border-emerald-300/18 hover:bg-emerald-500/[0.09]"
-                            >
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-100/52">Arbeit</div>
-                                <div className="mt-2 text-[14px] text-emerald-50/90">Finder</div>
-                                <div className="mt-1 text-[10px] text-emerald-100/48">Inhalte</div>
-                            </button>
-                        </div>
-
                         {featuredDeptTiles.length > 0 && (
                             <div data-testid="dept-pulse-tiles" className="mt-3 flex flex-wrap gap-2">
                                 {featuredDeptTiles.map(({ dept, count, active, loaded }) => (
@@ -811,48 +764,6 @@ export const HomeSurface: React.FC<{ overlayMode?: boolean }> = ({ overlayMode =
                             </button>
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                onClick={openBrowserConnect}
-                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/14 bg-cyan-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-cyan-100/80 transition-colors hover:border-cyan-300/24 hover:bg-cyan-500/[0.13]"
-                            >
-                                <Bell size={12} />
-                                Browser verbinden
-                            </button>
-                            <button
-                                type="button"
-                                onClick={openMail}
-                                className="inline-flex items-center gap-2 rounded-full border border-emerald-400/14 bg-emerald-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-emerald-100/80 transition-colors hover:border-emerald-300/24 hover:bg-emerald-500/[0.13]"
-                            >
-                                <Mail size={12} />
-                                Post oeffnen
-                            </button>
-                            <button
-                                type="button"
-                                onClick={openLocalTruth}
-                                className="inline-flex items-center gap-2 rounded-full border border-violet-400/14 bg-violet-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/80 transition-colors hover:border-violet-300/24 hover:bg-violet-500/[0.13]"
-                            >
-                                <Wrench size={12} />
-                                Local Truth oeffnen
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void localTruthBridge.refresh()}
-                                className="inline-flex items-center gap-2 rounded-full border border-violet-400/14 bg-violet-500/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/80 transition-colors hover:border-violet-300/24 hover:bg-violet-500/[0.13]"
-                            >
-                                <Wrench size={12} />
-                                Localhost pruefen
-                            </button>
-                            <button
-                                type="button"
-                                onClick={openIntegrations}
-                                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-white/58 transition-colors hover:border-white/14 hover:bg-white/[0.06] hover:text-white/76"
-                            >
-                                <Wrench size={12} />
-                                Integrationen
-                            </button>
-                        </div>
                     </div>
 
                     <div className="pointer-events-auto rounded-[24px] border border-white/[0.05] bg-[linear-gradient(160deg,rgba(5,16,18,0.18),rgba(4,10,13,0.03))] p-3.5 shadow-[0_12px_28px_rgba(0,0,0,0.08)] backdrop-blur-[14px]">
