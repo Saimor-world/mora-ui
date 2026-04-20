@@ -16,7 +16,7 @@ interface SpeakEventDetail {
  */
 export const OrbMessageEffect: React.FC = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
-    const [target, setTarget] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    const [target, setTarget] = useState({ x: 0, y: 0 }); // SSR-safe: real values resolved in useEffect
 
     useEffect(() => {
         const handleSpeak = (e: CustomEvent<SpeakEventDetail>) => {
