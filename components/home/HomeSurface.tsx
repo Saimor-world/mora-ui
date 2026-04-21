@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench, Sparkles } from 'lucide-react';
+import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Mail, Globe, CalendarDays, Wrench, Sparkles } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';

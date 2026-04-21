@@ -27,7 +27,7 @@ import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
-import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2, LayoutList } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';

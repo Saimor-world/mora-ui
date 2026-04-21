@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * MailPane - Guided Agency Day 1
@@ -12,12 +12,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
-import { coreGet, corePost, corePut } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
 import { normalizeList } from '@/lib/api/http';
 import { useNavStore } from '@/lib/store/navStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
-import { Mail, Send, Inbox, Star, Trash2, Archive, Shield, RefreshCw, Loader2, Search, ArrowLeft, Filter, Paperclip, MoreVertical, Minus, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
+import { Mail, Send, Inbox, Archive, RefreshCw, Loader2, ArrowLeft, Paperclip, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
