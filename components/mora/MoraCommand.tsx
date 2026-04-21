@@ -75,8 +75,6 @@ export function MoraCommand({ onSuccess }: MoraCommandProps) {
     };
 
     const executePlan = async (plan: AgentAction) => {
-        console.log("Executing Plan:", plan);
-
         if (plan.message) {
             toast.success(plan.message, { duration: 5000 });
         }

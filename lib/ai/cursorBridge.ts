@@ -138,7 +138,7 @@ export function executeCursorCommands(commands: CursorCommand[]): void {
                     break;
 
                 default:
-                    console.log('[CursorBridge] Unknown command:', cmd);
+                    break;
             }
         }, index * 500); // Stagger by 500ms
     });

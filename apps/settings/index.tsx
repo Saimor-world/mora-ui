@@ -1385,8 +1385,6 @@ useEffect(() => {
                                             const token = session?.user?.accessToken; // || localStorage fallback removed
                                             const userId = session?.user?.id || user?.id || 'demo_user';
 
-                                            console.log('[Reset Debug] Token present:', !!token, 'User ID:', userId);
-
                                             // Call correct endpoint from demo.py: /reset-instance
                                             const headers: Record<string, string> = {
                                                 'Content-Type': 'application/json',

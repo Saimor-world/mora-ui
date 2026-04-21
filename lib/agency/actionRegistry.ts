@@ -87,7 +87,6 @@ function logAction(action: AgencyAction, status: ActionLogEntry['status'], error
         error
     };
     _actionLog.push(entry);
-    console.log(`[Agency] ${status.toUpperCase()}: ${action.type} → ${action.target_id} | ${action.reason}`);
 }
 
 // ============================================
@@ -196,11 +195,8 @@ export async function executeProposal(proposal: ActionProposal): Promise<void> {
         }
     }));
 
-    console.log(`[Agency] Starting proposal ${proposal.proposal_id} with ${proposal.actions.length} actions`);
-
     for (const action of proposal.actions) {
         if (_abortController.signal.aborted) {
-            console.log('[Agency] Execution aborted');
             break;
         }
 
@@ -229,7 +225,6 @@ export async function executeProposal(proposal: ActionProposal): Promise<void> {
         }
     }));
 
-    console.log(`[Agency] Proposal ${proposal.proposal_id} complete`);
 }
 
 /**
@@ -238,7 +233,6 @@ export async function executeProposal(proposal: ActionProposal): Promise<void> {
 export function abortExecution(): void {
     if (_abortController) {
         _abortController.abort();
-        console.log('[Agency] Abort signal sent');
     }
     _isExecuting = false;
     notifyListeners(null);

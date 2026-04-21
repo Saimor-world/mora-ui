@@ -187,7 +187,6 @@ export const ResonanceRoom: React.FC<Props> = ({
             const category = guessCategory(insight);
             try {
                 await learnInsight({ insight, category, auto_commit: category !== 'fact', company_id: activeCompanyId });
-                console.log("[ResonanceRoom] Learning insight:", { insight, category });
             } catch (e) {
                 console.warn("[ResonanceRoom] Memory learning failed (backend not ready?):", e);
             }
@@ -231,11 +230,6 @@ export const ResonanceRoom: React.FC<Props> = ({
                         setMessages(prev => [...prev, confirmMessage]);
                     }
                 } else {
-                    // Show the final response
-                    const toolInfo = response.tools_executed.length > 0
-                        ? `[${response.tools_executed.map(t => t.tool).join(' -> ')}]`
-                        : '';
-
                     const moraMessage: ResonanceMessage = {
                         id: `mora-${Date.now()}`,
                         type: "mora",
@@ -243,13 +237,6 @@ export const ResonanceRoom: React.FC<Props> = ({
                         timestamp: new Date()
                     };
                     setMessages(prev => [...prev, moraMessage]);
-
-                    // Log transparency info
-                    console.log("[ResonanceRoom] Agentic Response:", {
-                        state: response.final_state,
-                        tools: toolInfo,
-                        mode: response.transparency_note
-                    });
 
 // ---
                     // MORA CURSOR INTELLIGENCE
@@ -265,8 +252,6 @@ export const ResonanceRoom: React.FC<Props> = ({
                         // NAVIGATE TOOL - Move to entity and change view
                         if (tool.tool === 'navigate' && tool.success && tool.result) {
                             const { target_type, target_id, target_name } = tool.result;
-
-                            console.log(`[MORA] Navigation: ${target_type} -> ${target_name} (${target_id})`);
 
                             switch (target_type) {
                                 case 'department':
@@ -302,7 +287,6 @@ export const ResonanceRoom: React.FC<Props> = ({
                         if (tool.tool === 'point_at' && tool.success && tool.result) {
                             const { target_type, target_id, reason, cursor_hint, should_pulse } = tool.result;
 
-                            console.log(`[MORA] Point: ${target_type}:${target_id} - "${reason}"`);
                             // Collect — point_at always overrides navigate as the single presence gesture
                             presencePoint = {
                                 action: 'point',
@@ -329,8 +313,6 @@ export const ResonanceRoom: React.FC<Props> = ({
                         // HIGHLIGHT TOOL - Temporarily highlight an element
                         if (tool.tool === 'highlight' && tool.success && tool.result) {
                             const { target_type, target_id, duration_ms, color } = tool.result;
-
-                            console.log(`[MORA] Highlight: ${target_type}:${target_id}`);
 
                             window.dispatchEvent(new CustomEvent('mora:highlight', {
                                 detail: {

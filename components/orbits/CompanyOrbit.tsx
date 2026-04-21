@@ -68,7 +68,6 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
     const { positions, orbitRadius, anchorPoints } = useMemo(() => {
         const count = Math.min(departments.length, 8); // Max 8
         if (count === 0) {
-            console.log('[CompanyOrbit] No departments found!');
             return { positions: [], orbitRadius: 0, anchorPoints: [] };
         }
 
@@ -80,20 +79,6 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
 
         // Calculate arc positions
         const positions = calculateOrbitPositions(count, orbitRadius, finalCenter, startAngle, arcAngle);
-
-        // DEBUG LOGGING
-        console.log('[CompanyOrbit] Rendering:', {
-            departmentCount: departments.length,
-            visibleCount: count,
-            center: finalCenter,
-            radius: orbitRadius,
-            arcAngle: `${(arcAngle * 180 / Math.PI).toFixed(0)} degrees`,
-            positions: positions.map((p, i) => ({
-                dept: departments[i]?.name,
-                x: Math.round(p.x),
-                y: Math.round(p.y)
-            }))
-        });
 
         // Convert to anchor points
         const anchorPoints = positionsToAnchorPoints(positions, 'department', bubbleSize / 2);
@@ -121,20 +106,14 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
     const visibleDepartments = departments.slice(0, 8);
 
     if (visibleDepartments.length === 0) {
-        console.log('[CompanyOrbit] No visible departments - returning null');
-        return null; // No departments to show
+        return null;
     }
-
-    console.log('[CompanyOrbit] Rendering', visibleDepartments.length, 'department bubbles');
 
     return (
         <div className="absolute inset-0 pointer-events-none">
             {visibleDepartments.map((dept, index) => {
                 const pos = positions[index];
-                if (!pos) {
-                    console.warn('[CompanyOrbit] No position for department:', dept.name, 'index:', index);
-                    return null;
-                }
+                if (!pos) return null;
 
                 const isActive = dept.id === activeDepartmentId;
                 const DeptIcon = getDepartmentIcon(dept.name);
