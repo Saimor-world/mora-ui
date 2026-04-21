@@ -292,7 +292,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         try {
             await downloadCompanyFile(fileId, item?.metadata?.original_filename || getContentDisplayName(item));
         } catch (error: any) {
-            toast.error(error?.message || 'Quelle konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Quelle konnte nicht geöffnet werden');
         }
     }, []);
 
@@ -313,7 +313,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     timestamp: Date.now(),
                 } satisfies DocumentNavigationContext : undefined,
             }).catch((error: any) => {
-                toast.error(error?.message || 'Datei konnte nicht geoeffnet werden');
+                toast.error(error?.message || 'Datei konnte nicht geöffnet werden');
             });
             return;
         }
@@ -335,7 +335,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             } satisfies DocumentNavigationContext : undefined,
         });
         if (result.mode === 'external-link') {
-            toast.success('Link im Browser geoeffnet');
+            toast.success('Link im Browser geöffnet');
         }
     }, [activeCompanyId, navigationContext, openPane, paneCompanyId]);
 
@@ -398,7 +398,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (itemType === 'department') {
             const departmentId = item.id ?? resolvedDepartmentId;
             if (!departmentId) {
-                toast.error('Department konnte nicht im Universe geoeffnet werden');
+                toast.error('Department konnte nicht im Universe geöffnet werden');
                 setContextMenu(null);
                 return;
             }
@@ -406,7 +406,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             setActiveSpace(null);
             setActiveFolder(null);
             setViewLevel('department');
-            toast.success('Department im Universe geoeffnet');
+            toast.success('Department im Universe geöffnet');
             setContextMenu(null);
             return;
         }
@@ -414,7 +414,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (itemType === 'space') {
             const spaceId = item.id ?? resolvedSpaceId;
             if (!spaceId) {
-                toast.error('Bereich konnte nicht im Universe geoeffnet werden');
+                toast.error('Bereich konnte nicht im Universe geöffnet werden');
                 setContextMenu(null);
                 return;
             }
@@ -422,7 +422,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             setActiveSpace(spaceId);
             setActiveFolder(null);
             setViewLevel('space');
-            toast.success('Bereich im Universe geoeffnet');
+            toast.success('Bereich im Universe geöffnet');
             setContextMenu(null);
             return;
         }
@@ -453,7 +453,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             }
         });
 
-        toast.success(itemType === 'folder' ? 'Ordner im Universe geoeffnet' : 'Dateikontext im Universe geoeffnet');
+        toast.success(itemType === 'folder' ? 'Ordner im Universe geöffnet' : 'Dateikontext im Universe geöffnet');
         setContextMenu(null);
     }, [
         contextMenu,
@@ -725,17 +725,17 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const navigationSourceLabel = useMemo(() => {
         switch (navigationContext?.source) {
             case 'chat':
-                return 'Aus Mora-Chat geoeffnet';
+                return 'Aus Mora-Chat geöffnet';
             case 'mycelium':
-                return 'Aus Einordnung geoeffnet';
+                return 'Aus Einordnung geöffnet';
             case 'work-session':
-                return 'Aus Arbeitsplan geoeffnet';
+                return 'Aus Arbeitsplan geöffnet';
             case 'search-popup':
             case 'search-pane':
             case 'search':
-                return 'Aus Suche geoeffnet';
+                return 'Aus Suche geöffnet';
             default:
-                return 'Von Mora geoeffnet';
+                return 'Von Mora geöffnet';
         }
     }, [navigationContext?.source]);
 
@@ -1706,11 +1706,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     };
 
     const getContextOpenLabel = (item: any, type: 'folder' | 'file' | 'background') => {
-        if (type === 'background') return 'Oeffnen';
+        if (type === 'background') return 'Öffnen';
         if (type === 'folder' || ['folder', 'space', 'department'].includes(item?.type)) {
-            if (item?.type === 'department') return 'Bereich oeffnen';
-            if (item?.type === 'space') return 'Bereich oeffnen';
-            return 'Ordner oeffnen';
+            if (item?.type === 'department') return 'Bereich öffnen';
+            if (item?.type === 'space') return 'Bereich öffnen';
+            return 'Ordner öffnen';
         }
         if (item?.type === 'file') {
             return getSourceFileOpenActionLabel(item);
@@ -2300,7 +2300,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte und Dateien</p>
-                                                            <p className="mt-1 text-[12px] text-white/34">{currentFolderId ? 'Direkt oeffnen, lesen oder weiterverarbeiten.' : 'Aktuelle Inhalte dieser Instanz, auch wenn sie in Bereichen liegen.'}</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">{currentFolderId ? 'Direkt öffnen, lesen oder weiterverarbeiten.' : 'Aktuelle Inhalte dieser Instanz, auch wenn sie in Bereichen liegen.'}</p>
                                                         </div>
                                                     </div>
                                                     <div className={fileGridClass}>
@@ -2353,7 +2353,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             </span>
                                                             <p className="min-h-[34px] text-[12px] leading-relaxed text-white/38">
                                                                 {file.type === 'file'
-                                                                    ? 'Reale Datei im aktiven Kontext. Kann direkt geoeffnet oder weiterverarbeitet werden.'
+                                                                    ? 'Reale Datei im aktiven Kontext. Kann direkt geöffnet oder weiterverarbeitet werden.'
                                                                     : getContextOpenLabel(file, 'file')}
                                                             </p>
                                                             <div className="mt-auto flex flex-wrap items-center gap-2">
@@ -2902,7 +2902,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             }}
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
-                                            <Paperclip size={14} /> Quelle oeffnen
+                                            <Paperclip size={14} /> Quelle öffnen
                                         </button>
                                     )}
                                     {contextMenu.type === 'file' && (
@@ -2922,7 +2922,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         </button>
                                     )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
-                                        <Globe size={14} /> Im Universe oeffnen
+                                        <Globe size={14} /> Im Universe öffnen
                                     </button>
                                     <button onClick={handleRename} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
                                         <Edit size={14} /> Umbenennen

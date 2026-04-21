@@ -18,7 +18,7 @@ import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 
-// â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── helpers ────────────────────────────────────────────────────────────────
 
 function relativeTime(isoStr: string): string {
     const diff = Date.now() - new Date(isoStr).getTime();
@@ -32,7 +32,7 @@ function relativeTime(isoStr: string): string {
     return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short' }).format(new Date(isoStr));
 }
 
-// â”€â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── types ───────────────────────────────────────────────────────────────────
 
 type RecentKind = 'document' | 'finder' | 'notes' | 'chat' | 'other';
 
@@ -62,7 +62,7 @@ function normalizePrivateAreaLabel(value?: string | null): string {
     return next;
 }
 
-// â”€â”€â”€ small UI helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── small UI helpers ─────────────────────────────────────────────────────────
 
 function kindIcon(kind: RecentKind): React.ReactNode {
     switch (kind) {
@@ -84,7 +84,7 @@ function kindLabel(kind: RecentKind): string {
     }
 }
 
-// â”€â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── component ───────────────────────────────────────────────────────────────
 
 /**
  * HomeSurface — Ambient Intelligence edition.
@@ -92,12 +92,12 @@ function kindLabel(kind: RecentKind): string {
  * No static nav grid. No org metadata panel. No fetchMyContent.
  * The home tells you what's happening right now:
  *   1. Mora briefing (from pre-loaded moraStore departments + treeData)
- *   2. Dept pulse tiles (click â†’ Finder scoped to dept)
+ *   2. Dept pulse tiles (click → Finder scoped to dept)
  *   3. Zuletzt berührt (OS-level activityStore — what you actually opened)
  *   4. Three quick actions
  */
 export const HomeSurface: React.FC = () => {
-    // â”€â”€ store selectors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── store selectors ────────────────────────────────────────────────────
     const user        = useSessionStore((s) => s.user);
     const resetStore  = useSessionStore((s) => s.resetStore);
     const setUser     = useSessionStore((s) => s.setUser);
@@ -126,7 +126,7 @@ export const HomeSurface: React.FC = () => {
     } = useCommunicationSurface();
     const { mailPreview, calendarPreview } = useCommunicationLiveData();
 
-    // â”€â”€ pane helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
         paneId: string,
         req: {
@@ -154,7 +154,7 @@ export const HomeSurface: React.FC = () => {
         openPane({ id: paneId, type: req.type, title: req.title, size: req.size, position: { x: cx, y: cy }, data: req.data });
     }, [focusPane, getPane, openPane, restorePane, updatePane, updatePanePos, updatePaneSize]);
 
-    // â”€â”€ named shortcuts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── named shortcuts ───────────────────────────────────────────────────
     const openFinder = useCallback(() => {
         revealPane('finder-main', { type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } });
     }, [revealPane]);
@@ -250,7 +250,7 @@ export const HomeSurface: React.FC = () => {
         setCoreMode('explore');
     }, [setCoreMode]);
 
-    // â”€â”€ logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── logout ────────────────────────────────────────────────────────────
     const handleLogout = useCallback(async () => {
         await authLogout();
         clearClientSessionArtifacts();
@@ -261,7 +261,7 @@ export const HomeSurface: React.FC = () => {
         if (typeof window !== 'undefined') window.location.assign('/');
     }, [logoutAccount, resetStore, setUser]);
 
-    // â”€â”€ derived data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── derived data ───────────────────────────────────────────────────────
     const briefing = useMemo(
         () => buildBriefing(departments, treeData),
         [departments, treeData],
@@ -388,7 +388,7 @@ export const HomeSurface: React.FC = () => {
         openFinder();
     }, [openFinder, revealPane]);
 
-    // â”€â”€ display values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── display values ─────────────────────────────────────────────────────
     const firstName = user?.name?.split(' ')[0] ?? null;
 
     const greeting = (() => {
@@ -405,7 +405,7 @@ export const HomeSurface: React.FC = () => {
     const timeStr     = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     const todayLabel  = `${dateStr} · ${timeStr}`;
 
-    // â”€â”€ render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── render ─────────────────────────────────────────────────────────────
     return (
             <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center pb-24">
@@ -452,7 +452,7 @@ export const HomeSurface: React.FC = () => {
                                     data-interaction-sound="firm"
                                     className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-cyan-500/[0.12] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-50/90 transition-all hover:border-cyan-200/32 hover:bg-cyan-500/[0.18]"
                                 >
-                                    Universe oeffnen
+                                    Universe öffnen
                                 </button>
                             </div>
                         ) : null}
@@ -474,7 +474,7 @@ export const HomeSurface: React.FC = () => {
                         </div>
                         <div className="mt-3 text-[13px] leading-relaxed text-white/62">
                             {browserBridge.permission === 'granted'
-                                ? 'Browser und Home sind bereit. Wenn du eintauchst, oeffnet sich die Live-Topographie vollstaendig.'
+                                ? 'Browser und Home sind bereit. Wenn du eintauchst, öffnet sich die Live-Topographie vollständig.'
                                 : 'Home bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen in der Mitte oeffnet den ganzen Universumsraum.'}
                         </div>
                     </div>
@@ -560,7 +560,7 @@ export const HomeSurface: React.FC = () => {
                                     onClick={openPrivateArea}
                                     className="rounded-full border border-emerald-400/12 bg-emerald-500/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-emerald-100/68 transition-colors hover:border-emerald-300/20 hover:bg-emerald-500/[0.12]"
                                 >
-                                    Oeffnen
+                                    Öffnen
                                 </button>
                             </div>
 
@@ -600,7 +600,7 @@ export const HomeSurface: React.FC = () => {
                             ) : null}
                         </div>
 
-                        <div className="mt-5 hidden flex-wrap gap-2">
+                        <div className="mt-5 flex flex-wrap gap-2">
                             <button
                                 data-testid="qa-finder"
                                 onClick={openFinder}

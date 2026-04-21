@@ -170,7 +170,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <span className="text-[9px] text-white/30 tracking-wide">Klicken zum Oeffnen</span>
+                <span className="text-[9px] text-white/30 tracking-wide">Klicken zum Öffnen</span>
                 <motion.div className="text-[9px] text-violet-400/60 group-hover:text-violet-400 transition-colors flex items-center gap-1" whileHover={{ x: 2 }}>
                     Mora Center
                     <span className="opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>

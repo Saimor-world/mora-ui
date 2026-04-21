@@ -999,7 +999,7 @@ export const DepartmentLayer: React.FC = () => {
                                                 </span>
                                             </div>
                                             <div className="absolute bottom-3 right-3 text-[9px] text-emerald-300/50 uppercase tracking-[0.2em]">
-                                                oeffnen
+                                                öffnen
                                             </div>
                                         </motion.div>
                                     ))}

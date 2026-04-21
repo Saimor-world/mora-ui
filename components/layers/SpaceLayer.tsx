@@ -529,7 +529,7 @@ export const SpaceLayer: React.FC = () => {
                 title={currentSpace?.name || 'Bereich'}
                 badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
-                collapsedHint="Ordner oeffnen oder Control Center nutzen."
+                collapsedHint="Ordner öffnen oder Control Center nutzen."
                 summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} abgelegte Ordner werden aus echter Dokumentdichte und letzter Aktivitaet abgeleitet.`}
                 metrics={[
                     { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
@@ -561,7 +561,7 @@ export const SpaceLayer: React.FC = () => {
                     onClick={openSpaceFinder}
                     className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
                 >
-                    Finder oeffnen
+                    Finder öffnen
                 </button>
             </LayerInsightRail>
 
@@ -598,7 +598,7 @@ export const SpaceLayer: React.FC = () => {
                                 onClick={() => openFocusedFolder(inspectedFolder.folder.id)}
                                 className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 transition-colors hover:bg-emerald-500/16"
                             >
-                                Oeffnen
+                                Öffnen
                             </button>
                         </div>
 
@@ -614,7 +614,7 @@ export const SpaceLayer: React.FC = () => {
                         </div>
 
                         <p className="mt-4 text-[11px] leading-relaxed text-white/44">
-                            Die linke Karte zeigt den aktuell staerksten oder gerade geoeffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
+                            Die linke Karte zeigt den aktuell staerksten oder gerade geöffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>
                 </motion.div>
@@ -708,7 +708,7 @@ export const SpaceLayer: React.FC = () => {
                                     boxShadow: `0 0 90px ${(currentDepartment?.color || '#10b981')}55, 0 0 180px ${(currentDepartment?.color || '#10b981')}26, inset 2px 2px 8px rgba(255,255,255,0.28)`,
                                 }}
                                 onClick={openSpaceFinder}
-                                title={`Finder oeffnen: ${spaceName}`}
+                                title={`Finder öffnen: ${spaceName}`}
                             >
                                 <div
                                     className="absolute left-[17%] top-[15%] h-[10%] w-[20%] rounded-full bg-white/70 blur-[1px]"

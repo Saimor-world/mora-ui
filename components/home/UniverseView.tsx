@@ -874,7 +874,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         {displayCompanyName}
                                     </div>
                                     <p className="mt-2 text-[12px] leading-relaxed text-white/66">
-                                        Die Home-Ebene bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen oeffnet den grossen Raum.
+                                        Die Home-Ebene bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen öffnet den grossen Raum.
                                     </p>
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         <span className="rounded-full border border-cyan-200/14 bg-cyan-300/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-cyan-50/76">
@@ -889,7 +889,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         onClick={() => setCoreMode('explore')}
                                         className="mt-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-cyan-500/[0.12] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-50/90 transition-all hover:border-cyan-200/32 hover:bg-cyan-500/[0.18]"
                                     >
-                                        Universe oeffnen
+                                        Universe öffnen
                                     </button>
                                 </motion.div>
                             ) : null}

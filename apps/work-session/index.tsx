@@ -232,26 +232,26 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
     switch (nav.target_type) {
         case 'department':
             if (!nav.department_id) return;
-            surfaceNavigationOutcome({ title: 'Bereich geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`, targetType: 'department', label, companyId, departmentId: nav.department_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Bereich geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan geöffnet.`, targetType: 'department', label, companyId, departmentId: nav.department_id, source: 'work-session' }, openPane);
             return;
         case 'space':
             if (!nav.space_id) return;
-            surfaceNavigationOutcome({ title: 'Bereich geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`, targetType: 'space', label, companyId, spaceId: nav.space_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Bereich geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan geöffnet.`, targetType: 'space', label, companyId, spaceId: nav.space_id, source: 'work-session' }, openPane);
             return;
         case 'folder':
             if (!nav.folder_id) return;
-            surfaceNavigationOutcome({ title: 'Ordner geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan im Finder geoeffnet.`, targetType: 'folder', label, companyId, folderId: nav.folder_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Ordner geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan im Finder geöffnet.`, targetType: 'folder', label, companyId, folderId: nav.folder_id, source: 'work-session' }, openPane);
             return;
         case 'company':
             if (!companyId) return;
-            surfaceNavigationOutcome({ title: 'Organisation geoeffnet', message: `Ich habe ${label} im aktuellen Organisationskontext geoeffnet.`, targetType: 'company', label, companyId, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Organisation geöffnet', message: `Ich habe ${label} im aktuellen Organisationskontext geöffnet.`, targetType: 'company', label, companyId, source: 'work-session' }, openPane);
             return;
         case 'node':
             if (!nav.node_id) return;
-            surfaceNavigationOutcome({ title: 'Datei geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`, targetType: 'node', label, companyId, folderId: nav.folder_id || undefined, nodeId: nav.node_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Datei geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan geöffnet.`, targetType: 'node', label, companyId, folderId: nav.folder_id || undefined, nodeId: nav.node_id, source: 'work-session' }, openPane);
             return;
         case 'search':
-            surfaceNavigationOutcome({ title: 'Suche geoeffnet', message: `Ich habe die Suche aus dem Arbeitsplan geoeffnet.`, targetType: 'search', label, query: label, companyId, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Suche geöffnet', message: `Ich habe die Suche aus dem Arbeitsplan geöffnet.`, targetType: 'search', label, query: label, companyId, source: 'work-session' }, openPane);
             return;
         default: return;
     }
@@ -310,7 +310,7 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                             {hasNavigation && (isDone || isRunning) && (
                                 <button type="button" onClick={() => onOpen(step)}
                                     className="inline-flex items-center gap-1 rounded-full border border-cyan-400/15 bg-cyan-500/[0.06] px-2 py-0.5 text-[10px] text-cyan-200/65 hover:border-cyan-400/30 hover:bg-cyan-500/[0.12] hover:text-cyan-200 transition-colors">
-                                    <ArrowUpRight size={10} />Oeffnen
+                                    <ArrowUpRight size={10} />Öffnen
                                 </button>
                             )}
                             {hasDetail && (
@@ -541,7 +541,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                 {!isLoading && error && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="red" icon={XCircle} label="Arbeitsplan nicht erreichbar" title={error}
-                            body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schliessen und erneut oeffnen, wenn der Fehler bleibt."
+                            body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schließen und erneut öffnen, wenn der Fehler bleibt."
                             chips={[{ label: 'Keine Aktion ausgefuehrt' }, { label: 'Datenstand bleibt erhalten' }]} className="w-full max-w-xl" />
                     </div>
                 )}
@@ -549,7 +549,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                 {!isLoading && !error && !plan && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="slate" label="Arbeitsplan" title="Kein Plan geladen."
-                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geoeffnet wurde, erscheint er in dieser Flaeche."
+                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geöffnet wurde, erscheint er in dieser Flaeche."
                             chips={[{ label: 'Wartet auf Plan' }, { label: 'Universe bleibt aktiv' }]} className="w-full max-w-xl" />
                     </div>
                 )}
