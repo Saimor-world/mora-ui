@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * TeamApp - Microsoft Teams-like Collaboration
@@ -406,7 +406,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                             {[
                                 { id: "members",  icon: Users,         label: "Team" },
                                 { id: "room",     icon: MessageCircle, label: "Raum" },
-                                { id: "activity", icon: Activity,      label: "Aktivitaet" },
+                                { id: "activity", icon: Activity,      label: "Aktivität" },
                                 { id: "invite",   icon: UserPlus,      label: "Einladen" }
                             ].map(tab => (
                                 <button
@@ -427,7 +427,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                     <button
                         onClick={handleClose}
                         className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/70 transition-all"
-                        title="Schliessen"
+                        title="Schließen"
                     >
                         <X size={16} />
                     </button>
@@ -439,7 +439,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                         <div className="flex flex-col items-center justify-center gap-3 px-6 py-10 text-center h-full">
                             <p className="text-sm font-medium text-foreground/80">Kein Kontext aktiv</p>
                             <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-                                Oeffne zuerst das Beispielsystem oder waehle einen Bereich, damit das Team sinnvoll erscheint.
+                                Oeffne zuerst das Beispielsystem oder wähle einen Bereich, damit das Team sinnvoll erscheint.
                             </p>
                             <button
                                 id="team-setup-settings"

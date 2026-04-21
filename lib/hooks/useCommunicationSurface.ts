@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
@@ -81,7 +81,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
         const calendarStatusLabel = calendarConfigured
             ? (overview?.calendar?.email || 'Kalender verbunden')
             : !calendarOauthEnabled
-                ? 'OAuth fuer Tenant fehlt'
+                ? 'OAuth für Tenant fehlt'
                 : 'Kalender nicht eingerichtet';
 
         const localTruthStatusLabel =
@@ -108,11 +108,11 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         : (mailSetupDetail || MAIL_SETUP_DETAIL),
             calendarStatusDetail:
                 calendarConfigured
-                    ? 'Der verbundene Kalender wird im OS gelesen und fuer Home, Kalender und Mora genutzt.'
+                    ? 'Der verbundene Kalender wird im OS gelesen und für Home, Kalender und Mora genutzt.'
                     : !calendarOauthEnabled
                         ? (ownerManageable
                             ? calendarSetupDetail
-                            : `Google-OAuth muss tenantweit zuerst von einem Eigentuemer eingerichtet werden. Redirect: ${calendarRedirectUrl}.`)
+                            : `Google-OAuth muss tenantweit zuerst von einem Eigentümer eingerichtet werden. Redirect: ${calendarRedirectUrl}.`)
                         : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
             browserConnectable: integrations.browserBridge.supported,
             browserPermission,
@@ -123,7 +123,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         ? 'Benachrichtigungen blockiert'
                         : browserPermission === 'default'
                             ? 'Benachrichtigungen noch nicht freigegeben'
-                            : 'Browser-Freigaben hier nicht verfuegbar',
+                            : 'Browser-Freigaben hier nicht verfügbar',
             mailConfigured,
             calendarConfigured,
             mailLocalMode,
@@ -167,7 +167,7 @@ export function buildCommunicationOperationalContextMessage(
 ): string | null {
     const sections: string[] = [
         'Lokaler Kommunikationskontext aus SAIMOR.',
-        'Nutze ihn nur fuer Mail, Kalender, Kommunikation, Priorisierung oder aktuelle Signale.',
+        'Nutze ihn nur für Mail, Kalender, Kommunikation, Priorisierung oder aktuelle Signale.',
     ];
 
     const hasMailData = mailPreview.length > 0;
@@ -210,7 +210,7 @@ export function buildCommunicationOperationalContextMessage(
     }
 
     if (!summary.ownerManageable && !summary.calendarOauthEnabled) {
-        sections.push('- Die tenantweite Google-OAuth-App ist noch nicht eingerichtet; das muss ein Eigentuemer zuerst freischalten.');
+        sections.push('- Die tenantweite Google-OAuth-App ist noch nicht eingerichtet; das muss ein Eigentümer zuerst freischalten.');
     }
 
     return sections.join('\n');

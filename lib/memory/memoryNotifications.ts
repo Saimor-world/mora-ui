@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Memory Toast Notifications
  *
- * Toast-System fuer Mora Memory Events
- * Nutzt sonner fuer konsistente Benachrichtigungen
+ * Toast-System für Mora Memory Events
+ * Nutzt sonner für konsistente Benachrichtigungen
  */
 
 import { toast } from 'sonner';
@@ -76,10 +76,10 @@ export function showPendingReviewToast(count: number): void {
 }
 
 /**
- * Zeigt Erfolgs-Toast wenn Insight bestaetigt wurde
+ * Zeigt Erfolgs-Toast wenn Insight bestätigt wurde
  */
 export function showMemoryApprovedToast(): void {
-  toast.success('Insight bestaetigt', {
+  toast.success('Insight bestätigt', {
     description: 'Mora wird sich daran erinnern',
     duration: 3000,
     position: 'bottom-right',

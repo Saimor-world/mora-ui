@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1074,8 +1074,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     title={focusedPlanet.name}
                     badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
                     accent={focusedPlanet.color || '#34d399'}
-                    collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren fuer Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Beziehungen fuer ${focusedPlanet.name}. Hover previewt das Signal, die Rail haelt den Fokus und ein Klick springt direkt in den verbundenen Bereich.`}
+                    collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren für Analyse.'}
+                    summary={`${focusedPlanetLinkCount} semantische Beziehungen für ${focusedPlanet.name}. Hover previewt das Signal, die Rail haelt den Fokus und ein Klick springt direkt in den verbundenen Bereich.`}
                     alwaysExpanded
                     showToggle={false}
                     forceExpanded={Boolean(focusedPlanetId) || Boolean(semanticPreviewPathId) || isInsightRailHovered}

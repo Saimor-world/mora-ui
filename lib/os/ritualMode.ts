@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 export type RitualSceneId = 'flow' | 'build' | 'lounge' | 'night';
 
@@ -38,7 +38,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         id: 'flow',
         label: 'Flow',
         shortLabel: 'Flow',
-        description: 'Ruhig und offen fuer Schreiben, Lesen und entspannte Navigation.',
+        description: 'Ruhig und offen für Schreiben, Lesen und entspannte Navigation.',
         accent: 'rgba(16,185,129,0.34)',
         aura: 'rgba(34,211,238,0.22)',
         audioGain: 0.92,
@@ -47,7 +47,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         id: 'build',
         label: 'Build',
         shortLabel: 'Build',
-        description: 'Klarer Kontrast fuer Umsetzung, Struktur und schnelle Entscheidungen.',
+        description: 'Klarer Kontrast für Umsetzung, Struktur und schnelle Entscheidungen.',
         accent: 'rgba(56,189,248,0.34)',
         aura: 'rgba(251,191,36,0.18)',
         audioGain: 1,
@@ -56,7 +56,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         id: 'lounge',
         label: 'Lounge',
         shortLabel: 'Lounge',
-        description: 'Waermer und weicher fuer Review, Lesen und ruhigere Sessions.',
+        description: 'Wärmer und weicher für Review, Lesen und ruhigere Sessions.',
         accent: 'rgba(251,146,60,0.32)',
         aura: 'rgba(244,114,182,0.18)',
         audioGain: 0.86,
@@ -65,7 +65,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         id: 'night',
         label: 'Nacht',
         shortLabel: 'Nacht',
-        description: 'Dunkler und stiller fuer spaete, lange Arbeitsphasen.',
+        description: 'Dunkler und stiller für späte, lange Arbeitsphasen.',
         accent: 'rgba(99,102,241,0.34)',
         aura: 'rgba(34,211,238,0.18)',
         audioGain: 0.76,

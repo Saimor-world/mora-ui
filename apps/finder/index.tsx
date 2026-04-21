@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
@@ -429,7 +429,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
         const folderId = resolvedFolderId ?? currentFolderIdRef.current;
         if (!folderId) {
-            toast.error('Kein Ordnerkontext fuer Universe-Navigation verfuegbar');
+            toast.error('Kein Ordnerkontext für Universe-Navigation verfügbar');
             setContextMenu(null);
             return;
         }
@@ -1031,11 +1031,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             fetchFolderContext(currentFolderId)
                 .then((ctx) => {
                     if (cancelled) return;
-                    storeCache(ctx, ctx ? null : 'Ordnerkontext aktuell nicht verfuegbar.');
+                    storeCache(ctx, ctx ? null : 'Ordnerkontext aktuell nicht verfügbar.');
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        storeCache(null, 'Ordnerkontext aktuell nicht verfuegbar.');
+                        storeCache(null, 'Ordnerkontext aktuell nicht verfügbar.');
                     }
                 });
         } else {
@@ -1053,7 +1053,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         }, null);
                     } else if (ec && (!ec.resolved || (ec.context_lookup && !ec.context_lookup.resolved))) {
                         const hintReason = ec.reason || ec.context_lookup?.reason || 'Kontext-ID nicht aufloesbar';
-                        storeCache(null, `${hintReason}, Inhalte bleiben verfuegbar.`);
+                        storeCache(null, `${hintReason}, Inhalte bleiben verfügbar.`);
                     } else {
                         storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
                     }
@@ -1197,7 +1197,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     toast.info("Ordner koennen hier noch nicht dupliziert werden");
                 } else {
                     if (!resolvedCompanyId) {
-                        toast.error('Bitte zuerst eine Organisation waehlen.');
+                        toast.error('Bitte zuerst eine Organisation wählen.');
                         return;
                     }
                     await orgCreateNode({
@@ -1337,7 +1337,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
     const handleUpload = useCallback(async (fileList: File[]) => {
         if (!resolvedCompanyId) {
-            toast.error('Bitte zuerst eine Organisation waehlen.');
+            toast.error('Bitte zuerst eine Organisation wählen.');
             setShowUpload(false);
             return;
         }
@@ -1985,7 +1985,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                             <button
                                 onClick={() => setIsDeepView(!isDeepView)}
                                 className={`hidden md:flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all ${isDeepView ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300' : 'border-white/8 bg-black/30 text-white/46 hover:text-white/76'}`}
-                                title={isDeepView ? "Gesamtsicht verlassen und nur den aktuellen Pfad zeigen" : "Gesamtsicht ueber die sichtbaren Inhalte dieser Instanz"}
+                                title={isDeepView ? "Gesamtsicht verlassen und nur den aktuellen Pfad zeigen" : "Gesamtsicht über die sichtbaren Inhalte dieser Instanz"}
                             >
                                 <Sparkles size={14} />
                                 <span className="hidden lg:inline text-[10px] font-medium uppercase tracking-[0.18em]">
@@ -2116,7 +2116,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     <CommandReceipt
                                         tone="cyan"
                                         icon={Loader2}
-                                        label="Finder laeuft"
+                                        label="Finder läuft"
                                         title="Inhalte werden synchronisiert."
                                         body="Mora zieht Pfad, Baum und Suchkontext zusammen. Das kann kurz dauern, wenn der aktuelle Ordner gerade neu geladen wird."
                                         chips={[
@@ -2753,7 +2753,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         query={pendingAction.params?.filename}
                                         results={(pendingAction.route_candidates || []).map((candidate, index) => toIntakeChoiceResult(candidate, index))}
                                         title={pendingAction.route_choice_headline || 'Mehrere plausible Ziele'}
-                                        body={pendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Waehle den richtigen Zielordner vor der Freigabe.'}
+                                        body={pendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Wähle den richtigen Zielordner vor der Freigabe.'}
                                         onPick={(result) => {
                                             const folderId = result.folderId;
                                             if (!folderId) return;
@@ -2771,9 +2771,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 {pendingAction.next && (
                                     <CommandReceipt
                                         tone={pendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
-                                        label={pendingAction.next.label || 'Naechster Schritt'}
+                                        label={pendingAction.next.label || 'Nächster Schritt'}
                                         title={pendingAction.route_summary || buildRoutePath(pendingAction.intake_context)}
-                                        body={pendingAction.next.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                        body={pendingAction.next.message || 'Pruefe die Einordnung und bestätige oder korrigiere das Ziel.'}
                                         className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
                                     />
                                 )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CoreFolder } from '@/lib/types/core';
@@ -530,7 +530,7 @@ export const SpaceLayer: React.FC = () => {
                 badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
                 collapsedHint="Ordner öffnen oder Control Center nutzen."
-                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} abgelegte Ordner werden aus echter Dokumentdichte und letzter Aktivitaet abgeleitet.`}
+                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} abgelegte Ordner werden aus echter Dokumentdichte und letzter Aktivität abgeleitet.`}
                 metrics={[
                     { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
                     { label: 'Mit Inhalt', value: foldersWithDocs, toneClassName: 'text-cyan-200' },
@@ -614,7 +614,7 @@ export const SpaceLayer: React.FC = () => {
                         </div>
 
                         <p className="mt-4 text-[11px] leading-relaxed text-white/44">
-                            Die linke Karte zeigt den aktuell staerksten oder gerade geöffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
+                            Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>
                 </motion.div>

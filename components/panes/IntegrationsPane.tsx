@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
@@ -216,11 +216,11 @@ const humanizeIntegrationStatus = (status?: string) => {
         case 'degraded':
             return 'Eingeschraenkt';
         case 'owner_only':
-            return 'Nur fuer Eigentuemer';
+            return 'Nur für Eigentümer';
         case 'forbidden_demo':
             return 'Im Demo-Modus gesperrt';
         case 'unavailable':
-            return 'Nicht verfuegbar';
+            return 'Nicht verfügbar';
         default:
             return 'Unbekannt';
     }
@@ -264,7 +264,7 @@ const buildMailDescription = (overview?: IntegrationsOverview) => {
     const caps = overview?.capabilities;
     if (!mail) return 'Mail-Status wird geladen.';
     if (mail.status === 'forbidden_demo') {
-        return 'Diese Verbindung kann nur im Eigentuemer-Kontext verwaltet werden.';
+        return 'Diese Verbindung kann nur im Eigentümer-Kontext verwaltet werden.';
     }
     if (mail.status === 'local' || caps?.mail_local_mode) {
         return 'Lokaler Postfach-Modus aktiv. Keine externe IMAP-Synchronisation.';
@@ -284,7 +284,7 @@ const buildCalendarDescription = (overview?: IntegrationsOverview) => {
         const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v1/auth/google/callback';
         const ownerManageable = Boolean(caps?.owner_manageable);
         return !ownerManageable
-            ? `Google-OAuth muss tenantweit zuerst von einem Eigentuemer eingerichtet werden. Redirect: ${redirect}.`
+            ? `Google-OAuth muss tenantweit zuerst von einem Eigentümer eingerichtet werden. Redirect: ${redirect}.`
             : missing.length > 0
             ? `Kalender-OAuth ist serverseitig noch nicht aktiviert. Es fehlen ${missing.join(' / ')}. Redirect: ${redirect}.`
             : `Kalender-OAuth ist serverseitig noch nicht aktiviert. Redirect: ${redirect}.`;
@@ -450,7 +450,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                     toast.success('Kalender verbunden');
                     await loadOverview();
                 } else if (result.reason === 'blocked') {
-                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster für SAIMOR.');
                 } else if (result.reason !== 'closed') {
                     toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
                 }
@@ -465,7 +465,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const copyRuntimeCommand = useCallback(async (platform: RuntimePlatform) => {
         try {
             await navigator.clipboard.writeText(localTruthStartupCommands[platform]);
-            toast.success(`Startbefehl fuer ${platform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
+            toast.success(`Startbefehl für ${platform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
         } catch {
             toast.error('Befehl konnte nicht kopiert werden');
         }
@@ -569,7 +569,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     {!surfaceProfile.isPublicDemoSurface
                                         ? 'Hier werden echte lokale Regeln, Browser-Freigaben und Verbindungen aufgebaut.'
                                         : surfaceProfile.isPublicDemoSurface
-                                            ? 'Die Demo zeigt dieselbe Oberflaeche, spiegelt aber nur den stabilen Stand.'
+                                            ? 'Die Demo zeigt dieselbe Oberfläche, spiegelt aber nur den stabilen Stand.'
                                             : 'Diese Organisation nutzt den Standardmodus der Plattform.'}
                                 </span>
                             </div>
@@ -648,7 +648,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             </span>
                                         </div>
                                         <p className="text-xs leading-relaxed text-white/60">
-                                            Echte Browser-Benachrichtigungen sind die erste lokale Bruecke fuer Mail-, Kalender- und Mora-Signale.
+                                            Echte Browser-Benachrichtigungen sind die erste lokale Brücke für Mail-, Kalender- und Mora-Signale.
                                         </p>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
@@ -755,7 +755,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                         <p className="text-xs leading-relaxed text-white/60">
                                             {localTruthBridge.error
-                                                || 'Hier wird geprueft, ob lokale UI und lokaler Core fuer echte Konten und echte Integrationen erreichbar sind.'}
+                                                || 'Hier wird geprueft, ob lokale UI und lokaler Core für echte Konten und echte Integrationen erreichbar sind.'}
                                         </p>
                                         <div className="mt-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] text-white/55">
                                             UI: <span className="text-white/78">{summary.localTruthUrl}</span>
@@ -816,7 +816,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             </span>
                                         </div>
                                         <p className="mt-4 text-xs leading-relaxed text-white/60">
-                                            Verwende lokal <span className="text-cyan-100">{overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}</span> fuer schnellen privaten Betrieb.
+                                            Verwende lokal <span className="text-cyan-100">{overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}</span> für schnellen privaten Betrieb.
                                             Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
                                         </p>
                                         <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
@@ -910,8 +910,8 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                         <p className="mt-3 text-[11px] text-white/45">
                                             {canControlRuntime
-                                                ? 'Als System-Eigentuemer kannst du die lokale Runtime jetzt direkt aus dem OS starten, stoppen und neu anstoen.'
-                                                : 'Runtime-Aktionen sind bewusst nur fuer den System-Eigentuemer freigegeben.'}
+                                                ? 'Als System-Eigentümer kannst du die lokale Runtime jetzt direkt aus dem OS starten, stoppen und neu anstoen.'
+                                                : 'Runtime-Aktionen sind bewusst nur für den System-Eigentümer freigegeben.'}
                                         </p>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             <button
@@ -948,7 +948,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                         <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Wahrheitsmodus</p>
                                         <div className="mt-3 space-y-3 text-xs leading-relaxed text-white/60">
                                             <p><span className="text-white/80">localhost</span> arbeitet mit echten lokalen Regeln, Browser-Freigaben und privaten Integrationen.</p>
-                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.demo_mirror || 'https://hq.saimor.world'}</span> zeigt dieselbe Oberflaeche, bleibt aber dein Demo-Spiegel.</p>
+                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.demo_mirror || 'https://hq.saimor.world'}</span> zeigt dieselbe Oberfläche, bleibt aber dein Demo-Spiegel.</p>
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login'}</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
                                             <p><span className="text-white/80">{overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control'}</span> ist der operative Runtime- und Integrationsleitstand.</p>
                                         </div>
@@ -982,7 +982,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 )) : (
                                                     <div className="text-[11px] text-white/45">Noch keine Runtime-Aktionen protokolliert.</div>
                                                 ) : (
-                                                    <div className="text-[11px] text-white/45">Nur der System-Eigentuemer sieht Runtime-Jobs.</div>
+                                                    <div className="text-[11px] text-white/45">Nur der System-Eigentümer sieht Runtime-Jobs.</div>
                                                 )}
                                             </div>
                                         </div>
@@ -1047,7 +1047,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                                 </p>
                                                             </div>
                                                             <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(providerStatus)}`}>
-                                                                {meta.healthy ? 'Gesund' : meta.available ? 'Konfiguriert' : 'Nicht verfuegbar'}
+                                                                {meta.healthy ? 'Gesund' : meta.available ? 'Konfiguriert' : 'Nicht verfügbar'}
                                                             </span>
                                                         </div>
                                                         {meta.error && (
@@ -1061,7 +1061,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                         </div>
                                     ) : (
                                         <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">
-                                            Keine Provider-Metadaten verfuegbar.
+                                            Keine Provider-Metadaten verfügbar.
                                         </div>
                                     )}
 
@@ -1085,10 +1085,10 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                             Kalender-OAuth: <span className="text-white/80">{overview?.capabilities?.calendar_oauth_enabled ? 'Aktiv' : 'Nicht aktiv'}</span>
                                         </div>
                                         <div className="rounded-xl bg-black/20 px-3 py-2">
-                                            Assistant: <span className="text-white/80">{overview?.capabilities?.assistant_available ? 'Verfuegbar' : 'Nicht verfuegbar'}</span>
+                                            Assistant: <span className="text-white/80">{overview?.capabilities?.assistant_available ? 'Verfuegbar' : 'Nicht verfügbar'}</span>
                                         </div>
                                         <div className="rounded-xl bg-black/20 px-3 py-2">
-                                            Steuerung: <span className="text-white/80">{overview?.capabilities?.owner_manageable ? 'Eigentuemer-Modus' : 'Eingeschraenkt'}</span>
+                                            Steuerung: <span className="text-white/80">{overview?.capabilities?.owner_manageable ? 'Eigentümer-Modus' : 'Eingeschraenkt'}</span>
                                         </div>
                                     </div>
                                 </section>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -628,8 +628,8 @@ export const MemorySidebar: React.FC = () => {
         : 'Hier siehst du nur deine eigenen Eintraege. Weitere Hinweise erscheinen, sobald ein Kontext aktiv ist.';
     const memoryContextFooter = resolvedCompanyId
         ? (surfaceProfile.isPublicDemoSurface
-            ? 'Mora zeigt hier, was im aktuellen Beispielkontext fuer dich gerade relevant ist.'
-            : 'Mora zeigt hier, was fuer dich im aktuellen Organisationskontext gerade relevant ist.')
+            ? 'Mora zeigt hier, was im aktuellen Beispielkontext für dich gerade relevant ist.'
+            : 'Mora zeigt hier, was für dich im aktuellen Organisationskontext gerade relevant ist.')
         : 'Waehle einen Kontext, damit zusaetzlich Hinweise und Freigaben erscheinen.';
 
     // Load recent memories on mount
@@ -913,7 +913,7 @@ export const MemorySidebar: React.FC = () => {
                                             </>
                                         ) : (
                                             <p className="text-xs text-muted-foreground px-4 py-6 text-center leading-relaxed">
-                                                Dein Bereich ist verfuegbar. Weitere Hinweise erscheinen, sobald ein aktiver Beispiel- oder Organisationskontext vorliegt.
+                                                Dein Bereich ist verfügbar. Weitere Hinweise erscheinen, sobald ein aktiver Beispiel- oder Organisationskontext vorliegt.
                                             </p>
                                         )}
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * QUICK PREVIEW / QUICK LOOK
@@ -189,7 +189,7 @@ const DocumentPreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
                 ) : (
                     <div className="text-center py-12 text-white/30">
                         <FileText size={48} className="mx-auto mb-4 opacity-30" />
-                        <p>Keine Vorschau verfuegbar</p>
+                        <p>Keine Vorschau verfügbar</p>
                     </div>
                 )}
             </div>
@@ -278,7 +278,7 @@ const ImagePreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
             ) : (
                 <div className="text-center text-white/30">
                     <ImageIcon size={48} className="mx-auto mb-4 opacity-30" />
-                    <p>Bild nicht verfuegbar</p>
+                    <p>Bild nicht verfügbar</p>
                 </div>
             )}
         </div>

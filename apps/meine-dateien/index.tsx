@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Check, ChevronRight, ExternalLink, FileText, Folder, Link, Loader2, Paperclip } from 'lucide-react';
@@ -140,7 +140,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         return (
             <GlassPanel {...glassPanelProps}>
                 <div className="px-5 py-8 text-sm text-white/30">
-                    Meine Inhalte sind gerade nicht verfuegbar.
+                    Meine Inhalte sind gerade nicht verfügbar.
                 </div>
             </GlassPanel>
         );
@@ -416,7 +416,7 @@ const ShareResult: React.FC<{ state: ShareState }> = ({ state }) => {
     if (state.status === 'unavailable') {
         return (
             <span className="mt-0.5 block text-[10px] text-white/20" data-testid="share-unavailable">
-                Teilen fuer diesen Inhalt ist noch nicht verfuegbar
+                Teilen für diesen Inhalt ist noch nicht verfügbar
             </span>
         );
     }

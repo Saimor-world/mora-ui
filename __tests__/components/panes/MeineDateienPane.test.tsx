@@ -1,4 +1,4 @@
-// __tests__/components/panes/MeineDateienPane.test.tsx
+﻿// __tests__/components/panes/MeineDateienPane.test.tsx
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
@@ -121,7 +121,7 @@ describe('MeineDateienPane', () => {
         mockFetch.mockResolvedValue(null);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/nicht verfuegbar/i)).toBeInTheDocument();
+            expect(screen.getByText(/nicht verfügbar/i)).toBeInTheDocument();
         });
     });
 

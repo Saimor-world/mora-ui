@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,7 +38,7 @@ export const QuickTips: React.FC = () => {
         {
             icon: Sparkles,
             title: 'Mora fragen',
-            description: 'Klicke auf den Orb rechts unten fuer KI-Hilfe',
+            description: 'Klicke auf den Orb rechts unten für KI-Hilfe',
             color: 'cyan'
         },
         {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -81,7 +81,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Private Instanz ausserhalb der Demo vorbereiten'
         : surfaceProfile.isLocalTruthSurface
-            ? 'Lokale oder interne Instanz fuer echte Produktionsregeln vorbereiten'
+            ? 'Lokale oder interne Instanz für echte Produktionsregeln vorbereiten'
             : 'Neue Organisation einrichten';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
@@ -431,7 +431,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!usingInvite && selectedRole === 'owner' && (!companyName || !companyName.trim())) {
-            toast.error('Organisationsname ist fuer Owner-Accounts erforderlich');
+            toast.error('Organisationsname ist für Owner-Accounts erforderlich');
             return;
         }
 
@@ -837,7 +837,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         transition={{ duration: 1.5, repeat: Infinity }}
                                                         className="text-xs text-emerald-500/50 tracking-widest"
                                                     >
-                                                        Identitaet wird geprueft...
+                                                        Identität wird geprueft...
                                                     </motion.div>
                                                 </motion.div>
                                             )}
@@ -857,7 +857,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] disabled:opacity-50"
                                                     >
                                                         <Sparkles className="w-4 h-4 text-emerald-400" />
-                                                        <span className="font-medium tracking-wide">Identitaet bestaetigt - Fortsetzen</span>
+                                                        <span className="font-medium tracking-wide">Identität bestätigt - Fortsetzen</span>
                                                     </motion.button>
                                                     <button
                                                         onClick={() => void handleLogout()}
@@ -941,7 +941,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             Interne Instanz
                                         </div>
                                         <div className="mt-2 text-xs leading-relaxed text-emerald-100/75">
-                                            Hier gelten die echten lokalen Regeln. Diese Oberflaeche ist fuer reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
+                                            Hier gelten die echten lokalen Regeln. Diese Oberfläche ist für reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
                                         </div>
                                     </div>
                                 )}
@@ -1205,7 +1205,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     >
                                                         {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
                                                         <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                        <span className="text-xs font-medium relative z-10">Eigentuemer</span>
+                                                        <span className="text-xs font-medium relative z-10">Eigentümer</span>
                                                         <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
                                                     </button>
                                                     <button

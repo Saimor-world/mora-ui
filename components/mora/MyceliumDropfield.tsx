@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -139,7 +139,7 @@ export const MyceliumDropfield: React.FC<MyceliumDropfieldProps> = ({ active, fi
                                         {files.length === 1 ? '1 Datei aufgenommen' : `${files.length} Dateien aufgenommen`}
                                     </div>
                                     <p className="mt-2 max-w-xl text-center text-sm leading-relaxed text-white/68">
-                                        Mora sammelt die Rohdateien, bereitet Routing-Vorschlaege vor und uebergibt sie an den Review-Stapel.
+                                        Mora sammelt die Rohdateien, bereitet Routing-Vorschläge vor und übergibt sie an den Review-Stapel.
                                     </p>
                                     <div className="mt-4 flex items-center justify-center gap-2 text-xs text-emerald-100/80">
                                         <Upload className="h-3.5 w-3.5" />

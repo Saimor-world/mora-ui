@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavStore } from '@/lib/store/navStore';
@@ -589,12 +589,12 @@ export const DepartmentLayer: React.FC = () => {
                 className="left-8 top-32 z-40"
                 eyebrow={deptTitle || 'Abteilung'}
                 title={hoveredSpaceDetails?.displayName || deptTitle || 'Abteilung'}
-                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsuebersicht'}
+                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsübersicht'}
                 accent={hoveredSpaceDetails?.color || deptColor}
-                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren fuer Details.'}
+                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren für Details.'}
                 summary={hoveredSpaceDetails
-                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die staerksten Ordner.`
-                    : 'Hover ueber einen Bereich, um seine staerksten Ordner und die echte Struktur zu sehen.'}
+                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die stärksten Ordner.`
+                    : 'Hover über einen Bereich, um seine stärksten Ordner und die echte Struktur zu sehen.'}
                 forceExpanded={Boolean(hoveredSpaceDetails)}
                 onPointerEnter={() => {
                     if (hoveredSpaceId) {
@@ -658,12 +658,12 @@ export const DepartmentLayer: React.FC = () => {
                         )}
 
                         <p className="text-[11px] leading-relaxed text-white/45">
-                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die staerksten Ordner dieses Bereichs, bevor du in die naechste Ebene gehst.'}
+                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die stärksten Ordner dieses Bereichs, bevor du in die naechste Ebene gehst.'}
                         </p>
                     </div>
                 ) : (
                     <p className="text-[11px] leading-relaxed text-white/40">
-                        Hover ueber einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
+                        Hover über einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
                     </p>
                 )}
             </LayerInsightRail>

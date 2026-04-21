@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -168,7 +168,7 @@ describe('CalendarIntegration', () => {
 
         renderWithProviders(<CalendarIntegration />);
 
-        expect(await screen.findByText(/Google OAuth fuer diesen Tenant/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Google OAuth für diesen Tenant/i)).toBeInTheDocument();
 
         const clientIdInput = screen.getByPlaceholderText('Google OAuth Client ID');
         const clientSecretInput = screen.getByPlaceholderText('Google OAuth Client Secret');
@@ -178,7 +178,7 @@ describe('CalendarIntegration', () => {
         fireEvent.change(clientSecretInput, { target: { value: 'tenant-secret-456789' } });
         fireEvent.change(redirectInput, { target: { value: 'http://127.0.0.1:8081/v1/auth/google/callback' } });
 
-        fireEvent.click(screen.getByRole('button', { name: 'OAuth fuer Tenant speichern' }));
+        fireEvent.click(screen.getByRole('button', { name: 'OAuth für Tenant speichern' }));
 
         await waitFor(() => {
             expect(coreClient.corePost).toHaveBeenCalledWith('/v3/integrations/calendar/provider-config', {
@@ -227,8 +227,8 @@ describe('CalendarIntegration', () => {
 
         renderWithProviders(<CalendarIntegration />);
 
-        expect(await screen.findByText(/muss zuerst von einem Eigentuemer eingerichtet werden/i)).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'OAuth fuer Tenant speichern' })).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Eigentuemer muss OAuth freischalten' })).toBeDisabled();
+        expect(await screen.findByText(/muss zuerst von einem Eigentümer eingerichtet werden/i)).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'OAuth für Tenant speichern' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Eigentümer muss OAuth freischalten' })).toBeDisabled();
     });
 });

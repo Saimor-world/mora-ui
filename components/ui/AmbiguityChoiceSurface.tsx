@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
 import { ArrowRight, Search } from 'lucide-react';
@@ -66,7 +66,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
 
     if (shownResults.length === 0) return null;
 
-    const firstLabel = query?.trim() ? ` fuer "${query.trim()}"` : '';
+    const firstLabel = query?.trim() ? ` für "${query.trim()}"` : '';
     const formatDestination = (destination?: IntakeDestinationSummary | null) => {
         const path = [destination?.department_name, destination?.space_name, destination?.folder_name]
             .filter(Boolean)
@@ -148,7 +148,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                                     <div className="flex gap-2">
                                         <span className="shrink-0 uppercase tracking-[0.18em] text-white/36">Warum</span>
                                         <span className="min-w-0 text-white/72">
-                                            {whyHeadline || whyReason || 'Keine kurze Begruendung verfuegbar'}
+                                            {whyHeadline || whyReason || 'Keine kurze Begründung verfügbar'}
                                         </span>
                                     </div>
                                     <div className="flex items-start gap-2">

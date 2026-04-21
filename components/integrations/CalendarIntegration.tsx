@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Calendar, Check, AlertCircle, RefreshCw, Link2 } from 'lucide-react';
@@ -99,7 +99,7 @@ export const CalendarIntegration: React.FC = () => {
                     await loadStatus();
                     broadcastCommunicationSync('calendar-config-connect');
                 } else if (result.reason === 'blocked') {
-                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster für SAIMOR.');
                 } else if (result.reason !== 'closed') {
                     toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
                 }
@@ -190,7 +190,7 @@ export const CalendarIntegration: React.FC = () => {
                 {!oauthReady && ownerManageable && (
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
                         <div>
-                            <h5 className="text-sm font-medium text-white">Google OAuth fuer diesen Tenant</h5>
+                            <h5 className="text-sm font-medium text-white">Google OAuth für diesen Tenant</h5>
                             <p className="mt-1 text-xs leading-relaxed text-white/55">
                                 Diese Konfiguration ist tenantweit. Nutzer verbinden danach ihren eigenen Kalender im OS und speichern ihre Tokens separat.
                             </p>
@@ -231,14 +231,14 @@ export const CalendarIntegration: React.FC = () => {
                             className="inline-flex items-center gap-2 rounded-lg bg-cyan-500/20 border border-cyan-500/30 px-3 py-2 text-xs text-cyan-100 transition-all hover:bg-cyan-500/30 disabled:opacity-50"
                         >
                             <RefreshCw size={14} className={isSavingConfig ? 'animate-spin' : ''} />
-                            {isSavingConfig ? 'Speichern...' : 'OAuth fuer Tenant speichern'}
+                            {isSavingConfig ? 'Speichern...' : 'OAuth für Tenant speichern'}
                         </button>
                     </div>
                 )}
 
                 {!oauthReady && !ownerManageable && (
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-relaxed text-white/60">
-                        Die Google-OAuth-App fuer diesen Tenant muss zuerst von einem Eigentuemer eingerichtet werden.
+                        Die Google-OAuth-App für diesen Tenant muss zuerst von einem Eigentümer eingerichtet werden.
                         Sobald das erfolgt ist, kannst du deinen persoenlichen Kalender direkt hier im OS verbinden.
                     </div>
                 )}
@@ -265,8 +265,8 @@ export const CalendarIntegration: React.FC = () => {
                             ? 'Verbinden...'
                             : !oauthReady
                                 ? ownerManageable
-                                    ? 'OAuth fuer Tenant einrichten'
-                                    : 'Eigentuemer muss OAuth freischalten'
+                                    ? 'OAuth für Tenant einrichten'
+                                    : 'Eigentümer muss OAuth freischalten'
                                 : status?.configured ? 'Neu verbinden' : 'Verbinden'
                         }
                     </button>

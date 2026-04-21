@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useCallback } from 'react';
 import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2, Users, Sparkles } from 'lucide-react';
@@ -101,7 +101,7 @@ export const ContextRail: React.FC = () => {
             action: handleHomeClick
         },
         { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
-        { id: 'activity', icon: Activity, label: 'Aktivitaet', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
+        { id: 'activity', icon: Activity, label: 'Aktivität', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
         { id: 'chat', icon: MessageSquare, label: "Mora", action: () => { closeOverlays(); openChatDock(); } },
     ];
 

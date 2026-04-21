@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * TerminalApp - Core Terminal (Session-based)
@@ -58,7 +58,7 @@ function makeLine(type: TerminalLine["type"], content: string): TerminalLine {
 
 const MORA_COMMANDS: Record<string, { description: string; handler: (args: string[]) => Promise<string> }> = {
     help: {
-        description: "Zeigt alle verfuegbaren Befehle",
+        description: "Zeigt alle verfügbaren Befehle",
         handler: async () =>
             [
                 "CORE TERMINAL — Remote Linux Server (Session)",

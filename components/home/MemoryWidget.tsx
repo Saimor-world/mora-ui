@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
@@ -12,7 +12,7 @@ import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 /**
  * MEMORY DASHBOARD WIDGET
  *
- * Kompaktes Widget fuer die Home-Ansicht mit:
+ * Kompaktes Widget für die Home-Ansicht mit:
  * - Anzahl Erinnerungen
  * - Pending Reviews mit pulsierendem Indikator
  * - Ehrliche Core-Metriken

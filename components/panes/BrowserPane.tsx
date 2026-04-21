@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -80,7 +80,7 @@ const getConnectSurface = (url: string): ConnectSurface | null => {
     if (lower.includes('accounts.google.com') || lower.includes('login.microsoftonline.com')) {
         return {
             kind: 'account',
-            title: 'Konto ueber Browser Bridge verbinden',
+            title: 'Konto über Browser Bridge verbinden',
             eyebrow: 'Account Connect',
             description: 'Die eigentliche Anmeldung laeuft ausserhalb des eingebetteten Frames. SAIMOR nutzt diese Seite als Connect-Maske und springt danach in die lokale Wahrheitsinstanz zurück.',
             tone: 'cyan',
@@ -207,7 +207,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                 await loadOverview();
                 openCalendarPane();
             } else if (result.reason === 'blocked') {
-                toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                toast.error('Popup blockiert. Erlaube das Verbindungsfenster für SAIMOR.');
             } else if (result.reason !== 'closed') {
                 toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
             }
@@ -329,7 +329,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                 <div className="text-[10px] uppercase tracking-[0.26em] text-cyan-200/52">Browser Connect</div>
                                 <h2 className="mt-3 text-[28px] font-light text-white">Lokale Konten und Kommunikation</h2>
                                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/58">
-                                    Dieser Browser ist die lokale Bruecke fuer Mail, Kalender, Browser-Benachrichtigungen und spaetere OAuth- oder Passkey-Flows.
+                                    Dieser Browser ist die lokale Brücke für Mail, Kalender, Browser-Benachrichtigungen und spätere OAuth- oder Passkey-Flows.
                                     Auf HQ bleibt das die Demo-Schale, auf localhost wird daraus die echte Wahrheitsflaeche.
                                 </p>
 
@@ -436,7 +436,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
                                         {overview?.runtime?.local_truth?.available
                                             ? 'Lokale Runtime ist vorbereitet. Browser, Mail und Kalender koennen an dieselbe Wahrheitsinstanz haengen.'
-                                            : 'Die lokale Runtime wird vorbereitet und ueber localhost zur eigentlichen Produktionswahrheit.'}
+                                            : 'Die lokale Runtime wird vorbereitet und über localhost zur eigentlichen Produktionswahrheit.'}
                                     </div>
                                     <div className="mt-3 rounded-2xl border border-white/8 bg-black/18 px-3.5 py-3">
                                         <div className="flex items-center justify-between gap-3">
@@ -491,7 +491,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Warum kein eingebetteter Login?</div>
                                     <p className="mt-2 text-sm leading-relaxed text-white/58">
                                         Provider wie Google und Microsoft setzen Sicherheitsheader, die eingebettete Logins in fremden Frames bewusst blockieren.
-                                        Die echte Verbindung laeuft deshalb ueber den Browser selbst, waehrend SAIMOR hier nur die lokale Connect-Oberflaeche zeigt.
+                                        Die echte Verbindung laeuft deshalb über den Browser selbst, waehrend SAIMOR hier nur die lokale Connect-Oberfläche zeigt.
                                     </p>
                                 </div>
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,7 +36,7 @@ export const ConnectionBanner: React.FC = () => {
             : 'Verbindung eingeschraenkt';
 
     const helperText = surfaceProfile.isLocalTruthSurface
-        ? 'Pruefe Core, lokale Integrationen und Modelle. Diese Oberflaeche ist fuer die echte Arbeitslogik gedacht.'
+        ? 'Prüfe Core, lokale Integrationen und Modelle. Diese Oberfläche ist für die echte Arbeitslogik gedacht.'
         : surfaceProfile.isPublicDemoSurface
             ? 'Die Demo spiegelt nur den stabilen Stand. Lokale Regeln und Integrationen liegen ausserhalb dieser Instanz.'
             : 'Die Organisation ist erreichbar, aber der aktuelle Datenpfad ist gestoert.';

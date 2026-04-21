@@ -1,4 +1,4 @@
-export type ShellViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder' | string;
+﻿export type ShellViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder' | string;
 
 export interface ShellCompanyLike {
     id: string;
@@ -160,7 +160,7 @@ export const buildShellContextSnapshot = ({
             signalA: formatCount(activeFolders.length, 'Ordner'),
             signalB: formatCount(docCount, 'Dokument', 'Dokumente'),
             accent: activeSpace.color || activeDepartment?.color || accent,
-            nextMoveLabel: leadingFolder ? `Fokus auf ${leadingFolder.name}` : 'Finder fuer diesen Space',
+            nextMoveLabel: leadingFolder ? `Fokus auf ${leadingFolder.name}` : 'Finder für diesen Space',
             nextMoveHint: leadingFolder
                 ? 'Der sichtbar staerkste Ordner ist hier der sinnvollste naechste Schritt.'
                 : 'Wenn noch kein klarer Lead-Ordner sichtbar ist, oeffne die Struktur im Finder.',

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -323,7 +323,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     if (!metrics) {
         return (
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
-                Keine Organisationsmetriken verfuegbar.
+                Keine Organisationsmetriken verfügbar.
             </div>
         );
     }
@@ -549,7 +549,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
                 <MemoryLayerPanel
                     layer={surface?.layers?.foundation}
                     accent="border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
-                    emptyText="Noch kein belastbares Grundwissen fuer diesen Kontext sichtbar."
+                    emptyText="Noch kein belastbares Grundwissen für diesen Kontext sichtbar."
                     onInspect={inspectLayerItem}
                     onExplain={explainLayerItem}
                 />

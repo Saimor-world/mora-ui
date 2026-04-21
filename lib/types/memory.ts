@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Memory System Types - SAIMOR OS
  *
- * Type Definitions fuer das Learning Brain Memory System.
+ * Type Definitions für das Learning Brain Memory System.
  * Basiert auf dem LearningBrain-Schema mit Multi-Tenant Support.
  *
  * Hierarchie: tenant_id -> company_id -> user_id
@@ -24,7 +24,7 @@ export type LowRiskCategory =
 
 /**
  * High-Risk Kategorien - Benoetigen Review
- * Diese Insights muessen vom Benutzer bestaetigt werden.
+ * Diese Insights müssen vom Benutzer bestätigt werden.
  */
 export type HighRiskCategory =
   | 'fact'        // Fakten ueber die Firma/Projekte
@@ -40,7 +40,7 @@ export type HighRiskCategory =
 export type MemoryCategory = LowRiskCategory | HighRiskCategory;
 
 /**
- * Risk Level fuer Kategorisierung
+ * Risk Level für Kategorisierung
  */
 export type RiskLevel = 'low' | 'high';
 
@@ -62,7 +62,7 @@ export interface MemoryEntry {
   /** Optional: Company/Workspace ID */
   company_id?: string | null;
 
-  /** Optional: User ID (fuer personalisierte Erinnerungen) */
+  /** Optional: User ID (für personalisierte Erinnerungen) */
   user_id?: string | null;
 
   /** Quelle der Erinnerung (z.B. 'voice_learn', 'manual', 'voice_auto') */
@@ -71,7 +71,7 @@ export interface MemoryEntry {
   /** Zusammenfassung/Inhalt der Erinnerung */
   summary: string;
 
-  /** Tags fuer Kategorisierung und Suche */
+  /** Tags für Kategorisierung und Suche */
   tags: string[];
 
   /** Zeitstempel der Erstellung (ISO 8601) */
@@ -85,7 +85,7 @@ export interface MemoryEntry {
 }
 
 /**
- * Quellen fuer Erinnerungen
+ * Quellen für Erinnerungen
  */
 export type MemorySource =
   | 'voice_learn'   // Gelernt durch Voice-Interaktion
@@ -162,7 +162,7 @@ export interface ReviewItem {
   /** Kategorie des Insights */
   category: HighRiskCategory;
 
-  /** Risk Level (immer 'high' fuer Review Items) */
+  /** Risk Level (immer 'high' für Review Items) */
   risk_level: RiskLevel;
 
   /** Aktueller Status */
@@ -174,7 +174,7 @@ export interface ReviewItem {
   /** Zeitpunkt des Reviews (ISO 8601, nur wenn reviewed) */
   reviewed_at?: string | null;
 
-  /** Generierte Curiosity-Frage fuer Benutzerbestaetigung */
+  /** Generierte Curiosity-Frage für Benutzerbestätigung */
   curiosity_question?: string;
 }
 
@@ -183,7 +183,7 @@ export interface ReviewItem {
 // =============================================================================
 
 /**
- * Request Payload fuer POST /v1/memory/learn
+ * Request Payload für POST /v1/memory/learn
  * Neues Insight zum Lernen einreichen
  */
 export interface LearnInsightPayload {
@@ -230,7 +230,7 @@ export interface LearnInsightResponse {
 }
 
 /**
- * Response fuer Review Item Approval
+ * Response für Review Item Approval
  */
 export interface ApproveReviewResponse {
   /** Erfolgreich? */
@@ -248,7 +248,7 @@ export interface ApproveReviewResponse {
 // =============================================================================
 
 /**
- * Query Parameter fuer Memory Search
+ * Query Parameter für Memory Search
  */
 export interface MemorySearchParams {
   /** Suchbegriff */
@@ -378,7 +378,7 @@ export interface MemoryMetricsExtended extends MemoryMetrics {
 // =============================================================================
 
 /**
- * Optionen fuer Memory Cleanup (Decay)
+ * Optionen für Memory Cleanup (Decay)
  */
 export interface MemoryCleanupOptions {
   /** TTL in Tagen (default: 75) */
@@ -412,7 +412,7 @@ export interface MemoryCleanupResult {
 }
 
 /**
- * Sync Status fuer Core Nodes Integration (Closed Loop V1)
+ * Sync Status für Core Nodes Integration (Closed Loop V1)
  */
 export interface MemorySyncStatus {
   /** Memory ID */
@@ -452,7 +452,7 @@ export function isHighRiskCategory(category: MemoryCategory): category is HighRi
 }
 
 /**
- * Ermittelt das Risk Level fuer eine Kategorie
+ * Ermittelt das Risk Level für eine Kategorie
  */
 export function getRiskLevel(category: MemoryCategory): RiskLevel {
   return isLowRiskCategory(category) ? 'low' : 'high';

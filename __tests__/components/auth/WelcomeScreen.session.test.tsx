@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
@@ -202,7 +202,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
 
         await waitFor(() => {
             expect(screen.getByText(/Mora erkennt dich/i)).toBeInTheDocument();
-            expect(screen.getByText(/Identitaet bestaetigt/i)).toBeInTheDocument();
+            expect(screen.getByText(/Identität bestätigt/i)).toBeInTheDocument();
         });
     });
 

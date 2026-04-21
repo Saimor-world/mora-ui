@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * MoraShell - Main OS Shell Component
@@ -1223,7 +1223,7 @@ export const MoraShell: React.FC = () => {
                             </h2>
                             <p className="mt-2 text-sm leading-relaxed text-white/65">
                                 Mora nimmt die Dateien im Universe auf, bereitet Einordnungsvorschlaege vor
-                                und führt die bestaetigte Ablage spaeter im Dateibaum aus.
+                                und führt die bestätigte Ablage später im Dateibaum aus.
                             </p>
                         </div>
                     </div>

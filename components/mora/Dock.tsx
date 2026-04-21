@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -870,7 +870,7 @@ export const Dock = () => {
                 {
                     id: 'department-team',
                     label: 'Teamflaeche',
-                    description: 'Wechsle direkt zur Team-Oberflaeche fuer diesen Bereich.',
+                    description: 'Wechsle direkt zur Team-Oberfläche für diesen Bereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
                 },
@@ -883,7 +883,7 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-chat',
-                    label: 'Mora fuer die Abteilung',
+                    label: 'Mora für die Abteilung',
                     description: 'Starte Mora mit Abteilungsfokus statt globalem Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
@@ -895,7 +895,7 @@ export const Dock = () => {
             {
                 id: 'universe-home',
                 label: 'Home',
-                description: 'Zurueck auf die zentrale Core-Oberflaeche.',
+                description: 'Zurueck auf die zentrale Core-Oberfläche.',
                 icon: Home,
                 onClick: closeAfter(() => handleDockClick('home')),
             },

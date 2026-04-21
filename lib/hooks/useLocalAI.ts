@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from 'react';
 import { moraAI, type AIMessage } from '@/lib/ai/localAI';
@@ -138,7 +138,7 @@ export function useLocalAI(): UseLocalAIReturn {
 - ${deptNames.join(', ') || 'Keine Departments'}
 
 💡 **Empfehlungen:**
-1. Lokale KI verbinden fuer tiefere Analyse
+1. Lokale KI verbinden für tiefere Analyse
 2. Mehr Inhalte in die wichtigsten Bereiche legen
 3. MORA danach konkrete naechste Schritte ausarbeiten lassen
 

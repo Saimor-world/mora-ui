@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -588,7 +588,7 @@ export const ResonanceRoom: React.FC<Props> = ({
 
                         {/* Hint Text */}
                         <span className="text-[9px] text-emerald-500/30">
-                            Enter zum Senden - Shift+Enter fuer neue Zeile
+                            Enter zum Senden - Shift+Enter für neue Zeile
                         </span>
                     </div>
 

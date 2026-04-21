@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -38,7 +38,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
     const company = safeCompanies.find(c => c.id === companyId);
 
     const tabs = [
-        { id: 'overview', label: 'Ueberblick', icon: Building2 },
+        { id: 'overview', label: 'Überblick', icon: Building2 },
         { id: 'danger', label: 'Gefahrenzone', icon: AlertCircle },
     ];
 

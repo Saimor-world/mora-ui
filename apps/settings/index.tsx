@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -120,11 +120,11 @@ export default function SettingsApp({ paneId }: AppProps) {
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
-        { id: 'about', label: 'Ueber Mora', icon: Info }
+        { id: 'about', label: 'Über Mora', icon: Info }
     ], [canEditWorkspace, canManageTeam, canViewSystem, structureTabLabel]);
 
     const resolvedTabs = useMemo(
-        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Ueber Mora' } : tab)),
+        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Über Mora' } : tab)),
         [tabs]
     );
 
@@ -355,7 +355,7 @@ useEffect(() => {
             }
 
             if (audioFiles.length !== selectedFiles.length) {
-                toast.info('Nur Audiodateien wurden uebernommen');
+                toast.info('Nur Audiodateien wurden übernommen');
             }
 
             toast.success(
@@ -591,7 +591,7 @@ useEffect(() => {
                                 <div>
                                     <h3 className="text-lg text-white font-light">Hintergrundmusik</h3>
                                     <p className="mt-2 text-sm text-white/45 max-w-xl">
-                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik laeuft weiter,
+                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik läuft weiter,
                                         solange SAIMOR OS geöffnet ist, auch wenn du in andere Panes wechselst.
                                     </p>
                                 </div>
@@ -885,7 +885,7 @@ useEffect(() => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="text-sm text-white/80">Sound Effects</div>
-                                            <div className="text-xs text-white/40">UI-Sounds fuer Aktionen</div>
+                                            <div className="text-xs text-white/40">UI-Sounds für Aktionen</div>
                                         </div>
                                         <button
                                             onClick={() => {
@@ -1296,7 +1296,7 @@ useEffect(() => {
                             <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
                                 <h4 className="text-sm text-white/60 font-medium mb-2">Zukuenftige Features</h4>
                                 <ul className="text-xs text-white/40 space-y-1">
-                                    <li>- Farben fuer Departments anpassen</li>
+                                    <li>- Farben für Departments anpassen</li>
                                     <li>- Custom Icons zuweisen</li>
                                     <li>- Drag & Drop Sortierung</li>
                                     <li>- Team Manager: Sichtbarkeit pro Rolle</li>
@@ -1368,7 +1368,7 @@ useEffect(() => {
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <h4 className="text-sm font-medium text-white/80">Datenverwaltung</h4>
                                 <p className="hidden text-xs text-white/40">
-                                    Hier kannst du die komplette Demo-Struktur zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten ueberschrieben.
+                                    Hier kannst du die komplette Demo-Struktur zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten überschrieben.
                                 </p>
                                 <p className="text-xs text-white/40">
                                     Hier kannst du die öffentliche Demo-Instanz auf den kuratierten Ausgangszustand zurücksetzen.
@@ -1440,10 +1440,10 @@ useEffect(() => {
 
                     {activeTab === 'about' && (
                         <div className="space-y-6">
-                            <h3 className="text-lg text-white font-light">Ueber SAIMOR</h3>
+                            <h3 className="text-lg text-white font-light">Über SAIMOR</h3>
                             <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/60 leading-relaxed">
                                 <p className="mb-4">
-                                    SAIMOR ist das semantische Betriebssystem fuer Klarheit, Struktur und belastbare Erinnerung in Organisationen.
+                                    SAIMOR ist das semantische Betriebssystem für Klarheit, Struktur und belastbare Erinnerung in Organisationen.
                                 </p>
                                 <div className="flex items-center gap-2 text-xs text-white/30 mt-8">
                                     <span>v2.0.0-beta</span>

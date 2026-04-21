@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * ChatApp - Mora AI Conversation Interface (App Module)
@@ -87,7 +87,7 @@ function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
 
     return {
         label: intent.headline || 'Treffer',
-        title: intent.open_explanation?.headline || intent.reason || `Suche fuer "${query}"`,
+        title: intent.open_explanation?.headline || intent.reason || `Suche für "${query}"`,
         body: intent.open_explanation?.reason || intent.reason || undefined,
         chips,
         footer: intent.next?.message,
@@ -426,7 +426,7 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
                 Kein Kontext aktiv
             </p>
             <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Oeffne zuerst das Beispielsystem oder waehle einen Bereich, damit Mora sinnvoll arbeiten kann.
+                Oeffne zuerst das Beispielsystem oder wähle einen Bereich, damit Mora sinnvoll arbeiten kann.
             </p>
             {onOpenSettings && (
                 <button
@@ -554,8 +554,8 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
 Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
 - **"Zeig mir ${d1}"** → ich navigiere dorthin
 - **"Was ist neu?"** → ich fasse reale Signale zusammen
-- **"Was laeuft in ${d2}?"** → ich suche in Inhalten und Aktivitaet
-- **"Merke dir ..."** → ich speichere belastbare Fakten fuer spaeter
+- **"Was läuft in ${d2}?"** → ich suche in Inhalten und Aktivität
+- **"Merke dir ..."** → ich speichere belastbare Fakten für später
 
 Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             timestamp: new Date()
@@ -796,7 +796,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             title: global ? 'Unternehmenssuche geöffnet' : 'Suche geöffnet',
             message: global
                 ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geöffnet.'
-                : `Ich habe die Suche fuer ${query} im aktuellen Organisationskontext geöffnet.`,
+                : `Ich habe die Suche für ${query} im aktuellen Organisationskontext geöffnet.`,
             targetType: 'search',
             label: query || 'Alle Dokumente',
             query: query || '',
@@ -832,7 +832,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         if (openIntent.resolution === 'choose' && openIntent.candidates.length > 0) {
             dispatchNavigationResult({
                 title: 'Mehrdeutiger Treffer',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer fuer ${trimmed}. Waehle unten einen aus.`,
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer für ${trimmed}. Wähle unten einen aus.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -844,7 +844,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 results: openIntent.candidates.map((candidate) => toChatOpenableResult(candidate)),
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich sehe mehrere passende Treffer fuer **${trimmed}**. Waehle unten einen aus.`;
+            return `Ich sehe mehrere passende Treffer für **${trimmed}**. Wähle unten einen aus.`;
         }
 
         if (openIntent.resolution === 'none' || !openIntent.chosen) {
@@ -857,7 +857,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             });
             dispatchNavigationResult({
                 title: 'Suche geöffnet',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geöffnet.`,
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer für ${trimmed} gefunden und die Suche geöffnet.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -868,7 +868,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 query: trimmed,
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fuer **${trimmed}** geöffnet.`;
+            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche für **${trimmed}** geöffnet.`;
         }
 
         const chosen = toChatOpenableResult(openIntent.chosen);
@@ -962,7 +962,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             setMessages(prev => [...prev, {
                                 id: crypto.randomUUID(),
                                 role: 'assistant',
-                                content: agentResponse.final_message || `Ich habe einen Aktionsplan fuer ${confirm.tool_name} vorbereitet. Bitte bestaetige ihn.`,
+                                content: agentResponse.final_message || `Ich habe einen Aktionsplan für ${confirm.tool_name} vorbereitet. Bitte bestätige ihn.`,
                                 timestamp: new Date(),
                                 pendingAction: {
                                     tool_name: confirm.tool_name,

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Settings2, X } from 'lucide-react';
@@ -44,7 +44,7 @@ export const AdminHome: React.FC = () => {
                         <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">In dieser Instanz</div>
                         <div className="mt-2 text-sm text-white/85">Organisationsverwaltung</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/48">
-                            Dieser Bereich ist fuer Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
+                            Dieser Bereich ist für Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
                         </p>
                     </div>
                     <div className="rounded-2xl border border-amber-400/18 bg-amber-500/[0.06] p-4">

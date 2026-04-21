@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -397,7 +397,7 @@ function TransitionGhostCard({ stepTitle, transitionType, message, segmentContex
     const tone = isConfirmed ? 'emerald' : 'slate';
     const label = isConfirmed ? 'Bestaetigt' : 'Uebersprungen';
     const Icon = isConfirmed ? CheckCircle2 : SkipForward;
-    const body = compactText(message, 220) || (isConfirmed ? 'Schritt bestaetigt.' : 'Schritt uebersprungen.');
+    const body = compactText(message, 220) || (isConfirmed ? 'Schritt bestätigt.' : 'Schritt übersprungen.');
     const footer = segmentContext ? `Weiter in ${segmentContext}.` : undefined;
     return (
         <CommandReceipt tone={tone} icon={Icon} label={label}
@@ -498,7 +498,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
         try {
             const updated = await corePost('/v3/work-session/reject', { plan_id: plan.plan_id, step_id: stepId }, { isOptional: true });
             if (updated) setPlan(updated as WorkSessionPlan);
-        } catch { toast.error('Schritt konnte nicht uebersprungen werden.'); }
+        } catch { toast.error('Schritt konnte nicht übersprungen werden.'); }
     };
 
     if (!pane) return null;

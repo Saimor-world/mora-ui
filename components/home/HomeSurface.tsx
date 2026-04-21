@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FileText, FolderOpen, StickyNote, MessageCircle, LogOut, Orbit, Mail, Globe, Bell, CalendarDays, Wrench, Sparkles } from 'lucide-react';
@@ -707,7 +707,7 @@ export const HomeSurface: React.FC = () => {
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-200/42">Zuletzt beruehrt</div>
-                                <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivitaet statt statischer Home-Daten.</div>
+                                <div className="mt-1 text-[12px] text-white/48">Echte OS-Aktivität statt statischer Home-Daten.</div>
                             </div>
                             <button
                                 type="button"
@@ -720,7 +720,7 @@ export const HomeSurface: React.FC = () => {
 
                         {recentActivityItems.length === 0 ? (
                             <p data-testid="recent-items-empty" className="text-sm text-white/30">
-                                Noch keine Aktivitaet. Starte im Finder.
+                                Noch keine Aktivität. Starte im Finder.
                             </p>
                         ) : (
                             <ul className="space-y-2">
