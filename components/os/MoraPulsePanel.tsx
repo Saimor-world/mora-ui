@@ -199,7 +199,7 @@ export const MoraPulsePanel: React.FC = () => {
                             <button
                                 onClick={() => requestCommandDeckOpen({ pinned: true })}
                                 className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/10 text-emerald-200 transition-colors hover:bg-emerald-500/16"
-                                title="Control Center oeffnen"
+                                title="Control Center öffnen"
                             >
                                 <PanelTopOpen size={14} />
                             </button>

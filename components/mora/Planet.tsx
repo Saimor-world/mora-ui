@@ -84,7 +84,7 @@ export const Planet: React.FC<PlanetProps> = ({
         <motion.button
             ref={planetRef}
             type="button"
-            aria-label={`${department.name} oeffnen`}
+            aria-label={`${department.name} öffnen`}
             className="absolute group pointer-events-auto border-0 bg-transparent p-6 -m-6 text-left cursor-pointer touch-manipulation"
             style={{
                 left: position.x,

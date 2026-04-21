@@ -1043,7 +1043,7 @@ export const ActionCenterPane: React.FC<{ id: string }> = ({ id }) => {
                                                                     className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1.5 text-[11px] text-cyan-200 transition-colors hover:bg-cyan-500/18"
                                                                 >
                                                                     {navigationOutcome.targetType === 'search' ? <Search size={12} /> : <CheckCircle size={12} />}
-                                                                    {navigationOutcome.targetType === 'search' ? 'Suche oeffnen' : 'Erneut oeffnen'}
+                                                                    {navigationOutcome.targetType === 'search' ? 'Suche öffnen' : 'Erneut öffnen'}
                                                                 </button>
                                                             </div>
                                                         )}

@@ -819,7 +819,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Kein Kontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Beispielinstanz geoeffnet hast.
+                                                        Kein Kontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Beispielinstanz geöffnet hast.
                                                     </div>
                                                 )}
 
@@ -919,7 +919,7 @@ export const MemorySidebar: React.FC = () => {
 
                                         {/* Footer */}
                                         <div className="p-3 border-t border-white/5 text-[9px] text-white/20 text-center">
-                                            {mod}+Shift+M zum Oeffnen
+                                            {mod}+Shift+M zum Öffnen
                                         </div>
                                     </>)}
                                 </div>

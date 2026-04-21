@@ -475,7 +475,7 @@ export const HomeSurface: React.FC = () => {
                         <div className="mt-3 text-[13px] leading-relaxed text-white/62">
                             {browserBridge.permission === 'granted'
                                 ? 'Browser und Home sind bereit. Wenn du eintauchst, öffnet sich die Live-Topographie vollständig.'
-                                : 'Home bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen in der Mitte oeffnet den ganzen Universumsraum.'}
+                                : 'Home bleibt ruhig im Vordergrund. Ein Klick auf das Zeichen in der Mitte öffnet den ganzen Universumsraum.'}
                         </div>
                     </div>
                 </div>

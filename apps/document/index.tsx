@@ -109,11 +109,11 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
 
     const navigationSourceLabel = (() => {
         switch (navigationContext?.source) {
-            case 'chat': return 'Aus Mora-Chat geoeffnet';
-            case 'mycelium': return 'Aus Einordnung geoeffnet';
-            case 'work-session': return 'Aus Arbeitsplan geoeffnet';
-            case 'search': case 'search-popup': case 'search-pane': return 'Aus Suche geoeffnet';
-            default: return 'Von Mora geoeffnet';
+            case 'chat': return 'Aus Mora-Chat geöffnet';
+            case 'mycelium': return 'Aus Einordnung geöffnet';
+            case 'work-session': return 'Aus Arbeitsplan geöffnet';
+            case 'search': case 'search-popup': case 'search-pane': return 'Aus Suche geöffnet';
+            default: return 'Von Mora geöffnet';
         }
     })();
 
@@ -168,7 +168,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             const opened = await openSourceFileForNode({ metadata, name, title: name, id: nodeId || 'document' });
             if (!opened) toast.info('Keine Originaldatei verknuepft');
         } catch (error: any) {
-            toast.error(error?.message || 'Originaldatei konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Originaldatei konnte nicht geöffnet werden');
         }
     };
 
@@ -289,14 +289,14 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         actions={(navigationContext.folderId || folderId) ? (
                             <button type="button"
                                 onClick={() => openNavigationOutcome({
-                                    title: 'Zielordner geoeffnet',
-                                    message: `Ich habe den Zielordner fuer ${navigationContext.label || name || 'das Dokument'} geoeffnet.`,
+                                    title: 'Zielordner geöffnet',
+                                    message: `Ich habe den Zielordner fuer ${navigationContext.label || name || 'das Dokument'} geöffnet.`,
                                     targetType: 'folder', label: navigationContext.label || name || 'Finder',
                                     path: navigationContext.path, companyId: navigationContext.companyId || companyId,
                                     folderId: navigationContext.folderId || folderId, source: navigationContext.source || 'search',
                                 }, openPane)}
                                 className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22">
-                                <FolderOpen size={13} />Im Zielordner oeffnen</button>
+                                <FolderOpen size={13} />Im Zielordner öffnen</button>
                         ) : null}
                         footer="Dieses Arbeitsdokument bleibt mit seinem Ursprung verknuepft." />
                 </div>
@@ -321,7 +321,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         <button onClick={handleDownloadText} className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors" title="Textinhalt herunterladen"><Download size={16} /></button>
                     )}
                     {sourceFileId && (
-                        <button onClick={() => void handleOpenOriginal()} className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors" title="Originaldatei oeffnen"><Paperclip size={16} /></button>
+                        <button onClick={() => void handleOpenOriginal()} className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors" title="Originaldatei öffnen"><Paperclip size={16} /></button>
                     )}
                     {(folderId || navigationContext?.folderId) && (
                         <button

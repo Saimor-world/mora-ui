@@ -289,12 +289,12 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                                                 type="button"
                                                                 onClick={() => {
                                                                     void openSourceFileForNode(node).catch((error: any) => {
-                                                                        toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                                        toast.error(error?.message || 'Datei konnte nicht geöffnet werden.');
                                                                     });
                                                                 }}
                                                                 className="text-cyan-200/70 transition-colors hover:text-cyan-100"
                                                             >
-                                                                Quelle oeffnen
+                                                                Quelle öffnen
                                                             </button>
                                                         </>
                                                     )}
@@ -325,7 +325,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                                         type="button"
                                                         onClick={() => {
                                                             void openSourceFileLike(file, openPane).catch((error: any) => {
-                                                                toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                                toast.error(error?.message || 'Datei konnte nicht geöffnet werden.');
                                                             });
                                                         }}
                                                         className="truncate text-left text-sm text-white/60 transition-colors group-hover:text-white/82"
@@ -345,7 +345,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                                         type="button"
                                                         onClick={() => {
                                                             void openSourceFileLike(file, openPane).catch((error: any) => {
-                                                                toast.error(error?.message || 'Datei konnte nicht geoeffnet werden.');
+                                                                toast.error(error?.message || 'Datei konnte nicht geöffnet werden.');
                                                             });
                                                         }}
                                                         className="transition-colors hover:text-white/70"

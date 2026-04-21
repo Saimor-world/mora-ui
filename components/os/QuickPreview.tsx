@@ -433,7 +433,7 @@ export const QuickPreview: React.FC = () => {
                                 <button
                                     onClick={openFullPane}
                                     className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
-                                    title="Vollstaendig oeffnen"
+                                    title="Vollständig öffnen"
                                 >
                                     <Maximize2 size={16} />
                                 </button>

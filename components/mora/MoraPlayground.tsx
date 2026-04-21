@@ -229,7 +229,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
             highlight: "Markiert Ziel",
             point: "Zeigt Kontext",
             navigate: "Fuehrt dich hin",
-            return: "Kehrt zurueck",
+            return: "Kehrt zurück",
             roam: "Scannt Umgebung",
         };
         return labels[cursorAgent.action] || "Aktiv";

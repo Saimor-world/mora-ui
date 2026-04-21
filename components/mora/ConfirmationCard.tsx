@@ -343,7 +343,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     ? 'Bitte Einordnung pruefen'
                     : isFileOp
                         ? 'Aktionsausfuehrung bestaetigen'
-                        : 'Bestaetigung erforderlich',
+                        : 'Bestätigung erforderlich',
                 duration: 2600,
                 source: 'system',
             });
@@ -689,9 +689,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     <div className="text-xs text-white/55 italic leading-relaxed">
                         {isContentOnlyOp
                             ? isContentUpdateOnlyOp
-                                ? 'MORA aendert diesen Inhalt erst nach Ihrer Bestaetigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
-                                : 'MORA erstellt diesen Inhalt erst nach Ihrer Bestaetigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
-                            : 'MORA fuehrt diese Aenderung erst nach Ihrer Bestaetigung aus. Der aktuelle Organisationskontext bleibt dabei verbindlich.'}
+                                ? 'MORA aendert diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
+                                : 'MORA erstellt diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
+                            : 'MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Organisationskontext bleibt dabei verbindlich.'}
                     </div>
                 </div>
 

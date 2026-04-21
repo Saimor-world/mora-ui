@@ -357,7 +357,7 @@ export interface MemoryMetrics {
  * Erweiterte Metrics mit Trend-Daten
  */
 export interface MemoryMetricsExtended extends MemoryMetrics {
-  /** Trend: Aenderung gegenueber Vorwoche (Prozent) */
+  /** Trend: Änderung gegenüber Vorwoche (Prozent) */
   trend_learns_7d?: number;
 
   /** Verteilung nach Kategorien */
@@ -369,7 +369,7 @@ export interface MemoryMetricsExtended extends MemoryMetrics {
   /** Letzte Cleanup-Zeit (ISO 8601) */
   last_cleanup_at?: string;
 
-  /** Anzahl geloeschter Memories beim letzten Cleanup */
+  /** Anzahl gelöschter Memories beim letzten Cleanup */
   last_cleanup_count?: number;
 }
 
@@ -390,7 +390,7 @@ export interface MemoryCleanupOptions {
   /** Tags die vom Cleanup schuetzen (z.B. 'important') */
   protected_tags?: string[];
 
-  /** Dry-Run Modus (zeigt nur was geloescht wuerde) */
+  /** Dry-Run Modus (zeigt nur was gelöscht würde) */
   dry_run?: boolean;
 }
 
@@ -398,7 +398,7 @@ export interface MemoryCleanupOptions {
  * Ergebnis eines Memory Cleanups
  */
 export interface MemoryCleanupResult {
-  /** Anzahl geloeschter Memories */
+  /** Anzahl gelöschter Memories */
   deleted_count: number;
 
   /** War es ein Dry-Run? */

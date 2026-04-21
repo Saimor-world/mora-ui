@@ -119,7 +119,7 @@ export class ErrorBoundary extends Component<Props, State> {
                             <p className="text-sm text-red-200/70 text-center mb-6 leading-relaxed">
                                 Dieser Bereich konnte gerade nicht sauber geladen werden. Deine Daten bleiben erhalten.
                                 <br />
-                                Versuche es erneut, lade die Seite neu oder geh zur Startflaeche zurueck.
+                                Versuche es erneut, lade die Seite neu oder geh zur Startfläche zurück.
                             </p>
 
                             {/* Error Details (Development Only) */}
@@ -167,7 +167,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-mora-gold/10 border border-mora-gold/30 text-mora-gold hover:bg-mora-gold/20 hover:border-mora-gold/50 transition-all"
                                 >
                                     <Home className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Zur Startflaeche</span>
+                                    <span className="text-sm font-medium">Zur Startfläche</span>
                                 </button>
                             </div>
                         </div>

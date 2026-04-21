@@ -457,7 +457,7 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                                     }`}
                                 title="Automatikmodus umschalten"
                             >
-                                {hilEnabled ? "Mit Bestaetigung" : "Direkt anwenden"}
+                                {hilEnabled ? "Mit Bestätigung" : "Direkt anwenden"}
                             </button>
                         )}
                         <button

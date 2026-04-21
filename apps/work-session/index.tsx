@@ -490,7 +490,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
         try {
             const updated = await corePost('/v3/work-session/confirm', { plan_id: plan.plan_id, step_id: stepId }, { isOptional: true });
             if (updated) setPlan(updated as WorkSessionPlan);
-        } catch { toast.error('Bestaetigung fehlgeschlagen.'); }
+        } catch { toast.error('Bestätigung fehlgeschlagen.'); }
     };
 
     const handleRejectStep = async (stepId: string) => {
@@ -542,7 +542,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="red" icon={XCircle} label="Arbeitsplan nicht erreichbar" title={error}
                             body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schließen und erneut öffnen, wenn der Fehler bleibt."
-                            chips={[{ label: 'Keine Aktion ausgefuehrt' }, { label: 'Datenstand bleibt erhalten' }]} className="w-full max-w-xl" />
+                            chips={[{ label: 'Keine Aktion ausgeführt' }, { label: 'Datenstand bleibt erhalten' }]} className="w-full max-w-xl" />
                     </div>
                 )}
 
@@ -576,7 +576,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                         <AnimatePresence>
                             {(pendingSteps.length > 0 || showGhost) && (
                                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="px-4 pt-4 pb-2">
-                                    {pendingSteps.length > 0 && <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">Bestaetigung erforderlich</div>}
+                                    {pendingSteps.length > 0 && <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">Bestätigung erforderlich</div>}
                                     <div className="space-y-2">
                                         {showGhost && ghostStep && (
                                             <motion.div key={`ghost-${lastTransitionStepId}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

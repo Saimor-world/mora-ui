@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,8 +43,8 @@ export const QuickTips: React.FC = () => {
         },
         {
             icon: Folder,
-            title: 'Finder oeffnen',
-            description: `${modifier}+F oeffnet den Datei-Explorer`,
+            title: 'Finder öffnen',
+            description: `${modifier}+F öffnet den Datei-Explorer`,
             color: 'blue'
         },
         {

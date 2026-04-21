@@ -692,7 +692,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/12 px-3 py-2 text-xs text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/18"
                                             >
                                                 <Mail size={14} />
-                                                Post oeffnen
+                                                Post öffnen
                                             </button>
                                         </div>
                                     </div>
@@ -719,7 +719,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-orange-400/20 bg-orange-500/12 px-3 py-2 text-xs text-orange-100 transition-colors hover:border-orange-300/35 hover:bg-orange-500/18"
                                             >
                                                 <Calendar size={14} />
-                                                Kalender oeffnen
+                                                Kalender öffnen
                                             </button>
                                             <button
                                                 onClick={connectGoogleCalendar}
@@ -775,7 +775,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
                                             >
                                                 <ExternalLink size={14} />
-                                                Local Truth oeffnen
+                                                Local Truth öffnen
                                             </button>
                                         </div>
                                     </div>
@@ -940,7 +940,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
                                             >
                                                 <ExternalLink size={14} />
-                                                Local Truth oeffnen
+                                                Local Truth öffnen
                                             </button>
                                         </div>
                                     </div>

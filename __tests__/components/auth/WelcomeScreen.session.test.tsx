@@ -138,7 +138,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
             expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
-            expect(screen.getByText('Simple Coffee Group oeffnen')).toBeInTheDocument();
+            expect(screen.getByText('Simple Coffee Group öffnen')).toBeInTheDocument();
         });
     });
 
@@ -298,10 +298,10 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Simple Coffee Group oeffnen')).toBeInTheDocument();
+            expect(screen.getByText('Simple Coffee Group öffnen')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Simple Coffee Group oeffnen'));
+        fireEvent.click(screen.getByText('Simple Coffee Group öffnen'));
 
         await waitFor(() => {
             expect(mockFetch).toHaveBeenCalledWith(

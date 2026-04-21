@@ -203,7 +203,7 @@ function shouldPreferAgenticLoop(text: string): boolean {
         /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|rewrite|schreib um)\b/,
         /\b(verschiebe|move|sortiere|ordne|organisiere)\b/,
         /\b(lösche|loesche|entferne|delete|archive)\b/,
-        /\b(teile|share|veröffentliche|veroeffentliche)\b/,
+        /\b(teile|share|veröffentliche|veröffentliche)\b/,
         /\b(fasse zusammen|zusammenfassen|review|prüfe|pruefe|analysiere|compare|vergleiche)\b/,
         /\b(starte|setze fort|continue|mach weiter|plane|bereite vor|arbeite aus)\b/,
     ].some((pattern) => pattern.test(lower));
@@ -435,7 +435,7 @@ function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
                     onClick={onOpenSettings}
                     className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
                 >
-                    Einstellungen oeffnen
+                    Einstellungen öffnen
                 </button>
             )}
         </div>
@@ -793,10 +793,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             data: { query, globalSearch: global, companyId: activeCompanyId || undefined }
         });
         dispatchNavigationResult({
-            title: global ? 'Unternehmenssuche geoeffnet' : 'Suche geoeffnet',
+            title: global ? 'Unternehmenssuche geöffnet' : 'Suche geöffnet',
             message: global
-                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geoeffnet.'
-                : `Ich habe die Suche fuer ${query} im aktuellen Organisationskontext geoeffnet.`,
+                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geöffnet.'
+                : `Ich habe die Suche fuer ${query} im aktuellen Organisationskontext geöffnet.`,
             targetType: 'search',
             label: query || 'Alle Dokumente',
             query: query || '',
@@ -856,8 +856,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 data: { query: trimmed },
             });
             dispatchNavigationResult({
-                title: 'Suche geoeffnet',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
+                title: 'Suche geöffnet',
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geöffnet.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -868,7 +868,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 query: trimmed,
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fuer **${trimmed}** geoeffnet.`;
+            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fuer **${trimmed}** geöffnet.`;
         }
 
         const chosen = toChatOpenableResult(openIntent.chosen);

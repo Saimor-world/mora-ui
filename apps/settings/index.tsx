@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -592,7 +592,7 @@ useEffect(() => {
                                     <h3 className="text-lg text-white font-light">Hintergrundmusik</h3>
                                     <p className="mt-2 text-sm text-white/45 max-w-xl">
                                         Lege dir eine kleine lokale Song-Auswahl an. Die Musik laeuft weiter,
-                                        solange SAIMOR OS geoeffnet ist, auch wenn du in andere Panes wechselst.
+                                        solange SAIMOR OS geöffnet ist, auch wenn du in andere Panes wechselst.
                                     </p>
                                 </div>
 
@@ -803,8 +803,8 @@ useEffect(() => {
                                         <div className="flex-1">
                                             <div className="text-sm text-white/80 font-medium">Aktionen direkt ausfuehren</div>
                                             <div className="text-xs text-white/40 mt-1">
-                                                Wenn deaktiviert, fragt MORA vor jedem Werkzeugschritt nach deiner Bestaetigung.
-                                                Das betrifft zum Beispiel Dateierstellung und inhaltliche Aenderungen.
+                                                Wenn deaktiviert, fragt MORA vor jedem Werkzeugschritt nach deiner Bestätigung.
+                                                Das betrifft zum Beispiel Dateierstellung und inhaltliche Änderungen.
                                             </div>
                                         </div>
                                         <button
@@ -836,12 +836,12 @@ useEffect(() => {
                                         {(user?.settings?.autoExecuteActions ?? true) ? (
                                             <>
                                                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                                                <span>MORA fuehrt Aktionen automatisch aus</span>
+                                                <span>MORA führt Aktionen automatisch aus</span>
                                             </>
                                         ) : (
                                             <>
                                                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                <span>Datenhoheit aktiv: Bestaetigung vor jeder Aktion</span>
+                                                <span>Datenhoheit aktiv: Bestätigung vor jeder Aktion</span>
                                             </>
                                         )}
                                     </div>
@@ -1083,13 +1083,13 @@ useEffect(() => {
                                                         <button
                                                             onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                if (!confirm(`"${dept.name}" wirklich loeschen? Alle enthaltenen Spaces und Dokumente werden geloescht.`)) return;
+                                                                if (!confirm(`"${dept.name}" wirklich loeschen? Alle enthaltenen Spaces und Dokumente werden gelöscht.`)) return;
                                                                 setIsDeleting(dept.id);
                                                                 try {
                                                                     await deleteDepartment(dept.id);
                                                                     await loadDepartments(activeCompanyId || undefined);
                                                                     if (activeCompanyId) loadTree();
-                                                                    toast.success('Department geloescht');
+                                                                    toast.success('Department gelöscht');
                                                                 } catch (err) {
                                                                     toast.error('Loeschen fehlgeschlagen');
                                                                 } finally {
@@ -1329,7 +1329,7 @@ useEffect(() => {
                                     className="mt-4 px-5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm hover:bg-emerald-500/25 transition-colors duration-200 flex items-center gap-2"
                                 >
                                     <Users size={14} />
-                                    Team Manager oeffnen
+                                    Team Manager öffnen
                                     <ChevronRight size={14} />
                                 </button>
                             </div>
@@ -1368,18 +1368,18 @@ useEffect(() => {
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <h4 className="text-sm font-medium text-white/80">Datenverwaltung</h4>
                                 <p className="hidden text-xs text-white/40">
-                                    Hier kannst du die komplette Demo-Struktur zuruecksetzen. Alle Daten werden geloescht und mit den Standard-Demo-Daten ueberschrieben.
+                                    Hier kannst du die komplette Demo-Struktur zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten ueberschrieben.
                                 </p>
                                 <p className="text-xs text-white/40">
-                                    Hier kannst du die oeffentliche Demo-Instanz auf den kuratierten Ausgangszustand zuruecksetzen.
+                                    Hier kannst du die öffentliche Demo-Instanz auf den kuratierten Ausgangszustand zurücksetzen.
                                 </p>
 
                                 <button
                                     onClick={async () => {
-                                        if (!confirm('Bist du sicher? Alle Aenderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurueckgesetzt.')) return;
+                                        if (!confirm('Bist du sicher? Alle Änderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurückgesetzt.')) return;
 
                                         try {
-                                            toast.loading('Demo-Instanz wird zurueckgesetzt...');
+                                            toast.loading('Demo-Instanz wird zurückgesetzt...');
 
                                             // Get token from Session (Production Auth)
                                             const token = session?.user?.accessToken; // || localStorage fallback removed
@@ -1406,7 +1406,7 @@ useEffect(() => {
                                                 throw new Error(err.detail || 'Reset failed');
                                             }
 
-                                            toast.success('Demo-Instanz erfolgreich zurueckgesetzt!');
+                                            toast.success('Demo-Instanz erfolgreich zurückgesetzt!');
                                             // Force reload window to clear all local state nuances
                                             window.location.reload();
                                         } catch (e) {
@@ -1417,9 +1417,9 @@ useEffect(() => {
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group [&>span:last-child]:hidden"
                                 >
                                     <Trash2 size={16} className="group-hover:animate-pulse" />
-                                    <span className="hidden">Demo-Instanz zuruecksetzen</span>
-                                    <span>Demo-Daten zuruecksetzen</span>
-                                    <span>Demo-Instanz zuruecksetzen</span>
+                                    <span className="hidden">Demo-Instanz zurücksetzen</span>
+                                    <span>Demo-Daten zurücksetzen</span>
+                                    <span>Demo-Instanz zurücksetzen</span>
                                 </button>
                             </div>
                             )}

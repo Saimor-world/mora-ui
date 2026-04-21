@@ -35,7 +35,7 @@ describe('MyceliumDropfield', () => {
 
         expect(screen.getByText('Mycelium Intake')).toBeInTheDocument();
         expect(screen.getByText('2 Dateien aufgenommen')).toBeInTheDocument();
-        expect(screen.getByText(/Batch wird in Mycelium Intake ueberfuehrt/i)).toBeInTheDocument();
+        expect(screen.getByText(/Batch wird in Mycelium Intake überführt/i)).toBeInTheDocument();
     });
 
     it('calls onComplete after the burst settles', () => {

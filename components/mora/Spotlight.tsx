@@ -151,7 +151,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
                 if (response.final_state === 'S4_CONFIRM' && response.pending_confirmations.length > 0) {
                     const pending = response.pending_confirmations[0];
-                    setMoraResponse(`${cleanContent}\n\nBestaetigung noetig: ${pending.what_will_change}`);
+                    setMoraResponse(`${cleanContent}\n\nBestätigung noetig: ${pending.what_will_change}`);
                 } else {
                     setMoraResponse(cleanContent);
                 }
@@ -209,7 +209,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         result.push({
             id: "action-memory",
             label: 'Mora Center',
-            description: "Erinnerungen, Signale und Kontext oeffnen",
+            description: "Erinnerungen, Signale und Kontext öffnen",
             icon: <Brain size={16} className="text-violet-400" />,
             category: "action",
             keywords: ["memory", "gedächtnis", "erinnerung", "lernen", "brain", "wissen"],

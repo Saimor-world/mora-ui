@@ -44,18 +44,18 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
 
     const handleDeleteCompany = async () => {
         if (confirmDelete != company?.name) {
-            toast.error('Bitte gib den Organisationsnamen zur Bestaetigung ein');
+            toast.error('Bitte gib den Organisationsnamen zur Bestätigung ein');
             return;
         }
 
         setIsDeleting(true);
         try {
             await coreDelete(`/v3/companies/${companyId}`);
-            toast.success(`"${company?.name}" wurde geloescht`);
+            toast.success(`"${company?.name}" wurde gelöscht`);
             await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
             removePane(id);
         } catch (error: any) {
-            toast.error(error.message || 'Organisation konnte nicht geloescht werden');
+            toast.error(error.message || 'Organisation konnte nicht gelöscht werden');
         } finally {
             setIsDeleting(false);
         }

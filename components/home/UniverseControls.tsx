@@ -231,7 +231,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 type="button"
                 onClick={handleOpenContextBridge}
                 className="flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white/58 transition-colors hover:border-emerald-400/20 hover:bg-emerald-500/[0.08] hover:text-emerald-200 xl:hidden"
-                title="Control Center oeffnen"
+                title="Control Center öffnen"
             >
                 <PanelTopOpen size={16} />
             </button>

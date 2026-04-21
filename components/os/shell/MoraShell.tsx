@@ -841,7 +841,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setNavigationOutcome(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Navigationshinweis schliessen"
+                                        aria-label="Navigationshinweis schließen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -870,10 +870,10 @@ export const MoraShell: React.FC = () => {
                                     >
                                         {navigationOutcome.targetType === 'search' ? <Search size={13} /> : navigationOutcome.targetType === 'node' ? <FileText size={13} /> : <FolderOpen size={13} />}
                                         {navigationOutcome.targetType === 'search'
-                                            ? 'Suche oeffnen'
+                                            ? 'Suche öffnen'
                                             : navigationOutcome.targetType === 'node'
-                                                ? 'Datei oeffnen'
-                                                : 'Im Finder oeffnen'}
+                                                ? 'Datei öffnen'
+                                                : 'Im Finder öffnen'}
                                     </button>
                                     {navigationOutcome.targetType === 'node' && navigationOutcome.folderId && (
                                         <button
@@ -881,15 +881,15 @@ export const MoraShell: React.FC = () => {
                                             onClick={() => openNavigationOutcome({
                                                 ...navigationOutcome,
                                                 targetType: 'folder',
-                                                title: 'Ordner geoeffnet',
-                                                message: `Ich habe ${navigationOutcome.label || 'den Zielordner'} im Finder geoeffnet.`,
+                                                title: 'Ordner geöffnet',
+                                                message: `Ich habe ${navigationOutcome.label || 'den Zielordner'} im Finder geöffnet.`,
                                                 nodeId: undefined,
                                                 folderId: navigationOutcome.folderId,
                                             }, openPane)}
                                             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                         >
                                             <FolderOpen size={13} />
-                                            Im Zielordner oeffnen
+                                            Im Zielordner öffnen
                                         </button>
                                     )}
                                 </div>
@@ -928,7 +928,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setMyceliumSummary(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Mycelium summary schliessen"
+                                        aria-label="Mycelium summary schließen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -990,15 +990,15 @@ export const MoraShell: React.FC = () => {
                                             className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
                                         >
                                             <FolderOpen size={13} />
-                                            Im Zielordner oeffnen
+                                            Im Zielordner öffnen
                                         </button>
                                     )}
                                     {myceliumSummary.phase === 'complete' && myceliumSummary.primaryFile?.nodeId && (
                                         <button
                                             type="button"
                                             onClick={() => openNavigationOutcome({
-                                                title: 'Datei geoeffnet',
-                                                message: `Ich habe ${myceliumSummary.primaryFile?.name || 'das Dokument'} geoeffnet.`,
+                                                title: 'Datei geöffnet',
+                                                message: `Ich habe ${myceliumSummary.primaryFile?.name || 'das Dokument'} geöffnet.`,
                                                 targetType: 'node',
                                                 label: myceliumSummary.primaryFile?.name || 'Dokument',
                                                 companyId: myceliumSummary.companyId || undefined,
@@ -1009,7 +1009,7 @@ export const MoraShell: React.FC = () => {
                                             className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
                                         >
                                             <FileText size={13} />
-                                            Datei oeffnen
+                                            Datei öffnen
                                         </button>
                                     )}
                                     <button
@@ -1111,7 +1111,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setWorkSessionSummary(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Arbeitsplan-Hinweis schliessen"
+                                        aria-label="Arbeitsplan-Hinweis schließen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -1176,7 +1176,7 @@ export const MoraShell: React.FC = () => {
                                         className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/14 px-3.5 py-2 text-[11px] font-medium text-violet-50 transition-colors hover:border-violet-300/35 hover:bg-violet-500/22"
                                     >
                                         <LayoutList size={13} />
-                                        Arbeitsplan oeffnen
+                                        Arbeitsplan öffnen
                                     </button>
                                     <button
                                         type="button"
@@ -1223,7 +1223,7 @@ export const MoraShell: React.FC = () => {
                             </h2>
                             <p className="mt-2 text-sm leading-relaxed text-white/65">
                                 Mora nimmt die Dateien im Universe auf, bereitet Einordnungsvorschlaege vor
-                                und fuehrt die bestaetigte Ablage spaeter im Dateibaum aus.
+                                und führt die bestaetigte Ablage spaeter im Dateibaum aus.
                             </p>
                         </div>
                     </div>

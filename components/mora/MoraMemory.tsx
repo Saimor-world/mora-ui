@@ -425,7 +425,7 @@ const MemoryLayerPanel: React.FC<MemoryLayerPanelProps> = ({ layer, accent, empt
                                     onClick={() => onInspect(item)}
                                     className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
                                 >
-                                    Im System oeffnen
+                                    Im System öffnen
                                 </button>
                                 <button
                                     type="button"

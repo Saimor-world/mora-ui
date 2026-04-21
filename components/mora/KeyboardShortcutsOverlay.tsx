@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,7 +95,7 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                             <div className="px-5 py-3 border-t border-white/5 bg-white/[0.02]">
                                 <div className="flex items-center justify-between text-[10px] text-white/30">
                                     <span>
-                                        Drucke <kbd className="px-1.5 py-0.5 rounded bg-white/10 mx-1">?</kbd> um dieses Menu zu oeffnen
+                                        Drücke <kbd className="px-1.5 py-0.5 rounded bg-white/10 mx-1">?</kbd> um dieses Menu zu öffnen
                                     </span>
                                     <span className="text-emerald-400/50">SAIMOR OS</span>
                                 </div>

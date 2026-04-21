@@ -420,7 +420,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     tone={searchResults.length > 1 ? 'amber' : 'cyan'}
                                     body={searchResults.length > 1
                                         ? 'Mehrere plausible Treffer. Waehle einen Eintrag.'
-                                        : 'Ein klarer Treffer. Du kannst ihn direkt oeffnen.'}
+                                        : 'Ein klarer Treffer. Du kannst ihn direkt öffnen.'}
                                 />
                             </div>
                         )}

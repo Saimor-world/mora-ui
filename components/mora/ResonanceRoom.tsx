@@ -218,7 +218,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                         const confirmMessage: ResonanceMessage = {
                             id: `mora-confirm-${Date.now()}`,
                             type: "mora",
-                            content: `Autorisierung erforderlich\n\nIch benoetige Ihre Bestaetigung fuer: ${confirm.tool_name}.\n\nDie Aenderung betrifft: ${confirm.what_will_change}`,
+                            content: `Autorisierung erforderlich\n\nIch benötige Ihre Bestätigung fuer: ${confirm.tool_name}.\n\nDie Änderung betrifft: ${confirm.what_will_change}`,
                             timestamp: new Date(),
                             pendingAction: {
                                 tool_name: confirm.tool_name,
@@ -521,7 +521,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                                     setMessages(prev => [...prev, {
                                                         id: `sys-succ-${Date.now()}`,
                                                         type: 'mora',
-                                                        content: `Aktion "${msg.pendingAction?.tool_name}" erfolgreich ausgefuehrt.`,
+                                                        content: `Aktion "${msg.pendingAction?.tool_name}" erfolgreich ausgeführt.`,
                                                         timestamp: new Date()
                                                     }]);
                                                 }}

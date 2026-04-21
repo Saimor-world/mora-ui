@@ -62,7 +62,7 @@ const getConnectSurface = (url: string): ConnectSurface | null => {
             kind: 'mail',
             title: 'Postfach sicher verbinden',
             eyebrow: 'Mail Connect',
-            description: 'Gmail und Outlook blockieren eingebettete Logins im Browser-OS. Auf localhost oeffnest du den echten Auth-Flow extern und kommst danach mit verbundenem Konto zurueck.',
+            description: 'Gmail und Outlook blockieren eingebettete Logins im Browser-OS. Auf localhost oeffnest du den echten Auth-Flow extern und kommst danach mit verbundenem Konto zurück.',
             tone: 'emerald',
             actionLabel: 'Postfach extern autorisieren',
         };
@@ -82,7 +82,7 @@ const getConnectSurface = (url: string): ConnectSurface | null => {
             kind: 'account',
             title: 'Konto ueber Browser Bridge verbinden',
             eyebrow: 'Account Connect',
-            description: 'Die eigentliche Anmeldung laeuft ausserhalb des eingebetteten Frames. SAIMOR nutzt diese Seite als Connect-Maske und springt danach in die lokale Wahrheitsinstanz zurueck.',
+            description: 'Die eigentliche Anmeldung laeuft ausserhalb des eingebetteten Frames. SAIMOR nutzt diese Seite als Connect-Maske und springt danach in die lokale Wahrheitsinstanz zurück.',
             tone: 'cyan',
             actionLabel: 'Extern weiter',
         };
@@ -309,7 +309,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                             onClick={() => navigate(address)}
                             className="rounded-xl border border-cyan-400/18 bg-cyan-500/[0.12] px-3 py-2 text-xs uppercase tracking-[0.18em] text-cyan-50 transition-colors hover:bg-cyan-500/[0.18]"
                         >
-                            Oeffnen
+                            Öffnen
                         </button>
                         <button
                             type="button"
@@ -345,7 +345,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         </div>
                                         <div className="mt-2 text-xs text-white/56">
                                             {summary.mailConfigured
-                                                ? (overview?.mail?.email || 'Postfach im Browser oeffnen')
+                                                ? (overview?.mail?.email || 'Postfach im Browser öffnen')
                                                 : summary.mailStatusDetail}
                                         </div>
                                     </button>
@@ -370,7 +370,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         </div>
                                         <div className="mt-2 text-xs text-white/56">
                                             {summary.calendarConfigured
-                                                ? (overview?.calendar?.email || 'Kalender im OS oeffnen')
+                                                ? (overview?.calendar?.email || 'Kalender im OS öffnen')
                                                 : !summary.calendarOauthEnabled
                                                     ? summary.calendarStatusDetail
                                                 : isConnectingCalendar
@@ -388,7 +388,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             <span className="text-sm font-medium">Post im OS</span>
                                         </div>
                                         <div className="mt-2 text-xs text-white/52">
-                                            Mail-App direkt in SAIMOR oeffnen.
+                                            Mail-App direkt in SAIMOR öffnen.
                                         </div>
                                     </button>
                                     <button
@@ -461,7 +461,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
                                             >
                                                 <Globe size={14} />
-                                                Lokal oeffnen
+                                                Lokal öffnen
                                             </button>
                                             <button
                                                 type="button"
@@ -546,7 +546,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {summary.browserPermissionSummary}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
-                                        Die Browser Bridge meldet dir Benachrichtigungen, Mail- und Kalenderstatus direkt im OS zurueck.
+                                        Die Browser Bridge meldet dir Benachrichtigungen, Mail- und Kalenderstatus direkt im OS zurück.
                                     </div>
                                 </div>
 
@@ -601,7 +601,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
                                             >
                                                 <Globe size={14} />
-                                                Lokal oeffnen
+                                                Lokal öffnen
                                             </button>
                                             <button
                                                 type="button"
