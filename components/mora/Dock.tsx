@@ -161,7 +161,7 @@ export const SessionChip: React.FC<SessionChipProps> = ({ planId, openPane, isSt
         <button
             type="button"
             onClick={handleClick}
-            title="Aktiven Arbeitsplan oeffnen"
+            title="Aktiven Arbeitsplan öffnen"
             data-testid="session-chip"
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-all ${
                 isStandardMode
@@ -215,7 +215,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                     : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
                     }`}
-                title="Audio-Einstellungen oeffnen"
+                title="Audio-Einstellungen öffnen"
             >
                 <Music2 size={16} />
             </button>
@@ -605,10 +605,10 @@ export const Dock = () => {
             return {
                 label: 'Ordner',
                 title: activeFolder.name,
-                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente oeffnen, teilen oder zurueck in den Bereich springen.',
+                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente öffnen, teilen oder zurück in den Bereich springen.',
                 signalA: `${activeFolder.node_count || 0} Dokumente`,
                 signalB: `${activeSpace.name} · ${activeFolders.length} Ordner`,
-                actionLabel: 'Im Finder oeffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeFolder.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeFolder.name, {
                     folderId: activeFolder.id,
@@ -627,7 +627,7 @@ export const Dock = () => {
                 description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
                 signalA: `${activeFolders.length} Ordner`,
                 signalB: `${docCount} Dokumente`,
-                actionLabel: 'Im Finder oeffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeSpace.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeSpace.name, {
                     spaceId: activeSpace.id,
@@ -646,7 +646,7 @@ export const Dock = () => {
                 description: 'Die Abteilung zeigt ihre Bereiche, Ordner und Dokumente. Von hier aus solltest du in den passenden Bereich hineinzoomen.',
                 signalA: `${activeSpaces.length} Bereiche`,
                 signalB: `${folderCount} Ordner · ${docCount} Dokumente`,
-                actionLabel: 'Im Finder oeffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeDepartment.color || accent,
                 onOpen: () => openFinderContext(activeDepartment.name, {
                     departmentId: activeDepartment.id,
@@ -665,7 +665,7 @@ export const Dock = () => {
                 : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur oeffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz oeffnen' : 'Organisation oeffnen',
+            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
             accent,
             onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -727,7 +727,7 @@ export const Dock = () => {
     const controlCenterNextMove = useMemo(() => {
         if (shellContext.nextTarget.kind === 'company') {
             return {
-                label: 'Organisation oeffnen',
+                label: 'Organisation öffnen',
                 hint: 'Direkt in Dateien und Strukturen dieser Organisation springen.',
             };
         }
@@ -775,7 +775,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'folder-open',
-                    label: 'Finder oeffnen',
+                    label: 'Finder öffnen',
                     description: 'Bleib im aktiven Folder und zieh Dateien direkt weiter.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -797,7 +797,7 @@ export const Dock = () => {
                 {
                     id: 'folder-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs oeffnen.',
+                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs öffnen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -815,7 +815,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'space-open',
-                    label: 'Im Finder oeffnen',
+                    label: 'Im Finder öffnen',
                     description: 'Gehe direkt in den Finder mit diesem Bereich als Root.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -837,7 +837,7 @@ export const Dock = () => {
                 {
                     id: 'space-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs oeffnen.',
+                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs öffnen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -855,7 +855,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'department-open',
-                    label: 'Im Finder oeffnen',
+                    label: 'Im Finder öffnen',
                     description: 'Oeffne die Abteilungsstruktur direkt im Finder.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -901,7 +901,7 @@ export const Dock = () => {
             },
                 {
                     id: 'universe-finder',
-                    label: 'Finder oeffnen',
+                    label: 'Finder öffnen',
                     description: 'Direkt in Dateien und Strukturen einsteigen.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -916,7 +916,7 @@ export const Dock = () => {
             {
                 id: 'universe-mora-center',
                 label: 'Mora Center',
-                description: 'Erinnerungen, Signale und Kontext des Beispielsystems oeffnen.',
+                description: 'Erinnerungen, Signale und Kontext des Beispielsystems öffnen.',
                 icon: Brain,
                 onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
             },
@@ -1175,7 +1175,7 @@ export const Dock = () => {
                                         size: { width: 920, height: 720 },
                                     })}
                                     title="Privater Bereich"
-                                    aria-label="Privaten Bereich oeffnen"
+                                    aria-label="Privaten Bereich öffnen"
                                     data-interaction-sound="soft"
                                     className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-white/62 transition-all duration-200 hover:border-white/18 hover:bg-white/[0.08] hover:text-white/88"
                                 >
@@ -1237,7 +1237,7 @@ export const Dock = () => {
                                     type="button"
                                     aria-expanded={isCommandDeckOpen}
                                     aria-pressed={isCommandDeckOpen}
-                                    title={isCommandDeckOpen ? 'Control Center schliessen' : 'Control Center oeffnen'}
+                                    title={isCommandDeckOpen ? 'Control Center schließen' : 'Control Center öffnen'}
                                     onClick={toggleCommandDeck}
                                     className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all ${isStandardMode
                                         ? isCommandDeckOpen
@@ -1386,7 +1386,7 @@ export const Dock = () => {
                                 ? 'bg-white shadow-lg'
                                 : 'bg-transparent'
                                 }`}
-                            title="Mora oeffnen"
+                            title="Mora öffnen"
                             style={!isStandardMode ? {
                                 filter: `drop-shadow(0 0 30px ${accent}40)`
                             } : {}}

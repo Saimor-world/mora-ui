@@ -60,7 +60,7 @@ export const AdminHome: React.FC = () => {
                                 rel="noreferrer"
                                 className="inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100 transition-colors hover:bg-amber-500/18"
                             >
-                                Owner-Bereich oeffnen
+                                Owner-Bereich öffnen
                             </a>
                             <a
                                 href={operationsConsoleUrl}
@@ -68,7 +68,7 @@ export const AdminHome: React.FC = () => {
                                 rel="noreferrer"
                                 className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-100 transition-colors hover:bg-cyan-500/18"
                             >
-                                Operations oeffnen
+                                Operations öffnen
                             </a>
                         </div>
                     </div>

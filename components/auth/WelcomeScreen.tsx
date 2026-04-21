@@ -959,7 +959,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz oeffnen' : 'Anmelden'}
+                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz öffnen' : 'Anmelden'}
                                         </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">{loginSubtitle}</div>
                                     </div>
@@ -1001,7 +1001,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {surfaceProfile.isLocalTruthSurface ? 'Demo-Spiegel oeffnen' : 'Simple Coffee Group oeffnen'}
+                                            {surfaceProfile.isLocalTruthSurface ? 'Demo-Spiegel öffnen' : 'Simple Coffee Group öffnen'}
                                         </div>
                                         <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">
                                             {surfaceProfile.isLocalTruthSurface
