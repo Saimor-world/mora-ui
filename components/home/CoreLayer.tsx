@@ -116,7 +116,7 @@ export const CoreLayer: React.FC = () => {
                                 }}
                             />
                         </div>
-                        <HomeSurface overlayMode />
+                        <HomeSurface />
                     </motion.div>
                 ) : (
                     <motion.div

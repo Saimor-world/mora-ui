@@ -146,7 +146,8 @@ describe('HomeSurface — rendering', () => {
     it('renders a personalised greeting with first name', async () => {
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getByText(/Anna/)).toBeInTheDocument();
+            // Overlay renders greeting in two spots (portal + left card) — use getAllByText
+            expect(screen.getAllByText(/Anna/).length).toBeGreaterThan(0);
         });
     });
 
@@ -257,7 +258,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
         });
     });
 
-    it('shows at most 5 recent items', async () => {
+    it('shows at most 3 recent items (overlay cap)', async () => {
         const manyItems = Array.from({ length: 8 }, (_, i) => ({
             id: `item-${i}`,
             label: `Item ${i}`,
@@ -269,7 +270,8 @@ describe('HomeSurface — Zuletzt berührt', () => {
 
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getAllByTestId('recent-item')).toHaveLength(5);
+            // Overlay caps recent items at 3 (compact panel design)
+            expect(screen.getAllByTestId('recent-item')).toHaveLength(3);
         });
     });
 
