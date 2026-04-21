@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from "@/lib/types/core";
 import { ROLE_SYSTEM_OWNER, TENANT_DEMO, TENANT_HQ, isDemoTenant as checkDemoTenant } from '@/lib/constants/tenants';
 import {
@@ -269,7 +269,7 @@ export const useMoraStore = create<MoraState>((set, get) => ({
         if ((current as any)._hasGenericMindLoopSub) return;
         (current as any)._hasGenericMindLoopSub = true;
 
-        console.log('[MoraState] Linking to Mind Loop Consciousness...');
+
 
         mindLoop.subscribe((level) => {
             // Map MindLoop levels to OrbState

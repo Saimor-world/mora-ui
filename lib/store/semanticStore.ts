@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 
 export interface SemanticNode {
     id: string;
@@ -60,7 +60,7 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
 
         try {
             // UPGRADE E1: Initialize Qdrant connection (mock)
-            console.log('🔗 Initializing semantic engine with Qdrant...');
+
 
             // Generate initial semantic nodes from current data
             const initialNodes: SemanticNode[] = [
@@ -80,7 +80,7 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
                 isProcessing: false
             });
 
-            console.log('✅ Semantic engine initialized');
+
         } catch (error) {
             console.error('❌ Failed to initialize semantic engine:', error);
             set({ isProcessing: false });

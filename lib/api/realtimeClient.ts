@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { coreGet, corePost } from '@/lib/api/coreClient';
 
@@ -187,7 +187,7 @@ class RealtimeClient {
             this.ws = new WebSocket(wsUrl);
 
             this.ws.onopen = () => {
-                console.log('[Realtime] Connected');
+
                 this.isConnecting = false;
                 this.reconnectAttempts = 0; // reset backoff on successful connect
                 // Lock stays set (wsLocked=true) while OPEN — prevents other instances connecting
@@ -202,7 +202,7 @@ class RealtimeClient {
 
                     if (payload.type === 'welcome') {
                         this.connectionId = payload.connection_id;
-                        console.log('[Realtime] Registered as', this.connectionId);
+
                     }
                     else if (payload.type === 'event') {
                         // console.log('[Realtime] Event:', payload.event_type);
@@ -220,7 +220,7 @@ class RealtimeClient {
             };
 
             this.ws.onclose = () => {
-                console.log('[Realtime] Disconnected');
+
                 this.isConnecting = false;
                 this.ws = null;
                 this.clearHeartbeat();
