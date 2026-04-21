@@ -123,17 +123,13 @@ export default function SettingsApp({ paneId }: AppProps) {
         { id: 'about', label: 'Über Mora', icon: Info }
     ], [canEditWorkspace, canManageTeam, canViewSystem, structureTabLabel]);
 
-    const resolvedTabs = useMemo(
-        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Über Mora' } : tab)),
-        [tabs]
-    );
 
     // Ensure active tab is valid for current role
     useEffect(() => {
-        if (!resolvedTabs.find(t => t.id === activeTab)) {
+        if (!tabs.find(t => t.id === activeTab)) {
             setActiveTab('profile');
         }
-    }, [resolvedTabs, activeTab]);
+    }, [tabs, activeTab]);
 
     useEffect(() => {
         if (!activeCompany) return;
@@ -396,7 +392,7 @@ useEffect(() => {
             <div className="flex h-full">
                 {/* Sidebar */}
                 <div className="w-1/3 border-r border-white/10 p-4 space-y-1">
-                    {resolvedTabs.map(tab => (
+                    {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
