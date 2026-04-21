@@ -80,20 +80,20 @@ function kindLabel(kind: RecentKind): string {
         case 'finder':   return 'Finder';
         case 'notes':    return 'Notizen';
         case 'chat':     return 'Mora';
-        default:         return 'AktivitÃ¤t';
+        default:         return 'Aktivität';
     }
 }
 
 // â”€â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * HomeSurface â€” Ambient Intelligence edition.
+ * HomeSurface — Ambient Intelligence edition.
  *
  * No static nav grid. No org metadata panel. No fetchMyContent.
  * The home tells you what's happening right now:
  *   1. Mora briefing (from pre-loaded moraStore departments + treeData)
  *   2. Dept pulse tiles (click â†’ Finder scoped to dept)
- *   3. Zuletzt berÃ¼hrt (OS-level activityStore â€” what you actually opened)
+ *   3. Zuletzt berührt (OS-level activityStore — what you actually opened)
  *   4. Three quick actions
  */
 export const HomeSurface: React.FC = () => {
@@ -542,7 +542,7 @@ export const HomeSurface: React.FC = () => {
                                                 ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
                                                 : loaded
                                                     ? 'ruhig'
-                                                    : 'lÃ¤dtâ€¦'}
+                                                    : 'lädt…'}
                                         </div>
                                     </button>
                                 ))}
@@ -606,7 +606,7 @@ export const HomeSurface: React.FC = () => {
                                 onClick={openFinder}
                                 className="rounded-xl border border-emerald-400/18 bg-emerald-500/[0.10] px-4 py-2 text-[12px] tracking-[0.04em] text-emerald-200/80 transition-all hover:border-emerald-300/28 hover:bg-emerald-500/[0.16]"
                             >
-                                Finder Ã¶ffnen
+                                Finder öffnen
                             </button>
                             <button
                                 onClick={openUniverse}
@@ -629,68 +629,6 @@ export const HomeSurface: React.FC = () => {
                                 Datei hochladen
                             </button>
                         </div>
-                    </div>
-                </div>
-
-                <div className="hidden absolute bottom-[8.25rem] left-8 w-[min(300px,calc(100vw-40rem))]">
-                    <div className="pointer-events-auto rounded-[24px] border border-white/8 bg-[linear-gradient(160deg,rgba(5,16,18,0.3),rgba(4,10,13,0.08))] p-4 shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-[16px]">
-                        <div className="mb-3 flex items-start justify-between gap-4">
-                            <div>
-                                <div className="text-[10px] uppercase tracking-[0.24em] text-emerald-200/42">Privater Bereich</div>
-                                <div className="mt-1 text-[13px] text-white/82">
-                                    {privateArea?.label || 'Eigene Inhalte'}
-                                </div>
-                                <div className="mt-2 text-[11px] text-white/42">
-                                    Dein eigener Bereich im System. Hier liegt nur, was deinem Konto gehÃ¶rt.
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={openPrivateArea}
-                                className="rounded-xl border border-emerald-400/16 bg-emerald-500/[0.08] px-3 py-2 text-[11px] text-emerald-200/74 transition-colors hover:border-emerald-300/24 hover:bg-emerald-500/[0.14] hover:text-emerald-100"
-                            >
-                                Ã–ffnen
-                            </button>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                            <HomeChip label="Ordner" value={privateArea?.folderCount ?? 0} />
-                            <HomeChip label="Inhalte" value={privateArea?.documentCount ?? 0} />
-                            <HomeChip label="Dateien" value={privateArea?.fileCount ?? 0} />
-                        </div>
-
-                        {privateArea?.latestItems?.length ? (
-                            <div className="mt-4 grid gap-2">
-                                {overlayPrivateItems.map((item) => (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={openPrivateArea}
-                                        className="flex w-full items-center gap-3 rounded-[20px] border border-white/[0.07] bg-white/[0.04] px-3 py-3 text-left transition-all hover:border-white/14 hover:bg-white/[0.07]"
-                                    >
-                                        <div
-                                            className={`flex h-9 w-9 items-center justify-center rounded-xl ${item.kind === 'document' ? 'bg-emerald-500/[0.08]' : 'bg-white/[0.04]'}`}
-                                        >
-                                            {item.kind === 'document' ? (
-                                                <FileText size={14} className="text-emerald-300/72" />
-                                            ) : (
-                                                <FolderOpen size={14} className="text-white/42" />
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="truncate text-[13px] text-white/78">{item.label}</div>
-                                            <div className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-white/28">
-                                                {item.kind === 'document' ? 'Inhalt' : 'Datei'}
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="mt-4 text-sm text-white/34">
-                                Noch keine privaten Inhalte sichtbar. Ã–ffne den privaten Bereich oder lade eine Datei hoch.
-                            </p>
-                        )}
                     </div>
                 </div>
 
