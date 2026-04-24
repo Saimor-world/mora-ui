@@ -200,6 +200,15 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         return null;
     }
 
+    if (loading) {
+        return (
+            <div className="flex items-center gap-2 px-5 py-8 text-sm text-white/30" data-testid="meine-dateien-loading">
+                <Loader2 size={14} className="animate-spin" />
+                Lade Inhalte...
+            </div>
+        );
+    }
+
     const glassPanelProps = {
         title: 'Privater Bereich',
         paneId,
@@ -219,17 +228,6 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         draggable: true,
         resizable: true,
     } as const;
-
-    if (loading) {
-        return (
-            <GlassPanel {...glassPanelProps}>
-                <div className="flex items-center gap-2 px-5 py-8 text-sm text-white/30" data-testid="meine-dateien-loading">
-                    <Loader2 size={14} className="animate-spin" />
-                    Lade Inhalte...
-                </div>
-            </GlassPanel>
-        );
-    }
 
     if (content === null || content === 'error') {
         return (

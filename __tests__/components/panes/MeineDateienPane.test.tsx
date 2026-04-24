@@ -12,8 +12,12 @@ jest.mock('@/lib/api/contentClient', () => ({
     fetchCloudConnectorItems: jest.fn(),
 }));
 
-jest.mock('@/components/layers/GlassPanel', () => ({
-    GlassPanel: ({ children }: { children: React.ReactNode }) => <div data-testid="glass-panel">{children}</div>,
+// Framer-motion renders as plain elements so GlassPanel (which uses it internally)
+// can mount without animation engine in JSDOM. No GlassPanel mock needed.
+jest.mock('framer-motion', () => ({
+    motion: { div: ({ children, ...props }: any) => <div {...props}>{children}</div> },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+    useDragControls: () => ({ start: jest.fn() }),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -35,9 +39,15 @@ jest.mock('@/lib/store/paneStore', () => ({
             updatePanePosition: jest.fn(),
             updatePaneSize: jest.fn(),
             activePaneId: 'meine-dateien',
+            // GlassPanel reads panes array to compute visiblePaneCount
+            panes: [],
         };
         return selector ? selector(store) : store;
     },
+}));
+
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (selector?: any) => selector ? selector({ isStandardMode: false }) : { isStandardMode: false },
 }));
 
 const mockShareNode = shareNode as jest.MockedFunction<typeof shareNode>;
