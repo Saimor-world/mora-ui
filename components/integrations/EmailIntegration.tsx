@@ -6,6 +6,7 @@ import { coreGet, corePost, coreDelete } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import type { IntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 interface MailIntegrationStatus {
     configured: boolean;
@@ -21,7 +22,11 @@ const PROVIDERS = [
     { id: 'custom', name: 'Custom IMAP' }
 ];
 
-export const EmailIntegration: React.FC = () => {
+interface EmailIntegrationProps {
+    overviewSnapshot?: IntegrationsOverview | null;
+}
+
+export const EmailIntegration: React.FC<EmailIntegrationProps> = ({ overviewSnapshot }) => {
     const [status, setStatus] = useState<MailIntegrationStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -34,7 +39,8 @@ export const EmailIntegration: React.FC = () => {
     const [customHost, setCustomHost] = useState('');
     const [customPort, setCustomPort] = useState('993');
     const [confirmingDelete, setConfirmingDelete] = useState(false);
-    const { overview } = useIntegrationsOverview();
+    const { overview: internalOverview } = useIntegrationsOverview(!overviewSnapshot, !overviewSnapshot);
+    const overview = overviewSnapshot || internalOverview;
 
     useEffect(() => {
         loadStatus();

@@ -50,11 +50,11 @@ describe('surfaceRegistry', () => {
             expect(coreWork).toContain('meine-dateien');
         });
 
-        it('assigns future to surfaces with no backend or unstable paths', () => {
-            expect(SURFACE_TIERS['mail']).toBe('future');
+        it('keeps only intentionally gated surfaces in future', () => {
+            expect(SURFACE_TIERS['mail']).toBe('app');
             // calendar promoted — apps/calendar/ module now live
-            expect(SURFACE_TIERS['integrations']).toBe('future');
-            expect(SURFACE_TIERS['terminal']).toBe('future');
+            expect(SURFACE_TIERS['integrations']).toBe('app');
+            expect(SURFACE_TIERS['terminal']).toBe('app');
             // mora-hub is 'app' in registry — pre-existing state, skip
             expect(SURFACE_TIERS['actions']).toBe('future');
             expect(SURFACE_TIERS['work-session']).toBe('future');
@@ -93,14 +93,14 @@ describe('surfaceRegistry', () => {
         it('returns true for app-tier panes', () => {
             expect(isPaneEnabled('scanner')).toBe(true);
             expect(isPaneEnabled('users')).toBe(true);
+            expect(isPaneEnabled('mail')).toBe(true);
+            expect(isPaneEnabled('integrations')).toBe(true);
+            expect(isPaneEnabled('terminal')).toBe(true);
         });
 
         it('returns false for future-tier panes', () => {
-            expect(isPaneEnabled('mail')).toBe(false);
-            expect(isPaneEnabled('terminal')).toBe(false);
             expect(isPaneEnabled('actions')).toBe(false);
             expect(isPaneEnabled('work-session')).toBe(false);
-            expect(isPaneEnabled('integrations')).toBe(false);
         });
 
         it('returns true for new app-platform types', () => {
@@ -117,10 +117,10 @@ describe('surfaceRegistry', () => {
 
     describe('FUTURE_PANE_TYPES', () => {
         it('lists all future-tier pane types for quick lookup', () => {
-            expect(FUTURE_PANE_TYPES).toContain('mail');
+            expect(FUTURE_PANE_TYPES).not.toContain('mail');
             // calendar promoted — no longer future
-            expect(FUTURE_PANE_TYPES).toContain('integrations');
-            expect(FUTURE_PANE_TYPES).toContain('terminal');
+            expect(FUTURE_PANE_TYPES).not.toContain('integrations');
+            expect(FUTURE_PANE_TYPES).not.toContain('terminal');
             expect(FUTURE_PANE_TYPES).toContain('actions');
             expect(FUTURE_PANE_TYPES).toContain('work-session');
             // promoted types no longer in future:

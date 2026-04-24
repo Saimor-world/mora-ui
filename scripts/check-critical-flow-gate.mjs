@@ -10,7 +10,7 @@
  * - v3_list_routes.unbounded_unscoped_count must be 0
  *
  * Usage:
- *   node scripts/check-critical-flow-gate.mjs
+ *   node scripts/check-critical-flow-gate.mjs --input docs/reports/mr16-baseline-2026-03-05.json
  *   node scripts/check-critical-flow-gate.mjs --base-url https://api.saimor.world
  *   node scripts/check-critical-flow-gate.mjs --input docs/reports/mr16-baseline-latest.json
  *

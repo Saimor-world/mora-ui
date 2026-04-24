@@ -26,19 +26,120 @@ import {
     type SemanticDriver,
 } from '@/lib/universe/semanticSimilarity';
 
-const CURATED_DEMO_LAYOUT: Record<string, { x: number; y: number }> = {
-    'technology & ai': { x: 25, y: 36 },
-    'hr & culture': { x: 52, y: 31 },
-    'store heilbronn': { x: 81, y: 35 },
-    'marketing & brand': { x: 33, y: 64 },
-    management: { x: 72, y: 66 },
-    'store stuttgart': { x: 24, y: 80 },
-    'store san francisco': { x: 83, y: 79 },
+const UNIVERSE_SAFE_BOUNDS = {
+    minX: 25,
+    maxX: 76,
+    minY: 24,
+    maxY: 61,
 };
 
-const normalizeUniverseKey = (value: string | null | undefined) =>
-    (value || '').trim().toLowerCase();
+const UNIVERSE_CORE_POINT = {
+    x: 50,
+    y: 44,
+};
 
+const clampUniverseCoordinate = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
+
+const stableUniverseHash = (value: string) => {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+};
+
+const buildOrganicUniverseLayout = (
+    departments: Array<any>,
+    metricsMap: Record<string, { nodes: number; spaces: number; folders: number; health: number }>,
+) => {
+    const count = departments.length;
+    if (count === 0) return [];
+
+    const maxSignal = Math.max(
+        1,
+        ...departments.map((dept) => {
+            const metrics = metricsMap[dept.id];
+            return (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
+        })
+    );
+
+    const orderedDepartments = departments
+        .map((dept) => ({
+            dept,
+            seed: stableUniverseHash(`${dept.id || ''}:${dept.name || ''}`),
+        }))
+        .sort((a, b) => a.seed - b.seed);
+
+    const points = orderedDepartments.map(({ dept, seed }, index) => {
+        const angleStep = (Math.PI * 2) / Math.max(1, count);
+        const angularJitter = ((((seed >>> 8) % 100) / 100) - 0.5) * Math.min(0.22, angleStep * 0.34);
+        const angle = (-Math.PI / 2) + (index * angleStep) + angularJitter;
+        const metrics = metricsMap[dept.id];
+        const signal = (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
+        const vitality = Math.min(1, signal / maxSignal);
+        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.08;
+        const radiusBias = 0.7 + (1 - vitality) * 0.18 + radialJitter;
+        const rx = 17 + radiusBias * 21;
+        const ry = 10 + radiusBias * 14;
+
+        return {
+            ...dept,
+            color: dept.color,
+            x: clampUniverseCoordinate(
+                UNIVERSE_CORE_POINT.x + (rx * Math.cos(angle)),
+                UNIVERSE_SAFE_BOUNDS.minX,
+                UNIVERSE_SAFE_BOUNDS.maxX
+            ),
+            y: clampUniverseCoordinate(
+                UNIVERSE_CORE_POINT.y + (ry * Math.sin(angle)),
+                UNIVERSE_SAFE_BOUNDS.minY,
+                UNIVERSE_SAFE_BOUNDS.maxY
+            ),
+            angle,
+            rx,
+            ry,
+            ringIndex: Math.floor(radiusBias * 3),
+        };
+    });
+
+    const minDistance = count > 14 ? 8.6 : count > 8 ? 10.4 : 12.8;
+    for (let iteration = 0; iteration < 28; iteration += 1) {
+        for (const point of points) {
+            const dx = point.x - UNIVERSE_CORE_POINT.x;
+            const dy = (point.y - UNIVERSE_CORE_POINT.y) * 1.18;
+            const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
+            const coreDistance = count > 10 ? 13 : 15.2;
+            if (distance >= coreDistance) continue;
+
+            const push = (coreDistance - distance) * 0.34;
+            point.x = clampUniverseCoordinate(point.x + (dx / distance) * push, UNIVERSE_SAFE_BOUNDS.minX, UNIVERSE_SAFE_BOUNDS.maxX);
+            point.y = clampUniverseCoordinate(point.y + ((dy / distance) * push) / 1.18, UNIVERSE_SAFE_BOUNDS.minY, UNIVERSE_SAFE_BOUNDS.maxY);
+        }
+
+        for (let i = 0; i < points.length; i += 1) {
+            for (let j = i + 1; j < points.length; j += 1) {
+                const a = points[i];
+                const b = points[j];
+                const dx = a.x - b.x;
+                const dy = (a.y - b.y) * 1.15;
+                const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
+                if (distance >= minDistance) continue;
+
+                const push = (minDistance - distance) * 0.28;
+                const nx = dx / distance;
+                const ny = dy / distance;
+                a.x = clampUniverseCoordinate(a.x + nx * push, UNIVERSE_SAFE_BOUNDS.minX, UNIVERSE_SAFE_BOUNDS.maxX);
+                a.y = clampUniverseCoordinate(a.y + (ny * push) / 1.15, UNIVERSE_SAFE_BOUNDS.minY, UNIVERSE_SAFE_BOUNDS.maxY);
+                b.x = clampUniverseCoordinate(b.x - nx * push, UNIVERSE_SAFE_BOUNDS.minX, UNIVERSE_SAFE_BOUNDS.maxX);
+                b.y = clampUniverseCoordinate(b.y - (ny * push) / 1.15, UNIVERSE_SAFE_BOUNDS.minY, UNIVERSE_SAFE_BOUNDS.maxY);
+            }
+        }
+    }
+
+    return points;
+};
 
 /**
  * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
@@ -264,74 +365,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         setLockedTooltipDeptId(null);
     }, [clearHoverRelease, clearUniverseInteractionState, coreMode, setIsInsightRailHovered]);
 
-    // Legacy fallback layout for non-demo or unknown department sets.
-    const rings = useMemo(() => [
-        { rx: 20, ry: 18, speed: 0 }, // Inner Ring (Planets 1-3)
-        { rx: 34, ry: 30, speed: 0 }, // Middle Ring (Planets 4-8)
-        { rx: 46, ry: 40, speed: 0 }  // Outer Ring (Planets 9+)
-    ], []);
-
     const planetPositions = useMemo(() => {
         if (safeDepartments.length === 0) return [];
-        const count = safeDepartments.length;
-
-        // Deterministic sorting to ensure planets stay in place
-        const sortedDepts = [...safeDepartments].sort((a, b) => a.name.localeCompare(b.name));
-
-        const canUseCuratedDemoLayout =
-            (isPublicDemoSurface || currentCompany?.is_demo || currentCompany?.tenant_id === TENANT_DEMO) &&
-            sortedDepts.every((dept) => CURATED_DEMO_LAYOUT[normalizeUniverseKey(dept.name)]);
-
-        if (canUseCuratedDemoLayout) {
-            return sortedDepts.map((dept) => {
-                const curated = CURATED_DEMO_LAYOUT[normalizeUniverseKey(dept.name)];
-                return {
-                    ...dept,
-                    color: dept.color,
-                    x: curated.x,
-                    y: curated.y,
-                    angle: 0,
-                    rx: 0,
-                    ry: 0,
-                    ringIndex: 0,
-                };
-            });
-        }
-
-        return sortedDepts.map((dept, index) => {
-            let ringIndex = 0;
-            // Distribute evenly: 3 inner, 5 middle, rest outer
-            if (index >= 3 && index < 8) ringIndex = 1;
-            else if (index >= 8) ringIndex = 2;
-
-            const ring = rings[ringIndex];
-            // How many planets in this specific ring?
-            const planetsInThisRing = ringIndex === 0 ? Math.min(count, 3)
-                : ringIndex === 1 ? Math.min(Math.max(0, count - 3), 5)
-                    : Math.max(0, count - 8);
-
-            // Calculate position in THIS ring (0-based index for this ring)
-            const posInRing = ringIndex === 0 ? index
-                : ringIndex === 1 ? index - 3
-                    : index - 8;
-
-            // EVEN SPACING: Divide circle by number of planets in ring
-            // Add offset so rings don't align perfectly (more natural)
-            const angleOffset = ringIndex * (Math.PI / 4);
-            const angle = (posInRing / Math.max(1, planetsInThisRing)) * Math.PI * 2 + angleOffset - (Math.PI / 2);
-
-            return {
-                ...dept,
-                color: dept.color,
-                x: 50 + (ring.rx * Math.cos(angle)), // Circular orbits for stability
-                y: 46 + (ring.ry * Math.sin(angle)), // -4% from center keeps planets clear of the dock
-                angle,
-                rx: ring.rx,
-                ry: ring.ry,
-                ringIndex
-            };
+        const stableDepartments = [...safeDepartments].sort((a, b) => {
+            const left = `${a.id || ''}:${a.name || ''}`;
+            const right = `${b.id || ''}:${b.name || ''}`;
+            return left.localeCompare(right);
         });
-    }, [safeDepartments, rings, isPublicDemoSurface, currentCompany?.is_demo, currentCompany?.tenant_id]);
+        return buildOrganicUniverseLayout(stableDepartments, departmentMetrics);
+    }, [safeDepartments, departmentMetrics]);
 
     // ─── SILK DRIFT PATHS (V10.6) ───
     const visiblePlanets = useMemo(
@@ -405,10 +447,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 const to = planetMap.get(edge.toId);
                 if (!from || !to) return null;
 
-                const midY = 54 - Math.min(12, Math.abs(from.ringIndex - to.ringIndex) * 4 + 5);
-                const labelX = (from.x * 0.25) + 25 + (to.x * 0.25);
-                const labelY = (from.y * 0.25) + (midY * 0.5) + (to.y * 0.25);
                 const pathId = buildSemanticEdgeKey(edge.fromId, edge.toId);
+                const dx = to.x - from.x;
+                const dy = to.y - from.y;
+                const distance = Math.max(1, Math.hypot(dx, dy));
+                const normalX = -dy / distance;
+                const normalY = dx / distance;
+                const curveSign = stableUniverseHash(pathId) % 2 === 0 ? 1 : -1;
+                const curve = Math.min(5.8, Math.max(1.8, distance * 0.08)) * curveSign;
+                const controlX = (from.x + to.x) / 2 + normalX * curve;
+                const controlY = (from.y + to.y) / 2 + normalY * curve;
+                const labelX = (from.x * 0.34) + (controlX * 0.32) + (to.x * 0.34);
+                const labelY = (from.y * 0.34) + (controlY * 0.32) + (to.y * 0.34);
                 const focusPeerName = focusedPlanetId
                     ? edge.fromId === focusedPlanetId
                         ? to.name
@@ -426,7 +476,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                 return {
                     id: pathId,
-                    d: `M ${from.x} ${from.y} Q 50 ${midY} ${to.x} ${to.y}`,
+                    d: `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`,
                     fromId: from.id,
                     fromName: from.name,
                     toId: to.id,
@@ -819,6 +869,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             background: star.color,
                             boxShadow: `0 0 ${star.size * 16}px ${star.color}`,
                         }}
+                        initial={{ opacity: 0.42, scale: 1 }}
                         animate={{ opacity: [0.42, 1, 0.54], scale: [1, 1.18, 1] }}
                         transition={{ duration: star.duration, delay: star.delay, repeat: Infinity, ease: 'easeInOut' }}
                     />
@@ -826,7 +877,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </motion.div>
 
             {/* 2. CENTER HUB (The Core) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 pb-20">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 -translate-y-8">
                 <motion.div
                     className="text-center pointer-events-auto flex flex-col items-center"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -907,8 +958,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="rgba(125,211,252,0)" />
-                        <stop offset="32%" stopColor="rgba(125,211,252,0.18)" />
-                        <stop offset="54%" stopColor="rgba(196,181,253,0.14)" />
+                        <stop offset="30%" stopColor="rgba(125,211,252,0.26)" />
+                        <stop offset="56%" stopColor="rgba(196,181,253,0.19)" />
                         <stop offset="100%" stopColor="rgba(125,211,252,0)" />
                     </linearGradient>
                     <filter id="beamGlow">
@@ -923,18 +974,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     .map((connection) => (
                     <motion.line
                         key={`core-${connection.id}`}
-                        x1="50"
-                        y1="54"
+                        x1={UNIVERSE_CORE_POINT.x}
+                        y1={UNIVERSE_CORE_POINT.y}
                         x2={connection.x}
                         y2={connection.y}
                         stroke="url(#coreBeam)"
-                        strokeWidth={connection.highlighted ? 0.16 + connection.intensity * 0.22 : 0.08 + connection.intensity * 0.1}
+                        strokeWidth={connection.highlighted ? 0.14 + connection.intensity * 0.16 : 0.07 + connection.intensity * 0.07}
                         filter="url(#beamGlow)"
                         initial={{ opacity: 0 }}
                         animate={{
                             opacity: isHomeUniversePreview
-                                ? (connection.highlighted ? 0.22 : 0.08 + connection.intensity * 0.03)
-                                : (connection.highlighted ? 0.32 : 0.12 + connection.intensity * 0.05)
+                                ? (connection.highlighted ? 0.18 : 0.055 + connection.intensity * 0.025)
+                                : (connection.highlighted ? 0.26 : 0.08 + connection.intensity * 0.035)
                         }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                     />
@@ -948,17 +999,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const baseOpacity = isHomeUniversePreview
                         ? (
                             path.highlighted || isPreviewedPath
-                                ? 0.74
+                                ? 0.42
                                 : isFocusedPath
-                                    ? 0.28
+                                    ? 0.16
                                     : 0
                         )
                         : (
                             path.highlighted || isPreviewedPath
-                                ? 0.82
+                                ? 0.52
                                 : isFocusedPath
-                                    ? 0.34
-                                    : Math.max(0.14, 0.08 + path.strength * 0.18)
+                                    ? 0.22
+                                    : Math.max(0.05, 0.035 + path.strength * 0.08)
                         );
 
                     return (
@@ -967,13 +1018,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.24 + path.strength * 0.34}
+                                strokeWidth={0.22 + path.strength * 0.2}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                opacity: baseOpacity * 0.12,
+                                    opacity: baseOpacity * 0.18,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
@@ -985,7 +1036,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.1 + path.strength * 0.18}
+                                strokeWidth={0.08 + path.strength * 0.12}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
@@ -1198,9 +1249,28 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                     const locked = isLocked(p);
                     const isSemanticPreviewPlanet = semanticPreviewPlanetIds.has(p.id);
+                    const shouldShowPlanetLabel = !isHomeUniversePreview && (
+                        focusedPlanetId === p.id ||
+                        isSemanticPreviewPlanet ||
+                        activeDepartmentId === p.id
+                    );
+                    const planetSize = isHomeUniversePreview
+                        ? 'sm'
+                        : (shouldShowPlanetLabel ? 'lg' : 'md');
 
                     return (
                         <React.Fragment key={p.id}>
+                            {!isHomeUniversePreview && !shouldShowPlanetLabel && (
+                                <div
+                                    className="pointer-events-none absolute z-20 max-w-[164px] -translate-x-1/2 translate-y-[52px] truncate rounded-full border border-white/[0.06] bg-black/[0.12] px-2.5 py-1 text-center text-[8px] uppercase tracking-[0.13em] text-white/42 backdrop-blur-[8px]"
+                                    style={{
+                                        left: `${p.x}%`,
+                                        top: `${p.y}%`,
+                                    }}
+                                >
+                                    {p.name}
+                                </div>
+                            )}
                             {locked ? (
                                 <div
                                     data-testid={`locked-planet-${p.id}`}
@@ -1219,6 +1289,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         department={p as any}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet}
+                                        size={planetSize}
+                                        showLabel={shouldShowPlanetLabel}
+                                        labelSide={p.x > 57 ? 'left' : 'right'}
                                         onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
                                             if (isHomeUniversePreview) {
@@ -1235,6 +1308,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     department={p as any}
                                     position={{ x: p.x + '%', y: p.y + '%' } as any}
                                     isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet}
+                                    size={planetSize}
+                                    showLabel={shouldShowPlanetLabel}
+                                    labelSide={p.x > 57 ? 'left' : 'right'}
                                     onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                     onClick={() => {
                                         if (isHomeUniversePreview) {

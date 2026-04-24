@@ -6,6 +6,8 @@ Aktive Wahrheiten:
 - UI: `C:\saimor\INTERFACE`
 - Core: `C:\saimor\CORE`
 - Startpfad: `C:\saimor\scripts\Start-LocalTruth.ps1`
+- Headless/Agent-Start: `powershell -ExecutionPolicy Bypass -File C:\saimor\scripts\Start-LocalTruth.ps1 -NoBrowser`
+- Erzwungener Neustart: `powershell -ExecutionPolicy Bypass -File C:\saimor\scripts\Start-LocalTruth.ps1 -ForceRestart -NoBrowser`
 
 Lokale URLs:
 - UI: `http://127.0.0.1:3000/login`
@@ -25,7 +27,7 @@ Bekannte reale Blocker:
 - Google Kalender braucht echte Werte in `C:\saimor\CORE\.env`:
   - `GOOGLE_CALENDAR_CLIENT_ID`
   - `GOOGLE_CALENDAR_CLIENT_SECRET`
-  - `GOOGLE_CALENDAR_REDIRECT_URL=http://127.0.0.1:8081/v1/auth/google/callback`
+  - `GOOGLE_CALENDAR_REDIRECT_URL=http://127.0.0.1:8081/v3/integrations/calendar/callback`
 - Mail braucht echte Werte in `C:\saimor\CORE\.env` oder benutzerspezifische Speicherung über den Integrationsbereich:
   - `EMAIL_IMAP_HOST`
   - `EMAIL_IMAP_USER`
@@ -40,3 +42,4 @@ Definition für Pre Alpha 1.0:
 - eine aktive Core-Wahrheit
 - ehrliche Setup-/Connect-Zustände statt Demo-Scheinlogik
 - echte Datenpfade vorbereitet, auch wenn Credentials noch fehlen
+- reproduzierbare Gates: `npm run verify:mr16:smoke` in `C:\saimor\INTERFACE` und `pytest -q` in `C:\saimor\CORE`

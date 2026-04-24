@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { coreGet, corePost } from '@/lib/api/coreClient';
+import { logger } from '@/lib/utils/logger';
 
 const AUTH_COOKIE = "mora_auth_token";
 
@@ -173,7 +174,7 @@ class RealtimeClient {
 
         const token = this.getToken();
         if (!token) {
-            // console.warn('[Realtime] No token found, skipping connection');
+            logger.warn('[Realtime] No token found, skipping connection');
             setWsLock(false);
             return;
         }
@@ -205,7 +206,7 @@ class RealtimeClient {
 
                     }
                     else if (payload.type === 'event') {
-                        // console.log('[Realtime] Event:', payload.event_type);
+                        logger.debug('[Realtime] Event:', payload.event_type);
                         this.emit(payload.event_type, payload.data);
                     }
                     else if (payload.type === 'ping' && this.ws?.readyState === WebSocket.OPEN) {
@@ -215,7 +216,7 @@ class RealtimeClient {
                         // heartbeat acknowledged
                     }
                 } catch (e) {
-                    console.error('[Realtime] Failed to parse message:', event.data);
+                    logger.error('[Realtime] Failed to parse message', e as Error);
                 }
             };
 
@@ -230,12 +231,12 @@ class RealtimeClient {
             };
 
             this.ws.onerror = (err) => {
-                // console.error('[Realtime] Error:', err);
+                // logger.error('[Realtime] Error:', err); // redundant with onclose/onerror logic
                 this.ws?.close();
             };
 
         } catch (e) {
-            console.error('[Realtime] Connection failed:', e);
+            logger.error('[Realtime] Connection failed', e as Error);
             this.isConnecting = false;
             this.clearHeartbeat();
             setWsLock(false);

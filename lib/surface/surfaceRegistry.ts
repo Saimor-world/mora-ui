@@ -52,10 +52,11 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     tasks:           'app',       // Kanban board
     canvas:          'app',       // Whiteboard
 
+    mail:            'app',
+    integrations:    'app',
+    terminal:        'app',
+
     // Future / gated (no working backend or in forbidden scope)
-    mail:            'future',
-    integrations:    'future',
-    terminal:        'future',
     actions:         'future',
     'work-session':  'future',
 };

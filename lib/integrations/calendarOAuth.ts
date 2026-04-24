@@ -1,7 +1,10 @@
 'use client';
 
 export const CALENDAR_OAUTH_MESSAGE = 'saimor:calendar-oauth';
+export const CLOUD_OAUTH_MESSAGE = 'saimor:cloud-oauth';
 const DEFAULT_POPUP_NAME = 'saimor-calendar-connect';
+const DEFAULT_CLOUD_POPUP_NAME = 'saimor-cloud-connect';
+const DEFAULT_CLOUD_DIRECT_POPUP_NAME = 'saimor-cloud-direct-connect';
 
 export const getCalendarOAuthReturnTo = () => {
     if (typeof window === 'undefined') return '/oauth/calendar/callback';
@@ -12,7 +15,18 @@ export type CalendarOAuthResult =
     | { ok: true; provider?: string; status?: string }
     | { ok: false; reason: 'blocked' | 'closed' | 'timeout' };
 
-export async function openCalendarOAuthPopup(authUrl: string): Promise<CalendarOAuthResult> {
+export type DirectCloudProvider = 'nextcloud' | 'extcloud';
+
+export const getCloudOAuthReturnTo = () => {
+    if (typeof window === 'undefined') return '/oauth/cloud/callback';
+    return `${window.location.origin}/oauth/cloud/callback`;
+};
+
+async function openOAuthPopup(
+    authUrl: string,
+    popupName: string,
+    messageType: string
+): Promise<CalendarOAuthResult> {
     if (typeof window === 'undefined') {
         return { ok: false, reason: 'blocked' };
     }
@@ -24,7 +38,7 @@ export async function openCalendarOAuthPopup(authUrl: string): Promise<CalendarO
 
     const popup = window.open(
         authUrl,
-        DEFAULT_POPUP_NAME,
+        popupName,
         `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
     );
 
@@ -53,7 +67,7 @@ export async function openCalendarOAuthPopup(authUrl: string): Promise<CalendarO
         const handleMessage = (event: MessageEvent) => {
             if (event.origin !== window.location.origin) return;
             const data = event.data;
-            if (!data || data.type !== CALENDAR_OAUTH_MESSAGE) return;
+            if (!data || data.type !== messageType) return;
             finish({
                 ok: true,
                 provider: data.provider,
@@ -78,4 +92,33 @@ export async function openCalendarOAuthPopup(authUrl: string): Promise<CalendarO
 
         window.addEventListener('message', handleMessage);
     });
+}
+
+export async function openCalendarOAuthPopup(authUrl: string): Promise<CalendarOAuthResult> {
+    return openOAuthPopup(authUrl, DEFAULT_POPUP_NAME, CALENDAR_OAUTH_MESSAGE);
+}
+
+export async function openCloudOAuthPopup(authUrl: string): Promise<CalendarOAuthResult> {
+    return openOAuthPopup(authUrl, DEFAULT_CLOUD_POPUP_NAME, CLOUD_OAUTH_MESSAGE);
+}
+
+export async function openDirectCloudConnectPopup(params: {
+    provider: DirectCloudProvider;
+    label?: string;
+    baseUrl?: string;
+    username?: string;
+    rootPath?: string;
+}): Promise<CalendarOAuthResult> {
+    if (typeof window === 'undefined') {
+        return { ok: false, reason: 'blocked' };
+    }
+
+    const url = new URL('/oauth/cloud/direct', window.location.origin);
+    url.searchParams.set('provider', params.provider);
+    if (params.label) url.searchParams.set('label', params.label);
+    if (params.baseUrl) url.searchParams.set('base_url', params.baseUrl);
+    if (params.username) url.searchParams.set('username', params.username);
+    if (params.rootPath) url.searchParams.set('root_path', params.rootPath);
+
+    return openOAuthPopup(url.toString(), DEFAULT_CLOUD_DIRECT_POPUP_NAME, CLOUD_OAUTH_MESSAGE);
 }

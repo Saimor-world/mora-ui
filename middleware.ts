@@ -20,6 +20,8 @@ const PUBLIC_PREFIXES = [
     "/api/auth",
     "/api/v2/auth",
     "/api/core",
+    "/oauth/calendar",
+    "/oauth/cloud",
 ];
 
 const PUBLIC_FILES = [

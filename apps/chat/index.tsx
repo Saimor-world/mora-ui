@@ -539,7 +539,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         messages: streamHistory,
         clearHistory,
     } = useMoraStream();
-    const { mailPreview, calendarPreview } = useCommunicationLiveData();
+    const { mailPreview, calendarPreview, feedPreview, cloudPreview } = useCommunicationLiveData();
     const { overview: communicationOverview, summary: communicationSummary } = useCommunicationSurface();
 
     const [messages, setMessages] = useState<Message[]>(() => {
@@ -589,8 +589,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             communicationOverview,
             mailPreview,
             calendarPreview,
+            feedPreview,
+            cloudPreview,
         ),
-        [calendarPreview, communicationOverview, communicationSummary, mailPreview]
+        [calendarPreview, cloudPreview, communicationOverview, communicationSummary, feedPreview, mailPreview]
     );
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);

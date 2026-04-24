@@ -84,6 +84,9 @@ export default function SettingsApp({ paneId }: AppProps) {
         () => ambientTracks.find((track) => track.id === ambientAudioTrackId) ?? null,
         [ambientTracks, ambientAudioTrackId]
     );
+    const activeAmbientLabel = selectedAmbientTrack
+        ? `${selectedAmbientTrack.name} - ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
+        : 'Mora Ambient - eingebauter prozeduraler Pad';
 
     const [brandingName, setBrandingName] = useState('');
     const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
@@ -258,7 +261,9 @@ useEffect(() => {
         if (!ambientAudioTrackId) {
             const fallbackTrack = ambientTracks[0];
             if (!fallbackTrack) {
-                toast.error('Lade zuerst mindestens einen Song hoch');
+                const nextEnabled = !ambientAudioEnabled;
+                saveSetting({ ambientAudioEnabled: nextEnabled });
+                toast.info(nextEnabled ? 'Mora Ambient aktiviert' : 'Mora Ambient pausiert');
                 return;
             }
             saveSetting({
@@ -585,10 +590,10 @@ useEffect(() => {
                         <div className="space-y-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <h3 className="text-lg text-white font-light">Hintergrundmusik</h3>
+                                    <h3 className="text-lg text-white font-light">Klangraum</h3>
                                     <p className="mt-2 text-sm text-white/45 max-w-xl">
-                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik läuft weiter,
-                                        solange SAIMOR OS geöffnet ist, auch wenn du in andere Panes wechselst.
+                                        SAIMOR hat jetzt immer einen eingebauten Ambient-Pad. Eigene Songs kannst du
+                                        lokal hinzufügen, wenn du einen konkreten Soundtrack willst.
                                     </p>
                                 </div>
 
@@ -605,18 +610,16 @@ useEffect(() => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
+                                <div className="overflow-hidden rounded-[26px] border border-emerald-300/[0.1] bg-[radial-gradient(circle_at_18%_0%,rgba(16,185,129,0.16),transparent_34%),linear-gradient(160deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.22)] space-y-4">
                                     <div className="flex items-center justify-between gap-4">
                                         <div>
-                                            <div className="text-sm text-white/80 font-medium">Aktiver Song</div>
+                                            <div className="text-sm text-white/80 font-medium">Aktiver Klang</div>
                                             <div className="text-xs text-white/40 mt-1">
-                                                {selectedAmbientTrack
-                                                    ? `${selectedAmbientTrack.name} - ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
-                                                    : 'Noch kein Song ausgewaehlt'}
+                                                {activeAmbientLabel}
                                             </div>
                                         </div>
-                                        <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] uppercase tracking-[0.18em] text-white/45">
-                                            Loop
+                                        <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] uppercase tracking-[0.18em] ${ambientAudioEnabled ? 'border-emerald-300/20 bg-emerald-500/10 text-emerald-100/72' : 'border-white/10 bg-white/5 text-white/45'}`}>
+                                            {ambientAudioEnabled ? 'Live' : 'Still'}
                                         </div>
                                     </div>
 
@@ -639,8 +642,8 @@ useEffect(() => {
                                         />
                                     </div>
 
-                                    <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/45 leading-relaxed">
-                                        Songs bleiben lokal in diesem Browser gespeichert. Kein Upload zum Server.
+                                    <div className="rounded-xl border border-cyan-300/10 bg-black/20 px-4 py-3 text-xs text-white/45 leading-relaxed">
+                                        Ohne eigene Songs nutzt SAIMOR einen lokalen Web-Audio-Pad. Eigene Songs bleiben lokal in diesem Browser gespeichert. Kein Upload zum Server.
                                     </div>
 
                                     <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-4">
@@ -680,7 +683,7 @@ useEffect(() => {
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                                <div className="rounded-[26px] border border-cyan-300/[0.1] bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,0.14),transparent_34%),linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.016))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.18)] space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <div className="text-sm text-white/80 font-medium">Bibliothek</div>
@@ -713,14 +716,22 @@ useEffect(() => {
                                             Audio-Bibliothek wird geladen...
                                         </div>
                                     ) : ambientTracks.length === 0 ? (
-                                        <div className="rounded-xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center">
-                                            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                                                <Music size={18} className="text-white/55" />
+                                        <div className="rounded-[22px] border border-dashed border-emerald-300/16 bg-black/20 px-4 py-6 text-center">
+                                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/14 bg-emerald-500/10 shadow-[0_0_34px_rgba(16,185,129,0.12)]">
+                                                <Music size={18} className="text-emerald-100/72" />
                                             </div>
-                                            <div className="text-sm text-white/75">Noch keine Songs in deiner Library</div>
+                                            <div className="text-sm text-white/80">Mora Ambient ist sofort bereit</div>
                                             <div className="mt-1 text-xs text-white/40">
-                                                Lade MP3, WAV, M4A, OGG, AAC oder FLAC hoch.
+                                                Du kannst direkt abspielen oder MP3, WAV, M4A, OGG, AAC oder FLAC hochladen.
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleAmbientAudioToggle}
+                                                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-500/12 px-3 py-2 text-sm text-emerald-100/78 transition-colors hover:bg-emerald-500/18"
+                                            >
+                                                {ambientAudioEnabled ? <Pause size={14} /> : <Play size={14} />}
+                                                {ambientAudioEnabled ? 'Ambient pausieren' : 'Ambient starten'}
+                                            </button>
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
@@ -1288,14 +1299,13 @@ useEffect(() => {
                                 )}
                             </div>
 
-                            {/* Future: Color & Icon Picker */}
-                            <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-                                <h4 className="text-sm text-white/60 font-medium mb-2">Zukuenftige Features</h4>
-                                <ul className="text-xs text-white/40 space-y-1">
-                                    <li>- Farben für Departments anpassen</li>
-                                    <li>- Custom Icons zuweisen</li>
-                                    <li>- Drag & Drop Sortierung</li>
-                                    <li>- Team Manager: Sichtbarkeit pro Rolle</li>
+                            <div className="mt-6 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] p-4">
+                                <h4 className="text-sm font-medium text-emerald-50/80 mb-2">Aktive Strukturregeln</h4>
+                                <ul className="space-y-1 text-xs text-white/45">
+                                    <li>- Departments und Spaces werden direkt im Core gespeichert.</li>
+                                    <li>- Rollen und Sichtbarkeit bleiben an die aktive Instanz gebunden.</li>
+                                    <li>- Aenderungen wirken auf Finder, Scanner und Team-Kontext.</li>
+                                    <li>- Sortierung und visuelle Details folgen in einem eigenen, getesteten Struktur-Editor.</li>
                                 </ul>
                             </div>
                         </div>

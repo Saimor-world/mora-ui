@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { IntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 type ReachabilityState = 'unknown' | 'checking' | 'ready' | 'core_only' | 'ui_only' | 'offline' | 'blocked';
@@ -14,7 +14,7 @@ export interface LocalTruthBridge {
     selectedCoreUrl: string | null;
     lastCheckedAt: string | null;
     error: string | null;
-    refresh: () => Promise<void>;
+    refresh: (options?: { force?: boolean; announce?: boolean }) => Promise<void>;
 }
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1']);
@@ -84,70 +84,96 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
     const [selectedCoreUrl, setSelectedCoreUrl] = useState<string | null>(null);
     const [lastCheckedAt, setLastCheckedAt] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const inFlightRef = useRef<Promise<void> | null>(null);
+    const lastRefreshAtRef = useRef<number>(0);
 
-    const uiCandidates = useMemo(() => withDefaultUiCandidates(overview), [overview]);
-    const coreCandidates = useMemo(() => withDefaultCoreCandidates(overview), [overview]);
+    const uiCandidates = useMemo(() => withDefaultUiCandidates(overview), [overview?.runtime?.local_truth?.ui_candidates]);
+    const coreCandidates = useMemo(() => withDefaultCoreCandidates(overview), [overview?.runtime?.local_truth?.core_candidates]);
 
-    const refresh = useCallback(async () => {
+    const refresh = useCallback(async (options?: { force?: boolean; announce?: boolean }) => {
         if (typeof window === 'undefined') return;
+        const force = Boolean(options?.force);
+        const announce = Boolean(options?.announce);
+        const now = Date.now();
 
-        setState('checking');
-        setError(null);
+        if (!force && now - lastRefreshAtRef.current < 4000) {
+            return;
+        }
 
-        let resolvedUi: string | null = null;
-        let resolvedCore: string | null = null;
+        if (inFlightRef.current) {
+            return inFlightRef.current;
+        }
 
-        for (const candidate of uiCandidates) {
-            // eslint-disable-next-line no-await-in-loop
-            const reachable = await probeUrl(candidate, isLocalSurface);
-            if (reachable) {
-                resolvedUi = candidate;
-                break;
+        if (announce) {
+            setState('checking');
+            setError(null);
+        }
+
+        const request = (async () => {
+            let resolvedUi: string | null = null;
+            let resolvedCore: string | null = null;
+
+            for (const candidate of uiCandidates) {
+                // eslint-disable-next-line no-await-in-loop
+                const reachable = await probeUrl(candidate, isLocalSurface);
+                if (reachable) {
+                    resolvedUi = candidate;
+                    break;
+                }
             }
-        }
 
-        for (const candidate of coreCandidates) {
-            // eslint-disable-next-line no-await-in-loop
-            const reachable = await probeUrl(candidate, isLocalSurface);
-            if (reachable) {
-                resolvedCore = candidate;
-                break;
+            for (const candidate of coreCandidates) {
+                // eslint-disable-next-line no-await-in-loop
+                const reachable = await probeUrl(candidate, isLocalSurface);
+                if (reachable) {
+                    resolvedCore = candidate;
+                    break;
+                }
             }
-        }
 
-        const nextUiReachable = Boolean(resolvedUi);
-        const nextCoreReachable = Boolean(resolvedCore);
-        setUiReachable(nextUiReachable);
-        setCoreReachable(nextCoreReachable);
-        setSelectedUiUrl(resolvedUi);
-        setSelectedCoreUrl(resolvedCore);
-        setLastCheckedAt(new Date().toISOString());
+            const nextUiReachable = Boolean(resolvedUi);
+            const nextCoreReachable = Boolean(resolvedCore);
+            setUiReachable(nextUiReachable);
+            setCoreReachable(nextCoreReachable);
+            setSelectedUiUrl(resolvedUi);
+            setSelectedCoreUrl(resolvedCore);
+            setLastCheckedAt(new Date().toISOString());
+            lastRefreshAtRef.current = Date.now();
 
-        if (nextUiReachable && nextCoreReachable) {
-            setState('ready');
-            return;
-        }
-        if (nextCoreReachable) {
-            setState('core_only');
-            setError('Lokaler Core antwortet, aber die lokale UI ist noch nicht erreichbar.');
-            return;
-        }
-        if (nextUiReachable) {
-            setState('ui_only');
-            setError('Lokale UI antwortet, aber der lokale Core ist noch nicht erreichbar.');
-            return;
-        }
+            if (nextUiReachable && nextCoreReachable) {
+                setState('ready');
+                setError(null);
+                return;
+            }
+            if (nextCoreReachable) {
+                setState('core_only');
+                setError('Lokaler Core antwortet, aber die lokale UI ist noch nicht erreichbar.');
+                return;
+            }
+            if (nextUiReachable) {
+                setState('ui_only');
+                setError('Lokale UI antwortet, aber der lokale Core ist noch nicht erreichbar.');
+                return;
+            }
 
-        setState(isLocalSurface ? 'offline' : 'blocked');
-        setError(
-            isLocalSurface
-                ? 'Lokale Instanz antwortet noch nicht. Starte UI und Core auf localhost.'
-                : 'Von HQ konnte keine lokale Instanz erreicht werden. Browser oder lokale Runtime blockieren die Verbindung noch.'
-        );
+            setState(isLocalSurface ? 'offline' : 'blocked');
+            setError(
+                isLocalSurface
+                    ? 'Lokale Instanz antwortet noch nicht. Starte UI und Core auf localhost.'
+                    : 'Von HQ konnte keine lokale Instanz erreicht werden. Browser oder lokale Runtime blockieren die Verbindung noch.'
+            );
+        })();
+
+        inFlightRef.current = request;
+        try {
+            await request;
+        } finally {
+            inFlightRef.current = null;
+        }
     }, [coreCandidates, isLocalSurface, uiCandidates]);
 
     useEffect(() => {
-        void refresh();
+        void refresh({ force: true, announce: true });
     }, [refresh]);
 
     return {

@@ -1,4 +1,5 @@
 ﻿import { create } from 'zustand';
+import { logger } from '@/lib/utils/logger';
 
 export interface SemanticNode {
     id: string;
@@ -82,7 +83,7 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
 
 
         } catch (error) {
-            console.error('❌ Failed to initialize semantic engine:', error);
+            logger.error('Failed to initialize semantic engine', error as Error);
             set({ isProcessing: false });
         }
     },
@@ -162,9 +163,9 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
                 isProcessing: false
             }));
 
-            console.log(`✨ Generated ${newConstellations.length} new constellations`);
+            logger.debug(`Generated ${newConstellations.length} new constellations`);
         } catch (error) {
-            console.error('❌ Failed to generate constellations:', error);
+            logger.error('Failed to generate constellations', error as Error);
             set({ isProcessing: false });
         }
     },

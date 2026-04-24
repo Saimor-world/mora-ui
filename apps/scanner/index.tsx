@@ -1278,9 +1278,16 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </AnimatePresence>
 
                     {files.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-48 gap-3">
-                            <Zap size={32} className="text-purple-400/50" />
-                            <p className="text-sm text-white/30">Noch keine Dateien</p>
+                        <div className="mx-auto mt-2 flex h-56 max-w-md flex-col items-center justify-center gap-3 rounded-3xl border border-emerald-300/10 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.12),transparent_55%)] px-8 text-center">
+                            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                                <Upload size={28} className="text-emerald-200/80" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-emerald-50/85">Bereit fuer den ersten Intake</p>
+                                <p className="mt-2 text-xs leading-relaxed text-white/42">
+                                    Ziehe Dateien in den Scanner oder waehle Upload. Mora prueft Kontext, Zielordner und Sichtbarkeit vor der Freigabe.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>

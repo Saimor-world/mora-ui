@@ -78,10 +78,10 @@ export const CoreLayer: React.FC = () => {
                             <div className="absolute inset-0 scale-[1.06] opacity-[0.34] saturate-[0.78] [filter:blur(2px)]">
                                 <UniverseView />
                             </div>
-                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(72,173,255,0.18),rgba(10,26,36,0.52)_34%,rgba(2,6,9,0.84)_100%)]" />
-                            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,8,9,0.82)_0%,rgba(2,8,9,0.56)_18%,rgba(2,8,9,0.14)_38%,rgba(2,8,9,0.14)_62%,rgba(2,8,9,0.56)_82%,rgba(2,8,9,0.82)_100%)]" />
-                            <div className="absolute inset-x-[18%] top-[14%] h-[24rem] rounded-full bg-cyan-300/[0.08] blur-[160px]" />
-                            <div className="absolute inset-x-[24%] bottom-[9%] h-[18rem] rounded-full bg-emerald-300/[0.05] blur-[150px]" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(20,184,166,0.18),rgba(8,42,35,0.50)_34%,rgba(2,8,8,0.86)_100%)]" />
+                            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,10,8,0.84)_0%,rgba(2,18,14,0.56)_18%,rgba(2,20,17,0.12)_38%,rgba(2,20,17,0.12)_62%,rgba(2,18,14,0.56)_82%,rgba(2,10,8,0.84)_100%)]" />
+                            <div className="absolute inset-x-[18%] top-[14%] h-[24rem] rounded-full bg-emerald-300/[0.08] blur-[160px]" />
+                            <div className="absolute inset-x-[24%] bottom-[9%] h-[18rem] rounded-full bg-teal-300/[0.06] blur-[150px]" />
                             <motion.div
                                 className="absolute inset-y-0 left-0 w-[23%] pointer-events-none"
                                 initial={false}
@@ -112,7 +112,7 @@ export const CoreLayer: React.FC = () => {
                                     transition: { duration: prefersReducedMotion ? 0.14 : 0.72, ease: [0.24, 0.96, 0.16, 1] as const },
                                 }}
                                 style={{
-                                    background: 'linear-gradient(90deg, rgba(2, 8, 9, 0.72) 0%, rgba(2, 8, 9, 0.38) 18%, rgba(2, 8, 9, 0.08) 50%, rgba(2, 8, 9, 0.38) 82%, rgba(2, 8, 9, 0.72) 100%)',
+                                    background: 'linear-gradient(90deg, rgba(2, 10, 8, 0.72) 0%, rgba(2, 18, 14, 0.38) 18%, rgba(2, 18, 14, 0.08) 50%, rgba(2, 18, 14, 0.38) 82%, rgba(2, 10, 8, 0.72) 100%)',
                                 }}
                             />
                         </div>

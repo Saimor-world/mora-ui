@@ -23,6 +23,7 @@ import { MailPane } from '@/components/panes/MailPane';
 import { CalendarPane } from '@/components/panes/CalendarPane';
 import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
+import { TerminalPane } from '@/components/panes/TerminalPane';
 import { TasksPane }       from '@/components/panes/TasksPane';
 import { TimelinePane }    from '@/components/panes/TimelinePane';
 import { CanvasPane }      from '@/components/panes/CanvasPane';
@@ -67,6 +68,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <IntegrationsPane id={pane.id} />;
         case 'browser':
             return <BrowserPane id={pane.id} />;
+        case 'terminal':
+            return <TerminalPane id={pane.id} />;
         case 'company-detail':
             return (
                 <CompanyDetailPane

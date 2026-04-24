@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import type { IntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
 interface CalendarIntegrationStatus {
     configured: boolean;
@@ -25,7 +26,13 @@ interface CalendarProviderConfigStatus {
     missing_fields?: string[];
 }
 
-export const CalendarIntegration: React.FC = () => {
+const DEFAULT_GOOGLE_CALENDAR_REDIRECT_URL = 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
+
+interface CalendarIntegrationProps {
+    overviewSnapshot?: IntegrationsOverview | null;
+}
+
+export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ overviewSnapshot }) => {
     const [status, setStatus] = useState<CalendarIntegrationStatus | null>(null);
     const [providerConfig, setProviderConfig] = useState<CalendarProviderConfigStatus | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,8 +40,9 @@ export const CalendarIntegration: React.FC = () => {
     const [isSavingConfig, setIsSavingConfig] = useState(false);
     const [clientId, setClientId] = useState('');
     const [clientSecret, setClientSecret] = useState('');
-    const [redirectInput, setRedirectInput] = useState('http://127.0.0.1:8081/v1/auth/google/callback');
-    const { overview } = useIntegrationsOverview();
+    const [redirectInput, setRedirectInput] = useState(DEFAULT_GOOGLE_CALENDAR_REDIRECT_URL);
+    const { overview: internalOverview } = useIntegrationsOverview(!overviewSnapshot, !overviewSnapshot);
+    const overview = overviewSnapshot || internalOverview;
 
     const loadStatus = async () => {
         try {
@@ -59,7 +67,7 @@ export const CalendarIntegration: React.FC = () => {
     const requiredEnv = Array.isArray(calendarSetup?.required_env) ? calendarSetup.required_env : [];
     const redirectUrl = typeof calendarSetup?.redirect_url === 'string'
         ? calendarSetup.redirect_url
-        : 'http://127.0.0.1:8081/v1/auth/google/callback';
+        : DEFAULT_GOOGLE_CALENDAR_REDIRECT_URL;
     const oauthReady = Boolean(overview?.capabilities?.calendar_oauth_enabled);
     const ownerManageable = Boolean(overview?.capabilities?.owner_manageable);
 
@@ -141,8 +149,8 @@ export const CalendarIntegration: React.FC = () => {
                         <Calendar className="text-emerald-400" size={20} />
                     </div>
                     <div>
-                        <h4 className="text-white font-medium">Google Calendar</h4>
-                        <p className="text-xs text-white/40">Kalender verbinden</p>
+                        <h4 className="text-white font-medium">Google Calendar persoenlich</h4>
+                        <p className="text-xs text-white/40">Eigenes Google-Konto verbinden</p>
                     </div>
                 </div>
                 {status?.configured && (
@@ -157,14 +165,14 @@ export const CalendarIntegration: React.FC = () => {
             <div className="p-6 rounded-xl bg-white/5 border border-white/10 space-y-4">
                 {(!status?.configured || !oauthReady) && (
                     <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/8 px-4 py-3 text-xs text-cyan-100/85">
-                        <div className="font-medium text-cyan-100">Google-Kalender lokal verbinden</div>
+                        <div className="font-medium text-cyan-100">Persoenlichen Google-Kalender verbinden</div>
                         <p className="mt-1 leading-relaxed text-cyan-100/75">
                             {oauthReady
                                 ? 'Starte den OAuth-Flow direkt aus dem OS. Nach erfolgreichem Login erscheinen echte Events in Home, Kalender und Mora.'
                                 : 'Der OAuth-Flow ist serverseitig noch nicht komplett konfiguriert. Setze zuerst die fehlenden Werte im Core.'}
                         </p>
                         <p className="mt-2 text-[11px] text-cyan-100/60">
-                            Die Google-OAuth-App ist serverweit. Der verbundene Kalender und die Tokens werden danach pro Nutzer gespeichert.
+                            Die Google-OAuth-App wird einmal fuer die Firma eingerichtet. Danach verbindet jeder Nutzer sein eigenes Google-Konto; Tokens bleiben pro Nutzer isoliert.
                         </p>
                         {providerConfig?.source && (
                             <p className="mt-2 text-[11px] text-cyan-100/60">
@@ -192,7 +200,7 @@ export const CalendarIntegration: React.FC = () => {
                         <div>
                             <h5 className="text-sm font-medium text-white">Google OAuth für diesen Tenant</h5>
                             <p className="mt-1 text-xs leading-relaxed text-white/55">
-                                Diese Konfiguration ist tenantweit. Nutzer verbinden danach ihren eigenen Kalender im OS und speichern ihre Tokens separat.
+                                Diese Konfiguration ist tenantweit. Nutzer verbinden danach ihren eigenen Google-Kalender im OS; Refresh-Tokens werden separat pro Nutzer gespeichert.
                             </p>
                         </div>
                         <div className="space-y-1">
@@ -221,7 +229,7 @@ export const CalendarIntegration: React.FC = () => {
                                 type="text"
                                 value={redirectInput}
                                 onChange={(e) => setRedirectInput(e.target.value)}
-                                placeholder="http://127.0.0.1:8081/v1/auth/google/callback"
+                                placeholder={DEFAULT_GOOGLE_CALENDAR_REDIRECT_URL}
                                 className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white focus:border-cyan-500/50 focus:outline-none"
                             />
                         </div>
@@ -238,7 +246,7 @@ export const CalendarIntegration: React.FC = () => {
 
                 {!oauthReady && !ownerManageable && (
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-relaxed text-white/60">
-                        Die Google-OAuth-App für diesen Tenant muss zuerst von einem Eigentümer eingerichtet werden.
+                        Die Google-OAuth-App fuer diesen Tenant muss zuerst von einem Eigentümer eingerichtet werden.
                         Sobald das erfolgt ist, kannst du deinen persoenlichen Kalender direkt hier im OS verbinden.
                     </div>
                 )}
@@ -267,7 +275,7 @@ export const CalendarIntegration: React.FC = () => {
                                 ? ownerManageable
                                     ? 'OAuth für Tenant einrichten'
                                     : 'Eigentümer muss OAuth freischalten'
-                                : status?.configured ? 'Neu verbinden' : 'Verbinden'
+                                : status?.configured ? 'Mein Google-Konto neu verbinden' : 'Mein Google-Konto verbinden'
                         }
                     </button>
                     <button

@@ -394,6 +394,7 @@ export const MoraShell: React.FC = () => {
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
+    const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
 
@@ -411,6 +412,7 @@ export const MoraShell: React.FC = () => {
         const handlePaneDragStart = () => {
             mouseMoveHandler = (e: MouseEvent) => {
                 const zone = detectSnapZone(e.clientX, e.clientY);
+                activeSnapZoneRef.current = zone;
                 setActiveSnapZone(zone);
             };
             window.addEventListener('mousemove', mouseMoveHandler);
@@ -423,9 +425,11 @@ export const MoraShell: React.FC = () => {
             }
             const customEvent = e as CustomEvent;
             const { paneId } = customEvent.detail || {};
-            if (paneId && activeSnapZone) {
-                applySnap(paneId, activeSnapZone);
+            const snapZone = activeSnapZoneRef.current;
+            if (paneId && snapZone) {
+                applySnap(paneId, snapZone);
             }
+            activeSnapZoneRef.current = null;
             setActiveSnapZone(null);
         };
 
@@ -439,7 +443,7 @@ export const MoraShell: React.FC = () => {
                 window.removeEventListener('mousemove', mouseMoveHandler);
             }
         };
-    }, [detectSnapZone, applySnap, activeSnapZone]);
+    }, [detectSnapZone, applySnap]);
 
     // EFFECT: Clear panes when ViewMode changes
     useEffect(() => {

@@ -7,8 +7,7 @@
  *  - Breadcrumb path updates correctly on each navigation
  *  - Critical buttons (Back, + NEW SPACE / + NEW FOLDER) are visible
  *
- * These run against the live deployment (hq.saimor.world) unless
- * BASE_URL env var overrides it. The app requires a valid auth session.
+ * These run against the configured Playwright baseURL. The app requires a valid auth session.
  * If the page redirects to login, tests are skipped gracefully.
  *
  * Run: npx playwright test e2e/l2-l3-smoke.spec.ts
@@ -16,11 +15,9 @@
 
 import { test, expect, Page } from '@playwright/test';
 
-const BASE = process.env.BASE_URL || 'https://hq.saimor.world';
-
 /** Navigate to the app and wait for the layer to stabilise. */
 async function goToApp(page: Page) {
-    await page.goto(BASE + '/home', { waitUntil: 'networkidle' });
+    await page.goto('/home', { waitUntil: 'networkidle' });
 }
 
 /**

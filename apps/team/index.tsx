@@ -64,6 +64,15 @@ interface TeamActivity {
     timestamp: string;
 }
 
+interface ChatRoom {
+    id: string;
+    name: string;
+    type: "shared" | "department" | string;
+    department_id?: string | null;
+    description?: string | null;
+    member_count?: number;
+}
+
 export default function TeamApp({ paneId, onClose }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(paneId);
@@ -73,6 +82,8 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
 
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [activities, setActivities] = useState<TeamActivity[]>([]);
+    const [rooms, setRooms] = useState<ChatRoom[]>([]);
+    const [selectedRoomId, setSelectedRoomId] = useState("shared:company");
     const [activeTab, setActiveTab] = useState<"members" | "activity" | "invite" | "room">("members");
     const [isLoading, setIsLoading] = useState(true);
     const [showChat, setShowChat] = useState<string | null>(null);
@@ -161,17 +172,18 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
 
     useEffect(() => {
         if (activeTab !== "room" || ctx.isOperational !== true) return;
+        const roomId = selectedRoomId || "shared:company";
         setIsLoadingRoom(true);
-        coreGet("/v3/user-chat/history?channel_id=team-room", { isOptional: true }).then((msgs: ChatMessage[] | null) => {
+        coreGet(`/v3/user-chat/history?channel_id=${encodeURIComponent(roomId)}`, { isOptional: true }).then((msgs: ChatMessage[] | null) => {
             if (msgs) setRoomHistory(msgs);
             setIsLoadingRoom(false);
         });
-    }, [activeTab, ctx.isOperational]);
+    }, [activeTab, ctx.isOperational, selectedRoomId]);
 
     useEffect(() => {
         if (activeTab !== "room") return;
         const handleRoomMessage = (data: ChatMessage) => {
-            if (data.channel_id !== "team-room") return;
+            if (data.channel_id !== selectedRoomId) return;
             setRoomHistory(prev => {
                 if (prev.some(m => m.id === data.id)) return prev;
                 return [...prev, data];
@@ -179,7 +191,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
         };
         realtime.on("chat.message", handleRoomMessage);
         return () => realtime.off("chat.message", handleRoomMessage);
-    }, [activeTab]);
+    }, [activeTab, selectedRoomId]);
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -256,7 +268,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
             id: tempRoomId,
             sender_id: user?.id || "self",
             sender_name: user?.name || "Me",
-            channel_id: "team-room",
+            channel_id: selectedRoomId,
             content: trimmed,
             timestamp: new Date().toISOString(),
             read: false
@@ -266,7 +278,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
         setRoomMessage("");
 
         try {
-            await corePost("/v3/user-chat/send", { channel_id: "team-room", content: trimmed });
+            await corePost("/v3/user-chat/send", { channel_id: selectedRoomId, content: trimmed });
         } catch (e) {
             console.error("Failed to send room message", e);
             setRoomHistory(prev => prev.filter(m => m.id !== tempRoomId));
@@ -276,11 +288,13 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
 
     const fetchTeamData = useCallback(async () => {
         try {
-            const [membersV3Res, activityRes] = await Promise.all([
+            const [membersV3Res, activityRes, roomsRes] = await Promise.all([
                 coreGet("/v3/team/members?include_inactive=false", { isOptional: true }),
-                coreGet("/v3/team/activity?limit=10", { isOptional: true })
+                coreGet("/v3/team/activity?limit=10", { isOptional: true }),
+                coreGet("/v3/user-chat/rooms", { isOptional: true })
             ]);
             const membersRes = Array.isArray(membersV3Res) ? membersV3Res : [];
+            const roomList = Array.isArray(roomsRes) ? roomsRes : [];
 
             const realMembers: TeamMember[] = membersRes.map((u: any) => ({
                 id: u.id,
@@ -291,6 +305,10 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
             }));
 
             setMembers(realMembers);
+            setRooms(roomList);
+            if (roomList.length > 0 && !roomList.some((room: ChatRoom) => room.id === selectedRoomId)) {
+                setSelectedRoomId(roomList[0].id);
+            }
             if (activityRes) setActivities(activityRes);
         } catch (error) {
             console.error("Failed to load team data", error);
@@ -298,7 +316,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedRoomId]);
 
     useEffect(() => {
         if (ctx.isOperational !== true) return;
@@ -492,10 +510,13 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                                             <p className="text-xs">Lade Team...</p>
                                         </div>
                                     ) : members.length === 0 ? (
-                                        <div className="text-center text-emerald-500/50 py-8">
-                                            <Users className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                                            <p className="text-sm mb-2">Noch keine Teammitglieder</p>
-                                            <button onClick={() => setActiveTab("invite")} className="text-xs text-emerald-400 hover:underline">Jetzt einladen</button>
+                                        <div className="mx-auto max-w-sm rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] px-6 py-8 text-center text-emerald-500/50">
+                                            <Users className="w-9 h-9 mx-auto mb-3 text-emerald-300/45" />
+                                            <p className="text-sm text-emerald-50/85">Noch keine Teammitglieder</p>
+                                            <p className="mt-2 text-xs leading-relaxed text-white/40">
+                                                Lege die erste Einladung an, damit Chat, Aktivitaeten und Anwesenheit echte Personen zeigen.
+                                            </p>
+                                            <button onClick={() => setActiveTab("invite")} className="mt-4 rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-xs text-emerald-200 transition-colors hover:bg-emerald-300/15">Jetzt einladen</button>
                                         </div>
                                     ) : (
                                         members
@@ -583,22 +604,55 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                                 <motion.div key="room" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <div className="text-sm text-emerald-50 font-medium">Team Room</div>
-                                            <div className="text-[10px] text-emerald-500/50 uppercase tracking-wider">Shared channel</div>
+                                            <div className="text-sm text-emerald-50 font-medium">
+                                                {rooms.find(room => room.id === selectedRoomId)?.name || "Shared Room"}
+                                            </div>
+                                            <div className="text-[10px] text-emerald-500/50 uppercase tracking-wider">
+                                                {rooms.find(room => room.id === selectedRoomId)?.type === "department" ? "Abteilungsraum" : "Gemeinsamer Kanal"}
+                                            </div>
                                         </div>
-                                        <div className="text-[10px] text-emerald-500/40">{members.length} members</div>
+                                        <div className="text-[10px] text-emerald-500/40">
+                                            {rooms.find(room => room.id === selectedRoomId)?.member_count ?? members.length} Mitglieder
+                                        </div>
                                     </div>
+
+                                    {rooms.length > 0 && (
+                                        <div className="flex gap-2 overflow-x-auto pb-1">
+                                            {rooms.map(room => (
+                                                <button
+                                                    key={room.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedRoomId(room.id);
+                                                        setRoomHistory([]);
+                                                    }}
+                                                    className={`shrink-0 rounded-xl border px-3 py-2 text-left transition-all ${
+                                                        selectedRoomId === room.id
+                                                            ? "border-emerald-300/35 bg-emerald-500/15 text-emerald-50"
+                                                            : "border-white/10 bg-white/[0.03] text-white/50 hover:bg-white/[0.06]"
+                                                    }`}
+                                                >
+                                                    <div className="text-xs font-medium">{room.name}</div>
+                                                    <div className="mt-0.5 text-[10px] uppercase tracking-[0.16em] opacity-55">
+                                                        {room.type === "department" ? "Abteilung" : "Shared"}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
 
                                     <div className="h-72 overflow-y-auto mb-2 space-y-3 pr-2">
                                         {isLoadingRoom ? (
                                             <div className="flex h-full items-center justify-center text-emerald-500/30"><Sparkles className="w-4 h-4 animate-spin" /></div>
                                         ) : roomHistory.length === 0 ? (
-                                            <div className="flex h-full items-center justify-center text-center text-xs text-emerald-500/30"><p>Noch keine Nachrichten im Team Room</p></div>
+                                            <div className="flex h-full items-center justify-center text-center text-xs text-emerald-500/45">
+                                                <p>Dieser Raum ist bereit.<br />Sende die erste Nachricht oder teile Kontext im OS.</p>
+                                            </div>
                                         ) : (
                                             roomHistory.map(msg => {
                                                 const meId = user?.id || "self";
                                                 const isMe = msg.sender_id === meId;
-                                                const senderLabel = msg.sender_name || (msg.sender_id === "mora" ? "MA'RA" : "Team member");
+                                                const senderLabel = msg.sender_name || (msg.sender_id === "mora" ? "MA'RA" : "Teammitglied");
                                                 return (
                                                     <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                                                         <div className="max-w-[85%]">
@@ -620,7 +674,7 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                                             value={roomMessage}
                                             onChange={(e) => setRoomMessage(e.target.value)}
                                             onKeyDown={(e) => e.key === "Enter" && handleSendRoomMessage()}
-                                            placeholder="Nachricht an das Team senden..."
+                                            placeholder="Nachricht in diesen Raum senden..."
                                             className="flex-1 bg-transparent text-sm text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none"
                                         />
                                         <button onClick={handleSendRoomMessage} disabled={!roomMessage.trim()} className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
@@ -634,9 +688,12 @@ export default function TeamApp({ paneId, onClose }: AppProps) {
                             {activeTab === "activity" && (
                                 <motion.div key="activity" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
                                     {activities.length === 0 ? (
-                                        <div className="text-center text-emerald-500/50 py-8">
-                                            <Activity className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                                            <p className="text-sm">Noch keine Aktivitäten</p>
+                                        <div className="mx-auto max-w-sm rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] px-6 py-8 text-center text-emerald-500/50">
+                                            <Activity className="w-8 h-8 mx-auto mb-3 text-emerald-300/45" />
+                                            <p className="text-sm text-emerald-50/85">Noch keine Aktivitaeten</p>
+                                            <p className="mt-2 text-xs leading-relaxed text-white/40">
+                                                Sobald Einladungen, Nachrichten oder Dokumentaktionen entstehen, erscheint hier die Team-Spur.
+                                            </p>
                                         </div>
                                     ) : (
                                         activities.map(activity => (

@@ -3,8 +3,10 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
+import { RssIntegration } from '@/components/integrations/RssIntegration';
+import { CloudStorageIntegration } from '@/components/integrations/CloudStorageIntegration';
 import { coreGet, corePost } from '@/lib/api/coreClient';
-import { AlertCircle, Bell, Bot, Calendar, Copy, Cpu, ExternalLink, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Bell, Bot, Calendar, Cloud, Copy, Cpu, ExternalLink, Mail, RefreshCw, Rss, ShieldCheck } from 'lucide-react';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
@@ -25,6 +27,21 @@ interface CalendarOverview {
     provider?: string;
     email?: string;
     status?: string;
+}
+
+interface RssOverview {
+    configured?: boolean;
+    enabled?: boolean;
+    status?: string;
+    count?: number;
+}
+
+interface CloudStorageOverview {
+    configured?: boolean;
+    enabled?: boolean;
+    status?: string;
+    count?: number;
+    providers?: string[];
 }
 
 interface AssistantProviderMeta {
@@ -49,6 +66,8 @@ interface AssistantOverview {
 interface IntegrationsOverview {
     mail?: MailOverview;
     calendar?: CalendarOverview;
+    rss?: RssOverview;
+    cloud_storage?: CloudStorageOverview;
     assistant?: AssistantOverview;
     runtime?: {
         local_truth?: {
@@ -143,6 +162,8 @@ interface IntegrationsOverview {
         real_email_enabled?: boolean;
         mail_local_mode?: boolean;
         calendar_oauth_enabled?: boolean;
+        rss_enabled?: boolean;
+        cloud_storage_enabled?: boolean;
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
@@ -281,7 +302,7 @@ const buildCalendarDescription = (overview?: IntegrationsOverview) => {
     if (!calendar) return 'Kalender-Status wird geladen.';
     if (!caps?.calendar_oauth_enabled) {
         const missing = overview?.setup?.calendar?.missing_env || [];
-        const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v1/auth/google/callback';
+        const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
         const ownerManageable = Boolean(caps?.owner_manageable);
         return !ownerManageable
             ? `Google-OAuth muss tenantweit zuerst von einem Eigentümer eingerichtet werden. Redirect: ${redirect}.`
@@ -293,6 +314,27 @@ const buildCalendarDescription = (overview?: IntegrationsOverview) => {
         return calendar.email ? `Verbunden mit ${calendar.email}.` : 'Kalender ist eingerichtet.';
     }
     return 'Noch keine Kalender-Verbindung eingerichtet.';
+};
+
+const buildRssDescription = (overview?: IntegrationsOverview) => {
+    const rss = overview?.rss;
+    if (!rss) return 'Feed-Status wird geladen.';
+    if (rss.configured) {
+        return `${rss.count || 0} RSS/Atom-Quellen verbunden. Mora kann daraus aktuelle Signale ableiten.`;
+    }
+    return 'Noch keine RSS/Atom-Feeds verbunden. Nutze Feeds fuer News, Releases, Monitoring und Marktbeobachtung.';
+};
+
+const buildCloudDescription = (overview?: IntegrationsOverview) => {
+    const cloud = overview?.cloud_storage;
+    if (!cloud) return 'Cloud-Status wird geladen.';
+    if (cloud.configured) {
+        return `${cloud.count || 0} persoenliche Cloud-Quelle(n) mit deinem privaten Bereich verbunden.`;
+    }
+    if (cloud.count && cloud.count > 0) {
+        return 'Cloud-Provider sind vorgemerkt, aber fuer SharePoint oder Google Drive fehlt noch der OAuth-Flow.';
+    }
+    return 'Noch keine persoenliche Cloud verbunden. Nextcloud kann direkt per WebDAV/App-Passwort angebunden werden.';
 };
 
 const SummaryCard: React.FC<{
@@ -339,7 +381,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
         localTruthBridge,
         summary,
     } = useCommunicationSurface();
-    const { mailPreview, calendarPreview } = useCommunicationLiveData();
+    const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
     const runtimeSession = useRuntimeSession();
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
@@ -362,6 +404,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     const canControlRuntime = runtimeRole === 'system_owner';
     const latestMail = mailPreview[0] ?? null;
     const nextEvent = calendarPreview[0] ?? null;
+    const latestFeedItem = feedPreview[0] ?? null;
 
     const requestBrowserNotifications = useCallback(async () => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
@@ -428,10 +471,19 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
     }, [overview]);
 
     const openLocalTruthSurface = useCallback(() => {
-        if (typeof window === 'undefined') return;
-        const url = summary.localTruthUrl;
-        window.open(url, '_blank', 'noopener,noreferrer');
-    }, [summary.localTruthUrl]);
+        if (summary.localTruthUiOpenable && typeof window !== 'undefined') {
+            window.open(summary.localTruthUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        openPane({
+            id: 'browser-connect',
+            type: 'browser',
+            title: 'Browser',
+            size: { width: 1160, height: 760 },
+            position: { x: 160, y: 100 },
+            data: { initialUrl: summary.connectSurfaceUrl },
+        });
+    }, [openPane, summary.connectSurfaceUrl, summary.localTruthUiOpenable, summary.localTruthUrl]);
 
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
@@ -575,7 +627,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                             </div>
                         </div>
                         <button
-                            onClick={loadOverview}
+                            onClick={() => void loadOverview()}
                             disabled={isLoading}
                             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 transition-colors hover:bg-white/10 disabled:opacity-50"
                         >
@@ -588,7 +640,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                 <div className="flex-1 overflow-y-auto px-6 py-6">
                     {isLoading ? (
                         <div className="space-y-6">
-                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
                                 {[0, 1, 2].map((index) => (
                                     <div key={index} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                                         <div className="mb-4 h-4 w-28 rounded bg-white/10" />
@@ -613,7 +665,7 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     <h4 className="text-sm font-medium text-red-100">Integrationen konnten nicht geladen werden</h4>
                                     <p className="mt-1 text-sm text-red-100/70">{error}</p>
                                     <button
-                                        onClick={loadOverview}
+                                        onClick={() => void loadOverview()}
                                         className="mt-4 rounded-xl bg-white/10 px-3 py-2 text-xs text-white transition-colors hover:bg-white/15"
                                     >
                                         Erneut versuchen
@@ -1007,6 +1059,22 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                     detail={nextEvent ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ''}` : 'Naechste Termine erscheinen direkt in Home, Kalender und Integrationen.'}
                                 />
                                 <SummaryCard
+                                    icon={<Rss size={18} />}
+                                    title="Feeds"
+                                    status={overview?.rss?.status}
+                                    description={buildRssDescription(overview || undefined)}
+                                    meta={overview?.rss?.count ? `${overview.rss.count} Quellen` : null}
+                                    detail={latestFeedItem ? `${latestFeedItem.sourceTitle}: ${latestFeedItem.title}` : 'RSS/Atom-Eintraege werden direkt in Moras Kontext eingespeist.'}
+                                />
+                                <SummaryCard
+                                    icon={<Cloud size={18} />}
+                                    title="Cloud"
+                                    status={overview?.cloud_storage?.status}
+                                    description={buildCloudDescription(overview || undefined)}
+                                    meta={overview?.cloud_storage?.count ? `${overview.cloud_storage.count} Quellen` : null}
+                                    detail="Diese Quellen gehoeren zum privaten Nutzerbereich, nicht zur Organisation."
+                                />
+                                <SummaryCard
                                     icon={<Bot size={18} />}
                                     title="Assistant"
                                     status={overview?.assistant?.status}
@@ -1113,14 +1181,28 @@ export const IntegrationsPane: React.FC<{ id: string }> = ({ id }) => {
                                         <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
                                         <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
                                     </div>
-                                    <EmailIntegration />
+                                    <EmailIntegration overviewSnapshot={overview} />
                                 </section>
                                 <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
                                     <div className="mb-4">
                                         <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
                                         <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
                                     </div>
-                                    <CalendarIntegration />
+                                    <CalendarIntegration overviewSnapshot={overview} />
+                                </section>
+                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 xl:col-span-2">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Feeds</p>
+                                        <h4 className="mt-1 text-sm font-medium text-white">RSS/Atom-Quellen</h4>
+                                    </div>
+                                    <RssIntegration />
+                                </section>
+                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 xl:col-span-2">
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Cloud</p>
+                                        <h4 className="mt-1 text-sm font-medium text-white">Persoenlicher Speicher</h4>
+                                    </div>
+                                    <CloudStorageIntegration />
                                 </section>
                             </div>
                         </div>

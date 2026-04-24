@@ -123,6 +123,27 @@ export interface UserContentResponse {
         source_available?: boolean;
         source_status?: 'ready' | 'missing' | string | null;
     }>;
+    /** Personal cloud storage connectors bound to this user's private area. */
+    cloud_storage?: {
+        configured?: boolean;
+        enabled?: boolean;
+        status?: string;
+        count?: number;
+        providers?: string[];
+        connectors?: Array<{
+            id: string;
+            provider: string;
+            label: string;
+            enabled?: boolean;
+            status?: string;
+            auth_type?: string;
+            base_url?: string | null;
+            webdav_url?: string | null;
+            account_hint?: string | null;
+            root_path?: string | null;
+            setup_required?: string | null;
+        }>;
+    };
     /** Summary counts for quick display. */
     counts?: {
         folders?: number;
@@ -142,12 +163,57 @@ export interface UserContentResponse {
 }
 
 /**
+ * Items returned by cloud connector live listings.
+ */
+export interface CloudFileItem {
+    id: string;
+    name: string;
+    kind: 'file' | 'folder' | string;
+    path?: string | null;
+    mime_type?: string | null;
+    size?: number | null;
+    modified_at?: string | null;
+    web_url?: string | null;
+    provider: string;
+    connector_id: string;
+    parent_id?: string | null;
+}
+
+export interface CloudFileListResponse {
+    connector_id: string;
+    provider: string;
+    account_hint?: string | null;
+    current_path?: string | null;
+    parent_path?: string | null;
+    items: CloudFileItem[];
+    count: number;
+    next_page_token?: string | null;
+    status?: string;
+}
+
+/**
  * Fetch the current user's personal content surface.
  * Returns the full structured response (space, folders, nodes, files, counts, ownership).
  * Returns null if the endpoint is unavailable — degrade gracefully.
  */
 export async function fetchMyContent(): Promise<UserContentResponse | null> {
     return coreGet('/v3/users/me/content', { isOptional: true });
+}
+
+/**
+ * Fetch live items from a cloud connector (Google Drive, SharePoint, Nextcloud).
+ * items are read-only and listed live from the provider.
+ */
+export async function fetchCloudConnectorItems(
+    connectorId: string,
+    limit: number = 20,
+    path?: string | null,
+): Promise<CloudFileListResponse | null> {
+    if (!connectorId) return null;
+    const params = new URLSearchParams({ limit: String(limit) });
+    const normalizedPath = (path || '').trim().replaceAll('\\', '/').replace(/^\/+|\/+$/g, '');
+    if (normalizedPath) params.set('path', normalizedPath);
+    return coreGet(`/v3/integrations/cloud/${connectorId}/items?${params.toString()}`, { isOptional: true });
 }
 
 // ── Sharing ───────────────────────────────────────────────────────────────────

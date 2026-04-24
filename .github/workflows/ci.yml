@@ -38,6 +38,9 @@ jobs:
       - name: Typecheck
         run: npm run verify:types
 
+      - name: Critical flow gate
+        run: npm run verify:critical-flow
+
       - name: OS smoke
         run: npm run verify:os:smoke
 

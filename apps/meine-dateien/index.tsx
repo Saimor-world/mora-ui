@@ -1,8 +1,8 @@
 ﻿'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, ChevronRight, ExternalLink, FileText, Folder, Link, Loader2, Paperclip } from 'lucide-react';
-import { fetchMyContent, shareFile, shareNode, type UserContentResponse } from '@/lib/api/coreClient';
+import { Check, ChevronRight, Cloud, ExternalLink, FileText, Folder, Link, Loader2, Paperclip, PlugZap } from 'lucide-react';
+import { fetchMyContent, shareFile, shareNode, fetchCloudConnectorItems, type CloudFileItem, type UserContentResponse } from '@/lib/api/contentClient';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -39,10 +39,33 @@ function normalizePrivateAreaLabel(value?: string | null): string {
     return next;
 }
 
+function normalizeCloudPath(path?: string | null): string {
+    const normalized = (path || '').trim().replaceAll('\\', '/');
+    if (!normalized || normalized === '/') return '';
+    return normalized.replace(/^\/+|\/+$/g, '');
+}
+
+function joinCloudPath(parentPath: string, childName: string): string {
+    const parent = normalizeCloudPath(parentPath);
+    const child = normalizeCloudPath(childName);
+    if (!child) return parent;
+    return parent ? `${parent}/${child}` : child;
+}
+
+function parentCloudPath(path: string): string {
+    const normalized = normalizeCloudPath(path);
+    if (!normalized || !normalized.includes('/')) return '';
+    return normalized.slice(0, normalized.lastIndexOf('/'));
+}
+
 export default function MeineDateienApp({ paneId }: AppProps) {
     const [content, setContent] = useState<UserContentResponse | 'error' | null>(null);
     const [loading, setLoading] = useState(true);
     const [shareStates, setShareStates] = useState<Record<string, ShareState>>({});
+    const [cloudItems, setCloudItems] = useState<Record<string, CloudFileItem[]>>({});
+    const [cloudPaths, setCloudPaths] = useState<Record<string, string>>({});
+    const [cloudErrors, setCloudErrors] = useState<Record<string, string>>({});
+    const [cloudLoadingByConnector, setCloudLoadingByConnector] = useState<Record<string, boolean>>({});
     const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(paneId);
     const isActive = usePaneStore(state => state.activePaneId === paneId);
@@ -66,6 +89,74 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             cancelled = true;
         };
     }, []);
+
+    const loadCloudConnectorItems = useCallback(async (connectorId: string, path: string = '') => {
+        const normalizedPath = normalizeCloudPath(path);
+        setCloudLoadingByConnector((prev) => ({ ...prev, [connectorId]: true }));
+        try {
+            const payload = await fetchCloudConnectorItems(connectorId, 24, normalizedPath);
+            if (!payload) throw new Error('Cloud connector unavailable');
+            const resolvedPath = normalizeCloudPath(payload.current_path ?? normalizedPath);
+            setCloudPaths((prev) => ({ ...prev, [connectorId]: resolvedPath }));
+            setCloudItems((prev) => ({ ...prev, [connectorId]: Array.isArray(payload.items) ? payload.items : [] }));
+            setCloudErrors((prev) => {
+                if (!(connectorId in prev)) return prev;
+                const next = { ...prev };
+                delete next[connectorId];
+                return next;
+            });
+        } catch {
+            setCloudItems((prev) => ({ ...prev, [connectorId]: [] }));
+            setCloudErrors((prev) => ({ ...prev, [connectorId]: 'Quelle gerade nicht erreichbar' }));
+        } finally {
+            setCloudLoadingByConnector((prev) => ({ ...prev, [connectorId]: false }));
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!content || content === 'error') {
+            setCloudItems({});
+            setCloudPaths({});
+            setCloudErrors({});
+            setCloudLoadingByConnector({});
+            return;
+        }
+        const configuredConnectors = Array.isArray(content.cloud_storage?.connectors)
+            ? content.cloud_storage.connectors.filter((connector) => connector.enabled && connector.status === 'configured')
+            : [];
+        const visibleConnectors = configuredConnectors.slice(0, 4);
+        if (visibleConnectors.length === 0) {
+            setCloudItems({});
+            setCloudPaths({});
+            setCloudErrors({});
+            setCloudLoadingByConnector({});
+            return;
+        }
+
+        const visibleIds = new Set(visibleConnectors.map((connector) => connector.id));
+        const keepVisible = <T extends Record<string, unknown>>(prev: T): T => {
+            const next: Record<string, unknown> = {};
+            Object.entries(prev).forEach(([key, value]) => {
+                if (visibleIds.has(key)) next[key] = value;
+            });
+            return next as T;
+        };
+
+        setCloudItems((prev) => keepVisible(prev));
+        setCloudPaths((prev) => {
+            const kept = keepVisible(prev);
+            visibleConnectors.forEach((connector) => {
+                if (!kept[connector.id]) kept[connector.id] = '';
+            });
+            return kept;
+        });
+        setCloudErrors((prev) => keepVisible(prev));
+        setCloudLoadingByConnector((prev) => keepVisible(prev));
+
+        visibleConnectors.forEach((connector) => {
+            void loadCloudConnectorItems(connector.id, '');
+        });
+    }, [content, loadCloudConnectorItems]);
 
     const setShare = useCallback((id: string, state: ShareState) => {
         setShareStates((prev) => ({ ...prev, [id]: state }));
@@ -100,6 +191,10 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             data: { folderId },
         });
     }, [openPane]);
+
+    const handleOpenCloudFolder = useCallback(async (connectorId: string, targetPath: string) => {
+        await loadCloudConnectorItems(connectorId, targetPath);
+    }, [loadCloudConnectorItems]);
 
     if (!pane) {
         return null;
@@ -156,6 +251,14 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const fileById = new Map(standaloneFiles.map((file) => [file.id, file]));
     const counts = content.counts && typeof content.counts === 'object' ? content.counts : undefined;
     const privateAreaLabel = normalizePrivateAreaLabel(content.space?.name);
+    const cloudStorage = content.cloud_storage;
+    const cloudConnectors = Array.isArray(cloudStorage?.connectors) ? cloudStorage.connectors : [];
+    const visibleCloudConnectors = cloudConnectors
+        .filter((connector) => connector.enabled && connector.status === 'configured')
+        .slice(0, 4);
+    const cloudLoading = Object.values(cloudLoadingByConnector).some(Boolean);
+    const cloudItemCount = Object.values(cloudItems).reduce((sum, items) => sum + items.length, 0);
+    const cloudErrorCount = Object.keys(cloudErrors).length;
 
     const visibleItems: VisibleItem[] = Array.isArray(content.items) && content.items.length > 0
         ? content.items
@@ -188,16 +291,6 @@ export default function MeineDateienApp({ paneId }: AppProps) {
 
     const isEmpty = folders.length === 0 && visibleItems.length === 0;
 
-    if (isEmpty) {
-        return (
-            <GlassPanel {...glassPanelProps}>
-                <div className="px-5 py-8 text-sm text-white/30">
-                    Keine eigenen Inhalte gefunden. Lege einen Ordner an oder lade eine Datei hoch.
-                </div>
-            </GlassPanel>
-        );
-    }
-
     return (
         <GlassPanel {...glassPanelProps}>
             <div className="flex h-full flex-col" data-testid="meine-dateien-content">
@@ -222,6 +315,157 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         </div>
                     )}
 
+                    <section aria-label="Cloud-Anbindungen" className="px-4 pb-2 pt-2">
+                        <div className="rounded-2xl border border-emerald-300/10 bg-emerald-500/[0.035] p-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex min-w-0 items-start gap-3">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-200">
+                                        <Cloud size={16} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-100/48">Private Cloud</div>
+                                        <div className="mt-1 text-sm font-medium text-white/82">
+                                            {cloudConnectors.length > 0
+                                                ? `${cloudConnectors.length} persoenliche Quelle(n)`
+                                                : 'Eigene Cloud anbinden'}
+                                        </div>
+                                        <p className="mt-1 text-xs leading-relaxed text-white/45">
+                                            {cloudConnectors.length > 0
+                                                ? cloudConnectors.map((connector) => connector.label).join(' · ')
+                                                : 'Nextcloud direkt per WebDAV/App-Passwort. SharePoint und Google Drive per OAuth.'}
+                                        </p>
+                                        {cloudLoading && visibleCloudConnectors.length === 0 ? (
+                                            <div className="mt-3 flex items-center gap-2 text-[11px] text-white/35">
+                                                <Loader2 size={11} className="animate-spin" />
+                                                Cloud-Inhalte werden live geladen...
+                                            </div>
+                                        ) : cloudItemCount > 0 || cloudErrorCount > 0 || visibleCloudConnectors.length > 0 ? (
+                                            <div className="mt-3 space-y-1.5">
+                                                {visibleCloudConnectors.map((connector) => {
+                                                    const items = cloudItems[connector.id] || [];
+                                                    const currentPath = normalizeCloudPath(cloudPaths[connector.id] || '');
+                                                    const pathLabel = currentPath ? `/${currentPath}` : '/';
+                                                    const isConnectorLoading = Boolean(cloudLoadingByConnector[connector.id]);
+                                                    const error = cloudErrors[connector.id];
+                                                    return (
+                                                        <div key={connector.id} className="rounded-xl border border-white/8 bg-black/20 p-2.5">
+                                                            <div className="mb-1.5 flex items-center justify-between gap-2">
+                                                                <div className="min-w-0">
+                                                                    <span className="block truncate text-[11px] font-medium text-white/62">{connector.label}</span>
+                                                                    <span className="block truncate text-[10px] text-emerald-100/55">{pathLabel}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => void handleOpenCloudFolder(connector.id, '')}
+                                                                        disabled={isConnectorLoading || !currentPath}
+                                                                        className="rounded-md border border-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-white/45 transition-colors hover:bg-white/[0.05] disabled:opacity-40"
+                                                                    >
+                                                                        Root
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => void handleOpenCloudFolder(connector.id, parentCloudPath(currentPath))}
+                                                                        disabled={isConnectorLoading || !currentPath}
+                                                                        className="rounded-md border border-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-white/45 transition-colors hover:bg-white/[0.05] disabled:opacity-40"
+                                                                    >
+                                                                        Hoch
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => void handleOpenCloudFolder(connector.id, currentPath)}
+                                                                        disabled={isConnectorLoading}
+                                                                        className="rounded-md border border-white/10 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-white/45 transition-colors hover:bg-white/[0.05] disabled:opacity-40"
+                                                                    >
+                                                                        Neu laden
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            {isConnectorLoading ? (
+                                                                <div className="flex items-center gap-2 px-2 py-1.5 text-[11px] text-white/35">
+                                                                    <Loader2 size={11} className="animate-spin" />
+                                                                    Lade Ordnerinhalt...
+                                                                </div>
+                                                            ) : error ? (
+                                                                <div className="rounded-lg border border-amber-300/10 bg-amber-500/[0.04] px-3 py-2 text-[11px] text-amber-100/62">
+                                                                    {error}
+                                                                </div>
+                                                            ) : items.length === 0 ? (
+                                                                <div className="px-2 py-1.5 text-[11px] text-white/35">
+                                                                    Dieser Ordner ist leer.
+                                                                </div>
+                                                            ) : (
+                                                                <div className="space-y-1">
+                                                                    {items.slice(0, 8).map((item) => {
+                                                                        const isFolder = item.kind === 'folder';
+                                                                        const canOpenFile = Boolean(item.web_url);
+                                                                        const nextPath = normalizeCloudPath(item.path || joinCloudPath(currentPath, item.name));
+                                                                        const canInteract = isFolder || canOpenFile;
+                                                                        return (
+                                                                            <button
+                                                                                key={`${connector.id}-${item.id}`}
+                                                                                type="button"
+                                                                                disabled={!canInteract}
+                                                                                onClick={() => {
+                                                                                    if (isFolder) {
+                                                                                        void handleOpenCloudFolder(connector.id, nextPath);
+                                                                                        return;
+                                                                                    }
+                                                                                    if (item.web_url) {
+                                                                                        window.open(item.web_url, '_blank', 'noopener,noreferrer');
+                                                                                    }
+                                                                                }}
+                                                                                className="group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/[0.04] disabled:cursor-default disabled:hover:bg-transparent"
+                                                                            >
+                                                                                {isFolder ? (
+                                                                                    <Folder size={12} className="shrink-0 text-emerald-100/45" />
+                                                                                ) : (
+                                                                                    <FileText size={12} className="shrink-0 text-cyan-100/45" />
+                                                                                )}
+                                                                                <span className="min-w-0 flex-1 truncate text-[11px] text-white/55 group-hover:text-white/78">
+                                                                                    {item.name}
+                                                                                </span>
+                                                                                {isFolder ? (
+                                                                                    <ChevronRight size={10} className="shrink-0 text-white/20" />
+                                                                                ) : canOpenFile ? (
+                                                                                    <ExternalLink size={10} className="shrink-0 text-white/20" />
+                                                                                ) : (
+                                                                                    <span className="shrink-0 text-[9px] uppercase tracking-[0.14em] text-white/18">intern</span>
+                                                                                )}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : cloudConnectors.some((connector) => connector.status === 'configured') ? (
+                                            <p className="mt-3 text-[11px] text-white/30">
+                                                Keine Cloud-Dateien sichtbar oder Provider derzeit nicht erreichbar.
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => openPane({
+                                        id: 'integrations-cloud',
+                                        type: 'integrations',
+                                        title: 'Integrationen',
+                                        size: { width: 1040, height: 720 },
+                                        position: { x: 180, y: 100 },
+                                    })}
+                                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-emerald-300/18 bg-emerald-500/10 px-3 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/16"
+                                >
+                                    <PlugZap size={13} />
+                                    Verbinden
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
                     {folders.length > 0 && (
                         <section aria-label="Ordner">
                             <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/20">
@@ -243,6 +487,12 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 </button>
                             ))}
                         </section>
+                    )}
+
+                    {isEmpty && (
+                        <div className="px-5 py-8 text-sm text-white/30">
+                            Keine eigenen Inhalte gefunden. Lege einen Ordner an, lade eine Datei hoch oder verbinde deine Cloud.
+                        </div>
                     )}
 
                     {visibleItems.length > 0 && (

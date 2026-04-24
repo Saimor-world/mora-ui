@@ -10,6 +10,40 @@ import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 
+function EntryLoading({ delayed = false }: { delayed?: boolean }) {
+    return (
+        <div className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-[#030806]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(16,185,129,0.18),transparent_34%),linear-gradient(135deg,rgba(6,78,59,0.22),transparent_45%,rgba(206,182,118,0.08))]" />
+            <div className="absolute inset-x-10 top-1/2 h-px bg-gradient-to-r from-transparent via-emerald-300/20 to-transparent" />
+            <div className="relative flex max-w-sm flex-col items-center gap-4 rounded-3xl border border-emerald-300/15 bg-black/35 px-8 py-7 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+                <div className="relative h-12 w-12">
+                    <div className="absolute inset-0 rounded-full border border-emerald-300/20" />
+                    <div className="absolute inset-1 rounded-full border-2 border-emerald-400/20 border-t-emerald-300 animate-spin" />
+                    <div className="absolute inset-4 rounded-full bg-emerald-300/70 shadow-[0_0_24px_rgba(110,231,183,0.5)]" />
+                </div>
+                <div>
+                    <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-300/60">Local Truth</div>
+                    <div className="mt-2 text-sm font-medium text-emerald-50">
+                        Einstieg wird vorbereitet
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-emerald-100/55">
+                        Sitzung, Instanzregeln und lokaler Core werden geprüft. Danach erscheint der Einstieg mit klarer Auswahl.
+                    </p>
+                </div>
+                {delayed && (
+                    <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-xs text-emerald-100/80 transition-colors hover:bg-emerald-300/15"
+                    >
+                        Neu laden
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function RootPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -58,11 +92,7 @@ function RootPageContent() {
 
     // Show loading while session check happens
     if (status === 'loading' && !allowWelcomeFallback) {
-        return (
-            <div className="relative w-full h-screen bg-[#030806] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
-            </div>
-        );
+        return <EntryLoading />;
     }
 
     return (
@@ -89,9 +119,7 @@ function RootPageContent() {
 export default function RootPage() {
     return (
         <Suspense fallback={
-            <div className="relative w-full h-screen bg-[#030806] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
-            </div>
+            <EntryLoading delayed />
         }>
             <RootPageContent />
         </Suspense>

@@ -2,13 +2,14 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
-import { fetchMyContent, shareNode, shareFile } from '@/lib/api/coreClient';
-import type { UserContentResponse } from '@/lib/api/coreClient';
+import { fetchMyContent, shareNode, shareFile, fetchCloudConnectorItems } from '@/lib/api/contentClient';
+import type { UserContentResponse } from '@/lib/api/contentClient';
 
-jest.mock('@/lib/api/coreClient', () => ({
+jest.mock('@/lib/api/contentClient', () => ({
     fetchMyContent: jest.fn(),
     shareNode: jest.fn(),
     shareFile: jest.fn(),
+    fetchCloudConnectorItems: jest.fn(),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -33,6 +34,7 @@ jest.mock('@/lib/store/paneStore', () => ({
 
 const mockShareNode = shareNode as jest.MockedFunction<typeof shareNode>;
 const mockShareFile = shareFile as jest.MockedFunction<typeof shareFile>;
+const mockFetchCloudConnectorItems = fetchCloudConnectorItems as jest.MockedFunction<typeof fetchCloudConnectorItems>;
 
 const mockFetch = fetchMyContent as jest.MockedFunction<typeof fetchMyContent>;
 
@@ -72,7 +74,10 @@ const mockResponse: UserContentResponse = {
 };
 
 describe('MeineDateienPane', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockFetchCloudConnectorItems.mockResolvedValue(null);
+    });
 
     it('shows loading state initially', async () => {
         mockFetch.mockImplementation(() => new Promise(() => {}));

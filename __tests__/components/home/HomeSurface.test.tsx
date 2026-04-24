@@ -65,7 +65,15 @@ jest.mock('@/lib/home/briefing', () => ({
 
 jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
-    motion: { div: ({ children, ...p }: any) => <div {...p}>{children}</div> },
+    motion: {
+        div: ({ children, ...props }: any) => {
+            const motionProps = new Set(['animate', 'exit', 'initial', 'transition', 'variants', 'whileHover', 'whileTap']);
+            const domProps = Object.fromEntries(
+                Object.entries(props).filter(([key]) => !motionProps.has(key))
+            );
+            return <div {...domProps}>{children}</div>;
+        },
+    },
     useReducedMotion: () => false,
 }));
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lightbulb, Sparkles, Command, Folder, MessageCircle } from 'lucide-react';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
+import { useNavStore } from '@/lib/store/navStore';
 
 /**
  * V12: Quick Tips
@@ -24,6 +25,8 @@ export const QuickTips: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [currentTip, setCurrentTip] = useState(0);
     const modifier = usePlatformModifier();
+    const coreMode = useNavStore((s) => s.coreMode);
+    const viewLevel = useNavStore((s) => s.viewLevel);
     // Return count (primitive) directly so Zustand doesn't trigger on every render
     // due to Array reference inequality from .filter().
     const visiblePanesCount = usePaneStore((s) => s.panes.filter(p => !p.minimized).length);
@@ -56,6 +59,9 @@ export const QuickTips: React.FC = () => {
     ];
 
     useEffect(() => {
+        if (viewLevel === 'core' && (coreMode === 'home' || coreMode === 'explore')) {
+            return;
+        }
         // Check if user has seen tips before
         const hasSeenTips = localStorage.getItem('saimor_tips_seen');
         if (!hasSeenTips) {
@@ -65,7 +71,13 @@ export const QuickTips: React.FC = () => {
             }, 3000);
             return () => clearTimeout(timer);
         }
-    }, []);
+    }, [coreMode, viewLevel]);
+
+    useEffect(() => {
+        if (viewLevel === 'core' && (coreMode === 'home' || coreMode === 'explore')) {
+            setIsVisible(false);
+        }
+    }, [coreMode, viewLevel]);
 
     // Auto-dismiss when any pane is opened
     useEffect(() => {

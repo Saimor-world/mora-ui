@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward, Sparkles, Brain
+    Music2, Pause, Play, SkipForward, Sparkles, Brain, X
 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
+import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -18,6 +19,7 @@ import { getCoreDockItems } from '@/lib/surface/surfaceRegistry';
 
 // Derived from paneStore — consistent with other pane-opening components
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
+type DockPane = ReturnType<typeof usePaneStore.getState>['panes'][number];
 import { SearchPopup } from './SearchPopup';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
@@ -200,7 +202,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     onNext,
     onOpen,
 }) => {
-    if (isDeckOpen || trackCount === 0) {
+    if (isDeckOpen) {
         return null;
     }
 
@@ -225,10 +227,10 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     Audio
                 </div>
                 <div className={`mt-1 max-w-[132px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
-                    {trackName || 'Track auswaehlen'}
+                    {trackName || 'Mora Ambient'}
                 </div>
                 <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                    {trackCount} Tracks
+                    {trackCount > 0 ? `${trackCount} Tracks` : 'Eingebauter Pad'}
                 </div>
             </button>
 
@@ -334,6 +336,95 @@ const DockPod: React.FC<DockPodProps> = ({
     </div>
 );
 
+interface RunningWindowsBarProps {
+    panes: DockPane[];
+    activePaneId: string | null;
+    isStandardMode: boolean;
+    onActivate: (pane: DockPane) => void;
+    onClose: (id: string) => void;
+}
+
+const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
+    panes,
+    activePaneId,
+    isStandardMode,
+    onActivate,
+    onClose,
+}) => {
+    const shouldShow = panes.length > 1 || panes.some((pane) => pane.minimized);
+    if (!shouldShow) return null;
+
+    return (
+        <div className="mb-3 flex w-[calc(100vw-20px)] justify-center px-2 pointer-events-auto">
+            <div className={`flex max-w-[min(1180px,calc(100vw-36px))] items-center gap-2 overflow-x-auto rounded-[22px] border px-2.5 py-2 shadow-2xl ${isStandardMode
+                ? 'border-gray-200 bg-white/92'
+                : 'border-white/10 bg-black/48 backdrop-blur-2xl'
+                }`}>
+                <div className={`hidden shrink-0 px-2 text-[10px] uppercase tracking-[0.22em] lg:block ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                    Fenster
+                </div>
+                {panes.map((pane) => {
+                    const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
+                    const isActive = pane.id === activePaneId && !pane.minimized;
+                    return (
+                        <div
+                            key={pane.id}
+                            className={`group flex min-w-[150px] max-w-[230px] items-center gap-2 rounded-2xl border px-2 py-1.5 transition-all ${isStandardMode
+                                ? isActive
+                                    ? 'border-[#0078D4]/40 bg-[#0078D4]/10 text-[#005A9E]'
+                                    : pane.minimized
+                                        ? 'border-gray-200 bg-gray-50 text-gray-500 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
+                                : isActive
+                                    ? 'border-emerald-400/35 bg-emerald-500/14 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.12)]'
+                                    : pane.minimized
+                                        ? 'border-white/8 bg-white/[0.025] text-white/42 hover:border-emerald-400/20 hover:text-emerald-200'
+                                        : 'border-white/10 bg-white/[0.055] text-white/72 hover:border-emerald-400/20 hover:text-emerald-200'
+                                }`}
+                        >
+                            <button
+                                type="button"
+                                aria-pressed={isActive}
+                                title={pane.minimized ? `${pane.title} wiederherstellen` : `${pane.title} fokussieren`}
+                                onClick={() => onActivate(pane)}
+                                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            >
+                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${isStandardMode
+                                    ? 'border-gray-200 bg-white'
+                                    : 'border-white/10 bg-black/20'
+                                    }`}>
+                                    <Icon size={15} />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-xs font-medium">{pane.title}</span>
+                                    <span className={`mt-0.5 block text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geoeffnet'}
+                                    </span>
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                aria-label={`${pane.title} schliessen`}
+                                title="Fenster schliessen"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onClose(pane.id);
+                                }}
+                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg opacity-0 transition-all group-hover:opacity-100 ${isStandardMode
+                                    ? 'text-gray-400 hover:bg-red-50 hover:text-red-600'
+                                    : 'text-white/35 hover:bg-red-500/15 hover:text-red-200'
+                                    }`}
+                            >
+                                <X size={13} />
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 type DockDerivedSpace = {
     id: string;
     name: string;
@@ -385,11 +476,12 @@ export const Dock = () => {
     const { data: companies = [] } = useCompanies();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
-    const { data: departmentsData = [] } = useDepartments(activeCompanyId);
-    const { data: treeData = [] } = useTree(activeCompanyId);
-    const departments = departmentsData;
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
     const activeFolderId = useNavStore((s) => s.activeFolderId);
+    const { data: departmentsData = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
+    const { data: foldersData = [] } = useFolders(activeSpaceId);
+    const departments = departmentsData;
     const setActiveCompany = useNavStore((s) => s.setActiveCompany);
     const viewMode = useNavStore((s) => s.viewMode);
     const viewLevel = useNavStore((s) => s.viewLevel);
@@ -397,9 +489,13 @@ export const Dock = () => {
     const updateUserSettings = useSessionStore((s) => s.updateUserSettings);
 
     const panes = usePaneStore((s) => s.panes);
+    const activePaneId = usePaneStore((s) => s.activePaneId);
     const restorePane = usePaneStore((s) => s.restorePane);
+    const focusPane = usePaneStore((s) => s.focusPane);
+    const minimizePane = usePaneStore((s) => s.minimizePane);
+    const removePane = usePaneStore((s) => s.removePane);
     const openPane = usePaneStore((s) => s.openPane);
-    const minimizedPanes = useMemo(() => panes.filter(p => p.minimized), [panes]);
+    const runningPanes = useMemo(() => panes.filter((pane) => pane.type !== 'search'), [panes]);
     const mod = usePlatformModifier();
 
     const [chatInput, setChatInput] = useState('');
@@ -413,6 +509,7 @@ export const Dock = () => {
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTree = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+    const safeFolders = useMemo(() => (Array.isArray(foldersData) ? foldersData : []), [foldersData]);
     const { spacesByDepartment, foldersBySpace } = useMemo(
         () => deriveDockStructure(safeTree),
         [safeTree]
@@ -451,8 +548,21 @@ export const Dock = () => {
         [activeSpaces, activeSpaceId]
     );
     const activeFolders = useMemo(
-        () => activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [],
-        [activeSpaceId, foldersBySpace]
+        () => {
+            if (!activeSpaceId) return [];
+            if (safeFolders.length > 0) {
+                return safeFolders.map((folder) => ({
+                    id: folder.id,
+                    name: folder.name,
+                    color: folder.color,
+                    node_count: folder.node_count,
+                    updated_at: folder.updated_at,
+                    created_at: folder.created_at,
+                }));
+            }
+            return foldersBySpace[activeSpaceId] || [];
+        },
+        [activeSpaceId, foldersBySpace, safeFolders]
     );
     const activeFolder = useMemo(
         () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
@@ -481,6 +591,18 @@ export const Dock = () => {
             default: break;
         }
     }, [navigateToCore, openPane]);
+
+    const handleTaskbarActivate = useCallback((pane: DockPane) => {
+        if (pane.minimized) {
+            restorePane(pane.id);
+            return;
+        }
+        if (pane.id === activePaneId) {
+            minimizePane(pane.id);
+            return;
+        }
+        focusPane(pane.id);
+    }, [activePaneId, focusPane, minimizePane, restorePane]);
 
     // Icon map: action → lucide icon. Defined here (UI concern) separate from registry (routing concern).
     const DOCK_ICON_MAP: Record<string, React.ComponentType<any>> = useMemo(() => ({
@@ -559,9 +681,9 @@ export const Dock = () => {
     const scopeLabel = shellContext.scopeLabel;
 
     const handleOpenContext = useCallback(() => {
-        if (activeFolder && activeSpace) {
-            openFinderContext(activeFolder.name, {
-                folderId: activeFolder.id,
+        if (activeFolderId && activeSpace) {
+            openFinderContext(activeFolder?.name || 'Aktiver Ordner', {
+                folderId: activeFolderId,
                 spaceId: activeSpace.id,
                 departmentId: activeDepartmentId || undefined,
                 companyId: activeCompanyId || activeDepartment?.company_id || undefined,
@@ -595,6 +717,7 @@ export const Dock = () => {
         activeDepartment,
         activeDepartmentId,
         activeFolder,
+        activeFolderId,
         activeSpace,
         openFinderContext,
         surfaceProfile.fallbackCompanyName,
@@ -1009,7 +1132,9 @@ export const Dock = () => {
         if (!ambientAudio.trackId) {
             const firstTrack = ambientTracks[0];
             if (!firstTrack) {
-                openAudioSettings();
+                persistAmbientAudioSettings(updateUserSettings, {
+                    ambientAudioEnabled: !ambientAudio.enabled,
+                });
                 return;
             }
 
@@ -1023,7 +1148,7 @@ export const Dock = () => {
         persistAmbientAudioSettings(updateUserSettings, {
             ambientAudioEnabled: !ambientAudio.enabled,
         });
-    }, [ambientAudio.enabled, ambientAudio.trackId, ambientTracks, openAudioSettings, updateUserSettings]);
+    }, [ambientAudio.enabled, ambientAudio.trackId, ambientTracks, updateUserSettings]);
 
     const handleAmbientNext = useCallback(() => {
         if (ambientTracks.length === 0) {
@@ -1057,28 +1182,14 @@ export const Dock = () => {
     }, [ritualSettings.autoTime, updateUserSettings]);
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
-            {/* MINIMIZED PANES - Floating above dock */}
-            {minimizedPanes.length > 0 && (
-                <div className="flex gap-2 mb-3 pointer-events-auto transition-all duration-100 ease-out">
-                    {minimizedPanes.map(pane => {
-                        const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
-                        return (
-                            <button
-                                key={pane.id}
-                                onClick={() => restorePane(pane.id)}
-                                title={pane.title}
-                                className={`w-12 h-12 flex items-center justify-center transition-all duration-75 ease-out active:scale-[0.98] shadow-lg ${isStandardMode
-                                    ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
-                                    : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
-                                    }`}
-                            >
-                                <Icon size={18} />
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+        <div className="fixed bottom-0 left-0 right-0 z-[740] flex flex-col items-center pointer-events-none">
+            <RunningWindowsBar
+                panes={runningPanes}
+                activePaneId={activePaneId}
+                isStandardMode={isStandardMode}
+                onActivate={handleTaskbarActivate}
+                onClose={removePane}
+            />
 
             {/* MAIN DOCK BAR */}
             <div className="w-[calc(100vw-20px)] max-w-none mx-auto mb-3 px-2 pointer-events-auto">
@@ -1211,7 +1322,7 @@ export const Dock = () => {
                                 onOpen={() => setSearchPopupOpen(true)}
                             />
 
-                            {ambientTracks.length > 0 && !isCommandDeckOpen && (
+                            {!isCommandDeckOpen && (
                                 <>
                                     <div className={`hidden xl:block h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
                                     <DockNowPlaying

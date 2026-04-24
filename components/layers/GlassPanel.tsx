@@ -362,6 +362,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         : hasPaneStack
             ? '0 6px 18px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.035)'
             : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
+    const panelBackgroundImage = isStandardMode
+        ? undefined
+        : effectiveIsActive
+            ? 'radial-gradient(circle at 14% 0%, rgba(16,185,129,0.16), transparent 32%), radial-gradient(circle at 88% 8%, rgba(34,211,238,0.10), transparent 28%), linear-gradient(160deg, rgba(255,255,255,0.035), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))'
+            : 'linear-gradient(160deg, rgba(255,255,255,0.018), rgba(0,0,0,0.12))';
 
     // Safe Portal Rendering (Client-side only)
     const [mounted, setMounted] = useState(false);
@@ -445,6 +450,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
                     maxHeight: isMaximized ? '100vh' : 'calc(100vh - 160px)',
                     backgroundColor: panelBackgroundColor,
+                    backgroundImage: panelBackgroundImage,
                     backdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     WebkitBackdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     boxShadow: panelBoxShadow,

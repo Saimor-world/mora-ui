@@ -763,6 +763,24 @@ export const DepartmentLayer: React.FC = () => {
                         </motion.div>
 
                         {moonPositions.map(({ space, displayName, color, x, y, delay }) => {
+                            const openSpaceSurface = (shiftOpenPane: boolean) => {
+                                setActiveSpace(space.id);
+                                if (!shiftOpenPane) {
+                                    navigateToSpace(space.id);
+                                    return;
+                                }
+                                openPane({
+                                    id: `space-${space.id}`,
+                                    type: 'space',
+                                    title: displayName,
+                                    data: {
+                                        spaceId: space.id,
+                                        departmentId: activeDepartmentId
+                                    },
+                                    size: { width: 1280, height: 820 },
+                                    position: { x: 100, y: 100 }
+                                });
+                            };
                             return (
                                 <motion.div
                                     key={space.id}
@@ -781,22 +799,7 @@ export const DepartmentLayer: React.FC = () => {
                                     onMouseEnter={() => setHoverSpace(space.id, { id: space.id, x, y })}
                                     onMouseLeave={() => scheduleHoverClear()}
                                     onClick={(event) => {
-                                        setActiveSpace(space.id);
-                                        if (!event.shiftKey) {
-                                            navigateToSpace(space.id);
-                                            return;
-                                        }
-                                        openPane({
-                                            id: `space-${space.id}`,
-                                            type: 'space',
-                                            title: displayName,
-                                            data: {
-                                                spaceId: space.id,
-                                                departmentId: activeDepartmentId
-                                            },
-                                            size: { width: 1280, height: 820 },
-                                            position: { x: 100, y: 100 }
-                                        });
+                                        openSpaceSurface(event.shiftKey);
                                     }}
                                 >
                                     <Star
@@ -825,11 +828,20 @@ export const DepartmentLayer: React.FC = () => {
                                     {(() => {
                                         const isRightHalf = x > 0;
                                         return (
-                                            <div className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-none ${isRightHalf ? 'right-full mr-2 text-right' : 'left-full ml-2 text-left'}`}>
-                                                <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[120px] truncate block">
+                                            <button
+                                                type="button"
+                                                data-testid={`space-label-${space.id}`}
+                                                className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-auto rounded-full px-2 py-1 transition-colors hover:bg-white/10 ${isRightHalf ? 'right-full mr-2 text-right' : 'left-full ml-2 text-left'}`}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    openSpaceSurface(event.shiftKey);
+                                                }}
+                                                title={`${displayName} öffnen`}
+                                            >
+                                                <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[120px] truncate block hover:text-white/80">
                                                     {displayName}
                                                 </span>
-                                            </div>
+                                            </button>
                                         );
                                     })()}
                                 </motion.div>

@@ -176,6 +176,10 @@ export const SpaceLayer: React.FC = () => {
         () => safeSpaces.find((space) => space.id === activeSpaceId) ?? null,
         [safeSpaces, activeSpaceId]
     );
+    const activeFolder = useMemo(
+        () => folders.find((folder) => folder.id === activeFolderId) ?? null,
+        [folders, activeFolderId]
+    );
 
     const displaySpaceName = useCallback((name: string) => {
         const departmentName = currentDepartment?.name || '';
@@ -400,6 +404,22 @@ export const SpaceLayer: React.FC = () => {
     }, [navigateToExplore]);
 
     const openSpaceFinder = useCallback(() => {
+        if (activeFolderId) {
+            openPane({
+                id: `finder-${activeFolderId}`,
+                type: 'finder',
+                title: activeFolder?.name || displaySpaceName(currentSpace?.name || 'Bereich'),
+                size: { width: 1280, height: 820 },
+                data: {
+                    folderId: activeFolderId,
+                    spaceId: activeSpaceId,
+                    departmentId: activeDepartmentId,
+                    companyId: activeCompanyId || currentDepartment?.company_id || undefined,
+                },
+            });
+            return;
+        }
+
         openPane({
             id: 'finder-main',
             type: 'finder',
@@ -415,6 +435,8 @@ export const SpaceLayer: React.FC = () => {
         openPane,
         displaySpaceName,
         currentSpace?.name,
+        activeFolder?.name,
+        activeFolderId,
         activeSpaceId,
         activeDepartmentId,
         activeCompanyId,
@@ -561,7 +583,7 @@ export const SpaceLayer: React.FC = () => {
                     onClick={openSpaceFinder}
                     className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
                 >
-                    Finder öffnen
+                    {activeFolderId ? 'Aktiven Ordner im Finder öffnen' : 'Finder öffnen'}
                 </button>
             </LayerInsightRail>
 
@@ -624,7 +646,7 @@ export const SpaceLayer: React.FC = () => {
                 {isLoadingFolders ? (
                     <LoadingState message="Bereich wird geladen..." />
                 ) : (
-                    <div className="relative h-full w-full pb-16">
+                    <div className="relative h-full w-full -translate-y-12 pb-24">
                         <svg
                             className="pointer-events-none absolute inset-0 z-0 h-full w-full"
                             viewBox="-640 -420 1280 840"
@@ -700,15 +722,15 @@ export const SpaceLayer: React.FC = () => {
                                     opacity: 0.24,
                                 }}
                             />
-                            <div
-                                className="pointer-events-auto relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-full backdrop-blur-sm"
+                                <div
+                                    className="pointer-events-auto relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-full backdrop-blur-sm"
                                 style={{
                                     background: `radial-gradient(145% 145% at 30% 24%, rgba(255,255,255,0.22) 0%, ${(currentDepartment?.color || '#10b981')}bb 45%, rgba(0,0,0,0.30) 100%)`,
                                     border: `1.5px solid ${(currentDepartment?.color || '#10b981')}99`,
                                     boxShadow: `0 0 90px ${(currentDepartment?.color || '#10b981')}55, 0 0 180px ${(currentDepartment?.color || '#10b981')}26, inset 2px 2px 8px rgba(255,255,255,0.28)`,
                                 }}
                                 onClick={openSpaceFinder}
-                                title={`Finder öffnen: ${spaceName}`}
+                                title={activeFolderId ? `Finder öffnen: ${activeFolder?.name || 'Aktiver Ordner'}` : `Finder öffnen: ${spaceName}`}
                             >
                                 <div
                                     className="absolute left-[17%] top-[15%] h-[10%] w-[20%] rounded-full bg-white/70 blur-[1px]"

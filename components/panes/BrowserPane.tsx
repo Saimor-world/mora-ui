@@ -237,10 +237,12 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     }, [navigate]);
 
     const openLocalTruth = useCallback(() => {
-        if (typeof window === 'undefined') return;
-        const url = summary.localTruthUrl;
-        window.open(url, '_blank', 'noopener,noreferrer');
-    }, [summary.localTruthUrl]);
+        if (summary.localTruthUiOpenable && typeof window !== 'undefined') {
+            window.open(summary.localTruthUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        navigate(summary.connectSurfaceUrl);
+    }, [navigate, summary.connectSurfaceUrl, summary.localTruthUiOpenable, summary.localTruthUrl]);
 
     if (!pane) return null;
 

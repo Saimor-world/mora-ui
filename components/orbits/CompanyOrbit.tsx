@@ -6,6 +6,7 @@ import { useDepartments } from '@/lib/queries/useDepartments';
 import { Building2, Briefcase, Users, DollarSign, TrendingUp } from 'lucide-react';
 import { Bubble } from './Bubble';
 import { calculateOrbitPositions, calculateDynamicRadius, calculateVisualCenter, type AnchorPoint, positionsToAnchorPoints } from '@/lib/orbit/orbitMath';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * COMPANY ORBIT SYSTEM
@@ -119,7 +120,7 @@ export const CompanyOrbit: React.FC<CompanyOrbitProps> = ({
                 const DeptIcon = getDepartmentIcon(dept.name);
                 const color = dept.color || '#10b981';
 
-                console.log(`[CompanyOrbit] Rendering bubble: ${dept.name} at (${Math.round(pos.x)}, ${Math.round(pos.y)})`);
+                logger.debug(`[CompanyOrbit] Rendering bubble: ${dept.name} at (${Math.round(pos.x)}, ${Math.round(pos.y)})`);
 
                 return (
                     <Bubble

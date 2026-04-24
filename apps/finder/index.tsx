@@ -49,6 +49,8 @@ import {
 import {
     createFolder as orgCreateFolder,
     createNode as orgCreateNode,
+    fetchNodeChildren,
+    fetchFoldersByCompany,
     updateNode as orgUpdateNode,
     deleteNode as orgDeleteNode,
     updateFolder as orgUpdateFolder,
@@ -56,7 +58,7 @@ import {
     updateSpace as orgUpdateSpace,
     deleteSpace as orgDeleteSpace,
 } from '@/lib/api/orgClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { useTree } from '@/lib/queries/useTree';
 import { useCompanyNodes } from '@/lib/queries/useNodes';
@@ -467,7 +469,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     ]);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
-    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('compact');
+    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('cozy');
     const [showContextlessZone, setShowContextlessZone] = useState(true);
     const nextDensity = useCallback(() => {
         setCardDensity(d => d === 'compact' ? 'cozy' : d === 'cozy' ? 'showcase' : 'compact');
@@ -637,6 +639,13 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (safeCompanies.length === 1) return safeCompanies[0].id;
         return null;
     }, [activeCompanyId, paneCompanyId, safeCompanies]);
+    const { data: companyFoldersData = [] } = useQuery({
+        queryKey: ['companyFolders', resolvedCompanyId],
+        queryFn: () => fetchFoldersByCompany(resolvedCompanyId!),
+        enabled: !!resolvedCompanyId,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
     const resolvedCompanyName = useMemo(() => {
         if (!resolvedCompanyId) return null;
         return safeCompanies.find((company) => company.id === resolvedCompanyId)?.name || null;
@@ -829,6 +838,88 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         },
     }), []);
 
+    const { rootFoldersBySpace, subfoldersByParent } = useMemo(() => {
+        const rootBySpace: Record<string, any[]> = {};
+        const subfoldersByFolder: Record<string, any[]> = {};
+
+        companyFoldersData.forEach((folder: any) => {
+            const mappedFolder = {
+                ...folder,
+                id: folder.id,
+                type: 'folder',
+                name: folder.name,
+                color: folder.color,
+                space_id: folder.space_id,
+                parent_folder_id: folder.parent_folder_id ?? null,
+            };
+
+            if (folder.parent_folder_id) {
+                if (!subfoldersByFolder[folder.parent_folder_id]) {
+                    subfoldersByFolder[folder.parent_folder_id] = [];
+                }
+                subfoldersByFolder[folder.parent_folder_id].push(mappedFolder);
+                return;
+            }
+
+            if (!rootBySpace[folder.space_id]) {
+                rootBySpace[folder.space_id] = [];
+            }
+            rootBySpace[folder.space_id].push(mappedFolder);
+        });
+
+        return {
+            rootFoldersBySpace: rootBySpace,
+            subfoldersByParent: subfoldersByFolder,
+        };
+    }, [companyFoldersData]);
+
+    const nodesByFolderFromCompany = useMemo(() => {
+        const byFolder: Record<string, any[]> = {};
+
+        companyNodesData.forEach((node) => {
+            const folderId = node.folder_id;
+            if (!folderId) return;
+            if (!byFolder[folderId]) {
+                byFolder[folderId] = [];
+            }
+            byFolder[folderId].push({
+                ...node,
+                name: node.title || node.name,
+            });
+        });
+
+        return byFolder;
+    }, [companyNodesData]);
+
+    const currentNodeTypeForChildren = useMemo(() => {
+        if (!currentFolderId) return null;
+        const currentNode = findNodeInTree(rawTree, currentFolderId);
+        if (currentNode?.type === 'department' || currentNode?.type === 'space' || currentNode?.type === 'folder') {
+            return currentNode.type;
+        }
+        if (spacesByDepartment[currentFolderId]) return 'department';
+        if (foldersBySpace[currentFolderId] || rootFoldersBySpace[currentFolderId]) return 'space';
+        if (subfoldersByParent[currentFolderId] || nodesByFolderFromCompany[currentFolderId]) return 'folder';
+        return null;
+    }, [
+        currentFolderId,
+        findNodeInTree,
+        rawTree,
+        spacesByDepartment,
+        foldersBySpace,
+        rootFoldersBySpace,
+        subfoldersByParent,
+        nodesByFolderFromCompany,
+    ]);
+
+    const { data: lazyChildrenData = [] } = useQuery({
+        queryKey: ['treeChildren', currentFolderId, currentNodeTypeForChildren],
+        queryFn: () => fetchNodeChildren(currentFolderId!, currentNodeTypeForChildren as 'department' | 'space' | 'folder'),
+        enabled: !!currentFolderId && !!currentNodeTypeForChildren,
+        staleTime: 2 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
+
     // Recursively extract content for current view
     const getCurrentContent = useCallback(() => {
         // Fallback structures from store
@@ -941,6 +1032,16 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             });
         }
 
+        if (lazyChildrenData.length > 0) {
+            lazyChildrenData.forEach((n: any) => {
+                if (['space', 'department', 'folder'].includes(n.type)) {
+                    folders.push(n);
+                } else {
+                    files.push({ ...n, name: n.title || n.name });
+                }
+            });
+        }
+
         // 2. Get from Flat Stores (The "Source of Truth" for loaded content)
         // Check if current ID is a Department -> Show its Spaces
         const spaces = flatSpaces[currentFolderId];
@@ -953,11 +1054,23 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (sFolders) {
             sFolders.forEach(f => folders.push(f));
         }
+        const fallbackRootFolders = rootFoldersBySpace[currentFolderId];
+        if (fallbackRootFolders) {
+            fallbackRootFolders.forEach((f) => folders.push(f));
+        }
+        const fallbackSubfolders = subfoldersByParent[currentFolderId];
+        if (fallbackSubfolders) {
+            fallbackSubfolders.forEach((f) => folders.push(f));
+        }
 
         // Check if current ID is a Folder -> Show its Nodes
         const nodes = nodesByFolder[currentFolderId];
         if (nodes) {
             nodes.forEach(n => files.push({ ...n, name: n.title || n.name }));
+        }
+        const fallbackNodes = nodesByFolderFromCompany[currentFolderId];
+        if (fallbackNodes) {
+            fallbackNodes.forEach((n) => files.push(n));
         }
 
         standaloneCompanyFiles
@@ -974,7 +1087,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             folders: Array.from(folderMap.values()),
             files: Array.from(fileMap.values())
         };
-    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem, companyNodesData, activeCompanyId, queryClient]);
+    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, rootFoldersBySpace, subfoldersByParent, nodesByFolderFromCompany, lazyChildrenData, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem, companyNodesData, activeCompanyId, queryClient]);
 
     // Effect to update breadcrumbs only when necessary
     useEffect(() => {
@@ -1090,7 +1203,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             const shouldReuseTree = opts?.preferCache === true && Array.isArray(existingTree) && existingTree.length > 0;
             if (resolvedCompanyId) {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(resolvedCompanyId), exact: false });
+                await queryClient.invalidateQueries({ queryKey: ['companyFolders', resolvedCompanyId], exact: false });
             }
+            await queryClient.invalidateQueries({ queryKey: ['treeChildren'], exact: false });
             if (!shouldReuseTree) {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
             }
@@ -1259,7 +1374,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     // UNIFIED FINDER: Navigate to starting point based on pane data
     const appliedStartKeyRef = useRef<string>('');
     useEffect(() => {
-        if (!treeData?.length) return;
+        if (!treeData?.length && !startFolderId && !startSpaceId && !departmentId) return;
+        const treeNodes = treeData ?? [];
         const startKey = `${resolvedCompanyId || ''}|${startFolderId || ''}|${startSpaceId || ''}|${departmentId || ''}`;
         if (appliedStartKeyRef.current === startKey) return;
 
@@ -1268,7 +1384,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             resetNavigationRoot(startFolderId);
         } else if (startSpaceId) {
             // Find the space in tree and navigate to it
-            const spaceNode = findNodeInTree(treeData, startSpaceId);
+            const spaceNode = findNodeInTree(treeNodes, startSpaceId);
             if (spaceNode) {
                 resetNavigationRoot(startSpaceId);
             }
@@ -1779,9 +1895,12 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         </div>
                     )}
 
-                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] px-3 py-2 backdrop-blur-md md:px-6">
-                        <div className="flex flex-col gap-3 rounded-[18px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(5,20,16,0.78),rgba(3,14,11,0.7))] px-4 py-3 shadow-[0_10px_32px_rgba(0,0,0,0.16)] lg:flex-row lg:items-center lg:justify-between">
-                            <div className="min-w-0">
+                    <div className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
+                        <div className="relative flex flex-col gap-3 overflow-hidden rounded-[22px] border border-emerald-300/[0.12] bg-[radial-gradient(circle_at_14%_16%,rgba(16,185,129,0.18),transparent_34%),radial-gradient(circle_at_88%_18%,rgba(34,211,238,0.10),transparent_28%),linear-gradient(135deg,rgba(5,28,23,0.92),rgba(1,13,12,0.80)_58%,rgba(0,5,5,0.88))] px-4 py-3 shadow-[0_18px_56px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.05)] lg:flex-row lg:items-center lg:justify-between">
+                            <div className="pointer-events-none absolute -left-20 -top-24 h-48 w-48 rounded-full bg-emerald-300/16 blur-3xl" />
+                            <div className="pointer-events-none absolute right-12 top-1/2 h-px w-64 bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent" />
+                            <div className="pointer-events-none absolute bottom-0 right-0 h-32 w-72 bg-[radial-gradient(circle_at_bottom_right,rgba(20,184,166,0.14),transparent_65%)]" />
+                            <div className="relative z-10 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
                                         {surfaceBadgeLabel}
@@ -1807,27 +1926,27 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         </span>
                                     ) : null}
                                 </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                                    <h2 className="truncate text-[15px] font-semibold tracking-tight text-white/92 md:text-[16px]">
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <h2 className="truncate text-[20px] font-semibold tracking-[-0.03em] text-white md:text-[24px]">
                                         {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                     </h2>
-                                    <p className="text-[12px] leading-relaxed text-white/42">
+                                    <p className="max-w-2xl text-[12px] leading-relaxed text-emerald-50/54">
                                         {currentFolderId
                                             ? 'Dateien, Dokumente und Ordner im aktuellen Pfad.'
                                             : 'Der Einstieg in die aktive Instanz: Struktur, Eingang und aktuelle Inhalte.'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 lg:min-w-[276px]">
-                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                            <div className="relative z-10 grid grid-cols-3 gap-2 lg:min-w-[290px]">
+                                <div className="rounded-2xl border border-emerald-300/[0.12] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
-                                    <div className="mt-1 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
+                                    <div className="mt-0.5 text-xl font-semibold text-emerald-100">{filteredFolders.length}</div>
                                 </div>
-                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                <div className="rounded-2xl border border-cyan-300/[0.12] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                    <div className="mt-1 text-lg font-semibold text-white/88">{displayFiles.length}</div>
+                                    <div className="mt-0.5 text-xl font-semibold text-cyan-100">{displayFiles.length}</div>
                                 </div>
-                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                <div className="rounded-2xl border border-white/[0.1] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
                                     <div className="mt-1 text-sm font-semibold text-white/82">{densityLabel}</div>
                                 </div>
@@ -1868,7 +1987,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
-                    <div className="flex flex-col gap-2 border-b border-white/5 bg-white/[0.02] px-3 py-2 backdrop-blur-md md:px-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-col gap-2 border-b border-emerald-300/[0.08] bg-black/18 px-3 py-2.5 backdrop-blur-xl md:px-6 lg:flex-row lg:items-center lg:justify-between">
                         {/* nav-group: exactly one Back/Forward/Up set -- do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
@@ -2102,7 +2221,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     {/* Content Container with Animation */}
-                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(10,45,34,0.34),transparent_38%),linear-gradient(180deg,rgba(1,10,8,0.78),rgba(1,7,6,0.92))] px-3 pb-4 pt-3 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
+                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_16%_0%,rgba(16,185,129,0.2),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(34,211,238,0.12),transparent_28%),linear-gradient(180deg,rgba(1,13,11,0.82),rgba(1,7,7,0.95))] px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
                         <AnimatePresence mode="popLayout">
                             {/* Loading State */}
                             {(isLoading || isLoadingTree) && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
@@ -2198,19 +2317,21 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid gap-4 xl:grid-cols-[156px_minmax(0,1fr)]">
+                                        <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
                                             <aside className="space-y-4">
-                                                <div className="rounded-[22px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.012))] px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.14)]">
-                                                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Explorer</p>
-                                                    <h3 className="mt-2 text-[14px] font-semibold text-white/88">Blick</h3>
-                                                    <div className="mt-4 grid gap-2">
-                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
-                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
-                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
+                                                <div className="sticky top-0 overflow-hidden rounded-[28px] border border-white/[0.08] bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.048),rgba(255,255,255,0.016))] px-4 py-4 shadow-[0_18px_52px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                                                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-300/12 blur-2xl" />
+                                                    <p className="relative text-[10px] uppercase tracking-[0.22em] text-emerald-100/38">Explorer</p>
+                                                    <h3 className="relative mt-2 text-[18px] font-semibold tracking-[-0.03em] text-white">Navigator</h3>
+                                                    <p className="relative mt-1 text-[11px] leading-relaxed text-white/38">Pfad, Inhalt und Routing in einer kompakten Arbeitskarte.</p>
+                                                    <div className="relative mt-5 grid gap-2">
+                                                        <div className="rounded-2xl border border-emerald-300/[0.12] bg-black/20 px-3 py-3">
+                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-emerald-100/34">Ordner</div>
+                                                            <div className="mt-1.5 text-xl font-semibold text-emerald-100">{filteredFolders.length}</div>
                                                         </div>
-                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
-                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{displayFiles.length}</div>
+                                                        <div className="rounded-2xl border border-cyan-300/[0.12] bg-black/20 px-3 py-3">
+                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-cyan-100/34">Inhalte</div>
+                                                            <div className="mt-1.5 text-xl font-semibold text-cyan-100">{displayFiles.length}</div>
                                                         </div>
                                                         {contextlessFiles.length > 0 && (
                                                             <div className="rounded-2xl border border-amber-500/[0.1] bg-amber-500/[0.05] px-3 py-2.5">
@@ -2219,7 +2340,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="mt-4 border-t border-white/[0.06] pt-4">
+                                                    <div className="relative mt-4 border-t border-white/[0.06] pt-4">
                                                         <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
                                                         <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/58">
                                                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</span>
@@ -2233,7 +2354,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             <div className="min-w-0 space-y-6">
 
                                             {filteredFolders.length > 0 && (
-                                                <div className="mb-5 rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
+                                                <div className="mb-5 rounded-[30px] border border-emerald-300/[0.09] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Ordner und Bereiche</p>
@@ -2248,11 +2369,12 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        className={`${folderCardClass} border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 ${isSelected
-                                                            ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
-                                                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
+                                                        className={`${folderCardClass} overflow-hidden border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-1 active:scale-[0.985] ${isSelected
+                                                            ? 'bg-[linear-gradient(160deg,rgba(16,185,129,0.24),rgba(6,95,70,0.12)_52%,rgba(1,14,12,0.8))] border-emerald-300/55 shadow-[0_28px_80px_rgba(0,0,0,0.34),0_0_34px_rgba(16,185,129,0.14)]'
+                                                            : 'bg-[radial-gradient(circle_at_20%_0%,rgba(59,130,246,0.1),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.065),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.12))] border-white/[0.08] hover:bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.16),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.09),rgba(255,255,255,0.028))] hover:border-emerald-200/18 hover:shadow-[0_22px_60px_rgba(0,0,0,0.28)]'
                                                             }`}
                                                     >
+                                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                                                         <div className="flex justify-between items-start">
                                                             {folder.type === 'department' ? (
                                                                 <div className="relative w-10 h-10 flex items-center justify-center">
@@ -2296,7 +2418,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             )}
 
                                             {displayFiles.length > 0 && (
-                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
+                                                <div className="rounded-[30px] border border-cyan-300/[0.08] bg-[radial-gradient(circle_at_100%_0%,rgba(34,211,238,0.1),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte und Dateien</p>
@@ -2321,18 +2443,19 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         id={`file-node-${file.id}`}
                                                         onClick={(e: React.MouseEvent) => { e.stopPropagation(); checkResonance(file.id); openFinderNode(file); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
-                                                        className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
-                                                            ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
-                                                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
+                                                        className={`${fileCardClass} overflow-hidden border transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-1 active:scale-[0.985] ${isSelected
+                                                            ? 'bg-[linear-gradient(160deg,rgba(16,185,129,0.2),rgba(6,95,70,0.1)_52%,rgba(1,14,12,0.82))] border-emerald-300/55 shadow-[0_28px_80px_rgba(0,0,0,0.34),0_0_34px_rgba(16,185,129,0.12)]'
+                                                            : 'bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.12),transparent_38%),linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.14))] border-white/[0.08] hover:bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.18),transparent_38%),linear-gradient(160deg,rgba(255,255,255,0.09),rgba(255,255,255,0.026))] hover:border-cyan-200/18 hover:shadow-[0_22px_60px_rgba(0,0,0,0.28)]'
                                                             }`}
                                                     >
+                                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                                                         {/* Resonance Glow (Background) */}
                                                         {isResonant && (
                                                             <div className="absolute inset-0 rounded-2xl bg-amber-500/5 shadow-[inset_0_0_20px_rgba(245,158,11,0.1)] pointer-events-none animate-pulse" />
                                                         )}
 
                                                         <div className="flex justify-between items-start">
-                                                            <div className={`${iconTileClass} flex items-center justify-center border border-white/8 bg-black/15`}>
+                                                            <div className={`${iconTileClass} flex items-center justify-center border border-cyan-100/10 bg-[radial-gradient(circle_at_30%_20%,rgba(34,211,238,0.18),rgba(0,0,0,0.18))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]`}>
                                                                 <Icon size={cardDensity === 'compact' ? 18 : cardDensity === 'showcase' ? 26 : 22} className={isSelected ? 'text-emerald-300' : 'text-emerald-300/90 group-hover:text-emerald-200'} />
                                                             </div>
                                                             <div className="flex flex-col items-end gap-2">
