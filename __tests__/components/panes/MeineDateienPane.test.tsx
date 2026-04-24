@@ -12,24 +12,32 @@ jest.mock('@/lib/api/contentClient', () => ({
     fetchCloudConnectorItems: jest.fn(),
 }));
 
+jest.mock('@/components/layers/GlassPanel', () => ({
+    GlassPanel: ({ children }: { children: React.ReactNode }) => <div data-testid="glass-panel">{children}</div>,
+}));
+
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: () => ({
-        getPane: (id: string) => ({
-            id,
-            type: 'meine-dateien',
-            title: 'Meine Dateien',
-            position: { x: 100, y: 100 },
-            size: { width: 800, height: 600 },
-            minimized: false,
-            zIndex: 500,
-        }),
-        openPane: jest.fn(),
-        removePane: jest.fn(),
-        minimizePane: jest.fn(),
-        focusPane: jest.fn(),
-        updatePanePosition: jest.fn(),
-        updatePaneSize: jest.fn(),
-    }),
+    usePaneStore: (selector?: any) => {
+        const store = {
+            getPane: (id: string) => ({
+                id,
+                type: 'meine-dateien',
+                title: 'Meine Dateien',
+                position: { x: 100, y: 100 },
+                size: { width: 800, height: 600 },
+                minimized: false,
+                zIndex: 500,
+            }),
+            openPane: jest.fn(),
+            removePane: jest.fn(),
+            minimizePane: jest.fn(),
+            focusPane: jest.fn(),
+            updatePanePosition: jest.fn(),
+            updatePaneSize: jest.fn(),
+            activePaneId: 'meine-dateien',
+        };
+        return selector ? selector(store) : store;
+    },
 }));
 
 const mockShareNode = shareNode as jest.MockedFunction<typeof shareNode>;
