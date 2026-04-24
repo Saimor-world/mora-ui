@@ -43,6 +43,19 @@ export async function authLogout(): Promise<{ success?: boolean; message?: strin
     return corePost('/v3/auth/logout', {}, { skipAuth: true, isOptional: true });
 }
 
+export interface SSOLoginResponse {
+    token: string;
+    user_id: string;
+    role: string;
+    tenant_id: string;
+    email: string;
+    scope: string;
+}
+
+export async function ssoLogin(token: string): Promise<SSOLoginResponse | null> {
+    return corePost('/v1/auth/sso', { token }, { skipAuth: true, isOptional: true });
+}
+
 export interface UserProfile {
     user_id: string;
     email?: string;

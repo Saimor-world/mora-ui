@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { Suspense } from 'react';
-import { readCookie } from '@/lib/auth/cookies';
-import { authLogout } from '@/lib/api/coreClient';
+import { readCookie, writeCookie } from '@/lib/auth/cookies';
+import { authLogout, ssoLogin } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 
@@ -77,6 +77,23 @@ function RootPageContent() {
             setShowLockScreen(true);
         }
     }, [status, searchParams, router]);
+
+    // SSO token handoff from WORLD website
+    useEffect(() => {
+        const ssoToken = searchParams.get('sso_token');
+        if (!ssoToken) return;
+
+        // Clear the token from URL immediately (security hygiene)
+        router.replace('/');
+
+        ssoLogin(ssoToken).then((result) => {
+            if (result?.token) {
+                // Store as CORE session cookie (same as normal login)
+                writeCookie('mora_session', result.token);
+                router.push('/home');
+            }
+        });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleAuthenticated = () => {
         router.push('/home');
