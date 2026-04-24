@@ -142,11 +142,11 @@ describe('UsersPane — P1: Invite link shown after submit', () => {
         fireEvent.click(screen.getByTestId('invite-button'));
 
         // Fill in email
-        const emailInput = screen.getByPlaceholderText('colleague@company.com');
+        const emailInput = screen.getByPlaceholderText('kollege@firma.de');
         fireEvent.change(emailInput, { target: { value: 'pilot@company.com' } });
 
         // Submit
-        fireEvent.click(screen.getByText('Send Invite'));
+        fireEvent.click(screen.getByText('Einladung senden'));
 
         // Wait for success view
         await waitFor(() => {
@@ -157,7 +157,7 @@ describe('UsersPane — P1: Invite link shown after submit', () => {
         expect(screen.getByTestId('copy-invite-link')).toBeInTheDocument();
 
         // The form inputs should no longer be visible
-        expect(screen.queryByPlaceholderText('colleague@company.com')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('kollege@firma.de')).not.toBeInTheDocument();
     });
 });
 
