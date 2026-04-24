@@ -130,6 +130,35 @@ export const APP_REGISTRY: AppManifest[] = [
     requiresRole: ['owner', 'admin'],
   },
 
+  // ── Productivity ─────────────────────────────────────────────────────────
+  {
+    id: 'action-center',
+    name: 'Action Center',
+    description: 'Aktionen, Vorschläge und operative Aufgaben',
+    icon: 'Activity',
+    color: 'emerald',
+    category: 'core',
+    defaultSize: { width: 900, height: 720 },
+  },
+  {
+    id: 'integrations',
+    name: 'Integrationen',
+    description: 'Verbindungen zu externen Diensten und Plattformen',
+    icon: 'Plug',
+    color: 'blue',
+    category: 'core',
+    defaultSize: { width: 860, height: 680 },
+  },
+  {
+    id: 'mail',
+    name: 'Mail',
+    description: 'E-Mail-Postfach und Kommunikation',
+    icon: 'Mail',
+    color: 'slate',
+    category: 'core',
+    defaultSize: { width: 960, height: 680 },
+  },
+
   // ── System ────────────────────────────────────────────────────────────────
   {
     id: 'apps',

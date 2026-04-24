@@ -2,8 +2,8 @@ import { APP_REGISTRY, getAppManifest } from '@/lib/apps/appRegistry';
 import type { AppManifest } from '@/lib/apps/types';
 
 describe('appRegistry', () => {
-  it('contains exactly 18 app entries', () => {
-    expect(APP_REGISTRY).toHaveLength(18);
+  it('contains exactly 21 app entries', () => {
+    expect(APP_REGISTRY).toHaveLength(21);
   });
 
   it('every app has required fields', () => {

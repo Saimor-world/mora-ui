@@ -6,7 +6,8 @@ import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
 import { LockScreen } from '@/components/auth/LockScreen';
 import { Suspense } from 'react';
 import { readCookie, writeCookie } from '@/lib/auth/cookies';
-import { authLogout, ssoLogin } from '@/lib/api/coreClient';
+import { authLogout } from '@/lib/api/coreClient';
+import { ssoLogin } from '@/lib/api/authClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
 

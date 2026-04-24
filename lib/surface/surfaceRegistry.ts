@@ -15,7 +15,7 @@ export type PaneType =
     | 'settings' | 'finder' | 'document' | 'chat' | 'team' | 'notes' | 'meine-dateien'
     | 'scanner' | 'users' | 'company-detail' | 'grid' | 'search' | 'space'
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
-    | 'actions' | 'work-session' | 'apps'
+    | 'actions' | 'action-center' | 'work-session' | 'apps'
     | 'timeline' | 'tasks' | 'canvas';
 
 /**
@@ -55,6 +55,8 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     mail:            'app',
     integrations:    'app',
     terminal:        'app',
+
+    'action-center': 'app',
 
     // Future / gated (no working backend or in forbidden scope)
     actions:         'future',
