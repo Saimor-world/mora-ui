@@ -27,7 +27,7 @@ import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
-import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList, WifiOff, RefreshCw } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
@@ -421,21 +421,64 @@ interface SetupRequiredCardProps {
 
 function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
     return (
-        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
-            <p className="text-sm font-medium text-foreground/80">
-                Kein Kontext aktiv
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/25 bg-amber-500/10">
+                <Sparkles className="h-5 w-5 text-amber-300/80" />
+            </div>
+            <p className="text-sm font-medium text-white/80">
+                Mora ist noch nicht eingerichtet
             </p>
-            <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Oeffne zuerst das Beispielsystem oder wähle einen Bereich, damit Mora sinnvoll arbeiten kann.
+            <p className="text-xs text-white/45 max-w-[300px] leading-relaxed">
+                Erstelle oder verknüpfe dein Unternehmen in den Einstellungen, damit Mora in deinem Organisationskontext arbeiten kann.
             </p>
             {onOpenSettings && (
                 <button
                     id="chat-setup-settings"
                     data-agency-id="chat-setup-settings"
                     onClick={onOpenSettings}
-                    className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
+                    className="mt-1 px-4 py-2 rounded-lg bg-amber-500/15 border border-amber-400/25 text-xs text-amber-200/80 hover:bg-amber-500/25 hover:border-amber-400/40 transition-all"
                 >
                     Einstellungen öffnen
+                </button>
+            )}
+        </div>
+    );
+}
+
+// ─── InputLoadingPlaceholder ──────────────────────────────────────────────────
+
+function InputLoadingPlaceholder() {
+    return (
+        <div className="p-4 border-t border-white/10">
+            <div className="flex gap-2 animate-pulse">
+                <div className="flex-1 h-12 rounded-lg bg-white/[0.04] border border-white/[0.06]" />
+                <div className="w-16 h-12 rounded-xl bg-white/[0.03] border border-white/[0.05]" />
+            </div>
+        </div>
+    );
+}
+
+// ─── OfflineCard ─────────────────────────────────────────────────────────────
+
+function OfflineCard({ onRetry }: { onRetry?: () => void }) {
+    return (
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.02] text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                <WifiOff className="h-5 w-5 text-white/40" />
+            </div>
+            <p className="text-sm font-medium text-white/60">
+                Mora ist nicht erreichbar
+            </p>
+            <p className="text-xs text-white/30 max-w-[280px] leading-relaxed">
+                Das Backend antwortet nicht. Stelle sicher, dass CORE läuft (Port 8081).
+            </p>
+            {onRetry && (
+                <button
+                    onClick={onRetry}
+                    className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:bg-white/10 hover:text-white/70 transition-all"
+                >
+                    <RefreshCw size={12} />
+                    Erneut versuchen
                 </button>
             )}
         </div>
@@ -569,6 +612,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     const hasPromptedSetupRef = useRef(false);
 
     // Memory Integration State
+    const [bootstrapTimedOut, setBootstrapTimedOut] = useState(false);
     const [memoryHint, setMemoryHint] = useState<{ show: boolean; content: string }>({ show: false, content: '' });
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
@@ -685,6 +729,16 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
+
+    // Bootstrap timeout: if isOperational stays null >7s, backend is likely down
+    useEffect(() => {
+        if (moraCtx.isOperational !== null) {
+            setBootstrapTimedOut(false);
+            return;
+        }
+        const timer = window.setTimeout(() => setBootstrapTimedOut(true), 7000);
+        return () => window.clearTimeout(timer);
+    }, [moraCtx.isOperational]);
 
     useEffect(() => {
         if (moraCtx.isOperational !== false) {
@@ -1117,10 +1171,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         timestamp: new Date(),
                     }]);
                 } else if (streamError) {
+                    const isConnErr = streamError.toLowerCase().includes('fetch') || streamError.toLowerCase().includes('network') || streamError.toLowerCase().includes('connect');
                     setMessages(prev => [...prev, {
                         id: crypto.randomUUID(),
                         role: 'assistant',
-                        content: `⚠️ Fehler: ${streamError}`,
+                        content: isConnErr
+                            ? 'Das Backend ist gerade nicht erreichbar. Stelle sicher, dass CORE läuft, und versuche es erneut.'
+                            : `Mora konnte nicht antworten – ${streamError}`,
                         timestamp: new Date(),
                     }]);
                 }
@@ -1513,8 +1570,11 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             </div>
 
             {/* Input */}
-            {moraCtx.isOperational !== null && (
-                moraCtx.isOperational ? (
+            {moraCtx.isOperational === null ? (
+                bootstrapTimedOut
+                    ? <OfflineCard onRetry={() => { setBootstrapTimedOut(false); window.location.reload(); }} />
+                    : <InputLoadingPlaceholder />
+            ) : moraCtx.isOperational ? (
                     <div className="p-4 border-t border-white/10 space-y-2">
                         {/* Memory Hint - shown when user types "merke dir..." etc. */}
                         <AnimatePresence>
@@ -1593,13 +1653,12 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             <ChatSuggestions onSelect={setInput} />
                         )}
                     </div>
-                ) : (
-                    <SetupRequiredCard
-                        onOpenSettings={() => {
-                            openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
-                        }}
-                    />
-                )
+            ) : (
+                <SetupRequiredCard
+                    onOpenSettings={() => {
+                        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                    }}
+                />
             )}
         </div>
     );
