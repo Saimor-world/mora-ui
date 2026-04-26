@@ -114,6 +114,13 @@ jest.mock('@/lib/hooks/useMemoryOverview', () => ({
     useMemoryOverview: () => ({ structuredFacts: 0, pendingReviews: 0 }),
 }));
 
+// Mock useMoraPerception — Real Mora P1 hook; flag is off in tests by default
+// so bundle is not consumed, but hook must be callable without QueryClient.
+let mockPerceptionData: any = undefined;
+jest.mock('@/lib/queries/useMoraPerception', () => ({
+    useMoraPerception: () => ({ data: mockPerceptionData, isSuccess: !!mockPerceptionData }),
+}));
+
 import { renderHook } from '@testing-library/react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 
@@ -212,6 +219,69 @@ describe('pre-chat company label from session', () => {
         });
         const { result } = renderHook(() => useMoraContext());
         expect(result.current.scopeLabels.company).toBe('Acme GmbH');
+    });
+});
+
+describe('bundle-driven branch (Real Mora P1)', () => {
+    const originalEnv = process.env.NEXT_PUBLIC_MORA_PERCEIVE_V1;
+    afterEach(() => {
+        if (originalEnv === undefined) delete process.env.NEXT_PUBLIC_MORA_PERCEIVE_V1;
+        else process.env.NEXT_PUBLIC_MORA_PERCEIVE_V1 = originalEnv;
+        mockPerceptionData = undefined;
+    });
+
+    it('derives scopeLevel from bundle.scope when flag is on', () => {
+        process.env.NEXT_PUBLIC_MORA_PERCEIVE_V1 = 'true';
+        mockPerceptionData = {
+            version: 'v1',
+            issued_at: '2026-04-25T12:00:00Z',
+            identity: { user_id: 'u', name: 'a', role: 'owner', tenant_id: 't', active_company: { id: 'c', name: 'C' } },
+            scope: {
+                company: { id: 'c', name: 'Acme' },
+                department: { id: 'd', name: 'Marketing' },
+                space: null,
+                folder: null,
+            },
+            active_object: null,
+            recent_activity: { navigations: [], edits: [], open_panes: [], drafts: [] },
+            relevant_memory: [],
+            recent_tool_runs: [],
+            capabilities: { tools_available: [], tools_degraded: [], providers_active: [], memory_writable: true },
+        };
+        mockStores({ user: { id: 'u1', name: 'Test', role: 'member', operational_state: 'operational' } });
+        const { result } = renderHook(() => useMoraContext());
+        expect(result.current.scopeLevel).toBe('department');
+        expect(result.current.scopeLabels.department).toBe('Marketing');
+        expect(result.current.scopeLabels.company).toBe('Acme');
+    });
+
+    it('falls back to legacy when flag is on but bundle not loaded', () => {
+        process.env.NEXT_PUBLIC_MORA_PERCEIVE_V1 = 'true';
+        mockPerceptionData = undefined;
+        mockStores({
+            user: { id: 'u1', name: 'Test', role: 'member', operational_state: 'operational', active_company_name: 'Acme GmbH' },
+        });
+        const { result } = renderHook(() => useMoraContext());
+        // Falls back to legacy: company name from session
+        expect(result.current.scopeLabels.company).toBe('Acme GmbH');
+    });
+
+    it('respects setup_required even when bundle is loaded', () => {
+        process.env.NEXT_PUBLIC_MORA_PERCEIVE_V1 = 'true';
+        mockPerceptionData = {
+            version: 'v1',
+            issued_at: '2026-04-25T12:00:00Z',
+            identity: { user_id: 'u', name: 'a', role: 'owner', tenant_id: 't', active_company: { id: 'c', name: 'C' } },
+            scope: { company: null, department: null, space: null, folder: null },
+            active_object: null,
+            recent_activity: { navigations: [], edits: [], open_panes: [], drafts: [] },
+            relevant_memory: [],
+            recent_tool_runs: [],
+            capabilities: { tools_available: [], tools_degraded: [], providers_active: [], memory_writable: true },
+        };
+        mockStores({ user: { id: 'u1', name: 'Test', role: 'member', operational_state: 'setup_required' } });
+        const { result } = renderHook(() => useMoraContext());
+        expect(result.current.isOperational).toBe(false);
     });
 });
 
