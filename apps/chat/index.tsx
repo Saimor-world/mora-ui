@@ -23,6 +23,8 @@ import { useOrbStore } from '@/lib/store/orbStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
+import { useMoraPerception } from '@/lib/queries/useMoraPerception';
+import { isMoraPerceiveV1Enabled } from '@/lib/featureFlags';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
@@ -627,6 +629,21 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         receipt: ReturnType<typeof buildOpenIntentReceipt>;
     } | null>(null);
     const moraCtx = useMoraContext();
+
+    // Real Mora P1: when the perceive flag is on, fetch the bundle keyed on
+    // current scope so the LLM gets fresh perception each turn. The hook is
+    // called unconditionally; when the flag is off the bundle is unused.
+    const { data: perceptionBundle } = useMoraPerception({
+        active_pane: {
+            type: pane?.type ?? 'chat',
+            data: {
+                department_id: activeDepartmentId ?? undefined,
+                space_id: activeSpaceId ?? undefined,
+                folder_id: activeFolderId ?? undefined,
+            },
+        },
+    });
+
     const communicationContextMessage = useMemo(
         () => buildCommunicationOperationalContextMessage(
             communicationSummary,
@@ -1158,6 +1175,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     context: buildChatContext({
                         session_id: "chat_pane",
                         pane_id: paneId,
+                        ...(isMoraPerceiveV1Enabled() && perceptionBundle ? { perception: perceptionBundle } : {}),
                     }) as Record<string, unknown> | undefined
                 });
 
@@ -1215,6 +1233,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         streamError,
         streamSend,
         viewLevel,
+        perceptionBundle,
     ]);
 
     // Handle initial message from Dock/Spotlight chat input
