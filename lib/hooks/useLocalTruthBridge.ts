@@ -49,8 +49,24 @@ const probeUrl = async (url: string, isLocalSurface: boolean) => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 2400);
 
+    // Detect cross-origin probe: even on a "local surface" page, probing
+    // 127.0.0.1 from a localhost origin (or vice versa) is cross-origin per
+    // the same-origin policy. Browsers block default-mode fetches across
+    // those, producing console CORS noise. Use 'no-cors' mode for any probe
+    // whose hostname doesn't match the current page hostname.
+    let sameHostProbe = false;
     try {
-        if (isLocalSurface) {
+        if (typeof window !== 'undefined') {
+            const target = new URL(url);
+            sameHostProbe = target.hostname === window.location.hostname;
+        }
+    } catch {
+        sameHostProbe = false;
+    }
+
+    try {
+        if (isLocalSurface && sameHostProbe) {
+            // Genuine same-origin probe: read response.ok for accurate signal.
             const response = await fetch(url, {
                 method: 'GET',
                 cache: 'no-store',
@@ -60,6 +76,8 @@ const probeUrl = async (url: string, isLocalSurface: boolean) => {
             return response.ok;
         }
 
+        // Cross-origin or remote: use no-cors so a successful network
+        // round-trip is enough; we cannot read the body anyway.
         await fetch(url, {
             method: 'GET',
             cache: 'no-store',
